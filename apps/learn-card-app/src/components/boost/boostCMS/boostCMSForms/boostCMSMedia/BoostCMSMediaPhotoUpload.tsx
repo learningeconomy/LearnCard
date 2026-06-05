@@ -12,6 +12,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSMediaPhotoUploadProps = {
     state: BoostCMSMediaState;
@@ -48,6 +49,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
         setSectionPortal(getTopmostCancelPortal());
     }, []);
     const { closeModal } = useModal();
+    const { t } = useTranslation();
 
     const { id, type, title, color, Icon } = boostMediaOptions.find(
         ({ type }) => type === activeMediaType
@@ -88,7 +90,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
                 <div className="image-preview max-h-[250px] mb-[20px]">
                     <img
-                        alt="Uploaded Image Preview"
+                        alt={t('boost.cms.media.uploadedImagePreview', 'Uploaded Image Preview')}
                         className="max-h-[250px]"
                         src={photoSrc}
                         onClick={handleImageSelect}
@@ -99,7 +101,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={t('boost.cms.media.titlePlaceholder', 'Title')}
                     type="text"
                     value={state.photos?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -126,11 +128,11 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                                     }}
                                     className={`flex flex-1  items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                                 >
-                                    Save
+                                    {t('boost.cms.appearance.save', 'Save')}
                                 </button>
                             ) : (
                                 <button className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide">
-                                    {imageUploadLoading ? 'Uploading...' : 'Upload'}
+                                    {imageUploadLoading ? t('boost.cms.media.uploading', 'Uploading...') : t('boost.cms.media.upload', 'Upload')}
                                 </button>
                             )}
 
@@ -139,7 +141,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                                     onClick={handleImageSelect}
                                     className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                                 >
-                                    Change Photo
+                                    {t('boost.cms.media.changePhoto', 'Change Photo')}
                                 </button>
                             )}
                         </div>
@@ -158,7 +160,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {t('boost.cms.media.close', 'Back')}
                             </button>
                         </div>
                     </div>,

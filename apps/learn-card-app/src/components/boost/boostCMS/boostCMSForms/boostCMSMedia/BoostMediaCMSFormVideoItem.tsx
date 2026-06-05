@@ -8,6 +8,7 @@ import Video from 'learn-card-base/svgs/Video';
 
 import { BoostMediaOptionsEnum } from '../../../boost';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
+import { useTranslation } from 'react-i18next';
 import {
     VideoMetadata,
     getVideoSource,
@@ -81,7 +82,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 >
                     <img
                         src={metaData?.thumbnailUrl || EmptyImage}
-                        alt={media.title || 'Video Cover'}
+                        alt={media.title || t('boost.cms.media.videoCover', 'Video Cover')}
                         className="h-full w-full object-cover"
                     />
                     <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent z-10"></div>

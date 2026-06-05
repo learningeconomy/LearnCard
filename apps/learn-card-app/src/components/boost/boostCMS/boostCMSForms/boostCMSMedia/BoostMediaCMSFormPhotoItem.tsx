@@ -8,6 +8,7 @@ import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 const BoostMediaCMSFormPhotoItem: React.FC<BoostMediaCMSFormItemProps> = ({
     index,
@@ -56,7 +57,7 @@ const BoostMediaCMSFormPhotoItem: React.FC<BoostMediaCMSFormItemProps> = ({
         >
             <div className="w-2/5 shrink-0 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px]">
                 <img
-                    alt="media attachment"
+                    alt={t('boost.cms.media.mediaAttachment', 'Media Attachment')}
                     src={media.url || ''}
                     className="h-full w-full object-cover"
                 />

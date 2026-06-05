@@ -22,6 +22,7 @@ import {
     boostCMSSkills,
 } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import { useTranslation } from 'react-i18next';
 
 const BoostCMSPrimarySkillButton: React.FC<{
     skill: BoostCMSSkillsEnum | string;
@@ -203,6 +204,7 @@ export const BoostCMSSkillsForm: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
 }> = ({ state, setState }) => {
+    const { t } = useTranslation();
     const handleAddSkill = (skill: { skill: BoostCMSSkill | string; subskills: string[] }) => {
         setState(prevState => {
             return {
@@ -305,7 +307,7 @@ export const BoostCMSSkillsForm: React.FC<{
                 className="w-full flex-col items-center justify-center bg-white rounded-[20px]"
             >
                 <div className="flex items-center justify-between w-full ion-padding">
-                    <h1 className="font-poppins text-black text-xl p-0 m-0">Skills</h1>
+                    <h1 className="font-poppins text-black text-xl p-0 m-0">{t('boost.cms.skills.title', 'Skills')}</h1>
 
                     <button
                         onClick={() =>

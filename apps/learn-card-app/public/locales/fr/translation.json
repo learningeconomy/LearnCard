@@ -1182,7 +1182,91 @@
         "id": "Identifiant",
         "noImage": "Aucune image",
         "uploadImage": "Télécharger une image",
-        "changeImage": "Changer l'image"
+        "changeImage": "Changer l'image",
+        "cms": {
+            "basicInfo": {
+                "about": "À propos",
+                "issuerNamePlaceholder": "Nom de l'émetteur",
+                "descriptionPlaceholder": "À quoi sert ce boost ?",
+                "narrativePlaceholder": "Comment gagner ce boost ?",
+                "location": "Emplacement",
+                "credentialExpires": "La crédential expire",
+                "expirationDate": "Date d'expiration"
+            },
+            "title": {
+                "titlePlaceholder": "Titre",
+                "boostTitlePlaceholder": "Titre du boost"
+            },
+            "skills": {
+                "title": "Compétences",
+                "addSkills": "Ajouter des compétences"
+            },
+            "media": {
+                "mediaAttachments": "Pièces jointes",
+                "showOnlyMedia": "Afficher uniquement les médias pour l'affichage de la crédential",
+                "requiredForMediaDisplay": "Requis pour le type d'affichage Média.",
+                "addMediaToEnable": "Ajoutez des médias pour activer l'option.",
+                "addMediaToContinue": "Ajoutez des médias pour continuer.",
+                "mediaDisplayToggleDescription": "Si activé, cette crédential affichera les médias joints au lieu de la mise en page par défaut.",
+                "selectMediaType": "Sélectionner le type de média",
+                "addMedia": "Ajouter un média",
+                "titlePlaceholder": "Titre",
+                "pasteLink": "Coller le lien...",
+                "uploadedPercent": "{{percent}}% téléchargé",
+                "uploading": "Téléchargement...",
+                "changePhoto": "Changer la photo",
+                "changeDoc": "Changer le document",
+                "upload": "Télécharger",
+                "close": "Fermer",
+                "videoCover": "Couverture vidéo",
+                "uploadedImagePreview": "Aperçu de l'image téléchargée",
+                "mediaAttachment": "Pièce jointe média",
+                "attachmentRules": "Règles des pièces jointes",
+                "attachmentRulesDescription": "Vous ne pouvez joindre qu'un seul type de média par crédential :",
+                "oneDocument": "Un document",
+                "oneVideo": "Une vidéo",
+                "oneOrMorePhotos": "Une ou plusieurs photos",
+                "mixingNotAllowed": "Le mélange de types (comme photo + vidéo) n'est pas autorisé.",
+                "attachmentRequired": "Pièce jointe requise",
+                "attachmentRequiredDescription": "Cette crédential utilise un affichage basé sur les médias. Veuillez joindre un document, une image ou un lien.",
+                "addMediaAttachment": "Ajouter une pièce jointe"
+            },
+            "appearance": {
+                "title": "Apparence",
+                "boostType": "Type de boost",
+                "selectStylePack": "Sélectionner le pack de styles",
+                "selectImage": "Sélectionner une image",
+                "save": "Enregistrer",
+                "cancel": "Annuler",
+                "badgeThumbnail": "Vignette du badge",
+                "default": "Par défaut",
+                "backgroundImage": "Image de fond",
+                "boostBackgroundImage": "Image de fond du boost",
+                "empty": "Vide",
+                "backgroundColor": "Couleur de fond",
+                "boostBackgroundColor": "Couleur de fond du boost",
+                "colorHexCode": "Code hexadécimal de la couleur",
+                "displayAsBadge": "Afficher comme {{type}}",
+                "displayType": "Affichage {{type}}",
+                "stylePack": "Pack de styles",
+                "all": "Tous",
+                "upload": "Télécharger",
+                "loading": "Chargement...",
+                "selectType": "Sélectionner le type",
+                "customType": "Type personnalisé",
+                "search": "Rechercher...",
+                "noResultsFor": "Aucun résultat trouvé pour",
+                "createBoost": "Créer le boost \"{{search}}\" !",
+                "editAppearance": "Modifier l'apparence",
+                "badgeThumbnailAlt": "vignette du badge"
+            },
+            "chat": {
+                "addChat": "Ajouter un chat"
+            },
+            "aiMission": {
+                "title": "Génération de mission par IA"
+            }
+        }
     },
     "legal": {
         "termsOfService": "Conditions d'utilisation",

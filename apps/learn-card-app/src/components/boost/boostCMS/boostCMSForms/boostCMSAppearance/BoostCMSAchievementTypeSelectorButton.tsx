@@ -22,6 +22,7 @@ import { BoostCMSState } from '../../../boost';
 import BoostCMSAchievementTypeSelectorModal from './BoostCMSAchievementTypeSelectorModal';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 type AchievementTypeSelectorButtonProps = {
     state: BoostCMSState;
@@ -47,6 +48,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<AchievementTypeSelectorBut
 }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen });
     const { isDesktop } = useDeviceTypeByWidth();
+    const { t } = useTranslation();
     const { getThemedCategoryIcons } = useTheme();
 
     let achievementTypeSelected;
@@ -59,7 +61,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<AchievementTypeSelectorBut
         const subcategories = CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type] || [];
         achievementTypeSelected =
             subcategories.find(options => options?.type === state?.basicInfo?.achievementType)
-                ?.title ?? 'Select Type';
+                ?.title ?? t('boost.cms.appearance.selectType', 'Select Type');
     }
 
     const boostMetadata =

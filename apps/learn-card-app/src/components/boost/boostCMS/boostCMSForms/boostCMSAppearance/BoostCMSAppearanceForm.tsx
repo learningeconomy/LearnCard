@@ -28,6 +28,7 @@ import BoostIDCardCMSAppearanceForm from '../../BoostIDCardCMS/BoostIDCardCMSFor
 
 import { BoostCMSState } from '../../../boost';
 import BoostIDCardCMSIssuerThumbnailForm from '../../BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSIssuerThumbnailForm';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSAppearanceFormProps = {
     state: BoostCMSState;
@@ -73,6 +74,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
     handleSaveAppearance,
 }) => {
     const { newModal, closeModal } = useModal();
+    const { t } = useTranslation();
 
     const { CategoryImage } = boostCategoryMetadata[activeCategoryType];
 
@@ -165,7 +167,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';
-    formTitle = 'Appearance';
+    formTitle = t('boost.cms.appearance.title', 'Appearance');
 
     return (
         <IonGrid
@@ -193,7 +195,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
-                        <h3 className="text-grayscale-700 text-left w-full">Badge Thumbnail</h3>
+                        <h3 className="text-grayscale-700 text-left w-full">{t('boost.cms.appearance.badgeThumbnail', 'Badge Thumbnail')}</h3>
                         <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-full mt-4">
                             <div className="flex items-center justify-start w-[70%] px-[6px] py-[6px] overflow-hidden">
                                 <div
@@ -205,7 +207,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                                     />
                                 </div>
                                 {isDefaultImage && (
-                                    <p className="ml-[10px] text-grayscale-700">Default</p>
+                                    <p className="ml-[10px] text-grayscale-700">{t('boost.cms.appearance.default', 'Default')}</p>
                                 )}
                             </div>
 
@@ -226,7 +228,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
 
                 <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                     <h3 className="text-grayscale-700 text-left w-full">
-                        {isID || isMembership ? 'Boost Background Image' : 'Background Image'}
+                        {isID || isMembership ? t('boost.cms.appearance.boostBackgroundImage', 'Boost Background Image') : t('boost.cms.appearance.backgroundImage', 'Background Image')}
                     </h3>
 
                     <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-tl-[10px] rounded-bl-[10px] rounded-tr-[50px] rounded-br-[50px] mt-4">
@@ -267,7 +269,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                                 )}
                             </div>
                             {!state?.appearance?.backgroundImage && (
-                                <p className="ml-[10px] text-grayscale-700">Empty</p>
+                                <p className="ml-[10px] text-grayscale-700">{t('boost.cms.appearance.empty', 'Empty')}</p>
                             )}
                         </div>
 
@@ -285,7 +287,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
 
                 <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                     <h3 className="text-grayscale-700 text-left w-full">
-                        {isID ? 'Boost Background Color' : 'Background Color'}
+                        {isID ? t('boost.cms.appearance.boostBackgroundColor', 'Boost Background Color') : t('boost.cms.appearance.backgroundColor', 'Background Color')}
                     </h3>
 
                     <div className="w-full flex items-center justify-center p-0 m-0 mt-4">
@@ -294,7 +296,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                                 value={state?.appearance?.backgroundColor}
                                 onChange={e => handleColorInputOnChange(e.target.value)}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base w-full pr-10"
-                                placeholder="Color Hex Code"
+                                placeholder={t('boost.cms.appearance.colorHexCode', 'Color Hex Code')}
                                 type="text"
                                 disabled={disabled}
                             />
@@ -328,10 +330,10 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                         }}
                         className="flex items-center justify-center bg-emerald-700 rounded-full mb-4 px-[12px] py-[8px] text-white font-poppins text-xl w-full max-w-[320px] shadow-lg normal tracking-wide"
                     >
-                        Save
+                        {t('boost.cms.appearance.save', 'Save')}
                     </button>
                     <button onClick={() => closeModal()} className="text-white text-center text-sm">
-                        Cancel
+                        {t('boost.cms.appearance.cancel', 'Cancel')}
                     </button>
                 </div>
             </IonRow>

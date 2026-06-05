@@ -13,6 +13,7 @@ import X from 'learn-card-base/svgs/X';
 import { BoostCMSState } from '../../../boost';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';
+import { useTranslation } from 'react-i18next';
 
 const BoostCMSAppearanceBadgeSelector: React.FC<{
     state: BoostCMSState;
@@ -21,6 +22,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
     showCloseButton?: boolean;
     title?: String | React.ReactNode;
 }> = ({ state, setState, handleCloseModal, showCloseButton = true, title }) => {
+    const { t } = useTranslation();
     return (
         <IonPage id="user-options-modal">
             <IonHeader className="ion-no-border bg-white pt-5">

@@ -3,6 +3,7 @@ import React from 'react';
 import { IonRow, IonCol, IonToggle } from '@ionic/react';
 
 import { BoostCMSState } from '../../../boost';
+import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 
@@ -11,6 +12,7 @@ const BoostCMSAddChatForm: React.FC<{
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -34,7 +36,7 @@ const BoostCMSAddChatForm: React.FC<{
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                    <h1 className="text-black text-2xl p-0 m-0">Add Chat</h1>
+                    <h1 className="text-black text-2xl p-0 m-0">{t('boost.cms.chat.addChat', 'Add Chat')}</h1>
                     <IonToggle
                         mode="ios"
                         color={primaryColor}

@@ -1182,7 +1182,91 @@
         "id": "هوية",
         "noImage": "لا توجد صورة",
         "uploadImage": "رفع صورة",
-        "changeImage": "تغيير الصورة"
+        "changeImage": "تغيير الصورة",
+        "cms": {
+            "basicInfo": {
+                "about": "حول",
+                "issuerNamePlaceholder": "اسم المُصدر",
+                "descriptionPlaceholder": "ما الغرض من هذا البوست؟",
+                "narrativePlaceholder": "كيف تكسب هذا البوست؟",
+                "location": "الموقع",
+                "credentialExpires": "تنتهي صلاحية الاعتماد",
+                "expirationDate": "تاريخ الانتهاء"
+            },
+            "title": {
+                "titlePlaceholder": "العنوان",
+                "boostTitlePlaceholder": "عنوان البوست"
+            },
+            "skills": {
+                "title": "المهارات",
+                "addSkills": "إضافة مهارات"
+            },
+            "media": {
+                "mediaAttachments": "مرفقات الوسائط",
+                "showOnlyMedia": "عرض الوسائط فقط لعرض الاعتماد",
+                "requiredForMediaDisplay": "مطلوب لنوع عرض الوسائط.",
+                "addMediaToEnable": "أضف وسائط لتمكين الخيار.",
+                "addMediaToContinue": "أضف وسائط للمتابعة.",
+                "mediaDisplayToggleDescription": "عند التشغيل، سيعرض هذا الاعتماد الوسائط المرفقة بدلاً من التخطيط الافتراضي.",
+                "selectMediaType": "تحديد نوع الوسائط",
+                "addMedia": "إضافة وسائط",
+                "titlePlaceholder": "العنوان",
+                "pasteLink": "الصق الرابط...",
+                "uploadedPercent": "{{percent}}% تم التحميل",
+                "uploading": "جاري التحميل...",
+                "changePhoto": "تغيير الصورة",
+                "changeDoc": "تغيير المستند",
+                "upload": "تحميل",
+                "close": "إغلاق",
+                "videoCover": "غلاف الفيديو",
+                "uploadedImagePreview": "معاينة الصورة المرفوعة",
+                "mediaAttachment": "مرفق وسائط",
+                "attachmentRules": "قواعد مرفقات الوسائط",
+                "attachmentRulesDescription": "يمكنك إرفاق نوع وسائط واحد فقط لكل اعتماد:",
+                "oneDocument": "مستند واحد",
+                "oneVideo": "فيديو واحد",
+                "oneOrMorePhotos": "صورة واحدة أو أكثر",
+                "mixingNotAllowed": "لا يُسمح بخلط الأنواع (مثل صورة + فيديو).",
+                "attachmentRequired": "مرفق الوسائط مطلوب",
+                "attachmentRequiredDescription": "يستخدم هذا الاعتماد عرضًا قائمًا على الوسائط. يرجى إرفاق مستند أو صورة أو رابط للعرض.",
+                "addMediaAttachment": "إضافة مرفق وسائط"
+            },
+            "appearance": {
+                "title": "المظهر",
+                "boostType": "نوع البوست",
+                "selectStylePack": "اختيار حزمة الأنماط",
+                "selectImage": "اختيار صورة",
+                "save": "حفظ",
+                "cancel": "إلغاء",
+                "badgeThumbnail": "صورة الشارة المصغرة",
+                "default": "افتراضي",
+                "backgroundImage": "صورة الخلفية",
+                "boostBackgroundImage": "صورة خلفية البوست",
+                "empty": "فارغ",
+                "backgroundColor": "لون الخلفية",
+                "boostBackgroundColor": "لون خلفية البوست",
+                "colorHexCode": "كود اللون الست عشري",
+                "displayAsBadge": "عرض كـ {{type}}",
+                "displayType": "عرض {{type}}",
+                "stylePack": "حزمة الأنماط",
+                "all": "الكل",
+                "upload": "تحميل",
+                "loading": "جاري التحميل...",
+                "selectType": "تحديد النوع",
+                "customType": "نوع مخصص",
+                "search": "بحث...",
+                "noResultsFor": "لم يتم العثور على نتائج لـ",
+                "createBoost": "إنشاء بوست \"{{search}}\"!",
+                "editAppearance": "تعديل المظهر",
+                "badgeThumbnailAlt": "صورة الشارة المصغرة"
+            },
+            "chat": {
+                "addChat": "إضافة محادثة"
+            },
+            "aiMission": {
+                "title": "توليد المهمة بالذكاء الاصطناعي"
+            }
+        }
     },
     "legal": {
         "termsOfService": "شروط الخدمة",

@@ -15,6 +15,7 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -58,6 +59,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
     }
 
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const [_customTypes, _setCustomTypes] = useState<any>(setCustomTypes);
@@ -142,7 +144,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                             setSearch(e.detail.value!);
                             setErrors({});
                         }}
-                        placeholder="Search..."
+                        placeholder={t('boost.cms.appearance.search', 'Search...')}
                         type="text"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                             errors?.customType ? 'border-red-500 border-2' : ''
@@ -161,14 +163,14 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                     {filteredAchievementTypes.length === 0 && (
                         <div className="w-full text-left flex flex-col items-start justify-center">
                             <p className="text-grayscale-600 text-base font-normal">
-                                No results found for{' '}
+                                {t('boost.cms.appearance.noResultsFor', 'No results found for')}{' '}
                                 <span className="text-black italic">{search}</span>
                             </p>
                             <button
                                 onClick={handleCustomType}
                                 className={`text-${primaryColor} text-base font-bold text-left`}
                             >
-                                Create "{search}" Boost!
+                                {t('boost.cms.appearance.createBoost', 'Create "{{search}}" Boost!', { search })}
                             </button>
                         </div>
                     )}
@@ -197,7 +199,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                                     <div className="flex-1 flex flex-col items-center justify-start pl-4">
                                         {isCustomType && (
                                             <p className="w-full text-gray-800 text-xs normal font-bold text-left">
-                                                Custom Type
+                                                {t('boost.cms.appearance.customType', 'Custom Type')}
                                             </p>
                                         )}
                                         <p className="w-full text-grayscale-700 font-medium text-lg text-left capitalize">
@@ -235,7 +237,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
 
                                     <div className="flex-1 flex flex-col items-center justify-start pl-4">
                                         <p className="w-full text-gray-800 text-xs normal font-bold text-left">
-                                            Custom Type
+                                            {t('boost.cms.appearance.customType', 'Custom Type')}
                                         </p>
                                         <p className="w-full text-grayscale-700 font-medium text-lg text-left capitalize">
                                             {title}

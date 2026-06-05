@@ -25,6 +25,7 @@ import {
     BoostCMSMediaState,
     useBoostCMSMediaState,
 } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -166,6 +167,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
     onSaveComplete,
 }) => {
     const { closeModal } = useModal();
+    const { t } = useTranslation();
 
     const [state, setState] = useBoostCMSMediaState(initialState);
     const [activeMediaType, setActiveMediaType] = useState<BoostMediaOptionsEnum | undefined>(
@@ -345,7 +347,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
                         value={(uploadProgress as number) / 100}
                     />
                     <p className="mt-2 text-sm font-medium text-grayscale-900">
-                        {uploadProgress}% uploaded
+                        {t('boost.cms.media.uploadedPercent', '{{percent}}% uploaded', { percent: uploadProgress })}
                     </p>
                 </div>
             )}

@@ -17,6 +17,7 @@ import {
     SKILLS_TO_SUBSKILLS,
 } from './boostSkills';
 import { toSkillAlignment, toSubskillAlignment } from '../../../alignmentHelpers';
+import { useTranslation } from 'react-i18next';
 
 export enum BoostCMSSkillsAttachmentFormModeEnum {
     view = 'view',
@@ -32,6 +33,7 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     state,
     setState,
 }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal({ mobile: ModalTypes.FullScreen });
     const { isDesktop } = useDeviceTypeByWidth();
 
@@ -230,7 +232,7 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSSkillOptions, {
         state: _state,
         setState: _setState,
-        title: <p className="font-poppins text-center text-xl text-grayscale-900">Add Skills</p>,
+        title: <p className="font-poppins text-center text-xl text-grayscale-900">{t('boost.cms.skills.addSkills', 'Add Skills')}</p>,
         showCloseButton: true,
         handleAddSkill: (
             skill: {
@@ -265,7 +267,7 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSSkillOptions, {
         state: _state,
         setState: _setState,
-        title: <p className="font-poppins text-center text-xl text-grayscale-900">Add Skills</p>,
+        title: <p className="font-poppins text-center text-xl text-grayscale-900">{t('boost.cms.skills.addSkills', 'Add Skills')}</p>,
         showCloseButton: false,
         handleAddSkill: (
             skill: {

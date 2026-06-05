@@ -8,6 +8,7 @@ import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 
 import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
@@ -34,6 +35,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
     const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
         !hideCloseButton && (showCloseButton ?? true)
     );
+    const { t } = useTranslation();
     const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
     useLayoutEffect(() => {
         setSectionPortal(getTopmostCancelPortal());
@@ -91,7 +93,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                                 onClick={closeModal}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Close
+                                {t('boost.cms.media.close', 'Close')}
                             </button>
                         </div>
                     </div>,

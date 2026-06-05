@@ -9,6 +9,7 @@ import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 import { BoostCMSState } from '../../../boost';
 import { useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 const BoostCMSIDAppearanceController: React.FC<{
     state: BoostCMSState;
@@ -35,6 +36,7 @@ const BoostCMSIDAppearanceController: React.FC<{
     showEditButton = true,
     showEditAppearanceText = true,
 }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal();
     const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSAppearanceFormModal, {
         state: state,
@@ -63,7 +65,7 @@ const BoostCMSIDAppearanceController: React.FC<{
         <div className="flex items-center justify-center w-full mt-12 mb-8 relative">
             <div className="relative">
                 {showEditAppearanceText && (
-                    <p className="absolute right-[55px] top-[-30px]">Edit Appearance</p>
+                    <p className="absolute right-[55px] top-[-30px]">{t('boost.cms.appearance.editAppearance', 'Edit Appearance')}</p>
                 )}
 
                 {showEditButton && (

@@ -12,6 +12,7 @@ import MediaDisplayTypeIcon from 'learn-card-base/assets/images/media-display-ty
 
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import BoostCMSDisplayTypeSelectorModal from './BoostCMSDisplayTypeSelectorModal';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSDisplayTypeSelectorProps = {
     state: BoostCMSState;
@@ -26,6 +27,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
     setDisplayType,
     disabled = false,
 }) => {
+    const { t } = useTranslation();
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     // Use useEffect to update the state if necessary
@@ -46,7 +48,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
 
     const { color: _color } =
         getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum) || {};
-    const displayTypeText = `${displayType} Display`;
+    const displayTypeText = t('boost.cms.appearance.displayType', '{{type}} Display', { type: displayType });
 
     let displayTypeIcon = null;
     if (displayType === BoostCMSAppearanceDisplayTypeEnum.Badge) {
@@ -93,7 +95,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
                     <img
                         src={displayTypeIcon}
                         className="w-[30px] h-auto mr-2"
-                        alt="display type"
+                        alt={t('boost.cms.appearance.badgeThumbnailTitle', 'display type')}
                     />{' '}
                     {displayTypeText}
                 </div>

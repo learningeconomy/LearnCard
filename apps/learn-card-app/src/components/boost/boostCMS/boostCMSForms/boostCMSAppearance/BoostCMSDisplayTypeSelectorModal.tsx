@@ -10,6 +10,7 @@ import MediaDisplayTypeIcon from 'learn-card-base/assets/images/media-display-ty
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSDisplayTypeSelectorModalProps = {
     state: BoostCMSState;
@@ -20,6 +21,7 @@ export const BoostCMSDisplayTypeSelectorModal: React.FC<BoostCMSDisplayTypeSelec
     state,
     handleDisplayTypeChange,
 }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
 
     const handleSetDisplayType = (displayType: BoostCMSAppearanceDisplayTypeEnum) => {
@@ -87,7 +89,7 @@ export const BoostCMSDisplayTypeSelectorModal: React.FC<BoostCMSDisplayTypeSelec
                                     className="w-[35px] h-auto mr-2"
                                     alt="display type"
                                 />{' '}
-                                Display as {title}
+                                {t('boost.cms.appearance.displayAsBadge', 'Display as {{type}}', { type: title })}
                             </div>
 
                             {isSelected && (

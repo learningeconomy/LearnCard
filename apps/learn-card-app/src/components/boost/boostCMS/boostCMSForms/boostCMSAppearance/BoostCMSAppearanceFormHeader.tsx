@@ -23,6 +23,7 @@ import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 import { BoostCMSState } from '../../../boost';
 
 import 'swiper/css/navigation';
+import { useTranslation } from 'react-i18next';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -76,6 +77,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
 
     handleSaveAppearance = () => { },
 }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
     let formTitle: string = '';
 
@@ -146,19 +148,19 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     let titleStyles = 'flex-1';
 
     if (activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm) {
-        formTitle = 'Boost Type';
+        formTitle = t('boost.cms.appearance.boostType', 'Boost Type');
         headerContainerStyles = 'items-center justify-between px-2 mt-2';
         headerBackButtonStyles = 'w-[86px] h-[44px]';
     } else if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
         if (showStylePackCategoryList) {
-            formTitle = 'Select Style Pack';
+            formTitle = t('boost.cms.appearance.selectStylePack', 'Select Style Pack');
             headerContainerStyles = 'items-center justify-center px-2';
         } else {
-            formTitle = 'Select Image';
+            formTitle = t('boost.cms.appearance.selectImage', 'Select Image');
             headerContainerStyles = 'items-center justify-center px-2';
         }
     } else {
-        formTitle = 'Appearance';
+        formTitle = t('boost.cms.appearance.title', 'Appearance');
         titleStyles = 'flex-none';
         headerContainerStyles = 'items-center justify-between px-4 pb-2';
     }
@@ -210,7 +212,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                 className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-white w-[86px] h-[44px] bg-emerald-700`}
                                 disabled={disabled}
                             >
-                                Save
+                                {t('boost.cms.appearance.save', 'Save')}
                             </button>
                         )}
                         {activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm && (
@@ -223,7 +225,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                     }`}
                                 disabled={saveDisabled}
                             >
-                                Save
+                                {t('boost.cms.appearance.save', 'Save')}
                             </button>
                         )}
                     </div>

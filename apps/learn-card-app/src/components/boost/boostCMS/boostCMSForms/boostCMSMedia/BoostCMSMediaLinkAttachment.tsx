@@ -10,6 +10,7 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSMediaLinkAttachmentProps = {
     state: BoostCMSMediaState;
@@ -43,6 +44,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
     useLayoutEffect(() => {
         setSectionPortal(getTopmostCancelPortal());
     }, []);
+    const { t } = useTranslation();
 
     const { title, color, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 
@@ -70,7 +72,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={t('boost.cms.media.titlePlaceholder', 'Title')}
                     type="text"
                     value={state.links?.[currentIndex]?.title || newLinkTitle}
                     onIonInput={e => {
@@ -91,7 +93,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Paste link..."
+                    placeholder={t('boost.cms.media.pasteLink', 'Paste link...')}
                     type="text"
                     value={state.links?.[currentIndex]?.url || newLinkUrl}
                     onIonInput={e => {
@@ -134,7 +136,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                Save
+                                    {t('boost.cms.appearance.save', 'Save')}
                             </button>
                         </div>
 
@@ -152,7 +154,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {t('boost.cms.media.close', 'Back')}
                             </button>
                         </div>
                     </div>,

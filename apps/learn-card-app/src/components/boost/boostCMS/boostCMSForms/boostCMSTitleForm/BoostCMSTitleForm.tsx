@@ -5,13 +5,16 @@ import { IonTextarea } from '@ionic/react';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import { BoostCMSState } from '../../../boost';
+import { useTranslation } from 'react-i18next';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 const BoostCMSTitleForm: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
+    const { t } = useTranslation();
     const { track } = useAnalytics();
     const basicInfo = state?.basicInfo;
 
@@ -50,7 +53,7 @@ const BoostCMSTitleForm: React.FC<{
         });
     };
 
-    const placeHolder = isID || isMembership ? 'Title' : 'Boost Title';
+    const placeHolder = isID || isMembership ? t('boost.cms.title.titlePlaceholder', 'Title') : t('boost.cms.title.boostTitlePlaceholder', 'Boost Title');
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-6">

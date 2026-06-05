@@ -14,6 +14,7 @@ import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSMediaDocumentUploadProps = {
     state: BoostCMSMediaState;
@@ -45,6 +46,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
     useLayoutEffect(() => {
         setSectionPortal(getTopmostCancelPortal());
     }, []);
+    const { t } = useTranslation();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -89,7 +91,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={t('boost.cms.media.titlePlaceholder', 'Title')}
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -123,7 +125,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
 
                     {uploadProgress !== false && (
                         <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
+                            {t('boost.cms.media.uploadedPercent', '{{percent}}% uploaded', { percent: uploadProgress?.toString?.() })}
                         </p>
                     )}
                 </div>
@@ -139,7 +141,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                Save
+                                    {t('boost.cms.appearance.save', 'Save')}
                             </button>
 
                             {documentSrc && (
@@ -147,7 +149,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                     onClick={handleDocumentSelect}
                                     className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                                 >
-                                    Change Doc
+                                    {t('boost.cms.media.changeDoc', 'Change Doc')}
                                 </button>
                             )}
                         </div>
@@ -166,7 +168,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {t('boost.cms.media.close', 'Back')}
                             </button>
                         </div>
                     </div>,
