@@ -35,7 +35,7 @@ const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps
     ) : (
         <UserProfilePicture
             customContainerClass={imageClassName}
-            customImageClass="h-full w-full object-cover"
+            customImageClass="h-full w-full object-cover bg-white"
             user={{ image: imageUrl, name: userName }}
             avatarColor={avatarColor}
             avatarFingerprintColor={avatarFingerprintColor}
