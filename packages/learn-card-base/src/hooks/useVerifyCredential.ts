@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useWallet from './useWallet';
 import { VC, VerificationItem, VerificationStatus, VerificationStatusEnum } from '@learncard/types';
+import { prettifyVerificationItems } from '../helpers/verificationPrettifier';
 
 export const useVerifyCredential = (checkProof: boolean = true) => {
     const { initWallet } = useWallet();
@@ -15,15 +16,16 @@ export const useVerifyCredential = (checkProof: boolean = true) => {
     ) => {
         let verificationItems;
         const wallet = await initWallet();
-        const verifications: VerificationItem[] = await wallet?.invoke?.verifyCredential(
+        const rawVerifications: VerificationItem[] = await wallet?.invoke?.verifyCredential(
             credential,
             {},
             true
         );
+        const verifications = prettifyVerificationItems(rawVerifications ?? []);
 
         if (!checkProof) {
             const verificationsMinusProof = verifications.filter(
-                verificationItem => !verificationItem.check.includes('proof')
+                verificationItem => !/proof/i.test(verificationItem.check)
             );
             verificationItems = verificationsMinusProof;
         } else {

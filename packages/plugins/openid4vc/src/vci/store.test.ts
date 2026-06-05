@@ -9,12 +9,14 @@ const signVcJwt = async (payload: Record<string, unknown>): Promise<string> => {
     return new SignJWT(payload).setProtectedHeader({ alg: 'EdDSA' }).sign(privateKey);
 };
 
-const makeLearnCard = (overrides: {
-    upload?: jest.Mock;
-    uploadEncrypted?: jest.Mock;
-    add?: jest.Mock;
-    storage?: string;
-} = {}) => {
+const makeLearnCard = (
+    overrides: {
+        upload?: jest.Mock;
+        uploadEncrypted?: jest.Mock;
+        add?: jest.Mock;
+        storage?: string;
+    } = {}
+) => {
     const storage = overrides.storage ?? 'LearnCloud';
     return {
         store: {
@@ -31,7 +33,9 @@ const makeLearnCard = (overrides: {
     } as unknown as LearnCard<any, any, any>;
 };
 
-const baseAccepted = async (overrides: Partial<AcceptedCredentialResult> = {}): Promise<AcceptedCredentialResult> => {
+const baseAccepted = async (
+    overrides: Partial<AcceptedCredentialResult> = {}
+): Promise<AcceptedCredentialResult> => {
     const jwt = await signVcJwt({
         iss: 'did:web:issuer.example.com',
         sub: 'did:key:z6Mkholder',
@@ -137,7 +141,10 @@ describe('storeAcceptedCredentials', () => {
 
         const accepted = await baseAccepted();
         await storeAcceptedCredentials(learnCard, accepted, {
-            category: vc => (Array.isArray(vc.type) && vc.type.includes('OpenBadgeCredential') ? 'Badges' : 'Other'),
+            category: vc =>
+                Array.isArray(vc.type) && vc.type.includes('OpenBadgeCredential')
+                    ? 'Badges'
+                    : 'Other',
         });
 
         expect(add.mock.calls[0][0].category).toBe('Badges');
@@ -158,14 +165,11 @@ describe('storeAcceptedCredentials', () => {
             },
         });
 
-        await storeAcceptedCredentials(
-            learnCard,
-            {
-                credentials: [
-                    { format: 'jwt_vc_json', credential: jwt, configuration_id: 'ID_jwt_vc_json' },
-                ],
-            }
-        );
+        await storeAcceptedCredentials(learnCard, {
+            credentials: [
+                { format: 'jwt_vc_json', credential: jwt, configuration_id: 'ID_jwt_vc_json' },
+            ],
+        });
 
         expect(add.mock.calls[0][0].category).toBe('ID');
     });
@@ -192,9 +196,9 @@ describe('storeAcceptedCredentials', () => {
 
         const accepted = await baseAccepted();
 
-        await expect(
-            storeAcceptedCredentials(learnCard, accepted)
-        ).rejects.toMatchObject({ code: 'store_plane_missing' });
+        await expect(storeAcceptedCredentials(learnCard, accepted)).rejects.toMatchObject({
+            code: 'store_plane_missing',
+        });
     });
 
     it('throws index_plane_missing when the index plugin is absent', async () => {
@@ -205,9 +209,9 @@ describe('storeAcceptedCredentials', () => {
 
         const accepted = await baseAccepted();
 
-        await expect(
-            storeAcceptedCredentials(learnCard, accepted)
-        ).rejects.toMatchObject({ code: 'index_plane_missing' });
+        await expect(storeAcceptedCredentials(learnCard, accepted)).rejects.toMatchObject({
+            code: 'index_plane_missing',
+        });
     });
 
     it('isolates per-credential failures so one bad credential does not abort the batch', async () => {
@@ -314,11 +318,15 @@ describe('storeAcceptedCredentials', () => {
     describe('SD-JWT-VC delegation', () => {
         const makeLearnCardWithSdJwt = (
             parseFn?: jest.Mock,
-            categorizeFn?: jest.Mock
+            categorizeFn?: jest.Mock,
+            verifyFn: jest.Mock = jest
+                .fn()
+                .mockResolvedValue({ checks: ['issuer_signature'], warnings: [], errors: [] })
         ) => {
             const invoke: Record<string, unknown> = {};
             if (parseFn) invoke.parseSdJwtVc = parseFn;
             if (categorizeFn) invoke.categorizeSdJwtVct = categorizeFn;
+            if (verifyFn) invoke.verifySdJwtVc = verifyFn;
             return {
                 store: { LearnCloud: { uploadEncrypted: jest.fn().mockResolvedValue('lc:abc') } },
                 index: { LearnCloud: { add: jest.fn().mockResolvedValue(true) } },
@@ -330,8 +338,7 @@ describe('storeAcceptedCredentials', () => {
             credentials: [
                 {
                     format,
-                    credential:
-                        'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload.sig~',
+                    credential: 'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload.sig~',
                     configuration_id: 'TestSdJwtVc',
                 },
             ],
@@ -432,9 +439,7 @@ describe('storeAcceptedCredentials', () => {
                 'Career Passport Test'
             );
             expect((result.stored[0].vc.proof as { jwt: string }).jwt).toBe(fakeParsed.rawSdJwt);
-            expect((result.stored[0].vc as Record<string, unknown>).sdJwtVct).toBe(
-                fakeParsed.vct
-            );
+            expect((result.stored[0].vc as Record<string, unknown>).sdJwtVct).toBe(fakeParsed.vct);
         });
 
         it('uploads the storage envelope, NOT the W3C wrapper, for SD-JWT', async () => {

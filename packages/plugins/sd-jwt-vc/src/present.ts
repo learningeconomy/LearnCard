@@ -219,6 +219,17 @@ export const presentSdJwtVc = async (
                 `unsupported cnf confirmation type: ${confirmationTypes.join(', ') || 'unknown'}`
             );
         }
+        // A declared-but-malformed jwk (e.g. `cnf: { jwk: null }`) must not
+        // silently produce an unbound presentation. parseSdJwtVc only sets
+        // holderPublicKey for object-valued jwk, so without this guard such a
+        // payload would skip key binding while still advertising cnf metadata.
+        const cnfJwk = (cnf as { jwk?: unknown }).jwk;
+        if (!cnfJwk || typeof cnfJwk !== 'object') {
+            throw new SdJwtVcError(
+                'unsupported_cnf_confirmation_type',
+                'SD-JWT-VC cnf.jwk must be a non-null object'
+            );
+        }
     }
 
     if (parsed.holderPublicKey && options.activeHolderPublicJwk) {
@@ -242,7 +253,7 @@ export const presentSdJwtVc = async (
         ) {
             throw new SdJwtVcError(
                 'key_binding_mismatch',
-                'Active holder Ed25519 key does not match the credential\'s cnf.jwk binding'
+                "Active holder Ed25519 key does not match the credential's cnf.jwk binding"
             );
         }
     }
@@ -279,7 +290,9 @@ export const presentSdJwtVc = async (
     if (!SUPPORTED_SD_ALGS.has(rawSdAlg)) {
         throw new SdJwtVcError(
             'unsupported_sd_alg',
-            `Unsupported _sd_alg "${rawSdAlg}": this wallet only supports ${[...SUPPORTED_SD_ALGS].join(', ')}`
+            `Unsupported _sd_alg "${rawSdAlg}": this wallet only supports ${[
+                ...SUPPORTED_SD_ALGS,
+            ].join(', ')}`
         );
     }
 
@@ -313,9 +326,7 @@ export const presentSdJwtVc = async (
     } catch (e) {
         throw new SdJwtVcError(
             needsKeyBinding ? 'kb_jwt_invalid' : 'internal_error',
-            `Failed to build SD-JWT-VC presentation: ${
-                e instanceof Error ? e.message : String(e)
-            }`,
+            `Failed to build SD-JWT-VC presentation: ${e instanceof Error ? e.message : String(e)}`,
             { cause: e }
         );
     }

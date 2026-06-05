@@ -21,11 +21,9 @@ import { z, type ZodIssue } from 'zod';
  * for draft configs.
  */
 const urlOrPlaceholder = () =>
-    z
-        .string()
-        .refine(val => val.startsWith('TODO_') || z.string().url().safeParse(val).success, {
-            message: 'Invalid URL (TODO_* placeholders are allowed)',
-        });
+    z.string().refine(val => val.startsWith('TODO_') || z.string().url().safeParse(val).success, {
+        message: 'Invalid URL (TODO_* placeholders are allowed)',
+    });
 
 // -----------------------------------------------------------------
 // Sub-schemas

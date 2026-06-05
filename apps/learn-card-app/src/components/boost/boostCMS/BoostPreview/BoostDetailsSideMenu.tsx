@@ -8,6 +8,7 @@ import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
 import CredentialResultsBox from './CredentialResultsBox';
+import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -157,6 +158,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
+
+                    <SdJwtVcClaimsBox credential={credential} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

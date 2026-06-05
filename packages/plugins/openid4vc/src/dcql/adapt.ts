@@ -146,8 +146,8 @@ const adaptSdJwt = async (
         typeof parsed.vct === 'string' && parsed.vct.length > 0
             ? parsed.vct
             : typeof parsed.claims.vct === 'string'
-              ? (parsed.claims.vct as string)
-              : undefined;
+            ? (parsed.claims.vct as string)
+            : undefined;
     if (!vct) return undefined;
 
     return {
@@ -166,13 +166,15 @@ const extractSdJwtCompact = (credential: unknown): string | undefined => {
     }
     if (credential && typeof credential === 'object') {
         const proofValue = (credential as { proof?: unknown }).proof;
-        const proof = Array.isArray(proofValue)
-            ? proofValue.find(p => p && typeof p === 'object')
-            : proofValue;
-        if (proof && typeof proof === 'object') {
-            const c = proof as { type?: unknown; jwt?: unknown };
-            if (c.type === 'SdJwtCompactProof' && typeof c.jwt === 'string') return c.jwt;
-        }
+        const proofs = Array.isArray(proofValue) ? proofValue : proofValue ? [proofValue] : [];
+        const sdJwtProof = proofs.find(
+            p =>
+                p &&
+                typeof p === 'object' &&
+                (p as { type?: unknown }).type === 'SdJwtCompactProof' &&
+                typeof (p as { jwt?: unknown }).jwt === 'string'
+        ) as { jwt?: string } | undefined;
+        if (sdJwtProof) return sdJwtProof.jwt;
     }
     return undefined;
 };
@@ -277,15 +279,16 @@ const inferDcqlFormat = (credential: unknown): string | undefined => {
 
     if (credential && typeof credential === 'object' && !Array.isArray(credential)) {
         const proofValue = (credential as { proof?: unknown }).proof;
-        const proof = Array.isArray(proofValue)
-            ? proofValue.find(p => p && typeof p === 'object')
-            : proofValue;
+        const proofs = (
+            Array.isArray(proofValue) ? proofValue : proofValue ? [proofValue] : []
+        ).filter((p): p is Record<string, unknown> => Boolean(p) && typeof p === 'object');
 
-        if (proof && typeof proof === 'object') {
-            const proofType = (proof as { type?: unknown }).type;
+        const sdJwtProof = proofs.find(p => p.type === 'SdJwtCompactProof');
+        if (sdJwtProof) return 'dc+sd-jwt';
 
-            if (proofType === 'SdJwtCompactProof') return 'dc+sd-jwt';
-            if (proofType === 'JwtProof2020') return 'jwt_vc_json';
+        const proof = proofs[0];
+        if (proof) {
+            if (proof.type === 'JwtProof2020') return 'jwt_vc_json';
             return 'ldp_vc';
         }
     }

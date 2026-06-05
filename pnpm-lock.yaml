@@ -1554,6 +1554,9 @@ importers:
       '@learncard/lca-api-plugin':
         specifier: workspace:*
         version: link:../plugins/lca-api-plugin
+      '@learncard/learn-card-plugin':
+        specifier: workspace:*
+        version: link:../plugins/learn-card
       '@learncard/ler-rs-plugin':
         specifier: workspace:*
         version: link:../plugins/ler-rs
