@@ -65,6 +65,13 @@ export const UserProfilePicture: React.FC<{
 }) => {
     const baseColor = avatarColor || 'bg-grayscale-700';
     const src = user?.image || user?.profileImage;
+    const [errored, setErrored] = React.useState(false);
+
+    // Reset the error flag whenever the source changes (e.g. good URL after a bad one).
+    React.useEffect(() => {
+        setErrored(false);
+    }, [src]);
+
     const letterToDisplay =
         user?.displayName?.substring(0, 1) ||
         user?.profileId?.substring(0, 1) ||
@@ -72,7 +79,7 @@ export const UserProfilePicture: React.FC<{
         user?.email?.substring(0, 1) ||
         '';
 
-    if (!src) {
+    if (!src || errored) {
         const fingerprintIconClassName = `${avatarIconClassName || 'w-[60%] h-[60%]'} ${
             avatarFingerprintColor || 'text-white/85'
         }`;
@@ -102,6 +109,7 @@ export const UserProfilePicture: React.FC<{
                 alt={alt || 'user'}
                 src={src}
                 referrerPolicy="no-referrer"
+                onError={() => setErrored(true)}
             />
             {children}
         </div>

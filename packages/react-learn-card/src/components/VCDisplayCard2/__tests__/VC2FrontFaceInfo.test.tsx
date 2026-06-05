@@ -96,4 +96,39 @@ describe('VC2FrontFaceInfo', () => {
         expect(issuerFingerprint).not.toBeUndefined();
         expect(issuerFingerprint?.classList.contains('w-[22px]')).toBe(true);
     });
+
+    test('wraps and clamps long issuer names instead of overflowing the card', () => {
+        const longIssuerName = 'Versace Academy of Leadership and Entrepreneurship';
+        const credential = {
+            issuer: { name: longIssuerName },
+            issuanceDate: '2026-05-15T00:00:00.000Z',
+            credentialSubject: {
+                id: '',
+                achievement: { name: 'Badge Title', description: 'Badge description' },
+            },
+            display: { displayType: 'badge' },
+        };
+
+        const { container, getByText } = render(
+            <VC2FrontFaceInfo
+                credential={credential as any}
+                issuee=""
+                issuer={{ name: longIssuerName } as any}
+                title="Badge Title"
+                createdAt="May 15, 2026"
+                knownDIDRegistry={{ source: 'unknown', results: {} }}
+            />
+        );
+
+        const issuedBy = container.querySelector('.issued-by');
+        expect(issuedBy).not.toBeNull();
+        // The bug was whitespace-nowrap forcing one line that overflowed the card.
+        expect(issuedBy?.className).not.toContain('whitespace-nowrap');
+        expect(issuedBy?.className).toContain('break-words');
+        // line-clamp-2 only clamps on a block/-webkit-box, not a flex container,
+        // so the container must NOT be `flex` (the original review-miss).
+        expect(issuedBy?.className).toContain('line-clamp-2');
+        expect(issuedBy?.className).not.toContain('flex');
+        expect(getByText(longIssuerName)).not.toBeNull();
+    });
 });

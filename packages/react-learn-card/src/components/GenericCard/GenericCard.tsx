@@ -2,6 +2,7 @@ import React from 'react';
 import { GenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
+import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
 
 export const GenericCard: React.FC<GenericCardProps> = ({
     title = 'Title Lorem Ipsum',
@@ -40,7 +41,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
 
             <section className={defaultThumbClass}>
                 {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
-                    <img
+                    <BadgeThumbnailImg
                         className="generic-display-card-img h-full w-full  w-[140px] h-[119px] rounded-[20px] object-cover overflow-hidden"
                         src={thumbImgSrc ?? ''}
                         alt="Credential Achievement Image"
