@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
@@ -193,8 +195,12 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 });
 
                                 const now = Date.now();
-                                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
                                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                                     method: ProfileBuildMethod.Notification,
                                     itemType: 'credential',
@@ -225,7 +231,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     }
                 );
             } catch (err) {
-                console.log('acceptCredential::error', err?.message);
+                log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',

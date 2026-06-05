@@ -24,6 +24,9 @@ import {
 } from 'ionicons/icons';
 import { getAppBaseUrl, getLCNApiUrl } from '../../config/bootstrapTenantConfig';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('interactions-page');
+
 /**
  * Parse the interaction URL to extract workflowId and interactionId.
  * URL format: /interactions/{workflowId}/{interactionId}
@@ -120,7 +123,7 @@ const InteractionsPage: React.FC = () => {
                 throw new Error('Invalid interaction data received from the server.');
             }
         } catch (e: any) {
-            console.error('Error fetching interaction details:', e);
+            log.error('Error fetching interaction details:', e);
             setError(e.message || 'An unknown error occurred while processing the interaction.');
             setLoading(false);
         }

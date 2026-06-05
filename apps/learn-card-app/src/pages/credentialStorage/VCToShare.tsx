@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('v-c-to-share');
 
 import { IonHeader, IonRow, IonCol, IonGrid, IonPage } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -70,7 +72,7 @@ const VCToShare: React.FC<{
                 chapiStore.set.isChapiInteraction(null);
                 redirectStore.set.authRedirect(null);
             } catch (e) {
-                console.error(e);
+                log.error(e);
             }
 
             // TODO: Move this logic into LearnCard - LearnCard should handle presentation flow.
@@ -84,7 +86,7 @@ const VCToShare: React.FC<{
                 holder: wallet.id.did(),
             };
 
-            console.log('✍️ Issuing VP to respond to CHAPI event', vpToShare);
+            log.info('✍️ Issuing VP to respond to CHAPI event', vpToShare);
 
             const data = await wallet.invoke.issuePresentation(vpToShare, {
                 challenge,
@@ -92,7 +94,7 @@ const VCToShare: React.FC<{
                 proofPurpose: 'authentication',
             });
 
-            console.log('✅ Issued VP', data);
+            log.info('✅ Issued VP', data);
 
             if (event) {
                 event.respondWith(

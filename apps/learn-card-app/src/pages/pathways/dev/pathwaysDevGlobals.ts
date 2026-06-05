@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('pathways-dev-globals');
 /**
  * Dev-only console globals for the Pathways v0.5 demo loop.
  *
@@ -20,6 +22,11 @@
  * VC that will satisfy each outcome's predicate. We're not simulating a
  * real wallet-observer here; we're confirming the binder → proposal →
  * commit path fires end-to-end without needing a real issuer.
+ *
+ * Note: the console.info calls in this file are intentionally raw. This module
+ * is gated by `import.meta.env.DEV` and the output is direct feedback for the
+ * dev typing commands into the browser console — it is not application logging
+ * and should not be routed through the Sentry transport.
  */
 
 import { v4 as uuid } from 'uuid';
@@ -30,16 +37,9 @@ import type { VcLike } from '../core/outcomeMatcher';
 import { pathwayProgressReactor } from '../events/pathwayProgressReactor';
 import type { ProgressDispatchRecord } from '../events/pathwayProgressReactor';
 import { publishWalletEvent } from '../events/walletEventBus';
-import type {
-    CredentialIngestSource,
-    OutcomeSignal,
-    Termination,
-} from '../types';
+import type { CredentialIngestSource, OutcomeSignal, Termination } from '../types';
 
-import {
-    seedAwsCloudPractitionerDemo,
-    seedDemoPathwayIfEmpty,
-} from './devSeed';
+import { seedAwsCloudPractitionerDemo, seedDemoPathwayIfEmpty } from './devSeed';
 
 // ---------------------------------------------------------------------------
 // VC synthesis
@@ -58,7 +58,7 @@ import {
  */
 const synthesizeVcForOutcome = (
     outcome: OutcomeSignal,
-    issuer = 'did:example:demo-institution',
+    issuer = 'did:example:demo-institution'
 ): VcLike | null => {
     switch (outcome.kind) {
         case 'credential-received':
@@ -78,7 +78,7 @@ const synthesizeVcForOutcome = (
                 credentialSubject: setFieldPath(
                     {},
                     outcome.field,
-                    pickSatisfyingNumber(outcome.op, outcome.value),
+                    pickSatisfyingNumber(outcome.op, outcome.value)
                 ),
             };
 
@@ -117,7 +117,7 @@ const synthesizeVcForOutcome = (
 const setFieldPath = (
     root: Record<string, unknown>,
     path: string,
-    value: unknown,
+    value: unknown
 ): Record<string, unknown> => {
     const segments = path.split('.').filter(Boolean);
 
@@ -147,10 +147,7 @@ const setFieldPath = (
  * Pick a number that satisfies the given comparison against `value`.
  * Stays a hair above `>=` / `>`, equal for `==`, a hair below for `<=` / `<`.
  */
-const pickSatisfyingNumber = (
-    op: '==' | '!=' | '<' | '<=' | '>' | '>=',
-    value: number,
-): number => {
+const pickSatisfyingNumber = (op: '==' | '!=' | '<' | '<=' | '>' | '>=', value: number): number => {
     switch (op) {
         case '==':
             return value;
@@ -195,7 +192,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
     const activeId = options.pathwayId ?? pathwayStore.get.activePathwayId();
 
     if (!activeId) {
-        console.warn('[pathwaysDev] No active pathway — seed one first.');
+        log.warn('[pathwaysDev] No active pathway — seed one first.');
 
         return { proposalsEmitted: 0, skipped: [] };
     }
@@ -203,7 +200,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
     const pathway = pathwayStore.get.pathways()[activeId];
 
     if (!pathway) {
-        console.warn(`[pathwaysDev] Active pathway "${activeId}" not in the store.`);
+        log.warn(`[pathwaysDev] Active pathway "${activeId}" not in the store.`);
 
         return { proposalsEmitted: 0, skipped: [] };
     }
@@ -211,7 +208,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
     const outcomes = pathway.outcomes ?? [];
 
     if (outcomes.length === 0) {
-        console.warn(`[pathwaysDev] Pathway "${pathway.title}" has no outcomes to match against.`);
+        log.warn(`[pathwaysDev] Pathway "${pathway.title}" has no outcomes to match against.`);
 
         return { proposalsEmitted: 0, skipped: [] };
     }
@@ -224,7 +221,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
 
         if (!vc) {
             console.info(
-                `[pathwaysDev] Skipping outcome "${outcome.label}" — kind "${outcome.kind}" has no VC shape to synthesize.`,
+                `[pathwaysDev] Skipping outcome "${outcome.label}" — kind "${outcome.kind}" has no VC shape to synthesize.`
             );
 
             continue;
@@ -263,7 +260,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
 
     console.info(
         `[pathwaysDev] Dropped demo VC → ${proposalsEmitted} proposal(s) emitted, ${allSkipped.length} skip(s).`,
-        { skipped: allSkipped },
+        { skipped: allSkipped }
     );
 
     return { proposalsEmitted, skipped: allSkipped };
@@ -357,7 +354,7 @@ export interface SimulateCredentialInput {
  * Call after `seedAws(did)` so there's a pathway to match against.
  */
 const simulateCredentialClaim = (
-    input: SimulateCredentialInput = {},
+    input: SimulateCredentialInput = {}
 ): ProgressDispatchRecord | null => {
     const eventId = input.eventId ?? uuid();
     const credentialUri = input.credentialUri ?? `urn:uuid:sim-${uuid()}`;
@@ -399,7 +396,7 @@ const simulateCredentialClaim = (
             ...(input.boostUri ? { boostUri: input.boostUri } : {}),
         });
     } catch (err) {
-        console.error('[pathwaysDev] simulateCredentialClaim rejected by bus:', err);
+        log.error('[pathwaysDev] simulateCredentialClaim rejected by bus:', err);
 
         return null;
     }
@@ -414,7 +411,7 @@ const simulateCredentialClaim = (
                   outcomeBindings: record.outcomeBindings?.length ?? 0,
                   credentialUri,
               }
-            : '(no dispatch — reactor saw the event but matched nothing / no pathways)',
+            : '(no dispatch — reactor saw the event but matched nothing / no pathways)'
     );
 
     return record;
@@ -443,11 +440,9 @@ export interface SimulateSessionInput {
  * `session-completed` terminations without having to actually
  * drive a tutor session through the websocket chat service.
  */
-const simulateAiSessionFinish = (
-    input: SimulateSessionInput,
-): ProgressDispatchRecord | null => {
+const simulateAiSessionFinish = (input: SimulateSessionInput): ProgressDispatchRecord | null => {
     if (!input.topicUri) {
-        console.warn('[pathwaysDev] simulateAiSessionFinish requires a topicUri.');
+        log.warn('[pathwaysDev] simulateAiSessionFinish requires a topicUri.');
 
         return null;
     }
@@ -468,7 +463,7 @@ const simulateAiSessionFinish = (
             source: 'user-finish',
         });
     } catch (err) {
-        console.error('[pathwaysDev] simulateAiSessionFinish rejected by bus:', err);
+        log.error('[pathwaysDev] simulateAiSessionFinish rejected by bus:', err);
 
         return null;
     }
@@ -483,7 +478,7 @@ const simulateAiSessionFinish = (
                   topicUri: input.topicUri,
                   threadId,
               }
-            : '(no dispatch — reactor saw the event but matched nothing)',
+            : '(no dispatch — reactor saw the event but matched nothing)'
     );
 
     return record;
@@ -498,7 +493,7 @@ const inspectActivePathway = (): void => {
     const activeId = pathwayStore.get.activePathwayId();
 
     if (!activeId) {
-        console.warn('[pathwaysDev] No active pathway.');
+        log.warn('[pathwaysDev] No active pathway.');
 
         return;
     }
@@ -515,14 +510,14 @@ const inspectActivePathway = (): void => {
         const marker = status === 'completed' ? '✓' : '·';
 
         console.info(
-            `  ${marker} [${status.padEnd(11)}] ${node.title} — ${terminationLabel(termination)}`,
+            `  ${marker} [${status.padEnd(11)}] ${node.title} — ${terminationLabel(termination)}`
         );
     }
 
     console.info(
         `[pathwaysDev] Outcomes: ${pathway.outcomes?.length ?? 0} declared, ${
             pathway.outcomes?.filter(o => o.binding).length ?? 0
-        } bound`,
+        } bound`
     );
 };
 
@@ -654,8 +649,8 @@ export const installPathwaysDevGlobals = (): void => {
             const id = pathwayId ?? pathwayStore.get.activePathwayId();
 
             if (!id) {
-                console.warn(
-                    '[pathwaysDev] triggerCelebration: no pathwayId given and no active pathway.',
+                log.warn(
+                    '[pathwaysDev] triggerCelebration: no pathwayId given and no active pathway.'
                 );
 
                 return;
@@ -674,6 +669,6 @@ export const installPathwaysDevGlobals = (): void => {
     console.info(
         '[pathwaysDev] Installed. Available: seedAws(did) / seedDemo(did) / ' +
             'dropVc() / simulateCredentialClaim({...}) / simulateAiSessionFinish({topicUri}) / ' +
-            'inspectPathway() / listDispatches() / clearDispatches() / triggerCelebration(pathwayId?) / resetAll().',
+            'inspectPathway() / listDispatches() / clearDispatches() / triggerCelebration(pathwayId?) / resetAll().'
     );
 };

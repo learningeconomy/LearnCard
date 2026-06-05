@@ -19,10 +19,20 @@ import {
     Sparkles,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('sandbox-test-step');
+
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
-import { PartnerProject, BrandingConfig, CredentialTemplate, DataMappingConfig, IntegrationMethod, fieldNameToVariable } from '../types';
+import {
+    PartnerProject,
+    BrandingConfig,
+    CredentialTemplate,
+    DataMappingConfig,
+    IntegrationMethod,
+    fieldNameToVariable,
+} from '../types';
 import { extractDynamicVariables, OBv3CredentialTemplate } from '../components/CredentialBuilder';
 
 interface SandboxTestStepProps {
@@ -56,7 +66,8 @@ const getSampleValue = (varName: string): string => {
     if (lower.includes('student') && lower.includes('name')) return 'Jane Doe';
     if (lower.includes('learner') && lower.includes('name')) return 'Jane Doe';
     if (lower.includes('instructor') || lower.includes('teacher')) return 'Dr. Smith';
-    if (lower.includes('course') && lower.includes('name')) return 'Introduction to Web Development';
+    if (lower.includes('course') && lower.includes('name'))
+        return 'Introduction to Web Development';
     if (lower.includes('course') && lower.includes('id')) return 'CS101';
     if (lower.includes('department')) return 'Computer Science';
     if (lower.includes('name')) return 'Sample Name';
@@ -103,9 +114,10 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
     }, [templates]);
 
     // Count master templates
-    const masterTemplateCount = useMemo(() => 
-        templates.filter(t => t.isMasterTemplate).length
-    , [templates]);
+    const masterTemplateCount = useMemo(
+        () => templates.filter(t => t.isMasterTemplate).length,
+        [templates]
+    );
 
     // Selected template for testing
     const selectedTemplate = useMemo(() => {
@@ -121,13 +133,17 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
         if (selectedTemplate.obv3Template) {
             try {
-                return extractDynamicVariables(selectedTemplate.obv3Template as OBv3CredentialTemplate);
+                return extractDynamicVariables(
+                    selectedTemplate.obv3Template as OBv3CredentialTemplate
+                );
             } catch (e) {
                 // fallback
             }
         }
 
-        return selectedTemplate.fields?.map(f => f.variableName || fieldNameToVariable(f.name)) || [];
+        return (
+            selectedTemplate.fields?.map(f => f.variableName || fieldNameToVariable(f.name)) || []
+        );
     }, [selectedTemplate]);
 
     // Integration method display
@@ -139,8 +155,8 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
     const handleSendTest = async () => {
         if (!testEmail.trim() || !selectedTemplate?.boostUri) {
-            presentToast('Please enter an email and select a template with a saved boost', { 
-                type: ToastTypeEnum.Error 
+            presentToast('Please enter an email and select a template with a saved boost', {
+                type: ToastTypeEnum.Error,
             });
             return;
         }
@@ -174,12 +190,15 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
             setTestStatus('success');
             setTestResult({
-                credentialId: result?.inbox?.issuanceId || result?.credentialUri || `test_${Date.now().toString(36)}`,
+                credentialId:
+                    result?.inbox?.issuanceId ||
+                    result?.credentialUri ||
+                    `test_${Date.now().toString(36)}`,
             });
 
             presentToast('Test credential sent successfully!', { type: ToastTypeEnum.Success });
         } catch (err) {
-            console.error('Test send failed:', err);
+            log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
                 error: err instanceof Error ? err.message : 'Failed to send test credential',
@@ -205,7 +224,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                 <div className="text-sm text-violet-800">
                     <p className="font-medium mb-1">Sandbox Testing</p>
                     <p>
-                        Let's make sure everything works before going live. Send yourself a test 
+                        Let's make sure everything works before going live. Send yourself a test
                         credential to verify your templates are configured correctly.
                     </p>
                 </div>
@@ -223,16 +242,22 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
                     <div>
                         <p className="text-gray-500">Issuer</p>
-                        <p className="font-medium text-gray-800">{branding.displayName || 'Not set'}</p>
+                        <p className="font-medium text-gray-800">
+                            {branding.displayName || 'Not set'}
+                        </p>
                     </div>
 
                     <div>
                         <p className="text-gray-500">Integration</p>
                         <div className="flex items-center gap-1.5">
                             {integrationMethodDisplay && (
-                                <integrationMethodDisplay.icon className={`w-4 h-4 text-${integrationMethodDisplay.color}-500`} />
+                                <integrationMethodDisplay.icon
+                                    className={`w-4 h-4 text-${integrationMethodDisplay.color}-500`}
+                                />
                             )}
-                            <p className="font-medium text-gray-800">{integrationMethodDisplay?.label}</p>
+                            <p className="font-medium text-gray-800">
+                                {integrationMethodDisplay?.label}
+                            </p>
                         </div>
                     </div>
 
@@ -242,7 +267,8 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                             {issuableTemplates.length} issuable
                             {masterTemplateCount > 0 && (
                                 <span className="text-gray-500 font-normal">
-                                    {' '}({masterTemplateCount} master)
+                                    {' '}
+                                    ({masterTemplateCount} master)
                                 </span>
                             )}
                         </p>
@@ -289,31 +315,51 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                 {selectedTemplate?.name || 'Select a template'}
                             </span>
                         </div>
-                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showTemplateSelector ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                            className={`w-5 h-5 text-gray-400 transition-transform ${
+                                showTemplateSelector ? 'rotate-180' : ''
+                            }`}
+                        />
                     </button>
 
                     {showTemplateSelector && (
                         <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 max-h-48 overflow-y-auto">
-                            {issuableTemplates.filter(t => t.boostUri).map(template => (
-                                <button
-                                    key={template.id}
-                                    onClick={() => {
-                                        setSelectedTemplateId(template.id);
-                                        setShowTemplateSelector(false);
-                                    }}
-                                    className={`w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors ${
-                                        selectedTemplate?.id === template.id ? 'bg-violet-50' : ''
-                                    }`}
-                                >
-                                    <Award className={`w-4 h-4 ${selectedTemplate?.id === template.id ? 'text-violet-500' : 'text-gray-400'}`} />
-                                    <span className={selectedTemplate?.id === template.id ? 'text-violet-700 font-medium' : 'text-gray-700'}>
-                                        {template.name}
-                                    </span>
-                                    {selectedTemplate?.id === template.id && (
-                                        <CheckCircle2 className="w-4 h-4 text-violet-500 ml-auto" />
-                                    )}
-                                </button>
-                            ))}
+                            {issuableTemplates
+                                .filter(t => t.boostUri)
+                                .map(template => (
+                                    <button
+                                        key={template.id}
+                                        onClick={() => {
+                                            setSelectedTemplateId(template.id);
+                                            setShowTemplateSelector(false);
+                                        }}
+                                        className={`w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 transition-colors ${
+                                            selectedTemplate?.id === template.id
+                                                ? 'bg-violet-50'
+                                                : ''
+                                        }`}
+                                    >
+                                        <Award
+                                            className={`w-4 h-4 ${
+                                                selectedTemplate?.id === template.id
+                                                    ? 'text-violet-500'
+                                                    : 'text-gray-400'
+                                            }`}
+                                        />
+                                        <span
+                                            className={
+                                                selectedTemplate?.id === template.id
+                                                    ? 'text-violet-700 font-medium'
+                                                    : 'text-gray-700'
+                                            }
+                                        >
+                                            {template.name}
+                                        </span>
+                                        {selectedTemplate?.id === template.id && (
+                                            <CheckCircle2 className="w-4 h-4 text-violet-500 ml-auto" />
+                                        )}
+                                    </button>
+                                ))}
                         </div>
                     )}
                 </div>
@@ -360,7 +406,10 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                             className="inline-flex items-center gap-1 px-2 py-1 bg-white/70 rounded text-xs"
                                         >
                                             <span className="text-gray-500">
-                                                {varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+                                                {varName
+                                                    .replace(/_/g, ' ')
+                                                    .replace(/\b\w/g, l => l.toUpperCase())}
+                                                :
                                             </span>
                                             <span className="font-medium text-gray-700">
                                                 {getSampleValue(varName)}
@@ -398,7 +447,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                         <input
                                             type="email"
                                             value={testEmail}
-                                            onChange={(e) => setTestEmail(e.target.value)}
+                                            onChange={e => setTestEmail(e.target.value)}
                                             placeholder="you@company.com"
                                             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                         />
@@ -416,80 +465,88 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                We'll issue a test credential with sample data and send it to this email address. 
-                                Check your inbox for a claim link to view the credential.
+                                We'll issue a test credential with sample data and send it to this
+                                email address. Check your inbox for a claim link to view the
+                                credential.
                             </p>
                         </div>
                     )}
 
-                {testStatus === 'sending' && (
-                    <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                        <Loader2 className="w-10 h-10 text-violet-500 animate-spin" />
+                    {testStatus === 'sending' && (
+                        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                            <Loader2 className="w-10 h-10 text-violet-500 animate-spin" />
 
-                        <div className="text-center">
-                            <p className="font-medium text-gray-800">Issuing Test Credential...</p>
-                            <p className="text-sm text-gray-500">This should only take a moment</p>
-                        </div>
-                    </div>
-                )}
-
-                {testStatus === 'success' && testResult && (
-                    <div className="space-y-4">
-                        <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-
-                            <div className="flex-1">
-                                <p className="font-medium text-emerald-800">Test Credential Issued!</p>
-                                <p className="text-sm text-emerald-700 mt-1">
-                                    A test credential has been sent to <strong>{testEmail}</strong>.
+                            <div className="text-center">
+                                <p className="font-medium text-gray-800">
+                                    Issuing Test Credential...
                                 </p>
-
-                                <p className="text-xs text-emerald-600 mt-2 font-mono">
-                                    ID: {testResult.credentialId}
+                                <p className="text-sm text-gray-500">
+                                    This should only take a moment
                                 </p>
                             </div>
                         </div>
+                    )}
 
-                        <div className="flex gap-3">
-                            <button
-                                onClick={handleRetry}
-                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                                Send Another
-                            </button>
+                    {testStatus === 'success' && testResult && (
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
 
-                            {/* <a
+                                <div className="flex-1">
+                                    <p className="font-medium text-emerald-800">
+                                        Test Credential Issued!
+                                    </p>
+                                    <p className="text-sm text-emerald-700 mt-1">
+                                        A test credential has been sent to{' '}
+                                        <strong>{testEmail}</strong>.
+                                    </p>
+
+                                    <p className="text-xs text-emerald-600 mt-2 font-mono">
+                                        ID: {testResult.credentialId}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleRetry}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Send Another
+                                </button>
+
+                                {/* <a
                                 href="#"
                                 className="flex items-center gap-2 px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors"
                             >
                                 <ExternalLink className="w-4 h-4" />
                                 View in Wallet
                             </a> */}
-                        </div>
-                    </div>
-                )}
-
-                {testStatus === 'error' && testResult?.error && (
-                    <div className="space-y-4">
-                        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-                            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-
-                            <div className="flex-1">
-                                <p className="font-medium text-red-800">Test Failed</p>
-                                <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
                             </div>
                         </div>
+                    )}
 
-                        <button
-                            onClick={handleRetry}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            Try Again
-                        </button>
-                    </div>
-                )}
+                    {testStatus === 'error' && testResult?.error && (
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+
+                                <div className="flex-1">
+                                    <p className="font-medium text-red-800">Test Failed</p>
+                                    <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleRetry}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                                Try Again
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

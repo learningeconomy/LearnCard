@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
@@ -192,9 +194,9 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
-                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
-                }`
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(
+                    boostUri
+                )}${challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''}`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');
@@ -204,7 +206,7 @@ const ClaimBoost: React.FC<{
             setBoost(boostVC);
             verify(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -243,7 +245,9 @@ const ClaimBoost: React.FC<{
 
                 const now = Date.now();
                 const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                     method: ProfileBuildMethod.ClaimLink,
                     itemType: 'credential',
@@ -292,7 +296,7 @@ const ClaimBoost: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 
@@ -518,13 +522,9 @@ const ClaimBoost: React.FC<{
                                             }
                                             className="w-full"
                                         />
-                                    ) : (
-                                        boostCredentialWithId
-                                            ? renderClaimCredentialDisplay(
-                                                  boostCredentialWithId
-                                              )
-                                            : null
-                                    )}
+                                    ) : boostCredentialWithId ? (
+                                        renderClaimCredentialDisplay(boostCredentialWithId)
+                                    ) : null}
                                 </div>
                             )}
 

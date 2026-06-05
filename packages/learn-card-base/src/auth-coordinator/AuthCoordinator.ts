@@ -1,15 +1,17 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('auth-coordinator');
 /**
  * Auth Coordinator
- * 
+ *
  * Unified state machine that coordinates authentication and key derivation.
  * Provides a single source of truth for auth state across the application.
- * 
+ *
  * This coordinator is designed to be:
  * - Auth provider agnostic (Firebase, Supertokens, OIDC, etc.)
  * - Key derivation strategy agnostic (SSS, Web3Auth, MPC, etc.)
  * - Easily testable with mock providers
  * - Shareable across apps (LearnCard, Scouts, etc.)
- * 
+ *
  * The coordinator delegates all server communication and recovery logic
  * to the KeyDerivationStrategy, keeping itself a pure state machine.
  */
@@ -58,7 +60,7 @@ export class AuthCoordinator {
 
     /**
      * Initialize the coordinator and determine the correct state.
-     * 
+     *
      * Flow:
      * 0. (Private-key-first) Check for cached private key in secure storage
      * 1. Check if user is authenticated via auth provider
@@ -100,7 +102,11 @@ export class AuthCoordinator {
                             if (authUser && this.keyDerivation.capabilities?.recovery) {
                                 try {
                                     const { token, providerType } = await this.getAuthCredentials();
-                                    const serverStatus = await this.keyDerivation.fetchServerKeyStatus(token, providerType);
+                                    const serverStatus =
+                                        await this.keyDerivation.fetchServerKeyStatus(
+                                            token,
+                                            providerType
+                                        );
 
                                     if (!serverStatus.exists || serverStatus.needsMigration) {
                                         this.setState({
@@ -114,7 +120,10 @@ export class AuthCoordinator {
                                 } catch (e) {
                                     // Server check failed — proceed to ready.
                                     // Migration will be caught on the next full init.
-                                    console.warn('Server key verification failed on pk-first path, proceeding to ready', e);
+                                    log.warn(
+                                        'Server key verification failed on pk-first path, proceeding to ready',
+                                        e
+                                    );
                                 }
                             }
 
@@ -130,7 +139,7 @@ export class AuthCoordinator {
                         }
                     }
                 } catch (e) {
-                    console.warn('Cached private key check failed, falling through to auth flow', e);
+                    log.warn('Cached private key check failed, falling through to auth flow', e);
                 }
             }
 
@@ -218,14 +227,17 @@ export class AuthCoordinator {
                 return this.state;
             }
 
-            const privateKey = await this.keyDerivation.reconstructKey(localKey, serverStatus.authShare);
+            const privateKey = await this.keyDerivation.reconstructKey(
+                localKey,
+                serverStatus.authShare
+            );
 
             // Verify the key produces the expected DID (health check)
             if (this.config.didFromPrivateKey && serverStatus.primaryDid) {
                 const derivedDid = await this.config.didFromPrivateKey(privateKey);
 
                 if (derivedDid !== serverStatus.primaryDid) {
-                    console.warn('DID mismatch - stale local key detected');
+                    log.warn('DID mismatch - stale local key detected');
                     await this.keyDerivation.clearLocalKeys();
 
                     this.setState({
@@ -257,12 +269,13 @@ export class AuthCoordinator {
         } catch (e) {
             // Typed auth session errors → idle (not error)
             if (e instanceof AuthSessionError) {
-                console.warn('Auth session expired or missing — returning to idle');
+                log.warn('Auth session expired or missing — returning to idle');
                 this.setState({ status: 'idle' });
                 return this.state;
             }
 
-            const errorMessage = e instanceof Error ? e.message : 'Unknown error during initialization';
+            const errorMessage =
+                e instanceof Error ? e.message : 'Unknown error during initialization';
 
             this.setState({
                 status: 'error',
@@ -301,8 +314,9 @@ export class AuthCoordinator {
 
             // Fire-and-forget: send email backup share if the strategy supports it
             if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
-                this.keyDerivation.sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => console.warn('Email backup share failed (non-fatal):', e));
+                this.keyDerivation
+                    .sendEmailBackupShare(token, providerType, privateKey, authUser.email)
+                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
             }
 
             this.setState({
@@ -376,8 +390,9 @@ export class AuthCoordinator {
 
             // Fire-and-forget: send email backup share if the strategy supports it
             if (this.keyDerivation.sendEmailBackupShare && authUser?.email) {
-                this.keyDerivation.sendEmailBackupShare(token, providerType, privateKey, authUser.email)
-                    .catch(e => console.warn('Email backup share failed (non-fatal):', e));
+                this.keyDerivation
+                    .sendEmailBackupShare(token, providerType, privateKey, authUser.email)
+                    .catch(e => log.warn('Email backup share failed (non-fatal):', e));
             }
 
             this.setState({
@@ -406,7 +421,7 @@ export class AuthCoordinator {
     /**
      * Recover account using a recovery method.
      * Only valid when state is 'needs_recovery'.
-     * 
+     *
      * Delegates the actual recovery logic to the strategy's executeRecovery().
      */
     async recover(input: unknown): Promise<UnifiedAuthState> {
@@ -447,7 +462,13 @@ export class AuthCoordinator {
                 status: 'error',
                 error: errorMessage,
                 canRetry: true,
-                previousState: { status: 'needs_recovery', authUser, recoveryMethods, recoveryReason, maskedRecoveryEmail },
+                previousState: {
+                    status: 'needs_recovery',
+                    authUser,
+                    recoveryMethods,
+                    recoveryReason,
+                    maskedRecoveryEmail,
+                },
             });
 
             return this.state;
@@ -487,12 +508,15 @@ export class AuthCoordinator {
             }
 
             // Fallback: try to reconstruct and verify DID
-            const privateKey = await this.keyDerivation.reconstructKey(localKey, serverStatus.authShare);
+            const privateKey = await this.keyDerivation.reconstructKey(
+                localKey,
+                serverStatus.authShare
+            );
             const derivedDid = await this.config.didFromPrivateKey(privateKey);
 
             return derivedDid === serverStatus.primaryDid;
         } catch (e) {
-            console.error('Key integrity verification failed', e);
+            log.error('Key integrity verification failed', e);
             return false;
         }
     }

@@ -1,5 +1,33 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2, Sparkles, Award } from 'lucide-react';
+import {
+    X,
+    Copy,
+    Check,
+    ExternalLink,
+    ChevronRight,
+    Code,
+    Globe,
+    Package,
+    Zap,
+    Key,
+    Database,
+    Plus,
+    Trash2,
+    MoreVertical,
+    Eye,
+    EyeOff,
+    Mail,
+    Send,
+    Server,
+    Webhook,
+    Shield,
+    CheckCircle2,
+    Loader2,
+    Sparkles,
+    Award,
+} from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-guide-panel');
 
 import { OBv3CredentialBuilder } from '../../../components/credentials/OBv3CredentialBuilder';
 import { Clipboard } from '@capacitor/clipboard';
@@ -57,8 +85,16 @@ const StepCard: React.FC<{
 const SCOPE_OPTIONS = [
     { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
     { label: 'Read Only', value: '*:read', description: 'Read access to all resources' },
-    { label: 'Profile Management', value: 'profile:* profileManager:*', description: 'Manage profiles' },
-    { label: 'Credential Management', value: 'credential:* presentation:* boosts:*', description: 'Manage credentials' },
+    {
+        label: 'Profile Management',
+        value: 'profile:* profileManager:*',
+        description: 'Manage profiles',
+    },
+    {
+        label: 'Credential Management',
+        value: 'credential:* presentation:* boosts:*',
+        description: 'Manage credentials',
+    },
     { label: 'Contracts', value: 'contracts:*', description: 'Manage contracts' },
 ];
 
@@ -83,7 +119,7 @@ const InlineAPITokenManager: React.FC = () => {
             const grants = await wallet.invoke.getAuthGrants();
             setAuthGrants(grants || []);
         } catch (err) {
-            console.error('Failed to fetch auth grants:', err);
+            log.error('Failed to fetch auth grants:', err);
         } finally {
             setLoading(false);
         }
@@ -110,8 +146,11 @@ const InlineAPITokenManager: React.FC = () => {
             setShowCreateForm(false);
             fetchAuthGrants();
         } catch (err) {
-            console.error('Failed to create token:', err);
-            presentToast('Failed to create API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to create token:', err);
+            presentToast('Failed to create API Token', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setCreating(false);
         }
@@ -126,17 +165,24 @@ const InlineAPITokenManager: React.FC = () => {
             setTimeout(() => setCopiedId(null), 2000);
             presentToast('API Token copied to clipboard', { hasDismissButton: true });
         } catch (err) {
-            console.error('Failed to copy token:', err);
-            presentToast('Failed to copy API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to copy token:', err);
+            presentToast('Failed to copy API Token', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
     const revokeToken = async (grant: Partial<AuthGrant>) => {
         const confirmed = await confirm({
-            text: `Are you sure you want to ${grant.status === 'active' ? 'revoke' : 'delete'} "${grant.name}"?`,
+            text: `Are you sure you want to ${grant.status === 'active' ? 'revoke' : 'delete'} "${
+                grant.name
+            }"?`,
             onConfirm: async () => {},
-            cancelButtonClassName: 'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
-            confirmButtonClassName: 'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            cancelButtonClassName:
+                'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            confirmButtonClassName:
+                'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
         });
 
         if (!confirmed) return;
@@ -154,8 +200,11 @@ const InlineAPITokenManager: React.FC = () => {
 
             fetchAuthGrants();
         } catch (err) {
-            console.error('Failed to revoke/delete token:', err);
-            presentToast('Failed to update API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to revoke/delete token:', err);
+            presentToast('Failed to update API Token', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -166,7 +215,11 @@ const InlineAPITokenManager: React.FC = () => {
             {/* Header with create button */}
             <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-600">
-                    {loading ? 'Loading...' : `${activeGrants.length} active token${activeGrants.length !== 1 ? 's' : ''}`}
+                    {loading
+                        ? 'Loading...'
+                        : `${activeGrants.length} active token${
+                              activeGrants.length !== 1 ? 's' : ''
+                          }`}
                 </p>
 
                 {!showCreateForm && (
@@ -184,24 +237,28 @@ const InlineAPITokenManager: React.FC = () => {
             {showCreateForm && (
                 <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Token Name</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Token Name
+                        </label>
                         <input
                             type="text"
                             value={newTokenName}
-                            onChange={(e) => setNewTokenName(e.target.value)}
+                            onChange={e => setNewTokenName(e.target.value)}
                             placeholder="e.g., Production API"
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Scope / Permissions</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Scope / Permissions
+                        </label>
                         <select
                             value={selectedScope}
-                            onChange={(e) => setSelectedScope(e.target.value)}
+                            onChange={e => setSelectedScope(e.target.value)}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
-                            {SCOPE_OPTIONS.map((option) => (
+                            {SCOPE_OPTIONS.map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
@@ -222,7 +279,11 @@ const InlineAPITokenManager: React.FC = () => {
                         </button>
 
                         <button
-                            onClick={() => { setShowCreateForm(false); setNewTokenName(''); setSelectedScope('*:*'); }}
+                            onClick={() => {
+                                setShowCreateForm(false);
+                                setNewTokenName('');
+                                setSelectedScope('*:*');
+                            }}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
                         >
                             Cancel
@@ -234,10 +295,15 @@ const InlineAPITokenManager: React.FC = () => {
             {/* Token list */}
             {!loading && activeGrants.length > 0 && (
                 <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
-                    {activeGrants.map((grant) => (
-                        <div key={grant.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                    {activeGrants.map(grant => (
+                        <div
+                            key={grant.id}
+                            className="flex items-center justify-between p-3 hover:bg-gray-50"
+                        >
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-800 truncate">{grant.name}</p>
+                                <p className="text-sm font-medium text-gray-800 truncate">
+                                    {grant.name}
+                                </p>
                                 <p className="text-xs text-gray-500">
                                     Created {new Date(grant.createdAt!).toLocaleDateString()}
                                 </p>
@@ -274,7 +340,9 @@ const InlineAPITokenManager: React.FC = () => {
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
                     <Key className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">No API tokens yet</p>
-                    <p className="text-xs text-gray-500 mt-1">Create one to authenticate your backend</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Create one to authenticate your backend
+                    </p>
                 </div>
             )}
 
@@ -304,7 +372,7 @@ const InlineSigningAuthoritySetup: React.FC = () => {
             const primary = await wallet.invoke.getPrimaryRegisteredSigningAuthority();
             setPrimarySAName(primary?.relationship?.name ?? null);
         } catch (err) {
-            console.error('Failed to fetch signing authority:', err);
+            log.error('Failed to fetch signing authority:', err);
             setPrimarySAName(null);
         } finally {
             setLoading(false);
@@ -342,8 +410,11 @@ const InlineSigningAuthoritySetup: React.FC = () => {
             presentToast('Signing authority created successfully', { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to create signing authority:', err);
+            presentToast('Failed to create signing authority', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setCreating(false);
         }
@@ -369,9 +440,12 @@ const InlineSigningAuthoritySetup: React.FC = () => {
                     </div>
 
                     <div className="flex-1">
-                        <p className="text-sm font-medium text-emerald-800">Signing Authority Configured</p>
+                        <p className="text-sm font-medium text-emerald-800">
+                            Signing Authority Configured
+                        </p>
                         <p className="text-xs text-emerald-600 mt-0.5">
-                            Using: <code className="bg-emerald-100 px-1 rounded">{primarySAName}</code>
+                            Using:{' '}
+                            <code className="bg-emerald-100 px-1 rounded">{primarySAName}</code>
                         </p>
                     </div>
                 </div>
@@ -416,7 +490,10 @@ const InlineSigningAuthoritySetup: React.FC = () => {
 };
 
 // Map permissions to their corresponding API methods
-const PERMISSION_TO_METHODS: Record<AppPermission, { method: string; description: string; code: string }> = {
+const PERMISSION_TO_METHODS: Record<
+    AppPermission,
+    { method: string; description: string; code: string }
+> = {
     request_identity: {
         method: 'requestIdentity()',
         description: 'Returns user DID & profile',
@@ -458,28 +535,36 @@ const PERMISSION_TO_METHODS: Record<AppPermission, { method: string; description
     },
 };
 
-const EmbeddedIframeGuide: React.FC<{ selectedPermissions?: AppPermission[] }> = ({ selectedPermissions = [] }) => {
+const EmbeddedIframeGuide: React.FC<{ selectedPermissions?: AppPermission[] }> = ({
+    selectedPermissions = [],
+}) => {
     return (
-    <div className="space-y-6">
-        <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
-            <p className="text-sm text-cyan-800">
-                Create an embedded app that runs inside the LearnCard wallet. Your app can request user identity, send credentials, and more.
-            </p>
-        </div>
-
-        <StepCard step={1} title="Set Up Your Website" icon={<Globe className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Create and host a website that can be embedded in an iframe. You'll need to configure CORS headers.
-            </p>
-
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
-                <p className="text-xs text-amber-800">
-                    <strong>Important:</strong> Your server must include these response headers:
+        <div className="space-y-6">
+            <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
+                <p className="text-sm text-cyan-800">
+                    Create an embedded app that runs inside the LearnCard wallet. Your app can
+                    request user identity, send credentials, and more.
                 </p>
             </div>
 
-            <CodeBlock
-                code={`// Required headers for iframe embedding
+            <StepCard
+                step={1}
+                title="Set Up Your Website"
+                icon={<Globe className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Create and host a website that can be embedded in an iframe. You'll need to
+                    configure CORS headers.
+                </p>
+
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                    <p className="text-xs text-amber-800">
+                        <strong>Important:</strong> Your server must include these response headers:
+                    </p>
+                </div>
+
+                <CodeBlock
+                    code={`// Required headers for iframe embedding
 // Use * to allow embedding from native apps and web
 X-Frame-Options: ALLOWALL
 Content-Security-Policy: frame-ancestors *
@@ -488,28 +573,39 @@ Content-Security-Policy: frame-ancestors *
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Methods: GET, POST, OPTIONS
 Access-Control-Allow-Headers: Content-Type`}
-            />
-        </StepCard>
+                />
+            </StepCard>
 
-        <StepCard step={2} title="Install the SDK" icon={<Package className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Install the LearnCard Partner Connect SDK to communicate with the wallet.
-            </p>
+            <StepCard
+                step={2}
+                title="Install the SDK"
+                icon={<Package className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Install the LearnCard Partner Connect SDK to communicate with the wallet.
+                </p>
 
-            <CodeBlock code={`npm install @learncard/partner-connect`} />
+                <CodeBlock code={`npm install @learncard/partner-connect`} />
 
-            <p className="text-xs text-gray-500 mt-3">
-                Or use yarn: <code className="bg-gray-100 px-1.5 py-0.5 rounded">yarn add @learncard/partner-connect</code>
-            </p>
-        </StepCard>
+                <p className="text-xs text-gray-500 mt-3">
+                    Or use yarn:{' '}
+                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">
+                        yarn add @learncard/partner-connect
+                    </code>
+                </p>
+            </StepCard>
 
-        <StepCard step={3} title="Initialize Partner Connect" icon={<Code className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Set up the SDK in your application to communicate with the LearnCard wallet.
-            </p>
+            <StepCard
+                step={3}
+                title="Initialize Partner Connect"
+                icon={<Code className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Set up the SDK in your application to communicate with the LearnCard wallet.
+                </p>
 
-            <CodeBlock
-                code={`import { createPartnerConnect } from '@learncard/partner-connect';
+                <CodeBlock
+                    code={`import { createPartnerConnect } from '@learncard/partner-connect';
 
 // Initialize the SDK
 const learnCard = createPartnerConnect({
@@ -518,138 +614,176 @@ const learnCard = createPartnerConnect({
 
 // Request user identity (SSO)
 const identity = await learnCard.requestIdentity();
-console.log('User DID:', identity.did);
-console.log('User Profile:', identity.profile);`}
-            />
-        </StepCard>
+log.info('User DID:', identity.did);
+log.info('User Profile:', identity.profile);`}
+                />
+            </StepCard>
 
-        <StepCard step={4} title="Use the API" icon={<Zap className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-4">
-                {selectedPermissions.length > 0 
-                    ? 'Based on your selected permissions, here are the methods you can use:'
-                    : 'Select permissions above to see relevant API methods. Here are some common ones:'}
-            </p>
-
-            {selectedPermissions.length > 0 ? (
-                <div className="space-y-3">
-                    {selectedPermissions.map(permission => {
-                        const methodInfo = PERMISSION_TO_METHODS[permission];
-                        if (!methodInfo) return null;
-                        return (
-                            <div key={permission} className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                    <code className="text-xs font-mono text-cyan-700 bg-white px-2 py-1 rounded">{methodInfo.method}</code>
-                                    <span className="text-xs text-cyan-600">{methodInfo.description}</span>
-                                </div>
-                                <CodeBlock code={methodInfo.code} />
-                            </div>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                            <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">requestIdentity()</code>
-                            <span className="text-xs text-gray-500">Returns user DID & profile</span>
-                        </div>
-                        <CodeBlock code={`const { did, profile } = await learnCard.requestIdentity();`} />
-                    </div>
-
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                            <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">sendCredential()</code>
-                            <span className="text-xs text-gray-500">Send VC to wallet</span>
-                        </div>
-                        <CodeBlock code={`await learnCard.sendCredential({ credential: myVerifiableCredential });`} />
-                    </div>
-                </div>
-            )}
-
-            {selectedPermissions.length > 0 && (
-                <p className="text-xs text-gray-500 mt-4 italic">
-                    💡 Tip: You've selected {selectedPermissions.length} permission{selectedPermissions.length > 1 ? 's' : ''}. 
-                    The methods above correspond to your selections.
+            <StepCard step={4} title="Use the API" icon={<Zap className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-4">
+                    {selectedPermissions.length > 0
+                        ? 'Based on your selected permissions, here are the methods you can use:'
+                        : 'Select permissions above to see relevant API methods. Here are some common ones:'}
                 </p>
-            )}
-        </StepCard>
 
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Full API Reference</h4>
+                {selectedPermissions.length > 0 ? (
+                    <div className="space-y-3">
+                        {selectedPermissions.map(permission => {
+                            const methodInfo = PERMISSION_TO_METHODS[permission];
+                            if (!methodInfo) return null;
+                            return (
+                                <div
+                                    key={permission}
+                                    className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg"
+                                >
+                                    <div className="flex items-center justify-between mb-2">
+                                        <code className="text-xs font-mono text-cyan-700 bg-white px-2 py-1 rounded">
+                                            {methodInfo.method}
+                                        </code>
+                                        <span className="text-xs text-cyan-600">
+                                            {methodInfo.description}
+                                        </span>
+                                    </div>
+                                    <CodeBlock code={methodInfo.code} />
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                                <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">
+                                    requestIdentity()
+                                </code>
+                                <span className="text-xs text-gray-500">
+                                    Returns user DID & profile
+                                </span>
+                            </div>
+                            <CodeBlock
+                                code={`const { did, profile } = await learnCard.requestIdentity();`}
+                            />
+                        </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                    <thead>
-                        <tr className="border-b border-gray-200">
-                            <th className="text-left py-2 pr-4 text-gray-600 font-medium">Method</th>
-                            <th className="text-left py-2 pr-4 text-gray-600 font-medium">Description</th>
-                            <th className="text-left py-2 text-gray-600 font-medium">Returns</th>
-                        </tr>
-                    </thead>
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                                <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">
+                                    sendCredential()
+                                </code>
+                                <span className="text-xs text-gray-500">Send VC to wallet</span>
+                            </div>
+                            <CodeBlock
+                                code={`await learnCard.sendCredential({ credential: myVerifiableCredential });`}
+                            />
+                        </div>
+                    </div>
+                )}
 
-                    <tbody className="text-gray-600">
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">requestIdentity()</td>
-                            <td className="py-2 pr-4">Request user identity (SSO)</td>
-                            <td className="py-2">IdentityResponse</td>
-                        </tr>
+                {selectedPermissions.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-4 italic">
+                        💡 Tip: You've selected {selectedPermissions.length} permission
+                        {selectedPermissions.length > 1 ? 's' : ''}. The methods above correspond to
+                        your selections.
+                    </p>
+                )}
+            </StepCard>
 
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">sendCredential(vc)</td>
-                            <td className="py-2 pr-4">Send VC to user's wallet</td>
-                            <td className="py-2">SendCredentialResponse</td>
-                        </tr>
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Full API Reference</h4>
 
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">launchFeature(path)</td>
-                            <td className="py-2 pr-4">Launch feature in host</td>
-                            <td className="py-2">void</td>
-                        </tr>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                        <thead>
+                            <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 pr-4 text-gray-600 font-medium">
+                                    Method
+                                </th>
+                                <th className="text-left py-2 pr-4 text-gray-600 font-medium">
+                                    Description
+                                </th>
+                                <th className="text-left py-2 text-gray-600 font-medium">
+                                    Returns
+                                </th>
+                            </tr>
+                        </thead>
 
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">askCredentialSearch(vpr)</td>
-                            <td className="py-2 pr-4">Request credentials by query</td>
-                            <td className="py-2">CredentialSearchResponse</td>
-                        </tr>
+                        <tbody className="text-gray-600">
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    requestIdentity()
+                                </td>
+                                <td className="py-2 pr-4">Request user identity (SSO)</td>
+                                <td className="py-2">IdentityResponse</td>
+                            </tr>
 
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">askCredentialSpecific(id)</td>
-                            <td className="py-2 pr-4">Request specific credential</td>
-                            <td className="py-2">CredentialSpecificResponse</td>
-                        </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    sendCredential(vc)
+                                </td>
+                                <td className="py-2 pr-4">Send VC to user's wallet</td>
+                                <td className="py-2">SendCredentialResponse</td>
+                            </tr>
 
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">requestConsent(uri)</td>
-                            <td className="py-2 pr-4">Request user consent</td>
-                            <td className="py-2">ConsentResponse</td>
-                        </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    launchFeature(path)
+                                </td>
+                                <td className="py-2 pr-4">Launch feature in host</td>
+                                <td className="py-2">void</td>
+                            </tr>
 
-                        <tr className="border-b border-gray-100">
-                            <td className="py-2 pr-4 font-mono text-cyan-700">initiateTemplateIssue(id)</td>
-                            <td className="py-2 pr-4">Issue from template/boost</td>
-                            <td className="py-2">TemplateIssueResponse</td>
-                        </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    askCredentialSearch(vpr)
+                                </td>
+                                <td className="py-2 pr-4">Request credentials by query</td>
+                                <td className="py-2">CredentialSearchResponse</td>
+                            </tr>
 
-                        <tr>
-                            <td className="py-2 pr-4 font-mono text-cyan-700">destroy()</td>
-                            <td className="py-2 pr-4">Clean up SDK</td>
-                            <td className="py-2">void</td>
-                        </tr>
-                    </tbody>
-                </table>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    askCredentialSpecific(id)
+                                </td>
+                                <td className="py-2 pr-4">Request specific credential</td>
+                                <td className="py-2">CredentialSpecificResponse</td>
+                            </tr>
+
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    requestConsent(uri)
+                                </td>
+                                <td className="py-2 pr-4">Request user consent</td>
+                                <td className="py-2">ConsentResponse</td>
+                            </tr>
+
+                            <tr className="border-b border-gray-100">
+                                <td className="py-2 pr-4 font-mono text-cyan-700">
+                                    initiateTemplateIssue(id)
+                                </td>
+                                <td className="py-2 pr-4">Issue from template/boost</td>
+                                <td className="py-2">TemplateIssueResponse</td>
+                            </tr>
+
+                            <tr>
+                                <td className="py-2 pr-4 font-mono text-cyan-700">destroy()</td>
+                                <td className="py-2 pr-4">Clean up SDK</td>
+                                <td className="py-2">void</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <a
-            href="https://docs.learncard.com/sdks/partner-connect"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full p-3 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
-        >
-            View Full Documentation
-            <ExternalLink className="w-4 h-4" />
-        </a>
-    </div>
+            <a
+                href="https://docs.learncard.com/sdks/partner-connect"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full p-3 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
+            >
+                View Full Documentation
+                <ExternalLink className="w-4 h-4" />
+            </a>
+        </div>
     );
 };
 
@@ -718,62 +852,73 @@ await learnCard.invoke.send({
     }, [builtCredential]);
 
     return (
-    <div className="space-y-6">
-        <OBv3CredentialBuilder
-            isOpen={showCredentialBuilder}
-            onClose={() => setShowCredentialBuilder(false)}
-            onSave={(cred) => setBuiltCredential(cred)}
-        />
-        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-            <p className="text-sm text-indigo-800">
-                Use the Consent Redirect flow to collect user consent and credentials from your external application. 
-                Users will be redirected to LearnCard to grant permissions, then back to your app with their credentials.
-            </p>
-        </div>
-
-        <StepCard step={1} title="Create a Consent Flow Contract" icon={<Globe className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                First, create or select a Consent Flow Contract that defines what permissions your app needs. 
-                You can do this in the Developer Portal or via the API.
-            </p>
-
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
-                <p className="text-xs text-amber-800">
-                    <strong>Important:</strong> Copy and save your Contract URI — you'll need it to send credentials later.
+        <div className="space-y-6">
+            <OBv3CredentialBuilder
+                isOpen={showCredentialBuilder}
+                onClose={() => setShowCredentialBuilder(false)}
+                onSave={cred => setBuiltCredential(cred)}
+            />
+            <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                <p className="text-sm text-indigo-800">
+                    Use the Consent Redirect flow to collect user consent and credentials from your
+                    external application. Users will be redirected to LearnCard to grant
+                    permissions, then back to your app with their credentials.
                 </p>
             </div>
 
-            {hasContractUri ? (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
-                    <p className="text-xs text-green-800 mb-2">
-                        <strong>✓ Contract Selected:</strong> Your consent flow contract URI:
-                    </p>
-                    <code className="text-xs bg-green-100 px-2 py-1 rounded break-all block">
-                        {contractUri}
-                    </code>
-                </div>
-            ) : (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
-                    <p className="text-xs text-gray-600">
-                        Select a consent flow contract above to see your URI here.
-                    </p>
-                </div>
-            )}
+            <StepCard
+                step={1}
+                title="Create a Consent Flow Contract"
+                icon={<Globe className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    First, create or select a Consent Flow Contract that defines what permissions
+                    your app needs. You can do this in the Developer Portal or via the API.
+                </p>
 
-            <CodeBlock
-                code={`// Your Contract URI
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                    <p className="text-xs text-amber-800">
+                        <strong>Important:</strong> Copy and save your Contract URI — you'll need it
+                        to send credentials later.
+                    </p>
+                </div>
+
+                {hasContractUri ? (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
+                        <p className="text-xs text-green-800 mb-2">
+                            <strong>✓ Contract Selected:</strong> Your consent flow contract URI:
+                        </p>
+                        <code className="text-xs bg-green-100 px-2 py-1 rounded break-all block">
+                            {contractUri}
+                        </code>
+                    </div>
+                ) : (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
+                        <p className="text-xs text-gray-600">
+                            Select a consent flow contract above to see your URI here.
+                        </p>
+                    </div>
+                )}
+
+                <CodeBlock
+                    code={`// Your Contract URI
 const consentFlowContractURI = '${displayContractUri}';`}
-            />
-        </StepCard>
+                />
+            </StepCard>
 
-        <StepCard step={2} title="Set Up Your Redirect Handler" icon={<Code className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Create an endpoint to handle the redirect from LearnCard. The user&apos;s DID and a VP JWT
-                (containing a delegate credential) will be included in the URL parameters.
-            </p>
+            <StepCard
+                step={2}
+                title="Set Up Your Redirect Handler"
+                icon={<Code className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Create an endpoint to handle the redirect from LearnCard. The user&apos;s DID
+                    and a VP JWT (containing a delegate credential) will be included in the URL
+                    parameters.
+                </p>
 
-            <CodeBlock
-                code={`// Example: /api/learncard/callback or /auth/learncard/redirect
+                <CodeBlock
+                    code={`// Example: /api/learncard/callback or /auth/learncard/redirect
 
 app.get('/api/learncard/callback', async (req, res) => {
     // Extract the user's DID and delegate VP JWT from URL params
@@ -788,100 +933,122 @@ app.get('/api/learncard/callback', async (req, res) => {
     // Redirect to your app's success page
     res.redirect('/dashboard?connected=true');
 });`}
-            />
+                />
 
-            <p className="text-xs text-gray-500 mt-3">
-                Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
-                <code className="bg-gray-100 px-1.5 py-0.5 rounded">vp</code> (a VP JWT containing a delegate credential)
-                to identify and send credentials to this user later.
-            </p>
-        </StepCard>
+                <p className="text-xs text-gray-500 mt-3">
+                    Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
+                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">vp</code> (a VP JWT
+                    containing a delegate credential) to identify and send credentials to this user
+                    later.
+                </p>
+            </StepCard>
 
-        <StepCard step={3} title="Create an API Key" icon={<Key className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-4">
-                Generate an API key to authenticate your backend with the LearnCard Network.
-            </p>
+            <StepCard
+                step={3}
+                title="Create an API Key"
+                icon={<Key className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-4">
+                    Generate an API key to authenticate your backend with the LearnCard Network.
+                </p>
 
-            <InlineAPITokenManager />
-        </StepCard>
+                <InlineAPITokenManager />
+            </StepCard>
 
-        <StepCard step={4} title="Initialize LearnCard on Your Backend" icon={<Package className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Install and initialize the LearnCard SDK in your backend application.
-            </p>
+            <StepCard
+                step={4}
+                title="Initialize LearnCard on Your Backend"
+                icon={<Package className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Install and initialize the LearnCard SDK in your backend application.
+                </p>
 
-            <CodeBlock code={`npm install @learncard/init`} />
+                <CodeBlock code={`npm install @learncard/init`} />
 
-            <p className="text-xs text-gray-500 mt-3 mb-3">Then initialize with your API key:</p>
+                <p className="text-xs text-gray-500 mt-3 mb-3">
+                    Then initialize with your API key:
+                </p>
 
-            <CodeBlock
-                code={`import { initLearnCard } from '@learncard/init';
+                <CodeBlock
+                    code={`import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({ 
     apiKey: process.env.LEARNCARD_API_KEY,
     network: true 
 });
 
-console.log('LearnCard DID:', learnCard.id.did());`}
-            />
-        </StepCard>
+log.info('LearnCard DID:', learnCard.id.did());`}
+                />
+            </StepCard>
 
-        <StepCard step={5} title="Send Credentials to Users" icon={<Zap className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                When you're ready to send a credential to a user, use the simplified <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">send</code> method. 
-                This handles credential creation, signing, and delivery in one call.
-            </p>
-
-            {/* Credential Builder Button */}
-            <div className="mb-4">
-                <button
-                    onClick={() => setShowCredentialBuilder(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-                >
-                    <Award className="w-4 h-4" />
-                    Build Your Credential
-                </button>
-
-                {builtCredential && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-emerald-600">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Custom credential added to code below</span>
-                    </div>
-                )}
-            </div>
-
-            <CodeBlock code={credentialCodeSample} />
-
-            <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                <p className="text-xs text-cyan-800">
-                    <strong>What this does:</strong> Creates a credential template, issues it to the user, 
-                    and writes it to your consent flow contract — all in one call.
+            <StepCard
+                step={5}
+                title="Send Credentials to Users"
+                icon={<Zap className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    When you're ready to send a credential to a user, use the simplified{' '}
+                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">send</code> method.
+                    This handles credential creation, signing, and delivery in one call.
                 </p>
+
+                {/* Credential Builder Button */}
+                <div className="mb-4">
+                    <button
+                        onClick={() => setShowCredentialBuilder(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                    >
+                        <Award className="w-4 h-4" />
+                        Build Your Credential
+                    </button>
+
+                    {builtCredential && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-emerald-600">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Custom credential added to code below</span>
+                        </div>
+                    )}
+                </div>
+
+                <CodeBlock code={credentialCodeSample} />
+
+                <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                    <p className="text-xs text-cyan-800">
+                        <strong>What this does:</strong> Creates a credential template, issues it to
+                        the user, and writes it to your consent flow contract — all in one call.
+                    </p>
+                </div>
+            </StepCard>
+
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+
+                <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
+                    <li>User clicks "Connect with LearnCard" in your app</li>
+                    <li>User is redirected to LearnCard to grant consent</li>
+                    <li>LearnCard redirects back to your app with their DID</li>
+                    <li>Your backend stores the user's DID</li>
+                    <li>When ready, your backend issues credentials to that DID</li>
+                </ol>
             </div>
-        </StepCard>
 
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
-            
-            <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
-                <li>User clicks "Connect with LearnCard" in your app</li>
-                <li>User is redirected to LearnCard to grant consent</li>
-                <li>LearnCard redirects back to your app with their DID</li>
-                <li>Your backend stores the user's DID</li>
-                <li>When ready, your backend issues credentials to that DID</li>
-            </ol>
-        </div>
+            <StepCard
+                step={6}
+                title="Additional Functions (Optional)"
+                icon={<Database className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-4">
+                    As the contract owner, you can also query consent data and transactions:
+                </p>
 
-        <StepCard step={6} title="Additional Functions (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-4">
-                As the contract owner, you can also query consent data and transactions:
-            </p>
-
-            <div className="space-y-4">
-                <div>
-                    <p className="text-xs text-gray-500 mb-2 font-medium">Get all consented data for your contract:</p>
-                    <CodeBlock
-                        code={`// Query all consent records for your contract
+                <div className="space-y-4">
+                    <div>
+                        <p className="text-xs text-gray-500 mb-2 font-medium">
+                            Get all consented data for your contract:
+                        </p>
+                        <CodeBlock
+                            code={`// Query all consent records for your contract
 const queryOptions = { limit: 50 };
 
 const consentData = await learnCard.invoke.getConsentFlowData(
@@ -889,91 +1056,113 @@ const consentData = await learnCard.invoke.getConsentFlowData(
     queryOptions
 );
 
-console.log('Consented records:', consentData.records);`}
-                    />
-                </div>
+log.info('Consented records:', consentData.records);`}
+                        />
+                    </div>
 
-                <div>
-                    <p className="text-xs text-gray-500 mb-2 font-medium">Get consent data for a specific user:</p>
-                    <CodeBlock
-                        code={`// Query consent data involving a specific DID
+                    <div>
+                        <p className="text-xs text-gray-500 mb-2 font-medium">
+                            Get consent data for a specific user:
+                        </p>
+                        <CodeBlock
+                            code={`// Query consent data involving a specific DID
 const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
     userDID,
     queryOptions
 );
 
-console.log('User consent records:', userConsentData.records);`}
-                    />
+log.info('User consent records:', userConsentData.records);`}
+                        />
+                    </div>
                 </div>
-            </div>
-        </StepCard>
+            </StepCard>
 
-        <a
-            href="https://docs.learncard.com/core-concepts/consent-and-permissions"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full p-3 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
-        >
-            View Full Documentation
-            <ExternalLink className="w-4 h-4" />
-        </a>
-    </div>
+            <a
+                href="https://docs.learncard.com/core-concepts/consent-and-permissions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full p-3 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
+            >
+                View Full Documentation
+                <ExternalLink className="w-4 h-4" />
+            </a>
+        </div>
     );
 };
 
 // Server Headless Guide - using Universal Inbox
 const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) => {
     return (
-    <div className="space-y-6">
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-            <p className="text-sm text-emerald-800">
-                Server Headless integration uses the <strong>Universal Inbox API</strong> to issue credentials 
-                directly to users via email or phone — no wallet interaction required from your side.
-            </p>
-        </div>
+        <div className="space-y-6">
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-sm text-emerald-800">
+                    Server Headless integration uses the <strong>Universal Inbox API</strong> to
+                    issue credentials directly to users via email or phone — no wallet interaction
+                    required from your side.
+                </p>
+            </div>
 
-        <StepCard step={1} title="Configure Signing Authority" icon={<Shield className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-4">
-                A signing authority is required to sign credentials on your behalf.
-            </p>
+            <StepCard
+                step={1}
+                title="Configure Signing Authority"
+                icon={<Shield className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-4">
+                    A signing authority is required to sign credentials on your behalf.
+                </p>
 
-            <InlineSigningAuthoritySetup />
-        </StepCard>
+                <InlineSigningAuthoritySetup />
+            </StepCard>
 
-        <StepCard step={2} title="Create an API Key" icon={<Key className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-4">
-                Generate an API key to authenticate your backend with the LearnCard Network.
-            </p>
+            <StepCard
+                step={2}
+                title="Create an API Key"
+                icon={<Key className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-4">
+                    Generate an API key to authenticate your backend with the LearnCard Network.
+                </p>
 
-            <InlineAPITokenManager />
-        </StepCard>
+                <InlineAPITokenManager />
+            </StepCard>
 
-        <StepCard step={3} title="Initialize LearnCard SDK" icon={<Package className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Install and initialize the LearnCard SDK in your backend application.
-            </p>
+            <StepCard
+                step={3}
+                title="Initialize LearnCard SDK"
+                icon={<Package className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Install and initialize the LearnCard SDK in your backend application.
+                </p>
 
-            <CodeBlock code={`npm install @learncard/init`} />
+                <CodeBlock code={`npm install @learncard/init`} />
 
-            <p className="text-xs text-gray-500 mt-3 mb-3">Then initialize with your API key:</p>
+                <p className="text-xs text-gray-500 mt-3 mb-3">
+                    Then initialize with your API key:
+                </p>
 
-            <CodeBlock
-                code={`import { initLearnCard } from '@learncard/init';
+                <CodeBlock
+                    code={`import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({ 
     apiKey: process.env.LEARNCARD_API_KEY,
     network: true 
 });`}
-            />
-        </StepCard>
+                />
+            </StepCard>
 
-        <StepCard step={4} title="Issue Credential via Universal Inbox" icon={<Send className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Send credentials to users by email or phone. LearnCard handles delivery automatically.
-            </p>
+            <StepCard
+                step={4}
+                title="Issue Credential via Universal Inbox"
+                icon={<Send className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Send credentials to users by email or phone. LearnCard handles delivery
+                    automatically.
+                </p>
 
-            <CodeBlock
-                code={`// Issue a credential to a user's email
+                <CodeBlock
+                    code={`// Issue a credential to a user's email
 const result = await learnCard.invoke.inbox.issue({
     // Recipient - just need email or phone!
     recipient: { 
@@ -1016,36 +1205,41 @@ const result = await learnCard.invoke.inbox.issue({
 });
 
 // Response
-console.log(result);
+log.info(result);
 // {
 //   issuanceId: 'abc123',
 //   status: 'ISSUED' | 'PENDING',
 //   claimUrl: 'https://...',  // If user doesn't have wallet yet
 //   recipientDid: 'did:...'   // If user already has wallet
 // }`}
-            />
+                />
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
-                <p className="text-xs text-blue-800">
-                    <strong>What happens:</strong> If the recipient has a LearnCard wallet linked to that email, 
-                    the credential is delivered instantly. Otherwise, they receive an email with a claim link.
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
+                    <p className="text-xs text-blue-800">
+                        <strong>What happens:</strong> If the recipient has a LearnCard wallet
+                        linked to that email, the credential is delivered instantly. Otherwise, they
+                        receive an email with a claim link.
+                    </p>
+                </div>
+            </StepCard>
+
+            <StepCard
+                step={5}
+                title="Handle Webhook Events (Optional)"
+                icon={<Webhook className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    Receive notifications when credentials are delivered or claimed.
                 </p>
-            </div>
-        </StepCard>
 
-        <StepCard step={5} title="Handle Webhook Events (Optional)" icon={<Webhook className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                Receive notifications when credentials are delivered or claimed.
-            </p>
-
-            <CodeBlock
-                code={`// Express webhook handler
+                <CodeBlock
+                    code={`// Express webhook handler
 app.post('/webhooks/learncard', (req, res) => {
     const { type, data } = req.body;
     
     switch (type) {
         case 'ISSUANCE_DELIVERED':
-            console.log('Credential delivered!', {
+            log.info('Credential delivered!', {
                 issuanceId: data.inbox.issuanceId,
                 status: data.inbox.status,
                 recipient: data.inbox.recipient
@@ -1055,16 +1249,23 @@ app.post('/webhooks/learncard', (req, res) => {
     
     res.json({ received: true });
 });`}
-            />
-        </StepCard>
+                />
+            </StepCard>
 
-        <StepCard step={6} title="REST API Alternative" icon={<Server className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                You can also use the REST API directly without the SDK.
-            </p>
+            <StepCard
+                step={6}
+                title="REST API Alternative"
+                icon={<Server className="w-5 h-5 text-gray-500" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    You can also use the REST API directly without the SDK.
+                </p>
 
-            <CodeBlock
-                code={`curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/api/inbox/issue \\
+                <CodeBlock
+                    code={`curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace(
+                        '/trpc',
+                        ''
+                    )}/api/inbox/issue \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1084,50 +1285,64 @@ app.post('/webhooks/learncard', (req, res) => {
         }
     }
 }'`}
-            />
-        </StepCard>
+                />
+            </StepCard>
 
-        <div className="p-4 bg-gray-100 rounded-xl">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+            <div className="p-4 bg-gray-100 rounded-xl">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
 
-            <div className="space-y-2 text-xs text-gray-600">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">1</div>
-                    <span>Your server calls <code className="bg-white px-1.5 py-0.5 rounded">inbox.issue</code> with email + credential</span>
-                </div>
+                <div className="space-y-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
+                            1
+                        </div>
+                        <span>
+                            Your server calls{' '}
+                            <code className="bg-white px-1.5 py-0.5 rounded">inbox.issue</code> with
+                            email + credential
+                        </span>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">2</div>
-                    <span>LearnCard signs the credential with your signing authority</span>
-                </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
+                            2
+                        </div>
+                        <span>LearnCard signs the credential with your signing authority</span>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">3</div>
-                    <span>If user has wallet → delivered instantly to their inbox</span>
-                </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
+                            3
+                        </div>
+                        <span>If user has wallet → delivered instantly to their inbox</span>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">4</div>
-                    <span>If new user → email sent with magic link to claim</span>
-                </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
+                            4
+                        </div>
+                        <span>If new user → email sent with magic link to claim</span>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">5</div>
-                    <span>Webhook notifies you of delivery status</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
+                            5
+                        </div>
+                        <span>Webhook notifies you of delivery status</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <a
-            href="https://docs.learncard.com/how-to-guides/send-credentials"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full p-3 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"
-        >
-            View Universal Inbox Documentation
-            <ExternalLink className="w-4 h-4" />
-        </a>
-    </div>
+            <a
+                href="https://docs.learncard.com/how-to-guides/send-credentials"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full p-3 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"
+            >
+                View Universal Inbox Documentation
+                <ExternalLink className="w-4 h-4" />
+            </a>
+        </div>
     );
 };
 
@@ -1137,12 +1352,16 @@ const DirectLinkGuide: React.FC<{ url?: string }> = ({ url }) => {
         <div className="space-y-6">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <p className="text-sm text-blue-800">
-                    Direct Link is the simplest integration — users click your app and are 
+                    Direct Link is the simplest integration — users click your app and are
                     redirected to your URL with optional query parameters for user context.
                 </p>
             </div>
 
-            <StepCard step={1} title="Configure Your Redirect URL" icon={<Globe className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={1}
+                title="Configure Your Redirect URL"
+                icon={<Globe className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
                     Provide the URL where users will be redirected when they launch your app.
                 </p>
@@ -1154,7 +1373,11 @@ const DirectLinkGuide: React.FC<{ url?: string }> = ({ url }) => {
                 </p>
             </StepCard>
 
-            <StepCard step={2} title="Handle User Context (Optional)" icon={<Code className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={2}
+                title="Handle User Context (Optional)"
+                icon={<Code className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
                     LearnCard can append the user's DID as a query parameter for identification.
                 </p>
@@ -1169,12 +1392,16 @@ const userDid = urlParams.get('did');
 
 if (userDid) {
     // User is authenticated via LearnCard
-    console.log('User DID:', userDid);
+    log.info('User DID:', userDid);
 }`}
                 />
             </StepCard>
 
-            <StepCard step={3} title="Verify User Identity (Optional)" icon={<Key className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={3}
+                title="Verify User Identity (Optional)"
+                icon={<Key className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
                     If you need to verify the user's identity, you can resolve their DID.
                 </p>
@@ -1186,7 +1413,7 @@ const learnCard = await initLearnCard({ network: true });
 
 // Resolve the user's DID document
 const didDocument = await learnCard.invoke.resolveDid(userDid);
-console.log('User Profile:', didDocument);`}
+log.info('User Profile:', didDocument);`}
                 />
             </StepCard>
 
@@ -1220,24 +1447,36 @@ const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
         <div className="space-y-6">
             <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
                 <p className="text-sm text-violet-800">
-                    AI Tutor apps let users select learning topics and launch personalized 
-                    tutoring sessions. LearnCard handles topic selection and passes context to your app.
+                    AI Tutor apps let users select learning topics and launch personalized tutoring
+                    sessions. LearnCard handles topic selection and passes context to your app.
                 </p>
             </div>
 
-            <StepCard step={1} title="Configure Your AI Tutor URL" icon={<Sparkles className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={1}
+                title="Configure Your AI Tutor URL"
+                icon={<Sparkles className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    Provide your AI tutor's base URL. Users will be redirected with topic and DID parameters.
+                    Provide your AI tutor's base URL. Users will be redirected with topic and DID
+                    parameters.
                 </p>
 
                 <CodeBlock code={aiTutorUrl || 'https://yourtutor.com'} />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    Users will be redirected to: <code className="bg-gray-100 px-1 rounded">{aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...</code>
+                    Users will be redirected to:{' '}
+                    <code className="bg-gray-100 px-1 rounded">
+                        {aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...
+                    </code>
                 </p>
             </StepCard>
 
-            <StepCard step={2} title="Handle Launch Parameters" icon={<Code className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={2}
+                title="Handle Launch Parameters"
+                icon={<Code className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
                     Your app receives the user's DID and selected topic as query parameters.
                 </p>
@@ -1248,7 +1487,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const userDid = urlParams.get('did');
 const topic = urlParams.get('topic');
 
-console.log('Starting session for:', { userDid, topic });
+log.info('Starting session for:', { userDid, topic });
 
 // Initialize your AI tutor with the topic
 initTutorSession({
@@ -1259,7 +1498,11 @@ initTutorSession({
                 />
             </StepCard>
 
-            <StepCard step={3} title="Track Learning Progress (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={3}
+                title="Track Learning Progress (Optional)"
+                icon={<Database className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
                     Issue credentials for completed learning milestones.
                 </p>
@@ -1297,27 +1540,40 @@ await learnCard.invoke.send({
 
                 <div className="space-y-2 text-xs text-gray-600">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">1</div>
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
+                            1
+                        </div>
                         <span>User clicks "Open" on your AI Tutor app</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">2</div>
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
+                            2
+                        </div>
                         <span>Topic selection modal appears (New Topic or Revisit)</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">3</div>
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
+                            3
+                        </div>
                         <span>User enters or selects a learning topic</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">4</div>
-                        <span>Redirected to your app with <code className="bg-white px-1 rounded">?did=...&topic=...</code></span>
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
+                            4
+                        </div>
+                        <span>
+                            Redirected to your app with{' '}
+                            <code className="bg-white px-1 rounded">?did=...&topic=...</code>
+                        </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">5</div>
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
+                            5
+                        </div>
                         <span>Your AI tutor starts the personalized session</span>
                     </div>
                 </div>

@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImmer, Updater } from 'use-immer';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-install-consent-modal');
 
 import {
     useModal,
@@ -114,7 +116,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     const wallet = await initWallet();
                     return await wallet.invoke.getContract(contractUri);
                 } catch (error) {
-                    console.error('Failed to fetch contract:', error);
+                    log.error('Failed to fetch contract:', error);
                     return null;
                 }
             },
@@ -184,7 +186,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             sharedUris.push(sharedUri);
                         }
                     } catch (error) {
-                        console.error(
+                        log.error(
                             `Failed to generate shared URI for credential ${credential.uri}:`,
                             error
                         );
@@ -195,10 +197,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     categoryConfig.shared = sharedUris;
                 }
             } catch (error) {
-                console.error(
-                    `Failed to fetch credentials for category ${credentialCategory}:`,
-                    error
-                );
+                log.error(`Failed to fetch credentials for category ${credentialCategory}:`, error);
             }
         }
 
@@ -209,22 +208,22 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     // Filter to only show categories where sharing is enabled
     const acceptedReadCategories = terms?.read?.credentials?.categories
         ? Object.entries(terms.read.credentials.categories)
-            .filter(([_, config]) => {
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            })
-            .map(([category]) => category)
+              .filter(([_, config]) => {
+                  const cfg = config as { sharing?: boolean };
+                  return cfg.sharing !== false;
+              })
+              .map(([category]) => category)
         : [];
 
     const acceptedWriteCategories = terms?.write?.credentials?.categories
         ? Object.entries(terms.write.credentials.categories)
-            .filter(([_, config]) => {
-                // Write categories can be boolean or object with sharing property
-                if (typeof config === 'boolean') return config;
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            })
-            .map(([category]) => category)
+              .filter(([_, config]) => {
+                  // Write categories can be boolean or object with sharing property
+                  if (typeof config === 'boolean') return config;
+                  const cfg = config as { sharing?: boolean };
+                  return cfg.sharing !== false;
+              })
+              .map(([category]) => category)
         : [];
 
     const hasReadCategories = acceptedReadCategories.length > 0;
@@ -623,10 +622,11 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 <button
                     onClick={handleInstall}
                     disabled={isPreview || isConsenting || (!!contractUri && isLoadingContract)}
-                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${isPreview
+                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${
+                        isPreview
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-indigo-600 hover:bg-indigo-700'
-                        }`}
+                    }`}
                     title={isPreview ? 'Install is disabled in preview mode' : undefined}
                 >
                     {isConsenting && <Loader2 className="w-5 h-5 animate-spin" />}

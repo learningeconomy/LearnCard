@@ -1,9 +1,22 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('json-preview');
 /**
  * JsonPreview - Live JSON preview with bidirectional editing
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Copy, Check, AlertCircle, RefreshCw, Code, Eye, PlayCircle, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import {
+    Copy,
+    Check,
+    AlertCircle,
+    RefreshCw,
+    Code,
+    Eye,
+    PlayCircle,
+    Loader2,
+    CheckCircle,
+    XCircle,
+} from 'lucide-react';
 
 import { OBv3CredentialTemplate } from './types';
 import { templateToJson, jsonToTemplate, extractVariablesByType } from './utils';
@@ -12,7 +25,9 @@ interface JsonPreviewProps {
     template: OBv3CredentialTemplate;
     onChange: (template: OBv3CredentialTemplate) => void;
     isEditable?: boolean;
-    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
+    onTestIssue?: (
+        credential: Record<string, unknown>
+    ) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     onValidate?: () => Promise<void>;
 }
 
@@ -27,7 +42,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
     const [jsonText, setJsonText] = useState('');
     const [parseError, setParseError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const [testIssueState, setTestIssueState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [testIssueState, setTestIssueState] = useState<'idle' | 'loading' | 'success' | 'error'>(
+        'idle'
+    );
     const [testIssueError, setTestIssueError] = useState<string | null>(null);
 
     // Convert template to JSON string
@@ -59,24 +76,27 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (e) {
-            console.error('Failed to copy:', e);
+            log.error('Failed to copy:', e);
         }
     }, [jsonFromTemplate]);
 
-    const handleJsonChange = useCallback((value: string) => {
-        setJsonText(value);
+    const handleJsonChange = useCallback(
+        (value: string) => {
+            setJsonText(value);
 
-        try {
-            const parsed = JSON.parse(value);
-            setParseError(null);
+            try {
+                const parsed = JSON.parse(value);
+                setParseError(null);
 
-            // Convert back to template
-            const newTemplate = jsonToTemplate(parsed);
-            onChange(newTemplate);
-        } catch (e) {
-            setParseError((e as Error).message);
-        }
-    }, [onChange]);
+                // Convert back to template
+                const newTemplate = jsonToTemplate(parsed);
+                onChange(newTemplate);
+            } catch (e) {
+                setParseError((e as Error).message);
+            }
+        },
+        [onChange]
+    );
 
     const handleEnterEditMode = useCallback(() => {
         setJsonText(jsonFromTemplate);
@@ -115,7 +135,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
 
             if (result.success) {
                 setTestIssueState('success');
-                console.log('Test issue successful:', result.result);
+                log.info('Test issue successful:', result.result);
                 setTimeout(() => setTestIssueState('idle'), 3000);
             } else {
                 setTestIssueState('error');
@@ -263,7 +283,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                         <div>
                             <p className="text-xs font-medium text-violet-700 mb-1">
                                 Dynamic Variables ({dynamicVariables.length})
-                                <span className="font-normal text-gray-500 ml-1">— provide at issuance</span>
+                                <span className="font-normal text-gray-500 ml-1">
+                                    — provide at issuance
+                                </span>
                             </p>
 
                             <div className="flex flex-wrap gap-1">
@@ -307,7 +329,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                 {editMode ? (
                     <textarea
                         value={jsonText}
-                        onChange={(e) => handleJsonChange(e.target.value)}
+                        onChange={e => handleJsonChange(e.target.value)}
                         className={`w-full h-full p-4 font-mono text-xs resize-none outline-none ${
                             parseError ? 'bg-red-50' : 'bg-gray-900 text-gray-100'
                         }`}
@@ -334,7 +356,10 @@ const JsonHighlighter: React.FC<{ json: string }> = ({ json }) => {
         .replace(/: "([^"]+)"/g, ': <span class="text-emerald-400">"$1"</span>')
         .replace(/: (\d+)/g, ': <span class="text-amber-400">$1</span>')
         .replace(/: (true|false|null)/g, ': <span class="text-rose-400">$1</span>')
-        .replace(/\{\{(\w+)\}\}/g, '<span class="text-violet-400 bg-violet-900/30 px-0.5 rounded">{{$1}}</span>');
+        .replace(
+            /\{\{(\w+)\}\}/g,
+            '<span class="text-violet-400 bg-violet-900/30 px-0.5 rounded">{{$1}}</span>'
+        );
 
     return <code dangerouslySetInnerHTML={{ __html: highlighted }} />;
 };

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-data-sharing-modal');
 
 import { IonSpinner } from '@ionic/react';
 import {
@@ -272,7 +274,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
 
             window.open(urlObj.toString(), '_blank');
         } catch (error) {
-            console.error('Failed to open app:', error);
+            log.error('Failed to open app:', error);
         } finally {
             setIsOpening(false);
         }
@@ -284,7 +286,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
             onUpdate?.();
             closeAllModals();
         } catch (error) {
-            console.error('Failed to revoke access:', error);
+            log.error('Failed to revoke access:', error);
         }
     };
 

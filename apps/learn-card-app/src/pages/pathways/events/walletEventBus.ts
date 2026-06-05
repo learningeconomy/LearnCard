@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-event-bus');
 /**
  * walletEventBus — the single publish/subscribe seam for every
  * completion-relevant event in the app.
@@ -46,10 +48,7 @@
  * pathway state up to date without user action.
  */
 
-import {
-    WalletEventSchema,
-    type WalletEvent,
-} from '../types/walletEvent';
+import { WalletEventSchema, type WalletEvent } from '../types/walletEvent';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -126,7 +125,7 @@ export const createWalletEventBus = (
          * want to bypass for negative cases.
          */
         validate?: boolean;
-    } = {},
+    } = {}
 ): WalletEventBus => {
     const recentBufferSize = options.recentBufferSize ?? DEFAULT_RECENT_BUFFER;
     const dedupWindow = options.dedupWindow ?? DEFAULT_DEDUP_WINDOW;
@@ -179,14 +178,14 @@ export const createWalletEventBus = (
                 // analytics pipeline is where it belongs rather
                 // than a crash.
                 // eslint-disable-next-line no-console
-                console.error('[walletEventBus] listener threw:', err);
+                log.error('[walletEventBus] listener threw:', err);
             }
         }
     };
 
     const subscribe = (
         listener: WalletEventListener,
-        options: SubscribeOptions = {},
+        options: SubscribeOptions = {}
     ): (() => void) => {
         listeners.add(listener);
 
@@ -199,7 +198,7 @@ export const createWalletEventBus = (
                     listener(event);
                 } catch (err) {
                     // eslint-disable-next-line no-console
-                    console.error('[walletEventBus] replay listener threw:', err);
+                    log.error('[walletEventBus] replay listener threw:', err);
                 }
             }
         }
@@ -240,5 +239,4 @@ export const walletEventBus = createWalletEventBus();
  * Convenience shim for the most common call site: publishers that
  * don't need the full `publish` reference just call this.
  */
-export const publishWalletEvent = (event: WalletEvent): void =>
-    walletEventBus.publish(event);
+export const publishWalletEvent = (event: WalletEvent): void => walletEventBus.publish(event);

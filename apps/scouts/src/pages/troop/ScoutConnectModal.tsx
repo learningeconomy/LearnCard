@@ -31,6 +31,8 @@ import {
 } from 'learn-card-base';
 
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('scout-connect-modal');
 
 // Types
 interface ScoutConnectModalProps {
@@ -114,7 +116,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
             setState(INITIAL_STATE);
             closeAllModals();
         } catch (error) {
-            console.error('Error handling boost:', error);
+            log.error('Error handling boost:', error);
             presentToast('Failed to process boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -171,7 +173,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                 }
             }
         } catch (error) {
-            console.error('Error generating claim link:', error);
+            log.error('Error generating claim link:', error);
             presentToast('Failed to generate claim link', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

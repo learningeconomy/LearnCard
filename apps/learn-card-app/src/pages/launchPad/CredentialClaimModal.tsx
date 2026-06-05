@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { X, Check, Loader2 } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-claim-modal');
 
-import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode, BoostCategoryOptionsEnum } from 'learn-card-base';
+import {
+    useWallet,
+    useToast,
+    ToastTypeEnum,
+    BoostPageViewMode,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC, VP } from '@learncard/types';
@@ -105,7 +113,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                             }
                         } catch (enrichErr) {
                             // Enrichment failure is non-fatal — modal remains usable.
-                            console.warn('[claim] background enrichment failed:', enrichErr);
+                            log.warn('background enrichment failed', enrichErr);
                         } finally {
                             if (!cancelled) setIsEnrichingFromFastPath(false);
                         }
@@ -129,7 +137,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                     markCredentialResolved({ fastPath: false });
                 }
             } catch (err) {
-                console.error('Failed to resolve credential:', err);
+                log.error('Failed to resolve credential:', err);
                 if (!cancelled) setError('Unable to load credential');
                 void flushSendCredentialFlowOnError({
                     phase: 'credential_resolve',
@@ -141,7 +149,9 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         };
 
         resolveCredential();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [credentialUri, preResolvedCredential]);
 
     const handleClaim = async () => {
@@ -188,7 +198,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             if (addResult.status === 'rejected') throw addResult.reason;
 
             if (acceptResult.status === 'rejected') {
-                console.warn('Failed to accept credential server-side:', acceptResult.reason);
+                log.warn('Failed to accept credential server-side:', acceptResult.reason);
             }
 
             // Fire-and-forget the notification metadata update. The user already sees claim
@@ -207,10 +217,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         read: true,
                     })
                     .catch((notifErr: unknown) => {
-                        console.warn('Failed to update notification:', notifErr);
+                        log.warn('Failed to update notification:', notifErr);
                     });
             } else if (queryResult.status === 'rejected') {
-                console.warn('Failed to query notification:', queryResult.reason);
+                log.warn('Failed to query notification:', queryResult.reason);
             }
 
             setClaimed(true);
@@ -221,7 +231,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to claim credential:', err);
+            log.error('Failed to claim credential:', err);
             void flushSendCredentialFlowOnError({
                 phase: 'claim',
                 message: err instanceof Error ? err.message : String(err),
@@ -363,7 +373,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         <div className="w-[180px]">
                             <BoostEarnedCard
                                 credential={credential as VC}
-                                categoryType={getDefaultCategoryForCredential(credential as VC) || BoostCategoryOptionsEnum.achievement}
+                                categoryType={
+                                    getDefaultCategoryForCredential(credential as VC) ||
+                                    BoostCategoryOptionsEnum.achievement
+                                }
                                 boostPageViewMode={BoostPageViewMode.Card}
                                 useWrapper={false}
                                 verifierState={false}

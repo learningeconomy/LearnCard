@@ -11,6 +11,9 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-issue-tcp-resume');
+
 /**
  * Normalized per-credential input used to build the final LER-RS payload.
  *
@@ -579,7 +582,7 @@ export const useIssueTcpResume = () => {
                     try {
                         vc = (await wallet.read.get(item.uri)) as VC | undefined;
                     } catch (error) {
-                        console.warn('[useIssueTcpResume] failed to resolve selected credential', {
+                        log.warn('[useIssueTcpResume] failed to resolve selected credential', {
                             ...logContext,
                             uri: item.uri,
                             category: item.category,
@@ -739,7 +742,7 @@ export const useIssueTcpResume = () => {
 
             return { lerVc, lerUri, pdfUrl };
         } catch (error) {
-            console.error('[useIssueTcpResume] failed', {
+            log.error('[useIssueTcpResume] failed', {
                 ...logContext,
                 currentStep,
                 error,

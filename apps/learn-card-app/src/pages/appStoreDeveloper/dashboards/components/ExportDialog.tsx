@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, X, Calendar, Filter, Loader2, AlertCircle, Layout } from 'lucide-react';
 import type { AppStoreListing } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('export-dialog');
 
 import { useWallet } from 'learn-card-base';
 
@@ -69,7 +71,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 setTotalRecords(stats?.total ?? 0);
             } catch (err) {
                 if (cancelled) return;
-                console.error('Failed to fetch stats:', err);
+                log.error('Failed to fetch stats:', err);
                 setTotalRecords(null);
                 setStatsError(true);
             } finally {

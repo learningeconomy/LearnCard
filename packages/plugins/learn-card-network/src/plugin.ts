@@ -20,7 +20,11 @@ import {
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
-import { getCredentialStatusArray, isVC2Format, resolveStorageReadResult } from '@learncard/helpers';
+import {
+    getCredentialStatusArray,
+    isVC2Format,
+    resolveStorageReadResult,
+} from '@learncard/helpers';
 import Mustache from 'mustache';
 
 import {
@@ -338,9 +342,9 @@ export async function getLearnCardNetworkPlugin(
     apiTokenOrOptions?:
         | string
         | {
-            guardianApprovalGetter?: GuardianApprovalGetter;
-            extraHeaders?: Record<string, string>;
-        },
+              guardianApprovalGetter?: GuardianApprovalGetter;
+              extraHeaders?: Record<string, string>;
+          },
     options?: {
         guardianApprovalGetter?: GuardianApprovalGetter;
         extraHeaders?: Record<string, string>;
@@ -370,20 +374,20 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
         : await getClient(
-            url,
-            async challenge => {
-                const jwt = await learnCard.invoke.getDidAuthVp({
-                    proofFormat: 'jwt',
-                    challenge,
-                });
+              url,
+              async challenge => {
+                  const jwt = await learnCard.invoke.getDidAuthVp({
+                      proofFormat: 'jwt',
+                      challenge,
+                  });
 
-                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                return jwt;
-            },
-            guardianApprovalGetter,
-            extraHeaders
-        );
+                  return jwt;
+              },
+              guardianApprovalGetter,
+              extraHeaders
+          );
 
     let userData: LCNProfile | undefined;
 
@@ -451,8 +455,9 @@ export async function getLearnCardNetworkPlugin(
         recipientDid: string
     ): Promise<string> => {
         const serviceUrl = new URL(url);
-        const serviceDomain = `${serviceUrl.hostname}${serviceUrl.port ? `%3A${serviceUrl.port}` : ''
-            }`;
+        const serviceDomain = `${serviceUrl.hostname}${
+            serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+        }`;
         const localServiceDid = `did:web:${serviceDomain}`;
 
         const getInferredServiceDid = (did: string): string | null => {
@@ -721,7 +726,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -1426,9 +1431,10 @@ export async function getLearnCardNetworkPlugin(
                         );
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1533,8 +1539,9 @@ export async function getLearnCardNetworkPlugin(
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
                     const serviceUrl = new URL(url);
-                    const serviceDomain = `${serviceUrl.hostname}${serviceUrl.port ? `%3A${serviceUrl.port}` : ''
-                        }`;
+                    const serviceDomain = `${serviceUrl.hostname}${
+                        serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+                    }`;
                     const recipientDomain = recipient.startsWith('did:web:')
                         ? recipient.split(':')[2]
                         : undefined;
@@ -1647,7 +1654,8 @@ export async function getLearnCardNetworkPlugin(
                                     );
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1829,6 +1837,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
+            },
+
+            getHolderExportMetadata: async _learnCard => {
+                await ensureUser();
+
+                return client.credential.getHolderExportMetadata.query({});
             },
 
             getCredentialsForContract: async (_learnCard, termsUri, options = {}) => {

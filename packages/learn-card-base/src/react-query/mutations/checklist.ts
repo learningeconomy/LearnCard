@@ -2,6 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 
+import { getLogger } from '../../logging/logger';
+const log = getLogger('checklist');
+
 export const useDeleteChecklistCredentialMutation = () => {
     const { initWallet } = useWallet();
     return useMutation({
@@ -11,17 +14,17 @@ export const useDeleteChecklistCredentialMutation = () => {
             try {
                 newCredsStore.set.removeCreds([uri]);
             } catch (error) {
-                console.error('Failed to remove credential from newCredsStore', error);
+                log.error('Failed to remove credential from newCredsStore', error);
             }
 
             try {
                 await wallet.index.LearnCloud.remove(id);
             } catch (error) {
-                console.error('Failed to remove credential from LearnCloud', error);
+                log.error('Failed to remove credential from LearnCloud', error);
             }
         },
         onError: error => {
-            console.error('Failed to delete checklist credential', error);
+            log.error('Failed to delete checklist credential', error);
         },
     });
 };
@@ -47,11 +50,11 @@ export const useUpdateChecklistItemCategoryMutation = () => {
                     [category]: [uri],
                 });
             } catch (error) {
-                console.error('Failed to update credential in newCredsStore', error);
+                log.error('Failed to update credential in newCredsStore', error);
             }
         },
         onError: error => {
-            console.error('Failed to update checklist credential', error);
+            log.error('Failed to update checklist credential', error);
         },
     });
 };

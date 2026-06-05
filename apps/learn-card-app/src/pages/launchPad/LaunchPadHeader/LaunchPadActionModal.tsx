@@ -6,36 +6,36 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
-import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
+import CheckListContainer from '../../../components/learncard/checklist/CheckListContainer';
+import AiPassportPersonalizationContainer from '../../../components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
-import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
-import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
-import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
-import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
+import AISessionsQuickNav from '../../../components/svgs/quicknav/AISessionsQuickNav';
+import BoostsQuickNav from '../../../components/svgs/quicknav/BoostsQuickNav';
+import CredentialQuickNav from '../../../components/svgs/quicknav/CredentialQuickNav';
+import ClaimCredentialQuickNav from '../../../components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
-import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
+import ResumeQuickNav from '../../../components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
-import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
-import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
+import StudiesQuickNav from '../../../components/svgs/quicknav/StudiesQuickNav';
+import ShareInsightsQuickNav from '../../../components/svgs/quicknav/ShareInsightsQuickNav';
+import UnderstandSkillsQuickNav from '../../../components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
-import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
-import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import FamiliesQuickNav from '../../../components/svgs/quicknav/FamiliesQuickNav';
+import RequestInsightsQuickNav from '../../../components/svgs/quicknav/RequestInsightsQuickNav';
 import AddToLearnCardQuickNav from '../../../components/svgs/quicknav/AddToLearnCardQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
-import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
-import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
-import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
-import CreateApiTokenQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateApiTokenQuickNav';
-import CreateSigningAuthorityQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateSigningAuthorityQuickNav';
-import CreateConsentFlowQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateConsentFlowQuickNav';
-import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchNetworksQuickNav';
-import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
-import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
-import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
-import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
-import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
+import AddUserQuickNav from '../../../components/svgs/quicknav/AddUserQuickNav';
+import ImportCredentialQuickNav from '../../../components/svgs/quicknav/ImportCredentialQuickNav';
+import SwitchAccountQuickNav from '../../../components/svgs/quicknav/SwitchAccountQuickNav';
+import CreateApiTokenQuickNav from '../../../components/svgs/quicknav/CreateApiTokenQuickNav';
+import CreateSigningAuthorityQuickNav from '../../../components/svgs/quicknav/CreateSigningAuthorityQuickNav';
+import CreateConsentFlowQuickNav from '../../../components/svgs/quicknav/CreateConsentFlowQuickNav';
+import SwitchNetworksQuickNav from '../../../components/svgs/quicknav/SwitchNetworksQuickNav';
+import ReadDocsQuickNav from '../../../components/svgs/quicknav/ReadDocsQuickNav';
+import AddChildQuickNav from '../../../components/svgs/quicknav/AddChildQuickNav';
+import SwitchChildQuickNav from '../../../components/svgs/quicknav/SwitchChildQuickNav';
+import NavBarPassportIcon from '../../../components/svgs/NavBarPassportIcon';
+import NavBarLaunchPadIcon from '../../../components/svgs/NavBarLaunchPadIcon';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
 import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
@@ -47,21 +47,21 @@ import {
     iconBgColors,
 } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
-import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
-import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
-import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
-import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
-import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
-import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
-import AdminToolsOptionsContainer from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
+import { useTheme } from '../../../theme/hooks/useTheme';
+import { IconSetEnum } from '../../../theme/icons/index';
+import AccountSwitcherModal from '../../../components/learncard/AccountSwitcherModal';
+import { SwitcherStepEnum } from '../../../components/learncard/switcher.helpers';
+import FamilyBoostPreviewWrapper from '../../../components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
+import useGetFamilyCredential from '../../../hooks/useGetFamilyCredential';
+import AdminToolsOptionsContainer from '../../adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
 import {
     adminToolOptions,
     AdminToolOptionsEnum,
     developerToolOptions,
-} from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
-import AdminToolsCreateProfileSimple from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
-import useBoostModal from 'apps/learn-card-app/src/components/boost/hooks/useBoostModal';
-import { openDeveloperDocs } from 'apps/learn-card-app/src/helpers/externalLinkHelpers';
+} from '../../adminToolsPage/AdminToolsModal/admin-tools.helpers';
+import AdminToolsCreateProfileSimple from '../../adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
+import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import { openDeveloperDocs } from '../../../helpers/externalLinkHelpers';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -87,6 +87,9 @@ import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
 import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('launch-pad-action-modal');
 
 const getIconForActionButton = (
     label: string,
@@ -492,7 +495,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         try {
             await refetchProfile();
         } catch (e) {
-            console.error('Failed to refresh profile cache after role change', e);
+            log.error('Failed to refresh profile cache after role change', e);
         }
 
         const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
@@ -855,8 +858,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                         setRole={handleRoleChange}
                                     />,
                                     {
-                                        sectionClassName:
-                                            '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                        sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]',
                                     },
                                     {
                                         mobile: ModalTypes.BottomSheet,

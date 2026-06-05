@@ -4,6 +4,7 @@ import Ribbon from 'learn-card-base/svgs/Ribbon';
 import ScoutsPledge from 'learn-card-base/svgs/ScoutsPledge';
 import CircleWithText from 'learn-card-base/svgs/CircleWithText';
 import CredentialMediaBadge from './CredentialMediaBadge';
+import BadgeThumbnailImg from './BadgeThumbnailImg';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import ScoutsGlobe from 'learn-card-base/svgs/ScoutsGlobe';
 import CertRibbon from 'learn-card-base/svgs/CertRibbon';
@@ -173,13 +174,12 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
                         <div
                             className={`relative flex items-center justify-center w-[70%] h-[70%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
                         >
-                            <img
+                            <BadgeThumbnailImg
                                 src={insertParamsToFilestackUrl(
                                     badgeThumbnail,
                                     'resize=width:200/quality=value:75/'
                                 )}
-                                alt="badge thumbnail"
-                                className={`${badgeThumbnailCustomClass}`}
+                                className={badgeThumbnailCustomClass}
                             />
                         </div>
                         {isCertDisplayType && (
@@ -222,12 +222,11 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
                 <div
                     className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
                 >
-                    <img
+                    <BadgeThumbnailImg
                         src={insertParamsToFilestackUrl(
                             badgeThumbnail,
                             'resize=width:200/quality=value:75/'
                         )}
-                        alt="badge thumbnail"
                         className={`h-full w-full object-cover ${badgeThumbnailCustomClass}`}
                     />
                 </div>

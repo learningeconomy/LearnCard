@@ -1,5 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-auto-consent-learn-card-ai');
 
 import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -95,7 +97,7 @@ export const useAutoConsentLearnCardAi = () => {
 
                     return true;
                 } catch (error) {
-                    console.error('Failed to auto-consent to LearnCard AI contract:', error);
+                    log.error('Failed to auto-consent to LearnCard AI contract:', error);
                     return false;
                 } finally {
                     inFlightRef.current = null;
@@ -133,7 +135,7 @@ export const useAutoConsentLearnCardAi = () => {
                 await withdrawConsent(consentedContract.uri);
                 return true;
             } catch (error) {
-                console.error('Failed to withdraw LearnCard AI consent:', error);
+                log.error('Failed to withdraw LearnCard AI consent:', error);
                 return false;
             } finally {
                 withdrawInFlightRef.current = null;

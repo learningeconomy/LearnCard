@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-boost-menu');
 
 import {
     useDeleteCredentialRecord,
@@ -70,11 +72,11 @@ const useBoostMenu = ({
             await deleteManagedBoost({ boostUri, category: categoryType });
             onDelete?.();
         } else if (record?.id && record.uri) {
-            console.log('deleting record', record);
+            log.info('deleting record', record);
             await deleteCredentialRecord(record as LCR);
             onDelete?.();
         } else {
-            presentToast("Error deleting credential: unable to locate record ID.", {
+            presentToast('Error deleting credential: unable to locate record ID.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import numeral from 'numeral';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-store-detail-modal');
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
 import {
@@ -204,7 +206,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             });
             onInstallSuccess?.();
         } catch (error) {
-            console.error('Failed to install app:', error);
+            log.error('Failed to install app:', error);
             if (error?.message) {
                 presentToast(`Failed to install app: ${error?.message}`, {
                     type: ToastTypeEnum.Error,
@@ -487,7 +489,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                     // Continue with uninstall even if consent withdrawal fails
                 }
             }
@@ -495,7 +497,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             await uninstallMutation.mutateAsync(listing.listing_id);
             closeModal();
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -522,7 +524,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             closeModal();
             setShowCopiedToast(true);
         } catch (err) {
-            console.error('Failed to copy link:', err);
+            log.error('Failed to copy link:', err);
         }
     };
 
