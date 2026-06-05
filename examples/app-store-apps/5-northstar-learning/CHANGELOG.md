@@ -1,5 +1,13 @@
 # @learncard/app-store-demo-northstar-learning
 
+## 0.0.4
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/init@2.3.21
+    -   @learncard/partner-connect@0.3.4
+
 ## 0.0.3
 
 ### Patch Changes
