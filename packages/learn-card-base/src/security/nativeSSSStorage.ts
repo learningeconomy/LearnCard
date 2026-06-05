@@ -100,10 +100,10 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         try {
             await db.open();
 
-            await db.run(
-                `INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`,
-                [shareId, share]
-            );
+            await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
+                shareId,
+                share,
+            ]);
         } catch (e) {
             log.error('[NativeSSSStorage] storeDeviceShare failed', e);
         } finally {
@@ -124,10 +124,9 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         try {
             await db.open();
 
-            const res = await db.query(
-                `SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`,
-                [shareId]
-            );
+            const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
+                shareId,
+            ]);
 
             const share = res?.values?.[0]?.share ?? null;
 
@@ -184,10 +183,10 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         try {
             await db.open();
 
-            await db.run(
-                `INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`,
-                [versionId, String(version)]
-            );
+            await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
+                versionId,
+                String(version),
+            ]);
         } catch (e) {
             log.error('[NativeSSSStorage] storeShareVersion failed', e);
         } finally {
@@ -208,10 +207,9 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         try {
             await db.open();
 
-            const res = await db.query(
-                `SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`,
-                [versionId]
-            );
+            const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
+                versionId,
+            ]);
 
             const raw = res?.values?.[0]?.share ?? null;
 
@@ -250,9 +248,10 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
                 if (row.id.endsWith(':version')) continue;
 
                 const share = row.share;
-                const preview = share.length > 16
-                    ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
-                    : share;
+                const preview =
+                    share.length > 16
+                        ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
+                        : share;
 
                 // Look up companion version
                 const versionRow = rows.find(r => r.id === `${row.id}:version`);

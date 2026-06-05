@@ -39,8 +39,7 @@ export const CheckListUploadRawVC: React.FC<{
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
 
-    const { mutate: deleteChecklistCredentialMutation } =
-        useDeleteChecklistCredentialMutation();
+    const { mutate: deleteChecklistCredentialMutation } = useDeleteChecklistCredentialMutation();
     const { mutate: updateChecklistItemCategoryMutation, isPending: isUpdating } =
         useUpdateChecklistItemCategoryMutation();
     const { refetchCheckListStatus } = useGetCheckListStatus();

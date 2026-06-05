@@ -3,7 +3,12 @@ import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ProfilePicture, useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
+import {
+    ProfilePicture,
+    useGetCredentialList,
+    useModal,
+    useSyncConsentFlow,
+} from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('chat-input');
 

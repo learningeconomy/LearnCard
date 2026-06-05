@@ -1,12 +1,49 @@
 import { parseSdJwtVc } from './parse';
 import { verifySdJwtVc } from './verify';
+import { categorizeSdJwt } from './categorize';
+import { toSdJwtDisplayViewModel } from './display';
+import { presentSdJwtVc } from './present';
 import { type SdJwtVcDependentLearnCard, type SdJwtVcPlugin } from './types';
+
+const SD_JWT_PROOF_TYPE = 'SdJwtCompactProof';
+
+interface ProofWithType {
+    type?: unknown;
+    jwt?: unknown;
+}
+
+const getActiveHolderPublicJwk = (
+    learnCard: SdJwtVcDependentLearnCard
+): Record<string, unknown> | undefined => {
+    try {
+        const keypair = learnCard.id.keypair('ed25519');
+        if (!keypair || keypair.kty !== 'OKP' || keypair.crv !== 'Ed25519') return undefined;
+        return {
+            kty: keypair.kty,
+            crv: keypair.crv,
+            x: keypair.x,
+        };
+    } catch {
+        return undefined;
+    }
+};
+
+const pickProof = (credential: unknown): ProofWithType | undefined => {
+    if (!credential || typeof credential !== 'object') return undefined;
+    const proof = (credential as { proof?: unknown }).proof;
+    if (!proof) return undefined;
+    if (Array.isArray(proof)) {
+        return proof.find(p => typeof p === 'object' && p !== null) as ProofWithType | undefined;
+    }
+    if (typeof proof === 'object') return proof as ProofWithType;
+    return undefined;
+};
 
 export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcPlugin => ({
     name: 'SDJwtVc',
     displayName: 'SD-JWT-VC',
     description:
-        'SD-JWT-VC holder + verifier support (RFC 9901 + draft-ietf-oauth-sd-jwt-vc). Selective-disclosure JWT credentials with DID-resolvable issuer verification.',
+        'SD-JWT-VC holder + verifier support (RFC 9901 + draft-ietf-oauth-sd-jwt-vc). Selective-disclosure JWT credentials with DID-resolvable issuer verification. Extends `verifyCredential` so SD-JWT-VCs (proof.type "SdJwtCompactProof") are verified against the issuer signature instead of silently passing through DIDKit.',
     methods: {
         parseSdJwtVc: async (_lc, compact: string) => parseSdJwtVc(compact),
 
@@ -16,6 +53,29 @@ export const getSdJwtVcPlugin = (learnCard: SdJwtVcDependentLearnCard): SdJwtVcP
         decodeSdJwtClaims: async (_lc, compact: string) => {
             const parsed = await parseSdJwtVc(compact);
             return parsed.claims;
+        },
+
+        categorizeSdJwtVct: (_lc, vct: string) => categorizeSdJwt(vct),
+
+        toSdJwtDisplayViewModel: (_lc, parsed) => toSdJwtDisplayViewModel(parsed),
+
+        presentSdJwtVc: async (_lc, compact, options) =>
+            presentSdJwtVc(compact, {
+                ...options,
+                verify: value => verifySdJwtVc(learnCard, value),
+                activeHolderPublicJwk: getActiveHolderPublicJwk(learnCard),
+            }),
+
+        verifyCredential: async (_lc, credential, options) => {
+            const proof = pickProof(credential);
+            if (
+                proof?.type === SD_JWT_PROOF_TYPE &&
+                typeof proof.jwt === 'string' &&
+                proof.jwt.length > 0
+            ) {
+                return verifySdJwtVc(learnCard, proof.jwt, {});
+            }
+            return learnCard.invoke.verifyCredential(credential, options);
         },
     },
 });

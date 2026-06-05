@@ -30,7 +30,7 @@ export const clearAllIndexedDB = async (strategy?: KeyDerivationStrategy): Promi
             const request = window.indexedDB.deleteDatabase(dbName);
 
             request.onsuccess = () => log.debug(`Deleted database: ${dbName}`);
-            request.onerror = (e) => log.debug(`Couldn't delete: ${dbName}`, e);
+            request.onerror = e => log.debug(`Couldn't delete: ${dbName}`, e);
         });
     } catch (e) {
         log.error('Error clearing IndexedDB:', e);

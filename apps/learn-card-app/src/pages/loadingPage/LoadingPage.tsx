@@ -25,16 +25,17 @@ const LoadingPage: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent
-                fullscreen
-                className="flex items-center justify-center"
-            >
+            <IonContent fullscreen className="flex items-center justify-center">
                 <IonRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
                 >
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={textLogo} alt="Logo" className="mb-8 max-w-[300px] max-h-[80px] object-contain" />
+                        <img
+                            src={textLogo}
+                            alt="Logo"
+                            className="mb-8 max-w-[300px] max-h-[80px] object-contain"
+                        />
                     </IonCol>
                 </IonRow>
             </IonContent>
@@ -51,16 +52,17 @@ export const LoadingPageDumb: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent
-                fullscreen
-                className="flex items-center justify-center"
-            >
+            <IonContent fullscreen className="flex items-center justify-center">
                 <IonRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
                 >
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={textLogo} alt="Logo" className="mb-8 max-w-[300px] max-h-[80px] object-contain" />
+                        <img
+                            src={textLogo}
+                            alt="Logo"
+                            className="mb-8 max-w-[300px] max-h-[80px] object-contain"
+                        />
                     </IonCol>
                 </IonRow>
             </IonContent>

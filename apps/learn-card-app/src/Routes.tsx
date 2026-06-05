@@ -50,9 +50,7 @@ const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
-const VerifySharedResume = lazyWithRetry(
-    () => import('./pages/resume-builder/VerifySharedResume')
-);
+const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/VerifySharedResume'));
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
@@ -444,12 +442,7 @@ export const Routes: React.FC = () => {
 };
 
 /** Paths gated behind the AI feature flag — only prefetch when enabled. */
-const AI_GATED_PATHS = new Set([
-    '/ai/insights',
-    '/ai/pathways',
-    '/ai/topics',
-    '/ai/sessions',
-]);
+const AI_GATED_PATHS = new Set(['/ai/insights', '/ai/pathways', '/ai/topics', '/ai/sessions']);
 
 /**
  * Path-keyed preload map for routes reachable from the wallet, side menu, and
@@ -506,10 +499,8 @@ interface PrefetchOptions {
  * caller indicates the user doesn't have AI access.
  */
 export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void => {
-    const ric: typeof window.requestIdleCallback | undefined =
-        (window as any).requestIdleCallback;
-    const schedule = (cb: () => void) =>
-        ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
+    const ric: typeof window.requestIdleCallback | undefined = (window as any).requestIdleCallback;
+    const schedule = (cb: () => void) => (ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200));
 
     schedule(() => {
         Object.entries(ROUTE_PRELOAD).forEach(([path, fn]) => {

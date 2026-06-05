@@ -378,6 +378,40 @@ describe('buildPresentation — input validation', () => {
     });
 });
 
+/* ------------- SD-JWT + W3C mix rejection (mixed-format PEX guard) ---------- */
+
+describe('buildPresentation — mixed SD-JWT + W3C VC rejection', () => {
+    it('throws unknown_credential_format for a PEX submission mixing SD-JWT-VC and W3C VC', () => {
+        const compactSdJwt = [
+            base64UrlEncode(JSON.stringify({ alg: 'EdDSA', typ: 'dc+sd-jwt' })),
+            base64UrlEncode(JSON.stringify({ iss: 'did:web:issuer.example', vct: 'https://example.com/cred' })),
+            'fakesig',
+        ].join('.') + '~';
+
+        const pd: PresentationDefinition = {
+            id: 'pd-mixed',
+            input_descriptors: [degreeDescriptor, { id: 'sd-jwt-cred', constraints: { fields: [] } }],
+        };
+
+        let caught: unknown;
+        try {
+            buildPresentation({
+                pd,
+                chosen: [
+                    { descriptorId: 'degree', candidate: { credential: degreeLdp } },
+                    { descriptorId: 'sd-jwt-cred', candidate: { credential: compactSdJwt, format: 'dc+sd-jwt' } },
+                ],
+                holder: HOLDER,
+            });
+        } catch (e) {
+            caught = e;
+        }
+
+        expect(caught).toBeInstanceOf(BuildPresentationError);
+        expect((caught as BuildPresentationError).code).toBe('unknown_credential_format');
+    });
+});
+
 /* ----------------------------- id generation ------------------------------- */
 
 describe('buildPresentation — id generation', () => {

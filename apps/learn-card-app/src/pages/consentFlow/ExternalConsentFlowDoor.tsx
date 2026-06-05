@@ -330,8 +330,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                         method: ProfileBuildMethod.ConsentFlow,
                                         itemType: 'credential',
                                         itemCount: 1,
-                                        totalItemsAfter:
-                                            snapshotRef.current.credentialCount + 1,
+                                        totalItemsAfter: snapshotRef.current.credentialCount + 1,
                                         msSinceAccountCreated: now - accountCreatedAt,
                                         msSinceSessionStart: now - sessionStart,
                                     });

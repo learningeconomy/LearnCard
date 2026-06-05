@@ -1,9 +1,11 @@
-import { CredentialRecord, VC, VP } from '@learncard/types';
+import { CredentialRecord, StoredCredentialEnvelope, VC, VP } from '@learncard/types';
 import { TestStoragePlugin } from './types';
+
+type StoredItem = VC | VP | StoredCredentialEnvelope;
 
 export const getTestStorage = (): TestStoragePlugin => {
     const index: CredentialRecord[] = [];
-    const vcs: (VC | VP)[] = [];
+    const vcs: StoredItem[] = [];
 
     return {
         name: 'Test Storage',
@@ -44,7 +46,7 @@ export const getTestStorage = (): TestStoragePlugin => {
                 const vcIdx = Number.parseInt(vcIndex);
 
                 if (vcIdx >= 0 && vcIdx < vcs.length) {
-                    vcs[vcIdx] = undefined as unknown as VC | VP;
+                    vcs[vcIdx] = undefined as unknown as StoredItem;
                     return true;
                 }
 
