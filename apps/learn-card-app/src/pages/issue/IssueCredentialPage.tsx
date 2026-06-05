@@ -26,6 +26,8 @@ import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
 import { JsonLens } from './components/JsonLens';
 import { IssueSuccess } from './components/IssueSuccess';
+import { skillsToAlignmentTemplates, type ResolvedSkill } from './components/skillAlignment';
+import type { SelectedSkill } from '../skills/skillTypes';
 
 const log = getLogger('issue-page');
 
@@ -41,6 +43,8 @@ const IssueCredentialPage: React.FC = () => {
 
     const [recipientMode, setRecipientMode] = useState<'self' | 'other'>('self');
     const [recipientValue, setRecipientValue] = useState('');
+
+    const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -70,6 +74,23 @@ const IssueCredentialPage: React.FC = () => {
         log.info('issue.type_selected', { credentialType: type });
         setCredentialType(type);
         setTemplate(buildSimpleTemplate({ credentialType: type, name: '', description: '' }));
+    }, []);
+
+    const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
+        setTemplate(prev => {
+            if (!prev) return prev;
+            const alignment = skillsToAlignmentTemplates(resolved);
+            return {
+                ...prev,
+                credentialSubject: {
+                    ...prev.credentialSubject,
+                    achievement: {
+                        ...prev.credentialSubject.achievement,
+                        alignment: alignment.length > 0 ? alignment : undefined,
+                    },
+                },
+            };
+        });
     }, []);
 
     const previewCredential = useMemo<Record<string, unknown> | null>(() => {
@@ -139,6 +160,7 @@ const IssueCredentialPage: React.FC = () => {
         setTemplate(null);
         setRecipientMode('self');
         setRecipientValue('');
+        setSelectedSkills([]);
         setError(null);
     }, []);
 
@@ -230,6 +252,9 @@ const IssueCredentialPage: React.FC = () => {
                                         recipientValue={recipientValue}
                                         onRecipientModeChange={setRecipientMode}
                                         onRecipientValueChange={setRecipientValue}
+                                        selectedSkills={selectedSkills}
+                                        onSelectedSkillsChange={setSelectedSkills}
+                                        onResolvedSkillsChange={handleResolvedSkillsChange}
                                     />
                                 )}
                             </div>

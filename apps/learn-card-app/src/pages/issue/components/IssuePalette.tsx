@@ -19,6 +19,15 @@ import {
     isEmailRecipient,
 } from '../../../components/simple-send/simpleSend.helpers';
 import { isPlausibleRecipient } from './recipientValidation';
+import {
+    MediaAttachments,
+    type SimpleMediaAttachment,
+    type SimpleMediaType,
+} from './MediaAttachments';
+import { mediaToEvidenceTemplates } from './mediaEvidence';
+import { SkillsSection } from './SkillsSection';
+import type { ResolvedSkill } from './skillAlignment';
+import type { SelectedSkill } from '../../skills/skillTypes';
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
@@ -88,6 +97,9 @@ interface IssuePaletteProps {
     recipientValue: string;
     onRecipientModeChange: (mode: 'self' | 'other') => void;
     onRecipientValueChange: (value: string) => void;
+    selectedSkills: SelectedSkill[];
+    onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
+    onResolvedSkillsChange: (resolved: ResolvedSkill[]) => void;
 }
 
 export const IssuePalette: React.FC<IssuePaletteProps> = ({
@@ -99,6 +111,9 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     recipientValue,
     onRecipientModeChange,
     onRecipientValueChange,
+    selectedSkills,
+    onSelectedSkillsChange,
+    onResolvedSkillsChange,
 }) => {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [recipientTouched, setRecipientTouched] = useState(false);
@@ -143,6 +158,29 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     const name = ach?.name?.value ?? '';
     const description = ach?.description?.value ?? '';
     const hasImage = Boolean(ach?.image?.value);
+
+    const mediaAttachments: SimpleMediaAttachment[] = (template?.credentialSubject?.evidence ?? [])
+        .filter(e => e.evidenceUrl?.value)
+        .map(e => ({
+            id: e.id,
+            type: (e.genre?.value as SimpleMediaType) || 'link',
+            url: e.evidenceUrl?.value ?? '',
+            title: e.name?.value ?? '',
+        }));
+
+    const handleMediaChange = useCallback(
+        (next: SimpleMediaAttachment[]) => {
+            if (!template) return;
+            onChangeTemplate({
+                ...template,
+                credentialSubject: {
+                    ...template.credentialSubject,
+                    evidence: mediaToEvidenceTemplates(next),
+                },
+            });
+        },
+        [template, onChangeTemplate]
+    );
 
     return (
         <div className="space-y-5 animate-fade-in-up">
@@ -216,6 +254,14 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         </button>
                     </section>
 
+                    <MediaAttachments attachments={mediaAttachments} onChange={handleMediaChange} />
+
+                    <SkillsSection
+                        selectedSkills={selectedSkills}
+                        onSelectedSkillsChange={onSelectedSkillsChange}
+                        onResolvedSkillsChange={onResolvedSkillsChange}
+                    />
+
                     <section className={CARD_CLASS}>
                         <button
                             type="button"
@@ -224,7 +270,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         >
                             <span className="flex items-center gap-2">
                                 <SlidersHorizontal className="w-4 h-4" />
-                                More detail (criteria, dates, evidence)
+                                More detail (criteria, dates)
                             </span>
                             <ChevronDown
                                 className={`w-4 h-4 transition-transform ${
@@ -272,36 +318,14 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                         className={INPUT_CLASS}
                                     />
                                 </div>
-                                <div>
-                                    <label className={LABEL_CLASS}>Evidence URL (optional)</label>
-                                    <input
-                                        type="url"
-                                        value={
-                                            template.credentialSubject.evidence?.[0]?.evidenceUrl
-                                                ?.value ?? ''
-                                        }
-                                        onChange={e =>
-                                            onChangeTemplate({
-                                                ...template,
-                                                credentialSubject: {
-                                                    ...template.credentialSubject,
-                                                    evidence: e.target.value
-                                                        ? [
-                                                              {
-                                                                  id: 'evidence_0',
-                                                                  evidenceUrl: staticField(
-                                                                      e.target.value
-                                                                  ),
-                                                              },
-                                                          ]
-                                                        : [],
-                                                },
-                                            })
-                                        }
-                                        placeholder="https://example.com/proof"
-                                        className={INPUT_CLASS}
-                                    />
-                                </div>
+                                <p className="text-xs text-grayscale-400 leading-relaxed">
+                                    Add evidence and media above in the
+                                    <span className="font-medium text-grayscale-600">
+                                        {' '}
+                                        Evidence &amp; media{' '}
+                                    </span>
+                                    section.
+                                </p>
                             </div>
                         )}
                     </section>
