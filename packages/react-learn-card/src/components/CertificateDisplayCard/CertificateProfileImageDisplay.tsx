@@ -33,7 +33,7 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
     ) : (
         <UserProfilePicture
             customContainerClass={imageClassName}
-            customImageClass="h-full w-full object-cover leading-normal"
+            customImageClass="h-full w-full object-cover leading-normal bg-white"
             user={{ image: imageUrl, name: userName }}
             avatarColor={avatarColor}
             avatarFingerprintColor={avatarFingerprintColor}

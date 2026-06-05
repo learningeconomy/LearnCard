@@ -31,6 +31,29 @@ type VC2FrontFaceInfoProps = {
     unknownVerifierTitle?: string;
 };
 
+const BadgeThumbnailPlaceholder: React.FC = () => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-1/2 h-1/2 text-grayscale-400"
+        aria-hidden="true"
+    >
+        <circle cx="12" cy="9" r="6" stroke="currentColor" strokeWidth="1.75" />
+        <path
+            d="M8.5 14.5 7 22l5-3 5 3-1.5-7.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M12 6.5 13 8.3l2 .3-1.4 1.4.3 2L12 11l-1.9.9.3-2L9 8.6l2-.3L12 6.5Z"
+            fill="currentColor"
+        />
+    </svg>
+);
+
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     credential,
     issuee,
@@ -48,6 +71,13 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 }) => {
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
+
+    const [thumbErrored, setThumbErrored] = React.useState(false);
+
+    // Reset the broken-image flag whenever the thumbnail source changes.
+    React.useEffect(() => {
+        setThumbErrored(false);
+    }, [imageUrl]);
 
     const issueeDisplay = resolveProfileDisplay(issuee, '');
     const issuerDisplay = resolveProfileDisplay(issuer, '');
@@ -139,12 +169,20 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     return (
         <Flipped inverseFlipId="card">
             <section className="vc-front-face w-full px-[15px] flex flex-col items-center gap-[15px]">
-                {imageUrl && !customThumbComponent && (
-                    <img
-                        className="vc-front-image h-[130px] w-[130px] rounded-[10px]"
-                        src={imageUrl}
-                    />
-                )}
+                {imageUrl &&
+                    !customThumbComponent &&
+                    (thumbErrored ? (
+                        <div className="vc-front-image h-[130px] w-[130px] rounded-[10px] bg-grayscale-100 flex items-center justify-center">
+                            <BadgeThumbnailPlaceholder />
+                        </div>
+                    ) : (
+                        <img
+                            className="vc-front-image h-[130px] w-[130px] rounded-[10px] bg-white object-cover"
+                            src={imageUrl}
+                            alt="credential thumbnail"
+                            onError={() => setThumbErrored(true)}
+                        />
+                    ))}
 
                 {customThumbComponent && customThumbComponent}
                 <div className="vc-issue-info-box bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
@@ -154,7 +192,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                         <>
                             <h3 className="flex flex-col text-center leading-[130%] w-full">
                                 {!issueeDisplay.isMissing && issueeDisplay.isDidValue && (
-                                    <span className="flex flex-wrap items-baseline justify-center gap-1 text-[17px] leading-normal font-[600] font-poppins max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                                    <span className="flex flex-wrap items-baseline justify-center gap-x-1 text-[17px] leading-normal font-[600] font-poppins max-w-full break-words">
                                         <span className="text-grayscale-900">Digital ID:</span>
                                         <span className="text-grayscale-500 underline">
                                             {issueeDisplay.displayName}
@@ -162,7 +200,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     </span>
                                 )}
                                 {!issueeDisplay.isMissing && !issueeDisplay.isDidValue && (
-                                    <span className="font-poppins font-semibold text-[20px] leading-[130%] max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-grayscale-900">
+                                    <span className="font-poppins font-semibold text-[20px] leading-[130%] max-w-full line-clamp-2 break-words text-grayscale-900">
                                         {issueeDisplay.displayName}
                                     </span>
                                 )}
@@ -175,10 +213,10 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     )}
                             </h3>
                             <div className="relative">
-                                <div className="vc-issuee-image h-[60px] w-[60px] rounded-full overflow-hidden">
+                                <div className="vc-issuee-image h-[60px] w-[60px] rounded-full overflow-hidden bg-white">
                                     {issueeImageEl}
                                 </div>
-                                <div className="vc-issuer-image h-[30px] w-[30px] rounded-full overflow-hidden absolute bottom-[-12px] right-[-12px]">
+                                <div className="vc-issuer-image h-[30px] w-[30px] rounded-full overflow-hidden absolute bottom-[-12px] right-[-12px] bg-white">
                                     {issuerImageEl}
                                 </div>
                             </div>
@@ -188,23 +226,19 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                         {createdAt}
                                     </span>
                                     {!issuerDisplay.isMissing && (
-                                        <span className="issued-by flex flex-wrap items-baseline justify-center gap-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[14px]">
-                                            <span className="font-medium text-grayscale-900">
-                                                By
-                                            </span>
+                                        <span className="issued-by max-w-full break-words text-center line-clamp-2 text-[14px]">
+                                            <span className="font-medium text-grayscale-900">By</span>{' '}
                                             {issuerDisplay.isDidValue ? (
-                                                <>
-                                                    <span className="flex flex-wrap items-baseline justify-center gap-1 leading-normal font-[600] font-poppins max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                                                        <span className="text-grayscale-900">
-                                                            Digital ID:
-                                                        </span>
-                                                        <span className="text-grayscale-500 underline">
-                                                            {issuerDisplay.displayName}
-                                                        </span>
+                                                <span className="font-[600] font-poppins break-words">
+                                                    <span className="text-grayscale-900">
+                                                        Digital ID:
+                                                    </span>{' '}
+                                                    <span className="text-grayscale-500 underline">
+                                                        {issuerDisplay.displayName}
                                                     </span>
-                                                </>
+                                                </span>
                                             ) : (
-                                                <strong className="font-bold text-grayscale-900">
+                                                <strong className="font-bold text-grayscale-900 break-words">
                                                     {issuerDisplay.displayName}
                                                 </strong>
                                             )}
