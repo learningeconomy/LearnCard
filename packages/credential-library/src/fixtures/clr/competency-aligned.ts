@@ -46,9 +46,9 @@ export const clrCompetencyAligned: CredentialFixture = {
         description:
             'Competency-aligned certificate record for Samuel Okafor, documenting four courses, three demonstrated competencies, and the awarded Full-Stack Web Development certificate.',
         image: {
-            id: 'https://riverside.edu/seals/cert-seal-2025.png',
+            id: 'https://www.rcc.edu/_resources/assets/icons/riverside-logo.svg',
             type: 'Image',
-            caption: 'Riverside College official seal',
+            caption: 'Riverside College official logo',
         },
         issuer: {
             id: 'did:web:registrar.riverside.edu',
@@ -57,9 +57,9 @@ export const clrCompetencyAligned: CredentialFixture = {
             url: 'https://riverside.edu/registrar',
             email: 'registrar@riverside.edu',
             image: {
-                id: 'https://riverside.edu/assets/seal-official.png',
+                id: 'https://www.rcc.edu/_resources/assets/icons/riverside-logo.svg',
                 type: 'Image',
-                caption: 'Riverside College official seal',
+                caption: 'Riverside City College official logo',
             },
             address: {
                 type: ['Address'],

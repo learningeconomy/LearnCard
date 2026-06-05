@@ -34,9 +34,9 @@ export const clrWestbridgeFull: CredentialFixture = {
         description:
             'Official academic transcript for the Bachelor of Science in Data Science awarded to Jordan A. Reyes, covering eight semesters of coursework, competency assessments, and degree conferral.',
         image: {
-            id: 'https://westbridge.edu/seals/transcript-seal-2025.png',
+            id: 'https://westbridgeuniversity.com/wp-content/uploads/2021/03/logo-with-bg-fill.jpg',
             type: 'Image',
-            caption: 'Official seal of Westbridge University',
+            caption: 'Westbridge University official logo',
         },
         issuer: {
             id: 'did:web:registrar.westbridge.edu',
@@ -48,9 +48,9 @@ export const clrWestbridgeFull: CredentialFixture = {
             email: 'registrar@westbridge.edu',
             phone: '+1-555-742-0100',
             image: {
-                id: 'https://westbridge.edu/assets/seal-official.png',
+                id: 'https://westbridgeuniversity.com/wp-content/uploads/2021/03/logo-with-bg-fill.jpg',
                 type: 'Image',
-                caption: 'Westbridge University official seal',
+                caption: 'Westbridge University official logo',
             },
             address: {
                 type: ['Address'],
