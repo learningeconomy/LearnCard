@@ -1922,7 +1922,7 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     id: 'urn:uuid:wb-rd-comp-level',
                                     type: ['ResultDescription'],
                                     name: 'Competency Level',
-                                    resultType: 'CompetencyLevel',
+                                    resultType: 'RubricCriterionLevel',
                                     allowedValue: [
                                         'Developing',
                                         'Proficient',
@@ -1971,7 +1971,7 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     id: 'urn:uuid:wb-rd-comp-level',
                                     type: ['ResultDescription'],
                                     name: 'Competency Level',
-                                    resultType: 'CompetencyLevel',
+                                    resultType: 'RubricCriterionLevel',
                                     allowedValue: [
                                         'Developing',
                                         'Proficient',
@@ -2030,7 +2030,7 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     id: 'urn:uuid:wb-rd-comp-level',
                                     type: ['ResultDescription'],
                                     name: 'Competency Level',
-                                    resultType: 'CompetencyLevel',
+                                    resultType: 'RubricCriterionLevel',
                                     allowedValue: [
                                         'Developing',
                                         'Proficient',
