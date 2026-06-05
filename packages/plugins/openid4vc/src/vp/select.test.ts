@@ -1,8 +1,4 @@
-import {
-    selectCredentials,
-    buildPresentationSubmission,
-    inferCredentialFormat,
-} from './select';
+import { selectCredentials, buildPresentationSubmission, inferCredentialFormat } from './select';
 import { PresentationDefinition } from './types';
 
 /* ---------------------------------- fixtures --------------------------------- */
@@ -102,137 +98,161 @@ describe('selectCredentials', () => {
             input_descriptors: [degreeDescriptor, licenseDescriptor],
         };
 
-        it('matches multiple descriptors against multiple candidates', async () => { const result = await selectCredentials([{ credential: degreeVc }, { credential: licenseVc }, { credential: employeeVc }],
-        pd);
-        
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors).toHaveLength(2);
-        
-        const degreeMatches = result.descriptors[0];
-        expect(degreeMatches.descriptorId).toBe('degree');
-        expect(degreeMatches.candidates).toHaveLength(1);
-        expect(degreeMatches.candidates[0].candidateIndex).toBe(0);
-        
-        const licenseMatches = result.descriptors[1];
-        expect(licenseMatches.candidates).toHaveLength(1);
-        expect(licenseMatches.candidates[0].candidateIndex).toBe(1); });
+        it('matches multiple descriptors against multiple candidates', async () => {
+            const result = await selectCredentials(
+                [{ credential: degreeVc }, { credential: licenseVc }, { credential: employeeVc }],
+                pd
+            );
 
-        it('canSatisfy=false when any descriptor has zero matches', async () => { const result = await selectCredentials([{ credential: degreeVc }], pd);
-        
-        expect(result.canSatisfy).toBe(false);
-        expect(result.reason).toMatch(/license/i);
-        expect(result.descriptors[1].candidates).toHaveLength(0);
-        expect(result.descriptors[1].reason).toMatch(/Drivers License/); });
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors).toHaveLength(2);
 
-        it('canSatisfy=false for empty wallet, with a helpful reason', async () => { const result = await selectCredentials([], pd);
-        
-        expect(result.canSatisfy).toBe(false);
-        expect(result.descriptors.every(d => d.candidates.length === 0)).toBe(true);
-        expect(result.descriptors[0].reason).toMatch(/no credentials/i); });
+            const degreeMatches = result.descriptors[0];
+            expect(degreeMatches.descriptorId).toBe('degree');
+            expect(degreeMatches.candidates).toHaveLength(1);
+            expect(degreeMatches.candidates[0].candidateIndex).toBe(0);
 
-        it('surfaces multiple unsatisfied descriptors in the reason', async () => { const result = await selectCredentials([{ credential: employeeVc }], pd);
-        
-        expect(result.canSatisfy).toBe(false);
-        expect(result.reason).toMatch(/degree/);
-        expect(result.reason).toMatch(/license/); });
+            const licenseMatches = result.descriptors[1];
+            expect(licenseMatches.candidates).toHaveLength(1);
+            expect(licenseMatches.candidates[0].candidateIndex).toBe(1);
+        });
+
+        it('canSatisfy=false when any descriptor has zero matches', async () => {
+            const result = await selectCredentials([{ credential: degreeVc }], pd);
+
+            expect(result.canSatisfy).toBe(false);
+            expect(result.reason).toMatch(/license/i);
+            expect(result.descriptors[1].candidates).toHaveLength(0);
+            expect(result.descriptors[1].reason).toMatch(/Drivers License/);
+        });
+
+        it('canSatisfy=false for empty wallet, with a helpful reason', async () => {
+            const result = await selectCredentials([], pd);
+
+            expect(result.canSatisfy).toBe(false);
+            expect(result.descriptors.every(d => d.candidates.length === 0)).toBe(true);
+            expect(result.descriptors[0].reason).toMatch(/no credentials/i);
+        });
+
+        it('surfaces multiple unsatisfied descriptors in the reason', async () => {
+            const result = await selectCredentials([{ credential: employeeVc }], pd);
+
+            expect(result.canSatisfy).toBe(false);
+            expect(result.reason).toMatch(/degree/);
+            expect(result.reason).toMatch(/license/);
+        });
     });
 
     describe('format designation matching', () => {
-        it('filters candidates by descriptor.format when declared', async () => { const pd: PresentationDefinition = {
-            id: 'pd-jwt-only',
-            input_descriptors: [
-                {
-                    ...degreeDescriptor,
-                    format: { jwt_vc_json: { alg: ['EdDSA'] } },
-                },
-            ],
-        };
-        
-        // ldp_vc (degreeVc) should be filtered out; only JWT VCs match.
-        const jwtDegree = buildJwtVc(degreeVc);
-        
-        const result = await selectCredentials([{ credential: degreeVc }, { credential: jwtDegree }],
-        pd);
-        
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors[0].candidates).toHaveLength(1);
-        expect(result.descriptors[0].candidates[0].candidate.format).toBe('jwt_vc_json'); });
+        it('filters candidates by descriptor.format when declared', async () => {
+            const pd: PresentationDefinition = {
+                id: 'pd-jwt-only',
+                input_descriptors: [
+                    {
+                        ...degreeDescriptor,
+                        format: { jwt_vc_json: { alg: ['EdDSA'] } },
+                    },
+                ],
+            };
 
-        it('falls back to pd.format when descriptor has none', async () => { const pd: PresentationDefinition = {
-            id: 'pd-ldp-only',
-            format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
-            input_descriptors: [degreeDescriptor],
-        };
-        
-        const jwtDegree = buildJwtVc(degreeVc);
-        
-        const result = await selectCredentials([{ credential: degreeVc }, { credential: jwtDegree }],
-        pd);
-        
-        expect(result.descriptors[0].candidates).toHaveLength(1);
-        expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc'); });
+            // ldp_vc (degreeVc) should be filtered out; only JWT VCs match.
+            const jwtDegree = buildJwtVc(degreeVc);
 
-        it('decodes JWT-VCs for JSONPath matching', async () => { const jwtDegree = buildJwtVc(degreeVc);
-        
-        const pd: PresentationDefinition = {
-            id: 'pd-jwt',
-            input_descriptors: [
-                {
-                    ...degreeDescriptor,
-                    format: { jwt_vc_json: {} },
-                },
-            ],
-        };
-        
-        const result = await selectCredentials([{ credential: jwtDegree }], pd);
-        
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors[0].candidates).toHaveLength(1); });
+            const result = await selectCredentials(
+                [{ credential: degreeVc }, { credential: jwtDegree }],
+                pd
+            );
 
-        it('rejects credentials whose inferred format is absent from designation', async () => { // `proof.type: 'Unknown'` means `inferCredentialFormat` returns
-        // 'ldp_vc' — which isn't in the `jwt_vc_json` designation.
-        const pd: PresentationDefinition = {
-            id: 'pd-jwt-strict',
-            input_descriptors: [
-                { ...degreeDescriptor, format: { jwt_vc_json: {} } },
-            ],
-        };
-        
-        const result = await selectCredentials([{ credential: degreeVc }], pd);
-        expect(result.canSatisfy).toBe(false);
-        expect(result.descriptors[0].candidates).toHaveLength(0); });
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates).toHaveLength(1);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('jwt_vc_json');
+        });
+
+        it('falls back to pd.format when descriptor has none', async () => {
+            const pd: PresentationDefinition = {
+                id: 'pd-ldp-only',
+                format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                input_descriptors: [degreeDescriptor],
+            };
+
+            const jwtDegree = buildJwtVc(degreeVc);
+
+            const result = await selectCredentials(
+                [{ credential: degreeVc }, { credential: jwtDegree }],
+                pd
+            );
+
+            expect(result.descriptors[0].candidates).toHaveLength(1);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc');
+        });
+
+        it('decodes JWT-VCs for JSONPath matching', async () => {
+            const jwtDegree = buildJwtVc(degreeVc);
+
+            const pd: PresentationDefinition = {
+                id: 'pd-jwt',
+                input_descriptors: [
+                    {
+                        ...degreeDescriptor,
+                        format: { jwt_vc_json: {} },
+                    },
+                ],
+            };
+
+            const result = await selectCredentials([{ credential: jwtDegree }], pd);
+
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates).toHaveLength(1);
+        });
+
+        it('rejects credentials whose inferred format is absent from designation', async () => {
+            // `proof.type: 'Unknown'` means `inferCredentialFormat` returns
+            // 'ldp_vc' — which isn't in the `jwt_vc_json` designation.
+            const pd: PresentationDefinition = {
+                id: 'pd-jwt-strict',
+                input_descriptors: [{ ...degreeDescriptor, format: { jwt_vc_json: {} } }],
+            };
+
+            const result = await selectCredentials([{ credential: degreeVc }], pd);
+            expect(result.canSatisfy).toBe(false);
+            expect(result.descriptors[0].candidates).toHaveLength(0);
+        });
     });
 
     describe('submission_requirements rule="all"', () => {
         const pd: PresentationDefinition = {
             id: 'pd-sr-all',
-            submission_requirements: [
-                { name: 'Identity Pack', rule: 'all', from: 'identity' },
-            ],
+            submission_requirements: [{ name: 'Identity Pack', rule: 'all', from: 'identity' }],
             input_descriptors: [
                 { ...degreeDescriptor, group: ['identity'] },
                 { ...licenseDescriptor, group: ['identity'] },
             ],
         };
 
-        it('requires every descriptor in the group to be matched', async () => { const ok = await selectCredentials([{ credential: degreeVc }, { credential: licenseVc }],
-        pd);
-        expect(ok.canSatisfy).toBe(true);
-        
-        const missing = await selectCredentials([{ credential: degreeVc }], pd);
-        expect(missing.canSatisfy).toBe(false);
-        expect(missing.reason).toMatch(/Identity Pack/);
-        expect(missing.reason).toMatch(/rule=all/); });
+        it('requires every descriptor in the group to be matched', async () => {
+            const ok = await selectCredentials(
+                [{ credential: degreeVc }, { credential: licenseVc }],
+                pd
+            );
+            expect(ok.canSatisfy).toBe(true);
 
-        it('returns canSatisfy=false with helpful reason when the group is unknown', async () => { const invalidPd: PresentationDefinition = {
-            id: 'pd-bad-group',
-            submission_requirements: [{ rule: 'all', from: 'nonexistent' }],
-            input_descriptors: [{ ...degreeDescriptor, group: ['identity'] }],
-        };
-        
-        const result = await selectCredentials([{ credential: degreeVc }], invalidPd);
-        expect(result.canSatisfy).toBe(false);
-        expect(result.reason).toMatch(/unknown group/); });
+            const missing = await selectCredentials([{ credential: degreeVc }], pd);
+            expect(missing.canSatisfy).toBe(false);
+            expect(missing.reason).toMatch(/Identity Pack/);
+            expect(missing.reason).toMatch(/rule=all/);
+        });
+
+        it('returns canSatisfy=false with helpful reason when the group is unknown', async () => {
+            const invalidPd: PresentationDefinition = {
+                id: 'pd-bad-group',
+                submission_requirements: [{ rule: 'all', from: 'nonexistent' }],
+                input_descriptors: [{ ...degreeDescriptor, group: ['identity'] }],
+            };
+
+            const result = await selectCredentials([{ credential: degreeVc }], invalidPd);
+            expect(result.canSatisfy).toBe(false);
+            expect(result.reason).toMatch(/unknown group/);
+        });
     });
 
     describe('submission_requirements rule="pick"', () => {
@@ -263,45 +283,51 @@ describe('selectCredentials', () => {
             ],
         };
 
-        it('is satisfied when the count threshold is met', async () => { const result = await selectCredentials([
-            { credential: degreeVc },
-            { credential: licenseVc },
-            { credential: employeeVc },
-        ],
-        pd);
-        expect(result.canSatisfy).toBe(true); });
+        it('is satisfied when the count threshold is met', async () => {
+            const result = await selectCredentials(
+                [{ credential: degreeVc }, { credential: licenseVc }, { credential: employeeVc }],
+                pd
+            );
+            expect(result.canSatisfy).toBe(true);
+        });
 
-        it('is unsatisfied when fewer than count descriptors match', async () => { const result = await selectCredentials([{ credential: degreeVc }], pd);
-        expect(result.canSatisfy).toBe(false);
-        expect(result.reason).toMatch(/count=2/); });
+        it('is unsatisfied when fewer than count descriptors match', async () => {
+            const result = await selectCredentials([{ credential: degreeVc }], pd);
+            expect(result.canSatisfy).toBe(false);
+            expect(result.reason).toMatch(/count=2/);
+        });
 
-        it('honours `min` when present instead of `count`', async () => { const minPd: PresentationDefinition = {
-            id: 'pd-sr-min',
-            submission_requirements: [
-                { rule: 'pick', min: 2, from: 'identity' },
-            ],
-            input_descriptors: pd.input_descriptors,
-        };
-        
-        const ok = await selectCredentials([{ credential: degreeVc }, { credential: licenseVc }],
-        minPd);
-        expect(ok.canSatisfy).toBe(true);
-        
-        const missing = await selectCredentials([{ credential: degreeVc }], minPd);
-        expect(missing.canSatisfy).toBe(false);
-        expect(missing.reason).toMatch(/min=2/); });
+        it('honours `min` when present instead of `count`', async () => {
+            const minPd: PresentationDefinition = {
+                id: 'pd-sr-min',
+                submission_requirements: [{ rule: 'pick', min: 2, from: 'identity' }],
+                input_descriptors: pd.input_descriptors,
+            };
 
-        it('treats `pick` with no count/min as "at least one"', async () => { const laxPd: PresentationDefinition = {
-            id: 'pd-sr-lax',
-            submission_requirements: [{ rule: 'pick', from: 'identity' }],
-            input_descriptors: pd.input_descriptors,
-        };
-        
-        const ok = await selectCredentials([{ credential: degreeVc }], laxPd);
-        expect(ok.canSatisfy).toBe(true);
-        
-        const none = await selectCredentials([], laxPd);
-        expect(none.canSatisfy).toBe(false); });
+            const ok = await selectCredentials(
+                [{ credential: degreeVc }, { credential: licenseVc }],
+                minPd
+            );
+            expect(ok.canSatisfy).toBe(true);
+
+            const missing = await selectCredentials([{ credential: degreeVc }], minPd);
+            expect(missing.canSatisfy).toBe(false);
+            expect(missing.reason).toMatch(/min=2/);
+        });
+
+        it('treats `pick` with no count/min as "at least one"', async () => {
+            const laxPd: PresentationDefinition = {
+                id: 'pd-sr-lax',
+                submission_requirements: [{ rule: 'pick', from: 'identity' }],
+                input_descriptors: pd.input_descriptors,
+            };
+
+            const ok = await selectCredentials([{ credential: degreeVc }], laxPd);
+            expect(ok.canSatisfy).toBe(true);
+
+            const none = await selectCredentials([], laxPd);
+            expect(none.canSatisfy).toBe(false);
+        });
     });
 
     describe('submission_requirements from_nested', () => {
@@ -324,11 +350,15 @@ describe('selectCredentials', () => {
             ],
         };
 
-        it('is satisfied when at least one nested requirement resolves', async () => { const ok = await selectCredentials([{ credential: degreeVc }], pd);
-        expect(ok.canSatisfy).toBe(true); });
+        it('is satisfied when at least one nested requirement resolves', async () => {
+            const ok = await selectCredentials([{ credential: degreeVc }], pd);
+            expect(ok.canSatisfy).toBe(true);
+        });
 
-        it('is unsatisfied when no nested requirement resolves', async () => { const result = await selectCredentials([{ credential: employeeVc }], pd);
-        expect(result.canSatisfy).toBe(false); });
+        it('is unsatisfied when no nested requirement resolves', async () => {
+            const result = await selectCredentials([{ credential: employeeVc }], pd);
+            expect(result.canSatisfy).toBe(false);
+        });
     });
 });
 
@@ -372,31 +402,37 @@ describe('walt.id real-world PD shape (regression)', () => {
         credentialSubject: { id: 'did:jwk:holder', bookingId: 'B-42' },
     });
 
-    it('matches a compact-JWS candidate', async () => { const result = await selectCredentials([{ credential: alpsJwt }], pd);
-    
-    expect(result.canSatisfy).toBe(true);
-    expect(result.descriptors[0].candidates).toHaveLength(1); });
+    it('matches a compact-JWS candidate', async () => {
+        const result = await selectCredentials([{ credential: alpsJwt }], pd);
 
-    it('matches a W3C-wrapped JWT candidate (the shape try-offer --save writes)', async () => { const wrapped = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
-        type: ['VerifiableCredential', 'AlpsTourReservation'],
-        credentialSubject: { id: 'did:jwk:holder', bookingId: 'B-42' },
-        proof: { type: 'JwtProof2020', jwt: alpsJwt },
-    };
-    
-    const result = await selectCredentials([{ credential: wrapped }], pd);
-    
-    expect(result.canSatisfy).toBe(true);
-    expect(result.descriptors[0].candidates).toHaveLength(1); });
-
-    it('still rejects when the type array does not contain a matching element', async () => { const otherJwt = buildJwtVc({
-        type: ['VerifiableCredential', 'SomeOtherCredential'],
+        expect(result.canSatisfy).toBe(true);
+        expect(result.descriptors[0].candidates).toHaveLength(1);
     });
-    
-    const result = await selectCredentials([{ credential: otherJwt }], pd);
-    
-    expect(result.canSatisfy).toBe(false);
-    expect(result.descriptors[0].candidates).toHaveLength(0); });
+
+    it('matches a W3C-wrapped JWT candidate (the shape try-offer --save writes)', async () => {
+        const wrapped = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential', 'AlpsTourReservation'],
+            credentialSubject: { id: 'did:jwk:holder', bookingId: 'B-42' },
+            proof: { type: 'JwtProof2020', jwt: alpsJwt },
+        };
+
+        const result = await selectCredentials([{ credential: wrapped }], pd);
+
+        expect(result.canSatisfy).toBe(true);
+        expect(result.descriptors[0].candidates).toHaveLength(1);
+    });
+
+    it('still rejects when the type array does not contain a matching element', async () => {
+        const otherJwt = buildJwtVc({
+            type: ['VerifiableCredential', 'SomeOtherCredential'],
+        });
+
+        const result = await selectCredentials([{ credential: otherJwt }], pd);
+
+        expect(result.canSatisfy).toBe(false);
+        expect(result.descriptors[0].candidates).toHaveLength(0);
+    });
 });
 
 describe('real-world PD shape hardening', () => {
@@ -435,24 +471,34 @@ describe('real-world PD shape hardening', () => {
             input_descriptors: [sphereonDescriptor],
         };
 
-        it('matches an ldp_vc candidate', async () => { const result = await selectCredentials([{ credential: degreeVc }], pd);
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc'); });
+        it('matches an ldp_vc candidate', async () => {
+            const result = await selectCredentials([{ credential: degreeVc }], pd);
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc');
+        });
 
-        it('matches a jwt_vc_json candidate (compact JWS)', async () => { const result = await selectCredentials([{ credential: degreeJwt }], pd);
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors[0].candidates[0].candidate.format).toBe('jwt_vc_json'); });
+        it('matches a jwt_vc_json candidate (compact JWS)', async () => {
+            const result = await selectCredentials([{ credential: degreeJwt }], pd);
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('jwt_vc_json');
+        });
 
-        it('matches a jwt_vc_json candidate (W3C-wrapped)', async () => { const wrapped = {
-            proof: { type: 'JwtProof2020', jwt: degreeJwt },
-        };
-        const result = await selectCredentials([{ credential: wrapped }], pd);
-        expect(result.canSatisfy).toBe(true); });
+        it('matches a jwt_vc_json candidate (W3C-wrapped)', async () => {
+            const wrapped = {
+                proof: { type: 'JwtProof2020', jwt: degreeJwt },
+            };
+            const result = await selectCredentials([{ credential: wrapped }], pd);
+            expect(result.canSatisfy).toBe(true);
+        });
 
-        it('deduplicates neither — returns all matching candidates', async () => { const result = await selectCredentials([{ credential: degreeVc }, { credential: degreeJwt }],
-        pd);
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors[0].candidates).toHaveLength(2); });
+        it('deduplicates neither — returns all matching candidates', async () => {
+            const result = await selectCredentials(
+                [{ credential: degreeVc }, { credential: degreeJwt }],
+                pd
+            );
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors[0].candidates).toHaveLength(2);
+        });
     });
 
     // EUDI reference verifier style: paths into nested claims under
@@ -481,12 +527,18 @@ describe('real-world PD shape hardening', () => {
             constraints: {
                 fields: [
                     {
-                        path: ['$.credentialSubject.age_over_18', '$.vc.credentialSubject.age_over_18'],
+                        path: [
+                            '$.credentialSubject.age_over_18',
+                            '$.vc.credentialSubject.age_over_18',
+                        ],
                         filter: { type: 'boolean', const: true },
                         purpose: 'Age gate',
                     },
                     {
-                        path: ['$.credentialSubject.family_name', '$.vc.credentialSubject.family_name'],
+                        path: [
+                            '$.credentialSubject.family_name',
+                            '$.vc.credentialSubject.family_name',
+                        ],
                         filter: { pattern: '.+' }, // type-less, pattern-only — widened heuristic path
                     },
                     {
@@ -502,88 +554,100 @@ describe('real-world PD shape hardening', () => {
             input_descriptors: [eudiDescriptor],
         };
 
-        it('matches an ldp_vc candidate with required + optional fields', async () => { const result = await selectCredentials([{ credential: idCredential }], pd);
-        expect(result.canSatisfy).toBe(true); });
-
-        it('matches a W3C-wrapped JWT candidate (nested $.vc.credentialSubject.*)', async () => { const pidJwt = buildJwtVc({
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
-            type: ['VerifiableCredential', 'PersonIdentificationData'],
-            credentialSubject: idCredential.credentialSubject,
+        it('matches an ldp_vc candidate with required + optional fields', async () => {
+            const result = await selectCredentials([{ credential: idCredential }], pd);
+            expect(result.canSatisfy).toBe(true);
         });
-        const wrapped = {
-            proof: { type: 'JwtProof2020', jwt: pidJwt },
-        };
-        const result = await selectCredentials([{ credential: wrapped }], pd);
-        expect(result.canSatisfy).toBe(true); });
 
-        it('rejects when age_over_18 is false (const boolean)', async () => { const minor = {
-            ...idCredential,
-            credentialSubject: { ...idCredential.credentialSubject, age_over_18: false },
-        };
-        const result = await selectCredentials([{ credential: minor }], pd);
-        expect(result.canSatisfy).toBe(false); });
+        it('matches a W3C-wrapped JWT candidate (nested $.vc.credentialSubject.*)', async () => {
+            const pidJwt = buildJwtVc({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'PersonIdentificationData'],
+                credentialSubject: idCredential.credentialSubject,
+            });
+            const wrapped = {
+                proof: { type: 'JwtProof2020', jwt: pidJwt },
+            };
+            const result = await selectCredentials([{ credential: wrapped }], pd);
+            expect(result.canSatisfy).toBe(true);
+        });
+
+        it('rejects when age_over_18 is false (const boolean)', async () => {
+            const minor = {
+                ...idCredential,
+                credentialSubject: { ...idCredential.credentialSubject, age_over_18: false },
+            };
+            const result = await selectCredentials([{ credential: minor }], pd);
+            expect(result.canSatisfy).toBe(false);
+        });
     });
 
     // Animo Paradym-style PD: ldp_vc only, basic $.type contains filter.
     // Sanity check the pre-fix happy path still works after the JWT
     // decoder changes and array-fallback addition.
     describe('Animo Paradym: ldp_vc-only sanity', () => {
-        it('ldp_vc PD with $.type contains filter still matches ldp candidates', async () => { const pd: PresentationDefinition = {
-            id: 'paradym-degree',
-            format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
-            input_descriptors: [degreeDescriptor],
-        };
-        const result = await selectCredentials([{ credential: degreeVc }], pd);
-        expect(result.canSatisfy).toBe(true); });
-
-        it('ldp_vc PD rejects a jwt_vc_json candidate via format designation', async () => { const jwtDegree = buildJwtVc({
-            type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        it('ldp_vc PD with $.type contains filter still matches ldp candidates', async () => {
+            const pd: PresentationDefinition = {
+                id: 'paradym-degree',
+                format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                input_descriptors: [degreeDescriptor],
+            };
+            const result = await selectCredentials([{ credential: degreeVc }], pd);
+            expect(result.canSatisfy).toBe(true);
         });
-        const pd: PresentationDefinition = {
-            id: 'paradym-degree-strict',
-            format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
-            input_descriptors: [degreeDescriptor],
-        };
-        const result = await selectCredentials([{ credential: jwtDegree }], pd);
-        expect(result.canSatisfy).toBe(false); });
+
+        it('ldp_vc PD rejects a jwt_vc_json candidate via format designation', async () => {
+            const jwtDegree = buildJwtVc({
+                type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+            });
+            const pd: PresentationDefinition = {
+                id: 'paradym-degree-strict',
+                format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                input_descriptors: [degreeDescriptor],
+            };
+            const result = await selectCredentials([{ credential: jwtDegree }], pd);
+            expect(result.canSatisfy).toBe(false);
+        });
     });
 
     // submission_requirements crossing formats — mixed wallet with both
     // ldp and jwt credentials, grouped descriptors each selecting the
     // right one via format designation.
     describe('submission_requirements with mixed-format candidates', () => {
-        it('satisfies rule=all across groups where each descriptor matches one format', async () => { const licenseJwt = buildJwtVc({
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
-            type: ['VerifiableCredential', 'DriversLicenseCredential'],
-            credentialSubject: { id: 'did:jwk:holder', licenseNumber: 'DL-42' },
+        it('satisfies rule=all across groups where each descriptor matches one format', async () => {
+            const licenseJwt = buildJwtVc({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'DriversLicenseCredential'],
+                credentialSubject: { id: 'did:jwk:holder', licenseNumber: 'DL-42' },
+            });
+
+            const pd: PresentationDefinition = {
+                id: 'mixed-formats',
+                submission_requirements: [{ name: 'Identity Pack', rule: 'all', from: 'identity' }],
+                input_descriptors: [
+                    {
+                        ...degreeDescriptor,
+                        group: ['identity'],
+                        format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
+                    },
+                    {
+                        ...licenseDescriptor,
+                        group: ['identity'],
+                        format: { jwt_vc_json: { alg: ['EdDSA'] } },
+                    },
+                ],
+            };
+
+            const result = await selectCredentials(
+                [{ credential: degreeVc }, { credential: licenseJwt }],
+                pd
+            );
+
+            expect(result.canSatisfy).toBe(true);
+            expect(result.descriptors).toHaveLength(2);
+            expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc');
+            expect(result.descriptors[1].candidates[0].candidate.format).toBe('jwt_vc_json');
         });
-        
-        const pd: PresentationDefinition = {
-            id: 'mixed-formats',
-            submission_requirements: [
-                { name: 'Identity Pack', rule: 'all', from: 'identity' },
-            ],
-            input_descriptors: [
-                {
-                    ...degreeDescriptor,
-                    group: ['identity'],
-                    format: { ldp_vc: { proof_type: ['Ed25519Signature2020'] } },
-                },
-                {
-                    ...licenseDescriptor,
-                    group: ['identity'],
-                    format: { jwt_vc_json: { alg: ['EdDSA'] } },
-                },
-            ],
-        };
-        
-        const result = await selectCredentials([{ credential: degreeVc }, { credential: licenseJwt }],
-        pd);
-        
-        expect(result.canSatisfy).toBe(true);
-        expect(result.descriptors).toHaveLength(2);
-        expect(result.descriptors[0].candidates[0].candidate.format).toBe('ldp_vc');
-        expect(result.descriptors[1].candidates[0].candidate.format).toBe('jwt_vc_json'); });
     });
 });
 
@@ -593,86 +657,102 @@ describe('buildPresentationSubmission', () => {
         input_descriptors: [degreeDescriptor, licenseDescriptor],
     };
 
-    it('produces a DIF PEX v2 descriptor_map', async () => { const submission = buildPresentationSubmission(
-        pd,
-        [
-            {
-                descriptorId: 'degree',
-                format: 'ldp_vc',
-                path: '$.verifiableCredential[0]',
-            },
-            {
-                descriptorId: 'license',
-                format: 'ldp_vc',
-                path: '$.verifiableCredential[1]',
-            },
-        ],
-        { submissionId: 'sub-1' }
-    );
-    
-    expect(submission).toEqual({
-        id: 'sub-1',
-        definition_id: 'pd-1',
-        descriptor_map: [
-            {
-                id: 'degree',
-                format: 'ldp_vc',
-                path: '$.verifiableCredential[0]',
-            },
-            {
-                id: 'license',
-                format: 'ldp_vc',
-                path: '$.verifiableCredential[1]',
-            },
-        ],
-    }); });
+    it('produces a DIF PEX v2 descriptor_map', async () => {
+        const submission = buildPresentationSubmission(
+            pd,
+            [
+                {
+                    descriptorId: 'degree',
+                    format: 'ldp_vc',
+                    path: '$.verifiableCredential[0]',
+                },
+                {
+                    descriptorId: 'license',
+                    format: 'ldp_vc',
+                    path: '$.verifiableCredential[1]',
+                },
+            ],
+            { submissionId: 'sub-1' }
+        );
 
-    it('emits path_nested for envelope-wrapped credentials', async () => { const submission = buildPresentationSubmission(
-        pd,
-        [
-            {
-                descriptorId: 'degree',
-                format: 'jwt_vc_json',
-                path: '$.verifiableCredential[0]',
-                pathNested: '$',
-            },
-        ],
-        { submissionId: 'sub-nested' }
-    );
-    
-    expect(submission.descriptor_map[0]).toEqual({
-        id: 'degree',
-        format: 'jwt_vc_json',
-        path: '$.verifiableCredential[0]',
-        path_nested: {
+        expect(submission).toEqual({
+            id: 'sub-1',
+            definition_id: 'pd-1',
+            descriptor_map: [
+                {
+                    id: 'degree',
+                    format: 'ldp_vc',
+                    path: '$.verifiableCredential[0]',
+                },
+                {
+                    id: 'license',
+                    format: 'ldp_vc',
+                    path: '$.verifiableCredential[1]',
+                },
+            ],
+        });
+    });
+
+    it('emits path_nested for envelope-wrapped credentials', async () => {
+        const submission = buildPresentationSubmission(
+            pd,
+            [
+                {
+                    descriptorId: 'degree',
+                    format: 'jwt_vc_json',
+                    path: '$.verifiableCredential[0]',
+                    pathNested: '$',
+                },
+            ],
+            { submissionId: 'sub-nested' }
+        );
+
+        expect(submission.descriptor_map[0]).toEqual({
             id: 'degree',
             format: 'jwt_vc_json',
-            path: '$',
-        },
-    }); });
-
-    it('generates a submission id when none supplied', async () => { const submission = buildPresentationSubmission(pd, [], {
-        makeId: () => 'mock-id-42',
+            path: '$.verifiableCredential[0]',
+            path_nested: {
+                id: 'degree',
+                format: 'jwt_vc_json',
+                path: '$',
+            },
+        });
     });
-    
-    expect(submission.id).toBe('mock-id-42'); });
+
+    it('generates a submission id when none supplied', async () => {
+        const submission = buildPresentationSubmission(pd, [], {
+            makeId: () => 'mock-id-42',
+        });
+
+        expect(submission.id).toBe('mock-id-42');
+    });
 });
 
 describe('inferCredentialFormat', () => {
-    it('returns jwt_vc_json for a compact JWS string', async () => { expect(inferCredentialFormat(buildJwtVc({ type: ['VC'] }))).toBe('jwt_vc_json'); });
+    it('returns jwt_vc_json for a compact JWS string', async () => {
+        expect(inferCredentialFormat(buildJwtVc({ type: ['VC'] }))).toBe('jwt_vc_json');
+    });
 
-    it('returns undefined for a non-JWS string', async () => { expect(inferCredentialFormat('not-a-jwt')).toBeUndefined(); });
+    it('returns undefined for a non-JWS string', async () => {
+        expect(inferCredentialFormat('not-a-jwt')).toBeUndefined();
+    });
 
-    it('returns jwt_vc_json when proof.type === JwtProof2020', async () => { expect(
-        inferCredentialFormat({ proof: { type: 'JwtProof2020', jwt: 'eyJ...' } })
-    ).toBe('jwt_vc_json'); });
+    it('returns jwt_vc_json when proof.type === JwtProof2020', async () => {
+        expect(inferCredentialFormat({ proof: { type: 'JwtProof2020', jwt: 'eyJ...' } })).toBe(
+            'jwt_vc_json'
+        );
+    });
 
-    it('returns ldp_vc for Data Integrity / legacy LDP proofs', async () => { expect(inferCredentialFormat(degreeVc)).toBe('ldp_vc');
-    expect(inferCredentialFormat(licenseVc)).toBe('ldp_vc'); });
+    it('returns ldp_vc for Data Integrity / legacy LDP proofs', async () => {
+        expect(inferCredentialFormat(degreeVc)).toBe('ldp_vc');
+        expect(inferCredentialFormat(licenseVc)).toBe('ldp_vc');
+    });
 
-    it('returns undefined when no recognized shape', async () => { expect(inferCredentialFormat({})).toBeUndefined();
-    expect(inferCredentialFormat(null)).toBeUndefined();
-    expect(inferCredentialFormat(42)).toBeUndefined(); });
+    it('returns undefined when no recognized shape', async () => {
+        expect(inferCredentialFormat({})).toBeUndefined();
+        expect(inferCredentialFormat(null)).toBeUndefined();
+        expect(inferCredentialFormat(42)).toBeUndefined();
+    });
 
     it('returns dc+sd-jwt for a compact SD-JWT string', () => {
         expect(inferCredentialFormat('eyJhbGc.eyJ2Y3Q.sig~Wyx~')).toBe('dc+sd-jwt');
@@ -682,6 +762,17 @@ describe('inferCredentialFormat', () => {
         expect(
             inferCredentialFormat({
                 proof: { type: 'SdJwtCompactProof', jwt: 'eyJh.eyJv.sig~Wyx~' },
+            })
+        ).toBe('dc+sd-jwt');
+    });
+
+    it('finds SdJwtCompactProof even when an LDP proof comes first in the array', () => {
+        expect(
+            inferCredentialFormat({
+                proof: [
+                    { type: 'DataIntegrityProof', proofValue: 'z...' },
+                    { type: 'SdJwtCompactProof', jwt: 'eyJh.eyJv.sig~Wyx~' },
+                ],
             })
         ).toBe('dc+sd-jwt');
     });
@@ -736,11 +827,9 @@ describe('selectCredentials — SD-JWT-VC matching', () => {
     };
 
     it('matches an SD-JWT-VC when sdJwtParser is provided', async () => {
-        const result = await selectCredentials(
-            [{ credential: sdJwtWrapper }],
-            pdAskingForVct,
-            { sdJwtParser: fakeParser }
-        );
+        const result = await selectCredentials([{ credential: sdJwtWrapper }], pdAskingForVct, {
+            sdJwtParser: fakeParser,
+        });
 
         expect(result.canSatisfy).toBe(true);
         expect(result.descriptors[0]?.candidates).toHaveLength(1);
@@ -748,21 +837,16 @@ describe('selectCredentials — SD-JWT-VC matching', () => {
     });
 
     it('matches an SD-JWT-VC supplied as a bare compact string', async () => {
-        const result = await selectCredentials(
-            [{ credential: SD_JWT_COMPACT }],
-            pdAskingForVct,
-            { sdJwtParser: fakeParser }
-        );
+        const result = await selectCredentials([{ credential: SD_JWT_COMPACT }], pdAskingForVct, {
+            sdJwtParser: fakeParser,
+        });
 
         expect(result.canSatisfy).toBe(true);
         expect(result.descriptors[0]?.candidates).toHaveLength(1);
     });
 
     it('fails to match an SD-JWT-VC when no sdJwtParser is provided', async () => {
-        const result = await selectCredentials(
-            [{ credential: sdJwtWrapper }],
-            pdAskingForVct
-        );
+        const result = await selectCredentials([{ credential: sdJwtWrapper }], pdAskingForVct);
 
         expect(result.canSatisfy).toBe(false);
         expect(result.descriptors[0]?.candidates).toHaveLength(0);
@@ -787,25 +871,19 @@ describe('selectCredentials — SD-JWT-VC matching', () => {
             ],
         };
 
-        const result = await selectCredentials(
-            [{ credential: sdJwtWrapper }],
-            pdAskingForClaim,
-            { sdJwtParser: fakeParser }
-        );
+        const result = await selectCredentials([{ credential: sdJwtWrapper }], pdAskingForClaim, {
+            sdJwtParser: fakeParser,
+        });
 
         expect(result.canSatisfy).toBe(true);
     });
 
     it('drops SD-JWT candidates whose parser throws', async () => {
-        const result = await selectCredentials(
-            [{ credential: sdJwtWrapper }],
-            pdAskingForVct,
-            {
-                sdJwtParser: async () => {
-                    throw new Error('decode failed');
-                },
-            }
-        );
+        const result = await selectCredentials([{ credential: sdJwtWrapper }], pdAskingForVct, {
+            sdJwtParser: async () => {
+                throw new Error('decode failed');
+            },
+        });
 
         expect(result.canSatisfy).toBe(false);
     });

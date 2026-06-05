@@ -335,10 +335,9 @@ const extractSdJwtCompact = (candidate: AdaptableCredential): string | undefined
 
     if (cred && typeof cred === 'object') {
         const proof = (cred as { proof?: unknown }).proof;
-        const proofObj = Array.isArray(proof)
-            ? proof.find(p => typeof p === 'object' && p !== null)
-            : proof;
-        if (proofObj && typeof proofObj === 'object') {
+        const proofs = Array.isArray(proof) ? proof : proof ? [proof] : [];
+        for (const proofObj of proofs) {
+            if (!proofObj || typeof proofObj !== 'object') continue;
             const jwt = (proofObj as { jwt?: unknown }).jwt;
             if (typeof jwt === 'string' && looksLikeSdJwtCompact(jwt)) return jwt;
         }
@@ -350,10 +349,7 @@ const extractSdJwtCompact = (candidate: AdaptableCredential): string | undefined
 const looksLikeSdJwtCompact = (s: string): boolean =>
     s.includes('~') && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(s);
 
-const vpFormatForQueryFormat = (
-    format: string,
-    queryId: string
-): 'jwt_vp_json' | 'ldp_vp' => {
+const vpFormatForQueryFormat = (format: string, queryId: string): 'jwt_vp_json' | 'ldp_vp' => {
     if (format === 'jwt_vc_json') return 'jwt_vp_json';
     if (format === 'ldp_vc') return 'ldp_vp';
 

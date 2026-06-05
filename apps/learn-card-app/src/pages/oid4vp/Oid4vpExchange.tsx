@@ -262,7 +262,14 @@ const Oid4vpExchange: React.FC = () => {
                                 if (parsed.disclosureKeys && parsed.claims) {
                                     const rowId =
                                         'descriptorId' in c ? c.descriptorId : c.credentialQueryId;
-                                    const discloseFrame = rowId ? picks.disclose[rowId] : undefined;
+                                    const candidateKey = (c.candidate as CandidateCredential).id;
+                                    const cacheKey =
+                                        rowId && candidateKey
+                                            ? `${rowId}::${candidateKey}`
+                                            : undefined;
+                                    const discloseFrame = cacheKey
+                                        ? picks.disclose[cacheKey]
+                                        : undefined;
 
                                     const disclosedClaims: Record<string, unknown> = {};
                                     const hiddenClaimKeys: string[] = [];
@@ -576,10 +583,11 @@ const buildChosenList = (
             const idx = userPicks.row[d.descriptorId] ?? 0;
             const chosen = d.candidates[idx] ?? d.candidates[0];
             if (!chosen) continue;
+            const discloseKey = `${d.descriptorId}::${chosen.candidate.id}`;
             out.push({
                 descriptorId: d.descriptorId,
                 candidate: chosen.candidate,
-                disclose: disclosureOrEmpty(chosen.candidate, userPicks.disclose[d.descriptorId]),
+                disclose: disclosureOrEmpty(chosen.candidate, userPicks.disclose[discloseKey]),
             });
         }
         return out;
@@ -591,13 +599,12 @@ const buildChosenList = (
             const idx = userPicks.row[queryId] ?? 0;
             const chosen = match.candidates[idx] ?? match.candidates[0];
             if (!chosen) continue;
+            const candidate = chosen as unknown as CandidateCredential;
+            const discloseKey = `${queryId}::${candidate.id}`;
             out.push({
                 credentialQueryId: queryId,
-                candidate: chosen as unknown as CandidateCredential,
-                disclose: disclosureOrEmpty(
-                    chosen as unknown as CandidateCredential,
-                    userPicks.disclose[queryId]
-                ),
+                candidate,
+                disclose: disclosureOrEmpty(candidate, userPicks.disclose[discloseKey]),
             });
         }
         return out;

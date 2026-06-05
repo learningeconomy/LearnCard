@@ -21,9 +21,7 @@ import {
  * payload (envelope claims + reconstructed disclosable claims) so PEX
  * paths like `$.vct`, `$.iss`, `$.given_name` resolve uniformly.
  */
-export type SdJwtParser = (
-    compact: string
-) => Promise<{
+export type SdJwtParser = (compact: string) => Promise<{
     claims: Record<string, unknown>;
     vct?: string;
     issuer?: string;
@@ -299,15 +297,17 @@ export const inferCredentialFormat = (credential: unknown): string | undefined =
 
     const vc = credential as Record<string, unknown>;
     const proofValue = vc.proof;
-    const proof =
-        Array.isArray(proofValue)
-            ? (proofValue.find(p => p && typeof p === 'object') as Record<string, unknown> | undefined)
-            : (proofValue as Record<string, unknown> | undefined);
+    const proofs = (Array.isArray(proofValue) ? proofValue : proofValue ? [proofValue] : []).filter(
+        (p): p is Record<string, unknown> => Boolean(p) && typeof p === 'object'
+    );
 
-    if (proof && typeof proof === 'object') {
-        if (proof.type === 'SdJwtCompactProof' && typeof proof.jwt === 'string') {
-            return 'dc+sd-jwt';
-        }
+    const sdJwtProof = proofs.find(
+        p => p.type === 'SdJwtCompactProof' && typeof p.jwt === 'string'
+    );
+    if (sdJwtProof) return 'dc+sd-jwt';
+
+    const proof = proofs[0];
+    if (proof) {
         if (typeof proof.jwt === 'string' || proof.type === 'JwtProof2020') {
             return 'jwt_vc_json';
         }
@@ -339,9 +339,7 @@ const evaluateSubmissionRequirements = (
     const srs = pd.submission_requirements;
 
     if (!srs || srs.length === 0) {
-        const unsatisfied = pd.input_descriptors
-            .map(d => d.id)
-            .filter(id => !satisfiedIds.has(id));
+        const unsatisfied = pd.input_descriptors.map(d => d.id).filter(id => !satisfiedIds.has(id));
 
         if (unsatisfied.length === 0) return { satisfied: true };
 
@@ -350,7 +348,9 @@ const evaluateSubmissionRequirements = (
             reason:
                 unsatisfied.length === 1
                     ? `Input descriptor "${unsatisfied[0]}" has no matching credential`
-                    : `${unsatisfied.length} input descriptors have no matching credential: ${unsatisfied.join(', ')}`,
+                    : `${
+                          unsatisfied.length
+                      } input descriptors have no matching credential: ${unsatisfied.join(', ')}`,
         };
     }
 
@@ -394,11 +394,7 @@ const evaluateRequirement = (
             if (outcome.satisfied) satisfiedNestedCount += 1;
         }
 
-        return applyRule(
-            requirement,
-            satisfiedNestedCount,
-            requirement.from_nested.length
-        );
+        return applyRule(requirement, satisfiedNestedCount, requirement.from_nested.length);
     }
 
     return {
@@ -443,11 +439,7 @@ const applyRule = (
         // here. The UI still shows it as guidance.
 
         // `pick` with no count/min and at least one match → satisfied.
-        if (
-            requirement.count === undefined &&
-            requirement.min === undefined &&
-            actual === 0
-        ) {
+        if (requirement.count === undefined && requirement.min === undefined && actual === 0) {
             return {
                 satisfied: false,
                 reason: `Requirement "${label}" (rule=pick) needs at least one match, none available`,
@@ -557,15 +549,15 @@ const extractSdJwtCompact = (credential: unknown): string | undefined => {
     }
     if (credential && typeof credential === 'object') {
         const proofValue = (credential as { proof?: unknown }).proof;
-        const proof = Array.isArray(proofValue)
-            ? proofValue.find(p => p && typeof p === 'object')
-            : proofValue;
-        if (proof && typeof proof === 'object') {
-            const candidate = proof as { type?: unknown; jwt?: unknown };
-            if (candidate.type === 'SdJwtCompactProof' && typeof candidate.jwt === 'string') {
-                return candidate.jwt;
-            }
-        }
+        const proofs = Array.isArray(proofValue) ? proofValue : proofValue ? [proofValue] : [];
+        const sdJwtProof = proofs.find(
+            p =>
+                p &&
+                typeof p === 'object' &&
+                (p as { type?: unknown }).type === 'SdJwtCompactProof' &&
+                typeof (p as { jwt?: unknown }).jwt === 'string'
+        ) as { jwt?: string } | undefined;
+        if (sdJwtProof) return sdJwtProof.jwt;
     }
     return undefined;
 };
@@ -629,7 +621,8 @@ const explainNoMatches = (
 const defaultMakeId = (): string => {
     const cryptoObj: { getRandomValues?: (a: Uint8Array) => Uint8Array } | undefined =
         typeof globalThis !== 'undefined' && 'crypto' in globalThis
-            ? (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }).crypto
+            ? (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } })
+                  .crypto
             : undefined;
 
     if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {

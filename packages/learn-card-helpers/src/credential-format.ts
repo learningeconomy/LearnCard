@@ -31,8 +31,7 @@ const sha256HasherSync = (data: string | ArrayBuffer, alg: string): Uint8Array =
         throw new Error(`Unsupported hash algorithm: "${alg}". Only sha-256 is supported.`);
     }
 
-    const bytes =
-        typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
+    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
     return sha256(bytes);
 };
 
@@ -150,15 +149,10 @@ const getWireFormProof = (vc: unknown, requireSupportedType = false): WireFormPr
 const asWireFormProof = (proof: unknown): WireFormProof | undefined =>
     proof && typeof proof === 'object' ? (proof as WireFormProof) : undefined;
 
-const isUsableWireFormProof = (
-    proof: WireFormProof,
-    requireSupportedType: boolean
-): boolean =>
+const isUsableWireFormProof = (proof: WireFormProof, requireSupportedType: boolean): boolean =>
     typeof proof.jwt === 'string' &&
     proof.jwt.length > 0 &&
-    (!requireSupportedType ||
-        proof.type === 'SdJwtCompactProof' ||
-        proof.type === 'JwtProof2020');
+    (!requireSupportedType || proof.type === 'SdJwtCompactProof' || proof.type === 'JwtProof2020');
 
 const getWireFormFromProof = (proof: WireFormProof | undefined): string | undefined =>
     typeof proof?.jwt === 'string' && proof.jwt.length > 0 ? proof.jwt : undefined;
@@ -348,9 +342,7 @@ const deriveVerificationMethodFromIssuer = (options: {
  * compact form from `envelope.data`. NEVER re-serialize from the
  * projected VC.
  */
-export const projectEnvelopeToDisplayVc = (
-    envelope: StoredCredentialEnvelope
-): VC | undefined => {
+export const projectEnvelopeToDisplayVc = (envelope: StoredCredentialEnvelope): VC | undefined => {
     if (envelope.format === 'mso_mdoc') return undefined;
 
     const data = envelope.data;
@@ -418,7 +410,8 @@ const projectSdJwtCompactToVc = (compact: string): VC | undefined => {
         // whose digest doesn't match MUST NOT appear in the projected subject.
     }
 
-    const credentialSubject: Record<string, unknown> = stripSdJwtReservedClaims(reconstructedClaims);
+    const credentialSubject: Record<string, unknown> =
+        stripSdJwtReservedClaims(reconstructedClaims);
     const cnf = payload.cnf;
     const holderPublicKey =
         cnf && typeof cnf === 'object' && 'jwk' in cnf && cnf.jwk && typeof cnf.jwk === 'object'
@@ -470,7 +463,19 @@ const projectJwtVcCompactToVc = (compact: string): VC | undefined => {
     if (!payload) return undefined;
     const vcClaim = payload.vc;
     if (!vcClaim || typeof vcClaim !== 'object') return undefined;
-    return vcClaim as VC;
+
+    // Preserve the compact JWS under a JwtProof2020 proof.jwt so the
+    // projected VC stays verifiable and VC-validator compatible, mirroring
+    // normalizeIssuedCredential. Returning only payload.vc drops the issuer
+    // signature and yields a proofless object downstream consumers reject.
+    const vc = { ...(vcClaim as Record<string, unknown>) } as Record<string, unknown>;
+    if (!vc.proof) {
+        vc.proof = {
+            type: 'JwtProof2020',
+            jwt: compact,
+        };
+    }
+    return vc as VC;
 };
 
 /**
@@ -494,8 +499,8 @@ const inferW3cVersionFromContext = (vc: unknown): 'w3c-vc-2.0' | 'w3c-vc-1.1' =>
     const contexts = Array.isArray(contextRaw)
         ? contextRaw
         : contextRaw !== undefined
-          ? [contextRaw]
-          : [];
+        ? [contextRaw]
+        : [];
     const isV2 = contexts.some(
         c => typeof c === 'string' && c.includes('w3.org/ns/credentials/v2')
     );
