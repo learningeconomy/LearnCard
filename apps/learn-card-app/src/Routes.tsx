@@ -99,6 +99,9 @@ const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/Intera
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
 );
+const GuardianAccountApprovalPage = lazyWithRetry(
+    () => import('./pages/interactions/GuardianAccountApprovalPage')
+);
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
@@ -379,6 +382,11 @@ export const Routes: React.FC = () => {
                             exact
                             path="/interactions/guardian-credential-approval/:token"
                             component={GuardianCredentialApprovalPage}
+                        />
+                        <SentryRoute
+                            exact
+                            path="/interactions/guardian-approval/:token"
+                            component={GuardianAccountApprovalPage}
                         />
                         <SentryRoute path="/interactions/*" component={InteractionsPage} />
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
