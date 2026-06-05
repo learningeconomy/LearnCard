@@ -21,7 +21,7 @@
  *
  * Usage:
  *   node scripts/validate-packages.mjs               # validate all packages
- *   node scripts/validate-packages.mjs --only crypto-plugin,init
+ *   node scripts/validate-packages.mjs --only=crypto-plugin,init
  *   node scripts/validate-packages.mjs --skip-attw   # publint only (fast)
  *   node scripts/validate-packages.mjs --concurrency=4
  */

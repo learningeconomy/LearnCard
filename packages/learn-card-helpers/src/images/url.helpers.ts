@@ -37,7 +37,9 @@ export const stringifyUrl = (parsed: ParsedUrl): string => {
         params.append(key, String(value));
     }
 
-    const search = params.toString();
+    // URLSearchParams encodes spaces as `+`; normalize to `%20` so output stays
+    // byte-stable for consumers that use the URL as a cache key.
+    const search = params.toString().replace(/\+/g, '%20');
     const fragment = parsed.fragmentIdentifier ? `#${parsed.fragmentIdentifier}` : '';
 
     return `${parsed.url}${search ? `?${search}` : ''}${fragment}`;
