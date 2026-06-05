@@ -663,3 +663,134 @@ describe('OpenID4VC plugin — presentCredentials surface guarantees', () => {
     });
 });
 
+describe('OpenID4VC plugin — SD-JWT-VC matcher wiring', () => {
+    const SD_JWT_VCT = 'https://example.com/credentials/playground';
+    const SD_JWT_COMPACT = 'header.payload.signature~Wyx~';
+
+    const sdJwtWrapper = {
+        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        type: ['VerifiableCredential', 'SdJwtVcCredential'],
+        issuer: 'did:jwk:issuer',
+        sdJwtVct: SD_JWT_VCT,
+        proof: { type: 'SdJwtCompactProof', jwt: SD_JWT_COMPACT },
+    };
+
+    const buildSdJwtPd = (): PresentationDefinition => ({
+        id: 'sd-jwt-integration-pd',
+        input_descriptors: [
+            {
+                id: 'playground-sd-jwt',
+                format: {
+                    'dc+sd-jwt': { alg: ['EdDSA'] },
+                    'vc+sd-jwt': { alg: ['EdDSA'] },
+                },
+                constraints: {
+                    fields: [
+                        {
+                            path: ['$.vct'],
+                            filter: { type: 'string', const: SD_JWT_VCT },
+                        },
+                    ],
+                },
+            },
+        ],
+    });
+
+    const attachParser = (mock: MockLearnCardHandle): jest.Mock => {
+        const parseSdJwtVc = jest.fn(async (compact: string) => {
+            expect(compact).toBe(SD_JWT_COMPACT);
+            return {
+                vct: SD_JWT_VCT,
+                issuer: 'did:jwk:issuer',
+                claims: {
+                    vct: SD_JWT_VCT,
+                    iss: 'did:jwk:issuer',
+                    iat: 1700000000,
+                    given_name: 'Ada',
+                    family_name: 'Lovelace',
+                },
+                holderPublicKey: { kty: 'OKP', crv: 'Ed25519', x: 'xxx' },
+            };
+        });
+        (mock.learnCard.invoke as unknown as { parseSdJwtVc: typeof parseSdJwtVc }).parseSdJwtVc =
+            parseSdJwtVc;
+        return parseSdJwtVc;
+    };
+
+    it('matches an SD-JWT-wrapped candidate when learnCard.invoke.parseSdJwtVc is present', async () => {
+        const mock = await buildMockLearnCard();
+        const parserMock = attachParser(mock);
+        const verifier = buildFakeVerifier({ pd: buildSdJwtPd() });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: sdJwtWrapper }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(true);
+        expect(preview.selection?.descriptors[0].candidates).toHaveLength(1);
+        expect(parserMock).toHaveBeenCalledTimes(1);
+        expect(parserMock).toHaveBeenCalledWith(SD_JWT_COMPACT);
+    });
+
+    it('reports cannot-satisfy when learnCard.invoke.parseSdJwtVc is absent', async () => {
+        const mock = await buildMockLearnCard();
+        const verifier = buildFakeVerifier({ pd: buildSdJwtPd() });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: sdJwtWrapper }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(false);
+        expect(preview.selection?.descriptors[0].candidates).toHaveLength(0);
+    });
+
+    it('matches an SD-JWT-VC supplied as a bare compact string', async () => {
+        const mock = await buildMockLearnCard();
+        attachParser(mock);
+        const verifier = buildFakeVerifier({ pd: buildSdJwtPd() });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: SD_JWT_COMPACT, format: 'dc+sd-jwt' }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(true);
+    });
+
+    it('matches against a deep claim path (e.g. $.given_name) after decoding', async () => {
+        const mock = await buildMockLearnCard();
+        attachParser(mock);
+        const pdAskingForClaim: PresentationDefinition = {
+            id: 'pd-deep-claim',
+            input_descriptors: [
+                {
+                    id: 'wants-given-name',
+                    format: { 'dc+sd-jwt': { alg: ['EdDSA'] } },
+                    constraints: {
+                        fields: [
+                            {
+                                path: ['$.given_name'],
+                                filter: { type: 'string', const: 'Ada' },
+                            },
+                        ],
+                    },
+                },
+            ],
+        };
+        const verifier = buildFakeVerifier({ pd: pdAskingForClaim });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: sdJwtWrapper }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(true);
+    });
+});
+

@@ -15,7 +15,7 @@ const getUserflowToken = (): string => {
     try {
         return getResolvedTenantConfig().observability.userflowToken;
     } catch {
-        return (typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION)
+        return typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION
             ? 'ct_qq6z63mixbhyzbzsgmivgrftda'
             : 'ct_w53eaxhevvf2vejzrecekeq3nu';
     }

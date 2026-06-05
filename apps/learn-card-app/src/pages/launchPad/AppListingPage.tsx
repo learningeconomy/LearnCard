@@ -194,7 +194,15 @@ const AppListingPage: React.FC = () => {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [installIntent, isOnboardingOpen, isLoggedIn, isCheckingInstalled, listing, isInstalled, isChildProfile]);
+    }, [
+        installIntent,
+        isOnboardingOpen,
+        isLoggedIn,
+        isCheckingInstalled,
+        listing,
+        isInstalled,
+        isChildProfile,
+    ]);
 
     const handleShareApp = async () => {
         if (!listing) return;
@@ -246,9 +254,7 @@ const AppListingPage: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                         {listing.display_name} installed
                     </h3>
-                    <p className="text-sm text-gray-500 mb-6">
-                        Would you like to open it now?
-                    </p>
+                    <p className="text-sm text-gray-500 mb-6">Would you like to open it now?</p>
                     <div className="flex gap-3">
                         <button
                             onClick={() => closeModal()}

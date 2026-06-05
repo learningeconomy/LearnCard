@@ -50,6 +50,7 @@ COPY packages/plugins/linked-claims/package.json packages/plugins/linked-claims/
 COPY packages/plugins/learn-cloud/package.json packages/plugins/learn-cloud/
 COPY packages/plugins/open-badge-v2/package.json packages/plugins/open-badge-v2/
 COPY packages/plugins/openid4vc/package.json packages/plugins/openid4vc/
+COPY packages/plugins/sd-jwt-vc/package.json packages/plugins/sd-jwt-vc/
 COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
@@ -91,6 +92,7 @@ COPY packages/plugins/linked-claims packages/plugins/linked-claims
 COPY packages/plugins/learn-cloud packages/plugins/learn-cloud
 COPY packages/plugins/open-badge-v2 packages/plugins/open-badge-v2
 COPY packages/plugins/openid4vc packages/plugins/openid4vc
+COPY packages/plugins/sd-jwt-vc packages/plugins/sd-jwt-vc
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates

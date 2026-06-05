@@ -6,7 +6,8 @@ import type {
 } from '@learncard/holder-continuity';
 
 type ExportLearnCardBundleFn = typeof import('@learncard/holder-continuity').exportLearnCardBundle;
-type RestoreLearnCardFromBundleFn = typeof import('@learncard/holder-continuity').restoreLearnCardFromBundle;
+type RestoreLearnCardFromBundleFn =
+    typeof import('@learncard/holder-continuity').restoreLearnCardFromBundle;
 
 export const createExportLearnCardBundleHelper = (
     exportBundle: ExportLearnCardBundleFn,
@@ -16,7 +17,8 @@ export const createExportLearnCardBundleHelper = (
         walletOrOptions: LearnCardBundleWallet | ExportLearnCardBundleOptions,
         maybeOptions?: ExportLearnCardBundleOptions
     ) => {
-        if (maybeOptions) return exportBundle(walletOrOptions as LearnCardBundleWallet, maybeOptions);
+        if (maybeOptions)
+            return exportBundle(walletOrOptions as LearnCardBundleWallet, maybeOptions);
 
         return exportBundle(defaultWallet, walletOrOptions as ExportLearnCardBundleOptions);
     };
@@ -28,9 +30,9 @@ export const createRestoreLearnCardFromBundleHelper = (
 ) => {
     return (
         path: string,
-        options: (Omit<RestoreLearnCardFromBundleOptions, 'init'> & {
+        options: Omit<RestoreLearnCardFromBundleOptions, 'init'> & {
             init?: Partial<RestoreLearnCardInit>;
-        }) = {}
+        } = {}
     ) => {
         return restoreBundle(path, {
             ...options,

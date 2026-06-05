@@ -49,13 +49,20 @@ import type { UnsignedVP } from '@learncard/types';
 
 import type { AdaptableCredential } from './adapt';
 import type { DcqlQuery } from './types';
+import type { SdJwtDiscloseFrame } from '../vp/sign';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
 /* -------------------------------------------------------------------------- */
 
-/** Outer presentation envelope format produced for a DCQL response. */
-export type DcqlVpFormat = 'jwt_vp_json' | 'ldp_vp';
+/**
+ * Outer envelope format for a DCQL per-query response. The first two
+ * are W3C VP envelopes signed by the signing layer; the last two are
+ * SD-JWT-VC passthroughs that carry the compact form directly into the
+ * `vp_token` value (no VP envelope per OID4VP §6.1.1 — the issuer JWT
+ * + disclosures + KB-JWT IS the presentation).
+ */
+export type DcqlVpFormat = 'jwt_vp_json' | 'ldp_vp' | 'dc+sd-jwt' | 'vc+sd-jwt';
 
 /**
  * One holder pick: "this candidate satisfies this credential query."
@@ -66,8 +73,14 @@ export type DcqlVpFormat = 'jwt_vp_json' | 'ldp_vp';
 export interface DcqlChosenCredential {
     /** Matches `DcqlQuery.credentials[N].id` from the verifier's query. */
     credentialQueryId: string;
-    /** Wire-shape credential (JWT-VC string or LD-VC object). */
+    /** Wire-shape credential (JWT-VC string, LD-VC object, or SD-JWT compact). */
     candidate: AdaptableCredential;
+    /**
+     * Optional per-claim consent frame, honored only when this entry
+     * resolves to an SD-JWT-VC passthrough. Omitted = release every
+     * disclosable claim (no selective disclosure).
+     */
+    disclose?: SdJwtDiscloseFrame;
 }
 
 export interface BuildDcqlPresentationsInput {
@@ -93,14 +106,30 @@ export interface BuildDcqlPresentationsInput {
     makeId?: () => string;
 }
 
-/** One unsigned VP, ready for the signing layer. */
-export interface BuiltDcqlPresentation {
+/**
+ * Per-query build output. Discriminated by `kind`:
+ *
+ * - `vp` — verifiable presentation envelope (jwt_vp_json or ldp_vp).
+ *   The signing layer wraps the chosen credentials in `unsignedVp` and
+ *   produces a signed VP. This is the path for `jwt_vc_json` / `ldp_vc`
+ *   inner formats.
+ * - `sd-jwt-vc` — passthrough for `dc+sd-jwt` / `vc+sd-jwt` queries. The
+ *   compact SD-JWT-VC IS the presentation per OID4VP §6.1.1; the
+ *   signing layer asks `learnCard.invoke.presentSdJwtVc` to apply
+ *   selective disclosure + KB-JWT and emits the resulting compact string
+ *   as the `vp_token` value for this query id. DCQL's `multiple: true`
+ *   is not yet implemented for SD-JWT (one compact per query id).
+ */
+export type BuiltDcqlPresentation = BuiltDcqlVpPresentation | BuiltDcqlSdJwtPresentation;
+
+export interface BuiltDcqlVpPresentation {
+    kind: 'vp';
     /** Matches `DcqlQuery.credentials[N].id`. */
     credentialQueryId: string;
     /** Unsigned VP wrapping the chosen credentials for this query. */
     unsignedVp: UnsignedVP;
     /** Envelope format the signing layer should use. */
-    vpFormat: DcqlVpFormat;
+    vpFormat: 'jwt_vp_json' | 'ldp_vp';
     /**
      * Original wire-shape candidates packed into this VP, in the
      * order they appear in `unsignedVp.verifiableCredential`. The
@@ -108,6 +137,20 @@ export interface BuiltDcqlPresentation {
      * future "what was actually presented?" inspection API do.
      */
     candidates: AdaptableCredential[];
+}
+
+export interface BuiltDcqlSdJwtPresentation {
+    kind: 'sd-jwt-vc';
+    /** Matches `DcqlQuery.credentials[N].id`. */
+    credentialQueryId: string;
+    /** Source compact SD-JWT-VC the holder chose. The signing layer feeds this into `presentSdJwtVc`. */
+    compact: string;
+    /** Format declared by the verifier on this query entry; passed back so the response can echo it. */
+    vpFormat: 'dc+sd-jwt' | 'vc+sd-jwt';
+    /** Original wire-shape candidates (always length-1 in this slice; `multiple: true` is a follow-up). */
+    candidates: AdaptableCredential[];
+    /** Per-claim consent frame from the holder UI, forwarded to the SD-JWT presenter at sign time. */
+    disclose?: SdJwtDiscloseFrame;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -118,7 +161,8 @@ export type BuildDcqlPresentationErrorCode =
     | 'no_selections'
     | 'unknown_credential_query'
     | 'unsupported_format'
-    | 'invalid_jwt_vc';
+    | 'invalid_jwt_vc'
+    | 'invalid_sd_jwt_vc';
 
 export class BuildDcqlPresentationError extends Error {
     readonly code: BuildDcqlPresentationErrorCode;
@@ -164,15 +208,20 @@ export const buildDcqlPresentations = (
 
     const makeId = input.makeId ?? defaultMakeId;
 
-    // Group chosen entries by credential_query_id so each VP packs
-    // exactly the candidates the verifier asked for under that id.
-    const groups = new Map<string, AdaptableCredential[]>();
+    const groups = new Map<
+        string,
+        { candidates: AdaptableCredential[]; disclose?: SdJwtDiscloseFrame }
+    >();
     for (const pick of chosen) {
         const existing = groups.get(pick.credentialQueryId);
         if (existing) {
-            existing.push(pick.candidate);
+            existing.candidates.push(pick.candidate);
+            if (!existing.disclose && pick.disclose) existing.disclose = pick.disclose;
         } else {
-            groups.set(pick.credentialQueryId, [pick.candidate]);
+            groups.set(pick.credentialQueryId, {
+                candidates: [pick.candidate],
+                disclose: pick.disclose,
+            });
         }
     }
 
@@ -186,15 +235,14 @@ export const buildDcqlPresentations = (
 
     const out: BuiltDcqlPresentation[] = [];
 
-    // Iterate the ORIGINAL query order so the final vp_token object
-    // matches what verifiers iterate first.
     for (const queryEntry of query.credentials) {
-        const candidates = groups.get(queryEntry.id);
-        if (!candidates) continue; // No pick for this query — caller may have skipped optional ones.
+        const group = groups.get(queryEntry.id);
+        if (!group) continue;
 
-        out.push(buildOnePresentation(queryEntry, candidates, holder, makeId));
+        out.push(
+            buildOnePresentation(queryEntry, group.candidates, holder, makeId, group.disclose)
+        );
 
-        // Mark consumed so we can detect orphan picks below.
         groups.delete(queryEntry.id);
     }
 
@@ -218,8 +266,13 @@ const buildOnePresentation = (
     queryEntry: DcqlQuery['credentials'][number],
     candidates: AdaptableCredential[],
     holder: string,
-    makeId: () => string
+    makeId: () => string,
+    disclose?: SdJwtDiscloseFrame
 ): BuiltDcqlPresentation => {
+    if (queryEntry.format === 'dc+sd-jwt' || queryEntry.format === 'vc+sd-jwt') {
+        return buildSdJwtPassthrough(queryEntry, candidates, disclose);
+    }
+
     const vpFormat = vpFormatForQueryFormat(queryEntry.format, queryEntry.id);
 
     const innerCredentials = candidates.map((candidate, i) =>
@@ -235,6 +288,7 @@ const buildOnePresentation = (
     };
 
     return {
+        kind: 'vp',
         credentialQueryId: queryEntry.id,
         unsignedVp,
         vpFormat,
@@ -242,22 +296,70 @@ const buildOnePresentation = (
     };
 };
 
-/**
- * Pick the outer envelope format from the DCQL query entry's declared
- * inner format. Unlike PEX (where the verifier may declare a `format`
- * map allowing multiple options), DCQL queries pin exactly one format
- * per credentials[] entry, so this is a direct map.
- */
+const buildSdJwtPassthrough = (
+    queryEntry: DcqlQuery['credentials'][number],
+    candidates: AdaptableCredential[],
+    disclose?: SdJwtDiscloseFrame
+): BuiltDcqlSdJwtPresentation => {
+    if (candidates.length !== 1) {
+        throw new BuildDcqlPresentationError(
+            'invalid_sd_jwt_vc',
+            `DCQL query "${queryEntry.id}" (format=${queryEntry.format}) received ${candidates.length} candidates; SD-JWT-VC passthrough currently supports exactly one candidate per query id (DCQL multiple:true for SD-JWT is a follow-up)`
+        );
+    }
+
+    const compact = extractSdJwtCompact(candidates[0]!);
+    if (!compact) {
+        throw new BuildDcqlPresentationError(
+            'invalid_sd_jwt_vc',
+            `DCQL query "${queryEntry.id}" (format=${queryEntry.format}) candidate is not a recognizable SD-JWT-VC compact form (expected a string or a W3C-wrapped object with proof.jwt of shape "<header>.<payload>.<sig>~<disclosure>*~<kb>?")`
+        );
+    }
+
+    return {
+        kind: 'sd-jwt-vc',
+        credentialQueryId: queryEntry.id,
+        compact,
+        vpFormat: queryEntry.format as 'dc+sd-jwt' | 'vc+sd-jwt',
+        candidates,
+        ...(disclose ? { disclose } : {}),
+    };
+};
+
+const extractSdJwtCompact = (candidate: AdaptableCredential): string | undefined => {
+    const cred = candidate.credential;
+
+    if (typeof cred === 'string') {
+        return looksLikeSdJwtCompact(cred) ? cred : undefined;
+    }
+
+    if (cred && typeof cred === 'object') {
+        const proof = (cred as { proof?: unknown }).proof;
+        const proofObj = Array.isArray(proof)
+            ? proof.find(p => typeof p === 'object' && p !== null)
+            : proof;
+        if (proofObj && typeof proofObj === 'object') {
+            const jwt = (proofObj as { jwt?: unknown }).jwt;
+            if (typeof jwt === 'string' && looksLikeSdJwtCompact(jwt)) return jwt;
+        }
+    }
+
+    return undefined;
+};
+
+const looksLikeSdJwtCompact = (s: string): boolean =>
+    s.includes('~') && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(s);
+
 const vpFormatForQueryFormat = (
     format: string,
     queryId: string
-): DcqlVpFormat => {
+): 'jwt_vp_json' | 'ldp_vp' => {
     if (format === 'jwt_vc_json') return 'jwt_vp_json';
     if (format === 'ldp_vc') return 'ldp_vp';
 
     throw new BuildDcqlPresentationError(
         'unsupported_format',
-        `DCQL query "${queryId}" requests format "${format}", which the plugin doesn't yet build presentations for (sd-jwt-vc and mso_mdoc are tracked for follow-up slices)`
+        `DCQL query "${queryId}" requests format "${format}", which the plugin doesn't yet build presentations for (mso_mdoc is tracked for a follow-up slice)`
     );
 };
 

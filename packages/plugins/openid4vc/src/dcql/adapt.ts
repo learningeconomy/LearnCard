@@ -34,11 +34,12 @@
  *   `DcqlMdocCredential` shape requires a CBOR-decoded namespace
  *   tree we don't compute.
  */
-import type { DcqlW3cVcCredential } from './types';
+import type { DcqlSdJwtVcCredential, DcqlW3cVcCredential } from './types';
+import type { SdJwtParser } from '../vp/select';
 
 /** Subset of {@link CandidateCredential} this adapter consumes. */
 export interface AdaptableCredential {
-    /** Wire-shape credential — string for JWT-VCs, object for LD-VCs. */
+    /** Wire-shape credential — string for JWT-VCs, object for LD-VCs, compact for SD-JWT. */
     credential: unknown;
     /**
      * Optional explicit format hint. When omitted the adapter infers
@@ -49,6 +50,18 @@ export interface AdaptableCredential {
      */
     format?: string;
 }
+
+export interface AdaptOptions {
+    /**
+     * Required when SD-JWT candidates are in the pool. Plugin-level
+     * callers wire this to `learnCard.invoke.parseSdJwtVc` (same
+     * runtime feature-detect convention as the PEX matcher); test
+     * callers can skip it when none of their fixtures are SD-JWT.
+     */
+    sdJwtParser?: SdJwtParser;
+}
+
+type AdaptedCredential = DcqlW3cVcCredential | DcqlSdJwtVcCredential;
 
 /**
  * Convert a single held credential into a `DcqlW3cVcCredential` ready
@@ -66,9 +79,10 @@ export interface AdaptableCredential {
  * caller to wrap in try/catch and degrade UX for "I have a weird
  * credential" cases that are otherwise harmless.
  */
-export const adaptCredentialForDcql = (
-    candidate: AdaptableCredential
-): DcqlW3cVcCredential | undefined => {
+export const adaptCredentialForDcql = async (
+    candidate: AdaptableCredential,
+    options: AdaptOptions = {}
+): Promise<AdaptedCredential | undefined> => {
     const format = candidate.format ?? inferDcqlFormat(candidate.credential);
 
     if (format === 'jwt_vc_json') {
@@ -79,7 +93,10 @@ export const adaptCredentialForDcql = (
         return adaptLdpVc(candidate.credential);
     }
 
-    // sd-jwt-vc, mso_mdoc, unknown — caller's pool drops this entry.
+    if (format === 'dc+sd-jwt' || format === 'vc+sd-jwt') {
+        return adaptSdJwt(candidate.credential, format, options.sdJwtParser);
+    }
+
     return undefined;
 };
 
@@ -91,17 +108,73 @@ export const adaptCredentialForDcql = (
  * present (the matcher only sees the normalized shape; submission
  * needs the original).
  */
-export const adaptCredentialsForDcql = (
-    candidates: readonly AdaptableCredential[]
-): Array<{ original: AdaptableCredential; adapted: DcqlW3cVcCredential }> => {
-    const out: Array<{ original: AdaptableCredential; adapted: DcqlW3cVcCredential }> = [];
+export const adaptCredentialsForDcql = async (
+    candidates: readonly AdaptableCredential[],
+    options: AdaptOptions = {}
+): Promise<Array<{ original: AdaptableCredential; adapted: AdaptedCredential }>> => {
+    const adapted = await Promise.all(
+        candidates.map(async candidate => ({
+            original: candidate,
+            adapted: await adaptCredentialForDcql(candidate, options),
+        }))
+    );
 
-    for (const candidate of candidates) {
-        const adapted = adaptCredentialForDcql(candidate);
-        if (adapted) out.push({ original: candidate, adapted });
+    return adapted.filter(
+        (entry): entry is { original: AdaptableCredential; adapted: AdaptedCredential } =>
+            entry.adapted !== undefined
+    );
+};
+
+const adaptSdJwt = async (
+    credential: unknown,
+    format: 'dc+sd-jwt' | 'vc+sd-jwt',
+    parser?: SdJwtParser
+): Promise<DcqlSdJwtVcCredential | undefined> => {
+    if (!parser) return undefined;
+
+    const compact = extractSdJwtCompact(credential);
+    if (!compact) return undefined;
+
+    let parsed: Awaited<ReturnType<SdJwtParser>>;
+    try {
+        parsed = await parser(compact);
+    } catch {
+        return undefined;
     }
 
-    return out;
+    const vct =
+        typeof parsed.vct === 'string' && parsed.vct.length > 0
+            ? parsed.vct
+            : typeof parsed.claims.vct === 'string'
+              ? (parsed.claims.vct as string)
+              : undefined;
+    if (!vct) return undefined;
+
+    return {
+        credential_format: format,
+        vct,
+        claims: parsed.claims as DcqlSdJwtVcCredential['claims'],
+        cryptographic_holder_binding: Boolean(parsed.holderPublicKey),
+    };
+};
+
+const extractSdJwtCompact = (credential: unknown): string | undefined => {
+    if (typeof credential === 'string') {
+        return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(credential)
+            ? credential
+            : undefined;
+    }
+    if (credential && typeof credential === 'object') {
+        const proofValue = (credential as { proof?: unknown }).proof;
+        const proof = Array.isArray(proofValue)
+            ? proofValue.find(p => p && typeof p === 'object')
+            : proofValue;
+        if (proof && typeof proof === 'object') {
+            const c = proof as { type?: unknown; jwt?: unknown };
+            if (c.type === 'SdJwtCompactProof' && typeof c.jwt === 'string') return c.jwt;
+        }
+    }
+    return undefined;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -193,9 +266,9 @@ const extractTypes = (value: unknown): string[] => {
  */
 const inferDcqlFormat = (credential: unknown): string | undefined => {
     if (typeof credential === 'string') {
-        // Compact JWS has exactly three `.`-delimited segments. Anything
-        // else is either malformed or a different envelope (SD-JWT
-        // separates with `~`, mdoc is binary).
+        if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(credential)) {
+            return 'dc+sd-jwt';
+        }
         if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(credential)) {
             return 'jwt_vc_json';
         }
@@ -203,16 +276,16 @@ const inferDcqlFormat = (credential: unknown): string | undefined => {
     }
 
     if (credential && typeof credential === 'object' && !Array.isArray(credential)) {
-        const proof = (credential as { proof?: unknown }).proof;
+        const proofValue = (credential as { proof?: unknown }).proof;
+        const proof = Array.isArray(proofValue)
+            ? proofValue.find(p => p && typeof p === 'object')
+            : proofValue;
 
         if (proof && typeof proof === 'object') {
             const proofType = (proof as { type?: unknown }).type;
 
-            // Legacy LDP-envelope-around-JWT-VC.
+            if (proofType === 'SdJwtCompactProof') return 'dc+sd-jwt';
             if (proofType === 'JwtProof2020') return 'jwt_vc_json';
-
-            // Anything else with a proof.type is a Data Integrity / LD
-            // signature variant; treat as ldp_vc.
             return 'ldp_vc';
         }
     }

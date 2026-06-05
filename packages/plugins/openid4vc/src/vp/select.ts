@@ -7,6 +7,42 @@ import {
 } from './types';
 
 /**
+ * Async parser callback used to surface SD-JWT-VC claims to the matcher.
+ *
+ * The PEX/DCQL matchers stay sync over their `subject` argument, but
+ * SD-JWT credentials carry their meaningful fields (`vct`, `iss`, plus
+ * every disclosable claim) inside the compact `proof.jwt` string —
+ * decoding requires SHA-256 hashing of disclosures, which is async-only
+ * in the browser via `crypto.subtle.digest`. Plugin-level code wires
+ * this to `learnCard.invoke.parseSdJwtVc` at runtime so the matcher
+ * stays decoupled from `@learncard/sd-jwt-vc-plugin`.
+ *
+ * Returned shape mirrors `ParsedSdJwtVc.claims` — the full reconstructed
+ * payload (envelope claims + reconstructed disclosable claims) so PEX
+ * paths like `$.vct`, `$.iss`, `$.given_name` resolve uniformly.
+ */
+export type SdJwtParser = (
+    compact: string
+) => Promise<{
+    claims: Record<string, unknown>;
+    vct?: string;
+    issuer?: string;
+    holderPublicKey?: Record<string, unknown>;
+}>;
+
+export interface SelectCredentialsOptions {
+    /**
+     * Injected when the host LearnCard has the sd-jwt-vc plugin
+     * installed. When omitted, SD-JWT candidates fall back to the
+     * matcher's no-decode behavior — paths like `$.vct` won't resolve
+     * and the candidate effectively gets dropped. Plugin callers
+     * always provide this; direct callers can skip it for tests that
+     * don't exercise SD-JWT.
+     */
+    sdJwtParser?: SdJwtParser;
+}
+
+/**
  * Given the holder's full credential pool and a verifier's Presentation
  * Definition, figure out which credentials are eligible to satisfy each
  * `input_descriptor`, whether the overall submission is possible, and
@@ -129,10 +165,11 @@ export interface SelectedDescriptor {
  * The result preserves the PD's declared descriptor order so UIs can
  * render "one row per descriptor".
  */
-export const selectCredentials = (
+export const selectCredentials = async (
     candidates: CandidateCredential[],
-    pd: PresentationDefinition
-): SelectionResult => {
+    pd: PresentationDefinition,
+    options: SelectCredentialsOptions = {}
+): Promise<SelectionResult> => {
     const enriched = candidates.map((c, index) => ({
         index,
         candidate: {
@@ -141,20 +178,25 @@ export const selectCredentials = (
         },
     }));
 
+    const decodedEntries = await Promise.all(
+        enriched.map(async entry => ({
+            ...entry,
+            decoded: await decodeCandidateForMatching(entry.candidate, options.sdJwtParser),
+        }))
+    );
+
     const descriptors: DescriptorSelection[] = pd.input_descriptors.map(descriptor => {
         const matches: DescriptorCandidate[] = [];
 
-        // Effective format designation: descriptor.format > pd.format.
         const formatDesignation = descriptor.format ?? pd.format;
 
-        for (const entry of enriched) {
-            const { candidate, index } = entry;
+        for (const entry of decodedEntries) {
+            const { candidate, index, decoded } = entry;
 
             if (formatDesignation && !formatIsPermitted(candidate.format, formatDesignation)) {
                 continue;
             }
 
-            const decoded = decodeCandidateForMatching(candidate);
             const match = matchInputDescriptor(decoded, descriptor);
 
             if (match.matched) {
@@ -245,8 +287,9 @@ export const buildPresentationSubmission = (
  */
 export const inferCredentialFormat = (credential: unknown): string | undefined => {
     if (typeof credential === 'string') {
-        // Compact JWS has exactly three segments; a signed JSON-LD VC
-        // is never serialized this way.
+        if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(credential)) {
+            return 'dc+sd-jwt';
+        }
         return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(credential)
             ? 'jwt_vc_json'
             : undefined;
@@ -255,14 +298,19 @@ export const inferCredentialFormat = (credential: unknown): string | undefined =
     if (!credential || typeof credential !== 'object') return undefined;
 
     const vc = credential as Record<string, unknown>;
-    const proof = vc.proof as Record<string, unknown> | undefined;
+    const proofValue = vc.proof;
+    const proof =
+        Array.isArray(proofValue)
+            ? (proofValue.find(p => p && typeof p === 'object') as Record<string, unknown> | undefined)
+            : (proofValue as Record<string, unknown> | undefined);
 
     if (proof && typeof proof === 'object') {
+        if (proof.type === 'SdJwtCompactProof' && typeof proof.jwt === 'string') {
+            return 'dc+sd-jwt';
+        }
         if (typeof proof.jwt === 'string' || proof.type === 'JwtProof2020') {
             return 'jwt_vc_json';
         }
-        // Every Data Integrity / legacy Linked Data Proof suite is ldp_vc
-        // for OID4VP purposes. We don't need to discriminate by suite here.
         if (typeof proof.type === 'string') return 'ldp_vc';
     }
 
@@ -460,7 +508,10 @@ const formatIsPermitted = (
  * for any decoding error, preserving the "no throws mid-selection"
  * contract of the selector.
  */
-const decodeCandidateForMatching = (candidate: CandidateCredential): unknown => {
+const decodeCandidateForMatching = async (
+    candidate: CandidateCredential,
+    sdJwtParser?: SdJwtParser
+): Promise<unknown> => {
     const { credential, format } = candidate;
 
     if (format === 'jwt_vc_json') {
@@ -469,7 +520,6 @@ const decodeCandidateForMatching = (candidate: CandidateCredential): unknown => 
             if (payload) return payload;
         }
 
-        // W3C-shape JWT-VC: pull the raw JWS out of proof.jwt and decode.
         if (credential && typeof credential === 'object') {
             const proof = (credential as { proof?: unknown }).proof;
             if (proof && typeof proof === 'object') {
@@ -482,7 +532,42 @@ const decodeCandidateForMatching = (candidate: CandidateCredential): unknown => 
         }
     }
 
+    if (format === 'dc+sd-jwt' || format === 'vc+sd-jwt') {
+        if (!sdJwtParser) return credential;
+
+        const compact = extractSdJwtCompact(credential);
+        if (!compact) return credential;
+
+        try {
+            const parsed = await sdJwtParser(compact);
+            return parsed.claims;
+        } catch {
+            return credential;
+        }
+    }
+
     return credential;
+};
+
+const extractSdJwtCompact = (credential: unknown): string | undefined => {
+    if (typeof credential === 'string') {
+        return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+~/.test(credential)
+            ? credential
+            : undefined;
+    }
+    if (credential && typeof credential === 'object') {
+        const proofValue = (credential as { proof?: unknown }).proof;
+        const proof = Array.isArray(proofValue)
+            ? proofValue.find(p => p && typeof p === 'object')
+            : proofValue;
+        if (proof && typeof proof === 'object') {
+            const candidate = proof as { type?: unknown; jwt?: unknown };
+            if (candidate.type === 'SdJwtCompactProof' && typeof candidate.jwt === 'string') {
+                return candidate.jwt;
+            }
+        }
+    }
+    return undefined;
 };
 
 /**

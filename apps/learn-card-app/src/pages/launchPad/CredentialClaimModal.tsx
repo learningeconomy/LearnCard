@@ -4,7 +4,13 @@ import { X, Check, Loader2 } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('credential-claim-modal');
 
-import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode, BoostCategoryOptionsEnum } from 'learn-card-base';
+import {
+    useWallet,
+    useToast,
+    ToastTypeEnum,
+    BoostPageViewMode,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC, VP } from '@learncard/types';
@@ -143,7 +149,9 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
         };
 
         resolveCredential();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [credentialUri, preResolvedCredential]);
 
     const handleClaim = async () => {
@@ -365,7 +373,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         <div className="w-[180px]">
                             <BoostEarnedCard
                                 credential={credential as VC}
-                                categoryType={getDefaultCategoryForCredential(credential as VC) || BoostCategoryOptionsEnum.achievement}
+                                categoryType={
+                                    getDefaultCategoryForCredential(credential as VC) ||
+                                    BoostCategoryOptionsEnum.achievement
+                                }
                                 boostPageViewMode={BoostPageViewMode.Card}
                                 useWrapper={false}
                                 verifierState={false}

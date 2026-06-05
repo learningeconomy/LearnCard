@@ -15,6 +15,29 @@ The playground is the curated checklist + one-click launcher for those answers. 
 
 ## Quick start
 
+### Fastest path: embedded provider (no Docker, no external services)
+
+For SD-JWT-VC dev-loop testing, the `embedded` provider runs a self-contained issuer + verifier inside the Vite dev server. No infrastructure required:
+
+```bash
+cd examples/openid4vc-playground
+pnpm install
+pnpm dev
+# → open http://localhost:5173
+# → pick "Embedded" provider in the dropdown
+```
+
+Then run the LearnCard app in another terminal (see below). The embedded provider currently ships two scenarios:
+
+| Scenario | Purpose |
+|---|---|
+| **SD-JWT-VC with cnf binding (issuance)** | Mints an SD-JWT-VC with `cnf.jwk` derived from the wallet's proof. Required before the verify scenario. |
+| **SD-JWT-VC presentation, PEX** | Verifies the wallet's presentation — checks issuer signature, KB-JWT, sd_hash, and reports which claims were released vs. hidden. Surfaces the verdict in the playground status panel. |
+
+Security posture: the embedded issuer does NOT verify the wallet's proof-of-possession signature (it would need a heavy DID resolver to support did:web). The verifier-side checks (issuer signature, KB-JWT signature, disclosure-hash integrity, nonce + vct binding) are fully enforced — that's what the engineer is actually testing.
+
+### Full path: walt.id Docker stack (for non-SD-JWT scenarios)
+
 ```bash
 # 1. Boot the walt.id Docker stack used as the OID4VC engine
 cd ../../tests/openid4vc-interop-e2e

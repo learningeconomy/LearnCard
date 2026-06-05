@@ -3,7 +3,12 @@ import { Loader2, ShieldAlert, BookOpen, PenTool, Eye } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-contract-preview');
 
-import { useModal, ModalTypes, useWallet, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useWallet,
+    contractCategoryNameToCategoryMetadata,
+} from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
 
 import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
@@ -18,21 +23,22 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
     const { newModal } = useModal();
     const { initWallet } = useWallet();
 
-    const { data: selectedContract, isLoading: isLoadingContract } = useQuery<ConsentFlowContractDetails | null>({
-        queryKey: ['getContract', contractUri],
-        queryFn: async () => {
-            if (!contractUri) return null;
+    const { data: selectedContract, isLoading: isLoadingContract } =
+        useQuery<ConsentFlowContractDetails | null>({
+            queryKey: ['getContract', contractUri],
+            queryFn: async () => {
+                if (!contractUri) return null;
 
-            try {
-                const wallet = await initWallet();
-                return await wallet.invoke.getContract(contractUri);
-            } catch (error) {
-                log.error('Failed to fetch contract:', error);
-                return null;
-            }
-        },
-        enabled: !!contractUri,
-    });
+                try {
+                    const wallet = await initWallet();
+                    return await wallet.invoke.getContract(contractUri);
+                } catch (error) {
+                    log.error('Failed to fetch contract:', error);
+                    return null;
+                }
+            },
+            enabled: !!contractUri,
+        });
 
     const readCategories = selectedContract?.contract?.read?.credentials?.categories || {};
     const writeCategories = selectedContract?.contract?.write?.credentials?.categories || {};
@@ -95,7 +101,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                         )}
 
                         <div>
-                            <p className="text-sm font-medium text-gray-700">{selectedContract.name}</p>
+                            <p className="text-sm font-medium text-gray-700">
+                                {selectedContract.name}
+                            </p>
                             {selectedContract.subtitle && (
                                 <p className="text-xs text-gray-400">{selectedContract.subtitle}</p>
                             )}
@@ -112,7 +120,8 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                         {hasReadCategories ? (
                             <div className="flex flex-wrap gap-1.5">
                                 {Object.keys(readCategories).map(category => {
-                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                    const metadata =
+                                        contractCategoryNameToCategoryMetadata(category);
 
                                     return (
                                         <span
@@ -128,7 +137,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                                 })}
                             </div>
                         ) : (
-                            <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                            <p className="text-xs text-cyan-600 italic">
+                                No read permissions requested
+                            </p>
                         )}
                     </div>
 
@@ -136,13 +147,16 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <PenTool className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-medium text-emerald-700">Write Access</span>
+                            <span className="text-xs font-medium text-emerald-700">
+                                Write Access
+                            </span>
                         </div>
 
                         {hasWriteCategories ? (
                             <div className="flex flex-wrap gap-1.5">
                                 {Object.keys(writeCategories).map(category => {
-                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                    const metadata =
+                                        contractCategoryNameToCategoryMetadata(category);
 
                                     return (
                                         <span
@@ -158,14 +172,18 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                                 })}
                             </div>
                         ) : (
-                            <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                            <p className="text-xs text-emerald-600 italic">
+                                No write permissions requested
+                            </p>
                         )}
                     </div>
                 </div>
             ) : (
                 <div className="p-3 bg-gray-100 rounded-lg">
                     <p className="text-xs text-gray-500 font-mono break-all">{contractUri}</p>
-                    <p className="text-xs text-gray-400 mt-1 italic">Contract details not available</p>
+                    <p className="text-xs text-gray-400 mt-1 italic">
+                        Contract details not available
+                    </p>
                 </div>
             )}
         </div>

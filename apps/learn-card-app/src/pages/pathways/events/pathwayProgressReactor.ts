@@ -56,13 +56,8 @@ const log = getLogger('pathway-progress-reactor');
  */
 
 import { pathwayStore, proposalStore } from '../../../stores/pathways';
-import {
-    bindCredentialToOutcomes,
-} from '../agents/credentialBinder';
-import {
-    bindEventToNodes,
-    type NodeBindResult,
-} from '../agents/nodeProgressBinder';
+import { bindCredentialToOutcomes } from '../agents/credentialBinder';
+import { bindEventToNodes, type NodeBindResult } from '../agents/nodeProgressBinder';
 import type { IssuerTrustRegistry, VcLike } from '../core/outcomeMatcher';
 import { applyProposal } from '../proposals/applyProposal';
 import type {
@@ -231,7 +226,7 @@ export interface PathwayProgressReactor {
 }
 
 export const createPathwayProgressReactor = (
-    options: PathwayProgressReactorOptions = {},
+    options: PathwayProgressReactorOptions = {}
 ): PathwayProgressReactor => {
     const bus = options.bus ?? defaultBus;
     const autoAcceptCredential = options.autoAcceptCredential ?? true;
@@ -265,10 +260,7 @@ export const createPathwayProgressReactor = (
                 listener(record);
             } catch (err) {
                 // eslint-disable-next-line no-console
-                log.error(
-                    '[pathwayProgressReactor] subscribe listener threw:',
-                    err,
-                );
+                log.error('[pathwayProgressReactor] subscribe listener threw:', err);
             }
         }
     };
@@ -313,7 +305,7 @@ export const createPathwayProgressReactor = (
     const processCredentialEvent = (
         event: CredentialIngestedEvent,
         pathways: Pathway[],
-        ownerDid: string,
+        ownerDid: string
     ): ProgressDispatchRecord => {
         // Node-level matches: "this credential completes a node".
         const nodeResult: NodeBindResult = bindEventToNodes({
@@ -345,16 +337,8 @@ export const createPathwayProgressReactor = (
         }
 
         // Auto-accept. Each acceptance mutates pathwayStore + proposalStore.
-        const nodeAccepts = tryAutoAccept(
-            nodeResult.proposals,
-            autoAcceptCredential,
-            ownerDid,
-        );
-        const outcomeAccepts = tryAutoAccept(
-            outcomeResult.proposals,
-            autoAcceptOutcome,
-            ownerDid,
-        );
+        const nodeAccepts = tryAutoAccept(nodeResult.proposals, autoAcceptCredential, ownerDid);
+        const outcomeAccepts = tryAutoAccept(outcomeResult.proposals, autoAcceptOutcome, ownerDid);
 
         const record: ProgressDispatchRecord = {
             eventId: event.eventId,
@@ -387,7 +371,7 @@ export const createPathwayProgressReactor = (
     const processSessionEvent = (
         event: AiSessionCompletedEvent,
         pathways: Pathway[],
-        ownerDid: string,
+        ownerDid: string
     ): ProgressDispatchRecord => {
         const nodeResult = bindEventToNodes({
             event,
@@ -401,11 +385,7 @@ export const createPathwayProgressReactor = (
             proposalStore.set.addProposal(proposal);
         }
 
-        const nodeAccepts = tryAutoAccept(
-            nodeResult.proposals,
-            autoAcceptSession,
-            ownerDid,
-        );
+        const nodeAccepts = tryAutoAccept(nodeResult.proposals, autoAcceptSession, ownerDid);
 
         const record: ProgressDispatchRecord = {
             eventId: event.eventId,
@@ -457,14 +437,13 @@ export const createPathwayProgressReactor = (
             event => {
                 processEvent(event);
             },
-            { replay: true },
+            { replay: true }
         );
 
     return {
         mount,
         processEvent,
-        lastDispatch: () =>
-            history.length > 0 ? history[history.length - 1] : null,
+        lastDispatch: () => (history.length > 0 ? history[history.length - 1] : null),
         recentDispatches: () => history.slice(),
         subscribe,
         resetDispatchHistory: () => {
@@ -495,7 +474,7 @@ export const createPathwayProgressReactor = (
 const tryAutoAccept = (
     proposals: readonly Proposal[],
     enabled: boolean,
-    ownerDid: string,
+    ownerDid: string
 ): Set<string> => {
     const accepted = new Set<string>();
 
@@ -516,7 +495,7 @@ const tryAutoAccept = (
             // eslint-disable-next-line no-console
             log.warn(
                 '[pathwayProgressReactor] proposal targets unknown pathway',
-                proposal.pathwayId,
+                proposal.pathwayId
             );
 
             continue;
@@ -528,10 +507,10 @@ const tryAutoAccept = (
         // routing bug.
         if (proposal.ownerDid !== ownerDid) {
             // eslint-disable-next-line no-console
-            log.warn(
-                '[pathwayProgressReactor] proposal owner does not match session owner',
-                { proposalOwner: proposal.ownerDid, sessionOwner: ownerDid },
-            );
+            log.warn('[pathwayProgressReactor] proposal owner does not match session owner', {
+                proposalOwner: proposal.ownerDid,
+                sessionOwner: ownerDid,
+            });
 
             continue;
         }
@@ -549,11 +528,7 @@ const tryAutoAccept = (
             // surfaces if they exist; otherwise the proposal simply
             // ages out at its expiresAt. Don't crash the reactor.
             // eslint-disable-next-line no-console
-            log.error(
-                '[pathwayProgressReactor] auto-accept failed for',
-                proposal.id,
-                err,
-            );
+            log.error('[pathwayProgressReactor] auto-accept failed for', proposal.id, err);
         }
     }
 

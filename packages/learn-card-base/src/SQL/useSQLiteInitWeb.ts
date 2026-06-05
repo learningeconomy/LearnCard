@@ -67,7 +67,10 @@ export const useSQLiteInitWeb = () => {
                     }
                 }
             } catch (err: unknown) {
-                const message = typeof err === 'object' && err && 'message' in err ? String((err as any).message) : '';
+                const message =
+                    typeof err === 'object' && err && 'message' in err
+                        ? String((err as any).message)
+                        : '';
                 if (message.includes('Sqlite could not init web store in')) {
                     log.warn(`Error: ${message}`);
                 } else {

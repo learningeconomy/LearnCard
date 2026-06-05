@@ -1,6 +1,7 @@
 import { getClient, getUser } from './helpers/getClient';
 import { Users } from '@accesslayer/user';
 import { Credentials } from '@accesslayer/credential';
+import type { JWE, StoredCredentialEnvelope } from '@learncard/types';
 
 import { client } from '@mongo';
 
@@ -9,6 +10,22 @@ import cache from '@cache';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+
+const makeSdJwtEnvelope = (
+    overrides: Partial<StoredCredentialEnvelope> = {}
+): StoredCredentialEnvelope => ({
+    format: 'dc+sd-jwt',
+    data: 'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload.sig~',
+    ...overrides,
+});
+
+const makeMdocEnvelope = (
+    overrides: Partial<StoredCredentialEnvelope> = {}
+): StoredCredentialEnvelope => ({
+    format: 'mso_mdoc',
+    data: 'YWJjZGVmZ2hpams',
+    ...overrides,
+});
 
 beforeAll(async () => {
     try {
@@ -257,6 +274,103 @@ describe('Storage', () => {
 
             expect(await userA.learnCard.invoke.decryptDagJwe(resolvedUris[1]!)).toEqual(vc);
             expect(await userA.learnCard.invoke.decryptDagJwe(resolvedUris[3]!)).toEqual(vp);
+        });
+    });
+
+    describe('envelope', () => {
+        beforeEach(async () => {
+            await Users.deleteMany({});
+            await Credentials.deleteMany({});
+            await cache.node.flushall();
+        });
+
+        afterAll(async () => {
+            await Users.deleteMany({});
+            await Credentials.deleteMany({});
+        });
+
+        it('should require full auth to store an envelope', async () => {
+            const envelope = makeSdJwtEnvelope();
+
+            await expect(noAuthClient.storage.store({ item: envelope })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.storage.store({ item: envelope })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should accept an SD-JWT-VC envelope (server-side encrypted)', async () => {
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: makeSdJwtEnvelope() })
+            ).resolves.not.toThrow();
+        });
+
+        it('should accept an mDoc envelope (base64url binary)', async () => {
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: makeMdocEnvelope() })
+            ).resolves.not.toThrow();
+        });
+
+        it('should roundtrip an SD-JWT-VC envelope through server-side encryption', async () => {
+            const envelope = makeSdJwtEnvelope();
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const encrypted = await userA.clients.fullAuth.storage.resolve({ uri });
+            const decrypted = await userA.learnCard.invoke.decryptDagJwe(encrypted as JWE);
+
+            expect(decrypted).toEqual(envelope);
+        });
+
+        it('should roundtrip an mDoc envelope through server-side encryption', async () => {
+            const envelope = makeMdocEnvelope();
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const encrypted = await userA.clients.fullAuth.storage.resolve({ uri });
+            const decrypted = await userA.learnCard.invoke.decryptDagJwe(encrypted as JWE);
+
+            expect(decrypted).toEqual(envelope);
+        });
+
+        it('should roundtrip a vc+sd-jwt legacy-format envelope through server-side encryption', async () => {
+            const envelope = makeSdJwtEnvelope({ format: 'vc+sd-jwt' });
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const encrypted = await userA.clients.fullAuth.storage.resolve({ uri });
+            const decrypted = await userA.learnCard.invoke.decryptDagJwe(encrypted as JWE);
+
+            expect(decrypted).toEqual(envelope);
+        });
+
+        it('should preserve unknown passthrough fields through server-side encryption', async () => {
+            const envelope = {
+                ...makeSdJwtEnvelope(),
+                metadata: { issuedBy: 'partner-x', schemaVersion: 2 },
+                cnfHint: 'did:jwk:abc',
+            };
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const encrypted = await userA.clients.fullAuth.storage.resolve({ uri });
+            const decrypted = await userA.learnCard.invoke.decryptDagJwe(encrypted as JWE);
+
+            expect(decrypted).toEqual(envelope);
+        });
+
+        it('should roundtrip through MongoDB when the Redis cache is cold', async () => {
+            // The resolve route checks Redis first via getCachedCredentialById and
+            // only falls through to MongoDB on a miss. The store mutation populates
+            // the cache, so a resolve immediately after store always hits cache.
+            // Flushing the cache here forces the MongoDB read + re-cache path that
+            // users hit when the cache TTL expires or Redis restarts.
+            const envelope = makeSdJwtEnvelope();
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+
+            await cache.node.flushall();
+
+            const encrypted = await userA.clients.fullAuth.storage.resolve({ uri });
+            const decrypted = await userA.learnCard.invoke.decryptDagJwe(encrypted as JWE);
+
+            expect(decrypted).toEqual(envelope);
         });
     });
 });

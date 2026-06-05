@@ -84,15 +84,12 @@ export const usePersonalizationQA = (): UsePersonalizationQAReturn => {
         }));
     }, []);
 
-    const removeAnswer = useCallback(
-        (questionType: PersonalizedQuestionEnum, answer: string) => {
-            setPersonalizedAnswers(prev => ({
-                ...prev,
-                [questionType]: prev[questionType].filter(a => a !== answer),
-            }));
-        },
-        []
-    );
+    const removeAnswer = useCallback((questionType: PersonalizedQuestionEnum, answer: string) => {
+        setPersonalizedAnswers(prev => ({
+            ...prev,
+            [questionType]: prev[questionType].filter(a => a !== answer),
+        }));
+    }, []);
 
     const completionPercentage = computeCompletionPercentage(personalizedAnswers);
 

@@ -26,7 +26,8 @@ export const encodePayload = async (
 ): Promise<{ stored: string; encrypted: boolean }> => {
     if (!options.encrypt) return { stored: plaintext, encrypted: false };
 
-    if (!options.password) throw new Error('A password is required for encrypted LearnCard exports');
+    if (!options.password)
+        throw new Error('A password is required for encrypted LearnCard exports');
 
     return {
         stored: JSON.stringify(await encryptWithPassword(plaintext, options.password), null, 2),
@@ -40,7 +41,8 @@ export const decodePayload = async (
 ): Promise<string> => {
     if (!options.encrypted) return stored;
 
-    if (!options.password) throw new Error('A password is required to decrypt this LearnCard export');
+    if (!options.password)
+        throw new Error('A password is required to decrypt this LearnCard export');
 
     const envelope = JSON.parse(stored) as EncryptedPayloadEnvelope;
 

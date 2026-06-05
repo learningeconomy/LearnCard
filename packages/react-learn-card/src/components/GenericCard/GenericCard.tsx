@@ -11,7 +11,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     customHeaderClass = '',
     type = WalletCategoryTypes.achievements,
     className,
-    onClick = () => { },
+    onClick = () => {},
     showChecked,
     checkStatus,
     flipped,

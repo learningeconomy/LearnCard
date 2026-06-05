@@ -29,11 +29,7 @@ import { useCallback } from 'react';
 import * as Sentry from '@sentry/react';
 
 import { useAnalytics } from '../analytics/context';
-import type {
-    AnalyticsEventName,
-    AnalyticsEventPayloads,
-    EventPayload,
-} from '../analytics/events';
+import type { AnalyticsEventName, AnalyticsEventPayloads, EventPayload } from '../analytics/events';
 
 /**
  * Per-report options passed at call time.
@@ -189,8 +185,7 @@ export const extractErrorName = (error: unknown): string | undefined => {
  * can drop the field cleanly instead of deduping `'unknown'`.
  */
 export const getWalletVersion = (): string | undefined => {
-    const v = (import.meta as { env?: Record<string, string | undefined> }).env
-        ?.VITE_APP_VERSION;
+    const v = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_APP_VERSION;
     return v && v.length > 0 ? v : undefined;
 };
 
