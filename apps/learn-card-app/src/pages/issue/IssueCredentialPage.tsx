@@ -1,0 +1,253 @@
+import React, { useCallback, useMemo, useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import { IonContent, IonPage } from '@ionic/react';
+import { ArrowLeft, Code } from 'lucide-react';
+
+import MainHeader from '../../components/main-header/MainHeader';
+import {
+    SimpleCredentialType,
+    SimpleSendRecipient,
+    buildSimpleTemplate,
+    issueAndSendCredential,
+} from '../../components/simple-send/simpleSend.helpers';
+import { isPlausibleRecipient } from './components/recipientValidation';
+import {
+    useWallet,
+    useToast,
+    ToastTypeEnum,
+    getLogger,
+    useGetCurrentLCNUser,
+} from 'learn-card-base';
+import { validateCredentialJsonLd } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
+import { templateToJson } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
+import type { OBv3CredentialTemplate } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+
+import { HeroCanvas } from './components/HeroCanvas';
+import { IssuePalette } from './components/IssuePalette';
+import { JsonLens } from './components/JsonLens';
+import { IssueSuccess } from './components/IssueSuccess';
+
+const log = getLogger('issue-page');
+
+const IssueCredentialPage: React.FC = () => {
+    const history = useHistory();
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+
+    const [credentialType, setCredentialType] = useState<SimpleCredentialType | null>(null);
+    const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(null);
+    const [showJson, setShowJson] = useState(false);
+
+    const [recipientMode, setRecipientMode] = useState<'self' | 'other'>('self');
+    const [recipientValue, setRecipientValue] = useState('');
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [issuedUri, setIssuedUri] = useState<string | null>(null);
+
+    const ach = template?.credentialSubject?.achievement;
+    const nameValid = Boolean(ach?.name?.value?.trim());
+    const descriptionValid = Boolean(ach?.description?.value?.trim());
+    const detailsValid = nameValid && descriptionValid;
+    const recipientValid = recipientMode === 'self' || isPlausibleRecipient(recipientValue);
+    const canIssue = Boolean(template) && detailsValid && recipientValid && !isSubmitting;
+
+    const issuerName = currentLCNUser?.displayName?.trim() || 'You';
+    const issuerImage = currentLCNUser?.image || undefined;
+
+    const missingHint = !template
+        ? 'Pick a type to begin'
+        : !nameValid
+        ? 'Add a name to continue'
+        : !descriptionValid
+        ? 'Add a description to continue'
+        : !recipientValid
+        ? 'Add a recipient to continue'
+        : null;
+
+    const handleSelectType = useCallback((type: SimpleCredentialType) => {
+        log.info('issue.type_selected', { credentialType: type });
+        setCredentialType(type);
+        setTemplate(buildSimpleTemplate({ credentialType: type, name: '', description: '' }));
+    }, []);
+
+    const previewCredential = useMemo<Record<string, unknown> | null>(() => {
+        if (!template) return null;
+        const json = templateToJson(template);
+        const fill = (obj: unknown): unknown => {
+            if (typeof obj === 'string') {
+                return obj.replace(/\{\{(\w+)\}\}/g, (_m, v) =>
+                    /date|time/i.test(v) ? new Date().toISOString() : ''
+                );
+            }
+            if (Array.isArray(obj)) return obj.map(fill);
+            if (obj && typeof obj === 'object') {
+                return Object.fromEntries(Object.entries(obj).map(([k, val]) => [k, fill(val)]));
+            }
+            return obj;
+        };
+        return {
+            ...(fill(json) as Record<string, unknown>),
+            issuer: {
+                id: currentLCNUser?.did || 'did:web:preview',
+                name: issuerName,
+                ...(issuerImage ? { image: issuerImage } : {}),
+            },
+            validFrom: new Date().toISOString(),
+        };
+    }, [template, issuerName, issuerImage, currentLCNUser?.did]);
+
+    const handleIssue = useCallback(async () => {
+        if (!template || !canIssue) return;
+        setError(null);
+        setIsSubmitting(true);
+        try {
+            const wallet = await initWallet();
+            const jsonLd = await validateCredentialJsonLd(templateToJson(template));
+            if (!jsonLd.valid) {
+                setError(jsonLd.errors.join('; '));
+                setIsSubmitting(false);
+                return;
+            }
+            const recipient: SimpleSendRecipient =
+                recipientMode === 'self'
+                    ? { kind: 'self' }
+                    : { kind: 'identifier', value: recipientValue.trim() };
+            const result = await issueAndSendCredential(wallet, template, recipient);
+            presentToast('Credential issued.', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            setIssuedUri(result.credentialUri);
+        } catch (e) {
+            log.error('issue.failed', e);
+            const message = (e as Error)?.message ?? '';
+            setError(
+                /network|fetch|connection/i.test(message)
+                    ? 'Connection issue. Please check your internet and try again.'
+                    : 'Something went wrong issuing your credential. Please try again.'
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [template, canIssue, initWallet, recipientMode, recipientValue, presentToast]);
+
+    const reset = useCallback(() => {
+        setIssuedUri(null);
+        setCredentialType(null);
+        setTemplate(null);
+        setRecipientMode('self');
+        setRecipientValue('');
+        setError(null);
+    }, []);
+
+    return (
+        <IonPage className="bg-white">
+            <MainHeader showBackButton customClassName="bg-white" />
+            <IonContent>
+                {issuedUri ? (
+                    <IssueSuccess
+                        credentialUri={issuedUri}
+                        credential={previewCredential}
+                        credentialType={credentialType}
+                        onIssueAnother={reset}
+                        onViewWallet={() => history.push('/wallet')}
+                    />
+                ) : (
+                    <div className="font-poppins min-h-full bg-grayscale-10">
+                        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-grayscale-200">
+                            <div className="max-w-[1100px] mx-auto px-6 py-3 flex items-center justify-between gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => history.goBack()}
+                                    className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                    Back
+                                </button>
+
+                                <div className="flex items-center gap-2">
+                                    {template && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowJson(v => !v)}
+                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors ${
+                                                showJson
+                                                    ? 'bg-grayscale-900 text-white'
+                                                    : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                            }`}
+                                        >
+                                            <Code className="w-3.5 h-3.5" />
+                                            JSON
+                                        </button>
+                                    )}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleIssue}
+                                            disabled={!canIssue}
+                                            className="py-2.5 px-5 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmitting ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    Issuing...
+                                                </span>
+                                            ) : (
+                                                'Issue Credential'
+                                            )}
+                                        </button>
+                                        {!canIssue && !isSubmitting && missingHint && (
+                                            <span className="text-[11px] text-grayscale-400 leading-none animate-fade-in-up">
+                                                {missingHint}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="max-w-[1100px] mx-auto px-6 py-8 flex flex-col-reverse desktop:flex-row desktop:items-start gap-8">
+                            <div className="flex-1 desktop:min-w-0">
+                                {error && (
+                                    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl">
+                                        <span className="text-sm text-red-700 leading-relaxed">
+                                            {error}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {showJson && previewCredential ? (
+                                    <JsonLens credential={previewCredential} />
+                                ) : (
+                                    <IssuePalette
+                                        credentialType={credentialType}
+                                        template={template}
+                                        onSelectType={handleSelectType}
+                                        onChangeTemplate={setTemplate}
+                                        recipientMode={recipientMode}
+                                        recipientValue={recipientValue}
+                                        onRecipientModeChange={setRecipientMode}
+                                        onRecipientValueChange={setRecipientValue}
+                                    />
+                                )}
+                            </div>
+
+                            <div className="desktop:w-[340px] shrink-0 desktop:sticky desktop:top-[84px]">
+                                <HeroCanvas
+                                    credential={previewCredential}
+                                    credentialType={credentialType}
+                                    cardTitle={ach?.name?.value ?? ''}
+                                    hasImage={Boolean(ach?.image?.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </IonContent>
+        </IonPage>
+    );
+};
+
+export default IssueCredentialPage;
