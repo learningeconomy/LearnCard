@@ -36,6 +36,7 @@ type SourceSkillNode = {
 type SourceSkillFramework = {
     name: string;
     description: string;
+    image?: string;
     skills: SourceSkillNode[];
 };
 
@@ -77,12 +78,11 @@ const buildFramework = (framework: FrameworkSource): SeedSkillFrameworkFixture =
     name: framework.data.name,
     description: framework.data.description,
     sourceURI: framework.sourceURI,
-    image: framework.image,
+    image: framework.data.image ?? framework.image,
     status: 'active',
     isPublic: true,
     skills: framework.data.skills.map(normalizeSkillNode),
 });
 
-export const DEFAULT_SKILL_FRAMEWORKS: SeedSkillFrameworkFixture[] = FRAMEWORK_SOURCES.map(
-    buildFramework
-);
+export const DEFAULT_SKILL_FRAMEWORKS: SeedSkillFrameworkFixture[] =
+    FRAMEWORK_SOURCES.map(buildFramework);
