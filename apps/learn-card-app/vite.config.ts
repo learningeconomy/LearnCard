@@ -59,6 +59,8 @@ const workspacePackages = [
     '@learncard/open-badge-v2-plugin',
     '@learncard/network-brain-client',
     '@learncard/network-plugin',
+    '@learncard/openid4vc-plugin',
+    '@learncard/sd-jwt-vc-plugin',
 ];
 
 export default defineConfig(({ mode }) => {
@@ -120,7 +122,8 @@ export default defineConfig(({ mode }) => {
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
             // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
             // Kept as fallbacks for backward compat; will be removed in a future PR.
-            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env.REACT_APP_KEY_DERIVATION_PROVIDER
+            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env
+                .REACT_APP_KEY_DERIVATION_PROVIDER
                 ? JSON.stringify(process.env.REACT_APP_KEY_DERIVATION_PROVIDER)
                 : 'undefined',
             'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL

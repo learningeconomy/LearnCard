@@ -7,6 +7,7 @@ import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import CredentialResultsBox from './CredentialResultsBox';
+import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -152,6 +153,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
+
+                    <SdJwtVcClaimsBox credential={credential} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

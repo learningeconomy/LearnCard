@@ -78,7 +78,13 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     const history = useHistory();
     const currentUser = useCurrentUser();
 
-    const { keyDerivation, capabilities, showDeviceLinkModal, authProvider: contextAuthProvider, refreshAuthSession } = useAppAuth();
+    const {
+        keyDerivation,
+        capabilities,
+        showDeviceLinkModal,
+        authProvider: contextAuthProvider,
+        refreshAuthSession,
+    } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
     const { newModal, closeModal } = useModal();
@@ -243,10 +249,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                 const showReAuth = () => {
                     newModal(
-                        <ReAuthOverlay
-                            onSuccess={closeModal}
-                            onCancel={closeModal}
-                        />,
+                        <ReAuthOverlay onSuccess={closeModal} onCancel={closeModal} />,
                         { sectionClassName: '!max-w-[480px]' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
@@ -278,11 +281,17 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                     try {
                         const token = await contextAuthProvider.getIdToken();
                         const providerType = contextAuthProvider.getProviderType();
-                        existingMethods = await keyDerivation.getAvailableRecoveryMethods(token, providerType);
+                        existingMethods = await keyDerivation.getAvailableRecoveryMethods(
+                            token,
+                            providerType
+                        );
 
                         // Fetch masked recovery email from server key status
                         if (keyDerivation.fetchServerKeyStatus) {
-                            const status = await keyDerivation.fetchServerKeyStatus(token, providerType);
+                            const status = await keyDerivation.fetchServerKeyStatus(
+                                token,
+                                providerType
+                            );
                             fetchedMaskedRecoveryEmail = status.maskedRecoveryEmail ?? null;
                         }
                     } catch {
@@ -293,13 +302,18 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                 const canSetup = !!keyDerivation.setupRecoveryMethod;
 
                 const setupMethod = canSetup
-                    ? async (input: { method: string; password?: string; did?: string }, authUser?: unknown) => {
+                    ? async (
+                          input: { method: string; password?: string; did?: string },
+                          authUser?: unknown
+                      ) => {
                           let token: string;
 
                           try {
                               token = await contextAuthProvider.getIdToken();
                           } catch {
-                              throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                              throw new Error(
+                                  'Your session has expired. Please close this dialog and sign in again.'
+                              );
                           }
 
                           const providerType = contextAuthProvider.getProviderType();
@@ -309,7 +323,8 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                               const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
-                              if (!jwt || typeof jwt !== 'string') throw new Error('Failed to sign DID-Auth VP');
+                              if (!jwt || typeof jwt !== 'string')
+                                  throw new Error('Failed to sign DID-Auth VP');
 
                               return jwt;
                           };
@@ -319,14 +334,18 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                               providerType,
                               privateKey: currentUser.privateKey!,
                               input: input as import('@learncard/sss-key-manager').RecoverySetupInput,
-                              authUser: (authUser as import('@learncard/sss-key-manager').AuthUser) ?? undefined,
+                              authUser:
+                                  (authUser as import('@learncard/sss-key-manager').AuthUser) ??
+                                  undefined,
                               signDidAuthVp: signVp,
                           });
                       }
                     : null;
 
                 const requireAuth = async () => {
-                    throw new Error('Your session has expired. Please close this dialog and sign in again.');
+                    throw new Error(
+                        'Your session has expired. Please close this dialog and sign in again.'
+                    );
                 };
 
                 const { serverUrl } = getAuthConfig();
@@ -343,7 +362,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                     return {
                         'Content-Type': 'application/json',
-                        ...(vpJwt && typeof vpJwt === 'string' ? { Authorization: `Bearer ${vpJwt}` } : {}),
+                        ...(vpJwt && typeof vpJwt === 'string'
+                            ? { Authorization: `Bearer ${vpJwt}` }
+                            : {}),
                     };
                 };
 
@@ -351,17 +372,23 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                     <RecoverySetupModal
                         existingMethods={existingMethods.map(m => ({
                             type: m.type,
-                            createdAt: m.createdAt instanceof Date
-                                ? m.createdAt.toISOString()
-                                : String(m.createdAt),
+                            createdAt:
+                                m.createdAt instanceof Date
+                                    ? m.createdAt.toISOString()
+                                    : String(m.createdAt),
                         }))}
                         maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
                         onSetupPasskey={
                             setupMethod
                                 ? async () => {
                                       const authUser = await contextAuthProvider.getCurrentUser();
-                                      const result = await setupMethod({ method: 'passkey' }, authUser);
-                                      return result?.method === 'passkey' ? result.credentialId : 'Passkey created';
+                                      const result = await setupMethod(
+                                          { method: 'passkey' },
+                                          authUser
+                                      );
+                                      return result?.method === 'passkey'
+                                          ? result.credentialId
+                                          : 'Passkey created';
                                   }
                                 : requireAuth
                         }
@@ -369,7 +396,10 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                             setupMethod
                                 ? async () => {
                                       const authUser = await contextAuthProvider.getCurrentUser();
-                                      const result = await setupMethod({ method: 'phrase' }, authUser);
+                                      const result = await setupMethod(
+                                          { method: 'phrase' },
+                                          authUser
+                                      );
                                       return result?.method === 'phrase' ? result.phrase : '';
                                   }
                                 : requireAuth
@@ -380,8 +410,13 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                       const authUser = await contextAuthProvider.getCurrentUser();
                                       const lc = await getSigningLearnCard(currentUser.privateKey!);
                                       const did = lc?.id?.did() || '';
-                                      const result = await setupMethod({ method: 'backup', password: backupPw, did }, authUser);
-                                      return result?.method === 'backup' ? JSON.stringify(result.backupFile, null, 2) : '';
+                                      const result = await setupMethod(
+                                          { method: 'backup', password: backupPw, did },
+                                          authUser
+                                      );
+                                      return result?.method === 'backup'
+                                          ? JSON.stringify(result.backupFile, null, 2)
+                                          : '';
                                   }
                                 : requireAuth
                         }
@@ -397,7 +432,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                             if (!res.ok) {
                                 const data = await res.json().catch(() => ({}));
-                                throw new Error(data?.message || 'Failed to send verification code.');
+                                throw new Error(
+                                    data?.message || 'Failed to send verification code.'
+                                );
                             }
                         }}
                         onVerifyRecoveryEmail={async (code: string) => {

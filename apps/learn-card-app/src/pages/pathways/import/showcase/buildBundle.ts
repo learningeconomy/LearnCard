@@ -55,7 +55,7 @@ export type TerminationBuilder = {
 
 export const compositeRef = (
     pathwaySlug: string,
-    renderStyle: 'inline-expandable' | 'link-out' = 'inline-expandable',
+    renderStyle: 'inline-expandable' | 'link-out' = 'inline-expandable'
 ): PolicyBuilder => ({
     __kind: 'composite-ref',
     pathwaySlug,
@@ -105,7 +105,7 @@ export interface PathwaySpec {
 
 export const artifactPolicy = (
     prompt: string,
-    expectedArtifact: 'text' | 'link' | 'pdf' = 'text',
+    expectedArtifact: 'text' | 'link' | 'pdf' = 'text'
 ): Policy => ({
     kind: 'artifact',
     prompt,
@@ -114,7 +114,7 @@ export const artifactPolicy = (
 
 export const practicePolicy = (
     frequency: 'daily' | 'weekly' | 'monthly' | 'ad-hoc',
-    perPeriod: number = 1,
+    perPeriod: number = 1
 ): Policy => ({
     kind: 'practice',
     cadence: { frequency, perPeriod },
@@ -148,7 +148,7 @@ export const externalPolicy = (serverId: string, toolName: string): Policy => ({
  * weighted rubrics when that's the point of the pathway.
  */
 export const assessmentPolicy = (
-    criteria: { id: string; description: string; weight?: number }[] = [],
+    criteria: { id: string; description: string; weight?: number }[] = []
 ): Policy => ({
     kind: 'assessment',
     rubric: {
@@ -167,17 +167,14 @@ export const selfAttest = (prompt: string): Termination => ({
 
 export const artifactCount = (
     count: number,
-    artifactType: 'text' | 'link' | 'pdf' = 'text',
+    artifactType: 'text' | 'link' | 'pdf' = 'text'
 ): Termination => ({
     kind: 'artifact-count',
     count,
     artifactType,
 });
 
-export const endorsement = (
-    minEndorsers: number,
-    trustedIssuers?: string[],
-): Termination => ({
+export const endorsement = (minEndorsers: number, trustedIssuers?: string[]): Termination => ({
     kind: 'endorsement',
     minEndorsers,
     ...(trustedIssuers ? { trustedIssuers } : {}),
@@ -199,7 +196,10 @@ const defaultGenerateId: IdFactory = () => {
     // eslint-disable-next-line no-console
     log.warn('[showcase] crypto.randomUUID unavailable; falling back to Math.random id');
     const part = () => Math.random().toString(16).slice(2, 10);
-    return `${part()}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part()}${part().slice(0, 4)}`;
+    return `${part()}-${part().slice(0, 4)}-${part().slice(0, 4)}-${part().slice(
+        0,
+        4
+    )}-${part()}${part().slice(0, 4)}`;
 };
 
 // ---------------------------------------------------------------------------
@@ -234,15 +234,16 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
     const primarySpec = specs.find(s => s.slug === primarySlug);
     if (!primarySpec) {
         throw new Error(
-            `[showcase] primary slug "${primarySlug}" not found in specs: ${specs.map(s => s.slug).join(', ')}`,
+            `[showcase] primary slug "${primarySlug}" not found in specs: ${specs
+                .map(s => s.slug)
+                .join(', ')}`
         );
     }
 
     const pathwayIdBySlug: Record<string, string> = {};
     for (const s of specs) pathwayIdBySlug[s.slug] = generateId();
 
-    const nodeIdKey = (pathwaySlug: string, nodeSlug: string) =>
-        `${pathwaySlug}::${nodeSlug}`;
+    const nodeIdKey = (pathwaySlug: string, nodeSlug: string) => `${pathwaySlug}::${nodeSlug}`;
     const nodeIdByKey: Record<string, string> = {};
     for (const s of specs) {
         for (const n of s.nodes) nodeIdByKey[nodeIdKey(s.slug, n.slug)] = generateId();
@@ -254,7 +255,7 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
 
             if (!refPathwayId) {
                 throw new Error(
-                    `[showcase] composite ref to unknown pathway slug: ${builderOrPolicy.pathwaySlug}`,
+                    `[showcase] composite ref to unknown pathway slug: ${builderOrPolicy.pathwaySlug}`
                 );
             }
 
@@ -269,17 +270,17 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
     };
 
     const resolveTermination = (
-        builderOrTermination: Termination | TerminationBuilder,
+        builderOrTermination: Termination | TerminationBuilder
     ): Termination => {
         if (
-            '__kind' in builderOrTermination
-            && builderOrTermination.__kind === 'pathway-completed-ref'
+            '__kind' in builderOrTermination &&
+            builderOrTermination.__kind === 'pathway-completed-ref'
         ) {
             const refPathwayId = pathwayIdBySlug[builderOrTermination.pathwaySlug];
 
             if (!refPathwayId) {
                 throw new Error(
-                    `[showcase] pathway-completed ref to unknown pathway slug: ${builderOrTermination.pathwaySlug}`,
+                    `[showcase] pathway-completed ref to unknown pathway slug: ${builderOrTermination.pathwaySlug}`
                 );
             }
 
@@ -323,7 +324,7 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
 
             if (!fromId || !toId) {
                 throw new Error(
-                    `[showcase] edge references unknown slug in pathway "${spec.slug}": ${e.from} → ${e.to}`,
+                    `[showcase] edge references unknown slug in pathway "${spec.slug}": ${e.from} → ${e.to}`
                 );
             }
 
@@ -372,15 +373,11 @@ export const assembleBundle = (opts: AssembleOptions): ShowcaseBundle => {
         // falls back to no route, matching `instantiateTemplate`.
         const seededRoute = seedChosenRoute(pathway);
 
-        return seededRoute.length > 0
-            ? { ...pathway, chosenRoute: seededRoute }
-            : pathway;
+        return seededRoute.length > 0 ? { ...pathway, chosenRoute: seededRoute } : pathway;
     };
 
     const primary = realize(primarySpec);
-    const supporting: Pathway[] = specs
-        .filter(s => s.slug !== primarySlug)
-        .map(realize);
+    const supporting: Pathway[] = specs.filter(s => s.slug !== primarySlug).map(realize);
 
     return { primary, supporting };
 };

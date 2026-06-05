@@ -37,16 +37,9 @@ import type { VcLike } from '../core/outcomeMatcher';
 import { pathwayProgressReactor } from '../events/pathwayProgressReactor';
 import type { ProgressDispatchRecord } from '../events/pathwayProgressReactor';
 import { publishWalletEvent } from '../events/walletEventBus';
-import type {
-    CredentialIngestSource,
-    OutcomeSignal,
-    Termination,
-} from '../types';
+import type { CredentialIngestSource, OutcomeSignal, Termination } from '../types';
 
-import {
-    seedAwsCloudPractitionerDemo,
-    seedDemoPathwayIfEmpty,
-} from './devSeed';
+import { seedAwsCloudPractitionerDemo, seedDemoPathwayIfEmpty } from './devSeed';
 
 // ---------------------------------------------------------------------------
 // VC synthesis
@@ -65,7 +58,7 @@ import {
  */
 const synthesizeVcForOutcome = (
     outcome: OutcomeSignal,
-    issuer = 'did:example:demo-institution',
+    issuer = 'did:example:demo-institution'
 ): VcLike | null => {
     switch (outcome.kind) {
         case 'credential-received':
@@ -85,7 +78,7 @@ const synthesizeVcForOutcome = (
                 credentialSubject: setFieldPath(
                     {},
                     outcome.field,
-                    pickSatisfyingNumber(outcome.op, outcome.value),
+                    pickSatisfyingNumber(outcome.op, outcome.value)
                 ),
             };
 
@@ -124,7 +117,7 @@ const synthesizeVcForOutcome = (
 const setFieldPath = (
     root: Record<string, unknown>,
     path: string,
-    value: unknown,
+    value: unknown
 ): Record<string, unknown> => {
     const segments = path.split('.').filter(Boolean);
 
@@ -154,10 +147,7 @@ const setFieldPath = (
  * Pick a number that satisfies the given comparison against `value`.
  * Stays a hair above `>=` / `>`, equal for `==`, a hair below for `<=` / `<`.
  */
-const pickSatisfyingNumber = (
-    op: '==' | '!=' | '<' | '<=' | '>' | '>=',
-    value: number,
-): number => {
+const pickSatisfyingNumber = (op: '==' | '!=' | '<' | '<=' | '>' | '>=', value: number): number => {
     switch (op) {
         case '==':
             return value;
@@ -231,7 +221,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
 
         if (!vc) {
             console.info(
-                `[pathwaysDev] Skipping outcome "${outcome.label}" — kind "${outcome.kind}" has no VC shape to synthesize.`,
+                `[pathwaysDev] Skipping outcome "${outcome.label}" — kind "${outcome.kind}" has no VC shape to synthesize.`
             );
 
             continue;
@@ -270,7 +260,7 @@ const dropMatchingDemoVc = (options: DropVcOptions = {}): DropVcResult => {
 
     console.info(
         `[pathwaysDev] Dropped demo VC → ${proposalsEmitted} proposal(s) emitted, ${allSkipped.length} skip(s).`,
-        { skipped: allSkipped },
+        { skipped: allSkipped }
     );
 
     return { proposalsEmitted, skipped: allSkipped };
@@ -364,7 +354,7 @@ export interface SimulateCredentialInput {
  * Call after `seedAws(did)` so there's a pathway to match against.
  */
 const simulateCredentialClaim = (
-    input: SimulateCredentialInput = {},
+    input: SimulateCredentialInput = {}
 ): ProgressDispatchRecord | null => {
     const eventId = input.eventId ?? uuid();
     const credentialUri = input.credentialUri ?? `urn:uuid:sim-${uuid()}`;
@@ -421,7 +411,7 @@ const simulateCredentialClaim = (
                   outcomeBindings: record.outcomeBindings?.length ?? 0,
                   credentialUri,
               }
-            : '(no dispatch — reactor saw the event but matched nothing / no pathways)',
+            : '(no dispatch — reactor saw the event but matched nothing / no pathways)'
     );
 
     return record;
@@ -450,9 +440,7 @@ export interface SimulateSessionInput {
  * `session-completed` terminations without having to actually
  * drive a tutor session through the websocket chat service.
  */
-const simulateAiSessionFinish = (
-    input: SimulateSessionInput,
-): ProgressDispatchRecord | null => {
+const simulateAiSessionFinish = (input: SimulateSessionInput): ProgressDispatchRecord | null => {
     if (!input.topicUri) {
         log.warn('[pathwaysDev] simulateAiSessionFinish requires a topicUri.');
 
@@ -490,7 +478,7 @@ const simulateAiSessionFinish = (
                   topicUri: input.topicUri,
                   threadId,
               }
-            : '(no dispatch — reactor saw the event but matched nothing)',
+            : '(no dispatch — reactor saw the event but matched nothing)'
     );
 
     return record;
@@ -522,14 +510,14 @@ const inspectActivePathway = (): void => {
         const marker = status === 'completed' ? '✓' : '·';
 
         console.info(
-            `  ${marker} [${status.padEnd(11)}] ${node.title} — ${terminationLabel(termination)}`,
+            `  ${marker} [${status.padEnd(11)}] ${node.title} — ${terminationLabel(termination)}`
         );
     }
 
     console.info(
         `[pathwaysDev] Outcomes: ${pathway.outcomes?.length ?? 0} declared, ${
             pathway.outcomes?.filter(o => o.binding).length ?? 0
-        } bound`,
+        } bound`
     );
 };
 
@@ -662,7 +650,7 @@ export const installPathwaysDevGlobals = (): void => {
 
             if (!id) {
                 log.warn(
-                    '[pathwaysDev] triggerCelebration: no pathwayId given and no active pathway.',
+                    '[pathwaysDev] triggerCelebration: no pathwayId given and no active pathway.'
                 );
 
                 return;
@@ -681,6 +669,6 @@ export const installPathwaysDevGlobals = (): void => {
     console.info(
         '[pathwaysDev] Installed. Available: seedAws(did) / seedDemo(did) / ' +
             'dropVc() / simulateCredentialClaim({...}) / simulateAiSessionFinish({topicUri}) / ' +
-            'inspectPathway() / listDispatches() / clearDispatches() / triggerCelebration(pathwayId?) / resetAll().',
+            'inspectPathway() / listDispatches() / clearDispatches() / triggerCelebration(pathwayId?) / resetAll().'
     );
 };

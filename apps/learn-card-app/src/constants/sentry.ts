@@ -33,7 +33,9 @@ export const initSentryFromTenant = (): void => {
         if (config.observability.sentryTraceDomains) {
             traceDomains = [
                 'localhost',
-                ...config.observability.sentryTraceDomains.map(d => new RegExp(`^https://${escapeRegExp(d)}`)),
+                ...config.observability.sentryTraceDomains.map(
+                    d => new RegExp(`^https://${escapeRegExp(d)}`)
+                ),
             ];
         }
     } catch {
@@ -95,7 +97,9 @@ export const initSentryFromTenant = (): void => {
         addBreadcrumb: opts => Sentry.addBreadcrumb(opts),
         // Escape hatch for callers that need direct scope access (e.g. logger.withContext).
         withScope: fn =>
-            Sentry.withScope(scope => fn({ setTag: scope.setTag.bind(scope), setExtra: scope.setExtra.bind(scope) })),
+            Sentry.withScope(scope =>
+                fn({ setTag: scope.setTag.bind(scope), setExtra: scope.setExtra.bind(scope) })
+            ),
     });
 };
 

@@ -270,15 +270,15 @@ export const BoostMediaPreview: React.FC<{
                 <>
                     <section className="grayscale-800 h-full flex flex-row overflow-hidden">
                         <div className="flex-1 h-full overflow-hidden relative">{mediaContent}</div>
-	                        {!isMobile && !isFullScreen && (
-	                            <BoostDetailsSideBar
-	                                credential={credential}
-	                                categoryType={BoostCategoryOptionsEnum.accomplishment}
-	                                verificationItems={verifications}
-	                                renderMethodCredential={credential}
-	                                displayType={DisplayTypeEnum.Media}
-	                            />
-	                        )}
+                        {!isMobile && !isFullScreen && (
+                            <BoostDetailsSideBar
+                                credential={credential}
+                                categoryType={BoostCategoryOptionsEnum.accomplishment}
+                                verificationItems={verifications}
+                                renderMethodCredential={credential}
+                                displayType={DisplayTypeEnum.Media}
+                            />
+                        )}
                         {isFullScreen && (
                             <MediaCollapseButton onClick={() => setIsFullScreen(false)} />
                         )}

@@ -1229,6 +1229,12 @@ importers:
 
   examples/openid4vc-playground:
     dependencies:
+      '@sd-jwt/decode':
+        specifier: ^0.19.0
+        version: 0.19.0
+      '@sd-jwt/sd-jwt-vc':
+        specifier: ^0.19.0
+        version: 0.19.0
       jose:
         specifier: ^5.9.6
         version: 5.10.0
@@ -1548,6 +1554,9 @@ importers:
       '@learncard/lca-api-plugin':
         specifier: workspace:*
         version: link:../plugins/lca-api-plugin
+      '@learncard/learn-card-plugin':
+        specifier: workspace:*
+        version: link:../plugins/learn-card
       '@learncard/ler-rs-plugin':
         specifier: workspace:*
         version: link:../plugins/ler-rs
@@ -1969,6 +1978,12 @@ importers:
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
+      '@noble/hashes':
+        specifier: ^1.8.0
+        version: 1.8.0
+      '@sd-jwt/decode':
+        specifier: ^0.19.0
+        version: 0.19.0
       '@trpc/server':
         specifier: 11.7.1
         version: 11.7.1(typescript@5.6.2)
@@ -2066,6 +2081,9 @@ importers:
       '@learncard/openid4vc-plugin':
         specifier: workspace:*
         version: link:../plugins/openid4vc
+      '@learncard/sd-jwt-vc-plugin':
+        specifier: workspace:*
+        version: link:../plugins/sd-jwt-vc
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -3252,6 +3270,12 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../didkit
+      '@learncard/vc-plugin':
+        specifier: workspace:^
+        version: link:../vc
+      '@sd-jwt/core':
+        specifier: ^0.19.0
+        version: 0.19.0
       '@sd-jwt/decode':
         specifier: ^0.19.0
         version: 0.19.0
@@ -12620,7 +12644,6 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.10':
     resolution: {integrity: sha512-mHH7I6fWdztaNjguGJOLaerXWnQymQ/xKQ8NqClIXoI2PJNgmpQG6DxFcLRs1aYyWg1iY8bPliLJi41u94KdCA==}
-    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}

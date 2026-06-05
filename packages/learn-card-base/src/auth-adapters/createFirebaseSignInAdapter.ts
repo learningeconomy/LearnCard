@@ -181,7 +181,9 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
                         handleCodeInApp: true,
                         ...(settings?.iOS ? { iOS: settings.iOS } : {}),
                         ...(settings?.android ? { android: settings.android } : {}),
-                        ...(settings?.dynamicLinkDomain ? { dynamicLinkDomain: settings.dynamicLinkDomain } : {}),
+                        ...(settings?.dynamicLinkDomain
+                            ? { dynamicLinkDomain: settings.dynamicLinkDomain }
+                            : {}),
                     },
                 });
             } else {
@@ -203,7 +205,9 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
 
             if (isNative() && getNativeAuth?.()) {
                 const nativeAuth = getNativeAuth!();
-                const { isSignInWithEmailLink } = await nativeAuth.isSignInWithEmailLink({ emailLink: link });
+                const { isSignInWithEmailLink } = await nativeAuth.isSignInWithEmailLink({
+                    emailLink: link,
+                });
                 const storedEmail = window.localStorage.getItem('emailForSignIn') || email;
 
                 if (!isSignInWithEmailLink) throw new Error('Invalid email sign-in link');
@@ -212,7 +216,9 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
                 const credential = EmailAuthProvider.credentialWithLink(storedEmail, link);
                 await signInWithCredential(firebaseAuth as never, credential);
             } else {
-                const { isSignInWithEmailLink, signInWithEmailLink } = await import('firebase/auth');
+                const { isSignInWithEmailLink, signInWithEmailLink } = await import(
+                    'firebase/auth'
+                );
 
                 if (!isSignInWithEmailLink(firebaseAuth as never, link)) {
                     throw new Error('Invalid email sign-in link');
@@ -255,22 +261,33 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
             };
         },
 
-        async confirmPhoneOtp(handle: PhoneVerificationHandle, code: string | number): Promise<AuthUser> {
-            const confirmationResult = handle._internal as { confirm: (code: string | number) => Promise<{ user: unknown }> } | undefined;
+        async confirmPhoneOtp(
+            handle: PhoneVerificationHandle,
+            code: string | number
+        ): Promise<AuthUser> {
+            const confirmationResult = handle._internal as
+                | { confirm: (code: string | number) => Promise<{ user: unknown }> }
+                | undefined;
 
             if (confirmationResult?.confirm) {
                 await confirmationResult.confirm(code);
             } else {
                 // Fallback: use credential-based sign-in
                 const { PhoneAuthProvider, signInWithCredential } = await import('firebase/auth');
-                const credential = PhoneAuthProvider.credential(handle.verificationId, String(code));
+                const credential = PhoneAuthProvider.credential(
+                    handle.verificationId,
+                    String(code)
+                );
                 await signInWithCredential(getAuth() as never, credential);
             }
 
             return requireCurrentUser();
         },
 
-        async confirmNativePhoneOtp(verificationId: string, code: string | number): Promise<AuthUser> {
+        async confirmNativePhoneOtp(
+            verificationId: string,
+            code: string | number
+        ): Promise<AuthUser> {
             const { PhoneAuthProvider, signInWithCredential } = await import('firebase/auth');
             const credential = PhoneAuthProvider.credential(verificationId, String(code));
             await signInWithCredential(getAuth() as never, credential);
@@ -290,8 +307,12 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
             // Also sign in on the web layer for SDK consistency on native
             if (isNative() && signInResult.credential?.idToken) {
                 try {
-                    const { GoogleAuthProvider, signInWithCredential } = await import('firebase/auth');
-                    const credential = GoogleAuthProvider.credential(signInResult.credential.idToken);
+                    const { GoogleAuthProvider, signInWithCredential } = await import(
+                        'firebase/auth'
+                    );
+                    const credential = GoogleAuthProvider.credential(
+                        signInResult.credential.idToken
+                    );
                     await signInWithCredential(firebaseAuth as never, credential);
                 } catch (e) {
                     log.warn('[FirebaseSignInAdapter] Web-layer Google credential failed:', e);
@@ -307,7 +328,8 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
             if (isNative()) {
                 const nativeAuth = getNativeAuth?.();
 
-                if (!nativeAuth) throw new Error('Apple sign-in on native requires the Firebase plugin');
+                if (!nativeAuth)
+                    throw new Error('Apple sign-in on native requires the Firebase plugin');
 
                 const result = await nativeAuth.signInWithApple({ skipNativeAuth: true });
 

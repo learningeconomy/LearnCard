@@ -1,11 +1,7 @@
 import { useWorker } from '@koale/useworker';
 
 import { getCanvasFromFile, getFileFromCanvas } from './photos/file.helpers';
-import {
-    bilinearInterpolate,
-    halfScaleCanvas,
-    scaleCanvas,
-} from './photos/canvas.helpers';
+import { bilinearInterpolate, halfScaleCanvas, scaleCanvas } from './photos/canvas.helpers';
 import { IMAGE_MIME_TYPES } from './constants/filestack';
 import { getLogger } from '../logging/logger';
 const log = getLogger('use-resize-photo');

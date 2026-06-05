@@ -1,25 +1,22 @@
 import type { LearnCard } from '@learncard/core';
 
-import {
-    OpenID4VCDependentLearnCard,
-    OpenID4VCPlugin,
-    OpenID4VCPluginConfig,
-} from './types';
-import {
-    parseCredentialOfferUri,
-    resolveCredentialOfferByReference,
-} from './offer/parse';
+import { OpenID4VCDependentLearnCard, OpenID4VCPlugin, OpenID4VCPluginConfig } from './types';
+import { parseCredentialOfferUri, resolveCredentialOfferByReference } from './offer/parse';
 import { CredentialOffer, CredentialOfferParseError } from './offer/types';
-import { acceptCredentialOffer as acceptCredentialOfferFn } from './vci/accept';
+import {
+    acceptCredentialOffer as acceptCredentialOfferFn,
+    exchangePreAuthCodeForToken as exchangePreAuthCodeForTokenFn,
+    requestCredentialsFromPreAuthToken as requestCredentialsFromPreAuthTokenFn,
+} from './vci/accept';
 import {
     beginAuthCodeFlow as beginAuthCodeFlowFn,
     completeAuthCodeFlow as completeAuthCodeFlowFn,
+    exchangeAuthCodeForToken as exchangeAuthCodeForTokenFn,
+    requestCredentialsFromAuthCodeToken as requestCredentialsFromAuthCodeTokenFn,
 } from './vci/auth-code';
 import { createJoseEd25519Signer } from './vci/proof';
-import {
-    storeAcceptedCredentials,
-    StoreAcceptedCredentialsOptions,
-} from './vci/store';
+import { importJWK, SignJWT, type JWK } from 'jose';
+import { storeAcceptedCredentials, StoreAcceptedCredentialsOptions } from './vci/store';
 import { AcceptCredentialOfferOptions } from './vci/types';
 import {
     parseAuthorizationRequestUri,
@@ -27,7 +24,7 @@ import {
     ResolveAuthorizationRequestOptions,
 } from './vp/parse';
 import { AuthorizationRequest } from './vp/types';
-import { selectCredentials } from './vp/select';
+import { selectCredentials, type SdJwtParser } from './vp/select';
 import {
     buildPresentation as buildPresentationFn,
     ChosenCredential,
@@ -38,19 +35,13 @@ import {
     signPresentation as signPresentationFn,
     LdpVpSigner,
     SignPresentationResult,
+    type SdJwtPresenter,
 } from './vp/sign';
 import { submitPresentation as submitPresentationFn } from './vp/submit';
-import {
-    signIdToken as signIdTokenFn,
-    requiresIdToken,
-    SignIdTokenResult,
-} from './siop/sign';
+import { signIdToken as signIdTokenFn, requiresIdToken, SignIdTokenResult } from './siop/sign';
 import { ProofJwtSigner } from './vci/types';
 import { selectCredentialsForDcql } from './dcql/select';
-import {
-    buildDcqlPresentations,
-    type DcqlChosenCredential,
-} from './dcql/build';
+import { buildDcqlPresentations, type DcqlChosenCredential } from './dcql/build';
 import { buildDcqlResponse } from './dcql/respond';
 import type { ChosenForPresentation } from './types';
 
@@ -125,6 +116,32 @@ export const getOpenID4VCPlugin = (
                 });
             },
 
+            exchangePreAuthCodeForToken: async (_lc, input, options = {}) => {
+                const offer = typeof input === 'string' ? await resolveOffer(input) : input;
+
+                return exchangePreAuthCodeForTokenFn({
+                    offer,
+                    options,
+                    fetchImpl,
+                });
+            },
+
+            requestCredentialsFromPreAuthToken: async (learnCard, requestOptions) => {
+                const offer =
+                    typeof requestOptions.input === 'string'
+                        ? await resolveOffer(requestOptions.input)
+                        : requestOptions.input;
+                const signer = requestOptions.signer ?? (await ensureSigner(learnCard, {}));
+
+                return requestCredentialsFromPreAuthTokenFn({
+                    offer,
+                    tokenResponse: requestOptions.tokenResponse,
+                    signer,
+                    options: requestOptions.options,
+                    fetchImpl,
+                });
+            },
+
             acceptAndStoreCredentialOffer: async (learnCard, input, options = {}) => {
                 // Split the merged options into the two concerns so each helper
                 // sees only what it cares about. This is purely hygienic —
@@ -169,9 +186,7 @@ export const getOpenID4VCPlugin = (
             },
 
             completeCredentialOfferAuthCode: async (learnCard, completionOptions) => {
-                const signer =
-                    completionOptions.signer ??
-                    (await ensureSigner(learnCard, {}));
+                const signer = completionOptions.signer ?? (await ensureSigner(learnCard, {}));
 
                 return completeAuthCodeFlowFn({
                     flowHandle: completionOptions.flowHandle,
@@ -182,29 +197,49 @@ export const getOpenID4VCPlugin = (
                 });
             },
 
+            exchangeAuthCodeForToken: async (_lc, completionOptions) => {
+                return exchangeAuthCodeForTokenFn({
+                    flowHandle: completionOptions.flowHandle,
+                    code: completionOptions.code,
+                    state: completionOptions.state,
+                    fetchImpl,
+                });
+            },
+
+            requestCredentialsFromAuthCodeToken: async (learnCard, requestOptions) => {
+                const signer = requestOptions.signer ?? (await ensureSigner(learnCard, {}));
+
+                return requestCredentialsFromAuthCodeTokenFn({
+                    flowHandle: requestOptions.flowHandle,
+                    tokenResponse: requestOptions.tokenResponse,
+                    signer,
+                    fetchImpl,
+                });
+            },
+
             parseAuthorizationRequest: (_lc, input) => parseAuthorizationRequestUri(input),
 
             resolveAuthorizationRequest: async (_lc, input) =>
                 resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions),
 
-            prepareVerifiablePresentation: async (_lc, input, credentials) => {
+            prepareVerifiablePresentation: async (learnCard, input, credentials) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+                const sdJwtParser = buildSdJwtParser(learnCard);
 
-                // DCQL takes precedence over PEX when both are
-                // somehow present (the parser already rejects that
-                // case, but be defensive).
                 if (request.dcql_query) {
-                    const dcqlSelection = selectCredentialsForDcql(
+                    const dcqlSelection = await selectCredentialsForDcql(
                         credentials,
-                        request.dcql_query
+                        request.dcql_query,
+                        { sdJwtParser }
                     );
                     return { request, dcqlSelection };
                 }
 
                 if (request.presentation_definition) {
-                    const selection = selectCredentials(
+                    const selection = await selectCredentials(
                         credentials,
-                        request.presentation_definition
+                        request.presentation_definition,
+                        { sdJwtParser }
                     );
                     return { request, selection };
                 }
@@ -250,8 +285,7 @@ export const getOpenID4VCPlugin = (
                         : learnCard.id.did());
 
                 if (prepared.vpFormat === 'jwt_vp_json') {
-                    const jwtSigner =
-                        options.signer ?? (await ensureVpJwtSigner(learnCard));
+                    const jwtSigner = options.signer ?? (await ensureVpJwtSigner(learnCard));
 
                     return signPresentationFn(
                         {
@@ -262,6 +296,20 @@ export const getOpenID4VCPlugin = (
                             holder,
                         },
                         { jwtSigner }
+                    );
+                }
+
+                if (prepared.vpFormat === 'dc+sd-jwt' || prepared.vpFormat === 'vc+sd-jwt') {
+                    return signPresentationFn(
+                        {
+                            unsignedVp: prepared.unsignedVp,
+                            vpFormat: prepared.vpFormat,
+                            audience: request.client_id,
+                            nonce: request.nonce,
+                            holder,
+                            sdJwtSource: prepared.sdJwtSource,
+                        },
+                        { sdJwtPresenter: buildSdJwtPresenter(learnCard) }
                     );
                 }
 
@@ -277,7 +325,13 @@ export const getOpenID4VCPlugin = (
                 );
             },
 
-            submitPresentation: async (learnCard, input, signed, submission, submitOptions = {}) => {
+            submitPresentation: async (
+                learnCard,
+                input,
+                signed,
+                submission,
+                submitOptions = {}
+            ) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const responseUri = request.response_uri ?? request.redirect_uri;
 
@@ -301,8 +355,7 @@ export const getOpenID4VCPlugin = (
             signIdToken: async (learnCard, input, options = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
                 const holder = options.holder ?? learnCard.id.did();
-                const signer =
-                    options.signer ?? (await ensureVpJwtSigner(learnCard));
+                const signer = options.signer ?? (await ensureVpJwtSigner(learnCard));
 
                 return signIdTokenFn(
                     {
@@ -335,9 +388,7 @@ export const getOpenID4VCPlugin = (
                 // asked for `id_token`, sign one and bundle it alongside
                 // the VP in the direct_post submission. Lifted out of
                 // the per-route bodies so PEX and DCQL share it.
-                const signIdTokenIfRequested = async (): Promise<
-                    SignIdTokenResult | undefined
-                > => {
+                const signIdTokenIfRequested = async (): Promise<SignIdTokenResult | undefined> => {
                     if (!requiresIdToken(request.response_type)) return undefined;
                     return signIdTokenFn(
                         {
@@ -366,15 +417,13 @@ export const getOpenID4VCPlugin = (
                         holder,
                     });
 
-                    // DCQL only emits jwt_vp_json/ldp_vp depending on
-                    // each query entry's declared format. Build the
-                    // helpers off the full set so we have whatever's
-                    // needed across all per-query VPs.
                     const needsJwt = dcqlBuilt.some(b => b.vpFormat === 'jwt_vp_json');
                     const needsLdp = dcqlBuilt.some(b => b.vpFormat === 'ldp_vp');
+                    const needsSdJwt = dcqlBuilt.some(b => b.kind === 'sd-jwt-vc');
                     const dcqlHelpers = {
                         ...(needsJwt ? { jwtSigner: await ensureSharedJwtSigner() } : {}),
                         ...(needsLdp ? { ldpVpSigner: buildLdpVpSigner(learnCard) } : {}),
+                        ...(needsSdJwt ? { sdJwtPresenter: buildSdJwtPresenter(learnCard) } : {}),
                     };
 
                     const dcqlResponse = await buildDcqlResponse(
@@ -423,7 +472,9 @@ export const getOpenID4VCPlugin = (
                 const helpers =
                     prepared.vpFormat === 'jwt_vp_json'
                         ? { jwtSigner: await ensureSharedJwtSigner() }
-                        : { ldpVpSigner: buildLdpVpSigner(learnCard) };
+                        : prepared.vpFormat === 'ldp_vp'
+                        ? { ldpVpSigner: buildLdpVpSigner(learnCard) }
+                        : { sdJwtPresenter: buildSdJwtPresenter(learnCard) };
 
                 const signed = await signPresentationFn(
                     {
@@ -432,6 +483,7 @@ export const getOpenID4VCPlugin = (
                         audience: request.client_id,
                         nonce: request.nonce,
                         holder,
+                        sdJwtSource: prepared.sdJwtSource,
                     },
                     helpers
                 );
@@ -475,9 +527,7 @@ const resolveRequestInput = async (
 
 const requirePresentationDefinition = (request: AuthorizationRequest) => {
     if (!request.presentation_definition) {
-        throw new Error(
-            'Authorization Request has no presentation_definition — cannot build a VP'
-        );
+        throw new Error('Authorization Request has no presentation_definition — cannot build a VP');
     }
     return request.presentation_definition;
 };
@@ -491,7 +541,9 @@ const assertPexChosen = (chosen: ChosenForPresentation[]): ChosenCredential[] =>
     for (const [i, entry] of chosen.entries()) {
         if (!('descriptorId' in entry) || typeof entry.descriptorId !== 'string') {
             throw new Error(
-                `chosen[${i}] is missing 'descriptorId' — PEX requests need ChosenCredential entries (received DCQL-shape entry with credentialQueryId="${(entry as DcqlChosenCredential).credentialQueryId}")`
+                `chosen[${i}] is missing 'descriptorId' — PEX requests need ChosenCredential entries (received DCQL-shape entry with credentialQueryId="${
+                    (entry as DcqlChosenCredential).credentialQueryId
+                }")`
             );
         }
     }
@@ -505,12 +557,11 @@ const assertPexChosen = (chosen: ChosenForPresentation[]): ChosenCredential[] =>
  */
 const assertDcqlChosen = (chosen: ChosenForPresentation[]): DcqlChosenCredential[] => {
     for (const [i, entry] of chosen.entries()) {
-        if (
-            !('credentialQueryId' in entry) ||
-            typeof entry.credentialQueryId !== 'string'
-        ) {
+        if (!('credentialQueryId' in entry) || typeof entry.credentialQueryId !== 'string') {
             throw new Error(
-                `chosen[${i}] is missing 'credentialQueryId' — DCQL requests need DcqlChosenCredential entries (received PEX-shape entry with descriptorId="${(entry as ChosenCredential).descriptorId}")`
+                `chosen[${i}] is missing 'credentialQueryId' — DCQL requests need DcqlChosenCredential entries (received PEX-shape entry with descriptorId="${
+                    (entry as ChosenCredential).descriptorId
+                }")`
             );
         }
     }
@@ -570,8 +621,9 @@ const maybeJarmSigner = async (
 ): Promise<ProofJwtSigner | undefined> => {
     if (request.response_mode !== 'direct_post.jwt') return undefined;
 
-    const signAlg = (request.client_metadata as { authorization_signed_response_alg?: unknown } | undefined)
-        ?.authorization_signed_response_alg;
+    const signAlg = (
+        request.client_metadata as { authorization_signed_response_alg?: unknown } | undefined
+    )?.authorization_signed_response_alg;
     if (typeof signAlg !== 'string' || signAlg.length === 0) return undefined;
 
     return ensureVpJwtSigner(learnCard);
@@ -597,12 +649,133 @@ const ensureVpJwtSigner = async (
  * contract expected by the VP sign layer. OID4VP replay-binding
  * (domain/challenge) is passed through verbatim.
  */
-const buildLdpVpSigner = (
-    learnCard: OpenID4VCDependentLearnCard
-): LdpVpSigner => ({
+const buildLdpVpSigner = (learnCard: OpenID4VCDependentLearnCard): LdpVpSigner => ({
     sign: async (unsignedVp, { domain, challenge }) =>
         learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
 });
+
+/**
+ * Build an SD-JWT-VC parser callback for the matcher layer. Wired to
+ * `learnCard.invoke.parseSdJwtVc` via runtime feature-detect so the
+ * matcher never hard-imports `@learncard/sd-jwt-vc-plugin` (same
+ * Slice 2b convention as `buildSdJwtPresenter` below). Returns
+ * undefined when the sd-jwt-vc plugin isn't installed — the matcher
+ * then falls back to its no-decode behavior for SD-JWT candidates.
+ */
+const buildSdJwtParser = (learnCard: OpenID4VCDependentLearnCard): SdJwtParser | undefined => {
+    const invoke = (learnCard as unknown as { invoke: Record<string, unknown> }).invoke;
+    if (typeof invoke?.parseSdJwtVc !== 'function') return undefined;
+
+    return async (compact: string) => {
+        const parsed = await (
+            invoke.parseSdJwtVc as (c: string) => Promise<{
+                vct?: string;
+                issuer?: string;
+                claims: Record<string, unknown>;
+                holderPublicKey?: Record<string, unknown>;
+            }>
+        )(compact);
+        return {
+            claims: parsed.claims,
+            vct: parsed.vct,
+            issuer: parsed.issuer,
+            holderPublicKey: parsed.holderPublicKey,
+        };
+    };
+};
+
+/**
+ * Build an SD-JWT-VC presenter callback bound to the host LearnCard.
+ *
+ * The callback:
+ * 1. Builds an Ed25519 KB-JWT signer from the host's primary keypair
+ *    (same key already used for VCI proof-of-possession + VP signing,
+ *    so it matches the `cnf.jwk` the issuer embedded at claim time).
+ * 2. Invokes `learnCard.invoke.presentSdJwtVc` with the source compact,
+ *    the verifier's audience+nonce, and the constructed signer.
+ *
+ * Returns `undefined` when the sd-jwt-vc plugin isn't installed — the
+ * VP signing layer will then surface `missing_sd_jwt_presenter` if an
+ * SD-JWT-VC presentation was attempted, with a clear diagnostic.
+ *
+ * The kbSigner construction here intentionally duplicates the logic in
+ * `@learncard/sd-jwt-vc-plugin`'s `createEd25519KbSigner` to preserve
+ * the runtime-feature-detect pattern established in Slice 2b — the
+ * openid4vc plugin must not hard-import the sd-jwt-vc plugin.
+ */
+const buildSdJwtPresenter = (
+    learnCard: OpenID4VCDependentLearnCard
+): SdJwtPresenter | undefined => {
+    const invoke = (learnCard as unknown as { invoke: Record<string, unknown> }).invoke;
+    if (typeof invoke?.presentSdJwtVc !== 'function') return undefined;
+
+    return async (compact, { audience, nonce, disclose }) => {
+        const keypair = requireEd25519Keypair(learnCard, 'SD-JWT-VC KB-JWT signing');
+
+        const privateKey = await importJWK(
+            {
+                kty: keypair.kty,
+                crv: keypair.crv,
+                x: keypair.x,
+                d: keypair.d,
+            } as JWK,
+            'EdDSA'
+        );
+
+        const kbSigner = async (data: string): Promise<string> => {
+            const dotIndex = data.indexOf('.');
+            if (dotIndex <= 0 || dotIndex >= data.length - 1) {
+                throw new Error(
+                    `KB-JWT signer received malformed JWS signing input (no dot separator)`
+                );
+            }
+            const headerSegment = data.slice(0, dotIndex);
+            const payloadSegment = data.slice(dotIndex + 1);
+
+            const decode = (s: string): Record<string, unknown> => {
+                const normalized = s.replace(/-/g, '+').replace(/_/g, '/');
+                const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+                const text =
+                    typeof Buffer !== 'undefined'
+                        ? Buffer.from(padded, 'base64').toString('utf-8')
+                        : new TextDecoder().decode(
+                              Uint8Array.from(atob(padded), c => c.charCodeAt(0))
+                          );
+                return JSON.parse(text);
+            };
+
+            const header = decode(headerSegment);
+            const payload = decode(payloadSegment);
+            const compact = await new SignJWT(payload)
+                .setProtectedHeader(header as { alg: string; typ: string })
+                .sign(privateKey);
+            const sig = compact.split('.')[2];
+            if (!sig) throw new Error('KB-JWT signing produced no signature segment');
+            return sig;
+        };
+
+        const result = await (
+            invoke.presentSdJwtVc as (
+                c: string,
+                opts: {
+                    audience: string;
+                    nonce: string;
+                    kbSigner: typeof kbSigner;
+                    kbSignAlg: string;
+                    disclose?: Record<string, unknown>;
+                }
+            ) => Promise<{ compact: string }>
+        )(compact, {
+            audience,
+            nonce,
+            kbSigner,
+            kbSignAlg: 'EdDSA',
+            ...(disclose ? { disclose: disclose as Record<string, unknown> } : {}),
+        });
+
+        return { compact: result.compact };
+    };
+};
 
 /**
  * Build an Ed25519 proof-of-possession signer from the host LearnCard's

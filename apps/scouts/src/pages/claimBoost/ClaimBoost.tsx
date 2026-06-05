@@ -34,7 +34,11 @@ import {
 } from 'learn-card-base';
 
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
-import { isTroopCredential, getRoleFromCred, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import {
+    isTroopCredential,
+    getRoleFromCred,
+    getScoutsNounForRole,
+} from '../../helpers/troop.helpers';
 
 import { VC } from '@learncard/types';
 import {

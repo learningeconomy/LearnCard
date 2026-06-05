@@ -83,9 +83,9 @@ jobs:
                     # npm is the package manager that broke us in the incident
                     # this workflow was created to prevent. Test across all
                     # currently supported LTS Node versions.
-                    - { package-manager: npm,  node-version: '18' }
-                    - { package-manager: npm,  node-version: '20' }
-                    - { package-manager: npm,  node-version: '22' }
+                    - { package-manager: npm, node-version: '18' }
+                    - { package-manager: npm, node-version: '20' }
+                    - { package-manager: npm, node-version: '22' }
                     # pnpm and yarn have their own resolution algorithms and
                     # handle optional/workspace deps differently — test on
                     # current LTS to catch other bug classes.

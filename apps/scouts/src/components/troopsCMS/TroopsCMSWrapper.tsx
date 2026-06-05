@@ -151,8 +151,7 @@ export const TroopsCMSWrapper: React.FC<TroopsCMSWrapperProps> = ({
                     networkType: network?.networkType ?? prev.networkFields?.networkType ?? '',
                     country: network?.country ?? prev.networkFields?.country ?? '',
                     region: network?.region ?? prev.networkFields?.region ?? '',
-                    organization:
-                        network?.organization ?? prev.networkFields?.organization ?? '',
+                    organization: network?.organization ?? prev.networkFields?.organization ?? '',
                 },
             }));
         }
