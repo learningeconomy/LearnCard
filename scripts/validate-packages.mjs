@@ -16,15 +16,30 @@
  * This is the test that would have caught the @learncard/init smoketest
  * regression (named ESM exports unresolvable from CJS shim) before publish.
  *
+ * Validation runs across all packages through a bounded concurrency pool
+ * (default 6) since attw's `npm pack` step dominates wall-clock time.
+ *
  * Usage:
- *   node scripts/validate-packages.mjs              # validate all packages
+ *   node scripts/validate-packages.mjs               # validate all packages
  *   node scripts/validate-packages.mjs --only crypto-plugin,init
- *   node scripts/validate-packages.mjs --skip-attw  # publint only (fast)
+ *   node scripts/validate-packages.mjs --skip-attw   # publint only (fast)
+ *   node scripts/validate-packages.mjs --concurrency=4
  */
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+function run(cmd, cmdArgs) {
+    return new Promise(resolve => {
+        const child = spawn(cmd, cmdArgs, { cwd: ROOT });
+        let out = '';
+        child.stdout.on('data', d => (out += d));
+        child.stderr.on('data', d => (out += d));
+        child.on('error', err => resolve({ ok: false, out: out + String(err) }));
+        child.on('close', code => resolve({ ok: code === 0, out }));
+    });
+}
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -146,10 +161,10 @@ const ATTW_IGNORE_RULES = [
 //     didkit-plugin-node is a tsc-compiled N-API package with no dual format).
 //   - The smoketest workflow checks *runtime ESM/CJS loadability* by actually
 //     installing + importing each published plugin from npm. The packages that
-//     fail there (ceramic, didkey, helpers, idx, lca-api, learn-cloud,
-//     network, simple-signing) have runtime resolution bugs (transitive
-//     CJS-only deps imported via named ESM, dynamic require() in ESM bundles)
-//     that are invisible to static type analysis.
+//     fail there (ceramic, didkey, idx, lca-api, learn-cloud, network,
+//     simple-signing) have runtime resolution bugs (transitive CJS-only deps
+//     imported via named ESM, dynamic require() in ESM bundles) that are
+//     invisible to static type analysis.
 // A package can pass one surface and fail the other. Keep both lists scoped to
 // the failures their own tool actually reports; don't try to unify them.
 const ADVISORY_ONLY = new Set([
@@ -158,67 +173,65 @@ const ADVISORY_ONLY = new Set([
     '@learncard/didkit-plugin-node', // Native N-API package, separate build
 ]);
 
-function runPublint({ rel, abs, pkg }) {
-    // No --strict: tolerate "suggestions" (engines.node, repository.url shape).
-    // Errors still fail. This is the level that catches missing/broken
-    // `exports` maps, FalseESM, and the original smoketest regression.
-    const result = spawnSync(
-        'pnpm',
-        ['exec', 'publint', abs],
-        { cwd: ROOT, encoding: 'utf8' },
-    );
-    const ok = result.status === 0;
-    const out = (result.stdout || '') + (result.stderr || '');
-    return { ok, out };
+// No --strict: tolerate "suggestions" (engines.node, repository.url shape).
+// Errors still fail. This is the level that catches missing/broken `exports`
+// maps, FalseESM, and the original smoketest regression.
+function runPublint({ abs }) {
+    return run('pnpm', ['exec', 'publint', abs]);
 }
 
-function runAttw({ rel, abs, pkg }) {
-    // --pack: runs `npm pack` and checks the actual tarball that would be
-    //         published. This is the artifact consumers see.
-    // --profile esm-only: ignores node10 (legacy) and node16-cjs (we ship a
-    //         proper CJS shim with .d.cts; node16-from-CJS is green).
-    // --ignore-rules: see ATTW_IGNORE_RULES above.
-    const result = spawnSync(
-        'pnpm',
-        [
-            'exec',
-            'attw',
-            '--pack',
-            abs,
-            '--profile',
-            'esm-only',
-            '--ignore-rules',
-            ...ATTW_IGNORE_RULES,
-        ],
-        { cwd: ROOT, encoding: 'utf8' },
-    );
-    const ok = result.status === 0;
-    const out = (result.stdout || '') + (result.stderr || '');
-    return { ok, out };
+// --pack: runs `npm pack` and checks the actual tarball that would be published
+//         — the artifact consumers see. npm pack writes a uniquely-named
+//         tarball per package, so concurrent invocations don't collide.
+// --profile esm-only: ignores node10 (legacy) and node16-cjs (we ship a proper
+//         CJS shim with .d.cts; node16-from-CJS is green).
+function runAttw({ abs }) {
+    return run('pnpm', [
+        'exec',
+        'attw',
+        '--pack',
+        abs,
+        '--profile',
+        'esm-only',
+        '--ignore-rules',
+        ...ATTW_IGNORE_RULES,
+    ]);
 }
 
-for (const t of targets) {
-    process.stdout.write(`• ${t.pkg.name.padEnd(42)}`);
+const concurrencyArg = args.find(a => a.startsWith('--concurrency='))?.slice('--concurrency='.length);
+const CONCURRENCY = Math.max(1, Number(concurrencyArg) || 6);
 
+async function validateOne(t) {
     let publintResult = { ok: true, out: '' };
     let attwResult = { ok: true, out: '' };
 
-    if (!skipPublint) publintResult = runPublint(t);
-    if (!skipAttw) attwResult = runAttw(t);
+    if (!skipPublint) publintResult = await runPublint(t);
+    if (!skipAttw) attwResult = await runAttw(t);
 
     const ok = publintResult.ok && attwResult.ok;
     const advisory = ADVISORY_ONLY.has(t.pkg.name);
+    const status = ok ? '✓' : advisory ? '⚠ (advisory)' : '✗';
 
-    if (ok) {
-        process.stdout.write('  ✓\n');
-    } else if (advisory) {
-        process.stdout.write('  ⚠ (advisory)\n');
-        advisories.push({ name: t.pkg.name, publint: publintResult, attw: attwResult });
-    } else {
-        process.stdout.write('  ✗\n');
-        failures.push({ name: t.pkg.name, publint: publintResult, attw: attwResult });
-    }
+    console.log(`• ${t.pkg.name.padEnd(42)}  ${status}`);
+
+    if (ok) return;
+    const entry = { name: t.pkg.name, publint: publintResult, attw: attwResult };
+    (advisory ? advisories : failures).push(entry);
 }
+
+async function runPool(items, limit, worker) {
+    let cursor = 0;
+    const runNext = async () => {
+        while (cursor < items.length) {
+            const index = cursor++;
+            await worker(items[index]);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runNext));
+}
+
+console.log(`Running with concurrency ${CONCURRENCY}…\n`);
+await runPool(targets, CONCURRENCY, validateOne);
 
 function printDiagnostics(label, list) {
     if (list.length === 0) return;

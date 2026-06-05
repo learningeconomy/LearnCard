@@ -1975,12 +1975,12 @@ importers:
       immer:
         specifier: ^10.0.3
         version: 10.2.0
-      query-string:
-        specifier: 9.3.1
-        version: 9.3.1
       use-immer:
         specifier: ^0.9.0
         version: 0.9.0(immer@10.2.0)(react@18.3.1)
+      zod:
+        specifier: 4.1.13
+        version: 4.1.13
     devDependencies:
       '@esbuild-plugins/node-resolve':
         specifier: ^0.1.4
@@ -25662,10 +25662,6 @@ packages:
   query-string@8.2.0:
     resolution: {integrity: sha512-tUZIw8J0CawM5wyGBiDOAp7ObdRQh4uBor/fUR9ZjmbZVvw95OD9If4w3MQxr99rg0DJZ/9CIORcpEqU5hQG7g==}
     engines: {node: '>=14.16'}
-
-  query-string@9.3.1:
-    resolution: {integrity: sha512-5fBfMOcDi5SA9qj5jZhWAcTtDfKF5WFdd2uD9nVNlbxVv1baq65aALy6qofpNEGELHvisjjasxQp7BlM9gvMzw==}
-    engines: {node: '>=18'}
 
   querystring-es3@0.2.1:
     resolution: {integrity: sha512-773xhDQnZBMFobEiztv8LIl70ch5MSF/jUQVlhwFyBILqq96anmoctVIYz+ZRp0qbCKATTn6ev02M3r7Ga5vqA==}
@@ -61289,12 +61285,6 @@ snapshots:
       strict-uri-encode: 2.0.0
 
   query-string@8.2.0:
-    dependencies:
-      decode-uri-component: 0.4.1
-      filter-obj: 5.1.0
-      split-on-first: 3.0.0
-
-  query-string@9.3.1:
     dependencies:
       decode-uri-component: 0.4.1
       filter-obj: 5.1.0
