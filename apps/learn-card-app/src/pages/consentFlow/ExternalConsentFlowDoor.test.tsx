@@ -132,6 +132,12 @@ vi.mock('@analytics', () => ({
 }));
 
 vi.mock('learn-card-base', () => ({
+    getLogger: () => ({
+        debug: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+    }),
     useWallet: () => ({ initWallet: mockFns.initWallet }),
     ProfilePicture: () => <div data-testid="profile-picture" />,
     pushUtilities: { revokePushToken: vi.fn() },

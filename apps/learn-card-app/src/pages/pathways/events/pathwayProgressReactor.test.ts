@@ -11,6 +11,12 @@ import type {
 import { createPathwayProgressReactor } from './pathwayProgressReactor';
 import { createWalletEventBus } from './walletEventBus';
 
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
+            .mockLearnCardBaseLogger(),
+}));
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------

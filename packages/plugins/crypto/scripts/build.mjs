@@ -10,6 +10,13 @@ const buildOptions = {
     external: ['isomorphic-webcrypto', '@learncard/core'],
 };
 
+// platform: 'node' makes esbuild emit the `0 && (module.exports = {...})`
+// annotation that Node's cjs-module-lexer needs to expose named exports to ESM
+// importers. Without it, `import { CryptoPlugin } from '@learncard/crypto-plugin'`
+// fails under Node ESM. Applied to CJS outputs only; the ESM build is genuine
+// ESM and needs no annotation.
+const cjsBuildOptions = { ...buildOptions, platform: 'node' };
+
 const configurations = [
     {
         keepNames: true,
@@ -20,7 +27,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         format: 'cjs',
         outfile: 'dist/crypto-plugin.cjs.development.cjs',
-        ...buildOptions,
+        ...cjsBuildOptions,
     },
     {
         keepNames: true,
@@ -32,7 +39,7 @@ const configurations = [
         minify: true,
         format: 'cjs',
         outfile: 'dist/crypto-plugin.cjs.production.min.cjs',
-        ...buildOptions,
+        ...cjsBuildOptions,
     },
     {
         keepNames: true,
