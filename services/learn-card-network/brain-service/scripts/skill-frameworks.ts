@@ -43,14 +43,14 @@ const parseCliOptions = (): CliOptions => {
     const command = args[0] as SkillFrameworkCommand | undefined;
 
     if (!command || !VALID_COMMANDS.includes(command)) {
-        throw new Error('Usage: pnpm skill-frameworks <seed|add-admin> [local|staging]');
+        throw new Error('\nUsage: pnpm skill-frameworks <seed|add-admin> [local|staging]\n');
     }
 
     const secondArg = args[1];
     const thirdArg = args[2];
 
     if (args.length > 3) {
-        throw new Error('Usage: pnpm skill-frameworks <seed|add-admin> [local|staging]');
+        throw new Error('\nUsage: pnpm skill-frameworks <seed|add-admin> [local|staging]\n');
     }
 
     if (!secondArg) {
@@ -74,7 +74,7 @@ const parseCliOptions = (): CliOptions => {
         }
 
         if (thirdArg) {
-            throw new Error('Usage: pnpm skill-frameworks <seed|add-admin> [local|staging]');
+            throw new Error('\nUsage: pnpm skill-frameworks <seed|add-admin> [local|staging]\n');
         }
 
         return {
@@ -173,7 +173,10 @@ const runAddAdmin = async (
             );
         }
 
-        const rawProfileId = inlineProfileId ?? (await ask('Profile id: '));
+        const rawProfileId = inlineProfileId ?? (await ask('\nProfile id: '));
+        if (!inlineProfileId) {
+            console.log('');
+        }
         const profileId = normalizeProfileId(rawProfileId);
 
         if (!profileId) {
