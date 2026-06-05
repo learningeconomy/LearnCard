@@ -5,11 +5,11 @@ import { ArrowLeft, Code } from 'lucide-react';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import {
-    SimpleCredentialType,
     SimpleSendRecipient,
     buildSimpleTemplate,
     issueAndSendCredential,
 } from '../../components/simple-send/simpleSend.helpers';
+import type { CredentialTypeEntry } from './components/credentialTypeCatalog';
 import { isPlausibleRecipient } from './components/recipientValidation';
 import {
     useWallet,
@@ -20,7 +20,10 @@ import {
 } from 'learn-card-base';
 import { validateCredentialJsonLd } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
 import { templateToJson } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
-import type { OBv3CredentialTemplate } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import {
+    staticField,
+    type OBv3CredentialTemplate,
+} from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
 import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
@@ -37,7 +40,7 @@ const IssueCredentialPage: React.FC = () => {
     const { presentToast } = useToast();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
-    const [credentialType, setCredentialType] = useState<SimpleCredentialType | null>(null);
+    const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(null);
     const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(null);
     const [showJson, setShowJson] = useState(false);
 
@@ -70,10 +73,26 @@ const IssueCredentialPage: React.FC = () => {
         ? 'Add a recipient to continue'
         : null;
 
-    const handleSelectType = useCallback((type: SimpleCredentialType) => {
-        log.info('issue.type_selected', { credentialType: type });
-        setCredentialType(type);
-        setTemplate(buildSimpleTemplate({ credentialType: type, name: '', description: '' }));
+    const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
+        log.info('issue.type_selected', { obv3Type: entry.obv3Type });
+        setSelectedType(entry);
+        setTemplate(() => {
+            const base = buildSimpleTemplate({
+                credentialType: entry.baseSimpleType,
+                name: '',
+                description: '',
+            });
+            return {
+                ...base,
+                credentialSubject: {
+                    ...base.credentialSubject,
+                    achievement: {
+                        ...base.credentialSubject.achievement,
+                        achievementType: staticField(entry.obv3Type),
+                    },
+                },
+            };
+        });
     }, []);
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
@@ -156,7 +175,7 @@ const IssueCredentialPage: React.FC = () => {
 
     const reset = useCallback(() => {
         setIssuedUri(null);
-        setCredentialType(null);
+        setSelectedType(null);
         setTemplate(null);
         setRecipientMode('self');
         setRecipientValue('');
@@ -172,7 +191,7 @@ const IssueCredentialPage: React.FC = () => {
                     <IssueSuccess
                         credentialUri={issuedUri}
                         credential={previewCredential}
-                        credentialType={credentialType}
+                        credentialType={selectedType?.baseSimpleType ?? null}
                         onIssueAnother={reset}
                         onViewWallet={() => history.push('/wallet')}
                     />
@@ -244,7 +263,7 @@ const IssueCredentialPage: React.FC = () => {
                                     <JsonLens credential={previewCredential} />
                                 ) : (
                                     <IssuePalette
-                                        credentialType={credentialType}
+                                        selectedType={selectedType}
                                         template={template}
                                         onSelectType={handleSelectType}
                                         onChangeTemplate={setTemplate}
@@ -262,7 +281,7 @@ const IssueCredentialPage: React.FC = () => {
                             <div className="desktop:w-[340px] shrink-0 desktop:sticky desktop:top-[84px]">
                                 <HeroCanvas
                                     credential={previewCredential}
-                                    credentialType={credentialType}
+                                    credentialType={selectedType?.baseSimpleType ?? null}
                                     cardTitle={ach?.name?.value ?? ''}
                                     hasImage={Boolean(ach?.image?.value)}
                                 />

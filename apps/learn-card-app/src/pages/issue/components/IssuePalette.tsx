@@ -1,23 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import {
-    Award,
-    ScrollText,
-    GraduationCap,
-    Sparkles,
-    Shield,
-    Users,
-    Zap,
-    ImagePlus,
-    Loader2,
-    SlidersHorizontal,
-    ChevronDown,
-} from 'lucide-react';
+import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown } from 'lucide-react';
 
 import { useFilestack } from 'learn-card-base';
-import {
-    SimpleCredentialType,
-    isEmailRecipient,
-} from '../../../components/simple-send/simpleSend.helpers';
+import { isEmailRecipient } from '../../../components/simple-send/simpleSend.helpers';
 import { isPlausibleRecipient } from './recipientValidation';
 import {
     MediaAttachments,
@@ -26,62 +11,13 @@ import {
 } from './MediaAttachments';
 import { mediaToEvidenceTemplates } from './mediaEvidence';
 import { SkillsSection } from './SkillsSection';
+import { TypePicker } from './TypePicker';
+import { ActivityFields } from './ActivityFields';
+import type { CredentialTypeEntry } from './credentialTypeCatalog';
 import type { ResolvedSkill } from './skillAlignment';
 import type { SelectedSkill } from '../../skills/skillTypes';
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
-
-interface TypeOption {
-    type: SimpleCredentialType;
-    label: string;
-    Icon: React.FC<{ className?: string }>;
-    hoverAccent: string;
-}
-
-const TYPE_OPTIONS: TypeOption[] = [
-    {
-        type: 'badge',
-        label: 'Badge',
-        Icon: Award,
-        hoverAccent: 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
-    },
-    {
-        type: 'certificate',
-        label: 'Certificate',
-        Icon: ScrollText,
-        hoverAccent: 'hover:border-grayscale-400 hover:bg-grayscale-10 hover:text-grayscale-900',
-    },
-    {
-        type: 'course',
-        label: 'Course',
-        Icon: GraduationCap,
-        hoverAccent: 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
-    },
-    {
-        type: 'skill',
-        label: 'Skill',
-        Icon: Sparkles,
-        hoverAccent: 'hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700',
-    },
-    {
-        type: 'license',
-        label: 'License',
-        Icon: Shield,
-        hoverAccent: 'hover:border-grayscale-400 hover:bg-grayscale-10 hover:text-grayscale-900',
-    },
-    {
-        type: 'membership',
-        label: 'Membership',
-        Icon: Users,
-        hoverAccent: 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700',
-    },
-    {
-        type: 'micro-credential',
-        label: 'Micro-Credential',
-        Icon: Zap,
-        hoverAccent: 'hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700',
-    },
-];
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -89,9 +25,9 @@ const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 
 interface IssuePaletteProps {
-    credentialType: SimpleCredentialType | null;
+    selectedType: CredentialTypeEntry | null;
     template: OBv3CredentialTemplate | null;
-    onSelectType: (type: SimpleCredentialType) => void;
+    onSelectType: (entry: CredentialTypeEntry) => void;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
     recipientMode: 'self' | 'other';
     recipientValue: string;
@@ -103,7 +39,7 @@ interface IssuePaletteProps {
 }
 
 export const IssuePalette: React.FC<IssuePaletteProps> = ({
-    credentialType,
+    selectedType,
     template,
     onSelectType,
     onChangeTemplate,
@@ -191,26 +127,10 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                 <p className="text-sm text-grayscale-600 leading-relaxed mb-4">
                     Pick a type — your credential takes shape as you go.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {TYPE_OPTIONS.map(({ type, label, Icon, hoverAccent }) => {
-                        const active = credentialType === type;
-                        return (
-                            <button
-                                key={type}
-                                type="button"
-                                onClick={() => onSelectType(type)}
-                                className={`flex items-center gap-2 py-2.5 px-3 rounded-full border text-sm font-medium transition-all duration-200 ${
-                                    active
-                                        ? 'bg-grayscale-900 border-grayscale-900 text-white'
-                                        : `bg-white border-grayscale-300 text-grayscale-700 motion-safe:hover:-translate-y-0.5 ${hoverAccent}`
-                                }`}
-                            >
-                                <Icon className="w-4 h-4 shrink-0" />
-                                <span className="truncate">{label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+                <TypePicker
+                    selectedObv3Type={selectedType?.obv3Type ?? null}
+                    onSelectType={onSelectType}
+                />
             </section>
 
             {template && (
@@ -252,6 +172,14 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                             )}
                             {hasImage ? 'Change image' : 'Add an image (optional)'}
                         </button>
+
+                        {selectedType && selectedType.activityFields.length > 0 && (
+                            <ActivityFields
+                                fields={selectedType.activityFields}
+                                template={template}
+                                onChangeTemplate={onChangeTemplate}
+                            />
+                        )}
                     </section>
 
                     <MediaAttachments attachments={mediaAttachments} onChange={handleMediaChange} />
