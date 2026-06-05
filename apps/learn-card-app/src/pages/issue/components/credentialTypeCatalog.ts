@@ -41,7 +41,11 @@ export type ActivityField =
     | 'expiryDate'
     | 'memberId'
     | 'role'
-    | 'term';
+    | 'term'
+    | 'humanCode'
+    | 'fieldOfStudy'
+    | 'specialization'
+    | 'version';
 
 export interface CredentialTypeEntry {
     obv3Type: string;
@@ -116,7 +120,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'learning',
         pickWhen: 'Someone completed a course or training.',
         baseSimpleType: 'course',
-        activityFields: ['completionDate', 'score'],
+        activityFields: ['humanCode', 'completionDate', 'score', 'version'],
         common: true,
     },
     {
@@ -156,7 +160,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'learning',
         pickWhen: 'Short-form recognition for focused learning.',
         baseSimpleType: 'micro-credential',
-        activityFields: ['creditHours'],
+        activityFields: ['creditHours', 'version'],
         common: true,
     },
 
@@ -213,7 +217,13 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'learning',
         pickWhen: 'A structured multi-part learning program.',
         baseSimpleType: 'course',
-        activityFields: ['startDate', 'completionDate', 'creditsEarned'],
+        activityFields: [
+            'humanCode',
+            'fieldOfStudy',
+            'startDate',
+            'completionDate',
+            'creditsEarned',
+        ],
     },
     {
         obv3Type: 'Assessment',
@@ -222,7 +232,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'learning',
         pickWhen: 'Results of a test or evaluation.',
         baseSimpleType: 'course',
-        activityFields: ['completionDate', 'score'],
+        activityFields: ['humanCode', 'completionDate', 'score'],
     },
     {
         obv3Type: 'Assignment',
@@ -231,7 +241,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'learning',
         pickWhen: 'A completed piece of coursework.',
         baseSimpleType: 'course',
-        activityFields: ['completionDate', 'score'],
+        activityFields: ['humanCode', 'completionDate', 'score'],
     },
     {
         obv3Type: 'Fieldwork',
@@ -250,7 +260,13 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A general academic degree.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'creditsEarned', 'term'],
+        activityFields: [
+            'fieldOfStudy',
+            'specialization',
+            'completionDate',
+            'creditsEarned',
+            'term',
+        ],
     },
     {
         obv3Type: 'AssociateDegree',
@@ -259,7 +275,13 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A two-year associate degree.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'creditsEarned', 'term'],
+        activityFields: [
+            'fieldOfStudy',
+            'specialization',
+            'completionDate',
+            'creditsEarned',
+            'term',
+        ],
     },
     {
         obv3Type: 'BachelorDegree',
@@ -268,7 +290,13 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A four-year undergraduate degree.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'creditsEarned', 'term'],
+        activityFields: [
+            'fieldOfStudy',
+            'specialization',
+            'completionDate',
+            'creditsEarned',
+            'term',
+        ],
     },
     {
         obv3Type: 'MasterDegree',
@@ -277,7 +305,13 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A graduate-level master’s degree.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'creditsEarned', 'term'],
+        activityFields: [
+            'fieldOfStudy',
+            'specialization',
+            'completionDate',
+            'creditsEarned',
+            'term',
+        ],
     },
     {
         obv3Type: 'DoctoralDegree',
@@ -286,7 +320,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A doctoral degree (PhD or equivalent).',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'term'],
+        activityFields: ['fieldOfStudy', 'specialization', 'completionDate', 'term'],
     },
     {
         obv3Type: 'ResearchDoctorate',
@@ -295,7 +329,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A research-focused doctorate.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'term'],
+        activityFields: ['fieldOfStudy', 'specialization', 'completionDate', 'term'],
     },
     {
         obv3Type: 'ProfessionalDoctorate',
@@ -304,7 +338,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A practice-oriented doctorate.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate', 'term'],
+        activityFields: ['fieldOfStudy', 'specialization', 'completionDate', 'term'],
     },
     {
         obv3Type: 'Diploma',
@@ -313,7 +347,7 @@ export const CREDENTIAL_TYPES: CredentialTypeEntry[] = [
         family: 'degrees',
         pickWhen: 'A diploma for completed study.',
         baseSimpleType: 'certificate',
-        activityFields: ['completionDate'],
+        activityFields: ['fieldOfStudy', 'completionDate'],
     },
     {
         obv3Type: 'SecondarySchoolDiploma',
