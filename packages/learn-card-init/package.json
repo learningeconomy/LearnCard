@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "2.3.20",
+    "version": "2.3.21",
     "description": "Primary initialization of LearnCard SDK",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -8,6 +8,10 @@
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
+            "node": {
+                "import": "./dist/node-esm.mjs",
+                "require": "./dist/index.cjs"
+            },
             "import": "./dist/init.esm.js",
             "require": "./dist/index.cjs"
         }

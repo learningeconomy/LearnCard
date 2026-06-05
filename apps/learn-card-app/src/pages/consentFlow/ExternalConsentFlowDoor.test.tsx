@@ -64,7 +64,11 @@ vi.mock('./ConsentFlowError', () => ({
 
 // Mock all the heavy dependencies
 vi.mock('@ionic/react', () => ({
-    IonPage: ({ children, className }: any) => <div data-testid="ion-page" className={className}>{children}</div>,
+    IonPage: ({ children, className }: any) => (
+        <div data-testid="ion-page" className={className}>
+            {children}
+        </div>
+    ),
     IonCol: ({ children }: any) => <div>{children}</div>,
     IonRow: ({ children }: any) => <div>{children}</div>,
     IonSkeletonText: () => <div data-testid="skeleton" />,
@@ -107,6 +111,26 @@ vi.mock('learn-card-base/hooks/useSocialLogins', () => ({
     },
 }));
 
+vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
+    useBrandingConfig: () => ({
+        name: 'LearnCard',
+        loginRedirectPath: '/login',
+    }),
+}));
+
+vi.mock('@analytics', () => ({
+    useAnalytics: () => ({ track: vi.fn() }),
+    useProfileSnapshotCapture: () => ({ capture: vi.fn(), snapshotRef: { current: null } }),
+    AnalyticsEvents: {
+        CONSENT_FLOW_STARTED: 'consent_flow_started',
+    },
+    ProfileBuildMethod: {
+        Manual: 'manual',
+    },
+    ACCOUNT_CREATED_AT_KEY: 'account_created_at',
+    SESSION_START_KEY: 'session_start',
+}));
+
 vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mockFns.initWallet }),
     ProfilePicture: () => <div data-testid="profile-picture" />,
@@ -116,6 +140,13 @@ vi.mock('learn-card-base', () => ({
     useContract: (...args: any[]) => mockFns.useContract(...args),
     redirectStore: { set: { authRedirect: vi.fn() } },
     ModalTypes: { FullScreen: 'fullscreen' },
+    UploadTypesEnum: {
+        Resume: 'resume',
+        Certificate: 'certificate',
+        Transcript: 'transcript',
+        Diploma: 'diploma',
+        RawVC: 'raw-vc',
+    },
     useModal: () => ({ newModal: vi.fn() }),
 }));
 
@@ -124,12 +155,98 @@ vi.mock('learn-card-base/stores/authStore', () => ({
     default: { get: { typeOfLogin: () => '', deviceToken: () => '' } },
 }));
 
+vi.mock('learn-card-base/stores/NetworkStore', () => ({
+    __esModule: true,
+    networkStore: {
+        get: {
+            networkUrl: () => '',
+            networkApiUrl: () => '',
+            cloudUrl: () => '',
+            xapiUrl: () => '',
+            apiEndpoint: () => '',
+            aiServiceUrl: () => '',
+            tenantId: () => '',
+        },
+        set: {
+            networkUrl: vi.fn(),
+            networkApiUrl: vi.fn(),
+            cloudUrl: vi.fn(),
+            xapiUrl: vi.fn(),
+            apiEndpoint: vi.fn(),
+            aiServiceUrl: vi.fn(),
+            tenantId: vi.fn(),
+        },
+        use: {
+            networkUrl: () => '',
+            networkApiUrl: () => '',
+            cloudUrl: () => '',
+            xapiUrl: () => '',
+            apiEndpoint: () => '',
+            aiServiceUrl: () => '',
+            tenantId: () => '',
+        },
+    },
+}));
+
+vi.mock('learn-card-base/stores/walletStore', () => ({
+    __esModule: true,
+    walletStore: {
+        get: {
+            wallet: () => null,
+            isMigrating: () => false,
+            syncState: () => ({ status: 0, text: null }),
+        },
+        set: {
+            wallet: vi.fn(),
+            isMigrating: vi.fn(),
+            syncState: vi.fn(),
+            setIsSyncing: vi.fn(),
+        },
+        use: {
+            wallet: () => null,
+            isMigrating: () => false,
+            syncState: () => ({ status: 0, text: null }),
+        },
+    },
+    switchedProfileStore: {
+        get: {
+            switchedDid: () => undefined,
+            profileType: () => null,
+            isSwitchedProfile: () => false,
+        },
+        set: {
+            switchedDid: vi.fn(),
+            profileType: vi.fn(),
+        },
+        use: {
+            switchedDid: () => undefined,
+            profileType: () => null,
+            isSwitchedProfile: () => false,
+        },
+    },
+}));
+
 vi.mock('../../firebase/firebase', () => ({
     auth: () => ({ signOut: vi.fn() }),
 }));
 
 vi.mock('../../providers/AuthCoordinatorProvider', () => ({
-    useAuthCoordinator: () => ({ logout: vi.fn().mockResolvedValue(undefined), state: { status: 'idle' } }),
+    useAuthCoordinator: () => ({
+        logout: vi.fn().mockResolvedValue(undefined),
+        state: { status: 'idle' },
+    }),
+}));
+
+vi.mock('../../config/bootstrapTenantConfig', () => ({
+    getLoginRedirectUrl: () => 'https://example.com/login',
+}));
+
+vi.mock('../../stores/resumeBuilderStore', () => ({
+    resumeBuilderStore: {
+        set: {
+            resetStore: vi.fn(),
+        },
+    },
 }));
 
 vi.mock('../../helpers/externalLinkHelpers', () => ({
@@ -159,7 +276,9 @@ describe('ExternalConsentFlowDoor', () => {
 
         mockUseHistory.mockReturnValue({ push: mockPush });
         mockUseLocation.mockReturnValue({
-            search: `?uri=${encodeURIComponent(contractUri)}&returnTo=${encodeURIComponent(returnTo)}`,
+            search: `?uri=${encodeURIComponent(contractUri)}&returnTo=${encodeURIComponent(
+                returnTo
+            )}`,
             pathname: '/consent-flow-login',
         });
 
@@ -233,8 +352,8 @@ describe('ExternalConsentFlowDoor', () => {
             // (either redirect to returnTo or show appropriate UI)
             await waitFor(() => {
                 // Should NOT navigate to sync-data for already-consented user
-                const syncDataCalls = mockPush.mock.calls.filter(
-                    (call: any) => call[0]?.includes('consent-flow-sync-data')
+                const syncDataCalls = mockPush.mock.calls.filter((call: any) =>
+                    call[0]?.includes('consent-flow-sync-data')
                 );
                 expect(syncDataCalls).toHaveLength(0);
             });

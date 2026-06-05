@@ -23,6 +23,11 @@ export default [
         format: 'esm',
         sourcemap: true,
       },
+      {
+        file: 'dist/partner-connect.mjs',
+        format: 'esm',
+        sourcemap: true,
+      },
     ],
     plugins: [
       resolve({ browser: true }),
