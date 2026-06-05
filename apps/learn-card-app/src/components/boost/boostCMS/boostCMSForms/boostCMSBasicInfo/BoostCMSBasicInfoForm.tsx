@@ -12,6 +12,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { AddressSpec } from 'apps/learn-card-app/src/components/locationSearch/location.helpers';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSBasicInfoForm: React.FC<{
     state: BoostCMSState;
@@ -92,7 +93,7 @@ const BoostCMSBasicInfoForm: React.FC<{
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
-                    About
+                    {m['boost.cms.basicInfo.about']()}
                 </h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
@@ -113,7 +114,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                                     onIonInput={e =>
                                         handleStateChange('issuerName', e.detail.value)
                                     }
-                                    placeholder="Issuer Name"
+                                    placeholder={m['boost.cms.basicInfo.issuerNamePlaceholder']()}
                                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                                     rows={2}
                                     disabled={disabled}
@@ -125,7 +126,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                             autocapitalize="on"
                             value={basicInfo?.description}
                             onIonInput={e => handleStateChange('description', e.detail.value)}
-                            placeholder="What is this boost for?"
+                            placeholder={m['boost.cms.basicInfo.descriptionPlaceholder']()}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium  text-base"
                             rows={3}
                             disabled={disabled}
@@ -136,7 +137,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                             autocapitalize="on"
                             value={basicInfo?.narrative}
                             onIonInput={e => handleStateChange('narrative', e.detail.value)}
-                            placeholder="How do you earn this boost?"
+                            placeholder={m['boost.cms.basicInfo.narrativePlaceholder']()}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium  text-base"
                             rows={3}
                             disabled={disabled}
@@ -157,7 +158,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                             >
                                 {state?.address.streetAddress
                                     ? state?.address.streetAddress
-                                    : 'Location'}
+                                    : m['boost.cms.basicInfo.location']()}
                             </button>
                             <button
                                 className="bg-grayscale-100 text-grayscale-600 rounded-[15px] font-medium tracking-widest text-base modal-btn-mobile w-full line-clamp-1 text-left"
@@ -173,14 +174,14 @@ const BoostCMSBasicInfoForm: React.FC<{
                             >
                                 {state?.address.streetAddress
                                     ? state?.address.streetAddress
-                                    : 'Location'}
+                                    : m['boost.cms.basicInfo.location']()}
                             </button>
                             <LocationIcon className="text-grayscale-600" />
                         </div>
                     )}
 
                     <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                        <p className="text-grayscale-900 font-medium w-10/12">Credential Expires</p>
+                        <p className="text-grayscale-900 font-medium w-10/12">{m['boost.cms.basicInfo.credentialExpires']()}</p>
                         <IonToggle
                             mode="ios"
                             color="emerald-700"
@@ -213,7 +214,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                                     ? moment(basicInfo?.expirationDate).format(
                                           'MMMM Do, YYYY - hh:mm A'
                                       )
-                                    : 'Expiration Date'}
+                                    : m['boost.cms.basicInfo.expirationDate']()}
                                 <Calendar className="w-[30px] text-grayscale-700" />
                             </button>
                         )}

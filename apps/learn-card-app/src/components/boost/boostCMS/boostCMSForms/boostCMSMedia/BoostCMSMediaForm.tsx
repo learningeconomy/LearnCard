@@ -18,6 +18,7 @@ import {
 } from '../../../boost';
 import { useTheme } from '../../../../../theme/hooks/useTheme';
 import { ModalTypes, useModal } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 export type BoostMediaCMSFormItemProps = {
     index: number;
@@ -95,11 +96,11 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
     if (isMediaDisplayType) isChecked = true;
 
     let toggleRequirementsText = isMediaDisplayType
-        ? 'Required for Media Display type.'
-        : 'Add media to enable option.';
+        ? m['boost.cms.media.requiredForMediaDisplay']()
+        : m['boost.cms.media.addMediaToEnable']();
     let addMediaText = isMediaDisplayType
-        ? 'Add media to continue.'
-        : 'When on, this credential will show the attached media instead of the default layout.';
+        ? m['boost.cms.media.addMediaToContinue']()
+        : m['boost.cms.media.mediaDisplayToggleDescription']();
 
     let lockIconPosition = '';
     if (isToggleDisabled && isMediaDisplayType) lockIconPosition = 'right-[6px]';
@@ -110,15 +111,14 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
             <IonCol size="12" className="w-full bg-white rounded-[20px]">
                 <button className="flex items-center justify-between w-full ion-padding">
                     <h1 className="font-poppins text-grayscale-900 text-xl p-0 m-0 flex items-center justify-center">
-                        <PaperClip className="h-[30px] w-[30px] mr-1" /> Media Attachments
+                        <PaperClip className="h-[30px] w-[30px] mr-1" /> {m['boost.cms.media.mediaAttachments']()}
                     </h1>
                 </button>
 
                 <div className="w-full flex items-center justify-between px-4">
                     <div>
                         <p className="font-poppins text-grayscale-900 text-[17px] p-0 m-0">
-                            Show only media for
-                            <br /> credential display
+                            {m['boost.cms.media.showOnlyMedia']()}
                         </p>
                         <p className="font-poppins text-grayscale-600 font-semibold text-xs p-0 m-0">
                             {toggleRequirementsText}
@@ -185,7 +185,7 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                                     setState={setState}
                                     title={
                                         <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                                            Select Media Type
+                                            {m['boost.cms.media.selectMediaType']()}
                                         </p>
                                     }
                                 />,
@@ -199,7 +199,7 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                         disabled={disabled}
                         className="w-full flex items-center justify-between p-4 bg-grayscale-100 text-grayscale-800 text-base rounded-[10px]"
                     >
-                        Add Media <Plus className="h-[30px] w-[30px] text-grayscale-700" />
+                        {m['boost.cms.media.addMedia']} <Plus className="h-[30px] w-[30px] text-grayscale-700" />
                     </button>
                 </div>
 

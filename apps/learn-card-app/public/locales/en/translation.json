@@ -1184,7 +1184,91 @@
         "id": "ID",
         "noImage": "No image set",
         "uploadImage": "Upload Image",
-        "changeImage": "Change Image"
+        "changeImage": "Change Image",
+        "cms": {
+            "basicInfo": {
+                "about": "About",
+                "issuerNamePlaceholder": "Issuer Name",
+                "descriptionPlaceholder": "What is this boost for?",
+                "narrativePlaceholder": "How do you earn this boost?",
+                "location": "Location",
+                "credentialExpires": "Credential Expires",
+                "expirationDate": "Expiration Date"
+            },
+            "title": {
+                "titlePlaceholder": "Title",
+                "boostTitlePlaceholder": "Boost Title"
+            },
+            "skills": {
+                "title": "Skills",
+                "addSkills": "Add Skills"
+            },
+            "media": {
+                "mediaAttachments": "Media Attachments",
+                "showOnlyMedia": "Show only media for credential display",
+                "requiredForMediaDisplay": "Required for Media Display type.",
+                "addMediaToEnable": "Add media to enable option.",
+                "addMediaToContinue": "Add media to continue.",
+                "mediaDisplayToggleDescription": "When on, this credential will show the attached media instead of the default layout.",
+                "selectMediaType": "Select Media Type",
+                "addMedia": "Add Media",
+                "titlePlaceholder": "Title",
+                "pasteLink": "Paste link...",
+                "uploadedPercent": "{{percent}}% uploaded",
+                "uploading": "Uploading...",
+                "changePhoto": "Change Photo",
+                "changeDoc": "Change Doc",
+                "upload": "Upload",
+                "close": "Close",
+                "videoCover": "Video Cover",
+                "uploadedImagePreview": "Uploaded Image Preview",
+                "mediaAttachment": "Media Attachment",
+                "attachmentRules": "Media Attachment Rules",
+                "attachmentRulesDescription": "You can attach only one media type per credential:",
+                "oneDocument": "One document",
+                "oneVideo": "One video",
+                "oneOrMorePhotos": "One or more photos",
+                "mixingNotAllowed": "Mixing types (like photo + video) isn't allowed.",
+                "attachmentRequired": "Media Attachment Required",
+                "attachmentRequiredDescription": "This credential uses a media-based display. Please attach a document, image, or link to showcase.",
+                "addMediaAttachment": "Add media attachment"
+            },
+            "appearance": {
+                "title": "Appearance",
+                "boostType": "Boost Type",
+                "selectStylePack": "Select Style Pack",
+                "selectImage": "Select Image",
+                "save": "Save",
+                "cancel": "Cancel",
+                "badgeThumbnail": "Badge Thumbnail",
+                "default": "Default",
+                "backgroundImage": "Background Image",
+                "boostBackgroundImage": "Boost Background Image",
+                "empty": "Empty",
+                "backgroundColor": "Background Color",
+                "boostBackgroundColor": "Boost Background Color",
+                "colorHexCode": "Color Hex Code",
+                "displayAsBadge": "Display as {{type}}",
+                "displayType": "{{type}} Display",
+                "stylePack": "Style Pack",
+                "all": "All",
+                "upload": "Upload",
+                "loading": "Loading...",
+                "selectType": "Select Type",
+                "customType": "Custom Type",
+                "search": "Search...",
+                "noResultsFor": "No results found for",
+                "createBoost": "Create \"{{search}}\" Boost!",
+                "editAppearance": "Edit Appearance",
+                "badgeThumbnailAlt": "badge thumbnail"
+            },
+            "chat": {
+                "addChat": "Add Chat"
+            },
+            "aiMission": {
+                "title": "AI Mission Generation"
+            }
+        }
     },
     "toasts": {
         "copied": "Copied to clipboard",

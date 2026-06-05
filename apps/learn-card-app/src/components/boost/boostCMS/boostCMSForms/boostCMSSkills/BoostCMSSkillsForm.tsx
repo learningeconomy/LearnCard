@@ -22,6 +22,7 @@ import {
     boostCMSSkills,
 } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSPrimarySkillButton: React.FC<{
     skill: BoostCMSSkillsEnum | string;
@@ -305,7 +306,7 @@ export const BoostCMSSkillsForm: React.FC<{
                 className="w-full flex-col items-center justify-center bg-white rounded-[20px]"
             >
                 <div className="flex items-center justify-between w-full ion-padding">
-                    <h1 className="font-poppins text-black text-xl p-0 m-0">Skills</h1>
+                    <h1 className="font-poppins text-black text-xl p-0 m-0">{m['boost.cms.skills.title']()}</h1>
 
                     <button
                         onClick={() =>

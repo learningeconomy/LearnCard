@@ -12,6 +12,7 @@ import MediaDisplayTypeIcon from 'learn-card-base/assets/images/media-display-ty
 
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import BoostCMSDisplayTypeSelectorModal from './BoostCMSDisplayTypeSelectorModal';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSDisplayTypeSelectorProps = {
     state: BoostCMSState;
@@ -46,7 +47,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
 
     const { color: _color } =
         getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum) || {};
-    const displayTypeText = `${displayType} Display`;
+    const displayTypeText = m['boost.cms.appearance.displayType']({ type: displayType });
 
     let displayTypeIcon = null;
     if (displayType === BoostCMSAppearanceDisplayTypeEnum.Badge) {
@@ -93,7 +94,7 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
                     <img
                         src={displayTypeIcon}
                         className="w-[30px] h-auto mr-2"
-                        alt="display type"
+                        alt={m['boost.cms.appearance.badgeThumbnailAlt']()}
                     />{' '}
                     {displayTypeText}
                 </div>

@@ -1182,7 +1182,91 @@
         "id": "Identificación",
         "noImage": "Sin imagen",
         "uploadImage": "Subir imagen",
-        "changeImage": "Cambiar imagen"
+        "changeImage": "Cambiar imagen",
+        "cms": {
+            "basicInfo": {
+                "about": "Acerca de",
+                "issuerNamePlaceholder": "Nombre del emisor",
+                "descriptionPlaceholder": "¿Para qué es este boost?",
+                "narrativePlaceholder": "¿Cómo se gana este boost?",
+                "location": "Ubicación",
+                "credentialExpires": "La credencial caduca",
+                "expirationDate": "Fecha de caducidad"
+            },
+            "title": {
+                "titlePlaceholder": "Título",
+                "boostTitlePlaceholder": "Título del boost"
+            },
+            "skills": {
+                "title": "Habilidades",
+                "addSkills": "Agregar habilidades"
+            },
+            "media": {
+                "mediaAttachments": "Archivos adjuntos",
+                "showOnlyMedia": "Mostrar solo medios para la visualización de la credencial",
+                "requiredForMediaDisplay": "Requerido para el tipo de visualización de medios.",
+                "addMediaToEnable": "Agrega medios para habilitar la opción.",
+                "addMediaToContinue": "Agrega medios para continuar.",
+                "mediaDisplayToggleDescription": "Cuando está activado, esta credencial mostrará los medios adjuntos en lugar del diseño predeterminado.",
+                "selectMediaType": "Seleccionar tipo de medio",
+                "addMedia": "Agregar medio",
+                "titlePlaceholder": "Título",
+                "pasteLink": "Pegar enlace...",
+                "uploadedPercent": "{{percent}}% cargado",
+                "uploading": "Subiendo...",
+                "changePhoto": "Cambiar foto",
+                "changeDoc": "Cambiar documento",
+                "upload": "Subir",
+                "close": "Cerrar",
+                "videoCover": "Portada del video",
+                "uploadedImagePreview": "Vista previa de la imagen cargada",
+                "mediaAttachment": "Adjunto de medios",
+                "attachmentRules": "Reglas de adjuntos de medios",
+                "attachmentRulesDescription": "Puedes adjuntar solo un tipo de medio por credencial:",
+                "oneDocument": "Un documento",
+                "oneVideo": "Un video",
+                "oneOrMorePhotos": "Una o más fotos",
+                "mixingNotAllowed": "No se permite mezclar tipos (como foto + video).",
+                "attachmentRequired": "Se requiere adjuntar medios",
+                "attachmentRequiredDescription": "Esta credencial usa una visualización basada en medios. Adjunta un documento, imagen o enlace para mostrar.",
+                "addMediaAttachment": "Agregar adjunto de medios"
+            },
+            "appearance": {
+                "title": "Apariencia",
+                "boostType": "Tipo de boost",
+                "selectStylePack": "Seleccionar paquete de estilos",
+                "selectImage": "Seleccionar imagen",
+                "save": "Guardar",
+                "cancel": "Cancelar",
+                "badgeThumbnail": "Miniatura de la insignia",
+                "default": "Predeterminado",
+                "backgroundImage": "Imagen de fondo",
+                "boostBackgroundImage": "Imagen de fondo del boost",
+                "empty": "Vacío",
+                "backgroundColor": "Color de fondo",
+                "boostBackgroundColor": "Color de fondo del boost",
+                "colorHexCode": "Código hexadecimal del color",
+                "displayAsBadge": "Mostrar como {{type}}",
+                "displayType": "Visualización {{type}}",
+                "stylePack": "Paquete de estilos",
+                "all": "Todos",
+                "upload": "Subir",
+                "loading": "Cargando...",
+                "selectType": "Seleccionar tipo",
+                "customType": "Tipo personalizado",
+                "search": "Buscar...",
+                "noResultsFor": "No se encontraron resultados para",
+                "createBoost": "¡Crear boost \"{{search}}\"!",
+                "editAppearance": "Editar apariencia",
+                "badgeThumbnailAlt": "miniatura de la insignia"
+            },
+            "chat": {
+                "addChat": "Agregar chat"
+            },
+            "aiMission": {
+                "title": "Generación de misión con IA"
+            }
+        }
     },
     "legal": {
         "termsOfService": "Términos de servicio",

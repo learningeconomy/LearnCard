@@ -3,6 +3,7 @@ import React from 'react';
 import { IonRow, IonCol, IonToggle } from '@ionic/react';
 
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSAIMissionForm: React.FC<{
     state: BoostCMSState;
@@ -29,7 +30,7 @@ const BoostCMSAIMissionForm: React.FC<{
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                    <h1 className="text-black text-2xl p-0 m-0">AI Mission Generation</h1>
+                    <h1 className="text-black text-2xl p-0 m-0">{m['boost.cms.aiMission.title']()}</h1>
                     <IonToggle
                         mode="ios"
                         color="indigo-700"

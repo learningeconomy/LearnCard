@@ -8,6 +8,7 @@ import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 
 import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
@@ -91,7 +92,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                                 onClick={closeModal}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Close
+                                {m['boost.cms.media.close']()}
                             </button>
                         </div>
                     </div>,

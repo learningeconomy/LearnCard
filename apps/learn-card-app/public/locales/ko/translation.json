@@ -1182,7 +1182,91 @@
         "id": "신분증",
         "noImage": "이미지 없음",
         "uploadImage": "이미지 업로드",
-        "changeImage": "이미지 변경"
+        "changeImage": "이미지 변경",
+        "cms": {
+            "basicInfo": {
+                "about": "정보",
+                "issuerNamePlaceholder": "발급자 이름",
+                "descriptionPlaceholder": "이 부스트는 무엇을 위한 것인가요?",
+                "narrativePlaceholder": "이 부스트는 어떻게 획득하나요?",
+                "location": "위치",
+                "credentialExpires": "자격증 만료",
+                "expirationDate": "만료일"
+            },
+            "title": {
+                "titlePlaceholder": "제목",
+                "boostTitlePlaceholder": "부스트 제목"
+            },
+            "skills": {
+                "title": "기술",
+                "addSkills": "기술 추가"
+            },
+            "media": {
+                "mediaAttachments": "미디어 첨부파일",
+                "showOnlyMedia": "자격증 표시를 위해 미디어만 표시",
+                "requiredForMediaDisplay": "미디어 표시 유형에 필요합니다.",
+                "addMediaToEnable": "옵션을 활성화하려면 미디어를 추가하세요.",
+                "addMediaToContinue": "계속하려면 미디어를 추가하세요.",
+                "mediaDisplayToggleDescription": "활성화하면 이 자격증은 기본 레이아웃 대신 첨부된 미디어를 표시합니다.",
+                "selectMediaType": "미디어 유형 선택",
+                "addMedia": "미디어 추가",
+                "titlePlaceholder": "제목",
+                "pasteLink": "링크 붙여넣기...",
+                "uploadedPercent": "{{percent}}% 업로드됨",
+                "uploading": "업로드 중...",
+                "changePhoto": "사진 변경",
+                "changeDoc": "문서 변경",
+                "upload": "업로드",
+                "close": "닫기",
+                "videoCover": "비디오 커버",
+                "uploadedImagePreview": "업로드된 이미지 미리보기",
+                "mediaAttachment": "미디어 첨부",
+                "attachmentRules": "미디어 첨부 규칙",
+                "attachmentRulesDescription": "자격증당 하나의 미디어 유형만 첨부할 수 있습니다:",
+                "oneDocument": "문서 1개",
+                "oneVideo": "비디오 1개",
+                "oneOrMorePhotos": "사진 1장 이상",
+                "mixingNotAllowed": "유형 혼합(예: 사진 + 비디오)은 허용되지 않습니다.",
+                "attachmentRequired": "미디어 첨부 필요",
+                "attachmentRequiredDescription": "이 자격증은 미디어 기반 표시를 사용합니다. 문서, 이미지 또는 링크를 첨부해 주세요.",
+                "addMediaAttachment": "미디어 첨부 추가"
+            },
+            "appearance": {
+                "title": "외관",
+                "boostType": "부스트 유형",
+                "selectStylePack": "스타일 팩 선택",
+                "selectImage": "이미지 선택",
+                "save": "저장",
+                "cancel": "취소",
+                "badgeThumbnail": "배지 썸네일",
+                "default": "기본",
+                "backgroundImage": "배경 이미지",
+                "boostBackgroundImage": "부스트 배경 이미지",
+                "empty": "비어있음",
+                "backgroundColor": "배경색",
+                "boostBackgroundColor": "부스트 배경색",
+                "colorHexCode": "색상 16진수 코드",
+                "displayAsBadge": "{{type}}(으)로 표시",
+                "displayType": "{{type}} 표시",
+                "stylePack": "스타일 팩",
+                "all": "전체",
+                "upload": "업로드",
+                "loading": "로딩 중...",
+                "selectType": "유형 선택",
+                "customType": "사용자 지정 유형",
+                "search": "검색...",
+                "noResultsFor": "다음에 대한 결과 없음",
+                "createBoost": "\"{{search}}\" 부스트 만들기!",
+                "editAppearance": "외관 편집",
+                "badgeThumbnailAlt": "배지 썸네일"
+            },
+            "chat": {
+                "addChat": "채팅 추가"
+            },
+            "aiMission": {
+                "title": "AI 미션 생성"
+            }
+        }
     },
     "legal": {
         "termsOfService": "서비스 약관",

@@ -163,7 +163,7 @@ export function isExcludedByRouteStrategy(url) {
 export let serverAsyncLocalStorage = undefined;
 export const disableAsyncLocalStorage = false;
 export const experimentalMiddlewareLocaleSplitting = false;
-export const isServer = typeof window === 'undefined';
+export const isServer = import.meta.env?.SSR ?? typeof window === 'undefined';
 /** @type {Locale | undefined} */
 export const experimentalStaticLocale = undefined;
 /**

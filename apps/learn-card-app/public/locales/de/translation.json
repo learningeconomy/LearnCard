@@ -1182,7 +1182,91 @@
         "id": "Ausweis",
         "noImage": "Kein Bild",
         "uploadImage": "Bild hochladen",
-        "changeImage": "Bild ändern"
+        "changeImage": "Bild ändern",
+        "cms": {
+            "basicInfo": {
+                "about": "Info",
+                "issuerNamePlaceholder": "Name des Ausstellers",
+                "descriptionPlaceholder": "Wofür ist dieser Boost?",
+                "narrativePlaceholder": "Wie verdient man diesen Boost?",
+                "location": "Standort",
+                "credentialExpires": "Berechtigung läuft ab",
+                "expirationDate": "Ablaufdatum"
+            },
+            "title": {
+                "titlePlaceholder": "Titel",
+                "boostTitlePlaceholder": "Boost-Titel"
+            },
+            "skills": {
+                "title": "Fähigkeiten",
+                "addSkills": "Fähigkeiten hinzufügen"
+            },
+            "media": {
+                "mediaAttachments": "Medienanhänge",
+                "showOnlyMedia": "Nur Medien für die Credential-Anzeige zeigen",
+                "requiredForMediaDisplay": "Erforderlich für den Medien-Anzeigetyp.",
+                "addMediaToEnable": "Medien hinzufügen, um Option zu aktivieren.",
+                "addMediaToContinue": "Medien hinzufügen, um fortzufahren.",
+                "mediaDisplayToggleDescription": "Wenn aktiv, zeigt diese Berechtigung die angehängten Medien anstelle des Standard-Layouts.",
+                "selectMediaType": "Medientyp auswählen",
+                "addMedia": "Medien hinzufügen",
+                "titlePlaceholder": "Titel",
+                "pasteLink": "Link einfügen...",
+                "uploadedPercent": "{{percent}}% hochgeladen",
+                "uploading": "Hochladen...",
+                "changePhoto": "Foto ändern",
+                "changeDoc": "Dokument ändern",
+                "upload": "Hochladen",
+                "close": "Schließen",
+                "videoCover": "Video-Cover",
+                "uploadedImagePreview": "Vorschau des hochgeladenen Bildes",
+                "mediaAttachment": "Medienanhang",
+                "attachmentRules": "Regeln für Medienanhänge",
+                "attachmentRulesDescription": "Sie können nur einen Medientyp pro Berechtigung anhängen:",
+                "oneDocument": "Ein Dokument",
+                "oneVideo": "Ein Video",
+                "oneOrMorePhotos": "Ein oder mehrere Fotos",
+                "mixingNotAllowed": "Das Mischen von Typen (wie Foto + Video) ist nicht erlaubt.",
+                "attachmentRequired": "Medienanhang erforderlich",
+                "attachmentRequiredDescription": "Diese Berechtigung verwendet eine medienbasierte Anzeige. Bitte hängen Sie ein Dokument, Bild oder einen Link an.",
+                "addMediaAttachment": "Medienanhang hinzufügen"
+            },
+            "appearance": {
+                "title": "Erscheinungsbild",
+                "boostType": "Boost-Typ",
+                "selectStylePack": "Style-Pack auswählen",
+                "selectImage": "Bild auswählen",
+                "save": "Speichern",
+                "cancel": "Abbrechen",
+                "badgeThumbnail": "Abzeichen-Miniaturansicht",
+                "default": "Standard",
+                "backgroundImage": "Hintergrundbild",
+                "boostBackgroundImage": "Boost-Hintergrundbild",
+                "empty": "Leer",
+                "backgroundColor": "Hintergrundfarbe",
+                "boostBackgroundColor": "Boost-Hintergrundfarbe",
+                "colorHexCode": "Farb-Hex-Code",
+                "displayAsBadge": "Anzeigen als {{type}}",
+                "displayType": "{{type}}-Anzeige",
+                "stylePack": "Style-Pack",
+                "all": "Alle",
+                "upload": "Hochladen",
+                "loading": "Laden...",
+                "selectType": "Typ auswählen",
+                "customType": "Benutzerdefinierter Typ",
+                "search": "Suchen...",
+                "noResultsFor": "Keine Ergebnisse gefunden für",
+                "createBoost": "\"{{search}}\" Boost erstellen!",
+                "editAppearance": "Erscheinungsbild bearbeiten",
+                "badgeThumbnailAlt": "Abzeichen-Miniaturansicht"
+            },
+            "chat": {
+                "addChat": "Chat hinzufügen"
+            },
+            "aiMission": {
+                "title": "KI-Mission-Generierung"
+            }
+        }
     },
     "legal": {
         "termsOfService": "Nutzungsbedingungen",

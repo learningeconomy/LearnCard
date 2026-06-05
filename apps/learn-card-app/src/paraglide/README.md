@@ -2,7 +2,7 @@
 
 > Auto-generated i18n message functions. Import `messages.js` to use translated strings.
 
-Compiled from: `/Users/donny/Work/LearnCard/apps/learn-card-app/project.inlang`
+Compiled from: `./project.inlang`
 
 
 ## What is this folder?

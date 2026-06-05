@@ -10,6 +10,7 @@ import MediaDisplayTypeIcon from 'learn-card-base/assets/images/media-display-ty
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSDisplayTypeSelectorModalProps = {
     state: BoostCMSState;
@@ -85,9 +86,9 @@ export const BoostCMSDisplayTypeSelectorModal: React.FC<BoostCMSDisplayTypeSelec
                                 <img
                                     src={icon}
                                     className="w-[35px] h-auto mr-2"
-                                    alt="display type"
+                                    alt={m['boost.cms.appearance.badgeThumbnailAlt']()}
                                 />{' '}
-                                Display as {title}
+                                {m['boost.cms.appearance.displayAsBadge']({ type: title })}
                             </div>
 
                             {isSelected && (
