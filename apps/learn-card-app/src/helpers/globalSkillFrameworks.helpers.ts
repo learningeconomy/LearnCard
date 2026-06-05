@@ -41,6 +41,38 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER = [
     'wef-global-skills-taxonomy',
     'pathsmith-durable-skills-starter-edition',
 ];
+const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> = {
+    'wef-global-skills-taxonomy': [
+        'skill-1770752882121-4o69efqu6',
+        'skill-1770752882121-6kjwahbon',
+        'skill-1770752882121-7awe5ozu1',
+        'skill-1770752882121-8i74t9iu9',
+        'skill-1770752882121-8oup5zhkp',
+        'skill-1770752882121-fxs8773lj',
+        'skill-1770752882121-gspxpjkur',
+        'skill-1770752882121-ijd7lrmqh',
+        'skill-1770752882121-kgp1fmr19',
+        'skill-1770752882121-lpy3rnsqi',
+        'skill-1770752882121-ltr7aytdx',
+        'skill-1770752882121-n0yqautmg',
+        'skill-1770752882121-nf6c7plai',
+        'skill-1770752882121-oz00jnqee',
+        'skill-1770752882121-pwnwrrai6',
+        'skill-1770752882121-y75tnzenk',
+    ],
+    'pathsmith-durable-skills-starter-edition': [
+        'skill-1772824804950-8n0kmlyf2',
+        'skill-1772824804950-a4g6gz6e1',
+        'skill-1772824804950-d89eknulo',
+        'skill-1772824804950-ebfgl4nam',
+        'skill-1772824804950-kegwjzu5x',
+        'skill-1772824804950-purc6ulo5',
+        'skill-1772824804950-tkv7qhywf',
+        'skill-1772824804950-urpvvber5',
+        'skill-1772824804950-w4yyfkxzt',
+        'skill-1772824804950-w96zstc5o',
+    ],
+};
 
 const isProductionEnvironment = (): boolean =>
     typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
@@ -111,7 +143,10 @@ const fetchSeededGlobalSkillFrameworks = async (
             return {
                 frameworkId: framework.id,
                 name: framework.name,
-                defaultSkillIds: frameworkDetails.skills?.records?.map(skill => skill.id) ?? [],
+                defaultSkillIds:
+                    SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS[framework.id] ??
+                    frameworkDetails.skills?.records?.map(skill => skill.id) ??
+                    [],
             } satisfies GlobalSkillFrameworkConfig;
         })
     );
