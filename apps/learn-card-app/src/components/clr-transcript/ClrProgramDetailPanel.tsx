@@ -4,23 +4,40 @@ import X from '../svgs/X';
 import { FlatIcon } from './ClrStatCard';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CertificateDisplayIcon } from 'learn-card-base';
+import ClrAlignmentList from './ClrAlignmentList';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
+import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
+
+import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import { useModal } from 'learn-card-base';
 
 import { formatAchievementType } from './clr.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import type {
+    ProgramDisplayModel,
+    CompetencyDisplayModel,
+    AssociationDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
 
 const ClrProgramDetailPanel: React.FC<{
     program: ProgramDisplayModel;
     onClose?: () => void;
     adminMode?: boolean;
+    associations?: AssociationDisplayModel[];
+    competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-}> = ({ program, adminMode = false, issuerName }) => {
+}> = ({ program, adminMode = false, associations = [], competencies = [], issuerName }) => {
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
+
+    // Competencies linked to this program via explicit CLR associations (no heuristics).
+    const programCompetencies = getLinkedCompetencies(
+        program.sourceCredentialId,
+        competencies,
+        associations
+    );
 
     return (
         <div className="space-y-5 pb-10 h-full bg-grayscale-100">
@@ -120,6 +137,39 @@ const ClrProgramDetailPanel: React.FC<{
                                 />
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Competencies linked to this program */}
+                {programCompetencies.length > 0 && (
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-3">
+                        <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
+                            {programCompetencies.length} Competenc
+                            {programCompetencies.length === 1 ? 'y' : 'ies'}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {programCompetencies.map(c => (
+                                <span
+                                    key={c.sourceCredentialId}
+                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-grayscale-700 bg-grayscale-50 border border-grayscale-200 rounded-full px-3 py-1.5"
+                                >
+                                    <SkillsIcon className="w-4 h-4 text-grayscale-500" />
+                                    {c.name?.value ?? 'Competency'}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Aligned competency frameworks (achievement.alignment) */}
+                {program.alignments.length > 0 && (
+                    <ClrAlignmentList alignments={program.alignments} />
+                )}
+
+                {/* Evidence & attachments scoped to this program */}
+                {program.evidence.length > 0 && (
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4">
+                        <ClrTranscriptEvidenceList evidence={program.evidence} />
                     </div>
                 )}
 
