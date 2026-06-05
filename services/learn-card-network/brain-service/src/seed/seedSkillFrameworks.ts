@@ -284,7 +284,7 @@ const describeEmbeddingBackfillFailure = (error: unknown): string => {
     const normalized = message.toLowerCase();
 
     if (normalized.includes('quota exceeded') || normalized.includes('resource_exhausted')) {
-        return 'Embedding quota was reached. The frameworks were seeded, but semantic search will stay limited until the Google embedding quota resets or you switch to a paid key.';
+        return '\nEmbedding quota was reached. \nThe frameworks were seeded, but semantic search will stay limited until the Google embedding quota resets or you switch to a paid key.\n';
     }
 
     if (normalized.includes('rate limits') || normalized.includes('too many requests')) {
