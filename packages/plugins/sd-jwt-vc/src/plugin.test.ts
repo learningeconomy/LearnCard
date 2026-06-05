@@ -62,16 +62,29 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
         const lc = buildLearnCard(chained);
         const plugin = getSdJwtVcPlugin(lc);
 
-        const result = await plugin.methods.verifyCredential(
-            lc as never,
-            sdJwtVc as never
-        );
+        const result = await plugin.methods.verifyCredential(lc as never, sdJwtVc as never);
 
         expect(mockVerify).toHaveBeenCalledTimes(1);
         expect(mockVerify).toHaveBeenCalledWith(lc, sdJwtVc.proof.jwt, {});
         expect(chained).not.toHaveBeenCalled();
         expect(result.errors).toEqual([]);
         expect(result.checks).toContain('issuer_signature');
+    });
+
+    it('routes to verifySdJwtVc when an LDP proof precedes SdJwtCompactProof in a proof array', async () => {
+        const chained = jest.fn();
+        const lc = buildLearnCard(chained);
+        const plugin = getSdJwtVcPlugin(lc);
+
+        const credentialWithArrayProof = {
+            ...sdJwtVc,
+            proof: [ldVc.proof, sdJwtVc.proof],
+        };
+
+        await plugin.methods.verifyCredential(lc as never, credentialWithArrayProof as never);
+
+        expect(mockVerify).toHaveBeenCalledWith(lc, sdJwtVc.proof.jwt, {});
+        expect(chained).not.toHaveBeenCalled();
     });
 
     it('surfaces SD-JWT verification errors back to the caller', async () => {
@@ -83,10 +96,7 @@ describe('SdJwtVcPlugin.verifyCredential', () => {
         const lc = buildLearnCard();
         const plugin = getSdJwtVcPlugin(lc);
 
-        const result = await plugin.methods.verifyCredential(
-            lc as never,
-            sdJwtVc as never
-        );
+        const result = await plugin.methods.verifyCredential(lc as never, sdJwtVc as never);
 
         expect(result.errors).toEqual(['signature_invalid: bad signature']);
     });

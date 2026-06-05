@@ -1,8 +1,5 @@
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
-import {
-    StoredCredentialEnvelopeValidator,
-    isStoredCredentialEnvelope,
-} from '@learncard/types';
+import { StoredCredentialEnvelopeValidator, isStoredCredentialEnvelope } from '@learncard/types';
 
 import {
     projectEnvelopeToDisplayVc,
@@ -64,7 +61,9 @@ const makeIssuerSigner = async () => {
     const publicJwk = publicKey.export({ format: 'jwk' }) as Record<string, unknown>;
 
     const signer = async (data: string): Promise<string> => {
-        return cryptoModule.sign(null, Buffer.from(data, 'utf-8'), privateKey).toString('base64url');
+        return cryptoModule
+            .sign(null, Buffer.from(data, 'utf-8'), privateKey)
+            .toString('base64url');
     };
 
     return { signer, publicJwk };
@@ -113,7 +112,7 @@ const makeSdJwtSynthesisLearnCard = () =>
             parseSdJwtVc,
             verifySdJwtVc: jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] }),
         },
-}) as never;
+    } as never);
 
 type TestCredentialRecord = {
     id: string;
@@ -140,14 +139,13 @@ const make = (extra: Partial<TestCredentialRecord> = {}): TestCredentialRecord =
     ...extra,
 });
 
-const makeVc = (overrides: Record<string, unknown> = {}): TestVc =>
-    ({
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
-        type: ['VerifiableCredential'],
-        issuer: 'did:web:issuer',
-        credentialSubject: {},
-        ...overrides,
-    });
+const makeVc = (overrides: Record<string, unknown> = {}): TestVc => ({
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    type: ['VerifiableCredential'],
+    issuer: 'did:web:issuer',
+    credentialSubject: {},
+    ...overrides,
+});
 
 describe('toStoredCredential — explicit format', () => {
     it('honors `format: dc+sd-jwt` with explicit rawWireForm', () => {
@@ -292,10 +290,7 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
         const wrapper = {
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiableCredential'],
-            proof: [
-                { type: 'Ed25519Signature2020' },
-                { type: 'JwtProof2020', jwt: compact },
-            ],
+            proof: [{ type: 'Ed25519Signature2020' }, { type: 'JwtProof2020', jwt: compact }],
         } as any;
         const stored = toStoredCredential(make({ vc: wrapper }));
         expect(stored.format).toBe('jwt-vc-json');
@@ -309,10 +304,7 @@ describe('toStoredCredential — inferred from shape (legacy records)', () => {
         const wrapper = {
             '@context': ['https://www.w3.org/ns/credentials/v2'],
             type: ['VerifiableCredential', 'SdJwtVcCredential'],
-            proof: [
-                { type: 'Ed25519Signature2020' },
-                { type: 'SdJwtCompactProof', jwt: compact },
-            ],
+            proof: [{ type: 'Ed25519Signature2020' }, { type: 'SdJwtCompactProof', jwt: compact }],
         } as any;
         const stored = toStoredCredential(make({ vc: wrapper }));
         expect(stored.format).toBe('dc+sd-jwt');
@@ -343,7 +335,10 @@ describe('toStoredCredential — explicit format takes precedence over shape', (
         // nor extractable proof.jwt would be malformed; we degrade
         // gracefully to shape inference rather than crashing.
         const stored = toStoredCredential(
-            make({ format: 'dc+sd-jwt', vc: { '@context': ['https://www.w3.org/ns/credentials/v2'] } })
+            make({
+                format: 'dc+sd-jwt',
+                vc: { '@context': ['https://www.w3.org/ns/credentials/v2'] },
+            })
         );
         expect(stored.format).toBe('w3c-vc-2.0');
     });
@@ -369,9 +364,9 @@ describe('toStoredCredential — never throws', () => {
 describe('StoredCredentialEnvelope', () => {
     describe('isStoredCredentialEnvelope', () => {
         it('returns true for a valid string envelope', () => {
-            expect(
-                isStoredCredentialEnvelope({ format: 'dc+sd-jwt', data: 'compact.jwt~' })
-            ).toBe(true);
+            expect(isStoredCredentialEnvelope({ format: 'dc+sd-jwt', data: 'compact.jwt~' })).toBe(
+                true
+            );
         });
 
         it('returns true for a Uint8Array envelope (mDoc forward-compat)', () => {
@@ -601,6 +596,9 @@ describe('StoredCredentialEnvelope', () => {
             expect(vc).toBeDefined();
             expect(vc!.issuer).toBe('did:web:university.example');
             expect(vc!.type).toContain('UniversityDegreeCredential');
+            const proof = vc!.proof as { type: string; jwt: string };
+            expect(proof.type).toBe('JwtProof2020');
+            expect(proof.jwt).toBe(compact);
         });
 
         it('mDoc returns undefined (no fake VC for binary)', () => {

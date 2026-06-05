@@ -46,7 +46,8 @@ const makeHolderKeypair = async () => {
     return { privateJwk, publicJwk };
 };
 
-const makeVerificationOk = () => jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] });
+const makeVerificationOk = () =>
+    jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] });
 
 const tamperIssuerSignature = (compact: string): string => {
     const [jwt, ...rest] = compact.split('~');
@@ -59,8 +60,7 @@ const tamperIssuerSignature = (compact: string): string => {
 };
 
 const buildMinimalCompactWithSdAlg = (sdAlg: string): string => {
-    const b64 = (obj: unknown) =>
-        Buffer.from(JSON.stringify(obj)).toString('base64url');
+    const b64 = (obj: unknown) => Buffer.from(JSON.stringify(obj)).toString('base64url');
     const header = b64({ alg: 'EdDSA', typ: 'dc+sd-jwt', kid: ISSUER_KID });
     const payload = b64({
         iss: ISSUER_DID,
@@ -187,7 +187,10 @@ describe('presentSdJwtVc', () => {
 
             expect(result.hasKeyBinding).toBe(true);
 
-            const lastSegment = result.compact.split('~').filter(s => s.length > 0).pop()!;
+            const lastSegment = result.compact
+                .split('~')
+                .filter(s => s.length > 0)
+                .pop()!;
             const [headerB64, payloadB64] = lastSegment.split('.');
             const header = decodeJsonSegment(headerB64!);
             const payload = decodeJsonSegment(payloadB64!);
@@ -323,9 +326,9 @@ describe('presentSdJwtVc', () => {
 
     describe('error handling', () => {
         it('throws invalid_compact_form for non-string input', async () => {
-            await expect(
-                presentSdJwtVc('not-an-sd-jwt')
-            ).rejects.toMatchObject({ code: 'invalid_compact_form' });
+            await expect(presentSdJwtVc('not-an-sd-jwt')).rejects.toMatchObject({
+                code: 'invalid_compact_form',
+            });
         });
 
         it('throws invalid_compact_form for empty input', async () => {
@@ -391,6 +394,23 @@ describe('presentSdJwtVc', () => {
             ).rejects.toMatchObject({ code: 'unsupported_cnf_confirmation_type' });
         });
 
+        it('fails closed when cnf.jwk is present but null (no unbound presentation)', async () => {
+            const holder = await makeHolderKeypair();
+            const kbSigner = await createEd25519KbSigner({ privateJwk: holder.privateJwk });
+            const { compact } = await issueCredential({
+                payloadOverrides: { cnf: { jwk: null } },
+            });
+
+            await expect(
+                presentSdJwtVc(compact, {
+                    audience: 'https://verifier.example.com',
+                    nonce: 'abc',
+                    kbSigner,
+                    verify: makeVerificationOk(),
+                })
+            ).rejects.toMatchObject({ code: 'unsupported_cnf_confirmation_type' });
+        });
+
         it('throws unsupported_sd_alg when credential carries an unsupported _sd_alg value', async () => {
             const compact = buildMinimalCompactWithSdAlg('sha-512');
 
@@ -414,9 +434,7 @@ describe('createEd25519KbSigner', () => {
     it('rejects keys without a private scalar', async () => {
         const keypair = await generateKeyPair('EdDSA');
         const publicOnly = (await exportJWK(keypair.publicKey)) as JWK;
-        await expect(
-            createEd25519KbSigner({ privateJwk: publicOnly })
-        ).rejects.toMatchObject({
+        await expect(createEd25519KbSigner({ privateJwk: publicOnly })).rejects.toMatchObject({
             code: 'kb_jwt_invalid',
             message: expect.stringContaining('private scalar'),
         });

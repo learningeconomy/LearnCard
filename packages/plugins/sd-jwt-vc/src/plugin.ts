@@ -33,6 +33,14 @@ const pickProof = (credential: unknown): ProofWithType | undefined => {
     const proof = (credential as { proof?: unknown }).proof;
     if (!proof) return undefined;
     if (Array.isArray(proof)) {
+        const sdJwtProof = proof.find(
+            p =>
+                p &&
+                typeof p === 'object' &&
+                (p as ProofWithType).type === SD_JWT_PROOF_TYPE &&
+                typeof (p as ProofWithType).jwt === 'string'
+        ) as ProofWithType | undefined;
+        if (sdJwtProof) return sdJwtProof;
         return proof.find(p => typeof p === 'object' && p !== null) as ProofWithType | undefined;
     }
     if (typeof proof === 'object') return proof as ProofWithType;

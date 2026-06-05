@@ -9,8 +9,7 @@ import {
 } from './sd-jwt-vc';
 import { VciError } from './errors';
 
-const FAKE_COMPACT =
-    'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload-segment.sig~';
+const FAKE_COMPACT = 'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload-segment.sig~';
 
 const HOLDER_JWK = {
     kty: 'OKP',
@@ -78,11 +77,7 @@ describe('synthesizeSdJwtVc', () => {
 
         expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
         expect(result.jwt).toBe(FAKE_COMPACT);
-        expect(result.vc.type).toEqual([
-            'VerifiableCredential',
-            'SdJwtVcCredential',
-            'TestCert',
-        ]);
+        expect(result.vc.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential', 'TestCert']);
         expect((result.vc as { name?: unknown }).name).toBe('Test Cert');
         expect(result.vc.issuer).toBe('did:web:issuer.example.com');
         expect(result.vc.validFrom).toBe('2024-01-01T00:00:00.000Z');
@@ -102,11 +97,7 @@ describe('synthesizeSdJwtVc', () => {
             header: { alg: 'EdDSA', typ: 'vc+sd-jwt', kid: 'did:web:issuer.example.com#key-1' },
         });
         const learnCard = makeLearnCard(parsed);
-        const result = await synthesizeSdJwtVc(
-            FAKE_COMPACT,
-            SD_JWT_VC_FORMAT_LEGACY,
-            learnCard
-        );
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT_LEGACY, learnCard);
 
         expect(result.format).toBe('vc+sd-jwt');
         expect(result.rawWireForm).toBe(FAKE_COMPACT);
@@ -222,10 +213,9 @@ describe('synthesizeSdJwtVc', () => {
         const subjectId = (result.vc.credentialSubject as { id?: string }).id ?? '';
         const encoded = subjectId.replace(/^did:jwk:/, '');
         const padded = encoded + '='.repeat((4 - (encoded.length % 4)) % 4);
-        const json = Buffer.from(
-            padded.replace(/-/g, '+').replace(/_/g, '/'),
-            'base64'
-        ).toString('utf-8');
+        const json = Buffer.from(padded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString(
+            'utf-8'
+        );
         expect(json).not.toContain('private-key-bytes-MUST-NOT-leak-into-did');
         expect(json).not.toMatch(/"d":/);
     });
@@ -256,21 +246,13 @@ describe('synthesizeSdJwtVc', () => {
             header: { alg: 'EdDSA', typ: 'vc+sd-jwt', kid: 'did:web:issuer.example.com#key-1' },
         });
         const learnCard = makeLearnCard(parsed);
-        const result = await synthesizeSdJwtVc(
-            FAKE_COMPACT,
-            SD_JWT_VC_FORMAT_LEGACY,
-            learnCard
-        );
+        const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT_LEGACY, learnCard);
 
         expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT_LEGACY);
-        expect(result.vc.type).toEqual([
-            'VerifiableCredential',
-            'SdJwtVcCredential',
-            'TestCert',
-        ]);
+        expect(result.vc.type).toEqual(['VerifiableCredential', 'SdJwtVcCredential', 'TestCert']);
     });
 
-    it('accepts credentials whose JOSE header omits typ (issuer didn\'t set it)', async () => {
+    it("accepts credentials whose JOSE header omits typ (issuer didn't set it)", async () => {
         const parsed = makeParsed({
             header: { alg: 'EdDSA', kid: 'did:web:issuer.example.com#key-1' },
         });
@@ -321,7 +303,9 @@ describe('synthesizeSdJwtVc', () => {
             await expect(
                 synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard)
             ).rejects.toMatchObject({
-                message: expect.stringMatching(/expired.*signature_invalid|signature_invalid.*expired/),
+                message: expect.stringMatching(
+                    /expired.*signature_invalid|signature_invalid.*expired/
+                ),
             });
         });
 
@@ -333,15 +317,11 @@ describe('synthesizeSdJwtVc', () => {
                 checks: ['parse', 'issuer_signature'],
             });
 
-            const result = await synthesizeSdJwtVc(
-                FAKE_COMPACT,
-                SD_JWT_VC_FORMAT,
-                learnCard
-            );
+            const result = await synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard);
             expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
         });
 
-        it('continues without verification when verifySdJwtVc is not available on the learnCard', async () => {
+        it('fails closed when verifySdJwtVc is not available (refuses to store unverified)', async () => {
             const parsed = makeParsed();
             const learnCard = {
                 invoke: {
@@ -349,12 +329,9 @@ describe('synthesizeSdJwtVc', () => {
                 },
             } as unknown as Parameters<typeof synthesizeSdJwtVc>[2];
 
-            const result = await synthesizeSdJwtVc(
-                FAKE_COMPACT,
-                SD_JWT_VC_FORMAT,
-                learnCard
-            );
-            expect(result.rawFormat).toBe(SD_JWT_VC_FORMAT);
+            await expect(
+                synthesizeSdJwtVc(FAKE_COMPACT, SD_JWT_VC_FORMAT, learnCard)
+            ).rejects.toMatchObject({ code: 'unsupported_format' });
         });
 
         it('passes { skipStatusCheck: true } to receipt-time verification (revocation freshness is a display-time concern)', async () => {
@@ -385,9 +362,7 @@ describe('synthesizeSdJwtVc', () => {
         const withExp = await synthesizeSdJwtVc(
             FAKE_COMPACT,
             SD_JWT_VC_FORMAT,
-            makeLearnCard(
-                makeParsed({ expiresAt: new Date('2030-01-01T00:00:00.000Z') })
-            )
+            makeLearnCard(makeParsed({ expiresAt: new Date('2030-01-01T00:00:00.000Z') }))
         );
         expect(withExp.vc.validUntil).toBe('2030-01-01T00:00:00.000Z');
     });
@@ -472,9 +447,9 @@ describe('extractSdJwtVct', () => {
 
 describe('deriveTypeFromVct', () => {
     it('extracts PascalCase from the last URL path segment', () => {
-        expect(
-            deriveTypeFromVct('http://localhost:5173/embedded/vct/playground-credential')
-        ).toBe('PlaygroundCredential');
+        expect(deriveTypeFromVct('http://localhost:5173/embedded/vct/playground-credential')).toBe(
+            'PlaygroundCredential'
+        );
     });
 
     it('uppercases short single-word lowercase segments as acronyms', () => {
@@ -491,9 +466,7 @@ describe('deriveTypeFromVct', () => {
 
     it('handles already-multi-word URL segments', () => {
         expect(
-            deriveTypeFromVct(
-                'https://issuer.example.com/credentials/UniversityDegreeCredential'
-            )
+            deriveTypeFromVct('https://issuer.example.com/credentials/UniversityDegreeCredential')
         ).toBe('UniversityDegreeCredential');
     });
 
@@ -506,9 +479,9 @@ describe('deriveTypeFromVct', () => {
 
 describe('deriveNameFromVct', () => {
     it('renders space-separated title-case from a URL vct', () => {
-        expect(
-            deriveNameFromVct('http://localhost:5173/embedded/vct/playground-credential')
-        ).toBe('Playground Credential');
+        expect(deriveNameFromVct('http://localhost:5173/embedded/vct/playground-credential')).toBe(
+            'Playground Credential'
+        );
     });
 
     it('keeps acronyms uppercase', () => {

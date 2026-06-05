@@ -6,9 +6,12 @@ import type {
     StoreAcceptedCredentialsOptions,
     StoreAcceptedCredentialsResult,
     AuthCodeFlowHandle,
+    TokenResponse,
 } from '@learncard/openid4vc-plugin';
 import type { ProofJwtSigner } from '@learncard/openid4vc-plugin';
+import { storeAcceptedCredentials } from '@learncard/openid4vc-plugin';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import type { LearnCard } from '@learncard/core';
 
 import {
     buildSignerForStrategy,
@@ -17,14 +20,24 @@ import {
 } from './signerStrategies';
 
 type WalletInvoke = {
-    acceptAndStoreCredentialOffer: (
+    exchangePreAuthCodeForToken: (
         input: string | CredentialOffer,
-        options: AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions
-    ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
-    completeCredentialOfferAuthCode: (options: {
+        options?: Omit<AcceptCredentialOfferOptions, 'signer'>
+    ) => Promise<TokenResponse>;
+    requestCredentialsFromPreAuthToken: (options: {
+        input: string | CredentialOffer;
+        tokenResponse: TokenResponse;
+        options?: Omit<AcceptCredentialOfferOptions, 'signer'>;
+        signer?: ProofJwtSigner;
+    }) => Promise<AcceptedCredentialResult>;
+    exchangeAuthCodeForToken: (options: {
         flowHandle: AuthCodeFlowHandle;
         code: string;
         state?: string;
+    }) => Promise<TokenResponse>;
+    requestCredentialsFromAuthCodeToken: (options: {
+        flowHandle: AuthCodeFlowHandle;
+        tokenResponse: TokenResponse;
         signer?: ProofJwtSigner;
     }) => Promise<AcceptedCredentialResult>;
 };
@@ -34,10 +47,7 @@ type ResilientWallet = BespokeLearnCard & { invoke: WalletInvoke };
 interface ResilientAcceptAndStoreArgs {
     wallet: ResilientWallet;
     offer: string | CredentialOffer;
-    options: Omit<
-        AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions,
-        'signer'
-    >;
+    options: Omit<AcceptCredentialOfferOptions & StoreAcceptedCredentialsOptions, 'signer'>;
     callbacks?: RunWithRecoveryCallbacks;
 }
 
@@ -65,8 +75,13 @@ export const resilientAcceptAndStoreCredentialOffer = async ({
     // proved broken. Updated only when the orchestrator hands us a new
     // signer strategy.
     let currentSignerId: SignerStrategyId = availableSigners[0];
+    // Exchange the single-use pre-auth code lazily — only after a signer
+    // is built — and memoize so it happens exactly once across retries.
+    // Exchanging before the signer would burn the grant on local signer
+    // failure, re-introducing `invalid_grant: Code inactive` on retry.
+    let tokenResponse: TokenResponse | undefined;
 
-    return runWithRecovery(
+    const accepted = await runWithRecovery(
         async ({ strategy }) => {
             if (strategy.axis === 'signer') {
                 currentSignerId = strategy.id as SignerStrategyId;
@@ -74,14 +89,26 @@ export const resilientAcceptAndStoreCredentialOffer = async ({
 
             const signer = await buildSignerForStrategy(wallet, currentSignerId);
 
-            return wallet.invoke.acceptAndStoreCredentialOffer(offer, {
-                ...options,
+            tokenResponse ??= await wallet.invoke.exchangePreAuthCodeForToken(offer, options);
+
+            return wallet.invoke.requestCredentialsFromPreAuthToken({
+                input: offer,
+                tokenResponse,
+                options,
                 signer,
             });
         },
         { availableSigners },
         callbacks
     );
+
+    const stored = await storeAcceptedCredentials(
+        wallet as unknown as LearnCard<any, any, any>,
+        accepted,
+        options
+    );
+
+    return { ...accepted, ...stored };
 };
 
 interface ResilientCompleteAuthCodeArgs {
@@ -106,6 +133,11 @@ export const resilientCompleteCredentialOfferAuthCode = async ({
 }: ResilientCompleteAuthCodeArgs): Promise<AcceptedCredentialResult> => {
     const availableSigners = getApplicableSignerStrategies(wallet);
     let currentSignerId: SignerStrategyId = availableSigners[0];
+    // Exchange the single-use OAuth code lazily — only after a signer is
+    // built — and memoize so it happens exactly once across retries.
+    // Exchanging before the signer would burn the grant on local signer
+    // failure, re-introducing `invalid_grant: Code inactive` on retry.
+    let tokenResponse: TokenResponse | undefined;
 
     return runWithRecovery(
         async ({ strategy }) => {
@@ -115,10 +147,15 @@ export const resilientCompleteCredentialOfferAuthCode = async ({
 
             const signer = await buildSignerForStrategy(wallet, currentSignerId);
 
-            return wallet.invoke.completeCredentialOfferAuthCode({
+            tokenResponse ??= await wallet.invoke.exchangeAuthCodeForToken({
                 flowHandle,
                 code,
                 state,
+            });
+
+            return wallet.invoke.requestCredentialsFromAuthCodeToken({
+                flowHandle,
+                tokenResponse,
                 signer,
             });
         },

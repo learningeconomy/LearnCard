@@ -1,7 +1,13 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Lock, ShieldAlert, Check } from 'lucide-react';
 
-import { BoostPageViewMode, ToastTypeEnum, VerifierHeader, useToast, useWallet } from 'learn-card-base';
+import {
+    BoostPageViewMode,
+    ToastTypeEnum,
+    VerifierHeader,
+    useToast,
+    useWallet,
+} from 'learn-card-base';
 import {
     getDefaultCategoryForCredential,
     humanizeCredentialType,
@@ -39,7 +45,11 @@ interface SdJwtConsentStatus {
 }
 
 const humanizeClaimKey = (key: string) => {
-    return key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ').replace(/^./, str => str.toUpperCase()).trim();
+    return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/[_-]/g, ' ')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
 };
 
 const formatIssuer = (iss: string): string => {
@@ -100,10 +110,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     onApprove,
     onCancel,
 }) => {
-    const verifierDisplay = useMemo(
-        () => extractVerifierDisplay(request),
-        [request]
-    );
+    const verifierDisplay = useMemo(() => extractVerifierDisplay(request), [request]);
 
     /**
      * Branded display name when the request supplied `client_metadata.client_name`,
@@ -167,7 +174,9 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
 
                     const [rowId, candidateId] = cacheKey.split('::');
                     const row = rows.find(r => r.id === rowId);
-                    const candidate = row?.candidates.find(c => c.candidate.id === candidateId)?.candidate;
+                    const candidate = row?.candidates.find(
+                        c => c.candidate.id === candidateId
+                    )?.candidate;
                     if (!candidate) continue;
 
                     const compact = getSdJwtCompact(candidate.credential);
@@ -181,7 +190,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             setParsedSdJwts(prev => ({ ...prev, [cacheKey]: parsed }));
 
                             setPicks(prev => {
-                                if (prev.disclose[rowId]) return prev;
+                                if (prev.disclose[cacheKey]) return prev;
                                 const initialDisclose: Record<string, boolean> = {};
                                 parsed.disclosureKeys?.forEach((key: string) => {
                                     initialDisclose[key] = true;
@@ -190,35 +199,42 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                     ...prev,
                                     disclose: {
                                         ...prev.disclose,
-                                        [rowId]: initialDisclose
-                                    }
+                                        [cacheKey]: initialDisclose,
+                                    },
                                 };
                             });
                         } catch (e) {
                             if (!cancelled) {
-                                presentToast('Couldn\u2019t read one credential\u2019s shareable claims.', {
-                                    type: ToastTypeEnum.Error,
-                                    hasDismissButton: true,
-                                });
+                                presentToast(
+                                    'Couldn\u2019t read one credential\u2019s shareable claims.',
+                                    {
+                                        type: ToastTypeEnum.Error,
+                                        hasDismissButton: true,
+                                    }
+                                );
                             }
                         }
                     }
                 }
 
-                if (!cancelled) {
-                    setParsingSdJwts(prev => {
-                        const next = { ...prev };
-                        for (const key of Object.keys(newParsing)) {
-                            delete next[key];
-                        }
-                        return next;
-                    });
-                }
+                // Always clear the parsing flags for keys this effect enqueued,
+                // even when cancelled mid-flight. Skipping this on cancel would
+                // leave a cacheKey marked parsing forever, so a later re-entry
+                // refuses to re-parse and Share stays disabled indefinitely.
+                setParsingSdJwts(prev => {
+                    const next = { ...prev };
+                    for (const key of Object.keys(newParsing)) {
+                        delete next[key];
+                    }
+                    return next;
+                });
             }
         };
 
         parseSdJwts();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [rows, picks.row, initWallet, presentToast]);
 
     const sdJwtStatuses = useMemo<Record<string, SdJwtConsentStatus>>(() => {
@@ -233,7 +249,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
 
                 const cacheKey = `${row.id}::${candidate.id}`;
                 const parsed = parsedSdJwts[cacheKey];
-                const discloseFrame = picks.disclose[row.id];
+                const discloseFrame = picks.disclose[cacheKey];
                 const isParsing = Boolean(parsingSdJwts[cacheKey]);
                 const isReady = Boolean(parsed && discloseFrame && !isParsing);
 
@@ -250,22 +266,24 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
         );
     }, [rows, picks.row, picks.disclose, parsedSdJwts, parsingSdJwts]);
 
-    const allRowsHaveCandidate = rows.every((r) => r.candidates.length > 0);
-    const pendingSdJwtRows = Object.values(sdJwtStatuses).filter(status => status.isSdJwt && !status.isReady).length;
+    const allRowsHaveCandidate = rows.every(r => r.candidates.length > 0);
+    const pendingSdJwtRows = Object.values(sdJwtStatuses).filter(
+        status => status.isSdJwt && !status.isReady
+    ).length;
     const canShare = allRowsHaveCandidate && pendingSdJwtRows === 0;
 
     const handlePickChange = (rowId: string, index: number) => {
-        setPicks((prev) => ({ ...prev, row: { ...prev.row, [rowId]: index } }));
+        setPicks(prev => ({ ...prev, row: { ...prev.row, [rowId]: index } }));
     };
 
-    const handleClaimChange = (rowId: string, claimKey: string, checked: boolean) => {
-        setPicks((prev) => {
-            const currentDisclose = prev.disclose[rowId] || {};
+    const handleClaimChange = (cacheKey: string, claimKey: string, checked: boolean) => {
+        setPicks(prev => {
+            const currentDisclose = prev.disclose[cacheKey] || {};
             return {
                 ...prev,
                 disclose: {
                     ...prev.disclose,
-                    [rowId]: {
+                    [cacheKey]: {
                         ...currentDisclose,
                         [claimKey]: checked,
                     },
@@ -292,7 +310,8 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </h1>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            {subjectLabel} is asking to see some of your credentials. Review what they&rsquo;ll see before sharing.
+                            {subjectLabel} is asking to see some of your credentials. Review what
+                            they&rsquo;ll see before sharing.
                         </p>
                     </div>
 
@@ -310,7 +329,8 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                     Encrypted response
                                 </p>
                                 <p className="text-xs text-emerald-700 leading-relaxed mt-0.5">
-                                    Your reply is sealed to the requesting app&rsquo;s key, so only they can read it.
+                                    Your reply is sealed to the requesting app&rsquo;s key, so only
+                                    they can read it.
                                 </p>
                             </div>
                         </div>
@@ -321,9 +341,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide mb-1">
                                 Reason
                             </p>
-                            <p className="text-sm text-grayscale-700 leading-relaxed">
-                                {purpose}
-                            </p>
+                            <p className="text-sm text-grayscale-700 leading-relaxed">{purpose}</p>
                         </div>
                     )}
 
@@ -333,7 +351,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         </p>
 
                         <ul className="space-y-2">
-                            {rows.map((row) => {
+                            {rows.map(row => {
                                 const pickedIndex = picks.row[row.id] ?? 0;
                                 const candidate = row.candidates[pickedIndex]?.candidate;
                                 const status = sdJwtStatuses[row.id];
@@ -343,11 +361,17 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                                         key={row.id}
                                         row={row}
                                         pickedIndex={pickedIndex}
-                                        onPick={(idx) => handlePickChange(row.id, idx)}
+                                        onPick={idx => handlePickChange(row.id, idx)}
                                         parsedSdJwt={parsedSdJwts[cacheKey]}
                                         isParsingSdJwt={status?.isParsing}
-                                        discloseFrame={picks.disclose[row.id] as Record<string, boolean> | undefined}
-                                        onClaimChange={(key, checked) => handleClaimChange(row.id, key, checked)}
+                                        discloseFrame={
+                                            picks.disclose[cacheKey] as
+                                                | Record<string, boolean>
+                                                | undefined
+                                        }
+                                        onClaimChange={(key, checked) =>
+                                            handleClaimChange(cacheKey, key, checked)
+                                        }
                                         verifierName={subjectLabel}
                                     />
                                 );
@@ -360,7 +384,8 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             <ShieldAlert className="text-amber-500 w-5 h-5 mt-0.5 shrink-0" />
 
                             <span className="text-xs text-amber-800 leading-relaxed">
-                                Some requested credentials aren&apos;t in your wallet, so the request may be rejected. You can still try.
+                                Some requested credentials aren&apos;t in your wallet, so the
+                                request may be rejected. You can still try.
                             </span>
                         </div>
                     )}
@@ -434,16 +459,23 @@ interface ConsentRowProps {
     verifierName?: string;
 }
 
-const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parsedSdJwt, isParsingSdJwt, discloseFrame, onClaimChange, verifierName }) => {
+const ConsentRow: React.FC<ConsentRowProps> = ({
+    row,
+    pickedIndex,
+    onPick,
+    parsedSdJwt,
+    isParsingSdJwt,
+    discloseFrame,
+    onClaimChange,
+    verifierName,
+}) => {
     const hasCandidate = row.candidates.length > 0;
     const hasMultiple = row.candidates.length > 1;
 
     return (
         <li className="rounded-xl border border-grayscale-200 bg-white p-4 space-y-3">
             <div>
-                <p className="text-sm font-semibold text-grayscale-900">
-                    {row.title}
-                </p>
+                <p className="text-sm font-semibold text-grayscale-900">{row.title}</p>
 
                 {row.purpose && (
                     <p className="text-xs text-grayscale-500 leading-relaxed mt-0.5">
@@ -522,80 +554,99 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parse
                 </div>
             )}
 
-            {parsedSdJwt && (
-                (parsedSdJwt.disclosureKeys?.length ?? 0) > 0 ||
-                parsedSdJwt.issuer ||
-                parsedSdJwt.vct
-            ) && (
-                <div className="mt-4 pt-4 border-t border-grayscale-200">
-                    <p className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wide">
-                        What you'll share
-                    </p>
+            {parsedSdJwt &&
+                ((parsedSdJwt.disclosureKeys?.length ?? 0) > 0 ||
+                    parsedSdJwt.issuer ||
+                    parsedSdJwt.vct) && (
+                    <div className="mt-4 pt-4 border-t border-grayscale-200">
+                        <p className="text-xs font-medium text-grayscale-700 mb-3 uppercase tracking-wide">
+                            What you'll share
+                        </p>
 
-                    {(parsedSdJwt.issuer || parsedSdJwt.vct || parsedSdJwt.expiresAt) && (
-                        <ul className="space-y-1 mb-3">
-                            {parsedSdJwt.issuer && (
-                                <RequiredClaimRow
-                                    label="Issuer"
-                                    value={formatIssuer(parsedSdJwt.issuer)}
-                                />
-                            )}
-                            {parsedSdJwt.vct && (
-                                <RequiredClaimRow
-                                    label="Credential type"
-                                    value={parsedSdJwt.vct}
-                                />
-                            )}
-                            {parsedSdJwt.expiresAt && (
-                                <RequiredClaimRow
-                                    label="Expires"
-                                    value={parsedSdJwt.expiresAt.toLocaleDateString()}
-                                />
-                            )}
-                        </ul>
-                    )}
-
-                    {(parsedSdJwt.disclosureKeys?.length ?? 0) > 0 && (
-                        <>
-                            <p className="text-xs text-grayscale-500 leading-relaxed mb-3">
-                                Uncheck anything you don&apos;t want to share with {verifierName}.
-                            </p>
-
-                            <ul className="space-y-1">
-                                {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
-                                    const val = parsedSdJwt.claims?.[key];
-                                    const isChecked = discloseFrame?.[key] ?? true;
-                                    return (
-                                        <li key={key}>
-                                            <label className="flex items-start gap-3 p-2 rounded-xl hover:bg-grayscale-10 cursor-pointer transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={(e) => onClaimChange?.(key, e.target.checked)}
-                                                    className="sr-only"
-                                                />
-                                                <div className="mt-0.5 shrink-0">
-                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isChecked ? 'bg-emerald-100 text-emerald-600' : 'bg-grayscale-200 text-transparent'}`}>
-                                                        <Check className="w-3 h-3" strokeWidth={3} />
-                                                    </div>
-                                                </div>
-                                                <div className={`flex flex-col min-w-0 transition-opacity ${isChecked ? 'opacity-100' : 'opacity-50'}`}>
-                                                    <span className="text-sm font-medium text-grayscale-900 truncate">
-                                                        {humanizeClaimKey(key)}
-                                                    </span>
-                                                    <span className="text-xs text-grayscale-500 truncate">
-                                                        {isChecked ? (typeof val === 'object' ? JSON.stringify(val) : String(val)) : 'hidden'}
-                                                    </span>
-                                                </div>
-                                            </label>
-                                        </li>
-                                    );
-                                })}
+                        {(parsedSdJwt.issuer || parsedSdJwt.vct || parsedSdJwt.expiresAt) && (
+                            <ul className="space-y-1 mb-3">
+                                {parsedSdJwt.issuer && (
+                                    <RequiredClaimRow
+                                        label="Issuer"
+                                        value={formatIssuer(parsedSdJwt.issuer)}
+                                    />
+                                )}
+                                {parsedSdJwt.vct && (
+                                    <RequiredClaimRow
+                                        label="Credential type"
+                                        value={parsedSdJwt.vct}
+                                    />
+                                )}
+                                {parsedSdJwt.expiresAt && (
+                                    <RequiredClaimRow
+                                        label="Expires"
+                                        value={parsedSdJwt.expiresAt.toLocaleDateString()}
+                                    />
+                                )}
                             </ul>
-                        </>
-                    )}
-                </div>
-            )}
+                        )}
+
+                        {(parsedSdJwt.disclosureKeys?.length ?? 0) > 0 && (
+                            <>
+                                <p className="text-xs text-grayscale-500 leading-relaxed mb-3">
+                                    Uncheck anything you don&apos;t want to share with{' '}
+                                    {verifierName}.
+                                </p>
+
+                                <ul className="space-y-1">
+                                    {(parsedSdJwt.disclosureKeys || []).map((key: string) => {
+                                        const val = parsedSdJwt.claims?.[key];
+                                        const isChecked = discloseFrame?.[key] ?? true;
+                                        return (
+                                            <li key={key}>
+                                                <label className="flex items-start gap-3 p-2 rounded-xl hover:bg-grayscale-10 cursor-pointer transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={e =>
+                                                            onClaimChange?.(key, e.target.checked)
+                                                        }
+                                                        className="sr-only"
+                                                    />
+                                                    <div className="mt-0.5 shrink-0">
+                                                        <div
+                                                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                                                                isChecked
+                                                                    ? 'bg-emerald-100 text-emerald-600'
+                                                                    : 'bg-grayscale-200 text-transparent'
+                                                            }`}
+                                                        >
+                                                            <Check
+                                                                className="w-3 h-3"
+                                                                strokeWidth={3}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        className={`flex flex-col min-w-0 transition-opacity ${
+                                                            isChecked ? 'opacity-100' : 'opacity-50'
+                                                        }`}
+                                                    >
+                                                        <span className="text-sm font-medium text-grayscale-900 truncate">
+                                                            {humanizeClaimKey(key)}
+                                                        </span>
+                                                        <span className="text-xs text-grayscale-500 truncate">
+                                                            {isChecked
+                                                                ? typeof val === 'object'
+                                                                    ? JSON.stringify(val)
+                                                                    : String(val)
+                                                                : 'hidden'}
+                                                        </span>
+                                                    </div>
+                                                </label>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+                )}
             {isParsingSdJwt && (
                 <div className="mt-4 pt-4 border-t border-grayscale-200">
                     <div className="flex flex-col items-center justify-center py-6 border-2 border-dashed border-grayscale-200 rounded-xl">
@@ -607,7 +658,6 @@ const ConsentRow: React.FC<ConsentRowProps> = ({ row, pickedIndex, onPick, parse
         </li>
     );
 };
-
 
 interface ConsentRowCandidate {
     candidate: PooledCandidate;
@@ -625,79 +675,77 @@ interface ConsentRowModel {
 }
 
 const buildRows = (
-  request: AuthorizationRequest,
-  selection?: SelectionResult,
-  dcqlSelection?: DcqlSelectionResult
+    request: AuthorizationRequest,
+    selection?: SelectionResult,
+    dcqlSelection?: DcqlSelectionResult
 ): ConsentRowModel[] => {
-  if (selection) {
-    return selection.descriptors.map((d) => {
-      const inputDescriptor = request.presentation_definition?.input_descriptors?.find(
-        (id) => id.id === d.descriptorId
-      );
+    if (selection) {
+        return selection.descriptors.map(d => {
+            const inputDescriptor = request.presentation_definition?.input_descriptors?.find(
+                id => id.id === d.descriptorId
+            );
 
-      const candidates: ConsentRowCandidate[] = d.candidates.map((dc) => {
-        const candidate = dc.candidate as PooledCandidate;
-        return { candidate, id: candidate.id };
-      });
+            const candidates: ConsentRowCandidate[] = d.candidates.map(dc => {
+                const candidate = dc.candidate as PooledCandidate;
+                return { candidate, id: candidate.id };
+            });
 
-      return {
-        id: d.descriptorId,
-        title:
-          inputDescriptor?.name?.trim() ||
-          humanizeCredentialType(d.descriptorId) ||
-          d.descriptorId,
-        purpose: inputDescriptor?.purpose,
-        candidates,
-        reason: d.reason,
-      };
-    });
-  }
+            return {
+                id: d.descriptorId,
+                title:
+                    inputDescriptor?.name?.trim() ||
+                    humanizeCredentialType(d.descriptorId) ||
+                    d.descriptorId,
+                purpose: inputDescriptor?.purpose,
+                candidates,
+                reason: d.reason,
+            };
+        });
+    }
 
-  if (dcqlSelection) {
-    return Object.entries(dcqlSelection.matches).map(([queryId, match]) => {
-      const candidates: ConsentRowCandidate[] = match.candidates.map((c) => {
-        const candidate = c as PooledCandidate;
-        return { candidate, id: candidate.id };
-      });
+    if (dcqlSelection) {
+        return Object.entries(dcqlSelection.matches).map(([queryId, match]) => {
+            const candidates: ConsentRowCandidate[] = match.candidates.map(c => {
+                const candidate = c as PooledCandidate;
+                return { candidate, id: candidate.id };
+            });
 
-      return {
-        id: queryId,
-        title: humanizeCredentialType(queryId) || queryId,
-        candidates,
-        reason: match.reason,
-      };
-    });
-  }
+            return {
+                id: queryId,
+                title: humanizeCredentialType(queryId) || queryId,
+                candidates,
+                reason: match.reason,
+            };
+        });
+    }
 
-  return [];
+    return [];
 };
 
 const extractVerifierDisplay = (request: AuthorizationRequest) => {
-  const meta = request.client_metadata;
-  if (!meta || typeof meta !== 'object') return undefined;
+    const meta = request.client_metadata;
+    if (!meta || typeof meta !== 'object') return undefined;
 
-  const m = meta as Record<string, unknown>;
-  return {
-    name: stringField(m, 'client_name'),
-    logoUri: stringField(m, 'logo_uri') ?? stringField(m, 'client_logo'),
-    policyUri: stringField(m, 'policy_uri'),
-    tosUri: stringField(m, 'tos_uri'),
-  };
+    const m = meta as Record<string, unknown>;
+    return {
+        name: stringField(m, 'client_name'),
+        logoUri: stringField(m, 'logo_uri') ?? stringField(m, 'client_logo'),
+        policyUri: stringField(m, 'policy_uri'),
+        tosUri: stringField(m, 'tos_uri'),
+    };
 };
 
 const extractPurpose = (request: AuthorizationRequest): string | undefined => {
-  if (request.presentation_definition?.purpose) {
-    return request.presentation_definition.purpose;
-  }
-  const firstDescriptorPurpose =
-    request.presentation_definition?.input_descriptors?.find((d) => d.purpose)?.purpose;
-  return firstDescriptorPurpose;
+    if (request.presentation_definition?.purpose) {
+        return request.presentation_definition.purpose;
+    }
+    const firstDescriptorPurpose = request.presentation_definition?.input_descriptors?.find(
+        d => d.purpose
+    )?.purpose;
+    return firstDescriptorPurpose;
 };
 
-const stringField = (
-    obj: Record<string, unknown>,
-    key: string
-): string | undefined => {
+const stringField = (obj: Record<string, unknown>, key: string): string | undefined => {
     const v = obj[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;
 };

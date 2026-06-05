@@ -197,9 +197,7 @@ export class BuildPresentationError extends Error {
  * - `invalid_jwt_vc` — a candidate tagged `jwt_vc_json` has neither a
  *   compact JWS string nor a `proof.jwt` we can extract.
  */
-export const buildPresentation = (
-    options: BuildPresentationOptions
-): PreparedPresentation => {
+export const buildPresentation = (options: BuildPresentationOptions): PreparedPresentation => {
     const { pd, chosen, holder } = options;
 
     if (!chosen || chosen.length === 0) {
@@ -229,7 +227,9 @@ export const buildPresentation = (
     if (sdJwtCount > 0 && sdJwtCount !== normalized.length) {
         throw new BuildPresentationError(
             'unknown_credential_format',
-            `Mixed SD-JWT-VC + W3C-VC selections are not supported in a single PEX submission (got ${sdJwtCount} SD-JWT and ${normalized.length - sdJwtCount} non-SD-JWT). Submit them as separate presentations or use DCQL.`
+            `Mixed SD-JWT-VC + W3C-VC selections are not supported in a single PEX submission (got ${sdJwtCount} SD-JWT and ${
+                normalized.length - sdJwtCount
+            } non-SD-JWT). Submit them as separate presentations or use DCQL.`
         );
     }
 
@@ -240,16 +240,15 @@ export const buildPresentation = (
                 'PEX submission with multiple SD-JWT-VCs is not yet supported (Slice 3 supports exactly one SD-JWT per PEX submission; multi-credential SD-JWT presentations are a follow-up)'
             );
         }
-        return buildSdJwtPexPassthrough(
-            options,
-            normalized[0]!,
-            holder,
-            chosen[0]!.disclose
-        );
+        return buildSdJwtPexPassthrough(options, normalized[0]!, holder, chosen[0]!.disclose);
     }
 
     const vpFormat =
-        options.envelopeFormat ?? inferEnvelopeFormat(pd, normalized.map(n => n.format));
+        options.envelopeFormat ??
+        inferEnvelopeFormat(
+            pd,
+            normalized.map(n => n.format)
+        );
 
     const makeId = options.makeId ?? defaultMakeId;
 
@@ -258,17 +257,21 @@ export const buildPresentation = (
         id: options.presentationId ?? `urn:uuid:${makeUuidV4(makeId)}`,
         type: ['VerifiablePresentation'],
         holder,
-        verifiableCredential: normalized.map(n => n.credential) as UnsignedVP['verifiableCredential'],
+        verifiableCredential: normalized.map(
+            n => n.credential
+        ) as UnsignedVP['verifiableCredential'],
     };
 
     const submission: PresentationSubmission = {
         id: options.submissionId ?? makeId(),
         definition_id: pd.id,
-        descriptor_map: normalized.map((n, index): PresentationSubmissionDescriptor => ({
-            id: n.descriptorId,
-            format: n.format,
-            path: pathForIndex(index, vpFormat),
-        })),
+        descriptor_map: normalized.map(
+            (n, index): PresentationSubmissionDescriptor => ({
+                id: n.descriptorId,
+                format: n.format,
+                path: pathForIndex(index, vpFormat),
+            })
+        ),
     };
 
     return {
@@ -279,8 +282,7 @@ export const buildPresentation = (
     };
 };
 
-const isSdJwtFormat = (format: string): boolean =>
-    format === 'dc+sd-jwt' || format === 'vc+sd-jwt';
+const isSdJwtFormat = (format: string): boolean => format === 'dc+sd-jwt' || format === 'vc+sd-jwt';
 
 const buildSdJwtPexPassthrough = (
     options: BuildPresentationOptions,
@@ -397,15 +399,15 @@ const extractSdJwtCompactFromCandidate = (credential: unknown): string | undefin
     }
     if (credential && typeof credential === 'object') {
         const proof = (credential as { proof?: unknown }).proof;
-        const proofObj = Array.isArray(proof)
-            ? proof.find(p => typeof p === 'object' && p !== null)
-            : proof;
-        if (proofObj && typeof proofObj === 'object') {
-            const candidate = (proofObj as { type?: unknown; jwt?: unknown });
-            if (candidate.type === 'SdJwtCompactProof' && typeof candidate.jwt === 'string') {
-                return candidate.jwt;
-            }
-        }
+        const proofs = Array.isArray(proof) ? proof : proof ? [proof] : [];
+        const sdJwtProof = proofs.find(
+            p =>
+                p &&
+                typeof p === 'object' &&
+                (p as { type?: unknown }).type === 'SdJwtCompactProof' &&
+                typeof (p as { jwt?: unknown }).jwt === 'string'
+        ) as { jwt?: string } | undefined;
+        if (sdJwtProof) return sdJwtProof.jwt;
     }
     return undefined;
 };
@@ -441,10 +443,7 @@ const extractCompactJws = (credential: unknown): string | undefined => {
  * 3. If `pd.format` says nothing about VPs, infer purely from inner
  *    formats with the same "all-or-ldp_vp" rule.
  */
-const inferEnvelopeFormat = (
-    pd: PresentationDefinition,
-    innerFormats: string[]
-): VpFormat => {
+const inferEnvelopeFormat = (pd: PresentationDefinition, innerFormats: string[]): VpFormat => {
     const declaredVpFormats = vpFormatsFromDesignation(pd.format);
 
     const inferred = homogeneousVpFormatFromInner(innerFormats);
@@ -464,9 +463,7 @@ const inferEnvelopeFormat = (
     return inferred;
 };
 
-const vpFormatsFromDesignation = (
-    designation: PresentationDefinition['format']
-): Set<VpFormat> => {
+const vpFormatsFromDesignation = (designation: PresentationDefinition['format']): Set<VpFormat> => {
     const set = new Set<VpFormat>();
     if (!designation) return set;
     if ('jwt_vp_json' in designation) set.add('jwt_vp_json');
@@ -492,7 +489,8 @@ const pathForIndex = (index: number, vpFormat: VpFormat): string =>
 const defaultMakeId = (): string => {
     const cryptoObj: { getRandomValues?: (a: Uint8Array) => Uint8Array } | undefined =
         typeof globalThis !== 'undefined' && 'crypto' in globalThis
-            ? (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }).crypto
+            ? (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } })
+                  .crypto
             : undefined;
 
     if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {

@@ -120,7 +120,15 @@ const callPluginVerify = async (
     compact: string
 ): Promise<VerificationCheckLike | undefined> => {
     const verifyFn = (learnCard?.invoke as Record<string, unknown> | undefined)?.verifySdJwtVc;
-    if (typeof verifyFn !== 'function') return undefined;
+    if (typeof verifyFn !== 'function') {
+        // Fail closed: a LearnCard that can parse but not verify SD-JWT-VCs
+        // would otherwise store credentials whose issuer signature was never
+        // checked. Parsing reconstructs claims; it does not prove authenticity.
+        throw new VciError(
+            'unsupported_format',
+            'SD-JWT-VC credential received, but this LearnCard can parse but not verify SD-JWT-VCs. Refusing to store an unverified credential. Add @learncard/sd-jwt-vc-plugin (which provides verifySdJwtVc) to enable receipt.'
+        );
+    }
     try {
         // Receipt-time verification covers signature + disclosure-hash integrity
         // ONLY. Status (Token Status List) is intentionally skipped here because
@@ -129,10 +137,7 @@ const callPluginVerify = async (
         // integration / staging. The wallet's existing verifyCredential call on
         // display will catch revocation when status checking ships in Slice 4.
         return (await (
-            verifyFn as (
-                c: string,
-                opts: Record<string, unknown>
-            ) => Promise<VerificationCheckLike>
+            verifyFn as (c: string, opts: Record<string, unknown>) => Promise<VerificationCheckLike>
         )(compact, { skipStatusCheck: true })) as VerificationCheckLike;
     } catch (e) {
         throw new VciError(
