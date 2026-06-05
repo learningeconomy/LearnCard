@@ -38,6 +38,13 @@ return 503 until a provider key is configured.
 | `AI_AGENT_SELF_IMPROVEMENT_ENABLED`           | `true` outside `NODE_ENV=production`                            | Enables per-DID dynamic docs, trace persistence, and post-response retro updates.    |
 | `AI_AGENT_RETRO_MODEL`                        | `AI_AGENT_MODEL`                                                | Model used by the background retro agent.                                            |
 | `AI_AGENT_RETRO_MAX_TRACE_CHARS`              | `24000`                                                         | Maximum serialized run-trace size sent to the retro agent.                           |
+| `AI_AGENT_WEB_SEARCH_PROVIDER`                | `brave` when `BRAVE_SEARCH_API_KEY` exists, otherwise `none`    | Current-info provider. Supported values: `brave`, `none`; `mock` is for tests.       |
+| `BRAVE_SEARCH_API_KEY`                        | none                                                            | Brave Web Search API key. Never returned in health responses or tool output.         |
+| `AI_AGENT_WEB_SEARCH_DEFAULT_LIMIT`           | `5`                                                             | Default result count for `webSearch`.                                                |
+| `AI_AGENT_WEB_SEARCH_MAX_LIMIT`               | `10`                                                            | Maximum result count exposed to the agent, hard-capped at `20`.                      |
+| `AI_AGENT_WEB_SEARCH_COUNTRY`                 | none                                                            | Optional default 2-letter country code, such as `US`.                                |
+| `AI_AGENT_WEB_SEARCH_LANG`                    | none                                                            | Optional default search language, such as `en`.                                      |
+| `AI_AGENT_WEB_SEARCH_SAFESEARCH`              | none                                                            | Optional default SafeSearch level: `off`, `moderate`, or `strict`.                   |
 
 ## Shape
 
@@ -51,6 +58,7 @@ return 503 until a provider key is configured.
 -   `src/tools/index.ts` registers tools for the agent.
 -   `src/tools/learnCardWallet/` exposes the configured wallet through one freeform `learnCardWallet` tool and a bundled `SKILL.md`.
 -   `src/tools/consentedUserData.ts` exposes request-scoped consented user data when a DID is supplied.
+-   `src/tools/webSearch/` defines the provider-neutral current-info search adapter contract, the stable `webSearch` agent tool, and the Brave Web Search provider.
 -   `public/index.html` is the debug chat UI served by the same process.
 
 The service is intentionally request/response. Its only background work is a post-response
@@ -68,6 +76,16 @@ When a DID-backed request has active Mongo docs, those docs are merged into the 
 `listSkills` index and loaded through `readSkill`. Static file-backed skills remain read-only.
 
 The `learnCardWallet` skill-backed tool uses this pattern for a broad object API. Its `inspect` operation returns function paths, arity, parsed JavaScript parameter names when available, result counts, and truncation hints. Use `query` when inspecting large namespaces.
+
+## Web Search / Current Information
+
+`webSearch` is registered only when a provider is configured. If `AI_AGENT_WEB_SEARCH_PROVIDER` is unset and `BRAVE_SEARCH_API_KEY` exists, the service enables Brave automatically. Set `AI_AGENT_WEB_SEARCH_PROVIDER=none` to keep the tool out of the agent tool list.
+
+The agent-facing schema is provider-neutral: `query`, optional `limit`, `freshness`, `country`, `searchLang`, and `safeSearch`. Tool results always return `{ query, provider, retrievedAt, results }`, where every result has `title`, `url`, `snippet`, `rank`, optional `score`, and `retrievedAt`. Raw provider payloads and provider error bodies are never returned.
+
+Use web search for current, time-sensitive, or source-attributed facts: recent events, current market/work information, live policy references, and URLs the answer should cite. Use memory tools for durable user context. Use ConsentFlow tools for user-approved personal data.
+
+To add another provider, implement `WebSearchProvider` in `src/tools/webSearch/`, add config selection in `src/tools/index.ts`, and keep the `webSearch` tool schema/result shape unchanged. Provider-specific response fields should be normalized inside the adapter.
 
 ## ConsentFlow Context
 

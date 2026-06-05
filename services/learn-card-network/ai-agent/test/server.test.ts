@@ -6,6 +6,7 @@ import type { ServiceConfig } from '../src/config';
 import type { MongoRuntime } from '../src/mongo';
 import { createServer as createAgentServer, runChatRequest } from '../src/server';
 import { createSelfImprovementRuntime, type SelfImprovementRuntime } from '../src/selfImprovement';
+import { createWebSearchTool, type WebSearchProvider } from '../src/tools/webSearch';
 import {
     createInMemoryRunTraceRepository,
     createRunTraceService,
@@ -283,6 +284,85 @@ describe('runChatRequest', () => {
             message: 'I can manage memory for this DID.',
         });
     });
+
+    it('can call an injected webSearch tool during an agent run', async () => {
+        let calls = 0;
+        const webSearchProvider: WebSearchProvider = {
+            name: 'mock',
+            search: async request => ({
+                query: request.query,
+                provider: 'mock',
+                retrievedAt: '2026-06-05T00:00:00.000Z',
+                results: [
+                    {
+                        title: 'Current source',
+                        url: 'https://example.com/current',
+                        snippet: 'Current search result.',
+                        rank: 1,
+                        retrievedAt: '2026-06-05T00:00:00.000Z',
+                    },
+                ],
+            }),
+        };
+        const provider: AgentProvider = {
+            complete: async ({ tools }) => {
+                calls += 1;
+
+                if (calls === 1) {
+                    expect(tools.map(tool => tool.name)).toContain('webSearch');
+
+                    return {
+                        message: {
+                            role: 'assistant',
+                            content: '',
+                            toolCalls: [
+                                {
+                                    id: 'search-call',
+                                    name: 'webSearch',
+                                    arguments: { query: 'latest LearnCard updates' },
+                                },
+                            ],
+                        },
+                    };
+                }
+
+                return {
+                    message: {
+                        role: 'assistant',
+                        content: 'I found a current source.',
+                    },
+                };
+            },
+        };
+        const result = await runChatRequest({
+            body: { messages: [{ role: 'user', content: 'Find current info.' }] },
+            config: testConfig,
+            provider,
+            tools: [createWebSearchTool({ provider: webSearchProvider })],
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.payload).toMatchObject({
+            message: 'I found a current source.',
+            toolRuns: [
+                {
+                    id: 'search-call',
+                    name: 'webSearch',
+                    arguments: { query: 'latest LearnCard updates' },
+                    result: {
+                        query: 'latest LearnCard updates',
+                        provider: 'mock',
+                        results: [
+                            {
+                                title: 'Current source',
+                                url: 'https://example.com/current',
+                            },
+                        ],
+                    },
+                },
+            ],
+        });
+    });
 });
 
 describe('createServer', () => {
@@ -338,6 +418,67 @@ describe('createServer', () => {
             Promise.resolve(handler({ body, params }, res)).catch(reject);
         });
     };
+    const healthyMongoRuntime: MongoRuntime = {
+        getClient: async () => {
+            throw new Error('Mongo client should not be requested.');
+        },
+        getDb: async () => {
+            throw new Error('Mongo db should not be requested.');
+        },
+        getStatus: async () => ({
+            configured: true,
+            connected: true,
+            dbName: 'test-ai-agent',
+        }),
+        close: async () => undefined,
+    };
+
+    it('includes webSearch in health and tools when Brave is configured', async () => {
+        const app = createAgentServer({
+            config: {
+                ...testConfig,
+                webSearchProvider: 'brave',
+                braveSearchApiKey: 'test-key',
+            },
+            mongoRuntime: healthyMongoRuntime,
+        });
+
+        await expect(callRoute(app, 'get', '/api/health')).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                webSearch: {
+                    provider: 'brave',
+                    enabled: true,
+                },
+                tools: expect.arrayContaining(['webSearch']),
+            },
+        });
+    });
+
+    it('omits webSearch from health and tools when no provider is configured', async () => {
+        const app = createAgentServer({
+            config: {
+                ...testConfig,
+                webSearchProvider: 'none',
+            },
+            mongoRuntime: healthyMongoRuntime,
+        });
+
+        await expect(callRoute(app, 'get', '/api/health')).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                webSearch: {
+                    provider: 'none',
+                    enabled: false,
+                },
+            },
+        });
+
+        const result = await callRoute(app, 'get', '/api/health');
+        const payload = result.payload as { tools?: string[] };
+
+        expect(payload.tools).not.toContain('webSearch');
+    });
 
     it('does not create a ConsentFlow contract when the default OpenAI provider is unconfigured', async () => {
         const consentFlowRuntime: ConsentFlowRuntime = {

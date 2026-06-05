@@ -1,3 +1,5 @@
+import type { WebSearchProviderName, WebSearchSafeSearch } from './tools/webSearch';
+
 export interface ServiceConfig {
     model: string;
     openAIApiKey?: string;
@@ -16,6 +18,13 @@ export interface ServiceConfig {
     selfImprovementEnabled: boolean;
     retroModel?: string;
     retroMaxTraceChars: number;
+    webSearchProvider?: WebSearchProviderName | 'none';
+    braveSearchApiKey?: string;
+    webSearchDefaultLimit?: number;
+    webSearchMaxLimit?: number;
+    webSearchCountry?: string;
+    webSearchSearchLang?: string;
+    webSearchSafeSearch?: WebSearchSafeSearch;
 }
 
 const DEFAULT_MONGO_DB_NAME = 'learn-card-ai-agent';
@@ -45,12 +54,34 @@ const readString = (value: string | undefined): string | undefined => {
     return trimmed || undefined;
 };
 
+const readWebSearchProvider = (
+    value: string | undefined,
+    braveSearchApiKey: string | undefined
+): ServiceConfig['webSearchProvider'] => {
+    const normalized = readString(value)?.toLowerCase();
+
+    if (normalized === 'brave' || normalized === 'mock' || normalized === 'none') return normalized;
+
+    return braveSearchApiKey ? 'brave' : 'none';
+};
+
+const readSafeSearch = (value: string | undefined): WebSearchSafeSearch | undefined => {
+    const normalized = readString(value)?.toLowerCase();
+
+    if (normalized === 'off' || normalized === 'moderate' || normalized === 'strict')
+        return normalized;
+
+    return undefined;
+};
+
 export const getConfig = (): ServiceConfig => {
     const model = readString(process.env.AI_AGENT_MODEL) ?? 'gpt-5.5';
     const selfImprovementEnabled = readBoolean(
         process.env.AI_AGENT_SELF_IMPROVEMENT_ENABLED,
         process.env.NODE_ENV !== 'production'
     );
+
+    const braveSearchApiKey = readString(process.env.BRAVE_SEARCH_API_KEY);
 
     return {
         model,
@@ -86,5 +117,15 @@ export const getConfig = (): ServiceConfig => {
         selfImprovementEnabled,
         retroModel: readString(process.env.AI_AGENT_RETRO_MODEL) ?? model,
         retroMaxTraceChars: readNumber(process.env.AI_AGENT_RETRO_MAX_TRACE_CHARS, 24_000),
+        webSearchProvider: readWebSearchProvider(
+            process.env.AI_AGENT_WEB_SEARCH_PROVIDER,
+            braveSearchApiKey
+        ),
+        braveSearchApiKey,
+        webSearchDefaultLimit: readNumber(process.env.AI_AGENT_WEB_SEARCH_DEFAULT_LIMIT, 5),
+        webSearchMaxLimit: readNumber(process.env.AI_AGENT_WEB_SEARCH_MAX_LIMIT, 10),
+        webSearchCountry: readString(process.env.AI_AGENT_WEB_SEARCH_COUNTRY),
+        webSearchSearchLang: readString(process.env.AI_AGENT_WEB_SEARCH_LANG),
+        webSearchSafeSearch: readSafeSearch(process.env.AI_AGENT_WEB_SEARCH_SAFESEARCH),
     };
 };

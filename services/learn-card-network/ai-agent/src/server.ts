@@ -269,6 +269,13 @@ export const createServer = ({
             walletSeed: config.walletSeed,
             cloudUrl: config.cloudUrl,
             networkUrl: config.networkUrl,
+            webSearchProvider: config.webSearchProvider,
+            braveSearchApiKey: config.braveSearchApiKey,
+            webSearchDefaultLimit: config.webSearchDefaultLimit,
+            webSearchMaxLimit: config.webSearchMaxLimit,
+            webSearchCountry: config.webSearchCountry,
+            webSearchSearchLang: config.webSearchSearchLang,
+            webSearchSafeSearch: config.webSearchSafeSearch,
         });
 
     app.use(cors());
@@ -293,6 +300,10 @@ export const createServer = ({
                 enabled: config.selfImprovementEnabled,
                 retroModel: config.retroModel,
                 retroMaxTraceChars: config.retroMaxTraceChars,
+            },
+            webSearch: {
+                provider: config.webSearchProvider,
+                enabled: agentTools.some(tool => tool.name === 'webSearch'),
             },
             tools: agentTools.map(tool => tool.name),
         });
