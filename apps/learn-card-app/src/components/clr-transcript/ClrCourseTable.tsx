@@ -1,19 +1,32 @@
 import React, { useState } from 'react';
 
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { AwardDisplayIcon } from 'learn-card-base/svgs/displayTypes/AwardDisplayIcon';
+import { ChevronDown, ChevronRight, Paperclip } from 'lucide-react';
+import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
 import { gradeColor, groupByTerm } from './clr.helpers';
 
-import type { CourseDisplayModel } from '../../helpers/clrRenderer.helpers';
+import type {
+    CourseDisplayModel,
+    CompetencyDisplayModel,
+    AssociationDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
 
 const ClrCourseTable: React.FC<{
     courses: CourseDisplayModel[];
     onSelectCourse?: (course: CourseDisplayModel) => void;
     selectedCourseId?: string;
     adminMode?: boolean;
-}> = ({ courses, onSelectCourse, selectedCourseId, adminMode = false }) => {
+    competencies?: CompetencyDisplayModel[];
+    associations?: AssociationDisplayModel[];
+}> = ({
+    courses,
+    onSelectCourse,
+    selectedCourseId,
+    adminMode = false,
+    competencies = [],
+    associations = [],
+}) => {
     const groups = groupByTerm(courses);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -62,12 +75,15 @@ const ClrCourseTable: React.FC<{
                         {/* Rows */}
                         {!isCollapsed && (
                             <div className="border-t border-grayscale-100">
-                                <div className="grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_96px_64px_56px_24px] px-3 sm:px-5 py-2 bg-white border-b border-grayscale-100">
+                                <div className="grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_80px_80px_64px_56px_24px] px-3 sm:px-5 py-2 bg-white border-b border-grayscale-100">
                                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider">
                                         Course
                                     </p>
                                     <p className="hidden sm:block text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-center">
-                                        Credentials
+                                        {/* Skills */}
+                                    </p>
+                                    <p className="hidden sm:block text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-center">
+                                        {/* Evidence */}
                                     </p>
                                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wider text-right">
                                         Credits
@@ -85,14 +101,19 @@ const ClrCourseTable: React.FC<{
                                     const credits =
                                         course.creditsEarned?.value ??
                                         course.creditsAvailable?.value;
-                                    const credentialCount = course.results.length;
+                                    const competencyCount = getLinkedCompetencies(
+                                        course.sourceCredentialId,
+                                        competencies,
+                                        associations
+                                    ).length;
+                                    const evidenceCount = course.evidence.length;
                                     const isSelected =
                                         course.sourceCredentialId === selectedCourseId;
 
                                     return (
                                         <button
                                             key={course.sourceCredentialId}
-                                            className={`w-full grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_96px_64px_56px_24px] px-3 sm:px-5 py-3.5 border-b border-grayscale-100 last:border-0 transition-colors text-left items-center odd:bg-white even:bg-grayscale-50`}
+                                            className={`w-full grid grid-cols-[1fr_64px_56px_24px] sm:grid-cols-[1fr_80px_80px_64px_56px_24px] px-3 sm:px-5 py-3.5 border-b border-grayscale-100 last:border-0 transition-colors text-left items-center odd:bg-white even:bg-grayscale-50`}
                                             onClick={() => onSelectCourse?.(course)}
                                         >
                                             {/* Course name + code */}
@@ -113,14 +134,29 @@ const ClrCourseTable: React.FC<{
                                                     </p>
                                                 )}
                                             </div>
-                                            {/* Credentials */}
+                                            {/* Linked competencies (skills) */}
                                             <div className="hidden sm:flex items-center justify-center gap-1.5">
-                                                {credentialCount > 0 ? (
+                                                {competencyCount > 0 ? (
                                                     <>
                                                         <span className="text-sm text-grayscale-600">
-                                                            {credentialCount}
+                                                            {competencyCount}
                                                         </span>
-                                                        <AwardDisplayIcon className="w-5 h-5" />
+                                                        <SkillsIcon className="w-4 h-4 text-grayscale-500" />
+                                                    </>
+                                                ) : (
+                                                    <span className="text-sm text-grayscale-300">
+                                                        —
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {/* Evidence */}
+                                            <div className="hidden sm:flex items-center justify-center gap-1.5">
+                                                {evidenceCount > 0 ? (
+                                                    <>
+                                                        <span className="text-sm text-grayscale-600">
+                                                            {evidenceCount}
+                                                        </span>
+                                                        <Paperclip className="w-4 h-4 text-grayscale-500" />
                                                     </>
                                                 ) : (
                                                     <span className="text-sm text-grayscale-300">
