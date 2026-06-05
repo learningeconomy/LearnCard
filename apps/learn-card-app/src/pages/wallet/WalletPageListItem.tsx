@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { IonSpinner } from '@ionic/react';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
@@ -7,6 +8,26 @@ import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import { conditionalPluralize, CredentialCategoryEnum } from 'learn-card-base';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+
+/**
+ * CredentialCategoryEnum → wallet.categories.* translation lookup.
+ * Mirrors the map in WalletPageSquare.tsx; lets the list-view Passport
+ * tile read the same translated title as the grid-view square.
+ */
+const CATEGORY_TITLE_KEY: Partial<Record<CredentialCategoryEnum, [string, string]>> = {
+    [CredentialCategoryEnum.aiTopic]: ['wallet.categories.aiSessions', 'AI Sessions'],
+    [CredentialCategoryEnum.aiPathway]: ['wallet.categories.aiPathways', 'AI Pathways'],
+    [CredentialCategoryEnum.aiInsight]: ['wallet.categories.aiInsights', 'AI Insights'],
+    [CredentialCategoryEnum.skill]: ['wallet.categories.skills', 'Skills'],
+    [CredentialCategoryEnum.socialBadge]: ['wallet.categories.socialBadges', 'Boosts'],
+    [CredentialCategoryEnum.achievement]: ['wallet.categories.achievements', 'Achievements'],
+    [CredentialCategoryEnum.learningHistory]: ['wallet.categories.studies', 'Studies'],
+    [CredentialCategoryEnum.accomplishment]: ['wallet.categories.portfolio', 'Portfolio'],
+    [CredentialCategoryEnum.accommodation]: ['wallet.categories.assistance', 'Assistance'],
+    [CredentialCategoryEnum.workHistory]: ['wallet.categories.experiences', 'Experiences'],
+    [CredentialCategoryEnum.family]: ['wallet.categories.families', 'Families'],
+    [CredentialCategoryEnum.id]: ['wallet.categories.ids', 'IDs'],
+};
 
 type WalletPageListItemProps = {
     handleItemClick: (categoryType: CredentialCategoryEnum) => void;
@@ -26,6 +47,7 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
     showNewItemIndicator,
     loading,
 }) => {
+    const { t } = useTranslation();
     const { categoryId: categoryType } = walletPageItem;
     const { getThemedCategory, colors: themeColors } = useTheme();
     const { icons, colors } = getThemedCategory(categoryType);
@@ -71,7 +93,9 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
 
             <div className="flex flex-col items-start justify-center">
                 <p className={`font-poppins text-[17px] font-[600] leading-[130%] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
-                    {walletPageItem.labels.plural}
+                    {CATEGORY_TITLE_KEY[categoryType]
+                        ? t(...CATEGORY_TITLE_KEY[categoryType]!)
+                        : walletPageItem.labels.plural}
                 </p>
                 {countDisplay}
             </div>
