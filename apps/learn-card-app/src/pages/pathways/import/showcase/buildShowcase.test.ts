@@ -18,12 +18,21 @@
  *      (pure function, deterministic under id injection).
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PathwaySchema } from '../../types';
 import { validatePathway } from '../../core/graphOps';
 import { detectCollections } from '../../map/collectionDetection';
 import { computeSuggestedRoute } from '../../map/route';
+
+vi.mock('learn-card-base', () => ({
+    getLogger: () => ({
+        debug: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+    }),
+}));
 
 import {
     SHOWCASE_PREVIEW,

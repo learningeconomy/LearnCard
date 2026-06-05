@@ -11,6 +11,15 @@ import type {
 import { createPathwayProgressReactor } from './pathwayProgressReactor';
 import { createWalletEventBus } from './walletEventBus';
 
+vi.mock('learn-card-base', () => ({
+    getLogger: () => ({
+        debug: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+    }),
+}));
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
