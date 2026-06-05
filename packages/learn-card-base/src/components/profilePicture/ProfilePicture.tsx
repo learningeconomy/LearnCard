@@ -144,7 +144,7 @@ export const UserProfilePicture: React.FC<{
                 {letterToDisplay || <PersonGlyph className="w-1/2 h-1/2 opacity-90" />}
             </div>
             <img
-                className={`relative rounded-full transition-opacity duration-150 ${customImageClass} ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`relative rounded-full bg-white transition-opacity duration-150 ${customImageClass} ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 alt="user"
                 src={src}
                 referrerPolicy="no-referrer"

@@ -1,6 +1,5 @@
 import type { Config, Context } from '@netlify/edge-functions';
 
-
 import { resolveTenantConfig, getTenantOrigin } from './shared/tenant-resolver.ts';
 
 const corsHeaders = {
@@ -50,9 +49,14 @@ function getLCNApiUrl(context: Context, hostname: string): string {
 }
 
 export default async (request: Request, context: Context) => {
-    // Guardian credential approval is handled by the SPA router, not VC-API
+    // Guardian approval routes are handled by the SPA router, not VC-API.
+    // (guardian-credential-approval = LC-1729 credential flow; guardian-approval =
+    // LC-1001 account/parental-consent flow.) Both must skip the exchange redirect below.
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/interactions/guardian-credential-approval')) {
+    if (
+        url.pathname.startsWith('/interactions/guardian-credential-approval') ||
+        url.pathname.startsWith('/interactions/guardian-approval')
+    ) {
         return context.next();
     }
 
