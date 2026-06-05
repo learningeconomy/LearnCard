@@ -19,12 +19,9 @@ import { PathwaySchema } from '../../types';
 import { generateScenarios } from '../../what-if/generators';
 
 vi.mock('learn-card-base', () => ({
-    getLogger: () => ({
-        debug: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-    }),
+    getLogger: () =>
+        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
+            .mockLearnCardBaseLogger(),
 }));
 
 import {

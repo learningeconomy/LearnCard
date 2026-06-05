@@ -3,12 +3,9 @@ import { renderHook, act } from '@testing-library/react';
 import { useAutosave } from './useAutosave';
 
 vi.mock('learn-card-base', () => ({
-    getLogger: () => ({
-        debug: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-    }),
+    getLogger: () =>
+        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
+            .mockLearnCardBaseLogger(),
 }));
 
 const STORAGE_KEY = 'test_autosave';
