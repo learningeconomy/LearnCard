@@ -54,6 +54,7 @@ import { vcV2LicenseCredential } from './vc-v2/license-credential';
 
 import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
+import { clrCompetencyAligned } from './clr/competency-aligned';
 
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
@@ -112,6 +113,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     vcV2LicenseCredential,
     clrGreatPlainsFull,
     clrWestbridgeFull,
+    clrCompetencyAligned,
 ];
 
 // Re-export individual fixtures for direct import
@@ -153,4 +155,5 @@ export {
     vcV2LicenseCredential,
     clrGreatPlainsFull,
     clrWestbridgeFull,
+    clrCompetencyAligned,
 };

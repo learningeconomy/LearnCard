@@ -7,6 +7,7 @@ import {
     clrGreatPlainsFull,
     clrMinimal,
     clrWestbridgeFull,
+    clrCompetencyAligned,
 } from '@learncard/credential-library';
 
 import {
@@ -26,6 +27,7 @@ const FIXTURES = {
     nd: clrNdStudentTranscript.credential as Record<string, unknown>,
     greatPlains: clrGreatPlainsFull.credential as Record<string, unknown>,
     minimal: clrMinimal.credential as Record<string, unknown>,
+    competencyAligned: clrCompetencyAligned.credential as Record<string, unknown>,
 };
 
 const FIXTURE_LABELS: Record<string, string> = {
@@ -34,6 +36,7 @@ const FIXTURE_LABELS: Record<string, string> = {
     nd: 'North Dakota',
     greatPlains: 'Great Plains',
     minimal: 'Minimal',
+    competencyAligned: 'Competency Aligned',
 };
 
 const VIEWER_LABELS: Record<string, string> = {
