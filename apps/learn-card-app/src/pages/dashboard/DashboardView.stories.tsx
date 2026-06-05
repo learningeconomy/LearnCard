@@ -24,7 +24,13 @@ const meta: Meta<typeof DashboardView> = {
     title: 'Dashboard/DashboardView',
     component: DashboardView,
     parameters: { layout: 'fullscreen' },
-    decorators: [Story => <SeedCredentials><Story /></SeedCredentials>],
+    decorators: [
+        Story => (
+            <SeedCredentials>
+                <Story />
+            </SeedCredentials>
+        ),
+    ],
 };
 
 export default meta;
@@ -82,6 +88,8 @@ const Playground: React.FC<{
             pendingConnections: hasActivity ? activeLearner.activity.pendingConnections : [],
             records: hasActivity ? activeLearner.activity.records : [],
         },
+        learningSnapshots: showAiInsights ? activeLearner.learningSnapshots : null,
+        topSkills: showAiInsights ? activeLearner.topSkills : null,
     };
 
     return <DashboardView vm={vm} />;

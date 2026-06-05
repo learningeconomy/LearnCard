@@ -9,6 +9,8 @@ import CurrentGoalCard from './components/CurrentGoalCard';
 import QuickActionsRow from './components/QuickActionsRow';
 import GetStartedChecklist from './components/GetStartedChecklist';
 import ActivityCard from './components/ActivityCard';
+import LearningSnapshotsCard from './components/LearningSnapshotsCard';
+import TopSkillsCard from './components/TopSkillsCard';
 import AppsCard from './components/AppsCard';
 import type { DashboardViewModel } from './DashboardView.types';
 
@@ -31,8 +33,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
         primaryButtonClass,
         slots,
         activity,
+        learningSnapshots,
+        topSkills,
         apps,
     } = vm;
+
+    const showInsightsRow = Boolean(learningSnapshots || topSkills);
 
     return (
         <div className="flex justify-center w-full font-poppins">
@@ -108,6 +114,21 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                 <GenericErrorBoundary>
                     <QuickActionsRow slots={slots} />
                 </GenericErrorBoundary>
+
+                {showInsightsRow && (
+                    <div className="grid grid-cols-1 desktop:grid-cols-2 gap-5 items-stretch">
+                        {learningSnapshots && (
+                            <GenericErrorBoundary>
+                                <LearningSnapshotsCard vm={learningSnapshots} />
+                            </GenericErrorBoundary>
+                        )}
+                        {topSkills && (
+                            <GenericErrorBoundary>
+                                <TopSkillsCard vm={topSkills} />
+                            </GenericErrorBoundary>
+                        )}
+                    </div>
+                )}
 
                 <GenericErrorBoundary>
                     <AppsCard

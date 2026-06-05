@@ -17,6 +17,9 @@ import {
     useGetUnreadUserNotifications,
     useVerifiableData,
     isVerifiableDataRecord,
+    useExistingAiInsightCredential,
+    useAiFeatureGate,
+    useGetCredentialsForSkills,
 } from 'learn-card-base';
 import {
     getCredentialName,
@@ -44,7 +47,21 @@ import {
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 
 import DashboardView from './DashboardView';
-import type { DashboardViewModel, DashboardEmptyTip } from './DashboardView.types';
+import type {
+    DashboardViewModel,
+    DashboardEmptyTip,
+    DashboardLearningSnapshotsViewModel,
+    DashboardLearningSnapshot,
+    DashboardTopSkillsViewModel,
+} from './DashboardView.types';
+import { buildLearningSnapshots } from './helpers/learningSnapshots';
+import { buildTopSkills } from './helpers/topSkills';
+import {
+    aggregateCategorizedEntries,
+    getTopSkills,
+    mapBoostsToSkills,
+    type RawCategorizedEntry,
+} from '../skills/skills.helpers';
 import { countReviewsDueToday } from './helpers/dueReviews';
 import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
@@ -163,6 +180,27 @@ const DashboardPage: React.FC = () => {
 
     const { data: receivedConnectionRequests = [] } = useGetConnectionsRequests();
     const { data: connections = [] } = useGetConnections();
+
+    const showAiInsights = Boolean(flags?.showAiInsights);
+    const { isAiEnabled } = useAiFeatureGate();
+    const aiInsightsAllowed = showAiInsights && isAiEnabled;
+    const { data: existingAiInsightCredential } = useExistingAiInsightCredential({
+        enabled: aiInsightsAllowed,
+    });
+
+    const { data: skillsCredentials } = useGetCredentialsForSkills(aiInsightsAllowed);
+    const dashboardTopSkills = useMemo(() => {
+        if (!aiInsightsAllowed) return [];
+
+        const skillsMap = mapBoostsToSkills(skillsCredentials);
+        const categorizedSkills = Object.entries(skillsMap) as [
+            string,
+            RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+        ][];
+        const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
+
+        return buildTopSkills(getTopSkills(aggregatedSkills, 3));
+    }, [aiInsightsAllowed, skillsCredentials]);
 
     const openMyLearnCard = () => {
         openHeaderModal(<MyLearnCardModal branding={BrandingEnum.learncard} />);
@@ -319,7 +357,7 @@ const DashboardPage: React.FC = () => {
         hasGoal,
         nextNodeTitle: goalSummary?.nextNode?.title,
         pathwaysEnabled,
-        showAiInsights: Boolean(flags?.showAiInsights),
+        showAiInsights,
     };
 
     const actionHandlers: ActionHandlers = {
@@ -387,6 +425,23 @@ const DashboardPage: React.FC = () => {
         },
     ];
 
+    const learningSnapshots = useMemo<DashboardLearningSnapshotsViewModel>(() => {
+        if (!aiInsightsAllowed) return null;
+
+        const snapshots: DashboardLearningSnapshot[] = buildLearningSnapshots(
+            existingAiInsightCredential
+        );
+        if (snapshots.length === 0) return null;
+
+        return { snapshots, onViewAll: goToInsights };
+    }, [aiInsightsAllowed, existingAiInsightCredential]);
+
+    const topSkills = useMemo<DashboardTopSkillsViewModel>(() => {
+        if (!aiInsightsAllowed || dashboardTopSkills.length === 0) return null;
+
+        return { skills: dashboardTopSkills, onViewAll: goToSkills };
+    }, [aiInsightsAllowed, dashboardTopSkills]);
+
     const viewModel: DashboardViewModel = {
         brandName: brandingConfig.name,
         header: {
@@ -426,6 +481,8 @@ const DashboardPage: React.FC = () => {
             isLoading: allCredentialsLoading,
             emptyTips,
         },
+        learningSnapshots,
+        topSkills,
         apps: {
             installedApps,
             suggestedApps,

@@ -106,6 +106,41 @@ export type DashboardAppsViewModel = {
     onInstallSuccess: () => void;
 };
 
+export type DashboardLearningSnapshot = {
+    label: string;
+    title: string;
+    description: string;
+    tone: 'strength' | 'weakness' | 'growth';
+};
+
+export type DashboardLearningSnapshotsViewModel = {
+    snapshots: DashboardLearningSnapshot[];
+    onViewAll: () => void;
+} | null;
+
+export type DashboardSkillCategory =
+    | 'durable'
+    | 'stem'
+    | 'athletic'
+    | 'creative'
+    | 'business'
+    | 'trade'
+    | 'social'
+    | 'digital'
+    | 'medical';
+
+export type DashboardTopSkill = {
+    title: string;
+    description: string;
+    count: number;
+    category: DashboardSkillCategory | null;
+};
+
+export type DashboardTopSkillsViewModel = {
+    skills: DashboardTopSkill[];
+    onViewAll: () => void;
+} | null;
+
 export type DashboardHeroSlot = 'getStarted' | 'goal';
 
 export type DashboardViewModel = {
@@ -122,5 +157,7 @@ export type DashboardViewModel = {
     primaryButtonClass?: string;
     slots: DashboardSlots;
     activity: DashboardActivityViewModel;
+    learningSnapshots: DashboardLearningSnapshotsViewModel;
+    topSkills: DashboardTopSkillsViewModel;
     apps: DashboardAppsViewModel;
 };

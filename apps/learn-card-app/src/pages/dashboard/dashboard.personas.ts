@@ -292,6 +292,8 @@ export const brandNewUser: DashboardViewModel = {
         isLoading: false,
         emptyTips: meanwhileTips,
     },
+    learningSnapshots: null,
+    topSkills: null,
     apps: {
         installedApps: [],
         suggestedApps,
@@ -365,6 +367,55 @@ export const activeLearner: DashboardViewModel = {
         isLoading: false,
         emptyTips: meanwhileTips,
     },
+    learningSnapshots: {
+        snapshots: [
+            {
+                tone: 'strength',
+                label: 'Strongest area',
+                title: 'Quality Assurance & Testing',
+                description:
+                    'Your credentials and skills show deep, consistent strength in test design and QA process.',
+            },
+            {
+                tone: 'weakness',
+                label: 'Needs work',
+                title: 'Data & Analytics',
+                description:
+                    'Few records touch on data analysis — a focused course here would round out your profile.',
+            },
+            {
+                tone: 'growth',
+                label: 'Room for growth',
+                title: 'Team Leadership',
+                description:
+                    'You are ready to step into mentoring and lead roles based on your experience level.',
+            },
+        ],
+        onViewAll: noop,
+    },
+    topSkills: {
+        skills: [
+            {
+                title: 'Attention to Detail',
+                count: 6,
+                description: 'Thoroughness and accuracy when accomplishing a task.',
+                category: 'durable',
+            },
+            {
+                title: 'Critical Thinking',
+                count: 4,
+                description: 'Objective analysis and evaluation to form a judgment.',
+                category: 'stem',
+            },
+            {
+                title: 'Communication',
+                count: 3,
+                description: 'Conveying information clearly and effectively to others.',
+                category: 'social',
+            },
+        ],
+        onViewAll: noop,
+    },
     apps: {
         installedApps: [
             makeInstalledApp('app-3', 'Khan Academy', 'Free world-class lessons and practice'),
@@ -379,6 +430,8 @@ export const activeLearner: DashboardViewModel = {
 export const returningNoActivity: DashboardViewModel = {
     ...activeLearner,
     goalSummary: null,
+    learningSnapshots: null,
+    topSkills: null,
     heroSlot: 'goal',
     checklistItems: checklist({ credential: true, goal: false, skills: true }),
     slots: {
