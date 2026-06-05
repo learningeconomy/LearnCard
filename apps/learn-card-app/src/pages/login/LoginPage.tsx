@@ -104,6 +104,8 @@ export const LoginContent: React.FC = () => {
 
     const openOnboardingModal = useCallback(
         (initialStep?: OnboardingStepsEnum) => {
+            redirectStore.set.isOnboardingOpen(true);
+
             newModal(
                 <OnboardingContainer initialStep={initialStep} />,
                 {},
@@ -116,6 +118,10 @@ export const LoginContent: React.FC = () => {
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
     const handlePromptOnboarding = useCallback(async () => {
+        if (redirectStore.get.isOnboardingOpen()) {
+            return;
+        }
+
         if (coordinatorState.status === 'needs_setup') {
             openOnboardingModal(OnboardingStepsEnum.ageGate);
             return;

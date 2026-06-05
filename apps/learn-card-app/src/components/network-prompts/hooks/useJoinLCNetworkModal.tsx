@@ -2,6 +2,7 @@ import JoinNetworkPrompt from '../JoinNetworkPrompt';
 
 import { ModalTypes, useIsCurrentUserLCNUser, useIsLoggedIn, useModal } from 'learn-card-base';
 import OnboardingContainer from '../../onboarding/OnboardingContainer';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 
 export const JoinNetworkModalWrapper: React.FC<{
@@ -25,6 +26,8 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
     });
 
     const presentNetworkModal = (onSuccess?: () => void) => {
+        redirectStore.set.isOnboardingOpen(true);
+
         newModal(
             <OnboardingContainer onSuccess={onSuccess} />,
             {},

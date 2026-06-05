@@ -100,6 +100,10 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             return;
         }
 
+        if (didPrepareNewKeyRef.current) {
+            return;
+        }
+
         if (!currentLCNUser) {
             return;
         }
