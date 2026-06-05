@@ -379,29 +379,39 @@ const AppRouter: React.FC = () => {
         handleBackfillConsent();
     }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled]);
 
-    if (initLoading) return <LoginLoadingPage />;
-
+    // NOTE: <Modals /> must stay mounted across the `initLoading` splash. During
+    // new-user key setup the coordinator transitions needs_setup → deriving_key →
+    // ready, flipping `initLoading` true for a moment. If <Modals /> were torn down
+    // (e.g. behind an early `return <LoginLoadingPage />`), any open modal — like the
+    // onboarding flow — would have its component instance destroyed and recreated,
+    // resetting its internal step state (bouncing the user back to the age gate).
+    // Keeping it as a persistent sibling of the loader/app content preserves the
+    // live modal instance across the transition.
     return (
         <GenericErrorBoundary>
-            <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                <IonSplitPane
-                    contentId="main"
-                    className={
-                        collapsed
-                            ? 'side-menu-split-pane-container-collapsed'
-                            : 'side-menu-split-pane-container-visible'
-                    }
-                >
-                    <GenericErrorBoundary>
-                        {isLoggedIn && !hideSideMenu && (
-                            <SideMenu branding={BrandingEnum.learncard} />
-                        )}
-                        <div id="main" className="w-full">
-                            <MobileNavBar />
-                        </div>
-                    </GenericErrorBoundary>
-                </IonSplitPane>
-            </div>
+            {initLoading ? (
+                <LoginLoadingPage />
+            ) : (
+                <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
+                    <IonSplitPane
+                        contentId="main"
+                        className={
+                            collapsed
+                                ? 'side-menu-split-pane-container-collapsed'
+                                : 'side-menu-split-pane-container-visible'
+                        }
+                    >
+                        <GenericErrorBoundary>
+                            {isLoggedIn && !hideSideMenu && (
+                                <SideMenu branding={BrandingEnum.learncard} />
+                            )}
+                            <div id="main" className="w-full">
+                                <MobileNavBar />
+                            </div>
+                        </GenericErrorBoundary>
+                    </IonSplitPane>
+                </div>
+            )}
             <Modals />
         </GenericErrorBoundary>
     );

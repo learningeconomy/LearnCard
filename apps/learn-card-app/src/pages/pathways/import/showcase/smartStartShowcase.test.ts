@@ -11,12 +11,18 @@
  * employer tracks.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PathwaySchema } from '../../types';
 import { validatePathway } from '../../core/graphOps';
 import { detectCollections } from '../../map/collectionDetection';
 import { computeSuggestedRoute } from '../../map/route';
+
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
+            .mockLearnCardBaseLogger(),
+}));
 
 import {
     SMART_START_PREVIEW,

@@ -273,4 +273,34 @@ describe('OnboardingContainer school-code bypass', () => {
 
         expect(screen.queryByTestId('age-gate')).toBeNull();
     });
+
+    it('does not bounce a freshly keyed user back to age gate when the profile is sparse', async () => {
+        mockCalculateAge.mockReturnValue(18);
+        mockCurrentLCNUser = {
+            displayName: 'Test User',
+            image: 'https://example.com/avatar.png',
+        };
+
+        render(<OnboardingContainer />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'set dob' }));
+        fireEvent.click(screen.getByRole('button', { name: 'set country' }));
+        fireEvent.click(screen.getByRole('button', { name: 'continue' }));
+
+        await waitFor(() => {
+            expect(mockGenerateEd25519PrivateKey).toHaveBeenCalledTimes(1);
+            expect(mockSetupNewKey).toHaveBeenCalledTimes(1);
+        });
+
+        await act(async () => {
+            mockAuthState = { status: 'ready' };
+            setupNewKeyDeferred.resolve(true);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByTestId('age-gate')).toBeNull();
+    });
 });
