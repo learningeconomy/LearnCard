@@ -1,0 +1,941 @@
+{
+  "id": "fw-1772824300325",
+  "name": "Pathsmith™ Durable Skills Starter Edition",
+  "description": "In today's dynamic economy, the skills that stand the test of time, like communication, critical thinking, and leadership, are more important than ever. These are the durable skills: competencies that remain relevant across roles, industries, and career stages, no matter how technology or job markets evolve.\n\nTo meet the growing demand for these essential skills, America Succeeds created Pathsmith, a durable skills solution crafted through rigorous research and shaped by the needs of both learners and employers. Like a blacksmith forging tools, Pathsmith equips today's learners and earners with skills that power economic mobility and future-proof careers.\n\nThe Pathsmith Durable Skills Framework is the result of a deep, collaborative process led by America Succeeds and CompTIA. It translates employer demand, sourced from over 80 million job postings, into a clear, structured, and equity-conscious guide for evaluating durable skills among early-career professionals.\n\nThis framework serves as an industry-aligned standard and practical tool to support training, development, and assessment. It is built with a specific audience in mind: early-career individuals, those who are new to the workforce or returning after a significant break, with roughly one year or less of job experience. Grounded in both labor market analysis and lived experience, the framework reflects broad stakeholder input, from a psychometrician and subject matter experts to educators, employers, and equity-focused researchers.\n\nDurable skills aren't just soft skills, they're critical skills. Pathsmith offers a way to recognize, measure, and grow them with clarity and intentionality, whether in a classroom, on a job site, or in a boardroom. This introduction outlines the methodology, equity considerations, and performance levels that guide the Pathsmith Durable Skills Framework, supporting its application in education, workforce development, and talent strategies.",
+  "skills": [
+    {
+      "id": "skill-1772824804950-22bbaiok9",
+      "targetName": "Leadership Domain",
+      "targetDescription": "Leadership at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- influence and/or motivate teams and individuals to achieve goals.\n-- lead others toward a common goal.\n-- model an acceptable work ethic.\n-- break down basic information to establish clear communication.\n\nThis individual is decisive, adaptable, demonstrates initiative, and actively engages in learning opportunities.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🦁",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-4hojwv31x",
+          "targetName": "Project Management",
+          "targetDescription": "The ability to use specific knowledge, skills, tools, and techniques to achieve specific project objectives and deliver value.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗂️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-97ggmsg60",
+          "targetName": "Decision Making",
+          "targetDescription": "The ability to analyze information, evaluate options, and make logical decisions that align with goals and objectives.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🤔",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-dd5lbteul",
+          "targetName": "Mentorship",
+          "targetDescription": "The ability to provide guidance and support to others in their personal and professional development.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "👨‍🏫",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-hvha7jidz",
+          "targetName": "Thought Leadership",
+          "targetDescription": "The ability to develop and communicate innovative and insightful ideas and perspectives that position an individual or organization as a trusted authority in one's industry or field.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "💡",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.8",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-lc27zm0qk",
+          "targetName": "Advocacy",
+          "targetDescription": "The ability to defend, promote, and support a cause or issue.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📢",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-purc6ulo5",
+          "targetName": "Leadership",
+          "targetDescription": "The ability to motivate and guide a group of people toward achieving a common goal or objective.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🦅",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-w3j5l2g33",
+          "targetName": "Management",
+          "targetDescription": "The ability to plan, organize, and coordinate resources in order to achieve specific goals and objectives.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗃️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-zhmcfaxcs",
+          "targetName": "Risk Management",
+          "targetDescription": "The ability to identify, assess, prioritize, and mitigate potential risks and uncertainties that may cause harm and/or negatively impact the success of a project or organization.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📉",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "2.7",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "2.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-92cyabeef",
+      "targetName": "Critical Thinking Domain",
+      "targetDescription": "Critical Thinking at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- process and synthesize information in a given context or on a particular topic.\n-- apply and articulate logic and reasoning to make judgments and draw conclusions.\n-- articulate pros and cons related to entry-level situations or a single fact.\n\nThis individual can effectively explain and articulate the rationale used to make decisions or arrive at conclusions and assist in determining potential future outcomes.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🔍",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-a0c15t0yh",
+          "targetName": "Research",
+          "targetDescription": "The ability to gather and analyze information systematically to gain insights and solve problems.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📖",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-a4g6gz6e1",
+          "targetName": "Problem-Solving",
+          "targetDescription": "The ability to define a problem, determine the cause of the problem, evaluate alternatives for a solution, and implement a solution.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🛠️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-cgaaxwhe3",
+          "targetName": "Prioritization",
+          "targetDescription": "The ability to effectively organize and manage tasks according to their level of importance and urgency.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📋",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-locv0itx1",
+          "targetName": "Analytical Thinking",
+          "targetDescription": "The ability to evaluate and interpret complex information to draw insights and make informed decisions.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🧠",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.7",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-urpvvber5",
+          "targetName": "Critical Thinking",
+          "targetDescription": "The ability to analyze and evaluate information in order to make objective and informed decisions.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🧩",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-xpt0uc9ih",
+          "targetName": "Investigation",
+          "targetDescription": "The ability to gather and analyze information from various sources to identify and resolve problems or issues.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🔬",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-yxppea8f5",
+          "targetName": "Intellectual Curiosity",
+          "targetDescription": "The ability to show willingness and desire to seek knowledge and understand new information by asking questions, exploring ideas, and continuously learning.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🤔",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "4.6",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "4.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-9bqhkv6mi",
+      "targetName": "Collaboration Domain",
+      "targetDescription": "Collaboration at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- consider the thoughts and feelings of others and use those to communicate effectively.\n-- engage respectfully with people of diverse backgrounds and differing opinions.\n-- willingly recognize the importance of inclusion and belonging.\n-- align resources towards a common goal.\n-- accept the larger purpose, setting aside their own interests to prioritize the organization's goals.\n\nThis individual can categorize, apply structure to, validate, and support the analysis of information, as well as dissect large projects into manageable chunks.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🤲",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-0vm22kkgh",
+          "targetName": "Team-Building",
+          "targetDescription": "The ability to effectively organize a team through actions that contribute to the team's cohesiveness by enhancing relationships, celebrating strengths, acknowledging weaknesses, and actively participating in team experiences and events.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🏗️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "5.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-3p44mrdm2",
+          "targetName": "Coordinating",
+          "targetDescription": "The ability to contribute to a team by clearly communicating one's work, leveraging one's unique strengths, and being adaptable in the face of change to continue working towards the common goal.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🔗",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "5.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-487j1k9l1",
+          "targetName": "Interpersonal Relationships",
+          "targetDescription": "The ability to understand priorities and apply them to the organization of time, people, and resources to achieve a common goal.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "💬",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "5.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-bsc9c7cle",
+          "targetName": "Teamwork/Team-Oriented",
+          "targetDescription": "The ability to manage time and resource constraints in order to plan for the completion of tasks in a way that maximizes the efficiency of the plan and does not create a burden for those involved in the scheduled events.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "👥",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "5.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-d89eknulo",
+          "targetName": "Cooperation",
+          "targetDescription": "The ability to prioritize the common goal of a group over one's personal goals for the benefit of the larger group and be flexible to complete a task being asked of you.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🤝",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "5.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-y2e0zby0l",
+          "targetName": "Remote/Virtual Teams",
+          "targetDescription": "The ability to effectively collaborate and build relationships with team members who are not in the same physical location.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "💻",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "5.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1775837398456-odop6377i",
+          "targetName": "Scheduling",
+          "targetDescription": "The ability to manage time and resource\nconstraints in order to plan for the\ncompletion of tasks in a way that maximizes the efficiency of the plan and does not create a burden for those involved in the scheduled events.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗓️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "5.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-gk0zh5lrb",
+      "targetName": "Fortitude Domain",
+      "targetDescription": "Fortitude at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- recover successfully from unexpected situations by resuming the plan.\n-- adapt despite setbacks.\n-- understand their team members' “why” and see their perspectives.\n-- understand team dynamics.\n-- display self-accountability and perseverance.\n-- focus on long-term goals.\n\nThis individual encourages others to pursue a goal, celebrates team members successes, models behavior desirable in others, sets expectations, performs well under pressure, trusts in their abilities, and exhibits a belief in themselves with a balance between humility and confidence.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🛡️",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-aikd04t7r",
+          "targetName": "Assertiveness",
+          "targetDescription": "The ability to confidently and willingly advocate for oneself while engaging in constructive discourse without being aggressive.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗣️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-gkqk5tclu",
+          "targetName": "Motivational Skills",
+          "targetDescription": "The ability to use contextually appropriate strategies and tactics to elicit a desired reaction from a group that contributes to achieving the common goals of a group.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🏋️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-gshg45jlj",
+          "targetName": "Resilience",
+          "targetDescription": "The ability to respond in the face of adversity in order to successfully recover from unexpected situations and resume or revise a plan to achieve the desired outcome of the original task.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🌱",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-w4yyfkxzt",
+          "targetName": "Self-Discipline",
+          "targetDescription": "The ability to regulate one's actions and emotions in order to stay committed to achieving a goal and keep oneself accountable for their responsibilities",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🎓",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-wq45d7y7r",
+          "targetName": "Tenacity",
+          "targetDescription": "The ability to stay focused on the process and have unwavering determination when completing a task. The ability to exhibit passion and persistence in the face of adversity",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🐢",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-xniik052a",
+          "targetName": "Calmness Under Pressure",
+          "targetDescription": "The ability to stay composed and level-headed when faced with challenging or high-pressure situations.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "😌",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.7",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-zjgotktn9",
+          "targetName": "Self-Confident",
+          "targetDescription": "The ability to trust one's abilities and present information with poise. The ability to have realistic confidence in one's judgment while knowing when to ask for assistance.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "💪",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.8",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-zoiwtqzij",
+          "targetName": "Optimism",
+          "targetDescription": "The ability to maintain a positive attitude and focus on the best possible outcomes for events and tasks..",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🌞",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "10.3",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "10.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-ih7je4kyw",
+      "targetName": "Character Domain",
+      "targetDescription": "Character at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- take responsibility for their own work, behavior, performance, and work outcomes.\n-- share and present information in a balanced and complete fashion.\n-- articulate their own purpose and personal motivations within the context of organizational goals.\n-- perform consistently well in their work.\n-- demonstrate actions and behaviors that are aligned with strong ethical standards.\n\nThis individual is positively predictable, exhibits dependability, is prompt, on time, consistently fulfills commitments, treats others with respect, and does the right thing even when no one is looking.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "⚖️",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-0dhuncc3w",
+          "targetName": "Reliability",
+          "targetDescription": "The ability to consistently produce high-quality work and fulfill commitments to others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "⌚",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "6.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-11fyf81e8",
+          "targetName": "Self-Motivation",
+          "targetDescription": "The ability to stay driven, focused, and committed to achieving goals and delivering results without the need for constant direction and supervision.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🏆",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "6.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-2dq4yrivs",
+          "targetName": "Personal Integrity",
+          "targetDescription": "The ability to consistently act in accordance with a set of values and principles, and be honest and transparent with others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🤝",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "6.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-cwwivx3db",
+          "targetName": "Tactfulness",
+          "targetDescription": "The ability to navigate situations with sensitivity, behaving and communicating in a way that is respectful and considerate of others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🎩",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "6.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-rcjmkv2qj",
+          "targetName": "Trustworthy",
+          "targetDescription": "The ability to demonstrate honesty, reliability, and ethical behavior during interactions, and consistently follow through on commitments and promises made to others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🔒",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "6.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-xtr4xd1pf",
+          "targetName": "Accountability",
+          "targetDescription": "The ability to take ownership of responsibilities, meet expectations, take corrective action when needed, and accept the consequences of one's actions or decisions.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📒",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "6.1",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "6.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-mxyqnt2d3",
+      "targetName": "Communication Domain",
+      "targetDescription": "Communication at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- effectively convey information through written, verbal, and non-verbal communication.\n-- appropriately use various communication channels or processes.\n-- understand how different types of communication influence interactions.\n-- use listening skills to adapt communication style when necessary.\n-- understand the intercultural factors that impact communication.\n\nThis individual can use communication techniques to reach agreements between multiple parties, persuade an audience, or effectively communicate with customers/clients.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "📡",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-0y1926shy",
+          "targetName": "Social Media",
+          "targetDescription": "The ability to create, manage, and leverage social media platforms to reach and engage with a target audience, promote brand awareness, and drive business objectives",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📱",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-284nuop3u",
+          "targetName": "Verbal Communication",
+          "targetDescription": "The ability to verbally convey information, thoughts, or ideas to others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗨️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-816g8ud92",
+          "targetName": "Customer Service",
+          "targetDescription": "The ability to provide assistance and guidance to people before, during, and after they utilize the company's products or services.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📞",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.7",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-a5g6jzb6x",
+          "targetName": "Communications (hybrid/remote)",
+          "targetDescription": "The ability to effectively exchange information, thoughts, and ideas with others in various environments (virtual and in-person) using various channels such as verbal, written, and non-verbal.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📧",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-e5img3d05",
+          "targetName": "Public Speaking",
+          "targetDescription": "The ability to effectively deliver a message to engage, inform, and persuade an audience.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🎤",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.8",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-ebfgl4nam",
+          "targetName": "Written Communication",
+          "targetDescription": "The ability to convey information, thoughts, or ideas in written form to others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "✏️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-j0fxnka8b",
+          "targetName": "Negotiation",
+          "targetDescription": "The ability to strategically guide a discussion between two or more parties aimed at reaching an agreement or a solution.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🤝",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-yk22wcj2j",
+          "targetName": "Presentation",
+          "targetDescription": "The ability to effectively convey ideas or information to an audience.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📊",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "1.2",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "1.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-n1z8lk3tn",
+      "targetName": "Mindfulness Domain",
+      "targetDescription": "Mindfulness at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- use cordial, polite greetings and introductions keeping in mind cultural competencies.\n-- ask questions to better understand the emotional state and needs of another person.\n-- demonstrate sensitivity to the feelings, thoughts, and experiences of another person.\n-- sustain calmness and poise.\n-- control their actions in relation to their emotions.\n-- recognize their own emotions and others' emotions to guide their behavior.\n\nThis individual is self-aware, welcoming and respectful of others, open to hearing what others are saying in a non-defensive and non-judgmental way, and takes an authentic and genuine interest in others.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🧘",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-eesahmda4",
+          "targetName": "Emotional Intelligence",
+          "targetDescription": "The ability to fully concentrate on, understand, and respond to verbal and/ or nonverbal communication in order to comprehend the speaker's message, and demonstrate engagement and interest in the conversation.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🧠",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-eu4suos08",
+          "targetName": "Compassion",
+          "targetDescription": "The ability to provide friendly, attentive, and welcoming service to customers or clients.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "❤️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-frahf8h7k",
+          "targetName": "Patience",
+          "targetDescription": "The ability to understand and share the feelings, perspectives, and experiences of others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "⏳",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-mgcymug5q",
+          "targetName": "Cultural Sensitivity",
+          "targetDescription": "The ability to have the self-esteem to understand that even though you are doing well, you do not have to brag about it.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🌍",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.8",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-p8f1jsfro",
+          "targetName": "Hospitality",
+          "targetDescription": "The ability to work independently and take initiative to complete tasks without external direction or motivation.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🏨",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-rsuxnbcgp",
+          "targetName": "Active Listening",
+          "targetDescription": "The ability to maintain a calm and composed attitude in the face of challenging situations and to persevere through difficulties or delays while maintaining a positive and productive outlook.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "👂",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-tgb0d9y7o",
+          "targetName": "Humility",
+          "targetDescription": "The ability to recognize, understand, and manage one's emotions, as well as empathize with and effectively communicate with others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🙏",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.7",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-w96zstc5o",
+          "targetName": "Empathy",
+          "targetDescription": "The ability to empathize and show kindness and understanding toward others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🤝",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "9.3",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "9.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-p9ij6uedx",
+      "targetName": "Creativity Domain",
+      "targetDescription": "Creativity at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- explore non-linear, indirect, non-traditional thinking processes to approach a problem or situation.\n-- summarize existing and new information to identify unrecognized possibilities.\n-- understand the process of trial and error and learn from failure.\n-- organize thoughts and ideas to generate innovative or novel suggestions that are focused and actionable.\n\nThis individual has the ability to craft, create, and share new ideas while keeping desired outcomes in mind and can work with others through idea generation and brainstorming.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🎨",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-8n0kmlyf2",
+          "targetName": "Creative Thinking",
+          "targetDescription": "The ability to approach problems or tasks in a non- traditional way, and generate new ideas and solutions that can lead to improved outcomes.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🖌️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "7.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-b7x0qgw95",
+          "targetName": "Ideation",
+          "targetDescription": "The ability to generate and develop new ideas with the aim of addressing business challenges.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "💭",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "7.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-bxqloqmio",
+          "targetName": "Brainstorming",
+          "targetDescription": "The ability to contribute to group problemsolving with spontaneous contribution of ideas.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "💡",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "7.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-j29aya1uh",
+          "targetName": "Innovation",
+          "targetDescription": "The ability to generate new ideas and creatively apply them to drive business growth and/or solve problems in a unique and effective way.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "⚙️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "7.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-qdoil8ata",
+          "targetName": "Experimentation",
+          "targetDescription": "The ability to appropriately use the iterative process of testing and validating ideas, products, and services.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🧪",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "7.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-waljh6t43",
+          "targetName": "Visionary",
+          "targetDescription": "The ability to think beyond the present, and envision and plan for a future state.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "👁️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "7.3",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "7.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-pnrs57ubt",
+      "targetName": "Metacognition Domain",
+      "targetDescription": "Metacognition at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- exhibit flexibility to changing conditions or circumstances.\n-- create processes to ensure details are addressed, deadlines are met, and time is used effectively.\n-- break down projects or large tasks into smaller tasks and recognize the need for prioritizing certain tasks.\n-- provide and take feedback to improve job, task, or project performance.\n-- share related job information and experience to learners in order to achieve a desired learning outcome.\n\nThis individual has an awareness of details impactful to a task or project deadline, can envision the end goal for planning purposes, and can measure success in the context of goals.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🧠",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-36eykqtyb",
+          "targetName": "Time Management",
+          "targetDescription": "The ability to estimate how long it takes to complete a task, to assess the progress of a task against the timeline for completion.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "⏰",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.5",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-3j08m18y6",
+          "targetName": "Detail-Oriented",
+          "targetDescription": "The ability to pay close attention to the small details of a task and to be aware of all details impactful to a task.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🔍",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-7nubyoxde",
+          "targetName": "Adaptability",
+          "targetDescription": "The ability to be flexible to changing circumstances and understand the impact of changes to task timelines in order to adjust plans efficiently",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🌊",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-c5ujdubx3",
+          "targetName": "Teaching",
+          "targetDescription": "The ability to effectively impart or convey knowledge, skills, and/or values to others.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "👨‍🏫",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-ld9haqlk2",
+          "targetName": "Planning",
+          "targetDescription": "The ability to envision the end goal and the process required to achieve the goal.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗓️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-qobpeka3y",
+          "targetName": "Constructive Feedback",
+          "targetDescription": "The ability to provide specific and actionable feedback to colleagues or employees with theaim of improving their performance and achieving organizational goals.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "✍️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.8",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-tkv7qhywf",
+          "targetName": "Goal Setting",
+          "targetDescription": "The ability to establish clear and achievable objectives and to develop a plan to achieve them.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🎯",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.7",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-wo2jj0vvu",
+          "targetName": "Organizational Skills",
+          "targetDescription": "The ability to identify the appropriate resources needed to complete a task and implement those resources effectively to facilitate the thorough completion of a task.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🗂️",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "3.4",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "3.0",
+      "type": "Alignment"
+    },
+    {
+      "id": "skill-1772824804950-px0moph48",
+      "targetName": "Growth Mindset Domain",
+      "targetDescription": "Growth Mindset at the Pathsmith Durable Skills Framework Applying Level:\n\nThis early career individual can:\n-- take initiative to start new tasks without the help of others, but at the direction of a manager or supervisor.\n-- identify opportunities to contribute.\n-- exhibit a desire to take action.\n-- demonstrate a drive to learn going beyond the surface.\n\nThis individual is resourceful, confident, trusts in themselves, and finds connections and new information in areas of interest to improve performance.",
+      "targetFramework": "fw-1772824300325",
+      "icon": "🌿",
+      "role": "tier",
+      "subskills": [
+        {
+          "id": "skill-1772824804950-7wpzq5som",
+          "targetName": "Results-Focused",
+          "targetDescription": "The ability to meet or exceed specific goals and objectives, and focus on the outcomes rather than the process it takes to get there.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🎯",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.7",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-86nd9j00d",
+          "targetName": "Self-Starter",
+          "targetDescription": "The ability to work independently and take initiative to complete tasks without external direction or motivation.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🚴",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.1",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-dsmt6dwcc",
+          "targetName": "Self-Sufficiency",
+          "targetDescription": "The ability to work independently, take ownership of tasks, and complete them with minimal or no supervision or guidance.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🚜",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.8",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-eennwwysa",
+          "targetName": "Proactivity",
+          "targetDescription": "The ability to take initiative and anticipate potential issues or opportunities before they arise.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "📈",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.2",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-fxm6dc0lp",
+          "targetName": "Action-Oriented",
+          "targetDescription": "The ability to take initiative, set goals, and actively work towards achieving them.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🏃",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.6",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-kegwjzu5x",
+          "targetName": "Curiosity",
+          "targetDescription": "The ability to be eager and open to learning new things, seeking out new information, and asking questions to better understand and solve problems.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🔍",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.3",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-ye6tas5rw",
+          "targetName": "Resourcefulness",
+          "targetDescription": "The ability to quickly find effective solutions to problems, even in situations where resources may be limited or unclear.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🔧",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.4",
+          "type": "Alignment"
+        },
+        {
+          "id": "skill-1772824804950-z98eectsq",
+          "targetName": "Entrepreneurship",
+          "targetDescription": "The ability to identify and pursue business opportunities by taking calculated risks, creating innovative solutions, and effectively managing resources.",
+          "targetFramework": "fw-1772824300325",
+          "icon": "🚀",
+          "role": "competency",
+          "subskills": [],
+          "targetCode": "8.5",
+          "type": "Alignment"
+        }
+      ],
+      "targetCode": "8.0",
+      "type": "Alignment"
+    }
+  ]
+}
