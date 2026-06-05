@@ -1,6 +1,5 @@
 import type { Config, Context } from '@netlify/edge-functions';
 
-
 import { resolveTenantConfig, getTenantOrigin } from './shared/tenant-resolver.ts';
 
 const corsHeaders = {
