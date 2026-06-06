@@ -1329,6 +1329,30 @@
                 "preview": "Aperçu",
                 "saveAsDraft": "Enregistrer comme brouillon",
                 "publishAndIssue": "Publier et émettre"
+            },
+            "success": {
+                "wellDone": "Bravo !",
+                "returnToWallet": "Retour au portefeuille"
+            },
+            "confirm": {
+                "areYouSure": "Êtes-vous sûr ?",
+                "publishedNoEdits": "Votre boost est publié et ne peut plus être modifié. Vous pouvez revenir à l'émission ou quitter pour recommencer.",
+                "issueLater": "Émettre plus tard",
+                "quitWithoutSaving": "Quitter sans enregistrer",
+                "saveAndQuit": "Enregistrer et quitter",
+                "returnToWallet": "Retour au portefeuille"
+            },
+            "header": {
+                "publish": "Publier",
+                "issue": "Émettre",
+                "confirmation": "Confirmation"
+            },
+            "preview": {
+                "details": "Détails",
+                "about": "À propos",
+                "criteria": "Critères",
+                "certificate": "Certificat",
+                "id": "ID"
             }
         }
     },

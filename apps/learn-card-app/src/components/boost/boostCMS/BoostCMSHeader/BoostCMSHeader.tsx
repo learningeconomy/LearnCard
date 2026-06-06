@@ -8,6 +8,7 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 type BoostCMSHeaderProps = {
@@ -36,6 +37,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     issueToLength,
 }) => {
     const { getThemedCategoryIcons } = useTheme();
+    const { t } = useTranslation();
     const { Icon } = getThemedCategoryIcons(boostCategoryMetadata[selectedVCType].credentialType);
     const { title } = boostCategoryMetadata[selectedVCType];
     const flags = useFlags();
@@ -48,11 +50,11 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
             </span>
         );
     } else if (currentStep === BoostCMSStepsEnum.publish) {
-        headerTitle = 'Publish';
+        headerTitle = t('boost.cms.header.publish', 'Publish');
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
-        headerTitle = 'Issue';
+        headerTitle = t('boost.cms.header.issue', 'Issue');
     } else if (currentStep === BoostCMSStepsEnum.confirmation) {
-        headerTitle = 'Confirmation';
+        headerTitle = t('boost.cms.header.confirmation', 'Confirmation');
     }
 
     const handleGoBack = () => {

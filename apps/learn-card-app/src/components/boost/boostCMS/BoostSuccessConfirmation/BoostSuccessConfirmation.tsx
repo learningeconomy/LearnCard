@@ -13,6 +13,7 @@ import { BoostCategoryOptionsEnum, UserProfilePicture } from 'learn-card-base';
 import BoostCMSIDCard from '../../boost-id-card/BoostIDCard';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 export const BoostSuccessConfirmation: React.FC<{
     state: BoostCMSState;
@@ -53,7 +54,7 @@ export const BoostSuccessConfirmation: React.FC<{
 
                 <div className="w-full flex items-end justify-center mb-6">
                     <h3 className="font-poppins text-grayscale-800 text-4xl text-center">
-                        Well Done!
+                        {t('boost.cms.success.wellDone', 'Well Done!')}
                     </h3>
                 </div>
                 <div className="w-full flex flex-col items-center justify-center mb-4">
@@ -109,7 +110,7 @@ export const BoostSuccessConfirmation: React.FC<{
                         }
                         className={`flex items-center justify-center text-white rounded-full px-[64px] py-[12px] bg-${primaryColor} font-poppins text-xl w-full shadow-3xl normal max-w-[325px] mb-4`}
                     >
-                        Return To Wallet
+                        {t('boost.cms.success.returnToWallet', 'Return To Wallet')}
                     </button>
                 </div>
             </div>

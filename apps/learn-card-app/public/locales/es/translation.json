@@ -1329,6 +1329,30 @@
                 "preview": "Vista previa",
                 "saveAsDraft": "Guardar como borrador",
                 "publishAndIssue": "Publicar y emitir"
+            },
+            "success": {
+                "wellDone": "¡Bien hecho!",
+                "returnToWallet": "Volver a la cartera"
+            },
+            "confirm": {
+                "areYouSure": "¿Estás seguro?",
+                "publishedNoEdits": "Tu boost está publicado y no se pueden hacer más ediciones. Puedes volver a emitir o salir para comenzar de nuevo.",
+                "issueLater": "Emitir más tarde",
+                "quitWithoutSaving": "Salir sin guardar",
+                "saveAndQuit": "Guardar y salir",
+                "returnToWallet": "Volver a la cartera"
+            },
+            "header": {
+                "publish": "Publicar",
+                "issue": "Emitir",
+                "confirmation": "Confirmación"
+            },
+            "preview": {
+                "details": "Detalles",
+                "about": "Acerca de",
+                "criteria": "Criterios",
+                "certificate": "Certificado",
+                "id": "ID"
             }
         }
     },

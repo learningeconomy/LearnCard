@@ -1329,6 +1329,30 @@
                 "preview": "معاينة",
                 "saveAsDraft": "حفظ كمسودة",
                 "publishAndIssue": "نشر وإصدار"
+            },
+            "success": {
+                "wellDone": "أحسنت!",
+                "returnToWallet": "العودة إلى المحفظة"
+            },
+            "confirm": {
+                "areYouSure": "هل أنت متأكد؟",
+                "publishedNoEdits": "تم نشر البوست الخاص بك ولا يمكن إجراء المزيد من التعديلات. يمكنك العودة إلى الإصدار أو الخروج للبدء من جديد.",
+                "issueLater": "إصدار لاحقًا",
+                "quitWithoutSaving": "الخروج بدون حفظ",
+                "saveAndQuit": "حفظ وخروج",
+                "returnToWallet": "العودة إلى المحفظة"
+            },
+            "header": {
+                "publish": "نشر",
+                "issue": "إصدار",
+                "confirmation": "تأكيد"
+            },
+            "preview": {
+                "details": "التفاصيل",
+                "about": "حول",
+                "criteria": "المعايير",
+                "certificate": "شهادة",
+                "id": "معرف"
             }
         }
     },

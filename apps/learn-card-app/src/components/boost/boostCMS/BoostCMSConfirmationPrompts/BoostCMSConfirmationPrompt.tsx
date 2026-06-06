@@ -6,6 +6,7 @@ import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../boost-options/boostOptions
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { useBrandingConfig } from 'learn-card-base';
+import { useTranslation } from 'react-i18next';
 
 type BoostCMSConfirmationPromptProps = {
     state: BoostCMSState;
@@ -34,6 +35,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
 
     const { closeModal } = useModal();
     const history = useHistory();
+    const { t } = useTranslation();
 
     const handleQuit = () => {
         clearLocalSave?.();
@@ -51,14 +53,14 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
 
     if (currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep) {
         promptText =
-            'Your boost is published and no more edits can be made. You can return to issuing or quit to start over.';
+            t('boost.cms.confirm.publishedNoEdits', 'Your boost is published and no more edits can be made. You can return to issuing or quit to start over.');
     }
 
     // Show "Issue Later" only when on issueTo step AND publish step was NOT skipped
     const quitWithoutSavingText =
         currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep
-            ? 'Issue Later'
-            : 'Quit Without Saving';
+            ? t('boost.cms.confirm.issueLater', 'Issue Later')
+            : t('boost.cms.confirm.quitWithoutSaving', 'Quit Without Saving');
 
     return (
         <section className="pt-[36px] pb-[16px]">
@@ -73,7 +75,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                     </div>
 
                     <h6 className="font-semi-bold text-black font-poppins text-xl mb-4 mt-4">
-                        Are you sure?
+                        {t('boost.cms.confirm.areYouSure', 'Are you sure?')}
                     </h6>
 
                     {promptText}
@@ -87,7 +89,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                                 onClick={handleQuitAndSave}
                                 className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-emerald-700 font-poppins font-medium text-xl w-full shadow-lg"
                             >
-                                Save & Quit
+                                {t('boost.cms.confirm.saveAndQuit', 'Save & Quit')}
                             </button>
                         )}
                     <button
@@ -108,7 +110,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                             }}
                             className={`flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-${primaryColor} font-poppins text-xl w-full shadow-lg normal mt-4`}
                         >
-                            Return to Wallet
+                            {t('boost.cms.confirm.returnToWallet', 'Return to Wallet')}
                         </button>
                     )}
                 </div>
