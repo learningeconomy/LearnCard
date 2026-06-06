@@ -1329,6 +1329,30 @@
                 "preview": "미리보기",
                 "saveAsDraft": "임시 저장",
                 "publishAndIssue": "게시 및 발급"
+            },
+            "success": {
+                "wellDone": "잘하셨습니다!",
+                "returnToWallet": "지갑으로 돌아가기"
+            },
+            "confirm": {
+                "areYouSure": "확실합니까?",
+                "publishedNoEdits": "부스트가 게시되었으며 더 이상 편집할 수 없습니다. 발급으로 돌아가거나 처음부터 다시 시작할 수 있습니다.",
+                "issueLater": "나중에 발급",
+                "quitWithoutSaving": "저장하지 않고 종료",
+                "saveAndQuit": "저장 및 종료",
+                "returnToWallet": "지갑으로 돌아가기"
+            },
+            "header": {
+                "publish": "게시",
+                "issue": "발급",
+                "confirmation": "확인"
+            },
+            "preview": {
+                "details": "세부 정보",
+                "about": "정보",
+                "criteria": "기준",
+                "certificate": "인증서",
+                "id": "ID"
             }
         }
     },

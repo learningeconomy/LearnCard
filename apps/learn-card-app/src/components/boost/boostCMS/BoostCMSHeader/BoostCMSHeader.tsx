@@ -9,6 +9,7 @@ import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -48,11 +49,11 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
             </span>
         );
     } else if (currentStep === BoostCMSStepsEnum.publish) {
-        headerTitle = 'Publish';
+        headerTitle = m['boost.cms.header.publish']();
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
-        headerTitle = 'Issue';
+        headerTitle = m['boost.cms.header.issue']();
     } else if (currentStep === BoostCMSStepsEnum.confirmation) {
-        headerTitle = 'Confirmation';
+        headerTitle = m['boost.cms.header.confirmation']();
     }
 
     const handleGoBack = () => {

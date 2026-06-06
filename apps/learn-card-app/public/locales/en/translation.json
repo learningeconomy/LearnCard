@@ -1331,6 +1331,30 @@
                 "preview": "Preview",
                 "saveAsDraft": "Save As Draft",
                 "publishAndIssue": "Publish & Issue"
+            },
+            "success": {
+                "wellDone": "Well Done!",
+                "returnToWallet": "Return To Wallet"
+            },
+            "confirm": {
+                "areYouSure": "Are you sure?",
+                "publishedNoEdits": "Your boost is published and no more edits can be made. You can return to issuing or quit to start over.",
+                "issueLater": "Issue Later",
+                "quitWithoutSaving": "Quit Without Saving",
+                "saveAndQuit": "Save & Quit",
+                "returnToWallet": "Return to Wallet"
+            },
+            "header": {
+                "publish": "Publish",
+                "issue": "Issue",
+                "confirmation": "Confirmation"
+            },
+            "preview": {
+                "details": "Details",
+                "about": "About",
+                "criteria": "Criteria",
+                "certificate": "Certificate",
+                "id": "ID"
             }
         }
     },
