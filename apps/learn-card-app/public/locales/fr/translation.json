@@ -1265,6 +1265,70 @@
             },
             "aiMission": {
                 "title": "Génération de mission par IA"
+            },
+            "issueTo": {
+                "title": "Émettre à",
+                "searchNetwork": "Rechercher dans le réseau {{name}}...",
+                "noSearchResults": "Aucun résultat de recherche",
+                "claimLink": "Lien de réclamation",
+                "updatingLink": "Mise à jour du lien...",
+                "howManyClaims": "Combien de réclamations ?",
+                "claimLinksUnavailable": "Les liens de réclamation ne sont pas disponibles",
+                "claimLinksUnavailableDescription": "les permissions sont désactivées.",
+                "claimLinksDisabledViewing": "Les liens de réclamation sont désactivés car l'affichage n'est pas activé pour ce modèle.",
+                "addContact": "Ajouter un contact",
+                "update": "Mettre à jour",
+                "generateClaimLink": "Générer un lien de réclamation ?",
+                "cannotGenerateClaimLinks": "Ce modèle ne peut pas générer de liens de réclamation car la permission d'affichage est désactivée.",
+                "enableViewing": "Activez l'affichage pour continuer la génération de liens.",
+                "anyoneCanView": "Tout le monde peut voir ce modèle de crédential"
+            },
+            "notes": {
+                "title": "Notes",
+                "placeholder": "Ajouter un message..."
+            },
+            "permissions": {
+                "title": "Permissions par défaut",
+                "description": "Configurez ce que tout le monde peut afficher, modifier ou envoyer par défaut pour ce modèle de crédential.",
+                "viewTemplate": "Voir le modèle",
+                "viewTemplateDescription": "Tout le monde peut voir ce modèle de crédential.",
+                "editTemplate": "Modifier le modèle",
+                "editTemplateDescription": "Tout le monde peut modifier ce modèle de crédential.",
+                "sendTemplate": "Envoyer le modèle",
+                "sendTemplateDescription": "Tout le monde peut envoyer ce modèle de crédential."
+            },
+            "userPermissions": {
+                "title": "Permissions utilisateur",
+                "createCustomBoosts": "Créer des boosts personnalisés",
+                "createIDs": "Créer des identifiants",
+                "createMemberships": "Créer des adhésions"
+            },
+            "admins": {
+                "title": "Attribuer des administrateurs"
+            },
+            "advanced": {
+                "title": "Paramètres avancés",
+                "issuerNamePlaceholder": "Nom de l'émetteur",
+                "descriptionPlaceholder": "À quoi sert ce/cette {{title}} ?",
+                "narrativePlaceholder": "Comment gagner ce/cette {{title}} ?",
+                "location": "Emplacement",
+                "credentialExpires": "La crédential expire",
+                "expirationDate": "Date d'expiration"
+            },
+            "privacy": {
+                "memberOptions": "Options des membres",
+                "autoConnectMembers": "Connecter automatiquement les membres dans les contacts",
+                "memberDisplay": "Affichage des membres",
+                "showToPublic": "Afficher au public",
+                "showToMembersOnly": "Afficher uniquement aux membres",
+                "hideMembers": "Masquer les membres"
+            },
+            "publish": {
+                "readyToPublish": "Êtes-vous prêt à publier ?",
+                "lockWarning": "Ce boost sera scellé de manière vérifiable pour toujours et ne pourra pas être modifié après publication.",
+                "preview": "Aperçu",
+                "saveAsDraft": "Enregistrer comme brouillon",
+                "publishAndIssue": "Publier et émettre"
             }
         }
     },

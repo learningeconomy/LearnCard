@@ -210,7 +210,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['boost.cms.issueTo.addContact'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',

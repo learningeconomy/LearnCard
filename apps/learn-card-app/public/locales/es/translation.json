@@ -1265,6 +1265,70 @@
             },
             "aiMission": {
                 "title": "Generación de misión con IA"
+            },
+            "issueTo": {
+                "title": "Emitir a",
+                "searchNetwork": "Buscar en la red de {{name}}...",
+                "noSearchResults": "Sin resultados de búsqueda",
+                "claimLink": "Enlace de reclamación",
+                "updatingLink": "Actualizando enlace...",
+                "howManyClaims": "¿Cuántas reclamaciones?",
+                "claimLinksUnavailable": "Los enlaces de reclamación no están disponibles",
+                "claimLinksUnavailableDescription": "los permisos están deshabilitados.",
+                "claimLinksDisabledViewing": "Los enlaces de reclamación están deshabilitados porque la visualización no está habilitada para esta plantilla.",
+                "addContact": "Agregar contacto",
+                "update": "Actualizar",
+                "generateClaimLink": "¿Generar enlace de reclamación?",
+                "cannotGenerateClaimLinks": "Esta plantilla no puede generar enlaces de reclamación porque el permiso de visualización está deshabilitado.",
+                "enableViewing": "Habilita la visualización para continuar con la generación del enlace de reclamación.",
+                "anyoneCanView": "Cualquiera puede ver esta plantilla de credencial"
+            },
+            "notes": {
+                "title": "Notas",
+                "placeholder": "Agregar un mensaje..."
+            },
+            "permissions": {
+                "title": "Permisos predeterminados",
+                "description": "Configura lo que cualquier persona puede ver, editar o enviar por defecto para esta plantilla de credencial.",
+                "viewTemplate": "Ver plantilla",
+                "viewTemplateDescription": "Cualquiera puede ver esta plantilla de credencial.",
+                "editTemplate": "Editar plantilla",
+                "editTemplateDescription": "Cualquiera puede editar esta plantilla de credencial.",
+                "sendTemplate": "Enviar plantilla",
+                "sendTemplateDescription": "Cualquiera puede enviar esta plantilla de credencial."
+            },
+            "userPermissions": {
+                "title": "Permisos de usuario",
+                "createCustomBoosts": "Crear boosts personalizados",
+                "createIDs": "Crear IDs",
+                "createMemberships": "Crear membresías"
+            },
+            "admins": {
+                "title": "Asignar administradores"
+            },
+            "advanced": {
+                "title": "Configuración avanzada",
+                "issuerNamePlaceholder": "Nombre del emisor",
+                "descriptionPlaceholder": "¿Para qué es este/a {{title}}?",
+                "narrativePlaceholder": "¿Cómo se gana este/a {{title}}?",
+                "location": "Ubicación",
+                "credentialExpires": "La credencial caduca",
+                "expirationDate": "Fecha de caducidad"
+            },
+            "privacy": {
+                "memberOptions": "Opciones de miembros",
+                "autoConnectMembers": "Conectar automáticamente a los miembros en contactos",
+                "memberDisplay": "Visualización de miembros",
+                "showToPublic": "Mostrar al público",
+                "showToMembersOnly": "Mostrar solo a miembros",
+                "hideMembers": "Ocultar miembros"
+            },
+            "publish": {
+                "readyToPublish": "¿Estás listo para publicar?",
+                "lockWarning": "Este boost se bloqueará en un sello verificable para siempre y no se puede cambiar después de publicarlo.",
+                "preview": "Vista previa",
+                "saveAsDraft": "Guardar como borrador",
+                "publishAndIssue": "Publicar y emitir"
             }
         }
     },

@@ -6,6 +6,7 @@ import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 
@@ -44,22 +45,22 @@ const BoostCMSMemberOptions: React.FC<{
     const memberOptions = [
         {
             privacyLevel: MemberPrivacyOptionsEnum.public,
-            text: 'Show to public',
+            text: m['boost.cms.privacy.showToPublic'](),
         },
         {
             privacyLevel: MemberPrivacyOptionsEnum.private,
-            text: 'Show to members only',
+            text: m['boost.cms.privacy.showToMembersOnly'](),
         },
         {
             privacyLevel: MemberPrivacyOptionsEnum.secret,
-            text: 'Hide members',
+            text: m['boost.cms.privacy.hideMembers'](),
         },
     ];
 
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-2xl p-0 m-0">Member Options</h1>
+                <h1 className="text-black text-2xl p-0 m-0">{m['boost.cms.privacy.memberOptions']()}</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${
@@ -73,7 +74,7 @@ const BoostCMSMemberOptions: React.FC<{
                     <IonCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
                             <p className="text-grayscale-900 font-medium w-10/12">
-                                Automatically connect members in contacts
+                                {m['boost.cms.privacy.autoConnectMembers']()}
                             </p>
                             <IonToggle
                                 mode="ios"
@@ -98,7 +99,7 @@ const BoostCMSMemberOptions: React.FC<{
                         className="w-full bg-white flex flex-col items-center justify-between"
                     >
                         <h1 className="text-black text-2xl p-0 m-0 w-full text-left">
-                            Member Display
+                            {m['boost.cms.privacy.memberDisplay']()}
                         </h1>
                         {memberOptions?.map(option => {
                             return (
