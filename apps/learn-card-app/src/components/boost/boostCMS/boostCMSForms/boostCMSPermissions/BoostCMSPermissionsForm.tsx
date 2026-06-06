@@ -3,6 +3,7 @@ import { IonCol, IonRow, IonToggle } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
+import { useTranslation } from 'react-i18next';
 
 const BoostCMSPermissionsForm: React.FC<{
     state: BoostCMSState;
@@ -10,12 +11,13 @@ const BoostCMSPermissionsForm: React.FC<{
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
     const [showPermissions, setShowPermissions] = useState<boolean>(true);
+    const { t } = useTranslation();
 
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
-                    Default Permissions
+                    {t('boost.cms.permissions.title', 'Default Permissions')}
                 </h1>
                 <button onClick={() => setShowPermissions(!showPermissions)}>
                     <CaretLeft
@@ -29,16 +31,15 @@ const BoostCMSPermissionsForm: React.FC<{
                 <IonCol size="12" className="w-full bg-white">
                     <div className="pb-[12px]">
                         <p className="text-grayscale-600 text-xs m-0">
-                            Configure what anyone can view, edit, or send by default for this
-                            credential template.
+                            {t('boost.cms.permissions.description', 'Configure what anyone can view, edit, or send by default for this credential template.')}
                         </p>
                     </div>
 
                     <div className="w-full flex items-center justify-between py-[8px]">
                         <div className="w-10/12">
-                            <p className="text-grayscale-900 font-medium m-0">View Template</p>
+                            <p className="text-grayscale-900 font-medium m-0">{t('boost.cms.permissions.viewTemplate', 'View Template')}</p>
                             <p className="text-grayscale-600 text-xs m-0">
-                                Anyone can view this credential template.
+                                {t('boost.cms.permissions.viewTemplateDescription', 'Anyone can view this credential template.')}
                             </p>
                         </div>
                         <IonToggle
@@ -61,9 +62,9 @@ const BoostCMSPermissionsForm: React.FC<{
 
                     <div className="w-full flex items-center justify-between py-[8px]">
                         <div className="w-10/12">
-                            <p className="text-grayscale-900 font-medium m-0">Edit Template</p>
+                            <p className="text-grayscale-900 font-medium m-0">{t('boost.cms.permissions.editTemplate', 'Edit Template')}</p>
                             <p className="text-grayscale-600 text-xs m-0">
-                                Anyone can edit this credential template.
+                                {t('boost.cms.permissions.editTemplateDescription', 'Anyone can edit this credential template.')}
                             </p>
                         </div>
                         <IonToggle
@@ -90,9 +91,9 @@ const BoostCMSPermissionsForm: React.FC<{
 
                     <div className="w-full flex items-center justify-between py-[8px]">
                         <div className="w-10/12">
-                            <p className="text-grayscale-900 font-medium m-0">Send Template</p>
+                            <p className="text-grayscale-900 font-medium m-0">{t('boost.cms.permissions.sendTemplate', 'Send Template')}</p>
                             <p className="text-grayscale-600 text-xs m-0">
-                                Anyone can send this credential template.
+                                {t('boost.cms.permissions.sendTemplateDescription', 'Anyone can send this credential template.')}
                             </p>
                         </div>
                         <IonToggle

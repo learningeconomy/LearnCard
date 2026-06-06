@@ -1265,6 +1265,70 @@
             },
             "aiMission": {
                 "title": "توليد المهمة بالذكاء الاصطناعي"
+            },
+            "issueTo": {
+                "title": "إصدار إلى",
+                "searchNetwork": "بحث في شبكة {{name}}...",
+                "noSearchResults": "لا توجد نتائج بحث",
+                "claimLink": "رابط المطالبة",
+                "updatingLink": "جاري تحديث الرابط...",
+                "howManyClaims": "كم عدد المطالبات؟",
+                "claimLinksUnavailable": "روابط المطالبة غير متاحة",
+                "claimLinksUnavailableDescription": "الأذونات معطلة.",
+                "claimLinksDisabledViewing": "روابط المطالبة معطلة لأن العرض غير مفعل لهذا القالب.",
+                "addContact": "إضافة جهة اتصال",
+                "update": "تحديث",
+                "generateClaimLink": "توليد رابط مطالبة؟",
+                "cannotGenerateClaimLinks": "لا يمكن لهذا القالب إنشاء روابط مطالبة لأن إذن العرض معطل.",
+                "enableViewing": "قم بتمكين العرض للمتابعة مع إنشاء رابط المطالبة.",
+                "anyoneCanView": "يمكن لأي شخص عرض قالب الاعتماد هذا"
+            },
+            "notes": {
+                "title": "ملاحظات",
+                "placeholder": "إضافة رسالة..."
+            },
+            "permissions": {
+                "title": "الأذونات الافتراضية",
+                "description": "تكوين ما يمكن لأي شخص عرضه أو تعديله أو إرساله افتراضيًا لقالب الاعتماد هذا.",
+                "viewTemplate": "عرض القالب",
+                "viewTemplateDescription": "يمكن لأي شخص عرض قالب الاعتماد هذا.",
+                "editTemplate": "تعديل القالب",
+                "editTemplateDescription": "يمكن لأي شخص تعديل قالب الاعتماد هذا.",
+                "sendTemplate": "إرسال القالب",
+                "sendTemplateDescription": "يمكن لأي شخص إرسال قالب الاعتماد هذا."
+            },
+            "userPermissions": {
+                "title": "أذونات المستخدم",
+                "createCustomBoosts": "إنشاء بوستات مخصصة",
+                "createIDs": "إنشاء معرفات",
+                "createMemberships": "إنشاء عضويات"
+            },
+            "admins": {
+                "title": "تعيين مسؤولين"
+            },
+            "advanced": {
+                "title": "إعدادات متقدمة",
+                "issuerNamePlaceholder": "اسم المُصدر",
+                "descriptionPlaceholder": "ما الغرض من هذا {{title}}؟",
+                "narrativePlaceholder": "كيف تكسب هذا {{title}}؟",
+                "location": "الموقع",
+                "credentialExpires": "تنتهي صلاحية الاعتماد",
+                "expirationDate": "تاريخ الانتهاء"
+            },
+            "privacy": {
+                "memberOptions": "خيارات الأعضاء",
+                "autoConnectMembers": "توصيل الأعضاء تلقائيًا في جهات الاتصال",
+                "memberDisplay": "عرض الأعضاء",
+                "showToPublic": "عرض للعامة",
+                "showToMembersOnly": "عرض للأعضاء فقط",
+                "hideMembers": "إخفاء الأعضاء"
+            },
+            "publish": {
+                "readyToPublish": "هل أنت مستعد للنشر؟",
+                "lockWarning": "سيتم قفل هذا البوست في ختم قابل للتحقق إلى الأبد ولا يمكن تغييره بعد النشر.",
+                "preview": "معاينة",
+                "saveAsDraft": "حفظ كمسودة",
+                "publishAndIssue": "نشر وإصدار"
             }
         }
     },

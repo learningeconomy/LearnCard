@@ -1267,6 +1267,70 @@
             },
             "aiMission": {
                 "title": "AI Mission Generation"
+            },
+            "issueTo": {
+                "title": "Issue To",
+                "searchNetwork": "Search {{name}} Network...",
+                "noSearchResults": "No search results",
+                "claimLink": "Claim Link",
+                "updatingLink": "Updating Link...",
+                "howManyClaims": "How many claims?",
+                "claimLinksUnavailable": "Claim links are unavailable",
+                "claimLinksUnavailableDescription": "permission are disabled.",
+                "claimLinksDisabledViewing": "Claim links are disabled because viewing is not enabled for this template.",
+                "addContact": "Add contact",
+                "update": "Update",
+                "generateClaimLink": "Generate Claim Link?",
+                "cannotGenerateClaimLinks": "This template cannot generate claim links because view permission are disabled.",
+                "enableViewing": "Enable viewing to continue with claim link generation.",
+                "anyoneCanView": "Anyone can view this credential template"
+            },
+            "notes": {
+                "title": "Notes",
+                "placeholder": "Add a message..."
+            },
+            "permissions": {
+                "title": "Default Permissions",
+                "description": "Configure what anyone can view, edit, or send by default for this credential template.",
+                "viewTemplate": "View Template",
+                "viewTemplateDescription": "Anyone can view this credential template.",
+                "editTemplate": "Edit Template",
+                "editTemplateDescription": "Anyone can edit this credential template.",
+                "sendTemplate": "Send Template",
+                "sendTemplateDescription": "Anyone can send this credential template."
+            },
+            "userPermissions": {
+                "title": "User Permissions",
+                "createCustomBoosts": "Create Custom Boosts",
+                "createIDs": "Create IDs",
+                "createMemberships": "Create Memberships"
+            },
+            "admins": {
+                "title": "Assign Admins"
+            },
+            "advanced": {
+                "title": "Advanced Settings",
+                "issuerNamePlaceholder": "Issuer Name",
+                "descriptionPlaceholder": "What is this {{title}} for?",
+                "narrativePlaceholder": "How do you earn this {{title}}?",
+                "location": "Location",
+                "credentialExpires": "Credential Expires",
+                "expirationDate": "Expiration Date"
+            },
+            "privacy": {
+                "memberOptions": "Member Options",
+                "autoConnectMembers": "Automatically connect members in contacts",
+                "memberDisplay": "Member Display",
+                "showToPublic": "Show to public",
+                "showToMembersOnly": "Show to members only",
+                "hideMembers": "Hide members"
+            },
+            "publish": {
+                "readyToPublish": "Are you ready to publish?",
+                "lockWarning": "This boost will be locked in a verifiable seal forever and can't be changed after you publish.",
+                "preview": "Preview",
+                "saveAsDraft": "Save As Draft",
+                "publishAndIssue": "Publish & Issue"
             }
         }
     },

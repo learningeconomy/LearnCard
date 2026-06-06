@@ -28,6 +28,7 @@ import BoostAddressBookContactList from './BoostAddressBookContactList';
 
 import { ModalTypes, useModal, UserProfilePicture, useWallet } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
+import { useTranslation } from 'react-i18next';
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
@@ -96,10 +97,11 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // IE: issueTo
     // IE: admins
     collectionPropName = 'issueTo',
-    title = 'Issue To',
+    title = t('boost.cms.issueTo.title', 'Issue To'),
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -260,7 +262,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     <div className="flex items-center justify-start w-full">
                                         <IonInput
                                             autocapitalize="on"
-                                            placeholder={`Search ${brandingConfig?.name} Network...`}
+                                            placeholder={t('boost.cms.issueTo.searchNetwork', 'Search {{name}} Network...', { name: brandingConfig?.name || '' })}
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                                             onIonInput={e => handleSearch(e?.detail?.value ?? '')}
@@ -328,7 +330,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         (search?.length ?? 0) > 0 &&
                         (searchResults?.length ?? 0) === 0 && (
                             <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                                <strong>No search results</strong>
+                                <strong>{t('boost.cms.issueTo.noSearchResults', 'No search results')}</strong>
                             </section>
                         )}
                 </IonContent>

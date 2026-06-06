@@ -1265,6 +1265,70 @@
             },
             "aiMission": {
                 "title": "AI 미션 생성"
+            },
+            "issueTo": {
+                "title": "발급 대상",
+                "searchNetwork": "{{name}} 네트워크 검색...",
+                "noSearchResults": "검색 결과 없음",
+                "claimLink": "클레임 링크",
+                "updatingLink": "링크 업데이트 중...",
+                "howManyClaims": "몇 건의 클레임?",
+                "claimLinksUnavailable": "클레임 링크를 사용할 수 없습니다",
+                "claimLinksUnavailableDescription": "권한이 비활성화되어 있습니다.",
+                "claimLinksDisabledViewing": "이 템플릿에 대해 보기가 활성화되지 않아 클레임 링크가 비활성화되었습니다.",
+                "addContact": "연락처 추가",
+                "update": "업데이트",
+                "generateClaimLink": "클레임 링크를 생성하시겠습니까?",
+                "cannotGenerateClaimLinks": "보기 권한이 비활성화되어 이 템플릿은 클레임 링크를 생성할 수 없습니다.",
+                "enableViewing": "클레임 링크 생성을 계속하려면 보기를 활성화하세요.",
+                "anyoneCanView": "누구나 이 자격증 템플릿을 볼 수 있습니다"
+            },
+            "notes": {
+                "title": "메모",
+                "placeholder": "메시지 추가..."
+            },
+            "permissions": {
+                "title": "기본 권한",
+                "description": "이 자격증 템플릿에 대해 기본적으로 누구나 볼 수 있고, 편집하고, 보낼 수 있는지 구성합니다.",
+                "viewTemplate": "템플릿 보기",
+                "viewTemplateDescription": "누구나 이 자격증 템플릿을 볼 수 있습니다.",
+                "editTemplate": "템플릿 편집",
+                "editTemplateDescription": "누구나 이 자격증 템플릿을 편집할 수 있습니다.",
+                "sendTemplate": "템플릿 보내기",
+                "sendTemplateDescription": "누구나 이 자격증 템플릿을 보낼 수 있습니다."
+            },
+            "userPermissions": {
+                "title": "사용자 권한",
+                "createCustomBoosts": "사용자 지정 부스트 만들기",
+                "createIDs": "ID 만들기",
+                "createMemberships": "멤버십 만들기"
+            },
+            "admins": {
+                "title": "관리자 지정"
+            },
+            "advanced": {
+                "title": "고급 설정",
+                "issuerNamePlaceholder": "발급자 이름",
+                "descriptionPlaceholder": "이 {{title}}은(는) 무엇을 위한 것인가요?",
+                "narrativePlaceholder": "이 {{title}}은(는) 어떻게 획득하나요?",
+                "location": "위치",
+                "credentialExpires": "자격증 만료",
+                "expirationDate": "만료일"
+            },
+            "privacy": {
+                "memberOptions": "회원 옵션",
+                "autoConnectMembers": "연락처에서 회원 자동 연결",
+                "memberDisplay": "회원 표시",
+                "showToPublic": "공개 표시",
+                "showToMembersOnly": "회원에게만 표시",
+                "hideMembers": "회원 숨기기"
+            },
+            "publish": {
+                "readyToPublish": "게시할 준비가 되셨나요?",
+                "lockWarning": "이 부스트는 게시 후 확인 가능한 봉인으로 영구 잠금되며 변경할 수 없습니다.",
+                "preview": "미리보기",
+                "saveAsDraft": "임시 저장",
+                "publishAndIssue": "게시 및 발급"
             }
         }
     },

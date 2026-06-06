@@ -6,6 +6,7 @@ import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
+import { useTranslation } from 'react-i18next';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 
@@ -21,6 +22,7 @@ const BoostCMSMemberOptions: React.FC<{
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const flags = useFlags();
@@ -44,22 +46,22 @@ const BoostCMSMemberOptions: React.FC<{
     const memberOptions = [
         {
             privacyLevel: MemberPrivacyOptionsEnum.public,
-            text: 'Show to public',
+            text: t('boost.cms.privacy.showToPublic', 'Show to public'),
         },
         {
             privacyLevel: MemberPrivacyOptionsEnum.private,
-            text: 'Show to members only',
+            text: t('boost.cms.privacy.showToMembersOnly', 'Show to members only'),
         },
         {
             privacyLevel: MemberPrivacyOptionsEnum.secret,
-            text: 'Hide members',
+            text: t('boost.cms.privacy.hideMembers', 'Hide members'),
         },
     ];
 
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-2xl p-0 m-0">Member Options</h1>
+                <h1 className="text-black text-2xl p-0 m-0">{t('boost.cms.privacy.memberOptions', 'Member Options')}</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${
@@ -73,7 +75,7 @@ const BoostCMSMemberOptions: React.FC<{
                     <IonCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
                             <p className="text-grayscale-900 font-medium w-10/12">
-                                Automatically connect members in contacts
+                                {t('boost.cms.privacy.autoConnectMembers', 'Automatically connect members in contacts')}
                             </p>
                             <IonToggle
                                 mode="ios"
@@ -98,7 +100,7 @@ const BoostCMSMemberOptions: React.FC<{
                         className="w-full bg-white flex flex-col items-center justify-between"
                     >
                         <h1 className="text-black text-2xl p-0 m-0 w-full text-left">
-                            Member Display
+                            {t('boost.cms.privacy.memberDisplay', 'Member Display')}
                         </h1>
                         {memberOptions?.map(option => {
                             return (

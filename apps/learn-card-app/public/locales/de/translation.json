@@ -1265,6 +1265,70 @@
             },
             "aiMission": {
                 "title": "KI-Mission-Generierung"
+            },
+            "issueTo": {
+                "title": "Ausstellen an",
+                "searchNetwork": "{{name}}-Netzwerk durchsuchen...",
+                "noSearchResults": "Keine Suchergebnisse",
+                "claimLink": "Anspruchs-Link",
+                "updatingLink": "Link wird aktualisiert...",
+                "howManyClaims": "Wie viele Ansprüche?",
+                "claimLinksUnavailable": "Anspruchs-Links sind nicht verfügbar",
+                "claimLinksUnavailableDescription": "Berechtigungen sind deaktiviert.",
+                "claimLinksDisabledViewing": "Anspruchs-Links sind deaktiviert, da die Anzeige für diese Vorlage nicht aktiviert ist.",
+                "addContact": "Kontakt hinzufügen",
+                "update": "Aktualisieren",
+                "generateClaimLink": "Anspruchs-Link generieren?",
+                "cannotGenerateClaimLinks": "Diese Vorlage kann keine Anspruchs-Links generieren, da die Anzeigeberechtigung deaktiviert ist.",
+                "enableViewing": "Aktivieren Sie die Anzeige, um mit der Link-Generierung fortzufahren.",
+                "anyoneCanView": "Jeder kann diese Berechtigungsvorlage anzeigen"
+            },
+            "notes": {
+                "title": "Notizen",
+                "placeholder": "Nachricht hinzufügen..."
+            },
+            "permissions": {
+                "title": "Standardberechtigungen",
+                "description": "Konfigurieren Sie, was standardmäßig jeder für diese Berechtigungsvorlage anzeigen, bearbeiten oder senden kann.",
+                "viewTemplate": "Vorlage anzeigen",
+                "viewTemplateDescription": "Jeder kann diese Berechtigungsvorlage anzeigen.",
+                "editTemplate": "Vorlage bearbeiten",
+                "editTemplateDescription": "Jeder kann diese Berechtigungsvorlage bearbeiten.",
+                "sendTemplate": "Vorlage senden",
+                "sendTemplateDescription": "Jeder kann diese Berechtigungsvorlage senden."
+            },
+            "userPermissions": {
+                "title": "Benutzerberechtigungen",
+                "createCustomBoosts": "Benutzerdefinierte Boosts erstellen",
+                "createIDs": "IDs erstellen",
+                "createMemberships": "Mitgliedschaften erstellen"
+            },
+            "admins": {
+                "title": "Administratoren zuweisen"
+            },
+            "advanced": {
+                "title": "Erweiterte Einstellungen",
+                "issuerNamePlaceholder": "Name des Ausstellers",
+                "descriptionPlaceholder": "Wofür ist dieser/diese {{title}}?",
+                "narrativePlaceholder": "Wie verdient man diesen/diese {{title}}?",
+                "location": "Standort",
+                "credentialExpires": "Berechtigung läuft ab",
+                "expirationDate": "Ablaufdatum"
+            },
+            "privacy": {
+                "memberOptions": "Mitgliedsoptionen",
+                "autoConnectMembers": "Mitglieder automatisch in Kontakten verbinden",
+                "memberDisplay": "Mitgliedsanzeige",
+                "showToPublic": "Öffentlich anzeigen",
+                "showToMembersOnly": "Nur Mitgliedern anzeigen",
+                "hideMembers": "Mitglieder ausblenden"
+            },
+            "publish": {
+                "readyToPublish": "Sind Sie bereit zu veröffentlichen?",
+                "lockWarning": "Dieser Boost wird für immer in einem verifizierbaren Siegel gesperrt und kann nach der Veröffentlichung nicht mehr geändert werden.",
+                "preview": "Vorschau",
+                "saveAsDraft": "Als Entwurf speichern",
+                "publishAndIssue": "Veröffentlichen und ausstellen"
             }
         }
     },
