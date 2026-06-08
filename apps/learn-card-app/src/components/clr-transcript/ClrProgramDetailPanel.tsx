@@ -4,12 +4,11 @@ import X from '../svgs/X';
 import { FlatIcon } from './ClrStatCard';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CertificateDisplayIcon } from 'learn-card-base';
+import ClrCompetencyBlock from './ClrCompetencyBlock';
 import ClrAlignmentList from './ClrAlignmentList';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
 import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
-
-import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import { useModal } from 'learn-card-base';
 
@@ -153,20 +152,18 @@ const ClrProgramDetailPanel: React.FC<{
 
                 {/* Competencies linked to this program */}
                 {programCompetencies.length > 0 && (
-                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-3">
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-4">
                         <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                             {programCompetencies.length} Competenc
                             {programCompetencies.length === 1 ? 'y' : 'ies'}
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="space-y-4">
                             {programCompetencies.map(c => (
-                                <span
+                                <ClrCompetencyBlock
                                     key={c.sourceCredentialId}
-                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-grayscale-700 bg-grayscale-50 border border-grayscale-200 rounded-full px-3 py-1.5"
-                                >
-                                    <SkillsIcon className="w-4 h-4 text-grayscale-500" />
-                                    {c.name?.value ?? 'Competency'}
-                                </span>
+                                    competency={c}
+                                    adminMode={adminMode}
+                                />
                             ))}
                         </div>
                     </div>
