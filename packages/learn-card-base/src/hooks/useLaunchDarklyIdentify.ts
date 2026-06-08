@@ -5,6 +5,9 @@ import { useWallet } from 'learn-card-base';
 import { ANONYMOUS_CONTEXT } from '../constants/launchDarkly';
 import { useIsCurrentUserLCNUser, useGetDid } from 'learn-card-base';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-launch-darkly-identify');
+
 export type UseLaunchDarklyOptions = {
     debug?: boolean;
 };
@@ -26,7 +29,7 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
         if (currentUser && ldClient) {
             if (isLCNLoading) return;
 
-            if (options.debug) console.debug('Identify user! 🎸', currentUser);
+            if (options.debug) log.debug('Identify user! 🎸', currentUser);
 
             (async () => {
                 try {
@@ -59,17 +62,17 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
                     };
 
                     if (options.debug)
-                        console.debug('🔍 LaunchDarkly User Context Identified', context);
+                        log.debug('🔍 LaunchDarkly User Context Identified', context);
 
                     ldClient.identify(context, undefined, (err, flags) => {
                         if (err) {
-                            console.error('❌ Error Updating LaunchDarkly Context', err);
+                            log.error('❌ Error Updating LaunchDarkly Context', err);
                         } else if (options.debug) {
-                            console.debug('✅ New LaunchDarkly Context Set', context, flags);
+                            log.debug('✅ New LaunchDarkly Context Set', context, flags);
                         }
                     });
                 } catch (e) {
-                    console.error(
+                    log.error(
                         '❌ Unable to identify LaunchDarkly User because DID could not be generated.',
                         e
                     );
@@ -78,9 +81,9 @@ export const useLaunchDarklyIdentify = (options: UseLaunchDarklyOptions = {}) =>
         } else {
             ldClient?.identify(ANONYMOUS_CONTEXT, undefined, (err, flags) => {
                 if (err) {
-                    console.error('❌ Error Revoking LaunchDarkly Context', err);
+                    log.error('❌ Error Revoking LaunchDarkly Context', err);
                 } else if (options.debug) {
-                    console.debug(
+                    log.debug(
                         '✅ LaunchDarkly Context Revoked On Logout',
                         ANONYMOUS_CONTEXT,
                         flags

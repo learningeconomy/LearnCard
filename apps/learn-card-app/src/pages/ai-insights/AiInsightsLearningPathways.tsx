@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-insights-learning-pathways');
 
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -50,7 +52,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                         try {
                             return await resolveCredential(uri);
                         } catch (e) {
-                            console.warn('Failed to resolve pathway credential:', uri, e);
+                            log.warn('Failed to resolve pathway credential:', uri, e);
                             return undefined;
                         }
                     })
@@ -84,7 +86,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                     );
                                     topicUri = topic?.uri;
                                 } catch (e) {
-                                    console.warn('Failed to fetch familial boosts for pathway', e);
+                                    log.warn('Failed to fetch familial boosts for pathway', e);
                                 }
                             }
 
@@ -104,7 +106,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
 
                 if (!isCancelled) setLearningPathwaysData(items);
             } catch (e) {
-                console.warn('Error fetching suggested pathways', e);
+                log.warn('Error fetching suggested pathways', e);
                 if (!isCancelled) setLearningPathwaysData([]);
             }
         };

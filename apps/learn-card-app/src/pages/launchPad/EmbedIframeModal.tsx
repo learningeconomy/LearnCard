@@ -2,6 +2,8 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { X } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-iframe-modal');
 
 import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
@@ -50,9 +52,12 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         credential?: any;
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string, credential?: any) => {
-        setPendingCredential({ credentialUri, boostUri, credential });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -72,7 +77,9 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(window.location.origin)}`;
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(
+                    window.location.origin
+                )}`;
             } catch {
                 // embedUrl is invalid — do not navigate
             }
@@ -107,7 +114,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
             const url = new URL(embedUrl);
             return url.origin;
         } catch (error) {
-            console.error('[PostMessage] Invalid embedUrl:', embedUrl);
+            log.error('[PostMessage] Invalid embedUrl:', embedUrl);
             setErrorMessage(`Invalid embed URL: ${embedUrl}`);
             setShowErrorToast(true);
             return '';

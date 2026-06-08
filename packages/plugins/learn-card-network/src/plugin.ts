@@ -14,10 +14,17 @@ import {
     VC,
     BitstringCredentialStatusEntry,
     BitstringCredentialStatusPurpose,
+    StoredCredentialEnvelope,
+    StoredCredentialEnvelopeValidator,
+    isStoredCredentialEnvelope,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
-import { getCredentialStatusArray, isVC2Format } from '@learncard/helpers';
+import {
+    getCredentialStatusArray,
+    isVC2Format,
+    resolveStorageReadResult,
+} from '@learncard/helpers';
 import Mustache from 'mustache';
 
 import {
@@ -26,6 +33,28 @@ import {
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
 } from './types';
+
+const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
+    const base64 =
+        typeof btoa === 'function'
+            ? btoa(binary)
+            : Buffer.from(binary, 'binary').toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+type WireEnvelope = StoredCredentialEnvelope & { data: string };
+
+const normalizeEnvelopeForTransport = <T>(
+    value: T
+): Exclude<T, StoredCredentialEnvelope> | WireEnvelope => {
+    if (!isStoredCredentialEnvelope(value)) {
+        return value as Exclude<T, StoredCredentialEnvelope>;
+    }
+    if (typeof value.data === 'string') return value as WireEnvelope;
+    return { ...value, data: uint8ArrayToBase64Url(value.data) };
+};
 
 /* -------------------------------------------------------------------------- *
  * Boost template rendering helpers
@@ -313,9 +342,9 @@ export async function getLearnCardNetworkPlugin(
     apiTokenOrOptions?:
         | string
         | {
-            guardianApprovalGetter?: GuardianApprovalGetter;
-            extraHeaders?: Record<string, string>;
-        },
+              guardianApprovalGetter?: GuardianApprovalGetter;
+              extraHeaders?: Record<string, string>;
+          },
     options?: {
         guardianApprovalGetter?: GuardianApprovalGetter;
         extraHeaders?: Record<string, string>;
@@ -345,20 +374,20 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
         : await getClient(
-            url,
-            async challenge => {
-                const jwt = await learnCard.invoke.getDidAuthVp({
-                    proofFormat: 'jwt',
-                    challenge,
-                });
+              url,
+              async challenge => {
+                  const jwt = await learnCard.invoke.getDidAuthVp({
+                      proofFormat: 'jwt',
+                      challenge,
+                  });
 
-                if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-                return jwt;
-            },
-            guardianApprovalGetter,
-            extraHeaders
-        );
+                  return jwt;
+              },
+              guardianApprovalGetter,
+              extraHeaders
+          );
 
     let userData: LCNProfile | undefined;
 
@@ -426,8 +455,9 @@ export async function getLearnCardNetworkPlugin(
         recipientDid: string
     ): Promise<string> => {
         const serviceUrl = new URL(url);
-        const serviceDomain = `${serviceUrl.hostname}${serviceUrl.port ? `%3A${serviceUrl.port}` : ''
-            }`;
+        const serviceDomain = `${serviceUrl.hostname}${
+            serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+        }`;
         const localServiceDid = `did:web:${serviceDomain}`;
 
         const getInferredServiceDid = (did: string): string | null => {
@@ -524,7 +554,10 @@ export async function getLearnCardNetworkPlugin(
                         }
                     }
 
-                    return await VCValidator.or(VPValidator).parseAsync(result);
+                    const parsed = await VCValidator.or(VPValidator)
+                        .or(StoredCredentialEnvelopeValidator)
+                        .parseAsync(result);
+                    return resolveStorageReadResult(parsed);
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
@@ -535,7 +568,9 @@ export async function getLearnCardNetworkPlugin(
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.storage.store.mutate({ item: credential });
+                return client.storage.store.mutate({
+                    item: normalizeEnvelopeForTransport(credential),
+                });
             },
             uploadEncrypted: async (
                 _learnCard,
@@ -555,7 +590,10 @@ export async function getLearnCardNetworkPlugin(
                     );
                 }
 
-                const jwe = await _learnCard.invoke.createDagJwe(credential, recipientsList);
+                const jwe = await _learnCard.invoke.createDagJwe(
+                    normalizeEnvelopeForTransport(credential),
+                    recipientsList
+                );
 
                 return client.storage.store.mutate({ item: jwe });
             },
@@ -688,7 +726,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -1393,9 +1431,10 @@ export async function getLearnCardNetworkPlugin(
                         );
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1500,8 +1539,9 @@ export async function getLearnCardNetworkPlugin(
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
                     const serviceUrl = new URL(url);
-                    const serviceDomain = `${serviceUrl.hostname}${serviceUrl.port ? `%3A${serviceUrl.port}` : ''
-                        }`;
+                    const serviceDomain = `${serviceUrl.hostname}${
+                        serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+                    }`;
                     const recipientDomain = recipient.startsWith('did:web:')
                         ? recipient.split(':')[2]
                         : undefined;
@@ -1614,7 +1654,8 @@ export async function getLearnCardNetworkPlugin(
                                     );
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1796,6 +1837,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
+            },
+
+            getHolderExportMetadata: async _learnCard => {
+                await ensureUser();
+
+                return client.credential.getHolderExportMetadata.query({});
             },
 
             getCredentialsForContract: async (_learnCard, termsUri, options = {}) => {

@@ -1,5 +1,51 @@
 # @learncard/cli
 
+## 3.4.1
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2), [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/init@2.3.21
+    -   @learncard/didkit-plugin@1.9.1
+    -   @learncard/learn-cloud-plugin@2.3.26
+    -   @learncard/ler-rs-plugin@0.1.12
+    -   @learncard/linked-claims-plugin@0.2.21
+    -   @learncard/open-badge-v2-plugin@1.1.22
+    -   @learncard/types@5.17.1
+    -   @learncard/holder-continuity@0.2.1
+    -   @learncard/core@9.4.21
+    -   @learncard/render-method-plugin@3.0.1
+    -   @learncard/simple-signing-plugin@1.1.25
+
+## 3.4.0
+
+### Minor Changes
+
+-   [#1269](https://github.com/learningeconomy/LearnCard/pull/1269) [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - feat: [LC-1798] Holder continuity export, restore, and metadata
+
+    Adds a new `@learncard/holder-continuity` package for creating encrypted holder continuity bundles, reading them back, importing credentials into a fresh wallet, and restoring the original wallet directly from the exported private-key seed.
+
+    Updates `@learncard/cli` to consume the new package and expose REPL helpers for export, import, and restore.
+
+    Adds holder export metadata types, an authenticated brain-service route, and a network plugin method for exporting consent records and transaction history without exposing credential payloads or key material from the service.
+
+    Adds bounded status-list fetching, optional verify-before-import support, bundle size guards, and capped holder metadata pagination.
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3), [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
+    -   @learncard/types@5.17.0
+    -   @learncard/holder-continuity@0.2.0
+    -   @learncard/didkit-plugin@1.9.0
+    -   @learncard/core@9.4.20
+    -   @learncard/init@2.3.20
+    -   @learncard/render-method-plugin@3.0.0
+    -   @learncard/learn-cloud-plugin@2.3.25
+    -   @learncard/ler-rs-plugin@0.1.11
+    -   @learncard/linked-claims-plugin@0.2.20
+    -   @learncard/open-badge-v2-plugin@1.1.21
+    -   @learncard/simple-signing-plugin@1.1.24
+
 ## 3.3.177
 
 ### Patch Changes

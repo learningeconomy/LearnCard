@@ -17,6 +17,8 @@ import { useFirebase } from '../../../hooks/useFirebase';
 import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('phone-form');
 
 import 'react-phone-number-input/style.css';
 
@@ -51,7 +53,7 @@ const PhoneForm: React.FC = () => {
 
     useEffect(() => {
         FirebaseAuthentication.addListener('phoneCodeSent', e => {
-            console.log('📞📞📞 phoneCodeSent::res 📞📞📞', e);
+            log.debug('📞📞📞 phoneCodeSent::res 📞📞📞', e);
 
             const verificationId = e?.verificationId;
 
@@ -81,7 +83,7 @@ const PhoneForm: React.FC = () => {
         });
 
         // FirebaseAuthentication.addListener('authStateChange', e => {
-        //     console.log('📞📞📞 authStateChange::res 📞📞📞', e);
+        //     log.debug('📞📞📞 authStateChange::res 📞📞📞', e);
         // });
     }, []);
 

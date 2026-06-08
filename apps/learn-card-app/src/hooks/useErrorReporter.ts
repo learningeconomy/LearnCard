@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-error-reporter');
 /**
  * Generic "user-reported error" fan-out for feature screens.
  *
@@ -27,11 +29,7 @@ import { useCallback } from 'react';
 import * as Sentry from '@sentry/react';
 
 import { useAnalytics } from '../analytics/context';
-import type {
-    AnalyticsEventName,
-    AnalyticsEventPayloads,
-    EventPayload,
-} from '../analytics/events';
+import type { AnalyticsEventName, AnalyticsEventPayloads, EventPayload } from '../analytics/events';
 
 /**
  * Per-report options passed at call time.
@@ -130,7 +128,7 @@ export const useErrorReporter = <E extends AnalyticsEventName>(config: {
                 });
             } catch (sentryFailure) {
                 // eslint-disable-next-line no-console
-                console.error('[useErrorReporter] Sentry capture failed', sentryFailure);
+                log.error('[useErrorReporter] Sentry capture failed', sentryFailure);
             }
 
             // ----- Product surface: analytics event -----
@@ -142,7 +140,7 @@ export const useErrorReporter = <E extends AnalyticsEventName>(config: {
                 await track(analyticsEvent, options.analyticsPayload);
             } catch (analyticsFailure) {
                 // eslint-disable-next-line no-console
-                console.error('[useErrorReporter] analytics track failed', analyticsFailure);
+                log.error('[useErrorReporter] analytics track failed', analyticsFailure);
             }
         },
         [feature, analyticsEvent, track]
@@ -187,8 +185,7 @@ export const extractErrorName = (error: unknown): string | undefined => {
  * can drop the field cleanly instead of deduping `'unknown'`.
  */
 export const getWalletVersion = (): string | undefined => {
-    const v = (import.meta as { env?: Record<string, string | undefined> }).env
-        ?.VITE_APP_VERSION;
+    const v = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_APP_VERSION;
     return v && v.length > 0 ? v : undefined;
 };
 

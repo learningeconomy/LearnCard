@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { IonContent, IonPage } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('oid4vp-exchange');
 
 import {
     ExchangeErrorDisplay,
@@ -10,7 +12,6 @@ import {
     useIsLoggedIn,
     useWallet,
 } from 'learn-card-base';
-
 import {
     sanitizeCounterparty,
     useExchangeErrorReporting,
@@ -25,24 +26,48 @@ import type {
     SelectionResult,
     SubmitPresentationResult,
 } from '@learncard/openid4vc-plugin';
+import { inferCredentialFormat } from '@learncard/openid4vc-plugin';
 
 import LoggedOutOid4vp from './LoggedOutOid4vp';
 import RequestLoading from './components/RequestLoading';
-import RequestConsent, {
-    type ConsentPicks,
-} from './components/RequestConsent';
+import RequestConsent, { type ConsentPicks } from './components/RequestConsent';
 import RequestSubmitting from './components/RequestSubmitting';
-import RequestFinished from './components/RequestFinished';
+import RequestFinished, { type SharedClaimsEntry } from './components/RequestFinished';
 import RequestCannotSatisfy from './components/RequestCannotSatisfy';
-import {
-    loadCandidatePool,
-    type PooledCandidate,
-    type WalletForCandidates,
-} from './candidatePool';
+import { loadCandidatePool, type PooledCandidate, type WalletForCandidates } from './candidatePool';
 
 import { resilientPresentCredentials } from '../../helpers/oid4vc-resilience/resilientVp';
 import { useResilientExchange } from '../../hooks/useResilientExchange';
 import { RecoveryPromptModal } from '../../components/oid4vc-recovery/RecoveryPromptModal';
+
+interface ParsedSdJwtForConsent {
+    disclosureKeys?: string[];
+    claims?: Record<string, unknown>;
+    vct?: string;
+}
+
+interface SdJwtAwareInvoke {
+    parseSdJwtVc?: (compact: string) => Promise<ParsedSdJwtForConsent>;
+}
+
+const getSdJwtCompact = (credential: unknown): string | undefined => {
+    if (typeof credential === 'string' && credential.includes('~')) {
+        return credential;
+    }
+    if (credential && typeof credential === 'object') {
+        const proofValue = (credential as { proof?: unknown }).proof;
+        const proof = Array.isArray(proofValue)
+            ? proofValue.find(p => p && typeof p === 'object')
+            : proofValue;
+        if (proof && typeof proof === 'object') {
+            const { type, jwt } = proof as { type?: unknown; jwt?: unknown };
+            if (type === 'SdJwtCompactProof' && typeof jwt === 'string') {
+                return jwt;
+            }
+        }
+    }
+    return undefined;
+};
 
 /**
  * Phases the page can be in. Modeled as a discriminated union so the
@@ -88,7 +113,8 @@ type Phase =
            * candidates were SD-JWT VCs / mDLs we can't render with the
            * BoostEarnedCard — the success screen falls back gracefully.
            */
-           sharedCredentials: VC[];
+          sharedCredentials: VC[];
+          sharedClaimsBreakdown?: SharedClaimsEntry[];
       }
     | {
           kind: 'error';
@@ -163,9 +189,7 @@ const Oid4vpExchange: React.FC = () => {
                 // dedicated “missing credentials” screen instead of
                 // letting the user try-and-fail at the consent step.
                 const canSatisfy =
-                    result.selection?.canSatisfy
-                    ?? result.dcqlSelection?.canSatisfy
-                    ?? false;
+                    result.selection?.canSatisfy ?? result.dcqlSelection?.canSatisfy ?? false;
 
                 if (!canSatisfy) {
                     setPhase({
@@ -185,7 +209,7 @@ const Oid4vpExchange: React.FC = () => {
                     pool,
                 });
             } catch (error) {
-                console.error('OID4VP: failed to resolve request', error);
+                log.error('OID4VP: failed to resolve request', error);
                 // No `clientInfo` here — we failed before resolving the
                 // request, so we don't yet know who the verifier was.
                 // The error screen falls back to a clean kind-themed
@@ -198,77 +222,137 @@ const Oid4vpExchange: React.FC = () => {
     // -----------------------------------------------------------------
     // Approve handler: build picks, sign, submit.
     // -----------------------------------------------------------------
-    const handleApprove = useCallback(async (picks: ConsentPicks) => {
-        if (phase.kind !== 'consent') return;
-        resilience.resetRun();
-        const currentPhase = phase;
-        // Capture branded identity once so we can thread it through the
-        // submitting and finished states without re-deriving after the
-        // network round-trip.
-        const clientInfo = extractClientInfo(currentPhase.request);
+    const handleApprove = useCallback(
+        async (picks: ConsentPicks) => {
+            if (phase.kind !== 'consent') return;
+            resilience.resetRun();
+            const currentPhase = phase;
+            // Capture branded identity once so we can thread it through the
+            // submitting and finished states without re-deriving after the
+            // network round-trip.
+            const clientInfo = extractClientInfo(currentPhase.request);
 
-        try {
-            setPhase({ kind: 'submitting', clientInfo });
+            try {
+                setPhase({ kind: 'submitting', clientInfo });
 
-            const wallet = (await initWallet()) as unknown as {
-                invoke: WalletOidcVpInvoke;
-            };
+                const wallet = (await initWallet()) as unknown as {
+                    invoke: WalletOidcVpInvoke;
+                };
 
-            const chosen = buildChosenList(
-                currentPhase.selection,
-                currentPhase.dcqlSelection,
-                picks
-            );
-
-            if (chosen.length === 0) {
-                throw new Error(
-                    'No credentials matched the requesting app’s request — cannot submit.'
+                const chosen = buildChosenList(
+                    currentPhase.selection,
+                    currentPhase.dcqlSelection,
+                    picks
                 );
-            }
 
-            const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
-                await resilientPresentCredentials({
-                    wallet: wallet as unknown as Parameters<
-                        typeof resilientPresentCredentials
-                    >[0]['wallet'],
-                    request: currentPhase.request,
-                    chosen,
-                    callbacks: resilience.callbacks,
+                if (chosen.length === 0) {
+                    throw new Error(
+                        'No credentials matched the requesting app’s request — cannot submit.'
+                    );
+                }
+
+                const sharedClaimsBreakdown: SharedClaimsEntry[] = [];
+                const invoke = wallet.invoke as unknown as SdJwtAwareInvoke;
+                if (typeof invoke.parseSdJwtVc === 'function') {
+                    for (const c of chosen) {
+                        const compact = getSdJwtCompact(c.candidate.credential);
+                        if (compact) {
+                            try {
+                                const parsed = await invoke.parseSdJwtVc(compact);
+                                if (parsed.disclosureKeys && parsed.claims) {
+                                    const rowId =
+                                        'descriptorId' in c ? c.descriptorId : c.credentialQueryId;
+                                    const candidateKey = (c.candidate as CandidateCredential).id;
+                                    const cacheKey =
+                                        rowId && candidateKey
+                                            ? `${rowId}::${candidateKey}`
+                                            : undefined;
+                                    const discloseFrame = cacheKey
+                                        ? picks.disclose[cacheKey]
+                                        : undefined;
+
+                                    const disclosedClaims: Record<string, unknown> = {};
+                                    const hiddenClaimKeys: string[] = [];
+
+                                    for (const key of parsed.disclosureKeys) {
+                                        const isDisclosed = discloseFrame
+                                            ? discloseFrame[key] !== false
+                                            : true;
+                                        if (isDisclosed) {
+                                            disclosedClaims[key] = parsed.claims[key];
+                                        } else {
+                                            hiddenClaimKeys.push(key);
+                                        }
+                                    }
+
+                                    const vc = extractW3cVc(c.candidate.credential);
+                                    const credentialName =
+                                        typeof vc?.name === 'string' && vc.name.length > 0
+                                            ? vc.name
+                                            : undefined;
+                                    const candidateId = (c.candidate as CandidateCredential).id;
+
+                                    sharedClaimsBreakdown.push({
+                                        credentialId: candidateId,
+                                        vct: parsed.vct,
+                                        credentialName,
+                                        disclosedClaims,
+                                        hiddenClaimKeys,
+                                    });
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse SD-JWT for breakdown', e);
+                            }
+                        }
+                    }
+                }
+
+                const result: Awaited<ReturnType<WalletOidcVpInvoke['presentCredentials']>> =
+                    await resilientPresentCredentials({
+                        wallet: wallet as unknown as Parameters<
+                            typeof resilientPresentCredentials
+                        >[0]['wallet'],
+                        request: currentPhase.request,
+                        chosen,
+                        callbacks: resilience.callbacks,
+                    });
+
+                // Pull the W3C VCs out of the picked candidates so the
+                // finished screen can render them as `BoostEarnedCard`s.
+                // Anything that isn't a JSON-LD VC (raw JWT compact strings,
+                // SD-JWT envelopes, mDLs) is skipped — the screen handles
+                // an empty array by hiding the hero strip entirely.
+                const sharedCredentials = chosen
+                    .map(c => extractW3cVc(c.candidate?.credential))
+                    .filter((vc): vc is VC => Boolean(vc));
+
+                setPhase({
+                    kind: 'finished',
+                    submitted: result.submitted,
+                    clientInfo,
+                    sharedCredentials,
+                    sharedClaimsBreakdown,
                 });
-
-            // Pull the W3C VCs out of the picked candidates so the
-            // finished screen can render them as `BoostEarnedCard`s.
-            // Anything that isn't a JSON-LD VC (raw JWT compact strings,
-            // SD-JWT envelopes, mDLs) is skipped — the screen handles
-            // an empty array by hiding the hero strip entirely.
-            const sharedCredentials = chosen
-                .map(c => extractW3cVc(c.candidate?.credential))
-                .filter((vc): vc is VC => Boolean(vc));
-
-            setPhase({
-                kind: 'finished',
-                submitted: result.submitted,
-                clientInfo,
-                sharedCredentials,
-            });
-        } catch (error) {
-            console.error('OID4VP: presentation failed', error);
-            // Carry `clientInfo` through to the error phase so the
-            // failure screen still renders the branded `VerifierHeader`
-            // — the user keeps brand context even when the share fails.
-            setPhase({
-                kind: 'error',
-                error,
-                clientInfo,
-                retryConsent: {
-                    request: currentPhase.request,
-                    selection: currentPhase.selection,
-                    dcqlSelection: currentPhase.dcqlSelection,
-                    pool: currentPhase.pool,
-                },
-            });
-        }
-    }, [phase, initWallet, resilience]);
+            } catch (error) {
+                log.error('OID4VP: presentation failed', error);
+                // Carry `clientInfo` through to the error phase so the
+                // failure screen still renders the branded `VerifierHeader`
+                // — the user keeps brand context even when the share fails.
+                setPhase({
+                    kind: 'error',
+                    error,
+                    clientInfo,
+                    retryConsent: {
+                        request: currentPhase.request,
+                        selection: currentPhase.selection,
+                        dcqlSelection: currentPhase.dcqlSelection,
+                        pool: currentPhase.pool,
+                    },
+                });
+            }
+        },
+        [phase, initWallet, resilience]
+    );
 
     const handleCancel = useCallback(() => {
         history.push('/');
@@ -338,9 +422,7 @@ const Oid4vpExchange: React.FC = () => {
                 )}
 
                 {phase.kind === 'submitting' && (
-                    <RequestSubmitting
-                        clientName={phase.clientInfo.display?.name?.trim()}
-                    />
+                    <RequestSubmitting clientName={phase.clientInfo.display?.name?.trim()} />
                 )}
 
                 {phase.kind === 'finished' && (
@@ -350,6 +432,7 @@ const Oid4vpExchange: React.FC = () => {
                         clientIdScheme={phase.clientInfo.clientIdScheme}
                         clientDisplay={phase.clientInfo.display}
                         sharedCredentials={phase.sharedCredentials}
+                        sharedClaimsBreakdown={phase.sharedClaimsBreakdown}
                         onDone={() => history.push('/')}
                     />
                 )}
@@ -368,16 +451,10 @@ const Oid4vpExchange: React.FC = () => {
                                 : undefined
                         }
                         onReport={userNote =>
-                            reportError(
-                                phase.error,
-                                getFriendlyOpenID4VCError(phase.error).kind,
-                                {
-                                    counterparty: sanitizeCounterparty(
-                                        phase.clientInfo?.clientId
-                                    ),
-                                    userNote,
-                                }
-                            )
+                            reportError(phase.error, getFriendlyOpenID4VCError(phase.error).kind, {
+                                counterparty: sanitizeCounterparty(phase.clientInfo?.clientId),
+                                userNote,
+                            })
                         }
                         onRetry={phase.retryConsent ? handleRetry : undefined}
                         onCancel={() => history.push('/')}
@@ -398,9 +475,7 @@ export default Oid4vpExchange;
 // Helpers
 // -----------------------------------------------------------------
 
-const singleParam = (
-    raw: string | (string | null)[] | null | undefined
-): string | undefined => {
+const singleParam = (raw: string | (string | null)[] | null | undefined): string | undefined => {
     if (typeof raw === 'string' && raw.length > 0) return raw;
     return undefined;
 };
@@ -441,14 +516,15 @@ interface WalletOidcVpInvoke {
 const extractClientInfo = (request: AuthorizationRequest): ClientInfo => {
     const meta = request.client_metadata as Record<string, unknown> | undefined;
 
-    const display: VerifierDisplayInfo | undefined = meta && typeof meta === 'object'
-        ? {
-              name: stringField(meta, 'client_name'),
-              logoUri: stringField(meta, 'logo_uri') ?? stringField(meta, 'client_logo'),
-              policyUri: stringField(meta, 'policy_uri'),
-              tosUri: stringField(meta, 'tos_uri'),
-          }
-        : undefined;
+    const display: VerifierDisplayInfo | undefined =
+        meta && typeof meta === 'object'
+            ? {
+                  name: stringField(meta, 'client_name'),
+                  logoUri: stringField(meta, 'logo_uri') ?? stringField(meta, 'client_logo'),
+                  policyUri: stringField(meta, 'policy_uri'),
+                  tosUri: stringField(meta, 'tos_uri'),
+              }
+            : undefined;
 
     return {
         clientId: request.client_id,
@@ -457,10 +533,7 @@ const extractClientInfo = (request: AuthorizationRequest): ClientInfo => {
     };
 };
 
-const stringField = (
-    obj: Record<string, unknown>,
-    key: string
-): string | undefined => {
+const stringField = (obj: Record<string, unknown>, key: string): string | undefined => {
     const v = obj[key];
     return typeof v === 'string' && v.length > 0 ? v : undefined;
 };
@@ -488,17 +561,33 @@ const extractW3cVc = (credential: unknown): VC | undefined => {
 const buildChosenList = (
     selection?: SelectionResult,
     dcqlSelection?: DcqlSelectionResult,
-    userPicks: ConsentPicks = {}
+    userPicks: ConsentPicks = { row: {}, disclose: {} }
 ): ChosenForPresentation[] => {
+    const disclosureOrEmpty = (
+        candidate: CandidateCredential,
+        disclose: ConsentPicks['disclose'][string]
+    ) => {
+        const format = candidate.format ?? inferCredentialFormat(candidate.credential);
+        // Consent parsing is async in RequestConsent. If an SD-JWT row reaches this point
+        // without a populated frame, fail closed to an empty frame rather than allowing the
+        // downstream presenter to interpret `undefined` as "release every claim".
+        if (format === 'dc+sd-jwt' || format === 'vc+sd-jwt') {
+            return disclose ?? {};
+        }
+        return disclose;
+    };
+
     if (selection) {
         const out: ChosenForPresentation[] = [];
         for (const d of selection.descriptors) {
-            const idx = userPicks[d.descriptorId] ?? 0;
+            const idx = userPicks.row[d.descriptorId] ?? 0;
             const chosen = d.candidates[idx] ?? d.candidates[0];
             if (!chosen) continue;
+            const discloseKey = `${d.descriptorId}::${chosen.candidate.id}`;
             out.push({
                 descriptorId: d.descriptorId,
                 candidate: chosen.candidate,
+                disclose: disclosureOrEmpty(chosen.candidate, userPicks.disclose[discloseKey]),
             });
         }
         return out;
@@ -507,12 +596,15 @@ const buildChosenList = (
     if (dcqlSelection) {
         const out: ChosenForPresentation[] = [];
         for (const [queryId, match] of Object.entries(dcqlSelection.matches)) {
-            const idx = userPicks[queryId] ?? 0;
+            const idx = userPicks.row[queryId] ?? 0;
             const chosen = match.candidates[idx] ?? match.candidates[0];
             if (!chosen) continue;
+            const candidate = chosen as unknown as CandidateCredential;
+            const discloseKey = `${queryId}::${candidate.id}`;
             out.push({
                 credentialQueryId: queryId,
-                candidate: chosen as unknown as CandidateCredential,
+                candidate,
+                disclose: disclosureOrEmpty(candidate, userPicks.disclose[discloseKey]),
             });
         }
         return out;

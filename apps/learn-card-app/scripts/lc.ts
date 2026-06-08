@@ -1,5 +1,8 @@
 #!/usr/bin/env npx tsx
 
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
+
 /**
  * lc.ts — Interactive developer launcher for the LearnCard app.
  *
@@ -133,16 +136,16 @@ const getTenantBundleId = (tenantId: string): string => {
 };
 
 const runCommand = (cmd: string, label: string, shortcut?: string, cwd?: string): void => {
-    console.log('');
-    console.log(green(`▶ ${label}`));
-    console.log(dim(`  $ ${cmd}`));
+    log.info('');
+    log.info(green(`▶ ${label}`));
+    log.info(dim(`  $ ${cmd}`));
 
     if (shortcut) {
-        console.log('');
-        console.log(dim(`  💡 Next time, run: ${cyan(shortcut)}`));
+        log.info('');
+        log.info(dim(`  💡 Next time, run: ${cyan(shortcut)}`));
     }
 
-    console.log('');
+    log.info('');
 
     rl.close();
 
@@ -172,18 +175,18 @@ const seedAppStoreListing = async () => {
     const seedScript = resolve(BRAIN_SERVICE_ROOT, 'scripts/seed-dev-app.ts');
 
     if (!existsSync(seedScript)) {
-        console.error(`\n❌ Seed script not found at ${seedScript}`);
+        log.error(`\n❌ Seed script not found at ${seedScript}`);
         rl.close();
         process.exit(1);
     }
 
-    console.log('');
-    console.log(bold('🌱 Seed App Store Listing'));
-    console.log(dim('   Creates a dev partner app, profile, and listing in your local DB.'));
-    console.log(dim('   Requires Neo4j + Redis + MongoDB running (e.g. pnpm lc dev ... full).'));
-    console.log('');
-    console.log(dim('   Press Enter on any field to accept the default.'));
-    console.log('');
+    log.info('');
+    log.info(bold('🌱 Seed App Store Listing'));
+    log.info(dim('   Creates a dev partner app, profile, and listing in your local DB.'));
+    log.info(dim('   Requires Neo4j + Redis + MongoDB running (e.g. pnpm lc dev ... full).'));
+    log.info('');
+    log.info(dim('   Press Enter on any field to accept the default.'));
+    log.info('');
 
     const fields: Array<{ flag: string; label: string; defaultVal: string; hint?: string }> = [
         { flag: '--app-name', label: 'App name', defaultVal: 'Dev Partner App' },
@@ -251,19 +254,19 @@ const seedPathwayDemoBundle = async () => {
     const seedScript = resolve(BRAIN_SERVICE_ROOT, 'scripts/seed-dev-app.ts');
 
     if (!existsSync(seedScript)) {
-        console.error(`\n❌ Seed script not found at ${seedScript}`);
+        log.error(`\n❌ Seed script not found at ${seedScript}`);
         rl.close();
         process.exit(1);
     }
 
-    console.log('');
-    console.log(bold('🌱 Seed Pathways demo bundle'));
-    console.log(dim('   Seeds 3 AppStoreListings for the AWS Cloud Practitioner demo pathway:'));
-    console.log(dim('     • Coursera — AWS Cloud Essentials  (DIRECT_LINK)'));
-    console.log(dim('     • AWS Practice Studio              (EMBEDDED_IFRAME)'));
-    console.log(dim('     • Cloud Coach                       (AI_TUTOR)'));
-    console.log(dim('   Idempotent — safe to re-run.'));
-    console.log('');
+    log.info('');
+    log.info(bold('🌱 Seed Pathways demo bundle'));
+    log.info(dim('   Seeds 3 AppStoreListings for the AWS Cloud Practitioner demo pathway:'));
+    log.info(dim('     • Coursera — AWS Cloud Essentials  (DIRECT_LINK)'));
+    log.info(dim('     • AWS Practice Studio              (EMBEDDED_IFRAME)'));
+    log.info(dim('     • Cloud Coach                       (AI_TUTOR)'));
+    log.info(dim('   Idempotent — safe to re-run.'));
+    log.info('');
 
     const ownerProfileId = await ask(`  Owner profile ID ${dim('(dev-owner)')}: `);
     const installFor = await ask(`  Install for profile ${dim('(skip to not auto-install)')}: `);
@@ -285,23 +288,23 @@ const seedPathwayDemoBundle = async () => {
 };
 
 const seedTestData = async () => {
-    console.log('');
-    console.log(bold('  🌱 Seed Test Data'));
-    console.log(dim('   Populate your local database with dev data.'));
-    console.log('');
-    console.log(
+    log.info('');
+    log.info(bold('  🌱 Seed Test Data'));
+    log.info(dim('   Populate your local database with dev data.'));
+    log.info('');
+    log.info(
         `  ${cyan('a')}  ${bold('App store listing')}       ${dim(
             '— dev partner app + profile + listing'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('b')}  ${bold('Pathways demo bundle')}    ${dim(
             '— 3 listings for the AWS Cloud Practitioner pathway'
         )}`
     );
-    console.log('');
-    console.log(dim('  Press Enter to go back'));
-    console.log('');
+    log.info('');
+    log.info(dim('  Press Enter to go back'));
+    log.info('');
 
     const sub = await ask('Pick [a, b]: ');
 
@@ -331,19 +334,19 @@ const pickStage = async (tenantId: string): Promise<string> => {
         return 'local';
     }
 
-    console.log('');
-    console.log(bold('Available stages:'));
-    console.log('');
-    console.log(`  ${cyan('1')}  ${bold('local')} — local dev ${dim('(default)')}`);
+    log.info('');
+    log.info(bold('Available stages:'));
+    log.info('');
+    log.info(`  ${cyan('1')}  ${bold('local')} — local dev ${dim('(default)')}`);
 
     stages
         .filter(s => s !== 'local')
         .forEach((s, i) => {
-            console.log(`  ${cyan(`${i + 2}`)}  ${bold(s)}`);
+            log.info(`  ${cyan(`${i + 2}`)}  ${bold(s)}`);
         });
 
-    console.log(`  ${cyan(`${stages.length + 1}`)}  ${bold('production')} — no stage overlay`);
-    console.log('');
+    log.info(`  ${cyan(`${stages.length + 1}`)}  ${bold('production')} — no stage overlay`);
+    log.info('');
 
     const choice = await ask(
         `Pick a stage [1-${stages.length + 1}] ${dim('(default: 1 / local)')}: `
@@ -399,9 +402,9 @@ const startDev = async (
     const tenants = discoverTenants();
 
     if (!tenantId) {
-        console.log('');
-        console.log(bold('Available tenants:'));
-        console.log('');
+        log.info('');
+        log.info(bold('Available tenants:'));
+        log.info('');
 
         tenants.forEach((t, i) => {
             const name = getTenantDisplayName(t);
@@ -409,10 +412,10 @@ const startDev = async (
             const stageList = stages.length > 0 ? dim(` [${stages.join(', ')}]`) : '';
             const marker = t === 'learncard' ? dim(' (default)') : '';
 
-            console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}${stageList}`);
+            log.info(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}${stageList}`);
         });
 
-        console.log('');
+        log.info('');
 
         const choice = await ask(
             `Pick a tenant [1-${tenants.length}] or name ${dim('(default: learncard)')}: `
@@ -445,25 +448,25 @@ const startDev = async (
     const stageLabel = stageId === 'production' ? '' : ` (${stageId})`;
 
     if (!devMode) {
-        console.log('');
-        console.log(bold('How do you want to run?'));
-        console.log('');
-        console.log(
+        log.info('');
+        log.info(bold('How do you want to run?'));
+        log.info('');
+        log.info(
             `  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim(
                 '(pnpm dev)'
             )}`
         );
-        console.log(
+        log.info(
             `  ${cyan('2')}  ${bold('App only')} — Just the Vite dev server ${dim(
                 '(assumes services are running)'
             )}`
         );
-        console.log(
+        log.info(
             `  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim(
                 '(pnpm dev:services)'
             )}`
         );
-        console.log('');
+        log.info('');
 
         const modeChoice = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
 
@@ -475,8 +478,8 @@ const startDev = async (
     const usesDocker = devMode === 'full' || devMode === 'services';
 
     if (usesDocker && noBuild === undefined) {
-        console.log('');
-        console.log(
+        log.info('');
+        log.info(
             dim('  Tip: skip --build to start ~10× faster when nothing in Docker has changed.')
         );
         const buildAns = await ask(`Rebuild Docker images? ${dim('(Y/n)')}: `);
@@ -522,19 +525,19 @@ const startDev = async (
 const pickTenantAndPrepare = async () => {
     const tenants = discoverTenants();
 
-    console.log('');
-    console.log(bold('Switch active tenant config:'));
-    console.log('');
+    log.info('');
+    log.info(bold('Switch active tenant config:'));
+    log.info('');
 
     tenants.forEach((t, i) => {
         const name = getTenantDisplayName(t);
         const stages = discoverStages(t);
         const stageList = stages.length > 0 ? dim(` [${stages.join(', ')}]`) : '';
 
-        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${stageList}`);
+        log.info(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${stageList}`);
     });
 
-    console.log('');
+    log.info('');
 
     const choice = await ask(`Pick a tenant [1-${tenants.length}]: `);
 
@@ -569,10 +572,10 @@ const runValidators = () => {
 const generateAssets = async () => {
     const tenants = discoverTenants();
 
-    console.log('');
-    console.log(bold('Generate tenant assets from a logo'));
-    console.log(dim('  Creates iOS, Android, web, and branding assets.'));
-    console.log('');
+    log.info('');
+    log.info(bold('Generate tenant assets from a logo'));
+    log.info(dim('  Creates iOS, Android, web, and branding assets.'));
+    log.info('');
 
     // 1. Pick tenant
     tenants.forEach((t, i) => {
@@ -580,10 +583,10 @@ const generateAssets = async () => {
         const hasAssets = existsSync(join(ENVIRONMENTS_DIR, t, 'assets'));
         const assetLabel = hasAssets ? dim(' (has assets — will overwrite)') : '';
 
-        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${assetLabel}`);
+        log.info(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${assetLabel}`);
     });
 
-    console.log('');
+    log.info('');
 
     const tenantChoice = await ask(`Pick a tenant [1-${tenants.length}]: `);
     let tenantId: string;
@@ -600,20 +603,20 @@ const generateAssets = async () => {
     let fillOnly = false;
 
     if (hasExistingAssets) {
-        console.log('');
-        console.log(bold('This tenant already has assets. How do you want to generate?'));
-        console.log('');
-        console.log(
+        log.info('');
+        log.info(bold('This tenant already has assets. How do you want to generate?'));
+        log.info('');
+        log.info(
             `  ${cyan('1')}  ${bold(
                 'Fill missing'
             )} — only generate assets that don\'t exist yet ${dim('(safe)')}`
         );
-        console.log(
+        log.info(
             `  ${cyan('2')}  ${bold(
                 'Full regen'
             )}  — regenerate all assets (overwrites existing) ${dim('(config/ preserved)')}`
         );
-        console.log('');
+        log.info('');
 
         const modeChoice = await ask(`Pick a mode [1-2] ${dim('(default: 1 / fill)')}: `);
 
@@ -621,16 +624,16 @@ const generateAssets = async () => {
     }
 
     // 3. Logo path (primary icon / brand mark)
-    console.log('');
-    console.log(dim('  Tip: Drag a file from Finder into the terminal to paste its path.'));
-    console.log(dim('  The primary logo is the icon/mark — used for app icons, favicon, etc.'));
-    console.log(dim('  Recommended: PNG or SVG, at least 1024×1024.'));
-    console.log('');
+    log.info('');
+    log.info(dim('  Tip: Drag a file from Finder into the terminal to paste its path.'));
+    log.info(dim('  The primary logo is the icon/mark — used for app icons, favicon, etc.'));
+    log.info(dim('  Recommended: PNG or SVG, at least 1024×1024.'));
+    log.info('');
 
     let logoPath = await ask('Primary icon / brand mark file path: ');
 
     if (!logoPath) {
-        console.log(yellow('  No logo path provided. Aborting.'));
+        log.info(yellow('  No logo path provided. Aborting.'));
         rl.close();
         return;
     }
@@ -643,14 +646,14 @@ const generateAssets = async () => {
     const nameDefault =
         configName !== tenantId ? configName : tenantId.charAt(0).toUpperCase() + tenantId.slice(1);
 
-    console.log('');
+    log.info('');
 
     const nameInput = await ask(`Display name ${dim(`(default: ${nameDefault})`)}: `);
     const displayName = nameInput || nameDefault;
 
     // 4. Background color
-    console.log('');
-    console.log(dim('  Icon & splash background color. Use hex format: #1A3C5E'));
+    log.info('');
+    log.info(dim('  Icon & splash background color. Use hex format: #1A3C5E'));
 
     const bgInput = await ask(`Background color ${dim('(default: #FFFFFF)')}: `);
     const bgHex = bgInput || '#FFFFFF';
@@ -662,63 +665,61 @@ const generateAssets = async () => {
     const splashHex = splashInput || '';
 
     // 6. Optional: skip splash?
-    console.log('');
+    log.info('');
 
     const skipSplashInput = await ask(`Skip splash screens? ${dim('(y/N)')}: `);
     const skipSplash = skipSplashInput.toLowerCase() === 'y';
 
     // 7. Logo variant overrides
-    console.log('');
-    console.log(bold('Logo variant overrides'));
-    console.log(
-        dim('  If you have Figma exports for different logo variants, provide them below.')
-    );
-    console.log(dim('  Press Enter to skip any variant — it will be auto-generated.'));
-    console.log('');
+    log.info('');
+    log.info(bold('Logo variant overrides'));
+    log.info(dim('  If you have Figma exports for different logo variants, provide them below.'));
+    log.info(dim('  Press Enter to skip any variant — it will be auto-generated.'));
+    log.info('');
 
     // -- Icon for dark backgrounds --
-    console.log(dim('  Icon / brand mark — light/white version for dark backgrounds.'));
-    console.log(dim('  (e.g. white version of your icon for use on dark/colored surfaces)'));
+    log.info(dim('  Icon / brand mark — light/white version for dark backgrounds.'));
+    log.info(dim('  (e.g. white version of your icon for use on dark/colored surfaces)'));
     const iconLightInput = await ask(
         `Icon for dark backgrounds ${dim('(Enter to auto-generate)')}: `
     );
 
-    console.log('');
+    log.info('');
 
     // -- Wordmark for dark backgrounds --
-    console.log(dim('  Wordmark (text only, no icon) — white/light text for dark backgrounds.'));
-    console.log(dim('  (Used on: loading page, intro slides, login page)'));
+    log.info(dim('  Wordmark (text only, no icon) — white/light text for dark backgrounds.'));
+    log.info(dim('  (Used on: loading page, intro slides, login page)'));
     const wordmarkInput = await ask(
         `Wordmark for dark backgrounds ${dim('(Enter to auto-generate)')}: `
     );
 
     // -- Wordmark for light backgrounds --
-    console.log(dim('  Wordmark (text only, no icon) — dark text for light backgrounds.'));
-    console.log(dim('  (Used on: side menu header, AI sessions desktop header)'));
+    log.info(dim('  Wordmark (text only, no icon) — dark text for light backgrounds.'));
+    log.info(dim('  (Used on: side menu header, AI sessions desktop header)'));
     const wordmarkLightInput = await ask(
         `Wordmark for light backgrounds ${dim('(Enter to auto-generate)')}: `
     );
 
-    console.log('');
+    log.info('');
 
     // -- Full lockup for light backgrounds --
-    console.log(dim('  Full lockup (icon + wordmark combined) — dark logo for light backgrounds.'));
-    console.log(dim('  (Used for: og:image, share cards, external embeds)'));
+    log.info(dim('  Full lockup (icon + wordmark combined) — dark logo for light backgrounds.'));
+    log.info(dim('  (Used for: og:image, share cards, external embeds)'));
     const fullLogoInput = await ask(
         `Full lockup for light backgrounds ${dim('(Enter to skip)')}: `
     );
 
     // -- Full lockup for dark backgrounds --
-    console.log(dim('  Full lockup (icon + wordmark combined) — light logo for dark backgrounds.'));
-    console.log(dim('  (Used for: splash screens, share cards on dark surfaces)'));
+    log.info(dim('  Full lockup (icon + wordmark combined) — light logo for dark backgrounds.'));
+    log.info(dim('  (Used for: splash screens, share cards on dark surfaces)'));
     const fullLogoDarkInput = await ask(
         `Full lockup for dark backgrounds ${dim('(Enter to skip)')}: `
     );
 
-    console.log('');
+    log.info('');
 
     // -- Desktop backgrounds --
-    console.log(dim('  Desktop login background images (optional overrides).'));
+    log.info(dim('  Desktop login background images (optional overrides).'));
     const desktopBgInput = await ask(`Desktop login BG file ${dim('(Enter to auto-generate)')}: `);
     const desktopBgAltInput = await ask(
         `Desktop login BG alt file ${dim('(Enter to auto-generate)')}: `
@@ -795,15 +796,15 @@ const generateAssets = async () => {
     }
 
     // Summary
-    console.log('');
-    console.log(bold('Summary:'));
-    console.log(`  Tenant:       ${bold(tenantId)}`);
-    console.log(`  Mode:         ${fillOnly ? 'fill missing only' : 'full regeneration'}`);
-    console.log(`  Primary icon: ${logoPath}`);
-    console.log(`  Name:         ${displayName}`);
-    console.log(`  Icon BG:      ${bgHex}`);
-    console.log(`  Splash BG:    ${splashHex || bgHex}`);
-    console.log(`  Skip splash:  ${skipSplash ? 'yes' : 'no'}`);
+    log.info('');
+    log.info(bold('Summary:'));
+    log.info(`  Tenant:       ${bold(tenantId)}`);
+    log.info(`  Mode:         ${fillOnly ? 'fill missing only' : 'full regeneration'}`);
+    log.info(`  Primary icon: ${logoPath}`);
+    log.info(`  Name:         ${displayName}`);
+    log.info(`  Icon BG:      ${bgHex}`);
+    log.info(`  Splash BG:    ${splashHex || bgHex}`);
+    log.info(`  Skip splash:  ${skipSplash ? 'yes' : 'no'}`);
 
     // Show which variants were provided
     const variants: Array<[string, string]> = [];
@@ -817,23 +818,23 @@ const generateAssets = async () => {
     if (desktopBgAltInput) variants.push(['Desktop BG alt', cleanPath(desktopBgAltInput)]);
 
     if (variants.length > 0) {
-        console.log('');
-        console.log(bold('  Logo variants:'));
+        log.info('');
+        log.info(bold('  Logo variants:'));
 
         for (const [label, val] of variants) {
-            console.log(`    ${label}: ${val}`);
+            log.info(`    ${label}: ${val}`);
         }
     } else {
-        console.log('');
-        console.log(dim('  No logo variants provided — all will be auto-generated.'));
+        log.info('');
+        log.info(dim('  No logo variants provided — all will be auto-generated.'));
     }
 
-    console.log('');
+    log.info('');
 
     const confirm = await ask(`Proceed? ${dim('(Y/n)')}: `);
 
     if (confirm.toLowerCase() === 'n') {
-        console.log(dim('  Cancelled.'));
+        log.info(dim('  Cancelled.'));
         rl.close();
         return;
     }
@@ -848,18 +849,18 @@ const generateAssets = async () => {
 const pickTenant = async (defaultTenant = 'learncard'): Promise<string> => {
     const tenants = discoverTenants();
 
-    console.log('');
-    console.log(bold('Available tenants:'));
-    console.log('');
+    log.info('');
+    log.info(bold('Available tenants:'));
+    log.info('');
 
     tenants.forEach((t, i) => {
         const name = getTenantDisplayName(t);
         const marker = t === defaultTenant ? dim(' (default)') : '';
 
-        console.log(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}`);
+        log.info(`  ${cyan(`${i + 1}`)}  ${bold(t)} — ${name}${marker}`);
     });
 
-    console.log('');
+    log.info('');
 
     const choice = await ask(
         `Pick a tenant [1-${tenants.length}] or name ${dim(`(default: ${defaultTenant})`)}: `
@@ -881,12 +882,12 @@ const pickTenant = async (defaultTenant = 'learncard'): Promise<string> => {
 type Platform = 'ios' | 'android';
 
 const pickPlatform = async (): Promise<Platform> => {
-    console.log('');
-    console.log(bold('Platform:'));
-    console.log('');
-    console.log(`  ${cyan('1')}  ${bold('ios')}     — Open in Xcode / run on iOS simulator`);
-    console.log(`  ${cyan('2')}  ${bold('android')} — Open in Android Studio / run on device`);
-    console.log('');
+    log.info('');
+    log.info(bold('Platform:'));
+    log.info('');
+    log.info(`  ${cyan('1')}  ${bold('ios')}     — Open in Xcode / run on iOS simulator`);
+    log.info(`  ${cyan('2')}  ${bold('android')} — Open in Android Studio / run on device`);
+    log.info('');
 
     const choice = await ask(`Pick a platform [1-2] ${dim('(default: 1 / ios)')}: `);
 
@@ -927,9 +928,7 @@ const patchCapConfigSource = (serverUrl: string): void => {
     );
 
     if (patched === content) {
-        console.warn(
-            `   ⚠️  Could not find insertion point in capacitor.config.ts — patching failed`
-        );
+        log.warn(`   ⚠️  Could not find insertion point in capacitor.config.ts — patching failed`);
         return;
     }
 
@@ -943,14 +942,14 @@ const patchCapConfigSource = (serverUrl: string): void => {
     const capgoDisabled = patched !== beforeCapgoPatch;
 
     writeFileSync(CAP_CONFIG_TS, patched, 'utf-8');
-    console.log(`   ${green('✓')} Patched capacitor.config.ts → server.url = ${serverUrl}`);
+    log.info(`   ${green('✓')} Patched capacitor.config.ts → server.url = ${serverUrl}`);
 
     if (capgoDisabled) {
-        console.log(
+        log.info(
             `   ${green('✓')} Patched capacitor.config.ts → CapacitorUpdater.autoUpdate = false`
         );
     } else {
-        console.warn(
+        log.warn(
             `   ⚠️  Could not find \`autoUpdate: true\` in CapacitorUpdater — Capgo may still poll during the session`
         );
     }
@@ -958,7 +957,7 @@ const patchCapConfigSource = (serverUrl: string): void => {
 
 const unpatchCapConfigSource = (): void => {
     if (!existsSync(CAP_CONFIG_BACKUP)) {
-        console.warn('   ⚠️  No backup found — skipping unpatch');
+        log.warn('   ⚠️  No backup found — skipping unpatch');
         return;
     }
 
@@ -973,7 +972,7 @@ const unpatchCapConfigSource = (): void => {
         /* ignore */
     }
 
-    console.log(`   ${green('✓')} Restored capacitor.config.ts from backup`);
+    log.info(`   ${green('✓')} Restored capacitor.config.ts from backup`);
 };
 
 /**
@@ -1016,9 +1015,9 @@ const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
 
             const relPath = jsonPath.replace(`${APP_ROOT}/`, '');
 
-            console.log(`   ${green('✓')} Patched ${relPath} → server.url + autoUpdate=false`);
+            log.info(`   ${green('✓')} Patched ${relPath} → server.url + autoUpdate=false`);
         } catch (err) {
-            console.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
+            log.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
         }
     }
 };
@@ -1036,15 +1035,15 @@ const setNativeBuildEnv = (stageId: string): void => {
 };
 
 const execBlocking = (cmd: string, label: string): void => {
-    console.log('');
-    console.log(green(`▶ ${label}`));
-    console.log(dim(`  $ ${cmd}`));
-    console.log('');
+    log.info('');
+    log.info(green(`▶ ${label}`));
+    log.info(dim(`  $ ${cmd}`));
+    log.info('');
 
     try {
         execSync(cmd, { cwd: APP_ROOT, stdio: 'inherit' });
     } catch (err) {
-        console.error(`\n❌ Command failed: ${cmd}`);
+        log.error(`\n❌ Command failed: ${cmd}`);
         throw err;
     }
 };
@@ -1061,8 +1060,8 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
     const displayName = getTenantDisplayName(tenantId);
 
-    console.log('');
-    console.log(bold(`📱 Native sync: ${displayName} (${tenantId}, ${stageId})`));
+    log.info('');
+    log.info(bold(`📱 Native sync: ${displayName} (${tenantId}, ${stageId})`));
 
     // 1. Populate public/ with tenant config + assets (so vite build picks them up)
     execBlocking(
@@ -1083,12 +1082,12 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
         'Patching native projects with tenant config'
     );
 
-    console.log('');
-    console.log(green('✅ Native sync complete.'));
-    console.log(
+    log.info('');
+    log.info(green('✅ Native sync complete.'));
+    log.info(
         dim('   Run `pnpm lc native open ios` or `pnpm lc native open android` to open the IDE.')
     );
-    console.log('');
+    log.info('');
 
     rl.close();
 };
@@ -1107,8 +1106,8 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
         const displayName = getTenantDisplayName(tenantId);
 
-        console.log('');
-        console.log(bold(`📱 Native open: ${displayName} (${tenantId}) → ${platform}`));
+        log.info('');
+        log.info(bold(`📱 Native open: ${displayName} (${tenantId}) → ${platform}`));
 
         // 1. Populate public/ with tenant config + assets
         execBlocking(
@@ -1154,8 +1153,8 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     const stageFlag = ' --stage local';
     const displayName = getTenantDisplayName(tenantId);
 
-    console.log('');
-    console.log(bold(`📱 Native run: ${displayName} → ${platform}`));
+    log.info('');
+    log.info(bold(`📱 Native run: ${displayName} → ${platform}`));
 
     // 1. Populate public/ with tenant config + assets
     execBlocking(
@@ -1200,8 +1199,8 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     const lanIp = getLanIp();
 
     if (!lanIp) {
-        console.error('\n❌ Could not detect a LAN IP address.');
-        console.error('   Make sure you are connected to a local network (Wi-Fi or Ethernet).');
+        log.error('\n❌ Could not detect a LAN IP address.');
+        log.error('   Make sure you are connected to a local network (Wi-Fi or Ethernet).');
         rl.close();
         process.exit(1);
     }
@@ -1209,23 +1208,23 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     const vitePort = 5173;
     const serverUrl = `http://${lanIp}:${vitePort}`;
 
-    console.log('');
-    console.log(bold(`📱 Native live-reload: ${displayName} → ${platform}`));
-    console.log(`   LAN IP:     ${cyan(lanIp)}`);
-    console.log(`   Server URL:  ${cyan(serverUrl)}`);
-    console.log('');
+    log.info('');
+    log.info(bold(`📱 Native live-reload: ${displayName} → ${platform}`));
+    log.info(`   LAN IP:     ${cyan(lanIp)}`);
+    log.info(`   Server URL:  ${cyan(serverUrl)}`);
+    log.info('');
 
     // Step 1: Patch capacitor.config.ts source with server.url for live-reload
-    console.log('');
-    console.log(green('▶ Step 1/6 — Patching capacitor.config.ts with live-reload URL'));
+    log.info('');
+    log.info(green('▶ Step 1/6 — Patching capacitor.config.ts with live-reload URL'));
     patchCapConfigSource(serverUrl);
 
     // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
     execBlocking('npx cap sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
 
     // Step 3: Restore the original capacitor.config.ts so git stays clean
-    console.log('');
-    console.log(green('▶ Step 3/6 — Restoring capacitor.config.ts (git stays clean)'));
+    log.info('');
+    log.info(green('▶ Step 3/6 — Restoring capacitor.config.ts (git stays clean)'));
     unpatchCapConfigSource();
 
     // Step 4: Patch native projects with tenant config. This step COPIES the
@@ -1239,23 +1238,23 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
 
     // Step 5: Re-apply live-reload patches directly to the platform JSONs
     // (the only thing that survives Step 4's tenant config copy).
-    console.log('');
-    console.log(green('▶ Step 5/6 — Re-applying live-reload patches to platform JSONs'));
+    log.info('');
+    log.info(green('▶ Step 5/6 — Re-applying live-reload patches to platform JSONs'));
     patchPlatformJsonsForLiveReload(serverUrl);
 
     // Step 6: Launch Vite + open the IDE
-    console.log('');
-    console.log(green('🚀 Starting Vite dev server + opening native IDE'));
-    console.log('');
-    console.log(
+    log.info('');
+    log.info(green('🚀 Starting Vite dev server + opening native IDE'));
+    log.info('');
+    log.info(
         `   The app on your ${
             platform === 'ios' ? 'iOS Simulator / device' : 'Android device'
         } will`
     );
-    console.log(`   load from ${bold(serverUrl)} with live-reload.`);
-    console.log('');
-    console.log(dim('   Press Ctrl+C to stop the Vite dev server.'));
-    console.log('');
+    log.info(`   load from ${bold(serverUrl)} with live-reload.`);
+    log.info('');
+    log.info(dim('   Press Ctrl+C to stop the Vite dev server.'));
+    log.info('');
 
     rl.close();
 
@@ -1278,23 +1277,21 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
 type FastlaneLane = 'release' | 'beta' | 'upload_to_appetize';
 
 const pickFastlaneLane = async (platform: Platform): Promise<FastlaneLane> => {
-    console.log('');
-    console.log(bold('Build type:'));
-    console.log('');
+    log.info('');
+    log.info(bold('Build type:'));
+    log.info('');
 
     if (platform === 'ios') {
-        console.log(
-            `  ${cyan('1')}  ${bold('beta')}       ${dim('— build + upload to TestFlight')}`
-        );
-        console.log(
+        log.info(`  ${cyan('1')}  ${bold('beta')}       ${dim('— build + upload to TestFlight')}`);
+        log.info(
             `  ${cyan('2')}  ${bold('release')}    ${dim('— build + submit to App Store review')}`
         );
-        console.log(
+        log.info(
             `  ${cyan('3')}  ${bold('appetize')}   ${dim(
                 '— simulator build + upload to Appetize.io'
             )}`
         );
-        console.log('');
+        log.info('');
 
         const choice = await ask(`Pick a build type [1-3] ${dim('(default: 1 / beta)')}: `);
 
@@ -1307,13 +1304,13 @@ const pickFastlaneLane = async (platform: Platform): Promise<FastlaneLane> => {
                 return 'beta';
         }
     } else {
-        console.log(
+        log.info(
             `  ${cyan('1')}  ${bold('release')}    ${dim('— build AAB + upload to Play Store')}`
         );
-        console.log(
+        log.info(
             `  ${cyan('2')}  ${bold('appetize')}   ${dim('— build APK + upload to Appetize.io')}`
         );
-        console.log('');
+        log.info('');
 
         const choice = await ask(`Pick a build type [1-2] ${dim('(default: 1 / release)')}: `);
 
@@ -1341,8 +1338,8 @@ const parseLaneArg = (s?: string): FastlaneLane | undefined => {
 
 const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: FastlaneLane) => {
     if (!existsSync(FASTLANE_ROOT)) {
-        console.error(`\n❌ Fastlane directory not found at ${FASTLANE_ROOT}`);
-        console.error(dim('   Expected: tools/fastlane/ in the monorepo root'));
+        log.error(`\n❌ Fastlane directory not found at ${FASTLANE_ROOT}`);
+        log.error(dim('   Expected: tools/fastlane/ in the monorepo root'));
         rl.close();
         process.exit(1);
     }
@@ -1362,9 +1359,9 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     const displayName = getTenantDisplayName(tenantId);
     const bundleId = getTenantBundleId(tenantId);
 
-    console.log('');
-    console.log(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
-    console.log(`   Bundle ID: ${cyan(bundleId)}`);
+    log.info('');
+    log.info(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
+    log.info(`   Bundle ID: ${cyan(bundleId)}`);
 
     const stage = lane === 'upload_to_appetize' ? 'alpha' : 'production';
 
@@ -1405,29 +1402,29 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     const fastlaneEnvPath = resolve(FASTLANE_ROOT, 'fastlane/.env');
     const hasEnvFile = existsSync(fastlaneEnvPath);
 
-    console.log('');
-    console.log(bold('   Derived from tenant config:'));
-    console.log(dim(`     APP_ID=${bundleId}`));
-    console.log(dim(`     XCODE_PROJECT=${xcodeProject}`));
-    console.log(dim(`     GRADLE_PROJECT_DIRECTORY=${gradleProjectDir}`));
+    log.info('');
+    log.info(bold('   Derived from tenant config:'));
+    log.info(dim(`     APP_ID=${bundleId}`));
+    log.info(dim(`     XCODE_PROJECT=${xcodeProject}`));
+    log.info(dim(`     GRADLE_PROJECT_DIRECTORY=${gradleProjectDir}`));
 
     if (!hasEnvFile) {
-        console.log('');
-        console.log(yellow('   ⚠️  No .env file found at tools/fastlane/fastlane/.env'));
-        console.log(dim('      Fastlane needs secrets (API keys, signing credentials).'));
-        console.log(dim('      Create one with the required values, or set env vars manually.'));
+        log.info('');
+        log.info(yellow('   ⚠️  No .env file found at tools/fastlane/fastlane/.env'));
+        log.info(dim('      Fastlane needs secrets (API keys, signing credentials).'));
+        log.info(dim('      Create one with the required values, or set env vars manually.'));
     }
 
-    console.log('');
+    log.info('');
 
     const laneLabel = lane === 'upload_to_appetize' ? 'appetize' : lane;
     const shortcut = `pnpm lc native build ${tenantId} ${platform} ${laneLabel}`;
 
-    console.log(green(`▶ Running: fastlane ${platform} ${lane}`));
-    console.log(dim(`  $ cd tools/fastlane && bundle exec fastlane ${platform} ${lane}`));
-    console.log('');
-    console.log(dim(`  💡 Next time, run: ${cyan(shortcut)}`));
-    console.log('');
+    log.info(green(`▶ Running: fastlane ${platform} ${lane}`));
+    log.info(dim(`  $ cd tools/fastlane && bundle exec fastlane ${platform} ${lane}`));
+    log.info('');
+    log.info(dim(`  💡 Next time, run: ${cyan(shortcut)}`));
+    log.info('');
 
     rl.close();
 
@@ -1442,39 +1439,39 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
 };
 
 const nativeMenu = async () => {
-    console.log('');
-    console.log(bold('📱 Native / Capacitor'));
-    console.log('');
-    console.log(
+    log.info('');
+    log.info(bold('📱 Native / Capacitor'));
+    log.info('');
+    log.info(
         `  ${cyan('1')}  ${bold('Live-reload dev')}   ${dim(
             '— Vite --host + cap sync + open IDE (auto LAN IP)'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('2')}  ${bold('Sync')}              ${dim('— cap sync + tenant config patching')}`
     );
-    console.log(
+    log.info(
         `  ${cyan('3')}  ${bold('Open IDE')}           ${dim(
             '— (optional: sync tenant) + open Xcode / Android Studio'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('4')}  ${bold('Run')}               ${dim(
             '— build + sync + run on device/simulator'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('5')}  ${bold('Build & Ship')}       ${dim(
             '— sync + fastlane (beta, release, appetize)'
         )}`
     );
-    console.log('');
-    console.log(
+    log.info('');
+    log.info(
         dim(
             '  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'
         )
     );
-    console.log('');
+    log.info('');
 
     const choice = await ask('Pick an option [1-5]: ');
 
@@ -1500,7 +1497,7 @@ const nativeMenu = async () => {
             break;
 
         default:
-            console.log(yellow('Unknown option. Try 1-5.'));
+            log.info(yellow('Unknown option. Try 1-5.'));
             rl.close();
             break;
     }
@@ -1747,8 +1744,8 @@ const handleShortcuts = async (): Promise<boolean> => {
             const handled = await handleNativeShortcut(nativeArgs);
 
             if (!handled) {
-                console.log(yellow(`Unknown native subcommand: ${nativeArgs[0]}`));
-                console.log(dim('  Available: dev, sync, open, run'));
+                log.info(yellow(`Unknown native subcommand: ${nativeArgs[0]}`));
+                log.info(dim('  Available: dev, sync, open, run'));
                 rl.close();
             }
 
@@ -1810,8 +1807,8 @@ const handleShortcuts = async (): Promise<boolean> => {
                     BRAIN_SERVICE_ROOT
                 );
             } else if (arg) {
-                console.log(yellow(`Unknown seed subcommand: ${arg}`));
-                console.log(dim('  Available: app'));
+                log.info(yellow(`Unknown seed subcommand: ${arg}`));
+                log.info(dim('  Available: app'));
                 rl.close();
             } else {
                 await seedTestData();
@@ -1821,8 +1818,8 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'tenants':
-            console.log('');
-            console.log(bold('Available tenants:'));
+            log.info('');
+            log.info(bold('Available tenants:'));
 
             for (const t of discoverTenants()) {
                 const name = getTenantDisplayName(t);
@@ -1841,21 +1838,21 @@ const handleShortcuts = async (): Promise<boolean> => {
 
                 const stageList = stages.length > 0 ? dim(` stages: [${stages.join(', ')}]`) : '';
 
-                console.log(
+                log.info(
                     `  ${green('•')} ${bold(t)} — ${name}${
                         domain ? dim(` (${domain})`) : ''
                     }${stageList}`
                 );
             }
 
-            console.log('');
-            console.log(bold('Available themes:'));
+            log.info('');
+            log.info(bold('Available themes:'));
 
             for (const t of discoverThemes()) {
-                console.log(`  ${green('•')} ${t}`);
+                log.info(`  ${green('•')} ${t}`);
             }
 
-            console.log('');
+            log.info('');
             rl.close();
             return true;
 
@@ -1871,103 +1868,97 @@ const handleShortcuts = async (): Promise<boolean> => {
 const printHelp = () => {
     const tenants = discoverTenants();
 
-    console.log('');
-    console.log(bold('🃏 LearnCard CLI — Quick Reference'));
-    console.log('');
-    console.log(bold('  ⚡ Start'));
-    console.log('');
-    console.log(
+    log.info('');
+    log.info(bold('🃏 LearnCard CLI — Quick Reference'));
+    log.info('');
+    log.info(bold('  ⚡ Start'));
+    log.info('');
+    log.info(
         `  ${cyan('pnpm lc dev <tenant> [stage] [mode] [fast]')}  ${dim(
             'Web dev server (mode: full|app|services)'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc sync <tenant> [stage]')}              ${dim(
             'Cap sync + tenant config patching'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc open <tenant> [platform]')}           ${dim(
             'Sync tenant + open Xcode / Android Studio'
         )}`
     );
-    console.log('');
-    console.log(dim('  Examples:'));
-    console.log(
-        dim('    pnpm lc dev vetpass alpha                # prompts for run mode + rebuild')
-    );
-    console.log(dim('    pnpm lc dev vetpass alpha app            # app only, no prompt'));
-    console.log(dim('    pnpm lc dev vetpass alpha full           # full stack, no prompt'));
-    console.log(
-        dim('    pnpm lc dev vetpass alpha full fast      # full stack, skip docker --build')
-    );
-    console.log(
+    log.info('');
+    log.info(dim('  Examples:'));
+    log.info(dim('    pnpm lc dev vetpass alpha                # prompts for run mode + rebuild'));
+    log.info(dim('    pnpm lc dev vetpass alpha app            # app only, no prompt'));
+    log.info(dim('    pnpm lc dev vetpass alpha full           # full stack, no prompt'));
+    log.info(dim('    pnpm lc dev vetpass alpha full fast      # full stack, skip docker --build'));
+    log.info(
         dim('    pnpm lc dev vetpass alpha services fast  # services only, skip docker --build')
     );
-    console.log(dim('    pnpm lc sync vetpass alpha'));
-    console.log(dim('    pnpm lc open vetpass ios'));
-    console.log('');
-    console.log(bold('  \ud83d\udee0 Tools'));
-    console.log('');
-    console.log(
+    log.info(dim('    pnpm lc sync vetpass alpha'));
+    log.info(dim('    pnpm lc open vetpass ios'));
+    log.info('');
+    log.info(bold('  🛠 Tools'));
+    log.info('');
+    log.info(
         `  ${cyan('pnpm lc viewer')}                     ${dim('Launch the Credential Viewer')}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc seed app [flags]')}           ${dim(
             'Seed app store listing into local DB'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm skill-frameworks seed [stage]')} ${dim('Seed default skill frameworks')}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm skill-frameworks add-admin [stage] [profileId]')} ${dim(
             'Grant framework admin access to an existing profile'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc native')}                     ${dim(
             'Full native menu (dev, run, build)'
         )}`
     );
-    console.log('');
-    console.log(bold('  🔧 Setup'));
-    console.log('');
-    console.log(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
-    console.log(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
-    console.log(
+    log.info('');
+    log.info(bold('  🔧 Setup'));
+    log.info('');
+    log.info(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
+    log.info(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
+    log.info(
         `  ${cyan('pnpm lc bump-default-capgo-channel')} ${dim(
             'Bump Capgo OTA channel (native compat break)'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim(
             'Generate icons/splash from a logo'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc validate')}                   ${dim(
             'Run all config + theme validators'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`
     );
-    console.log(
+    log.info(
         `  ${cyan('pnpm lc editor')}                     ${dim('Visual config editor on :4400')}`
     );
-    console.log(
-        `  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`
-    );
-    console.log(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
-    console.log(
+    log.info(`  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`);
+    log.info(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
+    log.info(
         `  ${cyan('pnpm lc tenants')}                    ${dim(
             'List all tenants, stages, and themes'
         )}`
     );
-    console.log('');
-    console.log(dim(`  Available tenants: ${tenants.join(', ')}`));
-    console.log('');
+    log.info('');
+    log.info(dim(`  Available tenants: ${tenants.join(', ')}`));
+    log.info('');
 
     rl.close();
 };
@@ -1977,43 +1968,43 @@ const printHelp = () => {
 // ---------------------------------------------------------------------------
 
 const configAndScaffoldingMenu = async () => {
-    console.log('');
-    console.log(bold('  🔧 Config & Scaffolding'));
-    console.log('');
-    console.log(
+    log.info('');
+    log.info(bold('  🔧 Config & Scaffolding'));
+    log.info('');
+    log.info(
         `  ${cyan('a')}  ${bold('Create a new tenant')}     ${dim('— interactive scaffolding')}`
     );
-    console.log(
+    log.info(
         `  ${cyan('b')}  ${bold('Create a new theme')}      ${dim(
             '— interactive theme scaffolding'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('c')}  ${bold('Generate tenant assets')}  ${dim(
             '— create icons/splash from a logo'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('d')}  ${bold('Validate configs')}        ${dim(
             '— run all config + theme validators'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('e')}  ${bold('Switch tenant config')}    ${dim(
             '— prepare config without starting'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('f')}  ${bold('Config editor')}           ${dim(
             '— visual config editor on :4400'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('g')}  ${bold('Resolve config')}          ${dim('— print final merged config')}`
     );
-    console.log('');
-    console.log(dim('  Press Enter to go back'));
-    console.log('');
+    log.info('');
+    log.info(dim('  Press Enter to go back'));
+    log.info('');
 
     const sub = await ask('Pick [a-g]: ');
 
@@ -2072,53 +2063,51 @@ const main = async () => {
     const tenants = discoverTenants();
     const themes = discoverThemes();
 
-    console.log('');
-    console.log(bold('🃏 LearnCard Developer Tools'));
-    console.log(
+    log.info('');
+    log.info(bold('🃏 LearnCard Developer Tools'));
+    log.info(
         dim(
             `   ${tenants.length} tenant(s): ${tenants.join(', ')}  •  ${
                 themes.length
             } theme(s): ${themes.join(', ')}`
         )
     );
-    console.log('');
-    console.log(bold('  ⚡ Start'));
-    console.log(
-        `  ${cyan('1')}  ${bold('Dev server')}              ${dim('— web dev for a tenant')}`
-    );
-    console.log(
+    log.info('');
+    log.info(bold('  ⚡ Start'));
+    log.info(`  ${cyan('1')}  ${bold('Dev server')}              ${dim('— web dev for a tenant')}`);
+    log.info(
         `  ${cyan('2')}  ${bold('Native sync')}             ${dim('— sync + patch tenant config')}`
     );
-    console.log(
+    log.info(
         `  ${cyan('3')}  ${bold('Open native IDE')}         ${dim('— Xcode / Android Studio')}`
     );
-    console.log('');
-    console.log(bold('  � Tools'));
-    console.log(
+    log.info('');
+    log.info(bold('  � Tools'));
+    log.info(
         `  ${cyan('4')}  ${bold('Credential Viewer')}       ${dim(
             '— browse & test credential fixtures'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('5')}  ${bold('Seed test data')}          ${dim(
             '— populate local DB with dev app + profiles'
         )}`
     );
-    console.log(
+    log.info(
         `  ${cyan('6')}  ${bold('Native menu')}             ${dim(
             '— full Capacitor menu (dev, run, build, ship)'
         )}`
     );
-    console.log('');
-    console.log(bold('  🔧 Setup'));
-    console.log(
+    log.info('');
+    log.info(bold('  🔧 Setup'));
+    log.info(
         `  ${cyan('7')}  ${bold('Config & scaffolding')}    ${dim(
             '— create, validate, edit, generate...'
         )}`
     );
-    console.log('');
-    console.log(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
-    console.log('');
+    log.info('');
+    log.info(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
+    log.info('');
 
     const choice = await ask('Pick an option [1-7, h]: ');
 
@@ -2158,13 +2147,13 @@ const main = async () => {
             break;
 
         default:
-            console.log(yellow('Unknown option. Try 1-7 or h.'));
+            log.info(yellow('Unknown option. Try 1-7 or h.'));
             rl.close();
             break;
     }
 };
 
 main().catch(err => {
-    console.error('Unexpected error:', err);
+    log.error('Unexpected error:', err);
     process.exit(1);
 });

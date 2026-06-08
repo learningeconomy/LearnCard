@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('apps-landing-page');
 /**
  * AppsLandingPage - Landing page for Apps tab when no integration is selected
  *
@@ -43,7 +45,7 @@ const AppsLandingPage: React.FC = () => {
             // Navigate to the new integration's apps page
             history.push(`/app-store/developer/integrations/${id}/apps`);
         } catch (error) {
-            console.error('Failed to create project:', error);
+            log.error('Failed to create project:', error);
         }
     };
 

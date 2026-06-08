@@ -8,10 +8,6 @@ import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
     onResolved: resolved => {
-        // Bundle query-string into the helpers build so it works in browser
-        // environments instead of relying on a dynamic require.
-        if (resolved.includes('node_modules/query-string')) return resolved;
-
         if (resolved.includes('node_modules')) {
             return {
                 external: true,
@@ -21,6 +17,10 @@ const nodeResolveExternal = NodeResolvePlugin({
     },
 });
 
+// platform: 'node' on the CJS builds makes esbuild emit the
+// `0 && (module.exports = {...})` annotation that Node's cjs-module-lexer reads
+// to expose named exports to ESM importers. Without it, named imports of this
+// package fail under Node ESM.
 const configurations = [
     {
         keepNames: true,
@@ -30,7 +30,8 @@ const configurations = [
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/helpers.cjs.development.js',
+        platform: 'node',
+        outfile: 'dist/helpers.cjs.development.cjs',
     },
     {
         keepNames: true,
@@ -41,7 +42,8 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/helpers.cjs.production.min.js',
+        platform: 'node',
+        outfile: 'dist/helpers.cjs.production.min.cjs',
     },
     {
         keepNames: true,

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-page');
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
@@ -102,7 +104,7 @@ const WalletPage: React.FC = () => {
                     );
                 }
             } catch (error) {
-                console.log(error);
+                log.info(error);
             }
         });
 
@@ -195,30 +197,38 @@ const WalletPage: React.FC = () => {
         >
             <MainHeader
                 customClassName={passportBgColor ? '' : 'bg-white'}
-                style={passportBgColor
-                    ? isMobile
-                        ? {
-                            background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
-                            backdropFilter: 'blur(5px)',
-                            WebkitBackdropFilter: 'blur(5px)',
-                            borderBottom: '1px solid white',
-                        }
-                        : { backgroundColor: passportBgColor }
-                    : undefined
+                style={
+                    passportBgColor
+                        ? isMobile
+                            ? {
+                                  background:
+                                      'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                                  backdropFilter: 'blur(5px)',
+                                  WebkitBackdropFilter: 'blur(5px)',
+                                  borderBottom: '1px solid white',
+                              }
+                            : { backgroundColor: passportBgColor }
+                        : undefined
                 }
                 notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
             />
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
-                    style={passportBgColor ? { '--background': passportBgColor } as React.CSSProperties : undefined}
+                    style={
+                        passportBgColor
+                            ? ({ '--background': passportBgColor } as React.CSSProperties)
+                            : undefined
+                    }
                 >
                     <div className={`px-[20px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
                         <div className="flex flex-col max-w-[600px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full">
                                     <div className="flex items-center gap-[10px] w-full">
-                                        <h2 className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}>
+                                        <h2
+                                            className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}
+                                        >
                                             Passport
                                         </h2>
 
@@ -227,7 +237,13 @@ const WalletPage: React.FC = () => {
                                         - add support for new items count based on categories
                                         */}
                                         {totalNewCredentialsCount > 0 && (
-                                            <p className={`${passportBgColor ? 'text-white/80' : 'text-emerald-700'} font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]`}>
+                                            <p
+                                                className={`${
+                                                    passportBgColor
+                                                        ? 'text-white/80'
+                                                        : 'text-emerald-700'
+                                                } font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]`}
+                                            >
                                                 <DotIcon className="w-[10px] h-[10px]" />{' '}
                                                 {totalNewCredentialsCount} New
                                             </p>

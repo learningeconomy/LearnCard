@@ -1,23 +1,27 @@
 {
     "name": "@learncard/render-method-plugin",
-    "version": "2.0.0",
+    "version": "3.0.1",
     "description": "LearnCard plugin for attaching W3C renderMethod to Verifiable Credentials",
-    "main": "./dist/index.js",
+    "type": "module",
+    "main": "./dist/index.cjs",
     "module": "./dist/render-method-plugin.esm.js",
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "module": "./dist/render-method-plugin.esm.js",
-            "import": "./dist/render-method-plugin.esm.js",
-            "require": "./dist/index.js",
-            "default": "./dist/index.js"
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/render-method-plugin.esm.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
         }
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""

@@ -24,6 +24,9 @@ type ShareCredentialsProps = {
     readOnly?: boolean;
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('share-boosts-bundle');
+
 const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     onSubmit,
     name = 'boost',
@@ -86,7 +89,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
             const selectedState = selectedCredsStore.get.state();
             onSubmit?.(selectedState);
         } catch (e) {
-            console.log('///handleSubmit create credential bundle Error', e);
+            log.info('///handleSubmit create credential bundle Error', e);
             presentAlert({
                 header: 'Error',
                 subHeader: 'Create Boost Bundle error',

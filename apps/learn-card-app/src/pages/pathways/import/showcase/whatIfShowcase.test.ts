@@ -11,12 +11,18 @@
  * generator's preconditions have drifted.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { validatePathway } from '../../core/graphOps';
 import { computeSuggestedRoute } from '../../map/route';
 import { PathwaySchema } from '../../types';
 import { generateScenarios } from '../../what-if/generators';
+
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
+            .mockLearnCardBaseLogger(),
+}));
 
 import {
     WHAT_IF_PREVIEW,

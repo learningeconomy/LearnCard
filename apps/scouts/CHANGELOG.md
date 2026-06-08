@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.90.14
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/lca-api-plugin@1.2.12
+    -   @learncard/react@2.9.29
+    -   @learncard/sss-key-manager@0.1.11
+
+## 1.90.13
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/lca-api-plugin@1.2.11
+    -   @learncard/react@2.9.28
+    -   @learncard/sss-key-manager@0.1.10
+
 ## 1.90.12
 
 ### Patch Changes

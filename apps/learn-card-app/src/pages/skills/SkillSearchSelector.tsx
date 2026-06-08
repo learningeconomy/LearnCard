@@ -10,6 +10,9 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-search-selector');
+
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
@@ -261,7 +264,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
             'https://script.google.com/macros/s/AKfycbxLWcLBp1u7CfIzjPJT0ZTf4TkdgCMsVxNz3YifmUjmHlLTr7xvsoXGJXJKMxjofg3k1A/exec';
         try {
             if (!webhookUrl) {
-                console.warn('REACT_APP_SKILL_SUGGESTION_WEBHOOK not configured');
+                log.warn('REACT_APP_SKILL_SUGGESTION_WEBHOOK not configured');
                 presentToast('Thank you for your suggestion!', {
                     type: ToastTypeEnum.Success,
                 });
@@ -282,7 +285,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error('Failed to submit skill suggestion:', error);
+            log.error('Failed to submit skill suggestion:', error);
             presentToast('Thank you for your suggestion!', {
                 type: ToastTypeEnum.Success,
             });

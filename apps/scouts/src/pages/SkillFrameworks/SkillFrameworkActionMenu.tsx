@@ -7,6 +7,8 @@ import TrashBin from 'learn-card-base/svgs/TrashBin';
 import EditFrameworkModal from './EditFrameworkModal';
 import ManageFrameworkNetworksModal from './ManageFrameworkNetworksModal';
 import ManageFrameworkAdminsModal from './ManageFrameworkAdminsModal';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-framework-action-menu');
 
 type SkillFrameworkActionMenuProps = {
     frameworkId?: string;
@@ -28,7 +30,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
             closeModal();
         },
         onError: error => {
-            console.error('Failed to delete framework:', error);
+            log.error('Failed to delete framework:', error);
             alert('Failed to delete framework. Please try again.');
         },
     });
@@ -45,27 +47,19 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
     const handleManageNetworks = () => {
         if (!frameworkId) return;
         closeModal();
-        newModal(
-            <ManageFrameworkNetworksModal frameworkId={frameworkId} />,
-            undefined,
-            {
-                desktop: ModalTypes.Center,
-                mobile: ModalTypes.Center,
-            }
-        );
+        newModal(<ManageFrameworkNetworksModal frameworkId={frameworkId} />, undefined, {
+            desktop: ModalTypes.Center,
+            mobile: ModalTypes.Center,
+        });
     };
 
     const handleManageAdmins = () => {
         if (!frameworkId) return;
         closeModal();
-        newModal(
-            <ManageFrameworkAdminsModal frameworkId={frameworkId} />,
-            undefined,
-            {
-                desktop: ModalTypes.Center,
-                mobile: ModalTypes.Center,
-            }
-        );
+        newModal(<ManageFrameworkAdminsModal frameworkId={frameworkId} />, undefined, {
+            desktop: ModalTypes.Center,
+            mobile: ModalTypes.Center,
+        });
     };
 
     const handleDelete = () => {
@@ -110,7 +104,9 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
                 <button
                     key={index}
                     onClick={option.onClick}
-                    className={`flex gap-[10px] items-center py-[10px] text-[18px] font-notoSans hover:bg-grayscale-100 rounded-[8px] ${option.className || ''}`}
+                    className={`flex gap-[10px] items-center py-[10px] text-[18px] font-notoSans hover:bg-grayscale-100 rounded-[8px] ${
+                        option.className || ''
+                    }`}
                     disabled={deleteFrameworkMutation.isPending}
                 >
                     {option.icon}

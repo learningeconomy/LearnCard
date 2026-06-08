@@ -37,6 +37,9 @@ const StateValidator = z.object({
         ),
 });
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('join-network-prompt');
+
 export const JoinNetworkPrompt: React.FC<{
     handleCloseModal: () => void;
     showNotificationsModal?: boolean;
@@ -118,7 +121,7 @@ export const JoinNetworkPrompt: React.FC<{
                             queryClient,
                         });
                     } catch (consentErr) {
-                        console.warn('Network consent error:', consentErr);
+                        log.warn('Network consent error:', consentErr);
                     }
 
                     await refetchIsCurrentUserLCNUser();
@@ -142,7 +145,7 @@ export const JoinNetworkPrompt: React.FC<{
                     }
                 }
             } catch (err) {
-                console.log('createProfile::error', err);
+                log.info('createProfile::error', err);
                 setError(err?.message);
                 setLoading(false);
             }

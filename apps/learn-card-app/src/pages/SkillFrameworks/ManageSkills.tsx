@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-skills');
 
 import { useModal, ModalTypes, useWallet, useGetSkillFrameworkById } from 'learn-card-base';
 
@@ -256,7 +258,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
 
                 return { ...framework, skills: skillsWithIcons };
             } catch (e) {
-                console.error('Error generating icons for skills:', e);
+                log.error('Error generating icons for skills:', e);
 
                 setJsonError({
                     type: 'processing',
@@ -353,7 +355,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                 setIsFileUploading(false);
                             })
                             .catch(err => {
-                                console.error('Failed to annotate icons:', err);
+                                log.error('Failed to annotate icons:', err);
                                 setJsonError({
                                     type: 'processing',
                                     errors: ['Icons failed to generate', err.message],
@@ -362,7 +364,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                 setIsFileUploading(false);
                             });
                     } catch (err) {
-                        console.error('Failed to parse JSON file:', err);
+                        log.error('Failed to parse JSON file:', err);
                         setJsonError({
                             type: 'format',
                             errors: [`Failed to parse JSON file: ${err}`],
@@ -372,7 +374,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     }
                 };
                 reader.onerror = e => {
-                    console.error('Error reading JSON file:', e);
+                    log.error('Error reading JSON file:', e);
                     setJsonError({
                         type: 'processing',
                         errors: [`Error reading JSON file: ${e}`],
@@ -443,7 +445,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
 
     const handleSave = async () => {
         if (!fileSkillFramework) {
-            console.error('No framework data to save');
+            log.error('No framework data to save');
             return;
         }
 
@@ -536,7 +538,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
             );
             // }, 301);
         } catch (error) {
-            console.error('Failed to add skills to framework:', error);
+            log.error('Failed to add skills to framework:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             alert(`Failed to add skills: ${errorMessage}`);
         } finally {

@@ -3,6 +3,8 @@ import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { LCNProfile } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-connections');
 
 import { IonSpinner } from '@ionic/react';
 
@@ -224,7 +226,7 @@ const AddressBookConnections: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.info('blockProfile::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',

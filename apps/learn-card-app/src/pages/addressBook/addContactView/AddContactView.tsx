@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useHistory, useRouteMatch } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('add-contact-view');
 
 import {
     useWallet,
@@ -102,7 +104,7 @@ export const AddContactView: React.FC<{
                     hasDismissButton: true,
                 });
             }
-            console.log('connectionReq', connectionReq);
+            log.info('connectionReq', connectionReq);
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
@@ -115,7 +117,7 @@ export const AddContactView: React.FC<{
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
             // @ts-ignore
-            console.log('connectionReq::error', err?.message);
+            log.info('connectionReq::error', err?.message);
             setLoading(false);
         }
     };
@@ -140,7 +142,7 @@ export const AddContactView: React.FC<{
                     hasDismissButton: true,
                 });
             }
-            console.log('expiredInviteConnectionReq', connectionReq);
+            log.info('expiredInviteConnectionReq', connectionReq);
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
@@ -153,7 +155,7 @@ export const AddContactView: React.FC<{
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
             // @ts-ignore
-            console.log('expiredInviteConnectionReq::error', err?.message);
+            log.info('expiredInviteConnectionReq::error', err?.message);
             setLoading(false);
         }
     };
@@ -176,7 +178,7 @@ export const AddContactView: React.FC<{
                     hasDismissButton: true,
                 });
             }
-            console.log('connection', connectionReq);
+            log.info('connection', connectionReq);
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
@@ -203,7 +205,7 @@ export const AddContactView: React.FC<{
                 });
             }
             // @ts-ignore
-            console.log('connection::error', err?.message);
+            log.info('connection::error', err?.message);
             setLoading(false);
         }
     };

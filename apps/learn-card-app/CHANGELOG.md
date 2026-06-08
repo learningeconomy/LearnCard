@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.95.16
+
+### Patch Changes
+
+-   [#1278](https://github.com/learningeconomy/LearnCard/pull/1278) [`b5fd74f72a5b08d271900fa45e856b7464c4a79f`](https://github.com/learningeconomy/LearnCard/commit/b5fd74f72a5b08d271900fa45e856b7464c4a79f) Thanks [@gerardopar](https://github.com/gerardopar)! - redeploy trigger
+
+-   [#1281](https://github.com/learningeconomy/LearnCard/pull/1281) [`ed1b8616cd70a571561592ae4cfb8df5dff23b1d`](https://github.com/learningeconomy/LearnCard/commit/ed1b8616cd70a571561592ae4cfb8df5dff23b1d) Thanks [@Custard7](https://github.com/Custard7)! - Fix playwright import
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/lca-api-plugin@1.2.12
+    -   @learncard/ler-rs-plugin@0.1.12
+    -   @learncard/open-badge-v2-plugin@1.1.22
+    -   @learncard/react@2.9.29
+    -   @learncard/render-method-plugin@3.0.1
+    -   @learncard/sss-key-manager@0.1.11
+
+## 1.95.15
+
+### Patch Changes
+
+-   [#1268](https://github.com/learningeconomy/LearnCard/pull/1268) [`343ba0c683de7a10f23c40f9381515c56b00774d`](https://github.com/learningeconomy/LearnCard/commit/343ba0c683de7a10f23c40f9381515c56b00774d) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1887 - Migrate All Logs to Centralized Logger
+
+-   [#1268](https://github.com/learningeconomy/LearnCard/pull/1268) [`343ba0c683de7a10f23c40f9381515c56b00774d`](https://github.com/learningeconomy/LearnCard/commit/343ba0c683de7a10f23c40f9381515c56b00774d) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1887 - Migrate LCA + Scouts Logs -> getLogger()
+
+-   [#1257](https://github.com/learningeconomy/LearnCard/pull/1257) [`b0022c464e449800e133e1c3f825c6d5fb947c88`](https://github.com/learningeconomy/LearnCard/commit/b0022c464e449800e133e1c3f825c6d5fb947c88) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add OpenID Deep Link Support to Native Apps
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/render-method-plugin@3.0.0
+    -   @learncard/lca-api-plugin@1.2.11
+    -   @learncard/ler-rs-plugin@0.1.11
+    -   @learncard/open-badge-v2-plugin@1.1.21
+    -   @learncard/react@2.9.28
+    -   @learncard/sss-key-manager@0.1.10
+
 ## 1.95.14
 
 ### Patch Changes
