@@ -47,27 +47,19 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
     const handleManageNetworks = () => {
         if (!frameworkId) return;
         closeModal();
-        newModal(
-            <ManageFrameworkNetworksModal frameworkId={frameworkId} />,
-            undefined,
-            {
-                desktop: ModalTypes.Center,
-                mobile: ModalTypes.Center,
-            }
-        );
+        newModal(<ManageFrameworkNetworksModal frameworkId={frameworkId} />, undefined, {
+            desktop: ModalTypes.Center,
+            mobile: ModalTypes.Center,
+        });
     };
 
     const handleManageAdmins = () => {
         if (!frameworkId) return;
         closeModal();
-        newModal(
-            <ManageFrameworkAdminsModal frameworkId={frameworkId} />,
-            undefined,
-            {
-                desktop: ModalTypes.Center,
-                mobile: ModalTypes.Center,
-            }
-        );
+        newModal(<ManageFrameworkAdminsModal frameworkId={frameworkId} />, undefined, {
+            desktop: ModalTypes.Center,
+            mobile: ModalTypes.Center,
+        });
     };
 
     const handleDelete = () => {
@@ -112,7 +104,9 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
                 <button
                     key={index}
                     onClick={option.onClick}
-                    className={`flex gap-[10px] items-center py-[10px] text-[18px] font-notoSans hover:bg-grayscale-100 rounded-[8px] ${option.className || ''}`}
+                    className={`flex gap-[10px] items-center py-[10px] text-[18px] font-notoSans hover:bg-grayscale-100 rounded-[8px] ${
+                        option.className || ''
+                    }`}
                     disabled={deleteFrameworkMutation.isPending}
                 >
                     {option.icon}

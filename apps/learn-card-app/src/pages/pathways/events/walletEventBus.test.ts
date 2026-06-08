@@ -4,6 +4,12 @@ import type { CredentialIngestedEvent, WalletEvent } from '../types';
 
 import { createWalletEventBus } from './walletEventBus';
 
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
+            .mockLearnCardBaseLogger(),
+}));
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------

@@ -299,7 +299,9 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
                         return { masterId: master.id, children };
                     } catch (e) {
-                        log.warn('Failed to fetch boost children', e, { boostUri: master.boostUri });
+                        log.warn('Failed to fetch boost children', e, {
+                            boostUri: master.boostUri,
+                        });
                         return { masterId: master.id, children: [] };
                     }
                 });

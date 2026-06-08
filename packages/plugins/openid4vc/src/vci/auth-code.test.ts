@@ -3,7 +3,9 @@ import {
     beginAuthCodeFlow,
     buildAuthorizationUrl,
     completeAuthCodeFlow,
+    exchangeAuthCodeForToken,
     exchangeAuthorizationCode,
+    requestCredentialsFromAuthCodeToken,
 } from './auth-code';
 import { CredentialOffer } from '../offer/types';
 import { generatePkcePair } from './pkce';
@@ -156,9 +158,14 @@ describe('exchangeAuthorizationCode', () => {
     });
 
     it('throws VciError(token_request_failed) on 400', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
-            mockResponse({ error: 'invalid_grant', error_description: 'bad code' }, { ok: false, status: 400 })
-        );
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValue(
+                mockResponse(
+                    { error: 'invalid_grant', error_description: 'bad code' },
+                    { ok: false, status: 400 }
+                )
+            );
 
         await expect(
             exchangeAuthorizationCode({
@@ -301,7 +308,9 @@ describe('completeAuthCodeFlow', () => {
                     credentialConfigurations: {
                         UniversityDegree_jwt: {
                             format: 'jwt_vc_json',
-                            credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+                            credential_definition: {
+                                type: ['VerifiableCredential', 'UniversityDegree'],
+                            },
                         },
                     },
                 },
@@ -322,8 +331,12 @@ describe('completeAuthCodeFlow', () => {
             credential: 'eyJ.vc.jwt',
             configuration_id: 'UniversityDegree_jwt',
         });
+        expect(result.c_nonce).toBe('nonce-1');
 
         expect(fakeSigner.sign).toHaveBeenCalledTimes(1);
+        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+            nonce: 'nonce-1',
+        });
 
         const tokenCall = fetchMock.mock.calls[0]!;
         const tokenBody = new URLSearchParams(tokenCall[1].body as string);
@@ -355,5 +368,303 @@ describe('completeAuthCodeFlow', () => {
                 signer: fakeSigner,
             })
         ).rejects.toMatchObject({ code: 'token_request_failed' });
+    });
+
+    it('prefers nonce_endpoint over token response c_nonce when advertised', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValueOnce(
+                mockResponse({
+                    access_token: 'at-1',
+                    token_type: 'Bearer',
+                    c_nonce: 'legacy-token-nonce',
+                })
+            )
+            .mockResolvedValueOnce(
+                mockResponse({ c_nonce: 'fresh-endpoint-nonce', c_nonce_expires_in: 120 })
+            )
+            .mockResolvedValueOnce(mockResponse({ credential: 'eyJ.vc.jwt' }));
+
+        const pkce = await generatePkcePair();
+        const flowHandle = {
+            version: 1 as const,
+            issuer: ISSUER,
+            tokenEndpoint: TOKEN_ENDPOINT,
+            credentialEndpoint: CREDENTIAL_ENDPOINT,
+            nonceEndpoint: 'https://issuer.example.com/nonce',
+            configurationIds: ['UniversityDegree_jwt'],
+            redirectUri: REDIRECT_URI,
+            clientId: CLIENT_ID,
+            state: 'state-xxx',
+            pkceVerifier: pkce.verifier,
+            pkceMethod: 'S256' as const,
+            credentialConfigurations: {
+                UniversityDegree_jwt: {
+                    format: 'jwt_vc_json',
+                    credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+                },
+            },
+        };
+
+        await completeAuthCodeFlow({
+            flowHandle,
+            code: 'callback-code',
+            state: 'state-xxx',
+            signer: fakeSigner,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(fetchMock.mock.calls[1]).toEqual([
+            'https://issuer.example.com/nonce',
+            { method: 'POST' },
+        ]);
+        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+            nonce: 'fresh-endpoint-nonce',
+        });
+    });
+
+    it('re-fetches nonce_endpoint and retries once on invalid_proof', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValueOnce(
+                mockResponse({
+                    access_token: 'at-1',
+                    token_type: 'Bearer',
+                    c_nonce: 'legacy-token-nonce',
+                })
+            )
+            .mockResolvedValueOnce(
+                mockResponse({ c_nonce: 'fresh-endpoint-nonce', c_nonce_expires_in: 120 })
+            )
+            .mockResolvedValueOnce(
+                mockResponse(
+                    {
+                        error: 'invalid_proof',
+                        error_description: 'nonce mismatch',
+                        c_nonce: 'ignored-error-nonce',
+                    },
+                    { ok: false, status: 400 }
+                )
+            )
+            .mockResolvedValueOnce(
+                mockResponse({ c_nonce: 'refreshed-endpoint-nonce', c_nonce_expires_in: 240 })
+            )
+            .mockResolvedValueOnce(mockResponse({ credential: 'eyJ.vc.jwt' }));
+
+        const pkce = await generatePkcePair();
+        const flowHandle = {
+            version: 1 as const,
+            issuer: ISSUER,
+            tokenEndpoint: TOKEN_ENDPOINT,
+            credentialEndpoint: CREDENTIAL_ENDPOINT,
+            nonceEndpoint: 'https://issuer.example.com/nonce',
+            configurationIds: ['UniversityDegree_jwt'],
+            redirectUri: REDIRECT_URI,
+            clientId: CLIENT_ID,
+            state: 'state-xxx',
+            pkceVerifier: pkce.verifier,
+            pkceMethod: 'S256' as const,
+            credentialConfigurations: {
+                UniversityDegree_jwt: {
+                    format: 'jwt_vc_json',
+                    credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+                },
+            },
+        };
+
+        const result = await completeAuthCodeFlow({
+            flowHandle,
+            code: 'callback-code',
+            state: 'state-xxx',
+            signer: fakeSigner,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(result.credentials).toHaveLength(1);
+        expect(fakeSigner.sign).toHaveBeenCalledTimes(2);
+        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+            nonce: 'fresh-endpoint-nonce',
+        });
+        expect((fakeSigner.sign as jest.Mock).mock.calls[1][1]).toMatchObject({
+            nonce: 'refreshed-endpoint-nonce',
+        });
+        expect(fetchMock.mock.calls[3]).toEqual([
+            'https://issuer.example.com/nonce',
+            { method: 'POST' },
+        ]);
+    });
+});
+
+describe('exchangeAuthCodeForToken', () => {
+    it('returns the token response without making a credential request', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(
+            mockResponse({
+                access_token: 'at-standalone',
+                token_type: 'Bearer',
+                c_nonce: 'cn-standalone',
+            })
+        );
+
+        const pkce = await generatePkcePair();
+        const flowHandle = {
+            version: 1 as const,
+            issuer: ISSUER,
+            tokenEndpoint: TOKEN_ENDPOINT,
+            credentialEndpoint: CREDENTIAL_ENDPOINT,
+            configurationIds: ['UniversityDegree_jwt'],
+            redirectUri: REDIRECT_URI,
+            clientId: CLIENT_ID,
+            state: 'state-solo',
+            pkceVerifier: pkce.verifier,
+            pkceMethod: 'S256' as const,
+            credentialConfigurations: {},
+        };
+
+        const result = await exchangeAuthCodeForToken({
+            flowHandle,
+            code: 'callback-code',
+            state: 'state-solo',
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(result).toMatchObject({
+            access_token: 'at-standalone',
+            token_type: 'Bearer',
+            c_nonce: 'cn-standalone',
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock.mock.calls[0]?.[0]).toBe(TOKEN_ENDPOINT);
+    });
+});
+
+describe('requestCredentialsFromAuthCodeToken', () => {
+    beforeEach(() => {
+        (fakeSigner.sign as jest.Mock).mockClear();
+    });
+
+    it('uses the supplied tokenResponse without re-exchanging the auth code', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const pkce = await generatePkcePair();
+        const flowHandle = {
+            version: 1 as const,
+            issuer: ISSUER,
+            tokenEndpoint: TOKEN_ENDPOINT,
+            credentialEndpoint: CREDENTIAL_ENDPOINT,
+            configurationIds: ['UniversityDegree_jwt'],
+            redirectUri: REDIRECT_URI,
+            clientId: CLIENT_ID,
+            state: 'state-standalone',
+            pkceVerifier: pkce.verifier,
+            pkceMethod: 'S256' as const,
+            credentialConfigurations: {
+                UniversityDegree_jwt: {
+                    format: 'jwt_vc_json',
+                    credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+                },
+            },
+        };
+
+        const result = await requestCredentialsFromAuthCodeToken({
+            flowHandle,
+            tokenResponse: {
+                access_token: 'at-supplied',
+                token_type: 'Bearer',
+                c_nonce: 'nonce-supplied',
+            },
+            signer: fakeSigner,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(result.credentials).toHaveLength(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock.mock.calls[0]?.[0]).toBe(CREDENTIAL_ENDPOINT);
+    });
+
+    it('honors nonce_endpoint if present on the flowHandle', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValueOnce(
+                mockResponse({ c_nonce: 'fresh-endpoint-nonce', c_nonce_expires_in: 120 })
+            )
+            .mockResolvedValueOnce(mockResponse({ credential: 'eyJ.vc.jwt' }));
+
+        const pkce = await generatePkcePair();
+        const flowHandle = {
+            version: 1 as const,
+            issuer: ISSUER,
+            tokenEndpoint: TOKEN_ENDPOINT,
+            credentialEndpoint: CREDENTIAL_ENDPOINT,
+            nonceEndpoint: 'https://issuer.example.com/nonce',
+            configurationIds: ['UniversityDegree_jwt'],
+            redirectUri: REDIRECT_URI,
+            clientId: CLIENT_ID,
+            state: 'state-standalone',
+            pkceVerifier: pkce.verifier,
+            pkceMethod: 'S256' as const,
+            credentialConfigurations: {
+                UniversityDegree_jwt: {
+                    format: 'jwt_vc_json',
+                    credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+                },
+            },
+        };
+
+        await requestCredentialsFromAuthCodeToken({
+            flowHandle,
+            tokenResponse: {
+                access_token: 'at-supplied',
+                token_type: 'Bearer',
+                c_nonce: 'legacy-token-nonce',
+            },
+            signer: fakeSigner,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(fetchMock.mock.calls[0]).toEqual([
+            'https://issuer.example.com/nonce',
+            { method: 'POST' },
+        ]);
+        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+            nonce: 'fresh-endpoint-nonce',
+        });
+    });
+
+    it('falls back to tokenResponse.c_nonce when no nonce_endpoint is advertised', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const pkce = await generatePkcePair();
+        const flowHandle = {
+            version: 1 as const,
+            issuer: ISSUER,
+            tokenEndpoint: TOKEN_ENDPOINT,
+            credentialEndpoint: CREDENTIAL_ENDPOINT,
+            configurationIds: ['UniversityDegree_jwt'],
+            redirectUri: REDIRECT_URI,
+            clientId: CLIENT_ID,
+            state: 'state-standalone',
+            pkceVerifier: pkce.verifier,
+            pkceMethod: 'S256' as const,
+            credentialConfigurations: {
+                UniversityDegree_jwt: {
+                    format: 'jwt_vc_json',
+                    credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+                },
+            },
+        };
+
+        await requestCredentialsFromAuthCodeToken({
+            flowHandle,
+            tokenResponse: {
+                access_token: 'at-supplied',
+                token_type: 'Bearer',
+                c_nonce: 'nonce-from-token',
+            },
+            signer: fakeSigner,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+            nonce: 'nonce-from-token',
+        });
     });
 });

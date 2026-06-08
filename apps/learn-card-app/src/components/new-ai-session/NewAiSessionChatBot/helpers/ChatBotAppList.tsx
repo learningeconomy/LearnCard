@@ -65,16 +65,12 @@ export const ChatBotAppListItem: React.FC<{
                     } catch (error) {
                         log.error('Failed to consent to LearnCard AI contract:', error);
 
-                        const message =
-                            error instanceof Error ? error.message : String(error);
+                        const message = error instanceof Error ? error.message : String(error);
 
-                        presentToast(
-                            `Failed to consent to LearnCard AI contract: ${message}`,
-                            {
-                                type: ToastTypeEnum.Error,
-                                hasDismissButton: true,
-                            }
-                        );
+                        presentToast(`Failed to consent to LearnCard AI contract: ${message}`, {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        });
                     }
                 }
 

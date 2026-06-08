@@ -10,7 +10,7 @@ const useWalletDid = (lc?: BespokeLearnCard) => {
     const getWalletDid = useCallback(async () => {
         try {
             // Use the provided wallet or initialize a new wallet
-            const wallet = lc ||await initWallet();
+            const wallet = lc || (await initWallet());
             const defaultDid = wallet.id.did();
             const keyDid = wallet.id.did('key');
 

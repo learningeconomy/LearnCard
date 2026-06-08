@@ -1,7 +1,6 @@
-import qs from 'query-string';
-
 import { quantizeValue } from '../arrays';
 import { getUrlsFromSrcSet } from './images.helpers';
+import { parseUrl, stringifyUrl } from './url.helpers';
 
 /**
  * Fixes image rotation based on EXIF data and uses auto_image on a given srcset string
@@ -44,11 +43,11 @@ export const VALID_DISCORD_SIZES = [20, 32, 40, 60, 64, 80, 100, 128, 256, 512, 
  * @return Discord URL
  */
 export const resizeUrl = (url: string, size: number): string => {
-    const parsedUrl = qs.parseUrl(url);
+    const parsedUrl = parseUrl(url);
 
     parsedUrl.query.size = quantizeValue(size, VALID_DISCORD_SIZES).toString();
 
-    return qs.stringifyUrl(parsedUrl);
+    return stringifyUrl(parsedUrl);
 };
 
 /**

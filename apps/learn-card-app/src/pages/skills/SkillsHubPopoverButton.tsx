@@ -147,97 +147,105 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                 </span>
                 <SortIcon className="h-[32px] w-[32px] text-grayscale-700" />
             </button>
-            {!isMobile && <IonPopover
-                onDidDismiss={() => setShowSortPopover(false)}
-                reference="trigger"
-                trigger="trigger-button"
-                className={theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'}
-                style={{ '--min-width': '300px' } as React.CSSProperties}
-            >
-                <div className="p-[15px] rounded-[20px] bg-white">
-                    <div className="flex flex-col gap-[5px]">
-                        {SKILLSHUB_SORT_OPTIONS.map(option => {
-                            return (
-                                <button
-                                    className={`font-poppins text-[16px] flex gap-[10px] items-center justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
-                                        option.type === sortBy ? '!bg-grayscale-100' : ''
-                                    }`}
-                                    key={option.id}
-                                    onClick={() => setSortBy(option.type)}
-                                >
-                                    {option.type === sortBy ? (
-                                        <Checkmark className="text-grayscale-800 w-[22px] h-[22px]" />
-                                    ) : (
-                                        <div className="w-[22px] h-[22px] shrink-0"> </div>
-                                    )}
-                                    Sort{' '}
-                                    {option.type === SkillsHubSortOptionsEnum.recentlyAdded
-                                        ? 'by '
-                                        : ''}
-                                    {option.title}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    <div className="w-full flex items-center justify-center">
-                        <div className="w-[90%] h-[1px] bg-grayscale-100 mt-2 mb-2" />
-                    </div>
-                    <div className="flex flex-col gap-[5px]">
-                        {SKILLSHUB_FILTER_OPTIONS.map(option => {
-                            return (
-                                <button
-                                    className={`font-poppins text-[16px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
-                                        filterBy.includes(option.type) ? '!bg-grayscale-100' : ''
-                                    }`}
-                                    key={option.id}
-                                    onClick={() => setFilterBy(toggleFilter(filterBy, option.type))}
-                                >
-                                    {filterBy.includes(option.type) ? (
-                                        <Checkmark className="text-grayscale-800 w-[22px] h-[22px] shrink-0" />
-                                    ) : (
-                                        <div className="w-[22px] h-[22px] shrink-0"> </div>
-                                    )}
-                                    {option.type === SkillsHubFilterOptionsEnum.legacy && (
+            {!isMobile && (
+                <IonPopover
+                    onDidDismiss={() => setShowSortPopover(false)}
+                    reference="trigger"
+                    trigger="trigger-button"
+                    className={theme.id === 'formal' ? 'launchpad-formal' : 'launchpad-popover'}
+                    style={{ '--min-width': '300px' } as React.CSSProperties}
+                >
+                    <div className="p-[15px] rounded-[20px] bg-white">
+                        <div className="flex flex-col gap-[5px]">
+                            {SKILLSHUB_SORT_OPTIONS.map(option => {
+                                return (
+                                    <button
+                                        className={`font-poppins text-[16px] flex gap-[10px] items-center justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
+                                            option.type === sortBy ? '!bg-grayscale-100' : ''
+                                        }`}
+                                        key={option.id}
+                                        onClick={() => setSortBy(option.type)}
+                                    >
+                                        {option.type === sortBy ? (
+                                            <Checkmark className="text-grayscale-800 w-[22px] h-[22px]" />
+                                        ) : (
+                                            <div className="w-[22px] h-[22px] shrink-0"> </div>
+                                        )}
+                                        Sort{' '}
+                                        {option.type === SkillsHubSortOptionsEnum.recentlyAdded
+                                            ? 'by '
+                                            : ''}
+                                        {option.title}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div className="w-full flex items-center justify-center">
+                            <div className="w-[90%] h-[1px] bg-grayscale-100 mt-2 mb-2" />
+                        </div>
+                        <div className="flex flex-col gap-[5px]">
+                            {SKILLSHUB_FILTER_OPTIONS.map(option => {
+                                return (
+                                    <button
+                                        className={`font-poppins text-[16px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 rounded-[15px] w-full p-[10px] ${
+                                            filterBy.includes(option.type)
+                                                ? '!bg-grayscale-100'
+                                                : ''
+                                        }`}
+                                        key={option.id}
+                                        onClick={() =>
+                                            setFilterBy(toggleFilter(filterBy, option.type))
+                                        }
+                                    >
+                                        {filterBy.includes(option.type) ? (
+                                            <Checkmark className="text-grayscale-800 w-[22px] h-[22px] shrink-0" />
+                                        ) : (
+                                            <div className="w-[22px] h-[22px] shrink-0"> </div>
+                                        )}
+                                        {option.type === SkillsHubFilterOptionsEnum.legacy && (
+                                            <FrameworkImage
+                                                sizeClassName="w-[25px] h-[25px]"
+                                                iconSizeClassName="w-[16px] h-[16px]"
+                                            />
+                                        )}
+                                        {option.title}
+                                    </button>
+                                );
+                            })}
+                            {availableFrameworks.map(option => {
+                                return (
+                                    <button
+                                        className={`font-poppins text-[16px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 w-full p-[10px] rounded-[15px] ${
+                                            filterBy.includes(option.id) ? '!bg-grayscale-100' : ''
+                                        }`}
+                                        key={option.id}
+                                        onClick={() =>
+                                            setFilterBy(toggleFilter(filterBy, option.id))
+                                        }
+                                    >
+                                        {filterBy.includes(option.id) ? (
+                                            <Checkmark className="text-grayscale-800 w-[22px] h-[22px] shrink-0" />
+                                        ) : (
+                                            <div className="w-[22px] h-[22px] shrink-0"> </div>
+                                        )}
                                         <FrameworkImage
+                                            image={option.image}
                                             sizeClassName="w-[25px] h-[25px]"
                                             iconSizeClassName="w-[16px] h-[16px]"
                                         />
-                                    )}
-                                    {option.title}
-                                </button>
-                            );
-                        })}
-                        {availableFrameworks.map(option => {
-                            return (
-                                <button
-                                    className={`font-poppins text-[16px] flex gap-[10px] items-start justify-start text-left text-grayscale-900 w-full p-[10px] rounded-[15px] ${
-                                        filterBy.includes(option.id) ? '!bg-grayscale-100' : ''
-                                    }`}
-                                    key={option.id}
-                                    onClick={() => setFilterBy(toggleFilter(filterBy, option.id))}
-                                >
-                                    {filterBy.includes(option.id) ? (
-                                        <Checkmark className="text-grayscale-800 w-[22px] h-[22px] shrink-0" />
-                                    ) : (
-                                        <div className="w-[22px] h-[22px] shrink-0"> </div>
-                                    )}
-                                    <FrameworkImage
-                                        image={option.image}
-                                        sizeClassName="w-[25px] h-[25px]"
-                                        iconSizeClassName="w-[16px] h-[16px]"
-                                    />
-                                    {option.name}
-                                </button>
-                            );
-                        })}
-                        {frameworksLoading && (
-                            <div className="flex items-center justify-center">
-                                <IonSpinner name="crescent" color="dark" />
-                            </div>
-                        )}
+                                        {option.name}
+                                    </button>
+                                );
+                            })}
+                            {frameworksLoading && (
+                                <div className="flex items-center justify-center">
+                                    <IonSpinner name="crescent" color="dark" />
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </IonPopover>}
+                </IonPopover>
+            )}
         </>
     );
 };

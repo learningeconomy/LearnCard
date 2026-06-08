@@ -596,10 +596,14 @@ const AuthSessionManager: React.FC<{
                     const version = parseInt(qrVersionStr, 10);
 
                     if (!isNaN(version)) {
-                        log.debug('[QR Login Pickup] storing shareVersion', { shareVersion: version });
+                        log.debug('[QR Login Pickup] storing shareVersion', {
+                            shareVersion: version,
+                        });
                         await keyDerivation.storeLocalShareVersion?.(version);
                     } else {
-                        log.warn('[QR Login Pickup] shareVersion is not a valid number', { qrVersionStr });
+                        log.warn('[QR Login Pickup] shareVersion is not a valid number', {
+                            qrVersionStr,
+                        });
                     }
                 } else {
                     log.warn('[QR Login Pickup] no shareVersion received from approver device');
@@ -679,7 +683,9 @@ const AuthSessionManager: React.FC<{
             const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
             if (!vpJwt || typeof vpJwt !== 'string') {
-                log.error('[signDidAuthVp] getDidAuthVp returned non-string', { type: typeof vpJwt });
+                log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
+                    type: typeof vpJwt,
+                });
                 throw new Error('Failed to sign DID-Auth VP JWT');
             }
 
@@ -1180,10 +1186,14 @@ const AuthSessionManager: React.FC<{
                             await keyDerivation.storeLocalKey(deviceShare);
 
                             if (shareVersion != null) {
-                                log.debug('[Recovery via Device] storing shareVersion', { shareVersion });
+                                log.debug('[Recovery via Device] storing shareVersion', {
+                                    shareVersion,
+                                });
                                 await keyDerivation.storeLocalShareVersion?.(shareVersion);
                             } else {
-                                log.warn('[Recovery via Device] no shareVersion received from approver device');
+                                log.warn(
+                                    '[Recovery via Device] no shareVersion received from approver device'
+                                );
                             }
 
                             await coordinator.initialize();
@@ -1430,7 +1440,9 @@ const AuthSessionManager: React.FC<{
 
                         const providerType = authProvider.getProviderType();
 
-                        log.debug('[setupMethod] got token, calling setupRecoveryMethod', { providerType });
+                        log.debug('[setupMethod] got token, calling setupRecoveryMethod', {
+                            providerType,
+                        });
 
                         return keyDerivation.setupRecoveryMethod!({
                             token,

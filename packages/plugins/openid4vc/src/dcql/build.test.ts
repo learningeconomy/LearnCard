@@ -246,7 +246,7 @@ describe('buildDcqlPresentations — typed errors', () => {
         }
     });
 
-    it('throws unsupported_format for a sd-jwt-vc / mso_mdoc query', () => {
+    it('throws invalid_sd_jwt_vc for a vc+sd-jwt query with a candidate that is not a recognizable SD-JWT compact', () => {
         const query = parseDcqlQuery({
             credentials: [
                 {
@@ -263,7 +263,7 @@ describe('buildDcqlPresentations — typed errors', () => {
                 chosen: [
                     {
                         credentialQueryId: 'sd',
-                        candidate: { credential: 'doesnt-matter~for~now' },
+                        candidate: { credential: 'doesnt-look-like-sd-jwt' },
                     },
                 ],
                 holder: 'did:jwk:h',
@@ -271,7 +271,78 @@ describe('buildDcqlPresentations — typed errors', () => {
             fail('expected throw');
         } catch (e) {
             expect(e).toBeInstanceOf(BuildDcqlPresentationError);
-            expect((e as BuildDcqlPresentationError).code).toBe('unsupported_format');
+            expect((e as BuildDcqlPresentationError).code).toBe('invalid_sd_jwt_vc');
+        }
+    });
+
+    it('emits a kind="sd-jwt-vc" passthrough for vc+sd-jwt queries with a compact candidate', () => {
+        const compact =
+            'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.eyJpc3MiOiJkaWQ6d2ViOmlzc3VlciJ9.signature~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkFkYSJd~';
+
+        const query = parseDcqlQuery({
+            credentials: [
+                {
+                    id: 'sd',
+                    format: 'vc+sd-jwt',
+                    meta: { vct_values: ['urn:test:credential'] },
+                },
+            ],
+        });
+
+        const built = buildDcqlPresentations({
+            query,
+            chosen: [{ credentialQueryId: 'sd', candidate: { credential: compact } }],
+            holder: 'did:jwk:h',
+        });
+
+        expect(built).toHaveLength(1);
+        expect(built[0]?.kind).toBe('sd-jwt-vc');
+        if (built[0]?.kind === 'sd-jwt-vc') {
+            expect(built[0].compact).toBe(compact);
+            expect(built[0].vpFormat).toBe('vc+sd-jwt');
+            expect(built[0].credentialQueryId).toBe('sd');
+        }
+    });
+
+    it('emits a kind="sd-jwt-vc" passthrough for dc+sd-jwt queries (draft-16 canonical format)', () => {
+        const compact =
+            'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.eyJpc3MiOiJkaWQ6d2ViOmlzc3VlciJ9.signature~';
+
+        const query = parseDcqlQuery({
+            credentials: [
+                {
+                    id: 'sd',
+                    format: 'dc+sd-jwt',
+                    meta: { vct_values: ['urn:test:credential'] },
+                },
+            ],
+        });
+
+        const built = buildDcqlPresentations({
+            query,
+            chosen: [{ credentialQueryId: 'sd', candidate: { credential: compact } }],
+            holder: 'did:jwk:h',
+        });
+
+        expect(built[0]?.kind).toBe('sd-jwt-vc');
+        if (built[0]?.kind === 'sd-jwt-vc') {
+            expect(built[0].vpFormat).toBe('dc+sd-jwt');
+        }
+    });
+
+    it('emits kind="vp" for non-SD-JWT queries (regression check on discriminator)', () => {
+        const built = buildDcqlPresentations({
+            query: baseQuery,
+            chosen: [
+                { credentialQueryId: 'degree', candidate: { credential: universityDegreeJwt } },
+            ],
+            holder: 'did:jwk:h',
+        });
+
+        expect(built[0]?.kind).toBe('vp');
+        if (built[0]?.kind === 'vp') {
+            expect(built[0].vpFormat).toBe('jwt_vp_json');
+            expect(built[0].unsignedVp.verifiableCredential).toEqual([universityDegreeJwt]);
         }
     });
 

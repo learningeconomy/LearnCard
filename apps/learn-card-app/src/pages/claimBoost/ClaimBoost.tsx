@@ -194,9 +194,9 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
-                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
-                }`
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(
+                    boostUri
+                )}${challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''}`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');
@@ -245,7 +245,9 @@ const ClaimBoost: React.FC<{
 
                 const now = Date.now();
                 const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                     method: ProfileBuildMethod.ClaimLink,
                     itemType: 'credential',
@@ -520,13 +522,9 @@ const ClaimBoost: React.FC<{
                                             }
                                             className="w-full"
                                         />
-                                    ) : (
-                                        boostCredentialWithId
-                                            ? renderClaimCredentialDisplay(
-                                                  boostCredentialWithId
-                                              )
-                                            : null
-                                    )}
+                                    ) : boostCredentialWithId ? (
+                                        renderClaimCredentialDisplay(boostCredentialWithId)
+                                    ) : null}
                                 </div>
                             )}
 

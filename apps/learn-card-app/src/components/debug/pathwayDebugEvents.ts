@@ -81,10 +81,7 @@ const isDebugEnabled = (): boolean => {
     if (typeof window === 'undefined') return false;
 
     try {
-        return (
-            import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true'
-            || import.meta.env.DEV
-        );
+        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
     } catch {
         return false;
     }
@@ -106,7 +103,7 @@ export const emitPathwayDebugEvent = (
     options?: {
         data?: Record<string, unknown>;
         level?: 'info' | 'success' | 'warning' | 'error';
-    },
+    }
 ): void => {
     if (!isDebugEnabled()) return;
 
@@ -133,9 +130,7 @@ export const emitPathwayDebugEvent = (
     }
 };
 
-export const subscribeToPathwayDebugEvents = (
-    listener: EventListener,
-): (() => void) => {
+export const subscribeToPathwayDebugEvents = (listener: EventListener): (() => void) => {
     listeners.add(listener);
 
     return () => {
@@ -183,22 +178,22 @@ const projectDispatch = (record: ProgressDispatchRecord): PathwayDebugEvent => {
         ? 'pathway:credential-dispatched'
         : 'pathway:session-dispatched';
 
-    const level: PathwayDebugEvent['level'] =
-        totalMatches > 0 ? 'success' : 'info';
+    const level: PathwayDebugEvent['level'] = totalMatches > 0 ? 'success' : 'info';
 
     // Friendly one-liner. Shape varies slightly by event kind so the
     // timeline reads naturally.
     const kindLabel = isCredential ? 'Credential ingested' : 'AI session finished';
-    const matchLabel = totalMatches === 0
-        ? 'no matches'
-        : [
-              nodeCount > 0 ? `${nodeCount} node${nodeCount === 1 ? '' : 's'}` : null,
-              outcomeCount > 0
-                  ? `${outcomeCount} outcome${outcomeCount === 1 ? '' : 's'}`
-                  : null,
-          ]
-              .filter(Boolean)
-              .join(' + ');
+    const matchLabel =
+        totalMatches === 0
+            ? 'no matches'
+            : [
+                  nodeCount > 0 ? `${nodeCount} node${nodeCount === 1 ? '' : 's'}` : null,
+                  outcomeCount > 0
+                      ? `${outcomeCount} outcome${outcomeCount === 1 ? '' : 's'}`
+                      : null,
+              ]
+                  .filter(Boolean)
+                  .join(' + ');
 
     const message = `${kindLabel} → ${matchLabel}`;
 

@@ -52,9 +52,12 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         credential?: any;
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string, credential?: any) => {
-        setPendingCredential({ credentialUri, boostUri, credential });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -74,7 +77,9 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(window.location.origin)}`;
+                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(
+                    window.location.origin
+                )}`;
             } catch {
                 // embedUrl is invalid — do not navigate
             }

@@ -116,7 +116,9 @@ describe('PII scrubbing', () => {
         configureSentryTransport(transport);
 
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        logger.error('batch failed', { items: [{ accessToken: 'tok-1' }, { accessToken: 'tok-2' }] });
+        logger.error('batch failed', {
+            items: [{ accessToken: 'tok-1' }, { accessToken: 'tok-2' }],
+        });
 
         const call = transport.calls.find(c => c.method === 'captureMessage');
         const extra = call!.args[3] as Record<string, { accessToken: unknown }[]>;
@@ -129,7 +131,12 @@ describe('PII scrubbing', () => {
         configureSentryTransport(transport);
 
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        logger.error('variant keys', { userEmail: 'a@b.com', phoneNumber: '555', firstName: 'Bob', code: 1 });
+        logger.error('variant keys', {
+            userEmail: 'a@b.com',
+            phoneNumber: '555',
+            firstName: 'Bob',
+            code: 1,
+        });
 
         const call = transport.calls.find(c => c.method === 'captureMessage');
         const extra = call!.args[3] as Record<string, unknown>;
@@ -485,7 +492,9 @@ describe('flexible arguments (like console.log)', () => {
         const call = transport.calls.find(c => c.method === 'addBreadcrumb');
         expect(call).toBeDefined();
         expect((call!.args[0] as { message: string }).message).toBe('warning: low disk space');
-        expect((call!.args[0] as { data?: { error?: string } }).data?.error).toBe('Error: warning: low disk space');
+        expect((call!.args[0] as { data?: { error?: string } }).data?.error).toBe(
+            'Error: warning: low disk space'
+        );
     });
 
     it('log.warn(error) uses error.message for captureMessage', () => {
@@ -583,13 +592,7 @@ describe('rest-args contract', () => {
         logger.warn('ReAuth: UID mismatch', 'old-uid', 'got', 'new-uid');
 
         // All four positional args must reach the console
-        expect(spy).toHaveBeenCalledWith(
-            '',
-            'ReAuth: UID mismatch',
-            'old-uid',
-            'got',
-            'new-uid'
-        );
+        expect(spy).toHaveBeenCalledWith('', 'ReAuth: UID mismatch', 'old-uid', 'got', 'new-uid');
     });
 
     it('warn surfaces an Error via the `error` extra rather than dropping it', () => {

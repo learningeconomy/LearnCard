@@ -227,7 +227,9 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     </span>
                                     {!issuerDisplay.isMissing && (
                                         <span className="issued-by max-w-full break-words text-center line-clamp-2 text-[14px]">
-                                            <span className="font-medium text-grayscale-900">By</span>{' '}
+                                            <span className="font-medium text-grayscale-900">
+                                                By
+                                            </span>{' '}
                                             {issuerDisplay.isDidValue ? (
                                                 <span className="font-[600] font-poppins break-words">
                                                     <span className="text-grayscale-900">

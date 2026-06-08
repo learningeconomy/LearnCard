@@ -263,8 +263,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.3.1)
       '@capgo/capacitor-updater':
-        specifier: 8.45.10
-        version: 8.45.10(@capacitor/core@8.3.1)
+        specifier: 8.47.7
+        version: 8.47.7(@capacitor/core@8.3.1)
       '@digitalcredentials/jsonld':
         specifier: ^9.0.0
         version: 9.0.0
@@ -729,8 +729,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.3.1)
       '@capgo/capacitor-updater':
-        specifier: 8.45.10
-        version: 8.45.10(@capacitor/core@8.3.1)
+        specifier: 8.47.7
+        version: 8.47.7(@capacitor/core@8.3.1)
       '@datadog/browser-logs':
         specifier: ^4.50.1
         version: 4.50.1
@@ -1229,6 +1229,12 @@ importers:
 
   examples/openid4vc-playground:
     dependencies:
+      '@sd-jwt/decode':
+        specifier: ^0.19.0
+        version: 0.19.0
+      '@sd-jwt/sd-jwt-vc':
+        specifier: ^0.19.0
+        version: 0.19.0
       jose:
         specifier: ^5.9.6
         version: 5.10.0
@@ -1548,6 +1554,9 @@ importers:
       '@learncard/lca-api-plugin':
         specifier: workspace:*
         version: link:../plugins/lca-api-plugin
+      '@learncard/learn-card-plugin':
+        specifier: workspace:*
+        version: link:../plugins/learn-card
       '@learncard/ler-rs-plugin':
         specifier: workspace:*
         version: link:../plugins/ler-rs
@@ -1969,18 +1978,24 @@ importers:
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
+      '@noble/hashes':
+        specifier: ^1.8.0
+        version: 1.8.0
+      '@sd-jwt/decode':
+        specifier: ^0.19.0
+        version: 0.19.0
       '@trpc/server':
         specifier: 11.7.1
         version: 11.7.1(typescript@5.6.2)
       immer:
         specifier: ^10.0.3
         version: 10.2.0
-      query-string:
-        specifier: 9.3.1
-        version: 9.3.1
       use-immer:
         specifier: ^0.9.0
         version: 0.9.0(immer@10.2.0)(react@18.3.1)
+      zod:
+        specifier: 4.1.13
+        version: 4.1.13
     devDependencies:
       '@esbuild-plugins/node-resolve':
         specifier: ^0.1.4
@@ -2066,6 +2081,9 @@ importers:
       '@learncard/openid4vc-plugin':
         specifier: workspace:*
         version: link:../plugins/openid4vc
+      '@learncard/sd-jwt-vc-plugin':
+        specifier: workspace:*
+        version: link:../plugins/sd-jwt-vc
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -3252,6 +3270,12 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../didkit
+      '@learncard/vc-plugin':
+        specifier: workspace:^
+        version: link:../vc
+      '@sd-jwt/core':
+        specifier: ^0.19.0
+        version: 0.19.0
       '@sd-jwt/decode':
         specifier: ^0.19.0
         version: 0.19.0
@@ -4149,7 +4173,7 @@ importers:
         version: 1.4.0
       openai:
         specifier: ^4.55.7
-        version: 4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
+        version: 4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
@@ -6301,8 +6325,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capgo/capacitor-updater@8.45.10':
-    resolution: {integrity: sha512-C7BG65RRJuEms/48uZ5IIUWT1+Sewi8mfistuTAiWs4ZHyd7P5OUmeZPikztysfgWfMEZCNRJHjfRUcdwFBWrg==}
+  '@capgo/capacitor-updater@8.47.7':
+    resolution: {integrity: sha512-Gi9onxH1ysaS40jirR9q69oS1qRidw13oAFzc7rvION+Omc/OLNkC2tqgEw55oVQloIokJKevRNQl4vjcmTliA==}
     peerDependencies:
       '@capacitor/core': ^8.0.0
 
@@ -12620,7 +12644,6 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.10':
     resolution: {integrity: sha512-mHH7I6fWdztaNjguGJOLaerXWnQymQ/xKQ8NqClIXoI2PJNgmpQG6DxFcLRs1aYyWg1iY8bPliLJi41u94KdCA==}
-    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -25663,10 +25686,6 @@ packages:
     resolution: {integrity: sha512-tUZIw8J0CawM5wyGBiDOAp7ObdRQh4uBor/fUR9ZjmbZVvw95OD9If4w3MQxr99rg0DJZ/9CIORcpEqU5hQG7g==}
     engines: {node: '>=14.16'}
 
-  query-string@9.3.1:
-    resolution: {integrity: sha512-5fBfMOcDi5SA9qj5jZhWAcTtDfKF5WFdd2uD9nVNlbxVv1baq65aALy6qofpNEGELHvisjjasxQp7BlM9gvMzw==}
-    engines: {node: '>=18'}
-
   querystring-es3@0.2.1:
     resolution: {integrity: sha512-773xhDQnZBMFobEiztv8LIl70ch5MSF/jUQVlhwFyBILqq96anmoctVIYz+ZRp0qbCKATTn6ev02M3r7Ga5vqA==}
     engines: {node: '>=0.4.x'}
@@ -33704,7 +33723,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.3.1
 
-  '@capgo/capacitor-updater@8.45.10(@capacitor/core@8.3.1)':
+  '@capgo/capacitor-updater@8.47.7(@capacitor/core@8.3.1)':
     dependencies:
       '@capacitor/core': 8.3.1
 
@@ -59686,7 +59705,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
+  openai@4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -59696,7 +59715,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
     transitivePeerDependencies:
       - encoding
@@ -61289,12 +61308,6 @@ snapshots:
       strict-uri-encode: 2.0.0
 
   query-string@8.2.0:
-    dependencies:
-      decode-uri-component: 0.4.1
-      filter-obj: 5.1.0
-      split-on-first: 3.0.0
-
-  query-string@9.3.1:
     dependencies:
       decode-uri-component: 0.4.1
       filter-obj: 5.1.0

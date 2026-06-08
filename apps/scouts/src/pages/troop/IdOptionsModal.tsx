@@ -207,13 +207,15 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 />
             )}
             {/* Remove Scout option - for troop leaders/admins removing non-admin members */}
-            {!isPersonalId && (isTroopLeader || canManageId || hasGlobalAdminID) && isScoutMember && (
-                <IdOptionRow
-                    text={`Remove from ${troopOrNetwork}`}
-                    icon={<PeaceIcon />}
-                    onClick={handleRevokeScout}
-                />
-            )}
+            {!isPersonalId &&
+                (isTroopLeader || canManageId || hasGlobalAdminID) &&
+                isScoutMember && (
+                    <IdOptionRow
+                        text={`Remove from ${troopOrNetwork}`}
+                        icon={<PeaceIcon />}
+                        onClick={handleRevokeScout}
+                    />
+                )}
         </div>
     );
 };

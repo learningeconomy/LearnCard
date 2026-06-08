@@ -54,11 +54,11 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 /*                                   config                                   */
 /* -------------------------------------------------------------------------- */
 
-const REAL_ISSUER_BASE =
-    process.env.EUDI_HOSTED_ISSUER_BASE_URL ?? 'https://issuer.eudiw.dev';
+const REAL_ISSUER_BASE = process.env.EUDI_HOSTED_ISSUER_BASE_URL ?? 'https://issuer.eudiw.dev';
 const REAL_CREDENTIAL_ENDPOINT =
-    process.env.EUDI_HOSTED_CREDENTIAL_ENDPOINT ??
-    'https://backend.issuer.eudiw.dev/credential';
+    process.env.EUDI_HOSTED_CREDENTIAL_ENDPOINT ?? 'https://backend.issuer.eudiw.dev/credential';
+const REAL_NONCE_ENDPOINT =
+    process.env.EUDI_HOSTED_NONCE_ENDPOINT ?? 'https://backend.issuer.eudiw.dev/nonce';
 
 /**
  * The base URL the wallet sees in metadata + offers. Defaults to the
@@ -66,8 +66,7 @@ const REAL_CREDENTIAL_ENDPOINT =
  * running the playground on a non-default host/port.
  */
 export const EUDI_PROXY_PUBLIC_BASE_URL =
-    process.env.EUDI_PROXY_PUBLIC_BASE_URL ??
-    'http://localhost:5173/api/eudi-proxy';
+    process.env.EUDI_PROXY_PUBLIC_BASE_URL ?? 'http://localhost:5173/api/eudi-proxy';
 
 const PROXY_PATH_PREFIX = '/api/eudi-proxy';
 
@@ -102,18 +101,12 @@ export const handleEudiProxy = async (
     }
 
     try {
-        if (
-            req.method === 'GET' &&
-            subPath === '/.well-known/openid-credential-issuer'
-        ) {
+        if (req.method === 'GET' && subPath === '/.well-known/openid-credential-issuer') {
             await proxyCredentialIssuerMetadata(res);
             return true;
         }
 
-        if (
-            req.method === 'GET' &&
-            subPath === '/.well-known/oauth-authorization-server'
-        ) {
+        if (req.method === 'GET' && subPath === '/.well-known/oauth-authorization-server') {
             await proxyAuthorizationServerMetadata(res);
             return true;
         }
@@ -133,6 +126,16 @@ export const handleEudiProxy = async (
                 req,
                 res,
                 REAL_CREDENTIAL_ENDPOINT,
+                /* allowedHeaders */ ['content-type', 'authorization', 'dpop']
+            );
+            return true;
+        }
+
+        if (req.method === 'POST' && subPath === '/nonce') {
+            await proxyPost(
+                req,
+                res,
+                REAL_NONCE_ENDPOINT,
                 /* allowedHeaders */ ['content-type', 'authorization', 'dpop']
             );
             return true;
@@ -174,22 +177,20 @@ export const handleEudiProxy = async (
  * `credential_issuer` and `credential_endpoint`. Everything else
  * (formats, claims, display) passes through unchanged.
  */
-const proxyCredentialIssuerMetadata = async (
-    res: ServerResponse
-): Promise<void> => {
-    const upstream = await fetch(
-        `${REAL_ISSUER_BASE}/.well-known/openid-credential-issuer`,
-        { method: 'GET' }
-    );
+const proxyCredentialIssuerMetadata = async (res: ServerResponse): Promise<void> => {
+    const upstream = await fetch(`${REAL_ISSUER_BASE}/.well-known/openid-credential-issuer`, {
+        method: 'GET',
+    });
     if (!upstream.ok) {
-        throw new Error(
-            `Upstream EUDI credential-issuer metadata returned ${upstream.status}`
-        );
+        throw new Error(`Upstream EUDI credential-issuer metadata returned ${upstream.status}`);
     }
     const json = (await upstream.json()) as Record<string, unknown>;
 
     json.credential_issuer = EUDI_PROXY_PUBLIC_BASE_URL;
     json.credential_endpoint = `${EUDI_PROXY_PUBLIC_BASE_URL}/credential`;
+    if (typeof json.nonce_endpoint === 'string') {
+        json.nonce_endpoint = `${EUDI_PROXY_PUBLIC_BASE_URL}/nonce`;
+    }
 
     res.statusCode = 200;
     res.setHeader('content-type', 'application/json');
@@ -206,17 +207,12 @@ const proxyCredentialIssuerMetadata = async (
  *   - `authorization_endpoint`: top-level browser navigation, no
  *     CORS involved.
  */
-const proxyAuthorizationServerMetadata = async (
-    res: ServerResponse
-): Promise<void> => {
-    const upstream = await fetch(
-        `${REAL_ISSUER_BASE}/.well-known/oauth-authorization-server`,
-        { method: 'GET' }
-    );
+const proxyAuthorizationServerMetadata = async (res: ServerResponse): Promise<void> => {
+    const upstream = await fetch(`${REAL_ISSUER_BASE}/.well-known/oauth-authorization-server`, {
+        method: 'GET',
+    });
     if (!upstream.ok) {
-        throw new Error(
-            `Upstream EUDI authorization-server metadata returned ${upstream.status}`
-        );
+        throw new Error(`Upstream EUDI authorization-server metadata returned ${upstream.status}`);
     }
     const json = (await upstream.json()) as Record<string, unknown>;
 
@@ -283,14 +279,8 @@ const setCorsHeaders = (req: IncomingMessage, res: ServerResponse): void => {
     } else {
         res.setHeader('access-control-allow-origin', '*');
     }
-    res.setHeader(
-        'access-control-allow-methods',
-        'GET, POST, OPTIONS'
-    );
-    res.setHeader(
-        'access-control-allow-headers',
-        'content-type, authorization, dpop'
-    );
+    res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
+    res.setHeader('access-control-allow-headers', 'content-type, authorization, dpop');
     // Preflight result can be cached for 10 minutes \u2014 keeps the
     // wallet from re-OPTIONS-ing every credential request.
     res.setHeader('access-control-max-age', '600');

@@ -373,10 +373,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             preferencesInitialized = true;
                         })
                         .catch(err => {
-                            log.error(
-                                'Failed to initialize preferences (non-blocking):',
-                                err
-                            );
+                            log.error('Failed to initialize preferences (non-blocking):', err);
                         });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
@@ -426,10 +423,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 },
                             });
                         } catch (err) {
-                            log.error(
-                                'Failed to auto-consent LearnCard AI after onboarding:',
-                                err
-                            );
+                            log.error('Failed to auto-consent LearnCard AI after onboarding:', err);
                         }
                     }, 0);
 

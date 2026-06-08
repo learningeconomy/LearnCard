@@ -48,10 +48,7 @@ const log = getLogger('wallet-event-bus');
  * pathway state up to date without user action.
  */
 
-import {
-    WalletEventSchema,
-    type WalletEvent,
-} from '../types/walletEvent';
+import { WalletEventSchema, type WalletEvent } from '../types/walletEvent';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -128,7 +125,7 @@ export const createWalletEventBus = (
          * want to bypass for negative cases.
          */
         validate?: boolean;
-    } = {},
+    } = {}
 ): WalletEventBus => {
     const recentBufferSize = options.recentBufferSize ?? DEFAULT_RECENT_BUFFER;
     const dedupWindow = options.dedupWindow ?? DEFAULT_DEDUP_WINDOW;
@@ -188,7 +185,7 @@ export const createWalletEventBus = (
 
     const subscribe = (
         listener: WalletEventListener,
-        options: SubscribeOptions = {},
+        options: SubscribeOptions = {}
     ): (() => void) => {
         listeners.add(listener);
 
@@ -242,5 +239,4 @@ export const walletEventBus = createWalletEventBus();
  * Convenience shim for the most common call site: publishers that
  * don't need the full `publish` reference just call this.
  */
-export const publishWalletEvent = (event: WalletEvent): void =>
-    walletEventBus.publish(event);
+export const publishWalletEvent = (event: WalletEvent): void => walletEventBus.publish(event);

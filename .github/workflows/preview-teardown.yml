@@ -1,7 +1,7 @@
 name: Teardown PR Preview
 
 # Automatically tear down the preview when a PR is closed or merged,
-# or when the "preview" label is removed
+# or when the "preview" / "capgo-preview" label is removed
 on:
     pull_request:
         types: [closed, unlabeled]
@@ -14,6 +14,9 @@ jobs:
         if: |
             (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
             (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+        permissions:
+            contents: read
+            pull-requests: write
         runs-on: ubuntu-latest
         timeout-minutes: 10
         environment: preview
@@ -105,4 +108,41 @@ jobs:
                           repo: context.repo.repo,
                           issue_number: prNumber,
                           body: `### 🧹 Preview Torn Down\nReason: ${reason}`,
+                      });
+
+    teardown-capgo:
+        name: Teardown Capgo PR Preview Channel
+        if: |
+            (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'capgo-preview')) ||
+            (github.event.action == 'unlabeled' && github.event.label.name == 'capgo-preview')
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        environment: learn-card-app-staging
+        permissions:
+            contents: read
+            pull-requests: write
+        steps:
+            - name: Delete Capgo channel
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  CHANNEL="pr-${PR_NUMBER}"
+                  echo "Deleting Capgo channel: $CHANNEL"
+                  npx @capgo/cli@latest channel delete "$CHANNEL" com.learncard.app || \
+                      echo "::warning::channel delete failed (already gone?)"
+
+            - name: Post Capgo teardown comment
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const prNumber = context.payload.pull_request.number;
+                      const reason = context.payload.action === 'closed'
+                          ? (context.payload.pull_request.merged ? 'PR merged' : 'PR closed')
+                          : 'capgo-preview label removed';
+                      await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: prNumber,
+                          body: `### 🧹 Capgo PR Preview Torn Down\nChannel \`pr-${prNumber}\` deleted. Reason: ${reason}`,
                       });
