@@ -28,6 +28,7 @@ type CliOptions = {
 const VALID_COMMANDS: SkillFrameworkCommand[] = ['seed', 'add-admin'];
 const VALID_STAGES: Stage[] = ['local', 'staging'];
 const BRAIN_SERVICE_ENV_PATH = resolve(process.cwd(), '.env');
+const BRAIN_SERVICE_STAGING_ENV_PATH = resolve(process.cwd(), '.env.staging');
 const STAGING_ENV_PATHS = [
     resolve(process.cwd(), '../../../packages/learn-card-network/brain-client/.env'),
     resolve(process.cwd(), '../../../packages/learn-card-network/cloud-client/.env'),
@@ -52,11 +53,11 @@ const loadEnvFile = (filePath: string): Record<string, string> => {
     return parseDotenv(readFileSync(filePath, 'utf8')) as Record<string, string>;
 };
 
-const loadEnvIntoProcess = (filePath: string): void => {
+const loadEnvIntoProcess = (filePath: string, overwrite = false): void => {
     const values = loadEnvFile(filePath);
 
     for (const [key, value] of Object.entries(values)) {
-        if (process.env[key] === undefined) {
+        if (overwrite || process.env[key] === undefined) {
             process.env[key] = value;
         }
     }
@@ -67,6 +68,8 @@ const loadSkillFrameworkEnv = (stage: Stage): void => {
         for (const filePath of STAGING_ENV_PATHS) {
             loadEnvIntoProcess(filePath);
         }
+
+        loadEnvIntoProcess(BRAIN_SERVICE_STAGING_ENV_PATH, true);
 
         return;
     }

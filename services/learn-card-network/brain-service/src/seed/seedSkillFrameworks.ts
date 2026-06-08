@@ -56,13 +56,23 @@ const DOCKER_NETWORK_NEO4J_FALLBACK = {
 };
 
 const STAGING_NEO4J_ENV_PATHS = [
-    resolve(process.cwd(), '../../../services/learn-card-network/brain-service/.env.staging'),
     resolve(process.cwd(), '../../../packages/learn-card-network/brain-client/.env'),
     resolve(process.cwd(), '../../../packages/learn-card-network/cloud-client/.env'),
+    resolve(process.cwd(), '../../../services/learn-card-network/brain-service/.env.staging'),
 ];
 
+const normalizeNeo4jUriForStaging = (uri: string): string => {
+    const trimmedUri = uri.trim();
+
+    if (/^(neo4j|bolt)(\+ssc|\+s)?:\/\//i.test(trimmedUri)) {
+        return trimmedUri;
+    }
+
+    return `neo4j+s://${trimmedUri.replace(/^\/+/, '')}`;
+};
+
 const normalizeNeo4jUriToBolt = (uri: string): string =>
-    uri.replace(/^neo4j(\+ssc|\+s)?/i, 'bolt$1');
+    normalizeNeo4jUriForStaging(uri).replace(/^neo4j(\+ssc|\+s)?/i, 'bolt$1');
 
 const loadEnvFile = (filePath: string): Record<string, string> => {
     if (!existsSync(filePath)) return {};
@@ -74,7 +84,19 @@ const loadStagingNeo4jEnv = (): Record<string, string> => {
     const loaded: Record<string, string> = {};
 
     for (const filePath of STAGING_NEO4J_ENV_PATHS) {
-        Object.assign(loaded, loadEnvFile(filePath));
+        const values = loadEnvFile(filePath);
+
+        if (toBoolean(process.env.SKILL_FRAMEWORKS_DEBUG)) {
+            const loadedKeys = ['NEO4J_URI', 'NEO4J_USERNAME', 'NEO4J_PASSWORD'].filter(
+                key => values[key] !== undefined
+            );
+
+            if (loadedKeys.length > 0) {
+                console.log(`[skill-frameworks] loaded ${loadedKeys.join(', ')} from ${filePath}`);
+            }
+        }
+
+        Object.assign(loaded, values);
     }
 
     return loaded;
@@ -138,8 +160,19 @@ const buildNeo4jConnectionCandidates = (
     const envUsername = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_USERNAME');
     const envPassword = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_PASSWORD');
 
+    if (stage === 'staging' && toBoolean(process.env.SKILL_FRAMEWORKS_DEBUG)) {
+        console.log(
+            `[skill-frameworks] staging Neo4j env resolved to ${
+                envUri ? normalizeNeo4jUriForStaging(envUri) : '<missing uri>'
+            } (username=${envUsername ? 'set' : 'missing'}, password=${
+                envPassword ? 'set' : 'missing'
+            })`
+        );
+    }
+
     if (stage === 'staging' && envUri && envUsername && envPassword) {
         const normalizedBoltUri = normalizeNeo4jUriToBolt(envUri);
+        const normalizedRoutingUri = normalizeNeo4jUriForStaging(envUri);
 
         return [
             ...(normalizedBoltUri !== envUri
@@ -155,10 +188,10 @@ const buildNeo4jConnectionCandidates = (
                 : []),
             {
                 label: 'environment variables',
-                url: envUri,
+                url: normalizedRoutingUri,
                 username: envUsername,
                 password: envPassword,
-                hint: 'Uses the NEO4J_* values already set in your shell or .env file.',
+                hint: 'Uses the NEO4J_* values already set in your shell or .env file, normalizing a bare Aura host when needed.',
             },
         ];
     }
