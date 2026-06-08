@@ -1,7 +1,10 @@
 #!/usr/bin/env tsx
 
-import * as dotenv from 'dotenv';
+import { existsSync, readFileSync } from 'fs';
 import { createInterface } from 'readline';
+import { resolve } from 'path';
+
+import { parse as parseDotenv } from 'dotenv';
 
 import {
     addSkillFrameworkAdmin,
@@ -9,8 +12,6 @@ import {
     resolveSkillFrameworkNeo4jConnection,
     seedSkillFrameworkFixtures,
 } from '../src/seed/seedSkillFrameworks';
-
-dotenv.config();
 
 type SkillFrameworkCommand = 'seed' | 'add-admin';
 
@@ -26,6 +27,11 @@ type CliOptions = {
 
 const VALID_COMMANDS: SkillFrameworkCommand[] = ['seed', 'add-admin'];
 const VALID_STAGES: Stage[] = ['local', 'staging'];
+const BRAIN_SERVICE_ENV_PATH = resolve(process.cwd(), '.env');
+const STAGING_ENV_PATHS = [
+    resolve(process.cwd(), '../../../packages/learn-card-network/brain-client/.env'),
+    resolve(process.cwd(), '../../../packages/learn-card-network/cloud-client/.env'),
+];
 
 const ask = (question: string): Promise<string> => {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -36,6 +42,36 @@ const ask = (question: string): Promise<string> => {
             resolve(answer.trim());
         });
     });
+};
+
+const loadEnvFile = (filePath: string): Record<string, string> => {
+    if (!existsSync(filePath)) {
+        return {};
+    }
+
+    return parseDotenv(readFileSync(filePath, 'utf8')) as Record<string, string>;
+};
+
+const loadEnvIntoProcess = (filePath: string): void => {
+    const values = loadEnvFile(filePath);
+
+    for (const [key, value] of Object.entries(values)) {
+        if (process.env[key] === undefined) {
+            process.env[key] = value;
+        }
+    }
+};
+
+const loadSkillFrameworkEnv = (stage: Stage): void => {
+    if (stage === 'staging') {
+        for (const filePath of STAGING_ENV_PATHS) {
+            loadEnvIntoProcess(filePath);
+        }
+
+        return;
+    }
+
+    loadEnvIntoProcess(BRAIN_SERVICE_ENV_PATH);
 };
 
 const parseCliOptions = (): CliOptions => {
@@ -208,6 +244,7 @@ const runAddAdmin = async (
 
 const main = async (): Promise<void> => {
     const options = parseCliOptions();
+    loadSkillFrameworkEnv(options.stage);
 
     if (options.command === 'seed') {
         await runSeed(options.stage, options.usedDefaultStage);

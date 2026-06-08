@@ -1,3 +1,7 @@
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
+
+import { parse as parseDotenv } from 'dotenv';
 import { Neogma } from 'neogma';
 import {
     type SeedSkillFrameworkFixture,
@@ -51,6 +55,46 @@ const DOCKER_NETWORK_NEO4J_FALLBACK = {
     password: 'this-is-the-password',
 };
 
+const STAGING_NEO4J_ENV_PATHS = [
+    resolve(process.cwd(), '../../../services/learn-card-network/brain-service/.env.staging'),
+    resolve(process.cwd(), '../../../packages/learn-card-network/brain-client/.env'),
+    resolve(process.cwd(), '../../../packages/learn-card-network/cloud-client/.env'),
+];
+
+const normalizeNeo4jUriToBolt = (uri: string): string =>
+    uri.replace(/^neo4j(\+ssc|\+s)?/i, 'bolt$1');
+
+const loadEnvFile = (filePath: string): Record<string, string> => {
+    if (!existsSync(filePath)) return {};
+
+    return parseDotenv(readFileSync(filePath, 'utf8')) as Record<string, string>;
+};
+
+const loadStagingNeo4jEnv = (): Record<string, string> => {
+    const loaded: Record<string, string> = {};
+
+    for (const filePath of STAGING_NEO4J_ENV_PATHS) {
+        Object.assign(loaded, loadEnvFile(filePath));
+    }
+
+    return loaded;
+};
+
+const readNeo4jEnvValue = (
+    stage: 'local' | 'staging',
+    stagingEnv: Record<string, string>,
+    key: 'NEO4J_URI' | 'NEO4J_USERNAME' | 'NEO4J_PASSWORD'
+): string | undefined => {
+    const stagingValue = stagingEnv[key]?.trim();
+    const processValue = process.env[key]?.trim();
+
+    if (stage === 'staging') {
+        return stagingValue ?? processValue;
+    }
+
+    return processValue ?? stagingValue;
+};
+
 const toBoolean = (value: string | undefined): boolean => {
     if (!value) return false;
 
@@ -89,12 +133,26 @@ const explainNeo4jConnectionError = (error: string): string => {
 const buildNeo4jConnectionCandidates = (
     stage: 'local' | 'staging' = 'local'
 ): Neo4jConnectionCandidate[] => {
-    const envUri = process.env.NEO4J_URI?.trim();
-    const envUsername = process.env.NEO4J_USERNAME?.trim();
-    const envPassword = process.env.NEO4J_PASSWORD?.trim();
+    const stagingEnv = stage === 'staging' ? loadStagingNeo4jEnv() : {};
+    const envUri = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_URI');
+    const envUsername = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_USERNAME');
+    const envPassword = readNeo4jEnvValue(stage, stagingEnv, 'NEO4J_PASSWORD');
 
     if (stage === 'staging' && envUri && envUsername && envPassword) {
+        const normalizedBoltUri = normalizeNeo4jUriToBolt(envUri);
+
         return [
+            ...(normalizedBoltUri !== envUri
+                ? [
+                      {
+                          label: 'environment variables (direct Bolt)',
+                          url: normalizedBoltUri,
+                          username: envUsername,
+                          password: envPassword,
+                          hint: 'Uses the same credentials but swaps the neo4j routing scheme for direct Bolt.',
+                      },
+                  ]
+                : []),
             {
                 label: 'environment variables',
                 url: envUri,
