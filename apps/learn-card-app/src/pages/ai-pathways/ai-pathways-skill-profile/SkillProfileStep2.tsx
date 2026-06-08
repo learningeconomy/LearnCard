@@ -41,7 +41,6 @@ import X from 'src/components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
-import * as m from '../../../paraglide/messages.js';
 
 type SkillProfileStep2Props = {
     handleNext: () => void;
