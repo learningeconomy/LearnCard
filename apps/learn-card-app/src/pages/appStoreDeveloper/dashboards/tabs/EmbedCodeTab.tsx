@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award, ChevronDown } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-code-tab');
 
 import { useToast } from 'learn-card-base/hooks/useToast';
 import type { CredentialTemplate } from '../types';
@@ -62,7 +64,7 @@ function buildHtmlSnippet(
 ${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: function(details) {
-        console.log('Claimed!', details.credentialId);
+        log.info('Claimed!', details.credentialId);
       },
     });
   });
@@ -94,7 +96,7 @@ function ClaimButton() {
 ${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: (details) => {
-        console.log('Claimed!', details.credentialId);
+        log.info('Claimed!', details.credentialId);
       },
     });
   }, []);
@@ -125,16 +127,42 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
         if (templates.length > 0) {
             return templates.map(t => ({
                 name: t.name,
-                htmlCode: buildHtmlSnippet(t.name, publishableKey, partnerName, branding, requestBackgroundIssuance),
-                reactCode: buildReactSnippet(t.name, publishableKey, partnerName, branding, requestBackgroundIssuance),
+                htmlCode: buildHtmlSnippet(
+                    t.name,
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+                reactCode: buildReactSnippet(
+                    t.name,
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
             }));
         }
 
-        return [{
-            name: 'My Credential',
-            htmlCode: buildHtmlSnippet('My Credential', publishableKey, partnerName, branding, requestBackgroundIssuance),
-            reactCode: buildReactSnippet('My Credential', publishableKey, partnerName, branding, requestBackgroundIssuance),
-        }];
+        return [
+            {
+                name: 'My Credential',
+                htmlCode: buildHtmlSnippet(
+                    'My Credential',
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+                reactCode: buildReactSnippet(
+                    'My Credential',
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+            },
+        ];
     }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance]);
 
     // Reset index when templates array shrinks below current selection
@@ -158,18 +186,26 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">Embed Code</h2>
-                <p className="text-sm text-gray-500">Copy and paste into your website to add a claim button</p>
+                <p className="text-sm text-gray-500">
+                    Copy and paste into your website to add a claim button
+                </p>
             </div>
 
             {/* Publishable Key */}
             <div className="p-4 bg-pink-50 border border-pink-200 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-pink-800">Your Publishable Key</label>
+                    <label className="text-sm font-medium text-pink-800">
+                        Your Publishable Key
+                    </label>
                     <button
                         onClick={() => copyCode(publishableKey, 'key')}
                         className="text-xs text-pink-700 hover:text-pink-800 flex items-center gap-1"
                     >
-                        {copied === 'key' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copied === 'key' ? (
+                            <Check className="w-3 h-3" />
+                        ) : (
+                            <Copy className="w-3 h-3" />
+                        )}
                         {copied === 'key' ? 'Copied!' : 'Copy'}
                     </button>
                 </div>
@@ -218,7 +254,11 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         onClick={() => copyCode(currentSnippet.htmlCode, 'html')}
                         className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
                     >
-                        {copied === 'html' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copied === 'html' ? (
+                            <Check className="w-3 h-3" />
+                        ) : (
+                            <Copy className="w-3 h-3" />
+                        )}
                         {copied === 'html' ? 'Copied!' : 'Copy'}
                     </button>
                 </div>
@@ -242,7 +282,11 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         onClick={() => copyCode(currentSnippet.reactCode, 'react')}
                         className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
                     >
-                        {copied === 'react' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copied === 'react' ? (
+                            <Check className="w-3 h-3" />
+                        ) : (
+                            <Copy className="w-3 h-3" />
+                        )}
                         {copied === 'react' ? 'Copied!' : 'Copy'}
                     </button>
                 </div>
@@ -257,7 +301,10 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             {/* SDK Reference */}
             <details className="group rounded-xl border border-gray-200 bg-gray-50">
                 <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-gray-700 select-none [&::-webkit-details-marker]:hidden list-none">
-                    <span>SDK Reference &mdash; <code className="text-xs font-normal text-gray-500">InitOptions</code></span>
+                    <span>
+                        SDK Reference &mdash;{' '}
+                        <code className="text-xs font-normal text-gray-500">InitOptions</code>
+                    </span>
                     <ChevronDown className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="px-4 pb-4">
@@ -271,14 +318,25 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         </thead>
                         <tbody className="text-gray-700">
                             <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono">target<span className="text-red-500">*</span></td>
-                                <td className="py-1.5 pr-2 font-mono text-gray-500">string | HTMLElement</td>
-                                <td className="py-1.5">CSS selector or DOM element to render the claim button into.</td>
+                                <td className="py-1.5 pr-2 font-mono">
+                                    target<span className="text-red-500">*</span>
+                                </td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">
+                                    string | HTMLElement
+                                </td>
+                                <td className="py-1.5">
+                                    CSS selector or DOM element to render the claim button into.
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono">credential<span className="text-red-500">*</span></td>
+                                <td className="py-1.5 pr-2 font-mono">
+                                    credential<span className="text-red-500">*</span>
+                                </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`{ name: string }`}</td>
-                                <td className="py-1.5">Credential template to issue. Use the template name — the server resolves it.</td>
+                                <td className="py-1.5">
+                                    Credential template to issue. Use the template name — the server
+                                    resolves it.
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">publishableKey</td>
@@ -292,32 +350,47 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">branding</td>
-                                <td className="py-1.5 pr-2 font-mono text-gray-500">BrandingTokens</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">
+                                    BrandingTokens
+                                </td>
                                 <td className="py-1.5">
-                                    <code>primaryColor</code>, <code>accentColor</code>, <code>partnerLogoUrl</code>, <code>logoUrl</code>, <code>walletUrl</code>.
+                                    <code>primaryColor</code>, <code>accentColor</code>,{' '}
+                                    <code>partnerLogoUrl</code>, <code>logoUrl</code>,{' '}
+                                    <code>walletUrl</code>.
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono text-nowrap">requestBackgroundIssuance</td>
+                                <td className="py-1.5 pr-2 font-mono text-nowrap">
+                                    requestBackgroundIssuance
+                                </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">boolean</td>
-                                <td className="py-1.5">If true, asks user for consent to issue future credentials without email verification.</td>
+                                <td className="py-1.5">
+                                    If true, asks user for consent to issue future credentials
+                                    without email verification.
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">onSuccess</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`(details) => void`}</td>
                                 <td className="py-1.5">
-                                    Called after a successful claim. Receives <code>credentialId</code>, <code>consentGiven</code>, and <code>handoffUrl</code>.
+                                    Called after a successful claim. Receives{' '}
+                                    <code>credentialId</code>, <code>consentGiven</code>, and{' '}
+                                    <code>handoffUrl</code>.
                                 </td>
                             </tr>
                             <tr>
                                 <td className="py-1.5 pr-2 font-mono">apiBaseUrl</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Override the API endpoint. Defaults to <code>{getResolvedTenantConfig().apis.brainServiceApi}</code>.</td>
+                                <td className="py-1.5">
+                                    Override the API endpoint. Defaults to{' '}
+                                    <code>{getResolvedTenantConfig().apis.brainServiceApi}</code>.
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                     <p className="mt-2 text-xs text-gray-400">
-                        <span className="text-red-500">*</span> Required. All other props are optional.
+                        <span className="text-red-500">*</span> Required. All other props are
+                        optional.
                     </p>
                 </div>
             </details>

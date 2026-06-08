@@ -17,6 +17,9 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 
 import type { BrandingConfig } from '../types';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('branding-tab');
+
 interface ProfileDisplay {
     backgroundColor?: string;
     backgroundImage?: string;
@@ -61,19 +64,21 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     const [shortBio, setShortBio] = useState(branding?.shortBio || '');
     const [bio, setBio] = useState(branding?.bio || '');
 
-    const [display, setDisplay] = useState<ProfileDisplay>(branding?.display || {
-        backgroundColor: '#ffffff',
-        backgroundImage: '',
-        fadeBackgroundImage: false,
-        repeatBackgroundImage: false,
-        fontColor: '#1f2937',
-        accentColor: '#2DD4BF',
-        accentFontColor: '#ffffff',
-        idBackgroundImage: '',
-        fadeIdBackgroundImage: true,
-        idBackgroundColor: '#2DD4BF',
-        repeatIdBackgroundImage: false,
-    });
+    const [display, setDisplay] = useState<ProfileDisplay>(
+        branding?.display || {
+            backgroundColor: '#ffffff',
+            backgroundImage: '',
+            fadeBackgroundImage: false,
+            repeatBackgroundImage: false,
+            fontColor: '#1f2937',
+            accentColor: '#2DD4BF',
+            accentFontColor: '#ffffff',
+            idBackgroundImage: '',
+            fadeIdBackgroundImage: true,
+            idBackgroundColor: '#2DD4BF',
+            repeatIdBackgroundImage: false,
+        }
+    );
 
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(!branding);
@@ -98,7 +103,8 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     idBackgroundImage: currentLCNUser.display.idBackgroundImage || '',
                     fadeIdBackgroundImage: currentLCNUser.display.fadeIdBackgroundImage ?? true,
                     idBackgroundColor: currentLCNUser.display.idBackgroundColor || '#2DD4BF',
-                    repeatIdBackgroundImage: currentLCNUser.display.repeatIdBackgroundImage || false,
+                    repeatIdBackgroundImage:
+                        currentLCNUser.display.repeatIdBackgroundImage || false,
                 });
             }
 
@@ -108,21 +114,23 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         }
     }, [currentLCNUser, branding]);
 
-    const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } = useFilestack({
-        fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => {
-            setImage(data?.url || '');
-            setIsDirty(true);
-        },
-    });
+    const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
+        useFilestack({
+            fileType: IMAGE_MIME_TYPES,
+            onUpload: (_url, _file, data) => {
+                setImage(data?.url || '');
+                setIsDirty(true);
+            },
+        });
 
-    const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } = useFilestack({
-        fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => {
-            setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));
-            setIsDirty(true);
-        },
-    });
+    const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } =
+        useFilestack({
+            fileType: IMAGE_MIME_TYPES,
+            onUpload: (_url, _file, data) => {
+                setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));
+                setIsDirty(true);
+            },
+        });
 
     const handleColorSelect = (primary: string, accent: string) => {
         setDisplay(prev => ({
@@ -161,7 +169,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
             await refetchCurrentUser();
 
-            presentToast('Branding updated successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('Branding updated successfully!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
 
             const config: BrandingConfig = {
                 displayName,
@@ -174,8 +185,11 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             setIsDirty(false);
             onUpdate?.(config);
         } catch (err) {
-            console.error('Failed to update profile:', err);
-            presentToast('Failed to update branding', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to update profile:', err);
+            presentToast('Failed to update branding', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setIsSaving(false);
         }
@@ -237,7 +251,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             />
 
                             <button
-                                onClick={() => { setImage(''); setIsDirty(true); }}
+                                onClick={() => {
+                                    setImage('');
+                                    setIsDirty(true);
+                                }}
                                 className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
                             >
                                 <X className="w-3 h-3" />
@@ -275,7 +292,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Profile Information</h3>
-                        <p className="text-sm text-gray-500">How your organization appears to others</p>
+                        <p className="text-sm text-gray-500">
+                            How your organization appears to others
+                        </p>
                     </div>
                 </div>
 
@@ -288,7 +307,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                         <input
                             type="text"
                             value={displayName}
-                            onChange={(e) => { setDisplayName(e.target.value); setIsDirty(true); }}
+                            onChange={e => {
+                                setDisplayName(e.target.value);
+                                setIsDirty(true);
+                            }}
                             placeholder="e.g., AARP Skills Builder"
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
@@ -302,7 +324,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                         <input
                             type="text"
                             value={shortBio}
-                            onChange={(e) => { setShortBio(e.target.value); setIsDirty(true); }}
+                            onChange={e => {
+                                setShortBio(e.target.value);
+                                setIsDirty(true);
+                            }}
                             placeholder="A brief tagline or description"
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
@@ -315,7 +340,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                         <textarea
                             value={bio}
-                            onChange={(e) => { setBio(e.target.value); setIsDirty(true); }}
+                            onChange={e => {
+                                setBio(e.target.value);
+                                setIsDirty(true);
+                            }}
                             placeholder="A longer description of your organization..."
                             rows={3}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
@@ -333,12 +361,14 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Card Colors</h3>
-                        <p className="text-sm text-gray-500">Customize your contact card appearance</p>
+                        <p className="text-sm text-gray-500">
+                            Customize your contact card appearance
+                        </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                    {DEFAULT_COLORS.map((color) => (
+                    {DEFAULT_COLORS.map(color => (
                         <button
                             key={color.name}
                             onClick={() => handleColorSelect(color.primary, color.accent)}
@@ -366,14 +396,26 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             <input
                                 type="color"
                                 value={display.idBackgroundColor || '#2DD4BF'}
-                                onChange={(e) => { setDisplay(prev => ({ ...prev, idBackgroundColor: e.target.value })); setIsDirty(true); }}
+                                onChange={e => {
+                                    setDisplay(prev => ({
+                                        ...prev,
+                                        idBackgroundColor: e.target.value,
+                                    }));
+                                    setIsDirty(true);
+                                }}
                                 className="w-10 h-10 rounded cursor-pointer"
                             />
 
                             <input
                                 type="text"
                                 value={display.idBackgroundColor || '#2DD4BF'}
-                                onChange={(e) => { setDisplay(prev => ({ ...prev, idBackgroundColor: e.target.value })); setIsDirty(true); }}
+                                onChange={e => {
+                                    setDisplay(prev => ({
+                                        ...prev,
+                                        idBackgroundColor: e.target.value,
+                                    }));
+                                    setIsDirty(true);
+                                }}
                                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
                             />
                         </div>
@@ -386,14 +428,20 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             <input
                                 type="color"
                                 value={display.accentColor || '#2DD4BF'}
-                                onChange={(e) => { setDisplay(prev => ({ ...prev, accentColor: e.target.value })); setIsDirty(true); }}
+                                onChange={e => {
+                                    setDisplay(prev => ({ ...prev, accentColor: e.target.value }));
+                                    setIsDirty(true);
+                                }}
                                 className="w-10 h-10 rounded cursor-pointer"
                             />
 
                             <input
                                 type="text"
                                 value={display.accentColor || '#2DD4BF'}
-                                onChange={(e) => { setDisplay(prev => ({ ...prev, accentColor: e.target.value })); setIsDirty(true); }}
+                                onChange={e => {
+                                    setDisplay(prev => ({ ...prev, accentColor: e.target.value }));
+                                    setIsDirty(true);
+                                }}
                                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
                             />
                         </div>
@@ -410,7 +458,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                     <div>
                         <h3 className="font-semibold text-gray-800">Card Background</h3>
-                        <p className="text-sm text-gray-500">Optional background image for your card</p>
+                        <p className="text-sm text-gray-500">
+                            Optional background image for your card
+                        </p>
                     </div>
                 </div>
 
@@ -418,14 +468,21 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     {DEFAULT_WALLPAPERS.map((wallpaper, index) => (
                         <button
                             key={index}
-                            onClick={() => { setDisplay(prev => ({ ...prev, idBackgroundImage: wallpaper })); setIsDirty(true); }}
+                            onClick={() => {
+                                setDisplay(prev => ({ ...prev, idBackgroundImage: wallpaper }));
+                                setIsDirty(true);
+                            }}
                             className={`w-20 h-14 rounded-lg overflow-hidden border-2 transition-all ${
                                 display.idBackgroundImage === wallpaper
                                     ? 'border-cyan-500 shadow-md'
                                     : 'border-transparent hover:border-gray-300'
                             }`}
                         >
-                            <img src={wallpaper} alt={`Wallpaper ${index + 1}`} className="w-full h-full object-cover" />
+                            <img
+                                src={wallpaper}
+                                alt={`Wallpaper ${index + 1}`}
+                                className="w-full h-full object-cover"
+                            />
                         </button>
                     ))}
 
@@ -443,7 +500,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                     {display.idBackgroundImage && (
                         <button
-                            onClick={() => { setDisplay(prev => ({ ...prev, idBackgroundImage: '' })); setIsDirty(true); }}
+                            onClick={() => {
+                                setDisplay(prev => ({ ...prev, idBackgroundImage: '' }));
+                                setIsDirty(true);
+                            }}
                             className="w-20 h-14 border-2 border-gray-200 rounded-lg flex items-center justify-center text-gray-400 hover:border-red-300 hover:text-red-500 transition-colors"
                         >
                             <X className="w-5 h-5" />
@@ -460,7 +520,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     className="p-4 rounded-xl relative overflow-hidden"
                     style={{
                         backgroundColor: display.idBackgroundColor || '#2DD4BF',
-                        backgroundImage: display.idBackgroundImage ? `url(${display.idBackgroundImage})` : undefined,
+                        backgroundImage: display.idBackgroundImage
+                            ? `url(${display.idBackgroundImage})`
+                            : undefined,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}

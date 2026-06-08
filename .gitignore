@@ -19,7 +19,6 @@ node_modules
 
 # Editor directories and files
 .vscode/*
-!.vscode/extensions.json
 .idea
 .DS_Store
 *.suo
@@ -36,11 +35,13 @@ node_modules
 
 # Personal AI tooling (not shared — teammates may use different setups)
 .claude/
+.codex/
 .vexp/
 .superpowers/
 docs/superpowers/plans/
 docs/superpowers/specs/
 docs/superpowers
+internal-docs/*
 .github/copilot-instructions.md
 .worktrees/
 CLAUDE.local.md

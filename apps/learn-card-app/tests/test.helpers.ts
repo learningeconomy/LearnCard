@@ -36,14 +36,33 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
 };
 
 /**
+ * Clicks the side-menu's "Add to LearnCard" and drills through the desktop
+ * LaunchPadActionModal intermediate (#1243) if it appears, leaving the
+ * AddToLearnCardMenu open with `Boost Someone` ready to click.
+ */
+export const openAddToLearnCardMenu = async (page: Page) => {
+    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+
+    // Desktop opens LaunchPadActionModal first; click its inner tile to reach
+    // AddToLearnCardMenu. Mobile skips this step.
+    const launcherModal = page.getByRole('complementary').filter({
+        has: page.getByRole('heading', { name: 'What would you like to do?' }),
+    });
+    if (await locatorExists(launcherModal, 2_000)) {
+        await launcherModal
+            .getByRole('button', { name: 'Add to LearnCard' })
+            .click({ timeout: 30_000 });
+    }
+};
+
+/**
  * Issues a credential to the current user via the UI.
  *
  * Flow: Add to LearnCard → Boost Someone → pick template → fill form →
  *       Next → Publish & Issue → Plus → Boost Myself → Save
  */
 export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
-    // Open the "Add to LearnCard" menu
-    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+    await openAddToLearnCardMenu(page);
 
     // Select "Boost Someone"
     await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
@@ -98,6 +117,18 @@ export const waitForAuthenticatedState = async (
         ? { path: pathOrOptions, seed: TEST_USER_SEED, profileId: undefined as string | undefined }
         : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? TEST_USER_SEED, profileId: pathOrOptions.profileId };
 
+    // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
+    // opens the menu rather than the OnboardingContainer. Tolerate timeout
+    // for cache-hit paths where no fresh request fires.
+    const profileFetchPromise = page
+        .waitForResponse(
+            response =>
+                /profile\.getProfile/.test(response.url()) &&
+                response.status() < 500,
+            { timeout }
+        )
+        .catch(() => undefined);
+
     // Login via seed - this creates a proper user with privateKey
     // If profileId is provided, the seed route will also create a network profile
     const seedUrl = options.profileId
@@ -111,6 +142,8 @@ export const waitForAuthenticatedState = async (
 
     // Wait for redirect to wallet (indicates successful login + profile creation)
     await page.waitForURL(/\/wallet/, { timeout });
+
+    await profileFetchPromise;
 
     // If a different path was requested, navigate there
     if (options.path !== '/' && options.path !== '/wallet') {

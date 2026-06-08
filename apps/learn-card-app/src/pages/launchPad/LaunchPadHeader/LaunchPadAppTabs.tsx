@@ -6,7 +6,7 @@ import { ColorSetEnum } from '../../../theme/colors/index';
 import { StyleSetEnum } from '../../../theme/styles/index';
 
 export enum LaunchPadTabEnum {
-    all = 'All',
+    myApps = 'My Apps',
     ai = 'AI',
     learning = 'Learning',
     games = 'Games',
@@ -15,6 +15,7 @@ export enum LaunchPadTabEnum {
     credentials = 'Credentials',
     other = 'Other',
     plugins = 'Plugins',
+    all = 'All',
 }
 
 type LaunchPadAppTabsProps = {

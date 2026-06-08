@@ -134,6 +134,9 @@ services:
             IS_OFFLINE: true
             PORT: 4000
             SEED: a
+            # LC-1644: Enable backend PerfTracker JSON logs (gated on this env var)
+            # Zero-cost in hot paths when unset; toggle off by unsetting.
+            LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for file watching in Docker

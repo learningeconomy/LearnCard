@@ -74,6 +74,7 @@
         "analytics": true,
         "themeSwitching": true,
         "introSlides": true,
+        "pathways": true,
         "launchPadQuickActions": false
     },
 
@@ -107,6 +108,12 @@
             "learncardapp.netlify.com",
             "lcw.app"
         ],
-        "customSchemes": ["dccrequest", "msprequest", "asuprequest"]
+        "customSchemes": [
+            "dccrequest",
+            "msprequest",
+            "asuprequest",
+            "openid4vp",
+            "openid-credential-offer"
+        ]
     }
 }

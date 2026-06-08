@@ -1,0 +1,1023 @@
+/**
+ * NodeDetail — single-node overlay for proof-of-effort (docs § 5).
+ *
+ * The overlay is the place where "I did the thing" becomes "it's
+ * attached and marked done". Phase 2 design principles:
+ *
+ *   - One visual spine: title + progress ring on top, evidence in the
+ *     middle, the commit action right beneath the work. No hunting
+ *     for a button at the bottom of a scroll.
+ *   - Progress replaces labels. The ring + a single requirement line
+ *     say everything the old "HOW THIS COMPLETES" / "X attached"
+ *     headings said, with a fraction of the chrome.
+ *   - Endorsements demoted to a footer. Most nodes don't need a vouch
+ *     to ship; keep that option close but quiet.
+ *   - Motion: spring-up entrance, staggered sections, drawn-in
+ *     checkmark on completion.
+ *
+ * Route `/pathways/node/:pathwayId/:nodeId` still backs deep-linking;
+ * visually it reads as an overlay on top of the current pathway.
+ */
+
+import React, { useState } from 'react';
+
+import { IonIcon } from '@ionic/react';
+import { closeOutline, mapOutline, openOutline } from 'ionicons/icons';
+import { AnimatePresence, motion } from 'motion/react';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
+import { v4 as uuid } from 'uuid';
+
+import { AnalyticsEvents, useAnalytics } from '../../../analytics';
+import { offlineQueueStore, pathwayStore } from '../../../stores/pathways';
+import { buildInAppHref, resolveNodeAction, type ResolvedAction } from '../core/action';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
+import PathwayPortal from '../PathwayPortal';
+import type { ArtifactType, EndorsementRef, Evidence, Policy } from '../types';
+
+import { canProject } from '../projection/toAchievementCredential';
+
+import AiSessionCard from './AiSessionCard';
+import AppListingCard from './AppListingCard';
+import CompositeNodeBody from './CompositeNodeBody';
+import CredentialPreview from './CredentialPreview';
+import EndorsementPanel from './EndorsementPanel';
+import EvidencePanel from './EvidencePanel';
+import EvidenceUploader from './EvidenceUploader';
+import ReviewsPanel from './ReviewsPanel';
+import TerminationProgress from './TerminationProgress';
+import { useListingForNode } from './useListingForNode';
+import { computeTerminationView, terminationDone } from './termination';
+
+/**
+ * Router state understood by `NodeDetail` when another surface opens
+ * it via `history.push(..., state)`.
+ *
+ * - `returnTo` — where the dismiss / complete buttons should send the
+ *   learner. Defaults to `/pathways/today` for back-compat (Today
+ *   never populated router state before) so old direct-link entries
+ *   still behave the way they used to.
+ * - `restoreFocusId` — on dismissal, passed back to the destination
+ *   route as `initialFocusId` so surfaces like the Map can re-focus
+ *   the same pin the learner was looking at ("exactly where I was").
+ *   Intentionally *not* forwarded on completion — completion lets the
+ *   destination re-derive its default (Map advances to the next
+ *   uncompleted step, Today picks the next daily action).
+ */
+export interface NodeDetailLocationState {
+    returnTo?: string;
+    restoreFocusId?: string;
+}
+
+/**
+ * Copy for the "Where to act" header row. The label under the kicker
+ * and the visual openness of the icon both adapt to the resolved
+ * action kind so we stay honest:
+ *
+ *   - `external-url` + landingPage → "View landing page" (marketing,
+ *     not a guaranteed earn destination)
+ *   - `external-url` otherwise     → "Go to issuer page"
+ *   - `app-listing`                → "Open app listing"
+ *   - `in-app-route`               → "Continue in-app"
+ *   - `mcp-tool` / `none`          → omitted (the overlay itself is
+ *     the honest destination)
+ */
+interface LaunchCopy {
+    kicker: string;
+    label: string;
+}
+
+/**
+ * Unified launch-row component. Renders the small "Where to act" pill
+ * above the working state and dispatches on the resolved action kind:
+ *
+ *   - `external-url`  → `<a target="_blank">` (actually leaves the app)
+ *   - `app-listing`   → `history.push('/app/:id')` via `onInAppNavigate`
+ *   - `in-app-route`  → `history.push(buildInAppHref(resolved))`
+ *
+ * MCP and `none` kinds never reach this component — callers gate
+ * rendering with `describeLaunch(...) && kind !== 'mcp-tool' | 'none'`.
+ * The component stays dumb about that logic so the branches below
+ * remain exhaustive.
+ */
+type LaunchableResolvedAction =
+    | Extract<ResolvedAction, { kind: 'external-url' }>
+    | Extract<ResolvedAction, { kind: 'app-listing' }>
+    | Extract<ResolvedAction, { kind: 'in-app-route' }>;
+
+const LaunchRow: React.FC<{
+    copy: LaunchCopy;
+    resolved: LaunchableResolvedAction;
+    onDispatch: (destination: string) => void;
+    onInAppNavigate: (href: string) => void;
+}> = ({ copy, resolved, onDispatch, onInAppNavigate }) => {
+    const rowClass =
+        `group flex items-center justify-between gap-3
+         px-4 py-3 rounded-[18px]
+         bg-white/70 backdrop-blur
+         border border-grayscale-200
+         hover:bg-white hover:border-grayscale-300
+         hover:shadow-sm transition-all duration-200
+         text-left w-full`;
+
+    const iconGlyph = resolved.kind === 'external-url' ? openOutline : mapOutline;
+
+    const inner = (
+        <>
+            <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-500">
+                    {copy.kicker}
+                </p>
+
+                <p className="text-sm font-medium text-grayscale-900 truncate">
+                    {copy.label}
+                </p>
+            </div>
+
+            <IonIcon
+                icon={iconGlyph}
+                className="shrink-0 text-grayscale-500 text-lg
+                           group-hover:text-grayscale-900 transition-colors"
+                aria-hidden
+            />
+        </>
+    );
+
+    if (resolved.kind === 'external-url') {
+        return (
+            <motion.a
+                {...SECTION_MOTION}
+                transition={{ ...SECTION_MOTION.transition, delay: 0.08 }}
+                href={resolved.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${copy.label} (opens in a new tab)`}
+                onClick={() => onDispatch(resolved.url)}
+                className={rowClass}
+            >
+                {inner}
+            </motion.a>
+        );
+    }
+
+    // app-listing / in-app-route → in-app navigation.
+    const href =
+        resolved.kind === 'app-listing'
+            ? `/app/${encodeURIComponent(resolved.listingId)}`
+            : buildInAppHref(resolved);
+
+    return (
+        <motion.button
+            {...SECTION_MOTION}
+            transition={{ ...SECTION_MOTION.transition, delay: 0.08 }}
+            type="button"
+            aria-label={copy.label}
+            onClick={() => {
+                onDispatch(href);
+                onInAppNavigate(href);
+            }}
+            className={rowClass}
+        >
+            {inner}
+        </motion.button>
+    );
+};
+
+const describeLaunch = (resolved: ResolvedAction): LaunchCopy | null => {
+    switch (resolved.kind) {
+        case 'external-url':
+            return {
+                kicker: 'Where to act',
+                label: resolved.landingPage ? 'View landing page' : 'Go to issuer page',
+            };
+
+        case 'app-listing':
+            return { kicker: 'Where to act', label: 'Open app listing' };
+
+        case 'in-app-route':
+            return { kicker: 'Where to act', label: 'Continue in-app' };
+
+        case 'ai-session':
+            // `ai-session` nodes render via the dedicated
+            // `AiSessionCard` (topic availability gate, skill chips,
+            // seed-prompt preview). The generic LaunchRow fallback
+            // would be both redundant and wrong — it would show a
+            // secondary CTA alongside the first-class card.
+            return null;
+
+        case 'mcp-tool':
+        case 'none':
+            return null;
+    }
+};
+
+/**
+ * Pick an `ArtifactType` to pre-bias the uploader toward, matching
+ * what the node's termination is actually asking for. Falls back to
+ * the policy's expected artifact (for `artifact` policies) and then
+ * to `text`.
+ */
+const pickExpectedArtifactType = (policy: Policy, node: { stage: { termination: unknown } }): ArtifactType => {
+    const termination = node.stage.termination as { kind: string; artifactType?: ArtifactType };
+
+    if (termination.kind === 'artifact-count' && termination.artifactType) {
+        return termination.artifactType;
+    }
+
+    if (policy.kind === 'artifact') return policy.expectedArtifact;
+
+    return 'text';
+};
+
+/**
+ * Overlay frame — tinted blurred backdrop, spring-up frosted card,
+ * large rounded corners, soft dismiss affordance. Kept local to
+ * NodeDetail until another surface wants the same chrome.
+ */
+const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({
+    children,
+    onClose,
+}) => (
+    <PathwayPortal>
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
+                   flex items-start sm:items-center justify-center
+                   p-0 sm:p-6 overflow-y-auto font-poppins"
+        style={{ overscrollBehavior: 'contain' }}
+        onClick={onClose}
+    >
+        <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
+            onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-xl min-h-screen sm:min-h-0
+                       bg-white/95 backdrop-blur-xl
+                       sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
+                       border border-white/60"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+            <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="absolute right-3 w-10 h-10 rounded-full
+                           bg-white/80 hover:bg-white hover:shadow-md
+                           border border-grayscale-200
+                           flex items-center justify-center
+                           transition-all duration-200 z-10"
+                style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
+            >
+                <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
+            </button>
+
+            {children}
+        </motion.div>
+    </motion.div>
+    </PathwayPortal>
+);
+
+// Motion preset shared by every section inside the card so the
+// staggered entrance feels unified rather than choreographed per
+// element. Sections pass their own `delay` via `transition`.
+const SECTION_MOTION = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.35, ease: 'easeOut' as const },
+};
+
+const NodeDetail: React.FC = () => {
+    const params = useParams<{ pathwayId: string; nodeId: string }>();
+    const history = useHistory();
+    const location = useLocation<NodeDetailLocationState | undefined>();
+    const analytics = useAnalytics();
+
+    useLockBodyScroll();
+
+    const pathway = pathwayStore.use.pathways()[params.pathwayId] ?? null;
+    const isOnline = offlineQueueStore.use.isOnline();
+
+    const [completing, setCompleting] = useState(false);
+
+    // Where to send the learner when they dismiss or complete.
+    // Defaults to Today for back-compat (direct deep-links and
+    // Today's own open path never populated router state before).
+    // Map-originated opens pass `/pathways/map` here so the canvas
+    // stays the hero.
+    const returnTo = location.state?.returnTo ?? '/pathways/today';
+
+    // On *dismissal*, forward `restoreFocusId` back to the return
+    // route as `initialFocusId` so the canvas re-focuses the pin the
+    // learner was looking at. On *completion* we deliberately drop
+    // it (see `handleComplete`) — the return surface should
+    // auto-advance, not restore.
+    const close = () =>
+        history.replace(
+            returnTo,
+            location.state?.restoreFocusId
+                ? { initialFocusId: location.state.restoreFocusId }
+                : undefined,
+        );
+
+    if (!pathway) {
+        return (
+            <OverlayFrame onClose={close}>
+                <div className="px-6 py-10 text-center">
+                    <h2 className="text-lg font-semibold text-grayscale-900 mb-2">
+                        That pathway isn't loaded
+                    </h2>
+
+                    <button
+                        type="button"
+                        onClick={close}
+                        className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    >
+                        Back to Today
+                    </button>
+                </div>
+            </OverlayFrame>
+        );
+    }
+
+    const node = pathway.nodes.find(n => n.id === params.nodeId);
+
+    if (!node) {
+        return (
+            <OverlayFrame onClose={close}>
+                <div className="px-6 py-10 text-center">
+                    <h2 className="text-lg font-semibold text-grayscale-900 mb-2">
+                        We couldn't find that node
+                    </h2>
+
+                    <button
+                        type="button"
+                        onClick={close}
+                        className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    >
+                        Back to Today
+                    </button>
+                </div>
+            </OverlayFrame>
+        );
+    }
+
+    const handleAttach = (evidence: Evidence) => {
+        // Cloud-first with offline-aware enqueue (docs § 11).
+        if (!isOnline) {
+            offlineQueueStore.set.enqueue({
+                kind: 'evidence-upload',
+                pathwayId: pathway.id,
+                nodeId: node.id,
+                evidence,
+                conflictStrategy: 'client-wins',
+                enqueuedAt: new Date().toISOString(),
+            });
+        }
+
+        // Either way, optimistic local write so the UI reflects the work.
+        pathwayStore.set.editNode(pathway.id, node.id, {
+            progress: {
+                ...node.progress,
+                status: node.progress.status === 'not-started' ? 'in-progress' : node.progress.status,
+                artifacts: [...node.progress.artifacts, evidence],
+                streak: {
+                    ...node.progress.streak,
+                    current: node.progress.streak.current + 1,
+                    longest: Math.max(node.progress.streak.longest, node.progress.streak.current + 1),
+                    lastActiveAt: evidence.submittedAt,
+                },
+            },
+        });
+    };
+
+    const handleComplete = async () => {
+        if (completing) return;
+        setCompleting(true);
+
+        const evidence = node.progress.artifacts;
+        const wasQueuedOffline = !isOnline;
+
+        if (wasQueuedOffline) {
+            offlineQueueStore.set.enqueue({
+                kind: 'complete-termination',
+                pathwayId: pathway.id,
+                nodeId: node.id,
+                evidence,
+                conflictStrategy: 'client-wins-with-reconcile',
+                enqueuedAt: new Date().toISOString(),
+            });
+        }
+
+        // Fire a light haptic tap before committing the state change so
+        // the feedback lines up with the learner's finger still on the
+        // button. Safe no-op on web; wrapped in try/catch because the
+        // native plugin can reject if the device has haptics disabled.
+        try {
+            const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+
+            await Haptics.impact({ style: ImpactStyle.Light });
+        } catch {
+            // No haptics available — keep going silently.
+        }
+
+        pathwayStore.set.completeTermination(pathway.id, node.id, []);
+
+        analytics.track(AnalyticsEvents.PATHWAYS_NODE_TERMINATION_COMPLETED, {
+            nodeId: node.id,
+            terminationKind: node.stage.termination.kind,
+            evidenceCount: evidence.length,
+            offlineQueued: wasQueuedOffline,
+        });
+
+        // Completion: return to whichever surface opened us, but do
+        // NOT pass `initialFocusId`. The destination's natural focus
+        // derivation (e.g. Map's `defaultFocusId` picks the next
+        // uncompleted node on the route; Today picks the next daily
+        // action) will advance focus to the step that comes after
+        // the one the learner just finished.
+        history.replace(returnTo);
+    };
+
+    const handleEndorsementRequested = (pending: EndorsementRef) => {
+        pathwayStore.set.editNode(pathway.id, node.id, {
+            endorsements: [...node.endorsements, pending],
+        });
+    };
+
+    /**
+     * Demo auto-vouch handler.
+     *
+     * Fired by `EndorsementPanel` after its `DEMO_AUTO_FULFILL_MS`
+     * timer elapses post-request. Finds the matching pending
+     * endorsement in the current node and replaces it with an
+     * arrived one — fresh non-`pending-` id, demo endorser DID,
+     * `receivedAt` set to now. The replace-in-place keeps the row's
+     * relationship label and trustTier so the list reads "Mentor /
+     * just now" instead of "Mentor / Waiting…".
+     *
+     * Why this exists: `termination.ts` excludes `pending-*` ids
+     * from the endorsement count, so without an upgrade path the
+     * learner is permanently stuck on "Waiting on 1 vouch."
+     * Production replaces this synthesizer with a real signed
+     * endorsement arriving via the delivery channel; the seam is
+     * the `onFulfilled` prop on `EndorsementPanel`.
+     *
+     * Idempotent on the endorsement id — if the panel fires twice
+     * (StrictMode double-invocation, fast retry, etc.), the second
+     * pass is a no-op because the matching pending entry is gone.
+     * We re-read `endorsements` off the freshly-mutated draft inside
+     * the same store update so two near-simultaneous fulfillments
+     * for different pending ids both land safely.
+     */
+    const fulfillEndorsement = (pendingEndorsementId: string) => {
+        const current = pathwayStore
+            .get.pathways()[pathway.id]
+            ?.nodes.find(n => n.id === node.id)
+            ?.endorsements;
+
+        if (!current) return;
+
+        const idx = current.findIndex(
+            e => e.endorsementId === pendingEndorsementId,
+        );
+
+        if (idx === -1) return;
+
+        const pending = current[idx];
+
+        const arrived: EndorsementRef = {
+            endorsementId: uuid(),
+            // Demo endorser DID — uses a stable shape ("did:demo:...")
+            // so observers can spot synthetic vouches in logs / state
+            // dumps without misreading them as real network DIDs.
+            endorserDid: `did:demo:${pending.endorserRelationship}`,
+            endorserRelationship: pending.endorserRelationship,
+            trustTier: pending.trustTier,
+            receivedAt: new Date().toISOString(),
+        };
+
+        const next = [...current];
+        next[idx] = arrived;
+
+        pathwayStore.set.editNode(pathway.id, node.id, {
+            endorsements: next,
+        });
+    };
+
+    // Termination context — needed so `pathway-completed` terminations
+    // on composite nodes can resolve against the live pathway store
+    // and produce a meaningful progress ring instead of "unsupported".
+    const allPathways = pathwayStore.use.pathways();
+
+    const view = computeTerminationView(node.stage.termination, node, {
+        pathways: allPathways,
+    });
+    const isCompleted = node.progress.status === 'completed';
+    const canComplete = terminationDone(view) && !completing;
+    const expectedArtifactType = pickExpectedArtifactType(node.stage.policy, node);
+
+    // Composite nodes ("completion of another pathway") get a
+    // dedicated body that replaces the evidence uploader / reviews
+    // panel. The author's render-style flag decides whether it looks
+    // like nesting or a separate-pathway link.
+    const isComposite = node.stage.policy.kind === 'composite';
+
+    // For `artifact` policies the prompt lives next to the title as an
+    // italic opening line — it's context, not a separate section. Only
+    // show it when there's no description (avoid three variations of
+    // the same sentence).
+    const inlinePrompt =
+        node.stage.policy.kind === 'artifact' && !node.description
+            ? node.stage.policy.prompt
+            : null;
+
+    // Pretty requirement line shown beneath the header. For `ready`
+    // terminations (self-attest) we omit it — the ring-check plus the
+    // big "Mark as done" already say everything.
+    const requirementText =
+        view.kind === 'ready' ? null : view.requirement;
+
+    // Resolve the node's primary launch destination. The resolver
+    // unifies three historically-separate signals:
+    //   - `node.action`                (explicit ActionDescriptor)
+    //   - `credentialProjection.earnUrl` (CTDL-imported earn link)
+    //   - `policy.external.mcp`         (MCP-driven work)
+    // and returns a single `ResolvedAction` we can dispatch on.
+    //
+    // Copy degrades with the source so we never promise a landing
+    // page awards a credential: explicit + earn-url/sourceData get
+    // "Go to issuer page" / "Continue in Khan Academy" etc.;
+    // earn-url/subjectWebpage softens to "View landing page."
+    const resolved: ResolvedAction = resolveNodeAction(node);
+    const launchCopy = describeLaunch(resolved);
+
+    // For `app-listing` actions, resolve the linked listing so we can
+    // render a rich inline card (icon, name, tagline, install/open
+    // CTA) instead of the generic "Open app listing" row. React Query
+    // de-dupes per listingId, so this costs nothing when the Map
+    // already fetched the same listing for its card avatar.
+    //
+    // Gracefully degrades: if the listing 404s (preset id the brain
+    // service hasn't seeded yet) the hook returns
+    // `{ listing: null, error }` and we fall through to the legacy
+    // `LaunchRow` which at least routes the learner to `/app/:id`
+    // where the public-listing page can show an honest error state.
+    const listingForNode = useListingForNode(node);
+    const hasAppListingAction = resolved.kind === 'app-listing';
+    const showAppListingCard =
+        hasAppListingAction
+        && !listingForNode.error
+        && listingForNode.listing !== null;
+    const showAppListingSkeleton =
+        hasAppListingAction
+        && listingForNode.isLoading
+        && !listingForNode.listing;
+
+    // For `ai-session` actions, render the dedicated `AiSessionCard`
+    // — topic enrichment, skill chips, seed-prompt preview, modal
+    // launch over the Map. The card always renders a launch CTA
+    // (the chat service resolves-or-creates the topic server-side;
+    // no wallet pre-flight is required) and uses `useTopicAvailability`
+    // advisorily to flip "Start session" → "Continue session" when
+    // prior sessions exist. NodeDetail just decides whether to mount it.
+    //
+    // The snapshot (when present on the action) is passed through so
+    // the card renders topic title / description / skills on first
+    // paint without waiting for the wallet query to resolve.
+    const aiSessionAction =
+        node.action?.kind === 'ai-session' ? node.action : null;
+    const showAiSessionCard = resolved.kind === 'ai-session';
+
+    // Badge/certificate artwork from the CTDL import (or the proxied
+    // credential). Falls back to `null` when the upstream record has
+    // no image — we don't render a broken thumbnail.
+    const image = node.credentialProjection?.image ?? null;
+
+    return (
+        <OverlayFrame onClose={close}>
+            <div className="px-6 pt-10 pb-8 space-y-5">
+                {/* -------------------------------------------------- */}
+                {/* Header: title, short context, progress ring         */}
+                {/* -------------------------------------------------- */}
+                <motion.header
+                    {...SECTION_MOTION}
+                    transition={{ ...SECTION_MOTION.transition, delay: 0.05 }}
+                    className="space-y-3 pr-10"
+                >
+                    {/*
+                        Row 1: image · title + requirement · progress.
+                        The description and inline prompt are
+                        deliberately *not* in the title's middle
+                        column — on a 375 px iPhone, the squeeze
+                        between a 64 px image and the 56 px progress
+                        ring leaves only ~135 px for prose, turning
+                        any non-trivial description into a tall
+                        narrow ribbon of broken-line text. Description
+                        gets its own full-width row below; the
+                        "thing you earn · progress toward earning it"
+                        symmetry between the badge and the ring stays
+                        readable here.
+                    */}
+                    <div className="flex items-center gap-4">
+                        {/*
+                            `items-center` (not `items-start`) so the
+                            title block centers vertically in the row
+                            when it's shorter than the 64 px image —
+                            otherwise nodes without `requirementText`
+                            leave a ~36 px gap of empty space between
+                            the title and the description below. The
+                            image and progress ring are both fixed-
+                            size and visually balance whether they
+                            top-align or centre-align, so centring is
+                            free of regressions.
+                        */}
+                        {image && (
+                            // Badge artwork lives on the left of the
+                            // header, sized to line up visually with the
+                            // `TerminationProgress` ring on the right so
+                            // the row reads as "thing you earn · progress
+                            // toward earning it." `object-contain` keeps
+                            // non-square badges from being cropped by the
+                            // rounded frame.
+                            <img
+                                src={image}
+                                alt=""
+                                className="shrink-0 w-16 h-16 rounded-2xl
+                                           bg-grayscale-10 border border-grayscale-200
+                                           object-contain p-1"
+                                loading="lazy"
+                                onError={e => {
+                                    // If the CDN is down / link rotted we
+                                    // silently drop the image rather than
+                                    // render a broken-image icon.
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        )}
+
+                        <div className="flex-1 min-w-0 space-y-1">
+                            <h2 className="text-[22px] font-semibold text-grayscale-900 leading-[1.2]">
+                                {node.title}
+                            </h2>
+
+                            {requirementText && (
+                                <p className="text-[11px] font-medium text-grayscale-500 uppercase tracking-[0.08em] pt-0.5">
+                                    Needs {requirementText}
+                                </p>
+                            )}
+                        </div>
+
+                        <TerminationProgress view={view} />
+                    </div>
+
+                    {/*
+                        Row 2: description / inline prompt at full
+                        card width. Only renders when there is
+                        copy to show, so nodes with no description
+                        keep the same compact single-row chrome
+                        they had before.
+                    */}
+                    {(node.description || inlinePrompt) && (
+                        <div className="space-y-1.5">
+                            {node.description && (
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    {node.description}
+                                </p>
+                            )}
+
+                            {inlinePrompt && (
+                                <p className="text-sm text-grayscale-600 leading-relaxed italic">
+                                    {inlinePrompt}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </motion.header>
+
+                {/* -------------------------------------------------- */}
+                {/* Where to act — two surfaces share this slot:         */}
+                {/*                                                     */}
+                {/*   1. `AppListingCard` when the node's resolved      */}
+                {/*      action is `app-listing` AND the listing loaded */}
+                {/*      — rich preview with icon, tagline, category,   */}
+                {/*      and an inline Install / Open CTA so learners   */}
+                {/*      don't have to leave the Map for the happy path.*/}
+                {/*                                                     */}
+                {/*   2. `LaunchRow` for every other launchable kind    */}
+                {/*      (external-url, in-app-route) and for          */}
+                {/*      app-listing nodes whose listing 404s or errors */}
+                {/*      — the row still routes to `/app/:id` where the */}
+                {/*      public-listing page shows the honest error.    */}
+                {/*                                                     */}
+                {/* mcp-tool / none kinds fall through entirely: the    */}
+                {/* overlay itself is the destination for those nodes.  */}
+                {/* -------------------------------------------------- */}
+                {showAppListingCard && listingForNode.listing && (
+                    <AppListingCard
+                        listing={listingForNode.listing}
+                        isInstalled={listingForNode.isInstalled}
+                        isInstalledLoading={listingForNode.isInstalledLoading}
+                        onInstallSuccess={() => {
+                            // Fire the same analytics event the
+                            // LaunchRow emits on dispatch, so the
+                            // install-completion path matches the
+                            // external-url / in-app-route shape. The
+                            // actual launch telemetry lands when the
+                            // learner taps Open after this.
+                            analytics.track(
+                                AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED,
+                                {
+                                    nodeId: node.id,
+                                    kind: resolved.kind,
+                                    source: resolved.source,
+                                    destination: `install:${
+                                        resolved.kind === 'app-listing'
+                                            ? resolved.listingId
+                                            : ''
+                                    }`,
+                                },
+                            );
+                        }}
+                    />
+                )}
+
+                {showAppListingSkeleton && (
+                    // Same vertical footprint as AppListingCard so the
+                    // layout doesn't jump when the listing resolves.
+                    <div
+                        aria-hidden
+                        className="
+                            rounded-2xl border border-grayscale-200 bg-white
+                            px-4 pt-3 pb-4
+                        "
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-14 h-14 rounded-xl bg-grayscale-100 animate-pulse" />
+
+                            <div className="min-w-0 flex-1 space-y-2 pt-1">
+                                <div className="h-4 w-3/4 rounded bg-grayscale-100 animate-pulse" />
+                                <div className="h-3 w-5/6 rounded bg-grayscale-100 animate-pulse" />
+                                <div className="h-4 w-16 rounded-full bg-grayscale-100 animate-pulse" />
+                            </div>
+                        </div>
+
+                        <div className="mt-3 h-11 w-full rounded-[20px] bg-grayscale-100 animate-pulse" />
+                    </div>
+                )}
+
+                {/* AI tutor session card — first-party LearnCard tutor
+                    on a specific AI Topic VC. Supersedes the generic
+                    LaunchRow entirely for `ai-session` nodes; the
+                    card's own states (loading / not-available / ready)
+                    cover every branch LaunchRow would. */}
+                {showAiSessionCard && resolved.kind === 'ai-session' && (
+                    <AiSessionCard
+                        resolved={resolved}
+                        snapshot={aiSessionAction?.snapshot}
+                    />
+                )}
+
+                {launchCopy
+                    && !showAppListingCard
+                    && !showAppListingSkeleton
+                    && !showAiSessionCard
+                    && (resolved.kind === 'external-url'
+                        || resolved.kind === 'app-listing'
+                        || resolved.kind === 'in-app-route') && (
+                    <LaunchRow
+                        copy={launchCopy}
+                        resolved={resolved}
+                        onDispatch={(destination) => {
+                            analytics.track(
+                                AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED,
+                                {
+                                    nodeId: node.id,
+                                    kind: resolved.kind,
+                                    source: resolved.source,
+                                    destination,
+                                },
+                            );
+                        }}
+                        onInAppNavigate={(href) => history.push(href)}
+                    />
+                )}
+
+                {/* -------------------------------------------------- */}
+                {/* Working state: composite body OR evidence/review    */}
+                {/* -------------------------------------------------- */}
+                {!isCompleted && (
+                    <motion.div
+                        {...SECTION_MOTION}
+                        transition={{ ...SECTION_MOTION.transition, delay: 0.12 }}
+                        className="space-y-3"
+                    >
+                        {isComposite ? (
+                            // Composite node: delegate the body to
+                            // CompositeNodeBody, which picks between
+                            // inline-expandable (nesting) and link-out
+                            // (composition) based on renderStyle.
+                            <CompositeNodeBody
+                                parentPathway={pathway}
+                                parentNode={
+                                    node as typeof node & {
+                                        stage: typeof node.stage & {
+                                            policy: Extract<
+                                                typeof node.stage.policy,
+                                                { kind: 'composite' }
+                                            >;
+                                        };
+                                    }
+                                }
+                            />
+                        ) : (
+                            <>
+                                <EvidencePanel evidence={node.progress.artifacts} />
+
+                                {/*
+                                    For `review` policies, show FSRS grading rather
+                                    than an evidence uploader — the node asks you to
+                                    recall, not to attach. Every other non-composite
+                                    policy kind flows through the same uploader.
+                                */}
+                                {node.stage.policy.kind === 'review' ? (
+                                    <ReviewsPanel
+                                        pathwayId={pathway.id}
+                                        node={
+                                            node as typeof node & {
+                                                stage: {
+                                                    policy: {
+                                                        kind: 'review';
+                                                        fsrs: typeof node.stage.policy.fsrs;
+                                                    };
+                                                };
+                                            }
+                                        }
+                                    />
+                                ) : (
+                                    <EvidenceUploader
+                                        onSubmit={handleAttach}
+                                        expectedType={expectedArtifactType}
+                                    />
+                                )}
+                            </>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* -------------------------------------------------- */}
+                {/* Commit: big "Mark as done" + unmet hint             */}
+                {/* -------------------------------------------------- */}
+                <AnimatePresence mode="wait" initial={false}>
+                    {isCompleted ? (
+                        <motion.div
+                            key="done"
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{
+                                type: 'spring',
+                                stiffness: 260,
+                                damping: 24,
+                                mass: 0.7,
+                            }}
+                            className="p-5 rounded-[24px]
+                                       bg-emerald-50/80 backdrop-blur-xl
+                                       border border-emerald-100
+                                       shadow-lg shadow-emerald-900/5
+                                       space-y-3"
+                        >
+                            <div className="flex items-center gap-3">
+                                <motion.span
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{
+                                        type: 'spring',
+                                        stiffness: 500,
+                                        damping: 18,
+                                        delay: 0.1,
+                                    }}
+                                    className="shrink-0 w-9 h-9 rounded-full bg-emerald-600
+                                               flex items-center justify-center
+                                               shadow-sm shadow-emerald-600/30"
+                                    aria-hidden
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                        <motion.path
+                                            d="M5 12.5l4.5 4.5L19 7"
+                                            stroke="white"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            initial={{ pathLength: 0 }}
+                                            animate={{ pathLength: 1 }}
+                                            transition={{
+                                                duration: 0.35,
+                                                ease: 'easeOut',
+                                                delay: 0.25,
+                                            }}
+                                        />
+                                    </svg>
+                                </motion.span>
+
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-emerald-800">
+                                        You did it.
+                                    </p>
+                                    <p className="text-xs text-emerald-700/90">
+                                        Proof is saved. Your next step is waiting on Today.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/*
+                                If this node projects to a credential, render the
+                                drafted claim inline. Honors §3.6 ("we project,
+                                we don't store a signed VC") and makes the
+                                Phase 1 contract ("every node is a potential
+                                OB 3.0 claim") tangible the moment it matters.
+                            */}
+                            {canProject(node) && (
+                                <CredentialPreview node={node} ownerDid={pathway.ownerDid} />
+                            )}
+
+                            <div className="flex gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={close}
+                                    className="flex-1 py-3 px-4 rounded-[20px]
+                                               bg-grayscale-900 text-white font-medium text-sm
+                                               hover:bg-grayscale-800 transition-colors"
+                                >
+                                    Back to Today
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => history.push('/pathways/map')}
+                                    className="py-3 px-4 rounded-[20px] border border-grayscale-300
+                                               text-grayscale-700 font-medium text-sm
+                                               hover:bg-grayscale-10 transition-colors
+                                               flex items-center gap-1.5"
+                                >
+                                    <IonIcon icon={mapOutline} className="text-base" aria-hidden />
+                                    <span>Map</span>
+                                </button>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="commit"
+                            {...SECTION_MOTION}
+                            transition={{ ...SECTION_MOTION.transition, delay: 0.18 }}
+                            className="space-y-2"
+                        >
+                            <motion.button
+                                type="button"
+                                onClick={handleComplete}
+                                disabled={!canComplete}
+                                whileTap={canComplete ? { scale: 0.97 } : undefined}
+                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                className={`w-full py-3.5 px-5 rounded-[20px] font-medium text-sm
+                                           transition-all duration-300 flex items-center justify-center gap-2
+                                           ${
+                                               canComplete
+                                                   ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/25'
+                                                   : 'bg-grayscale-200 text-grayscale-400 cursor-not-allowed'
+                                           }`}
+                            >
+                                {completing ? 'Marking done…' : 'Mark as done'}
+                            </motion.button>
+
+                            {!canComplete && 'unmetHint' in view && view.unmetHint && (
+                                <p className="text-xs text-grayscale-500 text-center">
+                                    {view.unmetHint}
+                                </p>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* -------------------------------------------------- */}
+                {/* Endorsement footer — demoted, still accessible      */}
+                {/* -------------------------------------------------- */}
+                <motion.div
+                    {...SECTION_MOTION}
+                    transition={{ ...SECTION_MOTION.transition, delay: 0.22 }}
+                    className="pt-4 mt-2 border-t border-grayscale-200"
+                >
+                    <EndorsementPanel
+                        nodeId={node.id}
+                        endorsements={node.endorsements}
+                        onRequested={handleEndorsementRequested}
+                        onFulfilled={fulfillEndorsement}
+                    />
+                </motion.div>
+            </div>
+        </OverlayFrame>
+    );
+};
+
+export default NodeDetail;

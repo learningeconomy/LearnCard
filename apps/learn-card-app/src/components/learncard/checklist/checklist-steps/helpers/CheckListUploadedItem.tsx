@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-uploaded-item');
 
 import TrashBin from '../../../../svgs/TrashBin';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
@@ -8,6 +10,8 @@ import CategorySelector from '../../../../categorySelector/CategorySelector';
 
 import {
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     useGetCheckListStatus,
     CredentialCategoryEnum,
     useModal,
@@ -26,26 +30,40 @@ export type RawVCFileType = {
     uri: string;
 };
 
-export const CheckListUploadRawVC: React.FC<{ rawVC: RawVCFileType; onSuccess: () => void }> = ({
-    rawVC,
-    onSuccess = () => {},
-}) => {
+export const CheckListUploadRawVC: React.FC<{
+    rawVC: RawVCFileType;
+    onSuccess: () => void;
+    onOptimisticDelete: (id: string) => void;
+    onDeleteFailed: () => void;
+}> = ({ rawVC, onSuccess = () => {}, onOptimisticDelete, onDeleteFailed }) => {
     const { newModal, closeModal } = useModal();
+    const { presentToast } = useToast();
 
-    const { mutate: deleteChecklistCredentialMutation, isPending: isDeleting } =
-        useDeleteChecklistCredentialMutation();
+    const { mutate: deleteChecklistCredentialMutation } = useDeleteChecklistCredentialMutation();
     const { mutate: updateChecklistItemCategoryMutation, isPending: isUpdating } =
         useUpdateChecklistItemCategoryMutation();
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
 
-    const handleDeleteTranscript = async (id: string, uri: string) => {
+    const handleDeleteRawVC = (id: string, uri: string) => {
+        onOptimisticDelete(id);
         deleteChecklistCredentialMutation(
             { id, uri },
             {
                 onSuccess: () => {
                     refetchCheckListStatus();
                     onSuccess();
+                },
+                onError: error => {
+                    log.error('Failed to delete credential', error);
+                    onDeleteFailed();
+                    presentToast('Failed to delete. Please try again.', {
+                        title: 'Delete failed',
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Error,
+                        hasX: true,
+                        duration: 5000,
+                    });
                 },
             }
         );
@@ -61,7 +79,7 @@ export const CheckListUploadRawVC: React.FC<{ rawVC: RawVCFileType; onSuccess: (
                     'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
             })
         ) {
-            await handleDeleteTranscript(id, uri);
+            handleDeleteRawVC(id, uri);
         }
     };
 
@@ -91,7 +109,7 @@ export const CheckListUploadRawVC: React.FC<{ rawVC: RawVCFileType; onSuccess: (
     const { title, IconComponent, color } =
         categoryMetadata[rawVC?.category as CredentialCategoryEnum];
 
-    if (isDeleting || isUpdating) return <CheckListItemSkeleton />;
+    if (isUpdating) return <CheckListItemSkeleton />;
 
     return (
         <div className="flex flex-col gap-[10px] py-[10px]">

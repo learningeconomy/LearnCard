@@ -62,14 +62,12 @@ const BoostCMSIDCard = lazyWithRetry(() => import('../boost-id-card/BoostIDCard'
 const BoostCMSIDAppearanceController = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController')
 );
-const BoostCMSPublish = lazyWithRetry(
-    () => import('./boostCMSForms/boostCMSPublish/boostCMSPublish')
-);
 
 import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSMediaDisplayWarning';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
+import BoostCMSPublish from './boostCMSForms/boostCMSPublish/boostCMSPublish';
 import RecoveryPrompt from '../../common/RecoveryPrompt';
 import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
@@ -139,6 +137,9 @@ interface BoostCMSProps {
     boostCMSState?: BoostCMSState;
     profileId?: string;
 }
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<BoostCMSProps> = ({
     boostDetails,
@@ -779,7 +780,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.info('error::savingBoost', e);
             presentToast(`Unable to save boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -846,7 +847,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsPublishLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(`Error issuing boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -952,7 +953,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(`Error issuing boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,

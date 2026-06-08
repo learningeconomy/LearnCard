@@ -1,0 +1,989 @@
+/**
+ * Slice 7.5 — **signed Authorization Request (Request Object) verification**.
+ *
+ * OpenID4VP §5 lets the verifier deliver the full Authorization Request
+ * as a signed JWS, either embedded inline (`request=<jws>`) or fetched
+ * by reference (`request_uri=<https-url>`). Signature verification
+ * hinges on the verifier's **client-id prefix** (OID4VP 1.0 §5.10) —
+ * which we derive from `client_id` and the optional draft-22
+ * `client_id_scheme` parameter (see `./client-id-prefix.ts`):
+ *
+ *   - **`redirect_uri`** — NO signed Request Object is permitted. The
+ *     `client_id` is an opaque response URL and there's no signing key
+ *     to check. If we receive a JWS for this prefix we reject it.
+ *   - **`did`** — `client_id` is a DID URL. The JWS `kid` header MUST
+ *     identify a verification method on the DID document, and the JWS
+ *     signature MUST verify against that method's public key.
+ *   - **`x509_san_dns`** — The JWS `x5c` header carries a DER cert
+ *     chain. The leaf cert's SAN dNSName MUST match the host portion
+ *     of `client_id`, and the JWS signature MUST verify against the
+ *     leaf cert's public key. A caller-supplied `trustedX509Roots`
+ *     list pins the trust anchor; in the absence of one we refuse
+ *     unless `unsafeAllowSelfSigned` is explicitly set.
+ *   - **`pre-registered`** — the verifier is pre-registered with the
+ *     wallet out-of-band. We can't bind the signing key to the bare
+ *     `client_id` (there's no spec-mandated channel for that), so we
+ *     accept signed requests in `pre-registered` mode only when the
+ *     JWS carries an `x5c` header AND the caller has opted into
+ *     `unsafeAllowSelfSigned` for an interop / dev context. Production
+ *     wallets must layer their own pre-registration registry on top.
+ *
+ * Unsupported prefixes (`https`, `verifier_attestation`, `x509_hash`)
+ * raise a typed error so callers can degrade gracefully.
+ *
+ * This module is **pure and injectable**: the DID resolver + fetch
+ * implementation are passed in. The plugin wires defaults for
+ * `did:jwk` (inline) and `did:web` (over the caller's fetch). Callers
+ * plug in their own resolver to support `did:key`, `did:ion`, etc.
+ */
+import * as x509 from '@peculiar/x509';
+
+import { importJWK, importX509, jwtVerify, JWK } from 'jose';
+
+import {
+    AuthorizationRequest,
+    PresentationDefinition,
+    VpError,
+} from './types';
+import {
+    deriveClientIdPrefix,
+    type ClientIdPrefix,
+} from './client-id-prefix';
+import { parseDcqlQuery } from '../dcql/parse';
+import type { DcqlQuery } from '../dcql/types';
+
+/* -------------------------------------------------------------------------- */
+/*                                public types                                */
+/* -------------------------------------------------------------------------- */
+
+export type RequestObjectErrorCode =
+    | 'invalid_request_object'
+    | 'request_fetch_failed'
+    | 'missing_client_id_scheme'
+    | 'unsupported_client_id_scheme'
+    | 'client_id_mismatch'
+    | 'request_signature_invalid'
+    | 'request_signer_untrusted'
+    | 'did_resolution_failed'
+    | 'unsafe_mode_rejected';
+
+export class RequestObjectError extends Error {
+    readonly code: RequestObjectErrorCode;
+
+    constructor(
+        code: RequestObjectErrorCode,
+        message: string,
+        options?: { cause?: unknown }
+    ) {
+        super(message);
+        this.name = 'RequestObjectError';
+        this.code = code;
+        if (options?.cause !== undefined) {
+            (this as { cause?: unknown }).cause = options.cause;
+        }
+    }
+}
+
+/**
+ * Minimal DID Document shape the resolver surface consumes. We avoid
+ * re-modeling the full spec — consumers only need enough to pull a
+ * `publicKeyJwk` out.
+ */
+export interface VerificationMethod {
+    id: string;
+    type: string;
+    controller?: string;
+    publicKeyJwk?: JWK;
+    publicKeyMultibase?: string;
+}
+
+export interface DidDocument {
+    id: string;
+    verificationMethod?: VerificationMethod[];
+    authentication?: Array<string | VerificationMethod>;
+    assertionMethod?: Array<string | VerificationMethod>;
+}
+
+export type DidResolver = (did: string) => Promise<DidDocument>;
+
+export interface VerifyRequestObjectOptions {
+    /** The `request_uri` to fetch. Mutually exclusive with `inlineJwt`. */
+    requestUri?: string;
+
+    /** The inline `request=<jws>` parameter value. Mutually exclusive with `requestUri`. */
+    inlineJwt?: string;
+
+    /**
+     * `client_id` from the outer URL params. Some verifiers let the
+     * `client_id` live in the URL while the JWS payload just repeats
+     * it; we cross-check them. Optional — only used as a consistency
+     * check when provided.
+     */
+    urlClientId?: string;
+
+    /**
+     * `client_id_scheme` from the outer URL params. Same cross-check
+     * rationale as `urlClientId`.
+     */
+    urlClientIdScheme?: string;
+
+    fetchImpl?: typeof fetch;
+
+    /**
+     * DID resolver override. When omitted, a built-in resolver handles
+     * `did:jwk` (offline) and `did:web` (over `fetchImpl`). Host apps
+     * that ship `did:key`/`did:ion`/… wire their own resolver here.
+     */
+    didResolver?: DidResolver;
+
+    /**
+     * Trusted X.509 root certificates (PEM strings). When scheme is
+     * `x509_san_dns`, the chain presented in `x5c` MUST root to one of
+     * these. If this list is empty and `unsafeAllowSelfSigned` is
+     * false, we refuse to verify x509-signed Request Objects.
+     */
+    trustedX509Roots?: readonly string[];
+
+    /**
+     * **Dangerous.** Accept self-signed / untrusted x509 chains for
+     * local development. The harness flips this on when a user
+     * explicitly opts in; production wallets must leave it off.
+     */
+    unsafeAllowSelfSigned?: boolean;
+
+    /**
+     * **Maximally dangerous.** Skip JWS signature verification on the
+     * Request Object entirely — claims are decoded but their
+     * authenticity is not checked at all. Strictly an interop /
+     * test-harness escape hatch for verifiers whose signing keys
+     * are pre-shared out-of-band and not published in any in-band
+     * channel (e.g. EUDI's reference verifier in `pre-registered`
+     * mode, which embeds `kid: "access_certificate"` referencing a
+     * keystore inside the verifier container with no JWKS endpoint).
+     *
+     * Production wallets MUST leave this off. Tampered Request
+     * Objects bypass detection when this flag is set. The other
+     * binding checks (`urlClientId` ↔ signed `client_id`) still run
+     * because they're integrity checks against the host-supplied
+     * URL, not against the JWS signature.
+     */
+    unsafeSkipRequestObjectSignatureVerification?: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               public surface                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Fetch-and-verify a signed OpenID4VP Authorization Request Object.
+ *
+ * Returns the canonical {@link AuthorizationRequest} shape built from
+ * the verified JWS payload. On any failure — fetch, decode, signature,
+ * trust-anchor — throws {@link RequestObjectError} with a stable code.
+ */
+export const verifyAndDecodeRequestObject = async (
+    opts: VerifyRequestObjectOptions
+): Promise<AuthorizationRequest> => {
+    const jws = await loadJws(opts);
+
+    const { header, claims } = decodeHeaderAndClaims(jws);
+
+    const clientId = asString(claims.client_id);
+    if (!clientId) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Request Object JWS payload is missing client_id'
+        );
+    }
+
+    // Derive the OID4VP 1.0 client-id prefix. Accepts both:
+    //   - draft-22 wire form: `client_id` is bare, prefix lives in a
+    //     separate `client_id_scheme` claim or URL param.
+    //   - OID4VP 1.0 wire form: prefix is encoded inline in
+    //     `client_id` (e.g. `x509_san_dns:verifier.example.com`).
+    // The derivation is pure — `unsupported_client_id_scheme` for
+    // prefixes we don't handle is raised below where the trust
+    // context is known, not in the parser.
+    const legacyScheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
+    const { prefix, value: prefixValue } = deriveClientIdPrefix(
+        clientId,
+        legacyScheme
+    );
+
+    // Defense-in-depth: the outer URL's client_id (when present) MUST
+    // match the signed claim. Otherwise an attacker could wrap someone
+    // else's signed request and re-point it. This check runs even
+    // when sig verification is bypassed — it's an integrity check on
+    // the host-supplied URL, not on the JWS signature.
+    if (opts.urlClientId && opts.urlClientId !== clientId) {
+        throw new RequestObjectError(
+            'client_id_mismatch',
+            `Outer URL client_id (${opts.urlClientId}) does not match signed Request Object client_id (${clientId})`
+        );
+    }
+
+    // Sig-verification bypass — interop escape hatch. The flag is
+    // double-named (`unsafe`) and double-documented because flipping
+    // it OFF is the security-critical default. We still derive the
+    // prefix above so callers get a meaningful `client_id_scheme` in
+    // the resolved AuthorizationRequest; we just skip the actual
+    // crypto check below.
+    if (opts.unsafeSkipRequestObjectSignatureVerification) {
+        return buildRequestFromClaims(clientId, prefix, claims);
+    }
+
+    switch (prefix) {
+        case 'redirect_uri':
+            throw new RequestObjectError(
+                'unsupported_client_id_scheme',
+                'client-id prefix=redirect_uri does not permit signed Request Objects (OID4VP §5)'
+            );
+
+        case 'did':
+            await verifyWithDid({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+            });
+            break;
+
+        case 'x509_san_dns':
+            await verifyWithX509({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+            });
+            break;
+
+        case 'pre-registered':
+            await verifyWithPreRegistered({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+            });
+            break;
+
+        case 'https':
+        case 'verifier_attestation':
+        case 'x509_hash':
+            throw new RequestObjectError(
+                'unsupported_client_id_scheme',
+                `client-id prefix=${prefix} is not yet supported (supported: did, x509_san_dns, pre-registered)`
+            );
+
+        default: {
+            // Exhaustiveness guard — if a future ClientIdPrefix lands
+            // and someone forgets to extend the switch, the type
+            // checker rejects it here.
+            const _exhaustive: never = prefix;
+            throw new RequestObjectError(
+                'unsupported_client_id_scheme',
+                `client-id prefix=${_exhaustive as string} is not supported`
+            );
+        }
+    }
+
+    return buildRequestFromClaims(clientId, prefix, claims);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                  fetch                                     */
+/* -------------------------------------------------------------------------- */
+
+const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
+    if (opts.inlineJwt) {
+        if (!looksLikeJws(opts.inlineJwt)) {
+            throw new RequestObjectError(
+                'invalid_request_object',
+                'Inline `request` parameter is not a compact JWS'
+            );
+        }
+        return opts.inlineJwt;
+    }
+
+    if (!opts.requestUri) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'verifyAndDecodeRequestObject requires either inlineJwt or requestUri'
+        );
+    }
+
+    const fetchImpl = opts.fetchImpl ?? globalThis.fetch;
+    if (typeof fetchImpl !== 'function') {
+        throw new RequestObjectError(
+            'request_fetch_failed',
+            'No fetch implementation available to resolve request_uri'
+        );
+    }
+
+    let response: Response;
+    try {
+        response = await fetchImpl(opts.requestUri, { method: 'GET' });
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_fetch_failed',
+            `Failed to fetch request_uri: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    if (!response.ok) {
+        throw new RequestObjectError(
+            'request_fetch_failed',
+            `request_uri returned ${response.status} ${response.statusText}`
+        );
+    }
+
+    const body = (await response.text()).trim();
+
+    if (!looksLikeJws(body)) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'request_uri response is not a compact JWS'
+        );
+    }
+
+    return body;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                               decode helpers                               */
+/* -------------------------------------------------------------------------- */
+
+interface DecodedJws {
+    header: Record<string, unknown>;
+    claims: Record<string, unknown>;
+}
+
+const decodeHeaderAndClaims = (jws: string): DecodedJws => {
+    const [headerB64, payloadB64] = jws.split('.');
+
+    try {
+        const header = JSON.parse(b64urlDecode(headerB64!)) as Record<string, unknown>;
+        const claims = JSON.parse(b64urlDecode(payloadB64!)) as Record<string, unknown>;
+        return { header, claims };
+    } catch (e) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `Failed to decode Request Object JWS: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+};
+
+/* -------------------------------------------------------------------------- */
+/*                       client_id_scheme=did verification                    */
+/* -------------------------------------------------------------------------- */
+
+interface VerifyCtx {
+    jws: string;
+    header: Record<string, unknown>;
+    clientId: string;
+    opts: VerifyRequestObjectOptions;
+}
+
+const verifyWithDid = async (ctx: VerifyCtx): Promise<void> => {
+    const { jws, header, clientId, opts } = ctx;
+
+    // Per Draft 22 §5.10.2, the JWS `kid` MUST reference a verification
+    // method in the client_id DID document. It may be the fully
+    // qualified VM id (did:...#frag) or just the fragment.
+    const kid = asString(header.kid);
+    if (!kid) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Request Object JWS header is missing kid (required for client_id_scheme=did)'
+        );
+    }
+
+    const did = clientId.split('#')[0]!;
+
+    const resolver = opts.didResolver ?? builtInDidResolver(opts.fetchImpl);
+
+    let doc: DidDocument;
+    try {
+        doc = await resolver(did);
+    } catch (e) {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `Failed to resolve ${did}: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    const vm = findVerificationMethod(doc, kid);
+    if (!vm) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Verification method ${kid} not found on ${did}`
+        );
+    }
+
+    if (!vm.publicKeyJwk) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Verification method ${vm.id} has no publicKeyJwk (publicKeyMultibase not supported by default resolver)`
+        );
+    }
+
+    const alg = asString(header.alg);
+    if (!alg) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Request Object JWS header is missing alg'
+        );
+    }
+
+    let key: Awaited<ReturnType<typeof importJWK>>;
+    try {
+        key = await importJWK(vm.publicKeyJwk, alg);
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Failed to import publicKeyJwk from ${vm.id}: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    try {
+        await jwtVerify(jws, key);
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signature_invalid',
+            `JWS signature verification failed: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+};
+
+const findVerificationMethod = (
+    doc: DidDocument,
+    kid: string
+): VerificationMethod | undefined => {
+    const pool: VerificationMethod[] = [];
+
+    for (const vm of doc.verificationMethod ?? []) pool.push(vm);
+    for (const ref of doc.authentication ?? [])
+        if (typeof ref === 'object') pool.push(ref);
+    for (const ref of doc.assertionMethod ?? [])
+        if (typeof ref === 'object') pool.push(ref);
+
+    // Match either the fully-qualified VM id or just the fragment.
+    const fragment = kid.includes('#') ? kid.split('#').pop()! : kid;
+
+    return pool.find(
+        vm => vm.id === kid || vm.id.split('#').pop() === fragment
+    );
+};
+
+/* -------------------------------------------------------------------------- */
+/*                    client_id_scheme=x509_san_dns verification              */
+/* -------------------------------------------------------------------------- */
+
+const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
+    const { jws, header, clientId, opts } = ctx;
+
+    const x5c = header.x5c;
+    if (!Array.isArray(x5c) || x5c.length === 0) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Request Object JWS header is missing x5c (required for client_id_scheme=x509_san_dns)'
+        );
+    }
+
+    // Defensive DER → X509Certificate construction (cross-platform via @peculiar/x509).
+    let chain: x509.X509Certificate[];
+    try {
+        chain = buildCertChain(x5c as string[]);
+    } catch (e) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `Failed to parse x5c chain: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    const leaf = chain[0]!;
+
+    // SAN DNS binding: client_id (as URL host) MUST appear in leaf SAN.
+    const expectedHost = hostFromClientId(clientId);
+    if (!leafCoversHost(leaf, expectedHost)) {
+        throw new RequestObjectError(
+            'client_id_mismatch',
+            `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${listLeafSanDnsNames(leaf).join(',') || 'none'})`
+        );
+    }
+
+    // Trust-anchor check.
+    const trusted = opts.trustedX509Roots ?? [];
+    const allowSelfSigned = Boolean(opts.unsafeAllowSelfSigned);
+
+    if (trusted.length === 0 && !allowSelfSigned) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            'client_id_scheme=x509_san_dns requires trustedX509Roots (or unsafeAllowSelfSigned for dev)'
+        );
+    }
+
+    if (trusted.length > 0) {
+        await verifyChainToTrustedRoots(chain, trusted);
+    }
+
+    // JWS signature must verify against the leaf cert's public key.
+    const leafPem = derToPem(x5c[0] as string);
+
+    let key: Awaited<ReturnType<typeof importX509>>;
+    try {
+        key = await importX509(leafPem, asString(header.alg) ?? 'RS256');
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Failed to import leaf X.509 cert: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    try {
+        await jwtVerify(jws, key);
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signature_invalid',
+            `JWS signature verification failed: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+};
+
+const buildCertChain = (
+    x5c: string[]
+): x509.X509Certificate[] =>
+    // peculiar's constructor accepts base64/PEM strings or BufferSource.
+    // x5c entries are base64-DER per RFC 7515 §4.1.6 (no PEM wrapper);
+    // we wrap them so peculiar's base64 detection works reliably across
+    // versions (some bundlers' typings constrain BufferSource away).
+    x5c.map(b64 => new x509.X509Certificate(derToPem(b64)));
+
+/**
+ * Walk the `x5c` chain bottom-up: each cert must be signed by the next,
+ * and the topmost cert must be signed by (or itself match) one of the
+ * trusted roots. Throws {@link RequestObjectError} on any broken link.
+ *
+ * Async because @peculiar/x509's signature verification routes through
+ * Web Crypto's `subtle.verify` (which is async by spec).
+ */
+const verifyChainToTrustedRoots = async (
+    chain: x509.X509Certificate[],
+    trustedPems: readonly string[]
+): Promise<void> => {
+    const trusted = trustedPems.map(pem => new x509.X509Certificate(pem));
+
+    for (let i = 0; i < chain.length - 1; i++) {
+        const child = chain[i]!;
+        const parent = chain[i + 1]!;
+        const linkOk = await safeVerify(child, parent);
+        if (!linkOk) {
+            throw new RequestObjectError(
+                'request_signer_untrusted',
+                `x5c chain broken at position ${i}: cert is not signed by its successor`
+            );
+        }
+    }
+
+    const top = chain[chain.length - 1]!;
+
+    // Self-anchored leaf → the leaf must itself match a trusted root
+    // (by SHA-256 thumbprint, the canonical "is this the same cert" test).
+    if (chain.length === 1) {
+        const topFp = await fingerprintHex(top);
+        for (const root of trusted) {
+            if ((await fingerprintHex(root)) === topFp) return;
+        }
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            'Leaf certificate is self-contained and does not match any trustedX509Roots'
+        );
+    }
+
+    for (const root of trusted) {
+        if (await safeVerify(top, root)) return;
+    }
+
+    throw new RequestObjectError(
+        'request_signer_untrusted',
+        'Top of x5c chain is not rooted in any trustedX509Roots'
+    );
+};
+
+// Verify that `child` is signed by `parent`'s public key. Defensive
+// against algorithm mismatches that throw inside Web Crypto rather
+// than returning false.
+const safeVerify = async (
+    child: x509.X509Certificate,
+    parent: x509.X509Certificate
+): Promise<boolean> => {
+    try {
+        return await child.verify({ publicKey: parent.publicKey });
+    } catch {
+        return false;
+    }
+};
+
+const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
+    const buf = await cert.getThumbprint('SHA-256');
+    const bytes = new Uint8Array(buf);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+        hex += bytes[i]!.toString(16).padStart(2, '0');
+    }
+    return hex;
+};
+
+/**
+ * SAN DNS binding check: returns true when `host` matches any
+ * dNSName entry in the cert's SubjectAlternativeName extension.
+ * Honours wildcard certs (`*.example.com` covers `foo.example.com`
+ * but not `example.com` or `bar.foo.example.com`), per RFC 6125 §6.4.3.
+ */
+const leafCoversHost = (
+    cert: x509.X509Certificate,
+    host: string
+): boolean => {
+    const lower = host.toLowerCase();
+    for (const dns of listLeafSanDnsNames(cert)) {
+        if (matchesDnsName(dns, lower)) return true;
+    }
+    return false;
+};
+
+const listLeafSanDnsNames = (cert: x509.X509Certificate): string[] => {
+    const ext = cert.getExtension(x509.SubjectAlternativeNameExtension);
+    if (!ext) return [];
+    return ext.names
+        .toJSON()
+        .filter(n => n.type === 'dns')
+        .map(n => n.value);
+};
+
+const matchesDnsName = (pattern: string, host: string): boolean => {
+    const p = pattern.toLowerCase();
+    if (p === host) return true;
+    if (!p.startsWith('*.')) return false;
+    // Wildcard matches exactly one label.
+    const suffix = p.slice(1); // ".example.com"
+    if (!host.endsWith(suffix)) return false;
+    const left = host.slice(0, -suffix.length);
+    return left.length > 0 && !left.includes('.');
+};
+
+const b64Decode = (b64: string): Uint8Array => {
+    if (typeof Buffer !== 'undefined') {
+        return new Uint8Array(Buffer.from(b64.replace(/\s+/g, ''), 'base64'));
+    }
+    const clean = b64.replace(/\s+/g, '');
+    const binary = atob(clean);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+};
+
+const derToPem = (b64: string): string => {
+    // b64 comes verbatim from the JWS header — unwrap any stray newlines
+    // and re-chunk to classic 64-char PEM lines.
+    const clean = b64.replace(/\s+/g, '');
+    const lines = clean.match(/.{1,64}/g) ?? [clean];
+    return `-----BEGIN CERTIFICATE-----\n${lines.join('\n')}\n-----END CERTIFICATE-----\n`;
+};
+
+/* -------------------------------------------------------------------------- */
+/*               client-id prefix=pre-registered verification                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Pre-registered verifier — the wallet has out-of-band knowledge of
+ * who this verifier is. The signing key isn't bound to `client_id`
+ * by any spec-defined channel, so we accept signed Request Objects
+ * **only** when:
+ *
+ *   1. `unsafeAllowSelfSigned` is explicitly enabled by the host app.
+ *      Production wallets must layer their own pre-registration
+ *      registry (mapping bare client_id → expected key) on top of
+ *      this verifier; until then, defaulting to "trusted via
+ *      out-of-band channel" silently would be a footgun.
+ *   2. The JWS carries `x5c` so we have *some* key material to
+ *      verify the signature against. Without it there's no key at
+ *      all — we'd be asserting authenticity from nothing.
+ *
+ * The leaf cert's SAN binding is **not** checked here (unlike
+ * `x509_san_dns`) because `pre-registered` doesn't bind the
+ * client_id to the certificate at all — the trust comes from the
+ * caller's `unsafeAllowSelfSigned` opt-in plus their downstream
+ * registry check.
+ *
+ * This is the path EUDI's reference verifier uses: it emits a bare
+ * `client_id="Verifier"` (no prefix) signed with a self-signed cert
+ * whose SAN doesn't match the client_id. Without this branch, our
+ * JAR verifier would correctly refuse to handle the request, leaving
+ * the host with no way to interop with EUDI even in dev.
+ */
+const verifyWithPreRegistered = async (ctx: VerifyCtx): Promise<void> => {
+    const { jws, header, opts } = ctx;
+
+    const allowSelfSigned = Boolean(opts.unsafeAllowSelfSigned);
+    if (!allowSelfSigned) {
+        throw new RequestObjectError(
+            'unsupported_client_id_scheme',
+            'client-id prefix=pre-registered without a registry binding requires unsafeAllowSelfSigned=true (signing key cannot be derived from client_id alone)'
+        );
+    }
+
+    const x5c = header.x5c;
+    if (!Array.isArray(x5c) || x5c.length === 0) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'client-id prefix=pre-registered requires an x5c header to verify the signature against (no key material available otherwise)'
+        );
+    }
+
+    // We don't validate the chain to a trust root here — the caller
+    // has opted into self-signed via `unsafeAllowSelfSigned`. The
+    // sole job of this branch is to verify the JWS signature against
+    // *some* embedded key so a tampered Request Object is still
+    // caught.
+    const leafPem = derToPem(x5c[0] as string);
+
+    let key: Awaited<ReturnType<typeof importX509>>;
+    try {
+        key = await importX509(leafPem, asString(header.alg) ?? 'RS256');
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signer_untrusted',
+            `Failed to import leaf X.509 cert: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    try {
+        await jwtVerify(jws, key);
+    } catch (e) {
+        throw new RequestObjectError(
+            'request_signature_invalid',
+            `JWS signature verification failed: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+};
+
+const hostFromClientId = (clientId: string): string => {
+    // client_id can be a hostname, URL, or URL with path. Pull a DNS
+    // name out in every reasonable shape.
+    try {
+        const url = new URL(
+            clientId.includes('://') ? clientId : `https://${clientId}`
+        );
+        return url.hostname;
+    } catch {
+        return clientId;
+    }
+};
+
+/* -------------------------------------------------------------------------- */
+/*                              built-in resolver                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Built-in DID resolver covering the two methods wallet-side holder
+ * traffic most often uses: `did:jwk` (keys inline in the identifier)
+ * and `did:web` (DID docs over HTTPS). Other methods should be handled
+ * via the caller's `didResolver` override.
+ */
+export const builtInDidResolver = (
+    fetchImpl: typeof fetch | undefined = globalThis.fetch
+): DidResolver => {
+    return async (did: string): Promise<DidDocument> => {
+        if (did.startsWith('did:jwk:')) {
+            return resolveDidJwk(did);
+        }
+        if (did.startsWith('did:web:')) {
+            return resolveDidWeb(did, fetchImpl);
+        }
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `Built-in resolver does not support ${did.split(':').slice(0, 2).join(':')} — pass a custom didResolver`
+        );
+    };
+};
+
+const resolveDidJwk = (did: string): DidDocument => {
+    const id = did.replace(/^did:jwk:/, '').split('#')[0]!;
+
+    let jwk: JWK;
+    try {
+        const pad = '='.repeat((4 - (id.length % 4)) % 4);
+        const b64 = id.replace(/-/g, '+').replace(/_/g, '/') + pad;
+        jwk = JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as JWK;
+    } catch (e) {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `Failed to decode did:jwk identifier: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    const vmId = `${did}#0`;
+    return {
+        id: did,
+        verificationMethod: [
+            {
+                id: vmId,
+                type: 'JsonWebKey2020',
+                controller: did,
+                publicKeyJwk: jwk,
+            },
+        ],
+        authentication: [vmId],
+        assertionMethod: [vmId],
+    };
+};
+
+const resolveDidWeb = async (
+    did: string,
+    fetchImpl: typeof fetch | undefined
+): Promise<DidDocument> => {
+    if (typeof fetchImpl !== 'function') {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            'did:web resolution requires a fetch implementation'
+        );
+    }
+
+    // did:web:example.com                  → https://example.com/.well-known/did.json
+    // did:web:example.com:user:alice       → https://example.com/user/alice/did.json
+    // did:web:example.com%3A8080           → https://example.com:8080/.well-known/did.json
+    const rest = did.replace(/^did:web:/, '');
+    const segments = rest.split(':').map(s => decodeURIComponent(s));
+
+    const host = segments.shift()!;
+    const path =
+        segments.length === 0 ? '/.well-known/did.json' : `/${segments.join('/')}/did.json`;
+
+    const url = `https://${host}${path}`;
+
+    let res: Response;
+    try {
+        res = await fetchImpl(url, { method: 'GET' });
+    } catch (e) {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `Failed to fetch ${url}: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    if (!res.ok) {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `${url} returned ${res.status} ${res.statusText}`
+        );
+    }
+
+    let json: unknown;
+    try {
+        json = await res.json();
+    } catch (e) {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `${url} response was not JSON: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    if (!json || typeof json !== 'object' || Array.isArray(json)) {
+        throw new RequestObjectError(
+            'did_resolution_failed',
+            `${url} response was not a DID Document object`
+        );
+    }
+
+    return json as DidDocument;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                        claims → AuthorizationRequest                       */
+/* -------------------------------------------------------------------------- */
+
+const buildRequestFromClaims = (
+    clientId: string,
+    clientIdPrefix: ClientIdPrefix,
+    claims: Record<string, unknown>
+): AuthorizationRequest => {
+    const presentationDefinition =
+        isObject(claims.presentation_definition)
+            ? (claims.presentation_definition as unknown as PresentationDefinition)
+            : undefined;
+
+    const presentationDefinitionUri = asString(claims.presentation_definition_uri);
+
+    // OID4VP 1.0 §5.3 mutual-exclusion check, mirrored from the URL
+    // params parser. A signed Request Object that carries both query
+    // languages is malformed regardless of how it was transported.
+    let dcqlQuery: DcqlQuery | undefined;
+    if (claims.dcql_query !== undefined && claims.dcql_query !== null) {
+        if (presentationDefinition || presentationDefinitionUri) {
+            throw new VpError(
+                'both_pex_and_dcql',
+                'Request Object claims carry both PEX (presentation_definition[_uri]) and DCQL (dcql_query); OID4VP 1.0 §5.3 forbids this'
+            );
+        }
+
+        // The library handles non-object inputs internally; we pass
+        // `claims.dcql_query` through untouched so its `cause` chain
+        // stays meaningful.
+        dcqlQuery = parseDcqlQuery(claims.dcql_query);
+    }
+
+    const clientMetadata =
+        isObject(claims.client_metadata)
+            ? (claims.client_metadata as Record<string, unknown>)
+            : undefined;
+
+    return {
+        client_id: clientId,
+        client_id_scheme: clientIdPrefix,
+        response_type: asString(claims.response_type) ?? 'vp_token',
+        response_mode: asString(claims.response_mode),
+        response_uri: asString(claims.response_uri),
+        redirect_uri: asString(claims.redirect_uri),
+        nonce: asString(claims.nonce) ?? '',
+        state: asString(claims.state),
+        presentation_definition: presentationDefinition,
+        presentation_definition_uri: presentationDefinitionUri,
+        dcql_query: dcqlQuery,
+        client_metadata: clientMetadata,
+        client_metadata_uri: asString(claims.client_metadata_uri),
+        scope: asString(claims.scope),
+    };
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                 tiny utils                                 */
+/* -------------------------------------------------------------------------- */
+
+const asString = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.length > 0 ? v : undefined;
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+    v !== null && typeof v === 'object' && !Array.isArray(v);
+
+const looksLikeJws = (s: string): boolean =>
+    /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(s);
+
+const b64urlDecode = (b64: string): string => {
+    const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+    const std = b64.replace(/-/g, '+').replace(/_/g, '/') + pad;
+    return Buffer.from(std, 'base64').toString('utf8');
+};
+
+const describe = (e: unknown): string => (e instanceof Error ? e.message : String(e));

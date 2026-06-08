@@ -9,6 +9,8 @@ import {
     lazyWithRetry,
     ChunkBoundary,
 } from 'learn-card-base';
+
+import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
@@ -29,7 +31,8 @@ const LearningHistoryPage = lazyWithRetry(
     () => import('./pages/learninghistory/LearningHistoryPage')
 );
 const WorkHistoryPage = lazyWithRetry(() => import('./pages/workhistory/WorkHistoryPage'));
-import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
+import DelayedFallback from './components/generic/DelayedFallback';
+import RouteTransitionLoader from './components/generic/RouteTransitionLoader';
 
 const CurrenciesPage = lazyWithRetry(() => import('./pages/currencies/CurrenciesPage'));
 const CredentialStorage = lazyWithRetry(
@@ -47,10 +50,9 @@ const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
-const VerifySharedResume = lazyWithRetry(
-    () => import('./pages/resume-builder/VerifySharedResume')
-);
+const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/VerifySharedResume'));
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
+const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -90,9 +92,14 @@ const ClaimFromDashboard = lazyWithRetry(
     () => import('./pages/claim-from-dashboard/ClaimFromDashboard')
 );
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
+const Oid4vciExchange = lazyWithRetry(() => import('./pages/oid4vci/Oid4vciExchange'));
+const Oid4vpExchange = lazyWithRetry(() => import('./pages/oid4vp/Oid4vpExchange'));
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
+);
+const GuardianAccountApprovalPage = lazyWithRetry(
+    () => import('./pages/interactions/GuardianAccountApprovalPage')
 );
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
@@ -111,7 +118,13 @@ const DeveloperPortalProvider = lazyWithRetry(() =>
 
 // Wrapper to provide DeveloperPortalContext for admin dashboard
 const AppStoreAdminWithProvider: React.FC = () => (
-    <Suspense fallback={<LoadingPageDumb />}>
+    <Suspense
+        fallback={
+            <DelayedFallback delayMs={200}>
+                <RouteTransitionLoader />
+            </DelayedFallback>
+        }
+    >
         <DeveloperPortalProvider>
             <AppStoreAdminDashboard />
         </DeveloperPortalProvider>
@@ -183,6 +196,10 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
+    // Pathways v2 visibility — see `usePathwaysEnabled` for the
+    // tenant + LaunchDarkly layering. Same hook is used by the side
+    // menu so the route and the nav link can't drift.
+    const pathwaysEnabled = usePathwaysEnabled();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -190,7 +207,13 @@ export const Routes: React.FC = () => {
 
     return (
         <ChunkBoundary>
-            <Suspense fallback={<LoadingPageDumb />}>
+            <Suspense
+                fallback={
+                    <DelayedFallback delayMs={200}>
+                        <RouteTransitionLoader />
+                    </DelayedFallback>
+                }
+            >
                 <GenericErrorBoundary>
                     <Switch location={background || location}>
                         <SentryRoute exact path="/login" component={LoginPage} />
@@ -263,6 +286,16 @@ export const Routes: React.FC = () => {
                             path="/ai/pathways/discovery"
                             component={AiPathwaysDiscovery}
                         />
+                        {/*
+                         * Pathways v2 — greenfield alongside the existing
+                         * /ai/pathways feature. Gated by `usePathwaysEnabled`
+                         * (tenant `features.pathways` AND LaunchDarkly
+                         * `enableJourneys`, both default off). See
+                         * pages/pathways/docs/architecture.md.
+                         */}
+                        {pathwaysEnabled && (
+                            <PrivateRoute path="/pathways" component={PathwaysShell} />
+                        )}
                         <PrivateRoute
                             exact
                             path="/learninghistory"
@@ -348,8 +381,15 @@ export const Routes: React.FC = () => {
                             path="/interactions/guardian-credential-approval/:token"
                             component={GuardianCredentialApprovalPage}
                         />
+                        <SentryRoute
+                            exact
+                            path="/interactions/guardian-approval/:token"
+                            component={GuardianAccountApprovalPage}
+                        />
                         <SentryRoute path="/interactions/*" component={InteractionsPage} />
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
+                        <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
+                        <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
 
                         <SentryRoute
                             exact
@@ -399,4 +439,73 @@ export const Routes: React.FC = () => {
             </Suspense>
         </ChunkBoundary>
     );
+};
+
+/** Paths gated behind the AI feature flag — only prefetch when enabled. */
+const AI_GATED_PATHS = new Set(['/ai/insights', '/ai/pathways', '/ai/topics', '/ai/sessions']);
+
+/**
+ * Path-keyed preload map for routes reachable from the wallet, side menu, and
+ * mobile nav. Consumers (WalletPage's category handler, PreloadingLink, etc.)
+ * await the matching preload before calling history.push, which keeps the
+ * current page mounted (no Suspense fallback flash) until the destination
+ * chunk is in memory.
+ *
+ * Note: admin-tools is intentionally excluded — it's a debug-only surface,
+ * not worth eagerly downloading for end users.
+ */
+export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    // Wallet (Passport) — same chunk for all three aliases.
+    '/passport': () => WalletPage.preload(),
+    '/wallet': () => WalletPage.preload(),
+    '/home': () => WalletPage.preload(),
+    // Wallet category routes (also rendered as squares on /wallet).
+    '/skills': () => SkillsPage.preload(),
+    '/socialBadges': () => SocialBadgesPage.preload(),
+    '/achievements': () => AchievementsPage.preload(),
+    '/learninghistory': () => LearningHistoryPage.preload(),
+    '/accomplishments': () => AccomplishmentsPage.preload(),
+    '/accommodations': () => AccommodationsPage.preload(),
+    '/workhistory': () => WorkHistoryPage.preload(),
+    '/families': () => FamilyPage.preload(),
+    '/ids': () => IdsPage.preload(),
+    '/memberships': () => MembershipPage.preload(),
+    '/currencies': () => CurrenciesPage.preload(),
+    // AI routes — gated by the AI feature flag in prefetchRoutes.
+    '/ai/insights': () => AiInsights.preload(),
+    '/ai/pathways': () => AiPathways.preload(),
+    '/ai/topics': () => AiSessionTopicsContainer.preload(),
+    '/ai/sessions': () => AiSessionsContainer.preload(),
+    // Side menu root links.
+    '/launchpad': () => LaunchPad.preload(),
+    '/contacts': () => AddressBook.preload(),
+    '/notifications': () => NotificationsPage.preload(),
+    // Mobile navbar / wallet header.
+    '/boost': () => BoostCMS.preload(),
+    // Other commonly side-menu-linked routes.
+    '/privacy-and-data': () => PrivacySettingsPage.preload(),
+    '/resume-builder': () => ResumeBuilderPage.preload(),
+};
+
+interface PrefetchOptions {
+    /** When false, AI routes are skipped — the user can't access them anyway. */
+    aiEnabled?: boolean;
+}
+
+/**
+ * Idle-prefetch routes in ROUTE_PRELOAD so first-time navigation from anywhere
+ * (wallet squares, side menu, mobile nav, deep links) lands on a warm chunk
+ * cache and the Suspense fallback never fires. AI routes are skipped when the
+ * caller indicates the user doesn't have AI access.
+ */
+export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void => {
+    const ric: typeof window.requestIdleCallback | undefined = (window as any).requestIdleCallback;
+    const schedule = (cb: () => void) => (ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200));
+
+    schedule(() => {
+        Object.entries(ROUTE_PRELOAD).forEach(([path, fn]) => {
+            if (!aiEnabled && AI_GATED_PATHS.has(path)) return;
+            fn();
+        });
+    });
 };

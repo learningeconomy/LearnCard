@@ -5,17 +5,16 @@ import MeritBadgeImageDisplay from './MeritBadgeImageDisplay';
 import MeritBadgeSkillsCount from './MeritBadgeSkillsCount';
 import MeritBadgeProfileImageDisplay from './MeritBadgeProfileImageDisplay';
 
-import Smiley from '../svgs/Smiley';
 import Line from '../svgs/Line';
 
 import {
     getInfoFromCredential,
-    getNameFromProfile,
     getImageFromProfile,
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
 import { isAppDidWeb } from '@learncard/helpers';
+import { resolveProfileDisplay } from '../../helpers/did-display.helpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -41,7 +40,6 @@ type MeritBadgeFrontFaceProps = {
     formattedDisplayType?: string;
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
-    hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
 };
 
@@ -61,7 +59,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     formattedDisplayType,
     customBodyContentSlot,
     unknownVerifierTitle,
-    hideAwardedTo: hideAwardedToProp,
     hideFrontFaceDetails,
 }) => {
     const {
@@ -105,8 +102,11 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
         borderColor = 'border-cyan-500';
     }
 
-    const issuerName = getNameFromProfile(issuer ?? '');
-    const issueeName = getNameFromProfile(issuee ?? '');
+    const issueeDisplay = resolveProfileDisplay(issuee, '');
+    const issuerDisplay = resolveProfileDisplay(issuer, 'Unknown');
+
+    const issuerName = issuerDisplay.displayName;
+    const issueeName = issueeDisplay.displayName;
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
@@ -115,12 +115,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
-    const hideAwardedTo =
-        hideAwardedToProp ??
-        (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
-        // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
-        // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
     } else if (unknownVerifierTitle) {
         verifierState = VERIFIER_STATES.trustedVerifier;
@@ -141,8 +136,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
-    const issueeImageExists = issueeImage || subjectImageComponent;
-
     return (
         <section
             role="button"
@@ -161,12 +154,25 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             >
                 <div className="flex flex-col gap-[5px] w-full">
                     <div className="flex flex-col items-center text-grayscale-900">
-                        <span className="text-[16px] leading-[150%] font-jacques">
-                            {issueeName || <Line width="60" />}
-                        </span>
-                        <span className="text-[14px] leading-[150%] font-jacques">
-                            has met the requirements for
-                        </span>
+                        {issueeName && (
+                            <>
+                                <span className="flex flex-wrap items-baseline justify-center gap-1 text-[16px] leading-[150%] font-jacques max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                                    {!issueeDisplay.isMissing && issueeDisplay.isDidValue ? (
+                                        <>
+                                            <span className="text-grayscale-900">Digital ID:</span>
+                                            <span className="text-grayscale-600 underline">
+                                                {issueeDisplay.displayName}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        issueeName
+                                    )}
+                                </span>
+                                <span className="text-[14px] leading-[150%] font-jacques">
+                                    has met the requirements for
+                                </span>
+                            </>
+                        )}
                     </div>
                     <div className="flex flex-col items-center">
                         <h1 className="text-grayscale-900 text-center text-[25px] font-jacques w-full">
@@ -180,17 +186,16 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     </div>
                 </div>
                 {customBodyCardComponent}
-                {issueeImageExists && !customBodyCardComponent && (
+                {!customBodyCardComponent && (
                     <MeritBadgeProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
                         className={`flex justify-center items-center ${textDarkColor}`}
+                        userName={issueeName}
+                        avatarColor={issueeDisplay.avatarColor}
+                        avatarFingerprintColor={issueeDisplay.avatarFingerprintColor}
+                        avatarFallbackVariant={issueeDisplay.isDidValue ? 'fingerprint' : 'initial'}
                     />
-                )}
-                {!issueeImageExists && !customBodyCardComponent && (
-                    <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
-                        <Smiley />
-                    </div>
                 )}
                 <div className="flex flex-col w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
@@ -221,8 +226,15 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     </div> */}
 
                     <div className="flex flex-col gap-[5px] items-center w-full">
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
-                            {issuerName}
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
+                            {issuerDisplay.isDidValue ? (
+                                <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] w-full text-center line-clamp-2 break-words">
+                                    <span className="font-[600]">Digital ID:</span>
+                                    <span className="text-grayscale-600">{issuerName}</span>
+                                </span>
+                            ) : (
+                                issuerName
+                            )}
                         </span>
 
                         {/* <div className="flex flex-col text-[12px] text-grayscale-900 items-center">
@@ -233,11 +245,14 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                 </div>
                 <MeritBadgeProfileImageDisplay
                     imageUrl={issuerImage}
-                    userName={issuerName}
+                    userName={issuerDisplay.isMissing ? '' : issuerName}
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] flex justify-center items-center ${textLightColor}`}
                     size="small"
                     showSeal
+                    avatarColor={issuerDisplay.avatarColor}
+                    avatarFingerprintColor={issuerDisplay.avatarFingerprintColor}
+                    avatarFallbackVariant={issuerDisplay.isDidValue ? 'fingerprint' : 'initial'}
                 />
                 {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>

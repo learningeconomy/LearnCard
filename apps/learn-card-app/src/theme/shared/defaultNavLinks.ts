@@ -24,6 +24,12 @@ export const DEFAULT_SIDE_MENU_SECONDARY_LINKS: SideMenuLink[] = [
     { id: SideMenuLinksEnum.aiTopics, label: 'AI Sessions', path: '/ai/topics' },
     { id: SideMenuLinksEnum.aiInsights, label: 'AI Insights', path: '/ai/insights' },
     { id: SideMenuLinksEnum.aiPathways, label: 'AI Pathways', path: '/ai/pathways' },
+    // Pathways v2 \u2014 currently labelled "Journeys" to avoid
+    // clashing with the legacy `AI Pathways` entry above. Once the
+    // legacy feature is retired we can reclaim the "Pathways" label
+    // here. Visibility is gated by `usePathwaysEnabled` in the side
+    // menu.
+    { id: SideMenuLinksEnum.pathways, label: 'Journeys', path: '/pathways' },
     { id: SideMenuLinksEnum.skills, label: 'Skills', path: '/skills' },
     { id: SideMenuLinksEnum.socialBadges, label: 'Boosts', path: '/socialBadges' },
     { id: SideMenuLinksEnum.achievements, label: 'Achievements', path: '/achievements' },

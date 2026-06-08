@@ -9,6 +9,8 @@ import { RouteComponentProps } from 'react-router-dom';
 import { handlePushNotificationActionPerformed } from 'learn-card-base/helpers/pushNotificationHelpers';
 
 import authStore from 'learn-card-base/stores/authStore';
+import { getLogger } from '../logging/logger';
+const log = getLogger('push-utilities');
 
 const pushNotificationsSupported = () => Capacitor.isNativePlatform();
 
@@ -42,7 +44,7 @@ export const pushUtilities = {
                             return 'GRANTED';
 
                         default:
-                            console.error(
+                            log.error(
                                 `Unexpected PushNotifications.checkPermissions() result: '${JSON.stringify(
                                     result
                                 )}'! Defaulting to '${DEFAULT_PERMISSION_STATE}'`
@@ -52,10 +54,10 @@ export const pushUtilities = {
                 }
             } else {
                 if (process.env.NODE_ENV !== 'production')
-                    console.debug(`Push notifications are NOT supported`);
+                    log.debug(`Push notifications are NOT supported`);
             }
         } catch (err) {
-            console.error(
+            log.error(
                 `Issue checking notification permission state. Defaulting to ${DEFAULT_PERMISSION_STATE}.`,
                 err
             );
@@ -74,12 +76,12 @@ export const pushUtilities = {
             if (permissionState === 'GRANTED') {
                 await PushNotifications.register();
             } else if (permissionState === 'PENDING') {
-                console.info('Push permissions pending - registration skipped');
+                log.info('Push permissions pending - registration skipped');
             } else {
-                console.warn(`Push permissions denied or not supported: ${permissionState}`);
+                log.warn(`Push permissions denied or not supported: ${permissionState}`);
             }
         } catch (err) {
-            console.error(`Failed to sync push token:`, err);
+            log.error(`Failed to sync push token:`, err);
             throw err;
         }
     },
@@ -95,7 +97,7 @@ export const pushUtilities = {
 
             authStore.set.deviceToken(null);
         } catch (error) {
-            console.error('Failed to revoke push token:', error);
+            log.error('Failed to revoke push token:', error);
             throw error;
         }
     },
@@ -116,9 +118,9 @@ export const pushUtilities = {
 
                 await wallet?.invoke?.registerDeviceForPushNotifications(token?.value);
                 authStore.set.deviceToken(token?.value);
-                console.info('Device successfully registered for push notifications');
+                log.info('Device successfully registered for push notifications');
             } catch (error) {
-                console.error('Failed to register device for push notifications:', error);
+                log.error('Failed to register device for push notifications:', error);
                 const errMsg =
                     error instanceof Error
                         ? error.message
@@ -132,7 +134,7 @@ export const pushUtilities = {
         });
 
         PushNotifications.addListener('registrationError', (error: any) => {
-            console.error('Push notification registration error:', error);
+            log.error('Push notification registration error:', error);
             handleNotificationRegistrationError?.(
                 `Registration error: ${error.message || 'Unknown error'}`
             );
@@ -141,7 +143,7 @@ export const pushUtilities = {
         PushNotifications.addListener(
             'pushNotificationReceived',
             (payload: PushNotificationSchema) => {
-                console.info('Push notification received:', payload);
+                log.info('Push notification received:', payload);
                 // Handle received notification if needed
             }
         );
@@ -149,7 +151,7 @@ export const pushUtilities = {
         PushNotifications.addListener(
             'pushNotificationActionPerformed',
             (payload: ActionPerformed) => {
-                console.info('Push notification action performed:', payload);
+                log.info('Push notification action performed:', payload);
                 handlePushNotificationActionPerformed(payload, history);
             }
         );
@@ -161,7 +163,7 @@ export const pushUtilities = {
 
     requestPermissions: async (): Promise<boolean> => {
         if (!pushNotificationsSupported()) {
-            console.warn('Push notifications not supported on this platform');
+            log.warn('Push notifications not supported on this platform');
             return false;
         }
 
@@ -169,21 +171,21 @@ export const pushUtilities = {
             let permStatus = await PushNotifications.checkPermissions();
 
             if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
-                console.info('Requesting push notification permissions...');
+                log.info('Requesting push notification permissions...');
                 permStatus = await PushNotifications.requestPermissions();
             }
 
             const isGranted = permStatus.receive === 'granted';
 
             if (isGranted) {
-                console.info('Push notification permissions granted');
+                log.info('Push notification permissions granted');
             } else {
-                console.warn('Push notification permissions denied');
+                log.warn('Push notification permissions denied');
             }
 
             return isGranted;
         } catch (error) {
-            console.error('Failed to request push notification permissions:', error);
+            log.error('Failed to request push notification permissions:', error);
             return false;
         }
     },
@@ -205,7 +207,7 @@ export const pushUtilities = {
             await PushNotifications.register();
             callback?.(true);
         } catch (error) {
-            console.error('Failed to register for notifications:', error);
+            log.error('Failed to register for notifications:', error);
             callback?.(false);
         }
     },
@@ -219,7 +221,7 @@ export const pushUtilities = {
             const result = await PushNotifications.getDeliveredNotifications();
             return result.notifications || [];
         } catch (error) {
-            console.error('Failed to get delivered notifications:', error);
+            log.error('Failed to get delivered notifications:', error);
             return [];
         }
     },
@@ -236,7 +238,7 @@ export const pushUtilities = {
                 await PushNotifications.removeAllDeliveredNotifications();
             }
         } catch (error) {
-            console.error('Failed to remove delivered notifications:', error);
+            log.error('Failed to remove delivered notifications:', error);
         }
     },
 

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-upload-resume');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -35,14 +37,22 @@ export const CheckListUploadResume: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFile, isUploading, isSaving, fetchParsedCredentials, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Data, rawArtifactCredential } =
-        useUploadFile(UploadTypesEnum.Resume);
+    const {
+        getFile,
+        isUploading,
+        isSaving,
+        fetchParsedCredentials,
+        storeSelectedCredentials,
+        parsedCredentials,
+        setParsedCredentials,
+        base64Data,
+        rawArtifactCredential,
+    } = useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
     const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
@@ -75,9 +85,11 @@ export const CheckListUploadResume: React.FC = () => {
                         });
                         setShowReview(true);
                     } else {
-                        storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                            () => handleSetResume()
-                        );
+                        storeSelectedCredentials(
+                            [],
+                            rawArtifactCredential,
+                            UploadTypesEnum.Resume
+                        ).finally(() => handleSetResume());
                     }
                 })
                 .catch(error => {
@@ -92,9 +104,11 @@ export const CheckListUploadResume: React.FC = () => {
                         duration: 7000,
                     });
                     // Still store the raw artifact so the file isn't lost
-                    storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                        () => handleSetResume()
-                    );
+                    storeSelectedCredentials(
+                        [],
+                        rawArtifactCredential,
+                        UploadTypesEnum.Resume
+                    ).finally(() => handleSetResume());
                 });
         }
     }, [base64Data, rawArtifactCredential]);
@@ -126,31 +140,38 @@ export const CheckListUploadResume: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetResume::error', error);
+            log.error('handleSetResume::error', error);
         }
     };
 
-    const handleDeleteResume = async () => {
-        try {
-            setIsDeleting(true);
-            const wallet = await initWallet();
-            const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+    const handleDeleteResume = () => {
+        const previous = resume;
+        if (!previous) return;
 
-            const recordUri = record?.[0]?.uri as string;
+        setResume(null);
 
-            if (!recordUri) {
-                setResume(null);
-                return;
+        void (async () => {
+            try {
+                const wallet = await initWallet();
+                const record = await wallet.index.LearnCloud.get({
+                    category: UploadTypesEnum.Resume,
+                });
+                const recordUri = record?.[0]?.uri as string;
+                if (!recordUri) return;
+                await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
+                refetchCheckListStatus();
+            } catch (error) {
+                log.error('handleDeleteResume::error', error);
+                setResume(previous);
+                presentToast('Failed to delete. Please try again.', {
+                    title: 'Delete failed',
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
             }
-
-            await wallet.index.LearnCloud.remove(resume?.id || (record?.[0]?.id as string));
-            await refetchCheckListStatus();
-            setResume(null);
-            setIsDeleting(false);
-        } catch (error) {
-            setIsDeleting(false);
-            console.error('handleDeleteResume::error', error);
-        }
+        })();
     };
 
     const confirmDelete = async () => {
@@ -265,7 +286,9 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                        {savedCredentialCount} credential
+                                        {savedCredentialCount !== 1 ? 's' : ''} saved to your
+                                        wallet.
                                     </p>
                                 </div>
                             )}
@@ -277,8 +300,19 @@ export const CheckListUploadResume: React.FC = () => {
                                         fill="none"
                                         viewBox="0 0 24 24"
                                     >
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                        />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
                                         Processing your resume in the background...
@@ -311,9 +345,9 @@ export const CheckListUploadResume: React.FC = () => {
                             </button>
                         </div>
 
-                        {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                        {isLoading && <CheckListItemSkeleton />}
 
-                        {resume && !isLoading && !isDeleting && (
+                        {resume && !isLoading && (
                             <div className="flex items-center justify-between w-full mt-4 relative pb-4">
                                 <div className="flex items-center justify-start overflow-hidden">
                                     <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />

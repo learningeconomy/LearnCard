@@ -1,5 +1,7 @@
 import { RecaptchaVerifier } from 'firebase/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from '../logging/logger';
+const log = getLogger('recaptcha.helpers');
 
 declare global {
     interface Window {
@@ -36,7 +38,7 @@ export const ensureRecaptcha = async (auth: any) => {
         window.recaptchaWidgetId = await window.recaptchaVerifier.render();
         return window.recaptchaVerifier;
     } catch (error) {
-        console.error('Failed to render reCAPTCHA:', error);
+        log.error('Failed to render reCAPTCHA:', error);
         destroyRecaptcha();
         throw error;
     }
@@ -55,7 +57,7 @@ export const destroyRecaptcha = () => {
         try {
             window.recaptchaVerifier.clear();
         } catch (error) {
-            console.debug('Error clearing recaptchaVerifier:', error);
+            log.debug('Error clearing recaptchaVerifier:', error);
         }
         window.recaptchaVerifier = undefined;
     }
@@ -65,7 +67,7 @@ export const destroyRecaptcha = () => {
         try {
             window.grecaptcha?.reset?.(window.recaptchaWidgetId);
         } catch (error) {
-            console.debug('Error resetting grecaptcha:', error);
+            log.debug('Error resetting grecaptcha:', error);
         }
         window.recaptchaWidgetId = undefined;
     }

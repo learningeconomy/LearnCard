@@ -31,18 +31,17 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
         app.contractUri,
         app
     );
+    const { track } = useAnalytics();
 
     const buttonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.unconnected}`;
     const connectedButtonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.connected}`;
 
-    if (filterBy === LaunchPadFilterOptionsEnum.unConnectedApps && app.isConnected) return <></>;
-    if (filterBy === LaunchPadFilterOptionsEnum.myApps && !app.isConnected) return <></>;
+    if (filterBy === LaunchPadFilterOptionsEnum.unConnectedApps && app.isConnected) return null;
+    if (filterBy === LaunchPadFilterOptionsEnum.myApps && !app.isConnected) return null;
 
     const isAiApp = !!app.type;
     const isConnected = app.contractUri ? hasConsented : app.isConnected;
     const isLoading = app.contractUri ? consentedContractLoading : app.isConnected === null;
-
-    const { track } = useAnalytics();
 
     const handleConnect = (appItem: LaunchPadAppListItemType) => {
         if (appItem.contractUri && !isConnected) {

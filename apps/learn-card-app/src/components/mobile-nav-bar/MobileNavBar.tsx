@@ -116,6 +116,7 @@ const MobileNavBar: React.FC = () => {
                             backgroundPosition: 'center top',
                             backgroundRepeat: 'no-repeat',
                         }}
+                        className="pb-[15px]"
                     >
                         {/*
                             tab prop is needed to prevent hard refresh...
@@ -227,16 +228,16 @@ const MobileNavBar: React.FC = () => {
                                             {unreadCount > 0 && (
                                                 <div className="absolute top-0 right-[5px] h-[7px] w-[7px] bg-blue-500 rounded-[10px]" />
                                             )}
-                                            <IonLabel
-                                                className={`font-notoSans font-bold text-[12px] ${
-                                                    isNotificationTabActive
-                                                        ? colors?.activeColor
-                                                        : colors?.inactiveColor
-                                                }`}
-                                            >
-                                                {link.label}
-                                            </IonLabel>
                                         </div>
+                                        <IonLabel
+                                            className={`font-notoSans font-bold text-[12px] ${
+                                                isNotificationTabActive
+                                                    ? colors?.activeColor
+                                                    : colors?.inactiveColor
+                                            }`}
+                                        >
+                                            {link.label}
+                                        </IonLabel>
                                     </IonTabButton>
                                 );
                             }

@@ -32,40 +32,45 @@ All user-facing UI in `apps/learn-card-app`, `apps/scouts`, and shared component
 
 The apps define a custom color palette in their `tailwind.config.js`. **Never use generic Tailwind colors** (`gray-*`, `purple-*`, `blue-*`) — always use the app tokens:
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `grayscale-900` | `#18224E` | Headings, primary button fills, dark text |
-| `grayscale-800` | `#353E64` | Strong secondary text |
-| `grayscale-700` | `#52597A` | Secondary text, cancel button text |
-| `grayscale-600` | `#6F7590` | Body text, descriptions |
-| `grayscale-500` | `#8B91A7` | Hint text, subtitles |
-| `grayscale-400` | `#A8ACBD` | Placeholder text, disabled icons |
-| `grayscale-300` | `#C5C8D3` | Borders, dividers |
-| `grayscale-200` | `#E2E3E9` | Light borders, separator lines |
-| `grayscale-100` | `#EFF0F5` | Inactive tab fills, subtle backgrounds |
-| `grayscale-10` | `#FBFBFC` | Hover background on light surfaces |
-| `emerald-50`–`emerald-900` | — | Success states, positive actions, focus rings |
-| `amber-50`–`amber-900` | — | Warnings, caution callouts |
-| `red-50`–`red-700` | — | Errors, destructive states |
+| Token                      | Hex       | Usage                                                                                                                                                                               |
+| -------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grayscale-900`            | `#18224E` | Headings, primary button fills, dark text                                                                                                                                           |
+| `grayscale-800`            | `#353E64` | Strong secondary text                                                                                                                                                               |
+| `grayscale-700`            | `#52597A` | Secondary text, cancel button text                                                                                                                                                  |
+| `grayscale-600`            | `#6F7590` | Body text, descriptions                                                                                                                                                             |
+| `grayscale-500`            | `#8B91A7` | Hint text, subtitles                                                                                                                                                                |
+| `grayscale-400`            | `#A8ACBD` | Placeholder text, disabled icons                                                                                                                                                    |
+| `grayscale-300`            | `#C5C8D3` | Borders, dividers                                                                                                                                                                   |
+| `grayscale-200`            | `#E2E3E9` | Light borders, separator lines                                                                                                                                                      |
+| `grayscale-100`            | `#EFF0F5` | Inactive tab fills, subtle backgrounds                                                                                                                                              |
+| `grayscale-10`             | `#FBFBFC` | Hover background on light surfaces                                                                                                                                                  |
+| `emerald-50`–`emerald-900` | —         | Success states, positive actions, focus rings                                                                                                                                       |
+| `amber-50`–`amber-900`     | —         | Warnings, caution callouts                                                                                                                                                          |
+| `red-50`–`red-700`         | —         | Errors, destructive states                                                                                                                                                          |
+| `indigo-50`–`indigo-700`   | —         | **Navigation / route-swap accents only** — scoped to Pathways v2 wayfinding (Map "Navigate mode", route-swap proposal cards, What-If scenario selection). Do **not** use elsewhere. |
+
+#### Indigo scope (Pathways v2)
+
+Indigo is the **only non-grayscale neutral** permitted alongside emerald / amber / red, and only in the contexts above. The intent is to give learners a stable visual signal that "this is route-shape change, not structural edit" — emerald already means "positive / committed", and reusing it for route swaps muddies that signal. Files where this is currently load-bearing: `apps/learn-card-app/src/pages/pathways/proposals/ProposalCard.tsx`, `proposals/RouteDiffSummary.tsx`, `map/MapMode.tsx`, `what-if/WhatIfMode.tsx`. New indigo usage outside Pathways v2 should be flagged in review.
 
 ### Typography
 
-- **Font family**: `font-poppins` (maps to Poppins in LCA, Noto Sans in Scouts)
-- **Headings**: `text-xl font-semibold text-grayscale-900`
-- **Body text**: `text-sm text-grayscale-600 leading-relaxed`
-- **Labels**: `text-xs font-medium text-grayscale-700`
-- **Hints / placeholders**: `text-xs text-grayscale-400` or `placeholder:text-grayscale-400`
+-   **Font family**: `font-poppins` (maps to Poppins in LCA, Noto Sans in Scouts)
+-   **Headings**: `text-xl font-semibold text-grayscale-900`
+-   **Body text**: `text-sm text-grayscale-600 leading-relaxed`
+-   **Labels**: `text-xs font-medium text-grayscale-700`
+-   **Hints / placeholders**: `text-xs text-grayscale-400` or `placeholder:text-grayscale-400`
 
 ### Buttons
 
-| Type | Classes |
-|------|---------|
-| **Primary** | `py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed` |
-| **Secondary / Cancel** | `py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors` |
-| **Positive action** | `py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors` |
-| **Tab (active)** | `py-2.5 px-3 rounded-full bg-grayscale-900 text-white font-medium text-sm` |
-| **Tab (inactive)** | `py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm` |
-| **Text link / back** | `text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors` |
+| Type                   | Classes                                                                                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primary**            | `py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed` |
+| **Secondary / Cancel** | `py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors`                          |
+| **Positive action**    | `py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors`                                                |
+| **Tab (active)**       | `py-2.5 px-3 rounded-full bg-grayscale-900 text-white font-medium text-sm`                                                                                     |
+| **Tab (inactive)**     | `py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm`                                                      |
+| **Text link / back**   | `text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors`                                                                                        |
 
 All buttons use `rounded-[20px]` (pill shape), **never** `rounded-lg`.
 
@@ -86,11 +91,12 @@ All buttons use `rounded-[20px]` (pill shape), **never** `rounded-lg`.
 ```
 
 Key rules:
-- Always set explicit `text-grayscale-900` and `bg-white` — never rely on defaults
-- Always set `placeholder:text-grayscale-400`
-- Use `rounded-xl` for inputs (slightly less rounded than buttons)
-- Focus state: `focus:ring-2 focus:ring-emerald-500 focus:border-transparent`
-- Add a `<label>` above: `text-xs font-medium text-grayscale-700 mb-1.5`
+
+-   Always set explicit `text-grayscale-900` and `bg-white` — never rely on defaults
+-   Always set `placeholder:text-grayscale-400`
+-   Use `rounded-xl` for inputs (slightly less rounded than buttons)
+-   Focus state: `focus:ring-2 focus:ring-emerald-500 focus:border-transparent`
+-   Add a `<label>` above: `text-xs font-medium text-grayscale-700 mb-1.5`
 
 ### Overlays & Modals
 
@@ -98,9 +104,7 @@ Use the shared `Overlay` component from `packages/learn-card-base/src/auth-coord
 
 ```tsx
 <Overlay>
-    <div className="p-8 text-center space-y-5">
-        {/* content */}
-    </div>
+    <div className="p-8 text-center space-y-5">{/* content */}</div>
 </Overlay>
 ```
 
@@ -111,12 +115,16 @@ Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, 
 Never leave the user without feedback. Every async action must show a loading state:
 
 ```tsx
-{loading ? (
-    <span className="flex items-center justify-center gap-2">
-        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        Recovering...
-    </span>
-) : 'Recover Account'}
+{
+    loading ? (
+        <span className="flex items-center justify-center gap-2">
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Recovering...
+        </span>
+    ) : (
+        'Recover Account'
+    );
+}
 ```
 
 Use contextual loading text: "Setting up...", "Recovering...", "Verifying...", "Generating...".
@@ -126,51 +134,60 @@ Use contextual loading text: "Setting up...", "Recovering...", "Verifying...", "
 Use the standard error banner pattern:
 
 ```tsx
-{error && (
-    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-        <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
-        <span className="text-sm text-red-700 leading-relaxed">{error}</span>
-    </div>
-)}
+{
+    error && (
+        <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+        </div>
+    );
+}
 ```
 
 Map raw error messages to friendly language:
-- Decrypt errors → "Incorrect password or corrupted data. Please try again."
-- Network errors → "Connection issue. Please check your internet and try again."
-- Generic fallback → "Something went wrong. Please try again."
+
+-   Decrypt errors → "Incorrect password or corrupted data. Please try again."
+-   Network errors → "Connection issue. Please check your internet and try again."
+-   Generic fallback → "Something went wrong. Please try again."
 
 ### Success States
 
 ```tsx
-{success && (
-    <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-        <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
-        <span className="text-sm text-emerald-700 leading-relaxed">{success}</span>
-    </div>
-)}
+{
+    success && (
+        <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
+            <IonIcon
+                icon={checkmarkCircleOutline}
+                className="text-emerald-500 text-lg mt-0.5 shrink-0"
+            />
+            <span className="text-sm text-emerald-700 leading-relaxed">{success}</span>
+        </div>
+    );
+}
 ```
 
 ### Copy & Language Rules
 
-- **No jargon.** Never use: "wallet", "migration", "device key", "key derivation", "SSS", "share", "DID". These are internal implementation details.
-- **User-friendly alternatives**: "account" (not "wallet"), "account upgrade" (not "migration"), "sign in" (not "authenticate")
-- **Be concise.** One short sentence for descriptions. No paragraphs.
-- **Be direct.** "Choose how you'd like to restore access." not "Please select one of the available recovery options below to proceed with restoring access to your wallet."
-- **Error titles**: "Something went wrong" — never expose stack traces or error codes.
-- **Button labels**: Use action verbs. "Recover Account", "Try Again", "Set Up Password". Not "Submit", "OK", "Proceed".
-- **Dismiss buttons**: "Skip for Now" (if optional), "Cancel" (if abandoning), "Done" (after success).
+-   **No jargon.** Never use: "wallet", "migration", "device key", "key derivation", "SSS", "share", "DID". These are internal implementation details.
+-   **User-friendly alternatives**: "account" (not "wallet"), "account upgrade" (not "migration"), "sign in" (not "authenticate")
+-   **Be concise.** One short sentence for descriptions. No paragraphs.
+-   **Be direct.** "Choose how you'd like to restore access." not "Please select one of the available recovery options below to proceed with restoring access to your wallet."
+-   **Error titles**: "Something went wrong" — never expose stack traces or error codes.
+-   **Button labels**: Use action verbs. "Recover Account", "Try Again", "Set Up Password". Not "Submit", "OK", "Proceed".
+-   **Dismiss buttons**: "Skip for Now" (if optional), "Cancel" (if abandoning), "Done" (after success).
 
 ### Icons
 
-- Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
-- For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
-- **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
+-   Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
+-   For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
+-   **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
 
 ### Background Context Awareness
 
 Shared components from `learn-card-base` may render on different backgrounds:
-- **Inside an Overlay**: White card background → `grayscale-*` text is fine
-- **On a login page**: Colored background (green, purple) → **wrap in a white card**
+
+-   **Inside an Overlay**: White card background → `grayscale-*` text is fine
+-   **On a login page**: Colored background (green, purple) → **wrap in a white card**
 
 When placing a shared component on a colored page background, always wrap it:
 
@@ -182,11 +199,11 @@ When placing a shared component on a colored page background, always wrap it:
 
 ### Spacing & Layout
 
-- Modal padding: `p-6` (inner content) or `p-8` (simple overlays with fewer elements)
-- Section spacing: `space-y-5` for major sections, `space-y-4` for form fields
-- Between heading + description: `mb-1`
-- Between description + content: `mb-5` or `mb-6`
-- Card content max-width: `max-w-md mx-auto` (inside overlays already constrained to 480px)
+-   Modal padding: `p-6` (inner content) or `p-8` (simple overlays with fewer elements)
+-   Section spacing: `space-y-5` for major sections, `space-y-4` for form fields
+-   Between heading + description: `mb-1`
+-   Between description + content: `mb-5` or `mb-6`
+-   Card content max-width: `max-w-md mx-auto` (inside overlays already constrained to 480px)
 
 ### Checklist for New UI Components
 
@@ -477,9 +494,15 @@ packages/credential-library/src/
 
 ```typescript
 import {
-    getAllFixtures, getFixture, findFixture, getFixtures,
-    getValidFixtures, getInvalidFixtures, getStats,
-    prepareFixture, prepareFixtureById,
+    getAllFixtures,
+    getFixture,
+    findFixture,
+    getFixtures,
+    getValidFixtures,
+    getInvalidFixtures,
+    getStats,
+    prepareFixture,
+    prepareFixtureById,
 } from '@learncard/credential-library';
 
 // Query
@@ -500,28 +523,28 @@ Alternatively, the `examples/credential-viewer` app has a **New Fixture** UI tha
 
 ### JSON-LD Context Gotchas
 
-- DidKit statically caches certain contexts (see `packages/plugins/didkit-plugin-node/native/src/lib.rs` `context_loader`)
-- CLR: use `context.json` (cached) not `context-2.0.1.json` (requires `allowRemoteContexts`)
-- VC v2 custom terms: use `https://www.w3.org/ns/credentials/examples/v2` (not `schema.org/` — causes protected term redefinition)
-- VC v1 custom terms: use `https://www.w3.org/2018/credentials/examples/v1`
+-   DidKit statically caches certain contexts (see `packages/plugins/didkit-plugin-node/native/src/lib.rs` `context_loader`)
+-   CLR: use `context.json` (cached) not `context-2.0.1.json` (requires `allowRemoteContexts`)
+-   VC v2 custom terms: use `https://www.w3.org/ns/credentials/examples/v2` (not `schema.org/` — causes protected term redefinition)
+-   VC v1 custom terms: use `https://www.w3.org/2018/credentials/examples/v1`
 
 ### CLR v2 Types (`@learncard/types`)
 
 Added in `packages/learn-card-types/src/clr.ts`:
 
-- `AssociationValidator` / `AssociationType`
-- `ClrSubjectValidator` / `ClrSubject`
-- `UnsignedClrCredentialValidator` / `UnsignedClrCredential`
-- `ClrCredentialValidator` / `ClrCredential`
+-   `AssociationValidator` / `AssociationType`
+-   `ClrSubjectValidator` / `ClrSubject`
+-   `UnsignedClrCredentialValidator` / `UnsignedClrCredential`
+-   `ClrCredentialValidator` / `ClrCredential`
 
 ### Credential Viewer (`examples/credential-viewer/`)
 
 Interactive React + Tailwind UI for browsing, issuing, and sending fixtures. Features:
 
-- Browse/filter/search all fixtures
-- Connect a LearnCard wallet (seed-based, configurable environment)
-- Bulk issue and send credentials
-- Create new fixtures with auto-inferred metadata
+-   Browse/filter/search all fixtures
+-   Connect a LearnCard wallet (seed-based, configurable environment)
+-   Bulk issue and send credentials
+-   Create new fixtures with auto-inferred metadata
 
 Run with `pnpm dev` from the `examples/credential-viewer/` directory.
 
@@ -1036,19 +1059,19 @@ All object sub-schemas use `.passthrough()` so newer config fields from the serv
 
 **Root schema sections:**
 
-| Section | Schema | Required | Purpose |
-| --- | --- | --- | --- |
-| `tenantId` | `z.string()` | yes | Unique tenant identifier |
-| `domain` | `z.string()` | yes | Production domain |
-| `devDomain` | `z.string()` | no | Local dev domain (default: `localhost:3000`) |
-| `apis` | `tenantApiConfigSchema` | yes | All service endpoints |
-| `auth` | `tenantAuthConfigSchema` | yes | Auth provider + key derivation |
-| `branding` | `tenantBrandingConfigSchema` | yes | Visual identity + category labels |
-| `features` | `tenantFeatureConfigSchema` | yes | Feature toggles |
-| `observability` | `tenantObservabilityConfigSchema` | yes | Sentry, LaunchDarkly, Userflow |
-| `links` | `tenantLinksConfigSchema` | yes | App Store / Play Store URLs |
-| `native` | `tenantNativeConfigSchema` | no | Bundle ID, deep links, Capgo |
-| `ecosystem` | `tenantEcosystemConfigSchema` | no | Ecosystem / root org IDs |
+| Section         | Schema                            | Required | Purpose                                      |
+| --------------- | --------------------------------- | -------- | -------------------------------------------- |
+| `tenantId`      | `z.string()`                      | yes      | Unique tenant identifier                     |
+| `domain`        | `z.string()`                      | yes      | Production domain                            |
+| `devDomain`     | `z.string()`                      | no       | Local dev domain (default: `localhost:3000`) |
+| `apis`          | `tenantApiConfigSchema`           | yes      | All service endpoints                        |
+| `auth`          | `tenantAuthConfigSchema`          | yes      | Auth provider + key derivation               |
+| `branding`      | `tenantBrandingConfigSchema`      | yes      | Visual identity + category labels            |
+| `features`      | `tenantFeatureConfigSchema`       | yes      | Feature toggles                              |
+| `observability` | `tenantObservabilityConfigSchema` | yes      | Sentry, LaunchDarkly, Userflow               |
+| `links`         | `tenantLinksConfigSchema`         | yes      | App Store / Play Store URLs                  |
+| `native`        | `tenantNativeConfigSchema`        | no       | Bundle ID, deep links, Capgo                 |
+| `ecosystem`     | `tenantEcosystemConfigSchema`     | no       | Ecosystem / root org IDs                     |
 
 ### Environment Files
 
@@ -1063,6 +1086,7 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 5. Run `npx tsx scripts/prepare-native-config.ts <tenant>` to validate
 
 **Minimal example** (`learncard.json`):
+
 ```json
 {
     "tenantId": "learncard",
@@ -1071,6 +1095,7 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 ```
 
 **Full override example** (`vetpass.json`):
+
 ```json
 {
     "tenantId": "vetpass",
@@ -1088,19 +1113,20 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 `NetworkStore` is a persisted Zustand store that holds the active network URLs. It replaces all direct references to legacy globals.
 
 **Initialization flow:**
+
 1. `resolveTenantConfig()` returns the validated config
 2. `initNetworkStoreFromTenant(config.apis)` populates the store
 3. All code reads URLs via `networkStore.get.networkUrl()`, `networkStore.get.apiEndpoint()`, etc.
 
 **Store fields:**
 
-| Field | Source | Legacy equivalent |
-| --- | --- | --- |
-| `networkUrl` | `apis.brainService` | `LCN_URL` |
-| `networkApiUrl` | `apis.brainServiceApi` | `LCN_API_URL` |
-| `cloudUrl` | `apis.cloudService` | `CLOUD_URL` |
-| `xapiUrl` | `apis.xapi` | `LEARN_CLOUD_XAPI_URL` |
-| `apiEndpoint` | `apis.lcaApi` | `API_URL` |
+| Field           | Source                 | Legacy equivalent      |
+| --------------- | ---------------------- | ---------------------- |
+| `networkUrl`    | `apis.brainService`    | `LCN_URL`              |
+| `networkApiUrl` | `apis.brainServiceApi` | `LCN_API_URL`          |
+| `cloudUrl`      | `apis.cloudService`    | `CLOUD_URL`            |
+| `xapiUrl`       | `apis.xapi`            | `LEARN_CLOUD_XAPI_URL` |
+| `apiEndpoint`   | `apis.lcaApi`          | `API_URL`              |
 
 ### React Context & Hooks
 
@@ -1114,29 +1140,29 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 
 **Available hooks:**
 
-| Hook | Returns |
-| --- | --- |
-| `useTenantConfig()` | Full `TenantConfig` |
-| `useApiConfig()` | `TenantApiConfig` |
-| `useAuthTenantConfig()` | `TenantAuthConfig` |
-| `useBrandingConfig()` | `TenantBrandingConfig` |
-| `useFeatureConfig()` | `TenantFeatureConfig` |
-| `useObservabilityConfig()` | `TenantObservabilityConfig` |
-| `useLinksConfig()` | `TenantLinksConfig` |
-| `useNativeConfig()` | `TenantNativeConfig \| undefined` |
-| `useTenantBaseUrl()` | `string` (e.g. `https://learncard.app`) |
+| Hook                       | Returns                                 |
+| -------------------------- | --------------------------------------- |
+| `useTenantConfig()`        | Full `TenantConfig`                     |
+| `useApiConfig()`           | `TenantApiConfig`                       |
+| `useAuthTenantConfig()`    | `TenantAuthConfig`                      |
+| `useBrandingConfig()`      | `TenantBrandingConfig`                  |
+| `useFeatureConfig()`       | `TenantFeatureConfig`                   |
+| `useObservabilityConfig()` | `TenantObservabilityConfig`             |
+| `useLinksConfig()`         | `TenantLinksConfig`                     |
+| `useNativeConfig()`        | `TenantNativeConfig \| undefined`       |
+| `useTenantBaseUrl()`       | `string` (e.g. `https://learncard.app`) |
 
 ### Branding Helpers
 
 Data-driven helpers in `brandingHelpers.ts` replace hard-coded `BrandingEnum` switches:
 
-- `getCategoryLabel(branding, key)` — credential category display name
-- `getCategoryColor(branding, key)` — category color override
-- `getNavBarColorOverride(branding, path)` — per-route nav bar color
-- `getStatusBarColorOverride(branding, path)` — per-route status bar color
-- `getHeaderTextColor(branding, path)` — per-route header text color
-- `getHomeRoute(branding)` — tenant home route (default: `/wallet`)
-- `getHeaderText(branding)` — header display text
+-   `getCategoryLabel(branding, key)` — credential category display name
+-   `getCategoryColor(branding, key)` — category color override
+-   `getNavBarColorOverride(branding, path)` — per-route nav bar color
+-   `getStatusBarColorOverride(branding, path)` — per-route status bar color
+-   `getHeaderTextColor(branding, path)` — per-route header text color
+-   `getHomeRoute(branding)` — tenant home route (default: `/wallet`)
+-   `getHeaderText(branding)` — header display text
 
 ### Build Scripts
 
@@ -1156,6 +1182,7 @@ npx tsx scripts/prepare-native-config.ts local
 ```
 
 **Steps:**
+
 1. Load `environments/<tenant>.json` overrides
 2. Deep-merge onto `DEFAULT_LEARNCARD_TENANT_CONFIG`
 3. Validate merged config against the Zod schema (fails the build if invalid)
@@ -1163,9 +1190,10 @@ npx tsx scripts/prepare-native-config.ts local
 5. Copy tenant assets from `environments/<tenant>/assets/` into Capacitor dirs
 
 **Docker scripts in `package.json`:**
-- `docker-start` → `prepare-native-config.ts local && vite --host`
-- `docker-start:tenant` → `prepare-native-config.ts ${TENANT:-learncard} && vite --host`
-- `docker-build` → `prepare-native-config.ts local && vite build`
+
+-   `docker-start` → `prepare-native-config.ts local && vite --host`
+-   `docker-start:tenant` → `prepare-native-config.ts ${TENANT:-learncard} && vite --host`
+-   `docker-build` → `prepare-native-config.ts local && vite build`
 
 #### `generate-tenant-assets.ts`
 
@@ -1179,25 +1207,27 @@ npx tsx scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C
 ```
 
 **Options:**
-- `--bg <hex>` — Icon background color (default: `#FFFFFF`)
-- `--splash-bg <hex>` — Splash background color (defaults to `--bg`)
-- `--no-splash` — Skip splash screen generation
+
+-   `--bg <hex>` — Icon background color (default: `#FFFFFF`)
+-   `--splash-bg <hex>` — Splash background color (defaults to `--bg`)
+-   `--no-splash` — Skip splash screen generation
 
 **Generated assets (~55 files) in `environments/<tenant>/assets/`:**
 
-| Platform | Assets | Sizes |
-| --- | --- | --- |
-| **iOS** | `AppIcon.png` | 1024×1024 |
-| **iOS** | `splash-2732x2732{,-1,-2}.png` | 2732×2732 (×3 copies for 1x/2x/3x) |
-| **Android** | `ic_launcher.webp` | 48–192px (5 densities: mdpi→xxxhdpi) |
-| **Android** | `ic_launcher_foreground.webp` | 108–432px (adaptive icon foreground) |
-| **Android** | `ic_launcher_round.webp` | 48–192px (circular clip) |
-| **Android** | `ic_launcher_background.xml` | Solid color vector + values resource |
-| **Android** | `splash.9.png` | 9-patch PNGs in all drawable-* dirs |
-| **Web** | `favicon.png` | 64×64 |
-| **Web** | `icon.png` | 512×512 (PWA maskable) |
+| Platform    | Assets                         | Sizes                                |
+| ----------- | ------------------------------ | ------------------------------------ |
+| **iOS**     | `AppIcon.png`                  | 1024×1024                            |
+| **iOS**     | `splash-2732x2732{,-1,-2}.png` | 2732×2732 (×3 copies for 1x/2x/3x)   |
+| **Android** | `ic_launcher.webp`             | 48–192px (5 densities: mdpi→xxxhdpi) |
+| **Android** | `ic_launcher_foreground.webp`  | 108–432px (adaptive icon foreground) |
+| **Android** | `ic_launcher_round.webp`       | 48–192px (circular clip)             |
+| **Android** | `ic_launcher_background.xml`   | Solid color vector + values resource |
+| **Android** | `splash.9.png`                 | 9-patch PNGs in all drawable-\* dirs |
+| **Web**     | `favicon.png`                  | 64×64                                |
+| **Web**     | `icon.png`                     | 512×512 (PWA maskable)               |
 
 **Full workflow for a new tenant:**
+
 ```bash
 # 1. Create environment file
 # environments/mytenant.json  (only overrides)
@@ -1214,13 +1244,13 @@ pnpm build
 
 ### Important Rules for AI Assistants
 
-- **Never use legacy globals** (`LCN_URL`, `CLOUD_URL`, `API_URL`, `LCN_API_URL`, `LEARN_CLOUD_XAPI_URL`). These have been removed from `vite.config.ts` and `global.d.ts`. Always use `networkStore.get.*()` or the tenant config hooks instead.
-- **Never hardcode URLs** in components. Read from `networkStore` or `useTenantConfig()`.
-- **Environment files are overrides only** — never duplicate defaults. The build script deep-merges onto `DEFAULT_LEARNCARD_TENANT_CONFIG`.
-- **All config is Zod-validated** at build time. Schema violations fail the build, not runtime.
-- **`.passthrough()`** on all Zod sub-schemas means extra fields are preserved, not stripped.
-- **Generated assets are gitignored** (`environments/*/assets/`). They are build artifacts.
-- **`sharp`** is a devDependency of `learn-card-app` used only by the asset generation script.
+-   **Never use legacy globals** (`LCN_URL`, `CLOUD_URL`, `API_URL`, `LCN_API_URL`, `LEARN_CLOUD_XAPI_URL`). These have been removed from `vite.config.ts` and `global.d.ts`. Always use `networkStore.get.*()` or the tenant config hooks instead.
+-   **Never hardcode URLs** in components. Read from `networkStore` or `useTenantConfig()`.
+-   **Environment files are overrides only** — never duplicate defaults. The build script deep-merges onto `DEFAULT_LEARNCARD_TENANT_CONFIG`.
+-   **All config is Zod-validated** at build time. Schema violations fail the build, not runtime.
+-   **`.passthrough()`** on all Zod sub-schemas means extra fields are preserved, not stripped.
+-   **Generated assets are gitignored** (`environments/*/assets/`). They are build artifacts.
+-   **`sharp`** is a devDependency of `learn-card-app` used only by the asset generation script.
 
 ## Privacy Preferences & Age-Gate System
 
@@ -1242,3 +1272,103 @@ GDPR/COPPA-compliant privacy controls based on user age and country. Minors have
 -   Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
 -   Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
 -   See CLAUDE.md for full architectural details
+
+## Logging
+
+Central logger lives at `packages/learn-card-base/src/logging/logger.ts`, exported from `learn-card-base`. Full reference: `packages/learn-card-base/src/logging/README.md`.
+
+### API
+
+Logger accepts **flexible arguments** (like `console.log`). Mix and match errors, messages, objects, primitives, and arrays in any order:
+
+```ts
+import { logger, getLogger } from 'learn-card-base';
+
+// Module-level or top of a file
+const log = getLogger('my-feature');
+
+// Just a message
+log.info('user navigated to home');
+
+// Just an error (uses error.message as the log message)
+try { ... } catch (e) { log.error(e); }
+
+// Just a primitive or array
+log.info(isEnabled);              // boolean → output as-is
+log.warn(42);                     // number → output as-is
+log.debug([1, 2, 3]);             // array → output as-is
+
+// Just an object
+log.error({ userId: '123', code: 404 });
+
+// Message + metadata
+log.info('user.navigated', { page: 'home' });
+
+// Message + error
+log.error('wallet.init.failed', err);
+
+// Error + metadata
+log.error(err, { userId: '123' });
+
+// Any combination — logger figures it out
+log.warn('operation failed', error, { userId, attempt: 2 });
+log.info('stats', 42, { label: 'count' });
+
+// No scope
+logger.debug('verbose detail');
+logger.breadcrumb({ category: 'auth', message: 'token refreshed' });
+logger.withContext(scope => scope.setTag('flow', 'oid4vci'));
+```
+
+### Levels
+
+| Level   | Dev / staging   | Production (`NODE_ENV === 'production'`)                     |
+| ------- | --------------- | ------------------------------------------------------------ |
+| `debug` | `console.debug` | **dropped** — silent in prod, visible in staging (no Sentry) |
+| `info`  | `console.info`  | Sentry breadcrumb                                            |
+| `warn`  | `console.warn`  | `console.warn` + Sentry captureMessage                       |
+| `error` | `console.error` | `console.error` + Sentry captureException / captureMessage   |
+
+### Argument parsing rules
+
+The logger accepts **any number of arguments in any order** (rest-args, like `console.log`). Each arg is classified by type and slotted into the right place — nothing is silently dropped or char-spread.
+
+| Argument type                        | Handling                                                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Error**                            | First one wins the `err` slot → `captureException` (error level) or `extra.error` (warn level). Additional Errors collect into `values`. |
+| **String**                           | First one wins the log message. Additional strings collect into `values` (they reach Sentry, never char-spread into the meta bag).       |
+| **Plain object**                     | Treated as metadata. Multiple objects are merged into a single `extra` bag (later wins on key conflicts).                                |
+| **Primitive** (bool, number, bigint) | Collected into `values`. Sentry sees `{ value: x }` for a single leftover or `{ values: [...] }` for multiple.                           |
+| **Array**                            | Same as a primitive — collected into `values`.                                                                                           |
+
+Examples:
+
+-   `log.error(err)` — error becomes message + captures exception
+-   `log.info('msg', false)` — message + boolean value
+-   `log.error('msg', err, { userId })` — message + error + meta
+-   `log.warn('failed to fetch', uri, err)` — message + leftover primitive + recovered Error (all reach Sentry; the Error is never dropped)
+-   `log.warn('UID mismatch', { expected, got })` — preferred over positional `'expected', a, 'got', b`
+-   `log.warn(42, { label: 'count' })` — no message, just primitive + metadata
+
+### Setup (apps)
+
+After `Sentry.init()`, call `configureSentryTransport(adapter)` — both `learn-card-app` and `scouts` do this in their `constants/sentry.ts`. `useSentryIdentify` calls `configureLoggerContext({ bugReportsEnabled })` automatically when preferences change, so the privacy gate is always in sync. `captureConsoleIntegration` has been removed from both apps — the logger is now the only path to Sentry.
+
+### Do / Don't
+
+| Do                                                        | Don't                                                           |
+| --------------------------------------------------------- | --------------------------------------------------------------- |
+| `log.error(err)` or `log.error('msg', err)`               | `console.error('wallet init failed', err)` in app src           |
+| `log.warn('cache.miss', { key })`                         | `Sentry.captureException(err)` directly                         |
+| `log.debug('verbose detail')` or `log.debug(someValue)`   | Leave spam `console.log` in production-facing paths             |
+| `log.info(isEnabled)` — primitives work directly          | `log.info('isEnabled::', { isEnabled })` — unnecessary wrapping |
+| In catch: `log.error(err)` or `log.error('context', err)` | `log.error('msg', new Error(String(e)))` — logger handles it    |
+| `{ allowPii: true }` only for internal debug tooling      | Log PII fields without the flag                                 |
+
+### PII scrubbing
+
+Field names are matched **case-insensitively as substrings**, so variants are caught automatically (`userEmail`, `phoneNumber`, `firstName`, `accessToken`, etc.). Scrubbing is **recursive** — nested objects and arrays are walked. Keywords matched: `email`, `phone`, `name`, `seed`, `password`, `privatekey`, `accesstoken`, `idtoken`, `token`. `did` is matched exactly (too short for safe substring). Any string value starting with `Bearer ` is also scrubbed. Pass `{ allowPii: true }` in the meta object to bypass (flag is stripped before forwarding to Sentry).
+
+### ESLint
+
+`no-console: 'warn'` is enabled for `apps/learn-card-app/src/**` and `apps/scouts/src/**` via the root `.eslintrc.js` overrides block. Remaining call sites surface as warnings until migrated.

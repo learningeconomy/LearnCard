@@ -18,6 +18,8 @@ import { CredentialCategory } from 'learn-card-base';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { KnownAchievementType } from '@learncard/types';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('issue-vccreator');
 
 /** Generates a default generic VC template state */
 const genericVCTemplateState = {
@@ -224,7 +226,7 @@ const IssueVCCreator: React.FC<{ category: CredentialCategory; closeModal?: any 
                     hasDismissButton: true,
                 });
             } catch (e) {
-                console.log('error', e);
+                log.debug('error', e);
                 closeModal?.();
                 presentToast(`Error creating ${templateTitle}`, {
                     type: ToastTypeEnum.Error,

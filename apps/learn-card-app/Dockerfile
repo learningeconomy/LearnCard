@@ -13,11 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm
+    && npm install -g pnpm@9.12.3
 
 # Copy root workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
+COPY tools/capgo tools/capgo
 
 # Copy dependency manifests for better Docker caching
 COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/
@@ -51,6 +52,9 @@ COPY packages/plugins/linked-claims/package.json packages/plugins/linked-claims/
 COPY packages/plugins/learn-cloud/package.json packages/plugins/learn-cloud/
 COPY packages/plugins/ler-rs/package.json packages/plugins/ler-rs/
 COPY packages/plugins/open-badge-v2/package.json packages/plugins/open-badge-v2/
+COPY packages/plugins/openid4vc/package.json packages/plugins/openid4vc/
+COPY packages/plugins/render-method/package.json packages/plugins/render-method/
+COPY packages/plugins/sd-jwt-vc/package.json packages/plugins/sd-jwt-vc/
 COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
@@ -95,6 +99,9 @@ COPY packages/plugins/linked-claims packages/plugins/linked-claims
 COPY packages/plugins/learn-cloud packages/plugins/learn-cloud
 COPY packages/plugins/ler-rs packages/plugins/ler-rs
 COPY packages/plugins/open-badge-v2 packages/plugins/open-badge-v2
+COPY packages/plugins/openid4vc packages/plugins/openid4vc
+COPY packages/plugins/render-method packages/plugins/render-method
+COPY packages/plugins/sd-jwt-vc packages/plugins/sd-jwt-vc
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates

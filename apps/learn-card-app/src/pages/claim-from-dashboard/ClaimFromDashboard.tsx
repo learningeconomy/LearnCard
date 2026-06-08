@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -12,6 +12,9 @@ import {
     IonToolbar,
     useIonModal,
 } from '@ionic/react';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-from-dashboard');
 
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -33,7 +36,14 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 import {
     getAchievementType,
@@ -142,6 +152,8 @@ const ClaimFromDashboard: React.FC = () => {
     const [metadata, setMetadata] = useState<FromDashboardMetadata | undefined>();
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -187,7 +199,7 @@ const ClaimFromDashboard: React.FC = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                if (res.status !== 200) console.error('Rip lol');
+                if (res.status !== 200) log.error('Rip lol');
                 else {
                     const { links, metadata } = (await res.json()) as {
                         links: {
@@ -249,7 +261,7 @@ const ClaimFromDashboard: React.FC = () => {
                     setCredential(await credResponse.json());
                 }
             } catch (error) {
-                console.error(error);
+                log.error(error);
             }
 
             setLoading(false);
@@ -271,6 +283,8 @@ const ClaimFromDashboard: React.FC = () => {
         try {
             if (!credential) return;
             setClaimingCredential(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             await storeAndAddVCToWallet(credential, { title: name });
 
@@ -282,6 +296,21 @@ const ClaimFromDashboard: React.FC = () => {
                     category: category,
                     boostType: achievementType,
                     method: 'Dashboard',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.Dashboard,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 
@@ -294,7 +323,7 @@ const ClaimFromDashboard: React.FC = () => {
             });
         } catch (e) {
             setClaimingCredential(false);
-            console.error('Error claiming credential', e);
+            log.error('Error claiming credential', e);
             /**
              * Sometimes, when claiming a credential, this error is thrown:
              * TRPCClientError: Record with that ID already exists!

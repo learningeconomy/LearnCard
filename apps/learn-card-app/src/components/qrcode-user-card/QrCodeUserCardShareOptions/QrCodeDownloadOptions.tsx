@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('qr-code-download-options');
 
 import { useModal, useWallet, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -137,7 +139,7 @@ const QrCodeUserCardShareOptions: React.FC<{
             alert('QR Code saved to Photos!');
         } catch (err) {
             setIsSavingPng(false);
-            console.error('QR save failed:', err);
+            log.error('QR save failed:', err);
             alert('Failed to save QR Code.');
         }
     };
@@ -189,7 +191,7 @@ const QrCodeUserCardShareOptions: React.FC<{
             if (Capacitor.isNativePlatform()) alert('QR Code saved to Documents!');
         } catch (err) {
             setIsSavingPdf(false);
-            console.error('PDF save failed:', err);
+            log.error('PDF save failed:', err);
             alert('Failed to save QR Code PDF.');
         }
     };

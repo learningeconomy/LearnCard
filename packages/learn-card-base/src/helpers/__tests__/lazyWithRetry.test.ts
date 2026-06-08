@@ -28,18 +28,20 @@ const fakeModule = { default: () => null };
 /** Extract the async loader that lazyWithRetry passes to React.lazy */
 let capturedLoader: (() => Promise<{ default: React.ComponentType<unknown> }>) | undefined;
 
+const fakeLazyComponent = { $$typeof: Symbol.for('react.lazy'), _status: -1, _result: null };
+
 vi.mock('react', () => ({
     default: {
         lazy: (loader: () => Promise<{ default: React.ComponentType<unknown> }>) => {
             capturedLoader = loader;
 
-            return 'LazyComponent';
+            return { ...fakeLazyComponent };
         },
     },
     lazy: (loader: () => Promise<{ default: React.ComponentType<unknown> }>) => {
         capturedLoader = loader;
 
-        return 'LazyComponent';
+        return { ...fakeLazyComponent };
     },
 }));
 
@@ -262,5 +264,61 @@ describe('guardedChunkReload', () => {
 
         expect(result2).toBe(false);
         expect(reloadMock).toHaveBeenCalledTimes(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// preload() — idempotent pre-fetching
+// ---------------------------------------------------------------------------
+
+describe('lazyWithRetry .preload()', () => {
+    it('resolves after a successful import', async () => {
+        const factory = vi.fn().mockResolvedValue(fakeModule);
+
+        const Component = lazyWithRetry(factory);
+        await expect(Component.preload()).resolves.toBeUndefined();
+        expect(factory).toHaveBeenCalledTimes(1);
+    });
+
+    it('only invokes the factory once across multiple preload() calls', async () => {
+        const factory = vi.fn().mockResolvedValue(fakeModule);
+
+        const Component = lazyWithRetry(factory);
+
+        // Fire multiple preloads in parallel
+        await Promise.all([Component.preload(), Component.preload(), Component.preload()]);
+
+        expect(factory).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not re-invoke the factory on render after preload', async () => {
+        const factory = vi.fn().mockResolvedValue(fakeModule);
+
+        const Component = lazyWithRetry(factory);
+        await Component.preload();
+        expect(factory).toHaveBeenCalledTimes(1);
+
+        // Simulate React.lazy calling the loader
+        const result = await capturedLoader!();
+        expect(result).toBe(fakeModule);
+        // Factory should NOT have been called again
+        expect(factory).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not poison subsequent preload attempts after a non-stale error', async () => {
+        const err = new Error('transient failure');
+        const factory = vi.fn()
+            .mockRejectedValueOnce(err)
+            .mockResolvedValueOnce(fakeModule);
+
+        const Component = lazyWithRetry(factory);
+
+        // First preload swallows the error
+        await expect(Component.preload()).resolves.toBeUndefined();
+        expect(factory).toHaveBeenCalledTimes(1);
+
+        // Second preload should retry (pending was cleared)
+        await expect(Component.preload()).resolves.toBeUndefined();
+        expect(factory).toHaveBeenCalledTimes(2);
     });
 });
