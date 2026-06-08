@@ -72,10 +72,10 @@ const ClrCompetencyBlock: React.FC<{
 
     return (
         <div className="space-y-2 border-t border-grayscale-100 first:border-t-0 first:pt-0 pt-4">
-            <div className="inline-flex max-w-full items-center gap-1 rounded-full border border-grayscale-200 bg-grayscale-10 px-2 py-2 whitespace-nowrap">
+            <div className="inline-flex max-w-full items-center gap-1 rounded-full border border-grayscale-200 bg-grayscale-10 px-3 py-1 whitespace-nowrap">
                 <span className="shrink-0">
                     <FlatIcon>
-                        <SkillsIcon className="w-5 h-5 text-grayscale-600" />
+                        <SkillsIcon className="w-5 h-5 text-grayscale-700" />
                     </FlatIcon>
                 </span>
                 <span className="min-w-0 truncate text-xs font-semibold text-grayscale-900">

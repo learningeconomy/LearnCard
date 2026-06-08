@@ -32,13 +32,17 @@ const ClrTranscriptFullPage: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
+    const issuerLogo = model.header.image?.value;
 
     const handleSelectProgram = (program: ProgramDisplayModel) => {
         newModal(
             <ClrProgramDetailPanel
                 program={program}
                 adminMode={adminMode}
+                associations={model.associations}
+                competencies={model.competencies}
                 issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
             />
         );
     };
@@ -51,6 +55,7 @@ const ClrTranscriptFullPage: React.FC<{
                 associations={model.associations}
                 competencies={model.competencies}
                 issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
             />
         );
     };

@@ -11,7 +11,8 @@ import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 const ClrCourseCredentialCollapsible: React.FC<{
     course: CourseDisplayModel;
     issuerName?: string;
-}> = ({ course, issuerName }) => {
+    issuerLogo?: string;
+}> = ({ course, issuerName, issuerLogo }) => {
     const [open, setOpen] = useState(true);
 
     return (
@@ -31,7 +32,12 @@ const ClrCourseCredentialCollapsible: React.FC<{
                 <div className="pb-4 w-full">
                     <div className="w-full bg-white flex items-center gap-3 pl-[50px] pr-4 relative">
                         <div className="absolute left-[10px]">
-                            <ClrIssuerBadge variant="standard" issuerName={issuerName} size={80} />
+                            <ClrIssuerBadge
+                                variant="standard"
+                                logoSrc={issuerLogo}
+                                issuerName={issuerName}
+                                size={80}
+                            />
                         </div>
                         <div className="min-w-0 space-y-0.5 pr-2 pl-[40px] py-2 rounded-[15px] shadow-box-bottom w-full relative">
                             <p className="text-sm font-medium text-grayscale-900 truncate">

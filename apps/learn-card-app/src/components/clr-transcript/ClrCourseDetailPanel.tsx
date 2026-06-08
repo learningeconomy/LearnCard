@@ -27,7 +27,15 @@ const ClrCourseDetailPanel: React.FC<{
     associations?: AssociationDisplayModel[];
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-}> = ({ course, adminMode = false, associations = [], competencies = [], issuerName }) => {
+    issuerLogo?: string;
+}> = ({
+    course,
+    adminMode = false,
+    associations = [],
+    competencies = [],
+    issuerName,
+    issuerLogo,
+}) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 
@@ -51,7 +59,7 @@ const ClrCourseDetailPanel: React.FC<{
     const allowedGrades = primaryResult?.allowedValue?.value ?? [];
 
     return (
-        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100 overflow-y-auto">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -265,7 +273,11 @@ const ClrCourseDetailPanel: React.FC<{
                 )}
 
                 {/* Source credential collapsible */}
-                <ClrCourseCredentialCollapsible course={course} issuerName={issuerName} />
+                <ClrCourseCredentialCollapsible
+                    course={course}
+                    issuerName={issuerName}
+                    issuerLogo={issuerLogo}
+                />
 
                 {/* Admin provenance */}
                 {adminMode && (

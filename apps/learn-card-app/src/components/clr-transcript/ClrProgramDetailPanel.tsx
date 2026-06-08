@@ -28,7 +28,15 @@ const ClrProgramDetailPanel: React.FC<{
     associations?: AssociationDisplayModel[];
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-}> = ({ program, adminMode = false, associations = [], competencies = [], issuerName }) => {
+    issuerLogo?: string;
+}> = ({
+    program,
+    adminMode = false,
+    associations = [],
+    competencies = [],
+    issuerName,
+    issuerLogo,
+}) => {
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
 
@@ -174,7 +182,11 @@ const ClrProgramDetailPanel: React.FC<{
                 )}
 
                 {/* Source credential collapsible */}
-                <ClrProgramCredentialCollapsible program={program} issuerName={issuerName} />
+                <ClrProgramCredentialCollapsible
+                    program={program}
+                    issuerName={issuerName}
+                    issuerLogo={issuerLogo}
+                />
 
                 {/* Admin provenance */}
                 {adminMode && (
