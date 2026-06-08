@@ -7,8 +7,8 @@ import { Checkmark } from '@learncard/react';
 import { useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
 
 import {
-    LEARNER_INSIGHTS_FILTER_OPTIONS,
-    LEARNER_INSIGHTS_SORT_OPTIONS,
+    getLearnerInsightsFilterOptions,
+    getLearnerInsightsSortOptions,
     LearnerInsightsFilterOptionsEnum,
     LearnerInsightsSortOptionsEnum,
 } from './learner-insights.helpers';
@@ -89,7 +89,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                 }`}
             >
                 <IonList>
-                    {LEARNER_INSIGHTS_SORT_OPTIONS.map(option => {
+                    {getLearnerInsightsSortOptions().map(option => {
                         return (
                             <IonItem
                                 className="font-notoSans text-sm flex items-center justify-start text-left"
@@ -111,7 +111,7 @@ export const LearnerInsightsPopOverButton: React.FC<RequestInsightsPopOverButton
                     <div className="w-full flex items-center justify-center">
                         <div className="w-[90%] h-[1px] bg-grayscale-100 mt-2 mb-2" />
                     </div>
-                    {LEARNER_INSIGHTS_FILTER_OPTIONS.map(option => {
+                    {getLearnerInsightsFilterOptions().map(option => {
                         return (
                             <IonItem
                                 className="font-notoSans text-sm flex items-center justify-start text-left"

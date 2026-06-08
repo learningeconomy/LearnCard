@@ -1,4 +1,7 @@
 import React, { useMemo } from 'react';
+
+import { m } from '../../paraglide/messages.js';
+
 import { useVerifiableData } from 'learn-card-base';
 import {
     SKILL_PROFILE_PROFILE_KEY,
@@ -105,7 +108,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
 
                 {occupationLoading ? (
                     <div className="py-2">
-                        <p className="text-sm text-grayscale-600">Finding career data...</p>
+                        <p className="text-sm text-grayscale-600">{m['aiInsights.findingCareerData']()}</p>
                     </div>
                 ) : hasOccupationData && occupation ? (
                     <>
@@ -154,8 +157,8 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                     <div className="py-2">
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {professionalTitle
-                                ? 'We could not find career data for this title yet.'
-                                : 'Add a professional title to see career data here.'}
+                                ? m['aiInsights.careerDataNotFound']()
+                                : m['aiInsights.addTitleForCareerData']()}
                         </p>
                     </div>
                 )}

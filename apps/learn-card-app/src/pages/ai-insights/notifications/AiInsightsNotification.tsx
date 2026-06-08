@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { capitalize } from 'lodash-es';
 import moment from 'moment';
 
+import { m } from '../../../paraglide/messages.js';
+
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useConsentFlow from '../../../pages/consentFlow/useConsentFlow';
 
@@ -153,42 +155,42 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         !insightsRequest?.status;
 
     if (hasConsented) {
-        buttonText = 'Accepted';
+        buttonText = m['aiInsights.accepted']();
     } else if (insightsRequest?.status === 'accepted' && !hasConsented) {
-        buttonText = 'View Insights';
+        buttonText = m['aiInsights.viewInsights']();
     } else if (expiredRequest) {
-        buttonText = 'Expired';
+        buttonText = m['aiInsights.expired']();
         claimButtonStyles = `${claimedButtonStyles} !bg-grayscale-200`;
     } else {
-        buttonText = 'View Request';
+        buttonText = m['aiInsights.viewRequest']();
     }
 
     if (isShareRequest && !insightsRequest?.status) {
         claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
-        buttonText = 'View Request';
+        buttonText = m['aiInsights.viewRequest']();
     } else if (isShareRequest && !!insightsRequest?.status) {
         claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600/50`;
-        buttonText = 'Accepted';
+        buttonText = m['aiInsights.accepted']();
     }
 
     const isChild = switchedProfileStore.use.profileType() === 'child';
     const isForwardedRequest = notification?.data?.metadata?.subtype === 'forwarded-share';
     if (isForwardedRequest) {
-        buttonText = 'View Request';
+        buttonText = m['aiInsights.viewRequest']();
         claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
     }
 
     if (isChild) {
-        buttonText = 'Get Permission';
+        buttonText = m['aiInsights.getPermission']();
         claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600`;
 
         if (hasConsented) {
-            buttonText = 'Approved';
+            buttonText = m['aiInsights.approved']();
             claimButtonStyles = `${claimedButtonStyles} !bg-emerald-600/50`;
         }
 
         if (expiredRequest) {
-            buttonText = 'Expired';
+            buttonText = m['aiInsights.expired']();
             claimButtonStyles = `${claimedButtonStyles} !bg-grayscale-200`;
         }
     }
@@ -215,7 +217,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 openConsentFlowModal(
                     true,
                     () => {
-                        presentToast('AI Insights shared!');
+                        presentToast(m['toasts.ai.aiInsightsShared']());
                         refetchNotifications();
                     },
                     notification?.data?.metadata?.targetProfileId as string,
@@ -269,7 +271,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
             openConsentFlowModal(
                 true,
                 () => {
-                    presentToast('AI Insights shared!');
+                    presentToast(m['toasts.ai.aiInsightsShared']());
                     refetchNotifications();
                 },
                 notification?.from?.profileId as string,
@@ -299,7 +301,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                     <div
                         className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]`}
                     >
-                        Unable to load notification
+                        {m['aiInsights.unableToLoad']()}
                     </div>
                 }
             >
@@ -334,7 +336,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                                 className={`font-bold p-0 mt-[10px] leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text text-indigo-600`}
                                 data-testid="notification-type"
                             >
-                                Insights{' '}
+                                {m['aiInsights.insightsLabel']()}{' '}
                                 {issueDate && (
                                     <span
                                         className="text-[rgba(24,34,78,0.8)] normal-case font-normal text-[12px] notification-card-type-issue-date"
@@ -354,7 +356,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                                     }}
                                     name="notification-claim-button"
                                 >
-                                    {isLoading ? 'Loading...' : buttonText}
+                                    {isLoading ? m['aiInsights.loading']() : buttonText}
                                     {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                                 </button>
 

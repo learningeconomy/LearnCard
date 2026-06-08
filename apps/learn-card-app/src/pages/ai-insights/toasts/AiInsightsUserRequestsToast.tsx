@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import { switchedProfileStore, UserProfilePicture } from 'learn-card-base';
 import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
 
@@ -52,10 +55,13 @@ export const AiInsightsUserRequestsToast: React.FC<{
                 </div>
                 <div className="flex flex-col text-left">
                     <p className="text-grayscale-900 text-sm">
-                        <span className="font-semibold">{contract?.owner?.displayName}</span> has
-                        requested to view{' '}
-                        <span className="font-semibold">{currentLCNUser?.displayName}</span>'s
-                        insights.
+                        <TransP
+                            m={m['aiInsights.hasRequestedToView']({ ownerName: contract?.owner?.displayName ?? '', userName: currentLCNUser?.displayName ?? '' })}
+                            components={[
+                                <span className="font-semibold" />,
+                                <span className="font-semibold" />,
+                            ]}
+                        />
                     </p>
                 </div>
             </div>
@@ -71,7 +77,7 @@ export const AiInsightsUserRequestsToast: React.FC<{
                             }}
                             name="notification-claim-button"
                         >
-                            Get Permission
+                            {m['aiInsights.getPermission']()}
                         </button>
                     ) : (
                         <FullScreenConsentFlow

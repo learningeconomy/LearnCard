@@ -2,6 +2,9 @@ import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 
+import { m } from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
@@ -52,12 +55,12 @@ export const RequestInsightsFromUserModal: React.FC<{
         const profileId = profile?.profileId ?? '';
 
         if (isPendingRequest) {
-            presentToast('Insights request already pending.');
+            presentToast(m['toasts.ai.alreadyPending']());
             return;
         }
 
         if (isAcceptedRequest) {
-            presentToast('Insights request already accepted.');
+            presentToast(m['toasts.ai.alreadyAccepted']());
             return;
         }
 
@@ -77,17 +80,17 @@ export const RequestInsightsFromUserModal: React.FC<{
         });
         closeModal();
 
-        presentToast('AI Insights request sent!');
+        presentToast(m['toasts.ai.requestSent']());
 
         onSuccessCallback?.();
     };
 
-    let requestButtonLabel = 'Login to Request';
+    let requestButtonLabel = m['aiInsights.loginToRequest']();
 
-    if (isPending) requestButtonLabel = 'Sending...';
-    else if (isPendingRequest) requestButtonLabel = 'Request Pending';
-    else if (isAcceptedRequest) requestButtonLabel = 'Request Accepted';
-    else if (isAuthenticated) requestButtonLabel = 'Send Request';
+    if (isPending) requestButtonLabel = m['aiInsights.sending']();
+    else if (isPendingRequest) requestButtonLabel = m['aiInsights.requestPending']();
+    else if (isAcceptedRequest) requestButtonLabel = m['aiInsights.requestAccepted']();
+    else if (isAuthenticated) requestButtonLabel = m['aiInsights.sendRequest']();
 
     return (
         <div className="h-full w-full flex items-center justify-center">
@@ -115,13 +118,18 @@ export const RequestInsightsFromUserModal: React.FC<{
                     </div>
                     {isAuthenticated ? (
                         <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-                            Request Insights from <br /> {profile?.displayName}
+                            {m['aiInsights.requestInsightsFrom']({ name: profile?.displayName ?? '' })}
                         </p>
                     ) : (
                         <p className="text-grayscale-900 text-[16px] text-center">
-                            Please <span className="font-semibold">Login</span> to{' '}
-                            <span className="font-semibold">Request Insights</span> from <br />{' '}
-                            <span className="font-semibold">{profile?.displayName}</span>
+                            <TransP
+                                m={m['aiInsights.loginToRequestFrom']({ name: profile?.displayName ?? '' })}
+                                components={[
+                                    <span className="font-semibold" />,
+                                    <span className="font-semibold" />,
+                                    <span className="font-semibold" />,
+                                ]}
+                            />
                         </p>
                     )}
                 </div>

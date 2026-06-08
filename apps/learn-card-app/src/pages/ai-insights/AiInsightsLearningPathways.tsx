@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
@@ -192,7 +194,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px]">
             <div className="w-full flex items-center justify-start">
                 <AiPathwaysIconWithShape className="w-[40px] h-[40px]" />
-                <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Pathways</h2>
+                <h2 className="text-xl text-grayscale-800 font-notoSans">{m['aiInsights.learningPathways']()}</h2>
             </div>
             {learningPathwaysData?.map(
                 ({ title, description, skills, topicUri, pathwayUri }, index) => {

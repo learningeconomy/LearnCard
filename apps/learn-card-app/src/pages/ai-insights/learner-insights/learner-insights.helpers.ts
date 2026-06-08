@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
@@ -28,33 +30,33 @@ export type LearnerInsightsFilterOption = Omit<LearnerInsightsSortOption, 'type'
     type: LearnerInsightsFilterOptionsEnum;
 };
 
-export const LEARNER_INSIGHTS_SORT_OPTIONS: LearnerInsightsSortOption[] = [
+export const getLearnerInsightsSortOptions = () => [
     {
         id: 1,
-        title: 'A-Z',
+        title: m['aiInsights.sort.az'](),
         type: LearnerInsightsSortOptionsEnum.alphabetical,
     },
     {
         id: 2,
-        title: 'Recently Added',
+        title: m['aiInsights.sort.recentlyAdded'](),
         type: LearnerInsightsSortOptionsEnum.recentlyAdded,
     },
 ];
 
-export const LEARNER_INSIGHTS_FILTER_OPTIONS: LearnerInsightsFilterOption[] = [
+export const getLearnerInsightsFilterOptions = () => [
     {
         id: 1,
-        title: 'All',
+        title: m['aiInsights.filter.all'](),
         type: LearnerInsightsFilterOptionsEnum.all,
     },
     {
         id: 2,
-        title: 'Pending',
+        title: m['aiInsights.filter.pending'](),
         type: LearnerInsightsFilterOptionsEnum.pending,
     },
     {
         id: 3,
-        title: 'Accepted',
+        title: m['aiInsights.filter.accepted'](),
         type: LearnerInsightsFilterOptionsEnum.accepted,
     },
 ];

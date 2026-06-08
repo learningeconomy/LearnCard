@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { IonFooter } from '@ionic/react';
 import TwoUsersIcon from 'learn-card-base/svgs/TwoUsers';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
@@ -82,7 +84,7 @@ export const AiInsightsParentConsent: React.FC<{
 
         closeModal();
 
-        presentToast('Parent notified of share request!');
+        presentToast(m['toasts.ai.parentNotified']());
     };
 
     return (
@@ -90,7 +92,7 @@ export const AiInsightsParentConsent: React.FC<{
             <div className="w-full flex items-center justify-center px-4 max-w-[400px]">
                 <div className="bg-white pt-8 w-full flex flex-col items-center gap-4 justify-center shadow-box-bottom rounded-[24px]">
                     <p className="text-indigo-500 text-[25px] font-semibold text-center">
-                        Get permission <br /> from an adult.
+                        {m['aiInsights.getPermissionFromAdult']()}
                     </p>
                     <div className="flex items-center gap-4">
                         <UserProfilePicture
@@ -104,7 +106,7 @@ export const AiInsightsParentConsent: React.FC<{
                             onClick={handleSendToAdult}
                             className="bg-indigo-500 py-[12px] rounded-[30px] font-notoSans text-[20px] font-semibold leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center mb-4"
                         >
-                            Send to My Adult
+                            {m['aiInsights.sendToMyAdult']()}
                         </button>
 
                         <div className="w-full h-[1px] bg-grayscale-200" />
@@ -114,7 +116,7 @@ export const AiInsightsParentConsent: React.FC<{
                             className="py-[12px] rounded-[30px] font-notoSans text-[20px] font-semibold leading-[24px] tracking-[0.25px] text-grayscale-900 w-full  flex gap-[5px] items-center justify-between"
                         >
                             <span className="flex items-center gap-2">
-                                <TwoUsersIcon /> Sign in as an adult
+                                <TwoUsersIcon /> {m['aiInsights.signInAsAdult']()}
                             </span>
                             <SkinnyCaretRight className="text-grayscale-300" />
                         </button>
@@ -132,7 +134,7 @@ export const AiInsightsParentConsent: React.FC<{
                             onClick={closeModal}
                             className="bg-white py-[12px] rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] items-center justify-center"
                         >
-                            close
+                            {m['aiInsights.close']()}
                         </button>
                     </div>
                 </div>

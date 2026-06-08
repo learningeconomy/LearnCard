@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import AiInsightsParentConsent from '../ai-insights-parent-consent/AiInsightsParentConsent';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
@@ -64,16 +67,16 @@ export const ShareInsightsWithUser: React.FC<{
             childProfileId,
         });
 
-        presentToast('Insights shared!');
+        presentToast(m['toasts.ai.insightsShared']());
         closeModal();
     };
 
-    let buttonText = 'Share Insights';
-    if (isChild && !bypassParentConsent) buttonText = 'Get Permission';
+    let buttonText = m['aiInsights.shareInsights']();
+    if (isChild && !bypassParentConsent) buttonText = m['aiInsights.getPermission']();
 
     let text = (
         <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-            Share Insights with <br /> {_targetProfile?.displayName}
+            {m['aiInsights.shareInsightsWith']({ name: _targetProfile?.displayName ?? '' })}
         </p>
     );
 
@@ -83,8 +86,13 @@ export const ShareInsightsWithUser: React.FC<{
 
         text = (
             <p className="text-grayscale-900 text-[17px] text-center">
-                <span className="font-semibold">{childName}</span> wants to share their insights
-                with <span className="font-semibold">{_targetProfile?.displayName}</span>
+                <TransP
+                    m={m['aiInsights.wantsToShare']({ childName: childName ?? '', targetName: _targetProfile?.displayName ?? '' })}
+                    components={[
+                        <span className="font-semibold" />,
+                        <span className="font-semibold" />,
+                    ]}
+                />
             </p>
         );
     }
