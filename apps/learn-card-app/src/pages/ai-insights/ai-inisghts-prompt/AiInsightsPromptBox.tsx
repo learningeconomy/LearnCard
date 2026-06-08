@@ -17,6 +17,7 @@ import { resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
 import { ChatBotQuestionsEnum } from '../../../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 export const AiInsightsPromptBox: React.FC = () => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
     const history = useHistory();
     const { gate } = useLCNGatedAction();

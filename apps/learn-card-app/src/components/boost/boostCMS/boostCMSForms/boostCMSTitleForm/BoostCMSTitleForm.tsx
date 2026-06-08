@@ -7,7 +7,6 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { BoostCMSState } from '../../../boost';
 import { useTranslation } from 'react-i18next';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-import { useTranslation } from 'react-i18next';
 
 const BoostCMSTitleForm: React.FC<{
     state: BoostCMSState;

@@ -7,6 +7,7 @@ import AiInsightsExploreMoreModal from './AiInsightsExploreMoreModal';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 export const AiInsightsExploreMoreButton: React.FC = () => {
+    const { t } = useTranslation();
     const { newModal } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,

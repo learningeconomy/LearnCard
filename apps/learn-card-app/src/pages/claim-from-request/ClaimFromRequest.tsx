@@ -413,6 +413,7 @@ const ExchangeErrorDisplay: React.FC<{
 };
 
 const ClaimFromRequest: React.FC = () => {
+    const { t } = useTranslation();
     const [isFront, setIsFront] = useState(true);
     const [loading, setLoading] = useState(false);
     const [claimingCredential, setClaimingCredential] = useState(false);

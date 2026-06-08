@@ -28,6 +28,7 @@ import { LearnCardRolesEnum } from '../../../components/onboarding/onboarding.he
 import { createTeacherStudentContract } from '../request-insights/request-insights.helpers';
 
 const LearnerInsights: React.FC = () => {
+    const { t } = useTranslation();
     const { initWallet } = useWallet();
 
     const { currentLCNUser } = useGetCurrentLCNUser();

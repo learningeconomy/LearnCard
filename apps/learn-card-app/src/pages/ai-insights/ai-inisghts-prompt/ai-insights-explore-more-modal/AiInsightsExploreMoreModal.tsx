@@ -9,6 +9,7 @@ import AiInsightsPromptList from '../ai-insights-prompt-list/AiInsightsPromptLis
 import { useModal } from 'learn-card-base';
 
 export const AiInsightsExploreMoreModal: React.FC = () => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
 
     return (

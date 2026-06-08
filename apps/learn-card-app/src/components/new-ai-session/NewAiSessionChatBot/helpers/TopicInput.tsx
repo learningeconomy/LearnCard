@@ -17,6 +17,7 @@ export const TopicInput: React.FC<{
     ) => void;
     index: number;
 }> = ({ handleChatBotAnswer, index }) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 

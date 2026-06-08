@@ -35,6 +35,7 @@ export const AddressBookHeader: React.FC<{
     showSearch,
     handleShowSearch,
 }) => {
+    const { t } = useTranslation();
     const { getColorSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
 

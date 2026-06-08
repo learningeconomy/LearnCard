@@ -237,8 +237,8 @@ const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => 
     const { t } = useTranslation();
     return (
         <p className="text-sm font-poppins text-grayscale-600 text-center max-w-[250px] mx-auto">
-            <TransP
-                m={m[copy.messageKey]()}
+            <Trans
+                i18nKey={copy.messageKey}
                 components={[<span className={`font-bold ${copy.highlightClassName}`} />]}
             />
         </p>
@@ -249,6 +249,7 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
     occupation,
     isLoading = false,
 }) => {
+    const { t } = useTranslation();
     const { data: jobSatisfactionData, isLoading: jobSatisfactionLoading } =
         useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY, {
             name: 'Job Satisfaction',

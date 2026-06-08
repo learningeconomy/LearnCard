@@ -30,6 +30,7 @@ const SharedInsightsRow: React.FC<{ request: SharedRequest; refetch: () => void 
     request,
     refetch,
 }) => {
+    const { t } = useTranslation();
     const { openConsentFlowModal } = useConsentFlowByUri(request.contractUri);
 
     const isAccepted = request.status === 'accepted';
@@ -93,6 +94,7 @@ const SharedInsightsRow: React.FC<{ request: SharedRequest; refetch: () => void 
 };
 
 const SharedInsights: React.FC = () => {
+    const { t } = useTranslation();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { getIconSet } = useTheme();

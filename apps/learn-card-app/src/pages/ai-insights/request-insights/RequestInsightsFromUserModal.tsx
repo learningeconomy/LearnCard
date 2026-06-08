@@ -38,6 +38,7 @@ export const RequestInsightsFromUserModal: React.FC<{
     redirectToLink?: string;
     requestStatus?: 'pending' | 'accepted' | 'denied' | null;
 }> = ({ profile, contractUri, onSuccessCallback, redirectToLink, requestStatus }) => {
+    const { t } = useTranslation();
     const { presentToast } = useToast();
     const { closeModal, closeAllModals } = useModal();
     const history = useHistory();

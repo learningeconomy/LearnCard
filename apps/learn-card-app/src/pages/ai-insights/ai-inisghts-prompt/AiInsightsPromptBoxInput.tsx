@@ -8,6 +8,7 @@ export const AiInsightsPromptBoxInput: React.FC<{
     prompt: string;
     setPrompt: (prompt: string) => void;
 }> = ({ prompt, setPrompt }) => {
+    const { t } = useTranslation();
     return (
         <div className="w-full">
             <IonTextarea

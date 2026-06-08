@@ -51,6 +51,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
     setStartInternalAiChatBot,
     selectedApp,
 }) => {
+    const { t } = useTranslation();
     const query = usePathQuery();
     const { isDesktop } = useDeviceTypeByWidth();
     const { closeAllModals } = useModal();

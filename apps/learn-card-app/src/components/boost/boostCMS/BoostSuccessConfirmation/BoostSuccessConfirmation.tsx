@@ -19,6 +19,7 @@ export const BoostSuccessConfirmation: React.FC<{
     state: BoostCMSState;
     handlePreview: () => void;
 }> = ({ state, handlePreview }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;

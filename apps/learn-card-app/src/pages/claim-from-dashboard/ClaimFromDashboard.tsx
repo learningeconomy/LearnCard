@@ -136,6 +136,7 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
 };
 
 const ClaimFromDashboard: React.FC = () => {
+    const { t } = useTranslation();
     const [isFront, setIsFront] = useState(true);
     const [loading, setLoading] = useState(false);
     const [claimingCredential, setClaimingCredential] = useState(false);

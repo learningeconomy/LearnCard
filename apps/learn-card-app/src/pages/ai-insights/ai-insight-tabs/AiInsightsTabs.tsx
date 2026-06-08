@@ -13,6 +13,7 @@ export const AiInsightsTabs: React.FC<{
     selectedTab?: AiInsightsTabsEnum;
     setSelectedTab?: (tab: AiInsightsTabsEnum) => void;
 }> = ({ className, selectedTab, setSelectedTab }) => {
+    const { t } = useTranslation();
     const isSelectedTab = (tab: AiInsightsTabsEnum) => selectedTab === tab;
 
     const [contractUri, setContractUri] = useState<string>('');

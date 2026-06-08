@@ -149,6 +149,7 @@ const MultiCredential: React.FC<{
 };
 
 const CredentialStorage: React.FC = () => {
+    const { t } = useTranslation();
     const { addVCtoWallet, initWallet, publishEncryptedContentToCeramic } = useWallet();
     const currentUser = useCurrentUser();
 

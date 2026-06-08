@@ -179,6 +179,7 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
     salaryType = 'per_year',
     variant = 'popover',
 }) => {
+    const { t } = useTranslation();
     const [search, setSearch] = useState('');
     const isSheet = variant === 'sheet';
     const searchTerm = search.trim();

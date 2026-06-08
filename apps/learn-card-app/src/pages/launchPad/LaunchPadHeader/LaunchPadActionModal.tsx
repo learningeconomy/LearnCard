@@ -459,6 +459,7 @@ const ActionButton: React.FC<{
 };
 
 const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFooterNav }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal();
     const history = useHistory();
     const { initWallet } = useWallet();

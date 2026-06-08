@@ -12,10 +12,12 @@ import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
+import { useTranslation } from 'react-i18next';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
 }> = ({ handleCloseModal }) => {
+    const { t } = useTranslation();
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
     const { presentToast } = useToast();

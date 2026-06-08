@@ -78,11 +78,11 @@ type FamilyCMSProps = {
 export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     credential,
     editorMode = FamilyCMSEditorModeEnum.create,
-    handleCloseModal = () => {
-    const { t } = useTranslation();},
+    handleCloseModal = () => {},
     onFamilyCreationSuccess,
     editBoostUri,
 }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const queryClient = useQueryClient();
     const currentUser = useCurrentUser();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -107,6 +108,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     skipRoleSlides,
     pendingInstall,
 }) => {
+    const { t } = useTranslation();
     const brandingConfig = useBrandingConfig();
     const { appIcon } = useTenantBrandingAssets();
     const { initWallet } = useWallet();

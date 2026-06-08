@@ -24,6 +24,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
     state,
     setState,
 }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,

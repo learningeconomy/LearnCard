@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { RadioGroup, useVerifiableData } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
@@ -18,7 +19,7 @@ type SkillProfileStep4Props = {
     handleBack: () => void;
 };
 
-const getWorkLifeBalanceOptions = () => [
+const getWorkLifeBalanceOptions = (t: TFunction) => [
     { value: 'terrible', label: t('aiPathways.workLife.terrible', 'Terrible, Unfair') },
     { value: 'not_adequate', label: t('aiPathways.workLife.notAdequate', 'Not Adequate') },
     { value: 'average', label: t('aiPathways.workLife.average', 'Average') },
@@ -27,7 +28,7 @@ const getWorkLifeBalanceOptions = () => [
     { value: 'paradise', label: t('aiPathways.workLife.paradise', 'It\'s Paradise') },
 ];
 
-const getJobStabilityOptions = () => [
+const getJobStabilityOptions = (t: TFunction) => [
     { value: 'very_uncertain', label: t('aiPathways.jobStability.veryUncertain', 'Very Uncertain') },
     { value: 'poor', label: t('aiPathways.jobStability.poor', 'Poor') },
     { value: 'average', label: t('aiPathways.jobStability.average', 'Average') },
@@ -81,7 +82,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             <RadioGroup
                 value={workLifeBalance}
                 onChange={setWorkLifeBalance}
-                options={getWorkLifeBalanceOptions()}
+                options={getWorkLifeBalanceOptions(t)}
                 name="work_life_balance"
                 columns={2}
                 allowDeselect
@@ -95,7 +96,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             <RadioGroup
                 value={jobStability}
                 onChange={setJobStability}
-                options={getJobStabilityOptions()}
+                options={getJobStabilityOptions(t)}
                 name="job_stability"
                 columns={2}
                 allowDeselect

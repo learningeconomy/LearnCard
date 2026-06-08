@@ -47,6 +47,7 @@ const getQueryParam = (value: string | string[] | null): string => {
 };
 
 const VerifySharedResume: React.FC = () => {
+    const { t } = useTranslation();
     const { isMobile } = useDeviceTypeByWidth();
     const { presentToast } = useToast();
     const location = useLocation();

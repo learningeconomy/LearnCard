@@ -42,6 +42,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     maskedRecoveryEmail,
     onClose,
 }) => {
+    const { t } = useTranslation();
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
 

@@ -48,6 +48,7 @@ type Flags = {
 };
 
 const AiInsights: React.FC = () => {
+    const { t } = useTranslation();
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const location = useLocation();

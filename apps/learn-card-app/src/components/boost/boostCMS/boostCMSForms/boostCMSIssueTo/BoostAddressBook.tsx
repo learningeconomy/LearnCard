@@ -97,11 +97,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // IE: issueTo
     // IE: admins
     collectionPropName = 'issueTo',
-    title = t('boost.cms.issueTo.title', 'Issue To'),
+    title: titleProp,
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
     const { t } = useTranslation();
+    const title = titleProp ?? t('boost.cms.issueTo.title', 'Issue To');
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,

@@ -21,6 +21,7 @@ import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
 
 export const ShareInsightsModal: React.FC = () => {
+    const { t } = useTranslation();
     const profileType = switchedProfileStore.use.profileType();
     const isChild = profileType === 'child';
 

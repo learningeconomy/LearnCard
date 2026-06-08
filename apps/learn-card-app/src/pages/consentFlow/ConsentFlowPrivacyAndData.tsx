@@ -53,6 +53,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     termsUri: propTermsUri,
     ownerDid: propOwnerDid,
 }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
     const { presentToast } = useToast();
     const brandingConfig = useBrandingConfig();

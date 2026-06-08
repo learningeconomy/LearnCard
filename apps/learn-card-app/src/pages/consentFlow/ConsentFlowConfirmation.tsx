@@ -72,6 +72,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     onCloseCallback,
     onBackCallback,
 }) => {
+    const { t } = useTranslation();
     const { closeModal, newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,

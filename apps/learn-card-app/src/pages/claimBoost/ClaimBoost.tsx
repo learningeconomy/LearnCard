@@ -128,6 +128,7 @@ const ClaimBoost: React.FC<{
     dismissClaimModal?: () => void;
     vc?: VC | null;
 }> = ({ uri, claimChallenge, dismissClaimModal = () => {}, vc }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
