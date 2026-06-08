@@ -70,6 +70,14 @@ export const CREDENTIAL_CATEGORIES = [
     'AI Assessment',
     'AI Pathway',
     'AI Insight',
+    'Goals',
+    'Professional Title',
+    'Role Experience',
+    'Work Experience',
+    'Pay Rate',
+    'Work Life Balance',
+    'Job Stability',
+    'Self-Assigned Skills',
     'VerifiableData',
 ] as const;
 

@@ -417,7 +417,7 @@ export const CATEGORY_MAP: Record<
 
     'ext:Family': 'Family',
 
-    [SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE]: 'Skill', // ext:SelfAssignedSkills
+    [SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE]: 'Self-Assigned Skills', // ext:SelfAssignedSkills
 };
 
 // unwrapBoost helper returns inner vc of boost or if normal vc returns vc
@@ -1235,6 +1235,7 @@ export const getCategoryPrimaryColor = (category = CredentialCategoryEnum.achiev
         case CredentialCategoryEnum.socialBadge:
             return 'cyan';
         case CredentialCategoryEnum.skill:
+        case CredentialCategoryEnum.selfAssignedSkills:
             return 'indigo';
         case CredentialCategoryEnum.achievement:
             return 'spice';

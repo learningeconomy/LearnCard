@@ -7,15 +7,23 @@ import { CredentialCategory, GenericCardWrapper, useVerifiableData } from 'learn
 
 import { curriedStateSlice } from '@learncard/helpers';
 
-const vcDisplayWord: Partial<Record<CredentialCategory, string>> = {
-    ID: 'ID',
-    Achievement: 'Achievement',
-    Skill: 'Skill',
-    Membership: 'Membership',
-    'Work History': 'Work History',
-    'Learning History': 'Learning History',
-    'Social Badge': 'Social Badge',
-    VerifiableData: 'Verifiable Data',
+const vcDisplayWord: Partial<Record<CredentialCategory, { singular: string; plural: string }>> = {
+    ID: { singular: 'ID', plural: 'IDs' },
+    Achievement: { singular: 'Achievement', plural: 'Achievements' },
+    Skill: { singular: 'Skill', plural: 'Skills' },
+    Membership: { singular: 'Membership', plural: 'Memberships' },
+    'Work History': { singular: 'Work History', plural: 'Work History' },
+    'Learning History': { singular: 'Learning History', plural: 'Learning History' },
+    'Social Badge': { singular: 'Social Badge', plural: 'Social Badges' },
+    Goals: { singular: 'Goal', plural: 'Goals' },
+    'Professional Title': { singular: 'Professional Title', plural: 'Professional Titles' },
+    'Role Experience': { singular: 'Role Experience', plural: 'Role Experiences' },
+    'Work Experience': { singular: 'Work Experience', plural: 'Work Experiences' },
+    'Pay Rate': { singular: 'Pay Rate', plural: 'Pay Rates' },
+    'Work Life Balance': { singular: 'Work Life Balance', plural: 'Work Life Balance' },
+    'Job Stability': { singular: 'Job Stability', plural: 'Job Stability' },
+    'Self-Assigned Skills': { singular: 'Self-Assigned Skill', plural: 'Self-Assigned Skills' },
+    VerifiableData: { singular: 'Verifiable Data', plural: 'Verifiable Data' },
 };
 
 const vcColor: Partial<Record<CredentialCategory, string>> = {
@@ -23,6 +31,7 @@ const vcColor: Partial<Record<CredentialCategory, string>> = {
     ID: 'yellow-400',
     Achievement: 'spice-600',
     Skill: 'indigo-400',
+    'Self-Assigned Skills': 'indigo-400',
     Membership: 'indigo-400',
     'Work History': 'rose-600',
     'Social Badge': 'cyan-300',
@@ -123,12 +132,8 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
     const updateSlice = curriedStateSlice(setCategories);
 
     const getTitle = (type: CredentialCategory, count: number) => {
-        const displayWord = vcDisplayWord[type] ?? type;
-        return `${count} ${displayWord}${
-            count !== 1 && !['Learning History', 'Work History', 'VerifiableData'].includes(type)
-                ? 's'
-                : ''
-        }`;
+        const displayWord = vcDisplayWord[type] ?? { singular: type, plural: type };
+        return `${count} ${count === 1 ? displayWord.singular : displayWord.plural}`;
     };
 
     return (

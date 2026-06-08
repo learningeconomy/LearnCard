@@ -21,6 +21,15 @@ export const useConsentFlowCredentials = (contractDetails?: ConsentFlowContractD
         Object.keys(contractDetails?.contract.read.credentials.categories ?? {}).includes(category)
     );
 
+    const goals = usePrefetchCredentials('Goals', requestedCategories.includes('Goals'));
+    const professionalTitle = usePrefetchCredentials(
+        'Professional Title',
+        requestedCategories.includes('Professional Title')
+    );
+    const roleExperience = usePrefetchCredentials(
+        'Role Experience',
+        requestedCategories.includes('Role Experience')
+    );
     const socialBadges = usePrefetchCredentials(
         'Social Badge',
         requestedCategories.includes('Social Badge')
@@ -37,7 +46,24 @@ export const useConsentFlowCredentials = (contractDetails?: ConsentFlowContractD
         'Work History',
         requestedCategories.includes('Work History')
     );
+    const workExperience = usePrefetchCredentials(
+        'Work Experience',
+        requestedCategories.includes('Work Experience')
+    );
+    const payRate = usePrefetchCredentials('Pay Rate', requestedCategories.includes('Pay Rate'));
+    const workLifeBalance = usePrefetchCredentials(
+        'Work Life Balance',
+        requestedCategories.includes('Work Life Balance')
+    );
+    const jobStability = usePrefetchCredentials(
+        'Job Stability',
+        requestedCategories.includes('Job Stability')
+    );
     const skills = usePrefetchCredentials('Skill', requestedCategories.includes('Skill'));
+    const selfAssignedSkills = usePrefetchCredentials(
+        'Self-Assigned Skills',
+        requestedCategories.includes('Self-Assigned Skills')
+    );
     const ids = usePrefetchCredentials('ID', requestedCategories.includes('ID'));
     const memberships = usePrefetchCredentials(
         'Membership',
@@ -49,11 +75,19 @@ export const useConsentFlowCredentials = (contractDetails?: ConsentFlowContractD
     );
 
     const allCredentials = [
+        ...goals,
+        ...professionalTitle,
+        ...roleExperience,
         ...socialBadges,
         ...achievements,
         ...learningHistory,
         ...workHistory,
+        ...workExperience,
+        ...payRate,
+        ...workLifeBalance,
+        ...jobStability,
         ...skills,
+        ...selfAssignedSkills,
         ...ids,
         ...memberships,
         ...verifiableData,
@@ -62,11 +96,19 @@ export const useConsentFlowCredentials = (contractDetails?: ConsentFlowContractD
     const mappedCredentials: Partial<
         Record<CredentialCategory, { uri: string; vc: VC | undefined }[]>
     > = {
+        Goals: mapPrefetchedCredentials(goals),
+        'Professional Title': mapPrefetchedCredentials(professionalTitle),
+        'Role Experience': mapPrefetchedCredentials(roleExperience),
         'Social Badge': mapPrefetchedCredentials(socialBadges),
         Achievement: mapPrefetchedCredentials(achievements),
         'Learning History': mapPrefetchedCredentials(learningHistory),
         'Work History': mapPrefetchedCredentials(workHistory),
+        'Work Experience': mapPrefetchedCredentials(workExperience),
+        'Pay Rate': mapPrefetchedCredentials(payRate),
+        'Work Life Balance': mapPrefetchedCredentials(workLifeBalance),
+        'Job Stability': mapPrefetchedCredentials(jobStability),
         Skill: mapPrefetchedCredentials(skills),
+        'Self-Assigned Skills': mapPrefetchedCredentials(selfAssignedSkills),
         ID: mapPrefetchedCredentials(ids),
         Membership: mapPrefetchedCredentials(memberships),
         VerifiableData: mapPrefetchedCredentials(verifiableData),

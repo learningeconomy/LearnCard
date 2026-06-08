@@ -39,6 +39,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
         {
             name: 'Salary Information',
             description: 'Current salary and compensation type',
+            category: 'Pay Rate',
         }
     );
 

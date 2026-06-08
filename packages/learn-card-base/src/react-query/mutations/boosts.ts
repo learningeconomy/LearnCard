@@ -638,7 +638,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(freshSasBoost.uri, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
-                    category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
+                    category: CredentialCategoryEnum.selfAssignedSkills, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
                     credential: unsignedCredential,
                     skills,
@@ -653,7 +653,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
-                    category: CredentialCategoryEnum.skill,
+                    category: CredentialCategoryEnum.selfAssignedSkills,
                     status: 'PROVISIONAL',
                     skills,
                 });
@@ -674,7 +674,8 @@ export const useManageSelfAssignedSkillsBoost = () => {
             // addCredentialToWallet
             const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
 
-            const category = getDefaultCategoryForCredential(vc) || 'Skill';
+            const category =
+                getDefaultCategoryForCredential(vc) || CredentialCategoryEnum.selfAssignedSkills;
 
             const res = await wallet.index.LearnCloud.add({
                 id: uuidv4(),

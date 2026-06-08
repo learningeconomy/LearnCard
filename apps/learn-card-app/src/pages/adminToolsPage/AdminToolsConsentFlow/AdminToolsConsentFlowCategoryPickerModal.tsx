@@ -67,7 +67,9 @@ export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
     return (
         <div className="flex flex-col items-center gap-[10px] w-full py-4 px-2">
             {CONTRACT_CATEGORIES.map(category => {
-                const { title, IconWithShape } = contractCategoryNameToCategoryMetadata(category)!;
+                const metadata = contractCategoryNameToCategoryMetadata(category);
+                const title = metadata?.title ?? category;
+                const IconWithShape = metadata?.IconWithShape;
 
                 const isActive = _selectedCategories.includes(category);
 
@@ -86,7 +88,11 @@ export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
                             }
                         }}
                     >
-                        <IconWithShape className="h-[40px] w-[40px]" />
+                        {IconWithShape ? (
+                            <IconWithShape className="h-[40px] w-[40px]" />
+                        ) : (
+                            <div className="h-[40px] w-[40px] rounded-full bg-grayscale-200" />
+                        )}
                         <p className="text-[17px] text-grayscale-800 flex-1">{title}</p>
                         <div
                             className={`flex items-center justify-center rounded-full transition-colors h-[40px] w-[40px] min-h-[40px] min-w-[40px] overflow-hidden ${

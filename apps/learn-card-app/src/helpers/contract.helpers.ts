@@ -39,8 +39,15 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
     CredentialCategoryEnum.id,
-    CredentialCategoryEnum.verifiableData,
 
     ...AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
 ];
