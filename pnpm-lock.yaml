@@ -263,8 +263,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.3.1)
       '@capgo/capacitor-updater':
-        specifier: 8.45.10
-        version: 8.45.10(@capacitor/core@8.3.1)
+        specifier: 8.47.7
+        version: 8.47.7(@capacitor/core@8.3.1)
       '@digitalcredentials/jsonld':
         specifier: ^9.0.0
         version: 9.0.0
@@ -729,8 +729,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2(@capacitor/core@8.3.1)
       '@capgo/capacitor-updater':
-        specifier: 8.45.10
-        version: 8.45.10(@capacitor/core@8.3.1)
+        specifier: 8.47.7
+        version: 8.47.7(@capacitor/core@8.3.1)
       '@datadog/browser-logs':
         specifier: ^4.50.1
         version: 4.50.1
@@ -4173,7 +4173,7 @@ importers:
         version: 1.4.0
       openai:
         specifier: ^4.55.7
-        version: 4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
+        version: 4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
@@ -6325,8 +6325,8 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capgo/capacitor-updater@8.45.10':
-    resolution: {integrity: sha512-C7BG65RRJuEms/48uZ5IIUWT1+Sewi8mfistuTAiWs4ZHyd7P5OUmeZPikztysfgWfMEZCNRJHjfRUcdwFBWrg==}
+  '@capgo/capacitor-updater@8.47.7':
+    resolution: {integrity: sha512-Gi9onxH1ysaS40jirR9q69oS1qRidw13oAFzc7rvION+Omc/OLNkC2tqgEw55oVQloIokJKevRNQl4vjcmTliA==}
     peerDependencies:
       '@capacitor/core': ^8.0.0
 
@@ -33723,7 +33723,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.3.1
 
-  '@capgo/capacitor-updater@8.45.10(@capacitor/core@8.3.1)':
+  '@capgo/capacitor-updater@8.47.7(@capacitor/core@8.3.1)':
     dependencies:
       '@capacitor/core': 8.3.1
 
@@ -59705,7 +59705,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
+  openai@4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -59715,7 +59715,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
     transitivePeerDependencies:
       - encoding
