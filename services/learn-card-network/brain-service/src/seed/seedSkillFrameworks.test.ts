@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_SKILL_FRAMEWORKS } from './skill-frameworks.fixtures';
+
 const mockFs = vi.hoisted(() => ({
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
@@ -166,6 +168,60 @@ describe('seedSkillFrameworks staging env resolution', () => {
 
         await expect(resolveSkillFrameworkNeo4jConnection('staging')).rejects.toThrow(
             /your shell environment or package \.env files|pnpm env:pull --env=staging/i
+        );
+    });
+
+    it('only links the canonical seeded skill frameworks when adding an admin', async () => {
+        const seededIds = DEFAULT_SKILL_FRAMEWORKS.map(({ id }) => id);
+
+        mockQueryRun.mockImplementation((query: string, params?: Record<string, unknown>) => {
+            if (query.includes('WHERE f.id IN $frameworkIds')) {
+                expect(params?.frameworkIds).toEqual(seededIds);
+
+                return Promise.resolve({
+                    records: [
+                        {
+                            get: (key: string) => {
+                                if (key === 'frameworkIds') return seededIds;
+                                if (key === 'count') return seededIds.length;
+                                return undefined;
+                            },
+                        },
+                    ],
+                });
+            }
+
+            if (query.includes('MERGE (p)-[:MANAGES]->(f)')) {
+                return Promise.resolve({
+                    records: [
+                        {
+                            get: (key: string) => {
+                                if (key === 'r') return true;
+                                return undefined;
+                            },
+                        },
+                    ],
+                });
+            }
+
+            return Promise.resolve({ records: [] });
+        });
+
+        const { addSkillFrameworkAdmin } = await import('./seedSkillFrameworks');
+        const result = await addSkillFrameworkAdmin(mockQueryRun, 'profile-123');
+
+        expect(result).toBe(seededIds.length);
+        expect(mockQueryRun.mock.calls[0]?.[0]).toContain('WHERE f.id IN $frameworkIds');
+        expect(mockQueryRun.mock.calls[0]?.[1]).toEqual({ frameworkIds: seededIds });
+        expect(
+            mockQueryRun.mock.calls
+                .filter(([query]) => String(query).includes('MERGE (p)-[:MANAGES]->(f)'))
+                .map(([, params]) => params)
+        ).toEqual(
+            seededIds.map(frameworkId => ({
+                profileId: 'profile-123',
+                frameworkId,
+            }))
         );
     });
 });

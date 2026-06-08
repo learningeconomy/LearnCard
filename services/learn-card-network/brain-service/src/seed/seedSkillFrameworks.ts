@@ -43,6 +43,7 @@ type Neo4jConnectionCandidate = {
 const DEFAULT_OWNER_PROFILE_ID = 'network-seed';
 const DEFAULT_OWNER_DISPLAY_NAME = 'Network Seed';
 const DEFAULT_OWNER_SHORT_BIO = 'System profile for seeded skill frameworks';
+const SEEDED_SKILL_FRAMEWORK_IDS = DEFAULT_SKILL_FRAMEWORKS.map(({ id }) => id);
 const LOCAL_NEO4J_FALLBACK = {
     url: 'bolt://localhost:7687',
     username: 'neo4j',
@@ -339,7 +340,10 @@ export const addSkillFrameworkAdmin = async (
 ): Promise<number> => {
     const normalizedProfileId = normalizeProfileId(profileId);
     const frameworksResult = await run(
-        `MATCH (f:SkillFramework) RETURN collect(f.id) AS frameworkIds, count(f) AS count`
+        `MATCH (f:SkillFramework)
+         WHERE f.id IN $frameworkIds
+         RETURN collect(f.id) AS frameworkIds, count(f) AS count`,
+        { frameworkIds: SEEDED_SKILL_FRAMEWORK_IDS }
     );
 
     const frameworkCount = Number(frameworksResult.records[0]?.get('count') ?? 0);
