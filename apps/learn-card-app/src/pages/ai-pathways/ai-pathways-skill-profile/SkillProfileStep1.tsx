@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
@@ -150,7 +153,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 <TextInput
                     value={goalInput}
                     onChange={value => setGoalInput(value ?? '')}
-                    placeholder="I want to..."
+                    placeholder={m['aiPathways.iWantTo']()}
                     maxLength={35}
                     onKeyDown={e => {
                         if (e.key === 'Enter') {
@@ -194,7 +197,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 <TextInput
                     value={professionalTitle}
                     onChange={value => setProfessionalTitle(value ?? '')}
-                    placeholder="Professional title..."
+                    placeholder={m['aiPathways.professionalTitle']()}
                 />
             </div>
 

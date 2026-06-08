@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import GrowSkillsCarouselSection from './GrowSkillsCarouselSection';
@@ -56,7 +58,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 />
 
                 <GrowSkillsCarouselSection
-                    title="Courses"
+                    title={m['aiPathways.courses']()}
                     items={schoolPrograms}
                     onViewAll={() => openGrowSkillsModal('Courses')}
                     renderItem={program => <GrowSkillsCourseItem program={program} />}
@@ -64,7 +66,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 />
 
                 <GrowSkillsCarouselSection
-                    title="Media"
+                    title={m['aiPathways.media']()}
                     items={mediaCards}
                     onViewAll={() => openGrowSkillsModal('Media')}
                     renderItem={card =>

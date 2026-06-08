@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { v4 as uuidv4 } from 'uuid';
@@ -427,7 +430,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     onChange={checked =>
                                         updateExperience(index, 'isCurrentJob', checked)
                                     }
-                                    label="Current Job"
+                                    label={m['aiPathways.currentJob']()}
                                 />
                             </div>
                             <TextInput
@@ -482,7 +485,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     onChange={checked =>
                                         updateExperience(index, 'workFromHome', checked)
                                     }
-                                    label="Work from home"
+                                    label={m['aiPathways.workFromHome']()}
                                 />
                             </div>
                             <TextInput
@@ -515,7 +518,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     value={experience.startDate}
                                     onChange={date => updateExperience(index, 'startDate', date)}
                                     isMobile={isMobile}
-                                    label="Month, Year"
+                                    label={m['aiPathways.monthYear']()}
                                 />
                             </div>
                             <div className="flex flex-col gap-[10px] flex-1">
@@ -531,7 +534,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                         value={experience.endDate}
                                         onChange={date => updateExperience(index, 'endDate', date)}
                                         isMobile={isMobile}
-                                        label="Month, Year"
+                                        label={m['aiPathways.monthYear']()}
                                         minDate={experience.startDate || undefined}
                                     />
                                 )}

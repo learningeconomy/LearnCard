@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { IonSpinner } from '@ionic/react';
 import { X } from 'lucide-react';
 import {
@@ -136,7 +138,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                 </div>
 
                 <PathwaySearchInput
-                    placeholder="Skill, goal, or job..."
+                    placeholder={m['aiPathways.skillGoalJobAlt']()}
                     value={search}
                     onValueChange={setSearch}
                     onSearchSubmit={query => {
@@ -182,7 +184,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                     })}
                 </div>
 
-                <SearchInput placeholder="Filter results..." value={filter} onChange={setFilter} />
+                <SearchInput placeholder={m['aiPathways.filterResults']()} value={filter} onChange={setFilter} />
 
                 {isLoading && visibleCards.length === 0 ? (
                     <div className="flex items-center justify-center py-[40px]">

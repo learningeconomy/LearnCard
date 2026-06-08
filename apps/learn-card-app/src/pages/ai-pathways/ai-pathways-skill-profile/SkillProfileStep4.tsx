@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { RadioGroup, useVerifiableData } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
@@ -15,22 +18,22 @@ type SkillProfileStep4Props = {
     handleBack: () => void;
 };
 
-const WORK_LIFE_BALANCE_OPTIONS = [
-    { value: 'terrible', label: 'Terrible, Unfair' },
-    { value: 'not_adequate', label: 'Not Adequate' },
-    { value: 'average', label: 'Average' },
-    { value: 'good_enough', label: 'Good Enough' },
-    { value: 'satisfied', label: 'Satisfied & Happy' },
-    { value: 'paradise', label: "It's Paradise" },
+const getWorkLifeBalanceOptions = () => [
+    { value: 'terrible', label: m['aiPathways.workLife.terrible']() },
+    { value: 'not_adequate', label: m['aiPathways.workLife.notAdequate']() },
+    { value: 'average', label: m['aiPathways.workLife.average']() },
+    { value: 'good_enough', label: m['aiPathways.workLife.goodEnough']() },
+    { value: 'satisfied', label: m['aiPathways.workLife.satisfied']() },
+    { value: 'paradise', label: m['aiPathways.workLife.paradise']() },
 ];
 
-const JOB_STABILITY_OPTIONS = [
-    { value: 'very_uncertain', label: 'Very Uncertain' },
-    { value: 'poor', label: 'Poor' },
-    { value: 'average', label: 'Average' },
-    { value: 'okay', label: "It's Okay" },
-    { value: 'great', label: 'Great' },
-    { value: 'confident', label: 'Confident' },
+const getJobStabilityOptions = () => [
+    { value: 'very_uncertain', label: m['aiPathways.jobStability.veryUncertain']() },
+    { value: 'poor', label: m['aiPathways.jobStability.poor']() },
+    { value: 'average', label: m['aiPathways.jobStability.average']() },
+    { value: 'okay', label: m['aiPathways.jobStability.okay']() },
+    { value: 'great', label: m['aiPathways.jobStability.great']() },
+    { value: 'confident', label: m['aiPathways.jobStability.confident']() },
 ];
 
 const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handleBack }) => {
@@ -77,7 +80,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             <RadioGroup
                 value={workLifeBalance}
                 onChange={setWorkLifeBalance}
-                options={WORK_LIFE_BALANCE_OPTIONS}
+                options={getWorkLifeBalanceOptions()}
                 name="work_life_balance"
                 columns={2}
                 allowDeselect
@@ -91,7 +94,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             <RadioGroup
                 value={jobStability}
                 onChange={setJobStability}
-                options={JOB_STABILITY_OPTIONS}
+                options={getJobStabilityOptions()}
                 name="job_stability"
                 columns={2}
                 allowDeselect

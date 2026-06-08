@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
@@ -275,7 +277,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                 <PathwaySearchInput
                     variant="simple"
-                    placeholder="Search by skill, goal, or job..."
+                    placeholder={m['aiPathways.searchSkillGoalJob']()}
                     value={search}
                     onValueChange={setSearch}
                     onSearchSubmit={setSearch}

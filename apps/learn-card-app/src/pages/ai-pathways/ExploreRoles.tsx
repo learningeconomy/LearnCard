@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { Search, X } from 'lucide-react';
 
 import {
@@ -167,7 +169,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                 </div>
 
                 <PathwaySearchInput
-                    placeholder="Skill, goal or job..."
+                    placeholder={m['aiPathways.skillGoalJob']()}
                     value={searchQuery}
                     onValueChange={setSearchQuery}
                     onSearchSubmit={query => {
@@ -184,7 +186,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                         type="text"
                         value={inlineFilter}
                         onChange={e => setInlineFilter(e.target.value)}
-                        placeholder="Filter results..."
+                        placeholder={m['aiPathways.filterResults']()}
                         className="w-full py-3 px-4 pl-10 border border-grayscale-200 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-600 focus:outline-none focus:border-transparent bg-white"
                     />
                 </div>
