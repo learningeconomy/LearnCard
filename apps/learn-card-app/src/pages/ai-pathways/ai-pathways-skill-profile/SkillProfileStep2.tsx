@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-import { m } from '../../../paraglide/messages.js';
-
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { v4 as uuidv4 } from 'uuid';
