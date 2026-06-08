@@ -117,7 +117,7 @@ export default defineConfig(({ mode }) => {
             __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
-                readDefaultChannel(path.join(__dirname, 'capacitor.config.ts')) ?? '',
+                readDefaultChannel(path.join(__dirname, 'capacitor.config.ts')) ?? ''
             ),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
             // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
@@ -135,8 +135,9 @@ export default defineConfig(({ mode }) => {
                 ? `"${process.env.SENTRY_DSN}"`
                 : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
             // Not yet in TenantConfig — keep as-is
-            GOOGLE_MAPS_API_KEY:
-                process.env.GOOGLE_MAPS_API_KEY && `"${process.env.GOOGLE_MAPS_API_KEY}"`,
+            GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY
+                ? `"${process.env.GOOGLE_MAPS_API_KEY}"`
+                : 'undefined',
             // DEPRECATED — now in config.json → branding.defaultTheme
             APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
             // Not yet in TenantConfig — keep as-is
