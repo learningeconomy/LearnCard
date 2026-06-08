@@ -413,7 +413,11 @@ export const getBoostRecipients = async (
         from: sender.profileId,
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
-        status: (coalesceStatus(sent.status, received?.status) as 'active' | 'revoked' | 'suspended' | undefined),
+        status: coalesceStatus(sent.status, received?.status) as
+            | 'active'
+            | 'revoked'
+            | 'suspended'
+            | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -507,7 +511,11 @@ export const getBoostRecipientsSkipLimit = async (
         from: sender.profileId,
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
-        status: (coalesceStatus(sent.status, received?.status) as 'active' | 'revoked' | 'suspended' | undefined),
+        status: coalesceStatus(sent.status, received?.status) as
+            | 'active'
+            | 'revoked'
+            | 'suspended'
+            | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -1538,7 +1546,11 @@ export const getBoostRecipientsWithChildren = async (
                 received: received?.date,
                 boostUri: getBoostUri(boostId, domain),
                 ...(credential && { uri: getCredentialUri(credential.id, domain) }),
-                status: (coalesceStatus(sent.status, received?.status) as 'active' | 'revoked' | 'suspended' | undefined),
+                status: coalesceStatus(sent.status, received?.status) as
+                    | 'active'
+                    | 'revoked'
+                    | 'suspended'
+                    | undefined,
             };
         });
 

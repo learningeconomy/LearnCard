@@ -30,22 +30,22 @@ export interface ProfileSnapshot {
 export const AnalyticsEvents = {
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
-    
+
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
     BOOST_CMS_CONFIRMATION: 'boostCMS_confirmation',
     BOOST_CMS_DATA_ENTRY: 'boostCMS_data_entry',
-    
+
     // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
     GENERATE_CLAIM_LINK: 'generate_claim_link',
-    
+
     // Boost Sending
     SELF_BOOST: 'self_boost',
     SEND_BOOST: 'send_boost',
     SEND_BOOST_WITH_ATTACHMENTS: 'send_boost_with_attachments',
-    
+
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
 
@@ -136,7 +136,7 @@ export const AnalyticsEvents = {
      */
     OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
 
-    /** 
+    /**
      * Fired when the resilience orchestrator gave up on an error
      * whose classified `kind` suggested it might have been
      * recoverable (wallet / request_invalid / unknown). Used to mine
@@ -478,13 +478,7 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
         nodeId: string;
         /** Resolved `ActionDescriptor.kind` at click time. */
-        kind:
-            | 'in-app-route'
-            | 'app-listing'
-            | 'ai-session'
-            | 'external-url'
-            | 'mcp-tool'
-            | 'none';
+        kind: 'in-app-route' | 'app-listing' | 'ai-session' | 'external-url' | 'mcp-tool' | 'none';
         /** How the resolver arrived at that kind. */
         source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
         /**

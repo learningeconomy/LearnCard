@@ -285,8 +285,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton =
-        acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
+    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
         claimStatusText = 'Claimed';

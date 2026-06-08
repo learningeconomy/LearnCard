@@ -252,8 +252,8 @@ export function useIntegrationActivity(
                     boostUris: boostUri
                         ? [boostUri]
                         : !integrationId && !listingId && boostUris.length > 0
-                          ? boostUris
-                          : undefined,
+                        ? boostUris
+                        : undefined,
                     integrationId,
                     listingId,
                     boostUri,

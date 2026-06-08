@@ -110,9 +110,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
     // Whether we can show credential management actions (gated on revoke permission).
     // An undefined status means active — only 'revoked' hides the actions.
     const canManage =
-        hasBoostAndRecipient &&
-        !!boostPermissions?.canRevoke &&
-        recipientStatus !== 'revoked';
+        hasBoostAndRecipient && !!boostPermissions?.canRevoke && recipientStatus !== 'revoked';
 
     const handleCredentialAction = async (action: 'revoke' | 'suspend' | 'unsuspend') => {
         if (!item.boostUri || !item.recipientProfile?.profileId) return;
@@ -132,8 +130,8 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                         action === 'revoke'
                             ? revokeRecipient
                             : action === 'suspend'
-                              ? suspendRecipient
-                              : unsuspendRecipient;
+                            ? suspendRecipient
+                            : unsuspendRecipient;
                     await mutation.mutateAsync({
                         boostUri: item.boostUri!,
                         recipientProfileId: item.recipientProfile!.profileId,
@@ -145,15 +143,17 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                         suspend: AnalyticsEvents.CREDENTIAL_SUSPENDED,
                         unsuspend: AnalyticsEvents.CREDENTIAL_UNSUSPENDED,
                     };
-                    track(eventMap[action], { boostUri: item.boostUri!, surface: 'issuer-dashboard' });
+                    track(eventMap[action], {
+                        boostUri: item.boostUri!,
+                        surface: 'issuer-dashboard',
+                    });
                     // Invalidate activity queries so the view refreshes
                     queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
                     queryClient.invalidateQueries({ queryKey: ['getActivityChain'] });
                     queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
-                    presentToast(
-                        `${recipientName}'s credential has been ${noun}.`,
-                        { type: ToastTypeEnum.Success }
-                    );
+                    presentToast(`${recipientName}'s credential has been ${noun}.`, {
+                        type: ToastTypeEnum.Success,
+                    });
                 } catch (error) {
                     presentToast(
                         `Failed to ${verb} credential for ${recipientName}. Please try again.`,
@@ -582,10 +582,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                                 </p>
                                 <div className="flex flex-col gap-3">
                                     {actions.map(action => (
-                                        <div
-                                            key={action.key}
-                                            className="flex items-start gap-3"
-                                        >
+                                        <div key={action.key} className="flex items-start gap-3">
                                             <button
                                                 className={`flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex-shrink-0 w-32 disabled:opacity-60 ${action.btn}`}
                                                 onClick={() => handleCredentialAction(action.key)}

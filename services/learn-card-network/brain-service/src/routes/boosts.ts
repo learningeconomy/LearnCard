@@ -1917,7 +1917,9 @@ export const boostsRouter = t.router({
             let credential;
             if (credentialUri) {
                 const { getCredentialByUri } = await import('@accesslayer/credential/read');
-                const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+                const resolvedCredential = await getCredentialByUri(
+                    decodeURIComponent(credentialUri)
+                );
                 if (!resolvedCredential) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
@@ -2036,7 +2038,9 @@ export const boostsRouter = t.router({
             let credential;
             if (credentialUri) {
                 const { getCredentialByUri } = await import('@accesslayer/credential/read');
-                const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+                const resolvedCredential = await getCredentialByUri(
+                    decodeURIComponent(credentialUri)
+                );
                 if (!resolvedCredential) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
@@ -2140,7 +2144,9 @@ export const boostsRouter = t.router({
             let credential;
             if (credentialUri) {
                 const { getCredentialByUri } = await import('@accesslayer/credential/read');
-                const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+                const resolvedCredential = await getCredentialByUri(
+                    decodeURIComponent(credentialUri)
+                );
                 if (!resolvedCredential) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
