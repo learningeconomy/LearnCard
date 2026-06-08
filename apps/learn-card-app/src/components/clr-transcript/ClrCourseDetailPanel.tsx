@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import X from '../svgs/X';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FlatIcon } from './ClrStatCard';
+import ClrCompetencyBlock from './ClrCompetencyBlock';
 import ClrGradeScale from './ClrGradeScale';
 import ClrProvenanceTable from './ClrProvenanceTable';
 import ClrAlignmentList from './ClrAlignmentList';
@@ -245,15 +246,13 @@ const ClrCourseDetailPanel: React.FC<{
                             </span>
                         </button>
                         {competenciesOpen && (
-                            <div className="px-4 pb-4 flex flex-wrap gap-2">
+                            <div className="px-4 pb-4 space-y-4">
                                 {courseCompetencies.map(c => (
-                                    <span
+                                    <ClrCompetencyBlock
                                         key={c.sourceCredentialId}
-                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-grayscale-700 bg-grayscale-50 border border-grayscale-200 rounded-full px-3 py-1.5"
-                                    >
-                                        <span className="text-sm leading-none">🔡</span>
-                                        {c.name?.value ?? 'Competency'}
-                                    </span>
+                                        competency={c}
+                                        adminMode={adminMode}
+                                    />
                                 ))}
                             </div>
                         )}
