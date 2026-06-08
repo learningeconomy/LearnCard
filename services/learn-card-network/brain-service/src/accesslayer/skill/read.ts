@@ -253,9 +253,7 @@ export const countSkillsInFramework = async (
     onlyCountCompetencies: boolean = false
 ): Promise<number> => {
     const buildTypeFilter = (alias: string): string =>
-        onlyCountCompetencies
-            ? `(${alias}.type = 'competency' OR ${alias}.type = 'skill')`
-            : 'true';
+        onlyCountCompetencies ? `${alias}.type = 'competency'` : 'true';
 
     if (!skillId) {
         // Count all skills in the framework
