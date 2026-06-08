@@ -70,6 +70,7 @@ export const CREDENTIAL_CATEGORIES = [
     'AI Assessment',
     'AI Pathway',
     'AI Insight',
+    'VerifiableData',
 ] as const;
 
 export type CredentialCategory = (typeof CREDENTIAL_CATEGORIES)[number];

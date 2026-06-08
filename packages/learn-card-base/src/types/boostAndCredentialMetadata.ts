@@ -96,6 +96,8 @@ export enum CredentialCategoryEnum {
     aiInsight = 'AI Insight',
     aiAssessment = 'AI Assessment',
 
+    verifiableData = 'VerifiableData',
+
     // todo
     membership = 'Membership',
     goals = 'Goals',
@@ -991,6 +993,20 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         walletColor: '',
         contractCredentialTypeOverride: 'ai-assessment',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.aiAssessment],
+    },
+    [CredentialCategoryEnum.verifiableData]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Verifiable Data',
+        title: 'Verifiable Data',
+        titleSingular: 'Verifiable Data',
+        plural: 'Verifiable Data',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: PuzzlePiece,
+        IconWithShape: Hexagon,
+        ShapeIcon: Hexagon,
     },
 
     // Obsolete / deprecated / unused / not implemented yet

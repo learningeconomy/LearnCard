@@ -11,6 +11,7 @@ import {
     LaunchPadAppListItem,
     boostCategoryMetadata,
     categoryMetadata,
+    contractCategoryNameToCategoryMetadata,
     getBaseUrl,
 } from 'learn-card-base';
 import { walletPageData } from '../pages/wallet/constants';
@@ -39,6 +40,7 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
     CredentialCategoryEnum.id,
+    CredentialCategoryEnum.verifiableData,
 
     ...AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
 ];
@@ -160,7 +162,8 @@ export const getFullTermsForContract = (
 };
 
 export const getInfoFromContractKey = (key: string) => {
-    const options = boostCategoryMetadata[key as BoostCategoryOptionsEnum];
+    const metadata = contractCategoryNameToCategoryMetadata(key);
+    const options = metadata ?? boostCategoryMetadata[key as BoostCategoryOptionsEnum];
 
     // prefer the wallet title + icon
     const walletOptions = walletPageData.find(data => {
@@ -187,11 +190,11 @@ export const getInfoFromContractKey = (key: string) => {
     if (options) {
         return {
             IconComponent: options.IconComponent,
-            iconSrc: walletOptions?.iconSrc,
+            iconSrc: options.CategoryImage,
             title: walletOptions?.title ?? options.title,
-            plural: `${key}s`,
+            plural: options.plural ?? `${key}s`,
             iconClassName: 'text-white',
-            iconCircleClass: `bg-${options.color}`,
+            iconCircleClass: `bg-${options.color ?? 'cyan-700'}`,
         };
     } else {
         return {

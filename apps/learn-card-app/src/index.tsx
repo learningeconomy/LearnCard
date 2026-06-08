@@ -20,7 +20,9 @@ import * as Sentry from '@sentry/browser';
 (async () => {
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
+    console.time('tenantConfig');
     const tenantConfig = await bootstrapTenantConfig();
+    console.time('tenantConfig');
 
     if (Capacitor.isNativePlatform()) {
         try {
@@ -35,7 +37,7 @@ import * as Sentry from '@sentry/browser';
             // non-blocking
         }
     }
-    
+
     // Disable LaunchDarkly logging
     const ldOptions = {
         options: {
@@ -54,7 +56,9 @@ import * as Sentry from '@sentry/browser';
         }, 10_000);
     }
 
+    console.time('launchdarkly');
     const LDProvider = await asyncWithLDProvider({ ...LAUNCH_DARKLY_CONFIG, ...ldOptions });
+    console.timeEnd('launchdarkly');
 
     const container = document.getElementById('root');
     if (container) {
