@@ -60,6 +60,21 @@ const STAGING_NEO4J_ENV_PATHS = [
     resolve(process.cwd(), '../../../packages/learn-card-network/cloud-client/.env'),
     resolve(process.cwd(), '../../../services/learn-card-network/brain-service/.env.staging'),
 ];
+const BRAIN_SERVICE_STAGING_ENV_PATH = resolve(
+    process.cwd(),
+    '../../../services/learn-card-network/brain-service/.env.staging'
+);
+const BRAIN_SERVICE_STAGING_ENV_DISPLAY_PATH =
+    'services/learn-card-network/brain-service/.env.staging';
+
+let hasWarnedMissingBrainServiceStagingEnv = false;
+
+export const getStagingNeo4jSourceDescription = (): string =>
+    existsSync(BRAIN_SERVICE_STAGING_ENV_PATH)
+        ? BRAIN_SERVICE_STAGING_ENV_DISPLAY_PATH
+        : 'your shell environment or package .env files';
+
+const hasBrainServiceStagingEnv = (): boolean => existsSync(BRAIN_SERVICE_STAGING_ENV_PATH);
 
 const normalizeNeo4jUriForStaging = (uri: string): string => {
     const trimmedUri = uri.trim();
@@ -82,6 +97,14 @@ const loadEnvFile = (filePath: string): Record<string, string> => {
 
 const loadStagingNeo4jEnv = (): Record<string, string> => {
     const loaded: Record<string, string> = {};
+
+    if (!hasWarnedMissingBrainServiceStagingEnv && !existsSync(BRAIN_SERVICE_STAGING_ENV_PATH)) {
+        hasWarnedMissingBrainServiceStagingEnv = true;
+
+        console.warn(
+            '\x1b[33mWARNING: services/learn-card-network/brain-service/.env.staging is missing. Run `pnpm env:pull --env=staging` from the repo root to generate it.\x1b[0m'
+        );
+    }
 
     for (const filePath of STAGING_NEO4J_ENV_PATHS) {
         const values = loadEnvFile(filePath);
@@ -134,15 +157,19 @@ const buildNeo4jErrorSummary = (error: unknown): string => {
     return String(error);
 };
 
-const explainNeo4jConnectionError = (error: string): string => {
+const explainNeo4jConnectionError = (error: string, stage: 'local' | 'staging'): string => {
     const normalized = error.toLowerCase();
 
     if (normalized.includes('no routing servers available')) {
-        return 'This URI points at a routing database, but the local seed script needs a direct Bolt connection. Try the local Docker default first.';
+        return stage === 'staging'
+            ? 'The database URI looks like a routing endpoint, but this command connects directly. Try the value from `services/learn-card-network/brain-service/.env.staging` or set `NEO4J_URI` to the current staging database URI.'
+            : 'The database URI looks like a routing endpoint, but this command connects directly. Try the local Docker default or a direct `bolt://` URI.';
     }
 
     if (normalized.includes('failed to establish connection') || normalized.includes('timed out')) {
-        return 'Neo4j could not be reached on that host and port. Make sure the container is running and 7687 is published to your machine.';
+        return stage === 'staging'
+            ? 'Neo4j could not be reached at that host. Double-check the URI in `services/learn-card-network/brain-service/.env.staging` and make sure the staging database is reachable from your machine.'
+            : 'Neo4j could not be reached on that host and port. Make sure the local container is running and 7687 is published to your machine.';
     }
 
     if (normalized.includes('authentication') || normalized.includes('unauthorized')) {
@@ -162,6 +189,9 @@ const buildNeo4jConnectionCandidates = (
 
     if (stage === 'staging' && toBoolean(process.env.SKILL_FRAMEWORKS_DEBUG)) {
         console.log(
+            `[skill-frameworks] staging Neo4j values are sourced from ${getStagingNeo4jSourceDescription()}`
+        );
+        console.log(
             `[skill-frameworks] staging Neo4j env resolved to ${
                 envUri ? normalizeNeo4jUriForStaging(envUri) : '<missing uri>'
             } (username=${envUsername ? 'set' : 'missing'}, password=${
@@ -173,25 +203,26 @@ const buildNeo4jConnectionCandidates = (
     if (stage === 'staging' && envUri && envUsername && envPassword) {
         const normalizedBoltUri = normalizeNeo4jUriToBolt(envUri);
         const normalizedRoutingUri = normalizeNeo4jUriForStaging(envUri);
+        const stagingSourceDescription = getStagingNeo4jSourceDescription();
 
         return [
             ...(normalizedBoltUri !== envUri
                 ? [
                       {
-                          label: 'environment variables (direct Bolt)',
+                          label: 'staging env (direct connection)',
                           url: normalizedBoltUri,
                           username: envUsername,
                           password: envPassword,
-                          hint: 'Uses the same credentials but swaps the neo4j routing scheme for direct Bolt.',
+                          hint: `Uses values from ${stagingSourceDescription}. This is the first connection we try.`,
                       },
                   ]
                 : []),
             {
-                label: 'environment variables',
+                label: 'staging env (configured URI)',
                 url: normalizedRoutingUri,
                 username: envUsername,
                 password: envPassword,
-                hint: 'Uses the NEO4J_* values already set in your shell or .env file, normalizing a bare Aura host when needed.',
+                hint: `Uses the URI from ${stagingSourceDescription} as configured, normalizing a bare Aura host when needed.`,
             },
         ];
     }
@@ -235,6 +266,7 @@ export const resolveSkillFrameworkNeo4jConnection = async (
 }> => {
     const candidates = buildNeo4jConnectionCandidates(stage);
     const failures: Array<{ candidate: Neo4jConnectionCandidate; error: string }> = [];
+    const stagingEnvFileExists = stage === 'staging' ? hasBrainServiceStagingEnv() : false;
 
     for (const candidate of candidates) {
         const connection = new Neogma({
@@ -257,9 +289,27 @@ export const resolveSkillFrameworkNeo4jConnection = async (
             ({ candidate, error }) =>
                 `- ${candidate.label} (${candidate.url}) — ${
                     candidate.hint
-                }\n  ${explainNeo4jConnectionError(error)}`
+                }\n  ${explainNeo4jConnectionError(error, stage)}`
         )
         .join('\n');
+
+    const nextSteps =
+        stage === 'staging'
+            ? stagingEnvFileExists
+                ? [
+                      `- If you are overriding the database in your shell, export \`NEO4J_URI\`, \`NEO4J_USERNAME\`, and \`NEO4J_PASSWORD\` before running the command again.`,
+                      `- Confirm the URI in ${BRAIN_SERVICE_STAGING_ENV_DISPLAY_PATH} points to the current staging Neo4j instance.`,
+                  ]
+                : [
+                      `- Re-pull the staging env file from the repo root: \`pnpm env:pull --env=staging\`.`,
+                      `- If you are overriding the database in your shell, export \`NEO4J_URI\`, \`NEO4J_USERNAME\`, and \`NEO4J_PASSWORD\` before running the command again.`,
+                      `- After the file is generated, confirm the URI in ${BRAIN_SERVICE_STAGING_ENV_DISPLAY_PATH} points to the current staging Neo4j instance.`,
+                  ]
+            : [
+                  '- If Neo4j is running in local Docker, make sure the container is up and port 7687 is published to localhost.',
+                  '- If you are using a direct local database URI, verify the host, port, username, and password.',
+                  '- If you are running the script inside Docker, the fallback hostname is usually bolt://neo4j:7687.',
+              ];
 
     throw new Error(
         [
@@ -269,9 +319,7 @@ export const resolveSkillFrameworkNeo4jConnection = async (
             failureLines,
             '',
             'What to do next:',
-            '- If Neo4j is running in local Docker, make sure the container is up and port 7687 is published to localhost.',
-            '- If you are using a custom database URL, export NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD before running the command again.',
-            '- If you are running the script inside Docker, the fallback hostname is usually bolt://neo4j:7687.',
+            ...nextSteps,
         ].join('\n')
     );
 };

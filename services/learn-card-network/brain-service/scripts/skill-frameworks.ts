@@ -9,6 +9,7 @@ import { parse as parseDotenv } from 'dotenv';
 import {
     addSkillFrameworkAdmin,
     frameworkExists,
+    getStagingNeo4jSourceDescription,
     resolveSkillFrameworkNeo4jConnection,
     seedSkillFrameworkFixtures,
 } from '../src/seed/seedSkillFrameworks';
@@ -151,7 +152,12 @@ const ensureStageMessage = (stage: Stage, usedDefaultStage: boolean): void => {
         console.log('No environment specified. Defaulting to local.');
     }
 
-    console.log(`Using ${stage} environment.`);
+    if (stage === 'staging') {
+        console.log(`Using staging environment from ${getStagingNeo4jSourceDescription()}.`);
+        return;
+    }
+
+    console.log('Using local environment.');
 };
 
 const countProfileById = async (

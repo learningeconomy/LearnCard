@@ -82,4 +82,90 @@ describe('seedSkillFrameworks staging env resolution', () => {
         expect(result.candidate.username).toBe('neo4j');
         expect(result.candidate.password).toBe('service-password');
     });
+
+    it('includes staging-specific guidance when the connection fails', async () => {
+        mockFs.existsSync.mockImplementation(
+            (filePath: string) =>
+                filePath.includes('brain-client/.env') ||
+                filePath.includes('cloud-client/.env') ||
+                filePath.endsWith('/services/learn-card-network/brain-service/.env.staging')
+        );
+
+        mockFs.readFileSync.mockImplementation((filePath: string) => {
+            if (filePath.includes('brain-client/.env')) {
+                return [
+                    'NEO4J_URI=neo4j+s://ab9edde2.databases.neo4j.io',
+                    'NEO4J_USERNAME=neo4j',
+                    'NEO4J_PASSWORD=package-password',
+                ].join('\n');
+            }
+
+            if (filePath.includes('cloud-client/.env')) {
+                return [
+                    'NEO4J_URI=neo4j+s://ab9edde2.databases.neo4j.io',
+                    'NEO4J_USERNAME=neo4j',
+                    'NEO4J_PASSWORD=package-password',
+                ].join('\n');
+            }
+
+            if (filePath.endsWith('/services/learn-card-network/brain-service/.env.staging')) {
+                return [
+                    'NEO4J_URI="7f5bdf65.databases.neo4j.io"',
+                    'NEO4J_USERNAME="neo4j"',
+                    'NEO4J_PASSWORD="service-password"',
+                ].join('\n');
+            }
+
+            return '';
+        });
+        mockQueryRun.mockRejectedValue(new Error('timed out'));
+
+        const { resolveSkillFrameworkNeo4jConnection } = await import('./seedSkillFrameworks');
+
+        await expect(resolveSkillFrameworkNeo4jConnection('staging')).rejects.toThrow(
+            /\.env\.staging|pnpm env:pull --env=staging|staging Neo4j instance/i
+        );
+    });
+
+    it('falls back to shell/package env wording when .env.staging is missing', async () => {
+        mockFs.existsSync.mockImplementation((filePath: string) => {
+            if (filePath.endsWith('/services/learn-card-network/brain-service/.env.staging')) {
+                return false;
+            }
+
+            return filePath.includes('brain-client/.env') || filePath.includes('cloud-client/.env');
+        });
+
+        mockFs.readFileSync.mockImplementation((filePath: string) => {
+            if (filePath.includes('brain-client/.env')) {
+                return [
+                    'NEO4J_URI=neo4j+s://ab9edde2.databases.neo4j.io',
+                    'NEO4J_USERNAME=neo4j',
+                    'NEO4J_PASSWORD=package-password',
+                ].join('\n');
+            }
+
+            if (filePath.includes('cloud-client/.env')) {
+                return [
+                    'NEO4J_URI=neo4j+s://ab9edde2.databases.neo4j.io',
+                    'NEO4J_USERNAME=neo4j',
+                    'NEO4J_PASSWORD=package-password',
+                ].join('\n');
+            }
+
+            return '';
+        });
+        mockQueryRun.mockRejectedValue(new Error('timed out'));
+
+        const { resolveSkillFrameworkNeo4jConnection, getStagingNeo4jSourceDescription } =
+            await import('./seedSkillFrameworks');
+
+        expect(getStagingNeo4jSourceDescription()).toBe(
+            'your shell environment or package .env files'
+        );
+
+        await expect(resolveSkillFrameworkNeo4jConnection('staging')).rejects.toThrow(
+            /your shell environment or package \.env files|pnpm env:pull --env=staging/i
+        );
+    });
 });
