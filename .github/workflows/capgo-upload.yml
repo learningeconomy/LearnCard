@@ -104,7 +104,12 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-pnpm-store-
 
+            # Skip mongodb-memory-server's postinstall Mongo binary download — a
+            # backend-only transitive dep, unused by the frontend build. Its cached
+            # `.tgz.downloading` temp file has flaked install with ENOENT.
             - name: Install dependencies
+              env:
+                  MONGOMS_DISABLE_POSTINSTALL: '1'
               run: pnpm install --no-frozen-lockfile
 
             # Prepare tenant config for learn-card-app builds. For other projects
