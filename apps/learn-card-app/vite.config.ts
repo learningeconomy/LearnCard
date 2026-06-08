@@ -11,6 +11,28 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
+import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
+
+/**
+ * Fail the build/dev start if any file imports paraglide/messages.js twice
+ * (declares `m` twice → runtime SyntaxError). See scripts/check-i18n-imports.mjs.
+ */
+const i18nImportGuard = () => ({
+    name: 'i18n-duplicate-import-guard',
+    buildStart() {
+        const offenders = findDuplicateMessageImports();
+        if (offenders.length) {
+            const detail = offenders
+                .map(o => `  ${o.file}\n${o.lines.map(l => `      ${l}`).join('\n')}`)
+                .join('\n');
+            this.error(
+                `Duplicate paraglide/messages.js import(s) — causes "Identifier 'm' has ` +
+                    `already been declared" at runtime:\n${detail}\n  Fix: keep ONE import per file.`
+            );
+        }
+    },
+});
+
 /**
  * Resolve a short build commit SHA at config-eval time.
  *
@@ -60,6 +82,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
         plugins: [
+            i18nImportGuard(),
             react(),
             svgr(),
             tsconfigPaths({ root: '../../' }),

@@ -145,6 +145,7 @@
         "generate-assets": "npx tsx scripts/generate-tenant-assets.ts",
         "validate-configs": "npx tsx scripts/validate-tenant-configs.ts",
         "validate-themes": "npx tsx scripts/validate-theme-schemas.ts",
+    "check:i18n-imports": "node scripts/check-i18n-imports.mjs",
         "create-tenant": "npx tsx scripts/create-tenant.ts",
         "lc": "npx tsx scripts/lc.ts",
         "config-editor": "npx tsx scripts/config-editor.ts",
