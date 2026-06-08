@@ -22,6 +22,12 @@ type BoostOptionsMenuProps = {
     menuType?: BoostMenuType;
     categoryType?: string;
     handleManageIssuances?: () => void;
+    /**
+     * For managed boosts: whether the boost is a DRAFT. Deleting is only offered for drafts
+     * (a LIVE managed boost has issued credentials). When omitted, delete is left enabled to
+     * preserve existing behavior for non-status-aware callers.
+     */
+    isDraft?: boolean;
 };
 
 const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
@@ -33,6 +39,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     menuType,
     categoryType,
     handleManageIssuances,
+    isDraft,
 }) => {
     const confirm = useConfirmation();
 
@@ -104,7 +111,12 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
         });
     }
 
-    if (menuType === BoostMenuType.managed || record?.id) {
+    // Managed boosts: only offer Delete on DRAFTs (a LIVE managed boost has issued
+    // credentials). `isDraft === undefined` preserves prior always-on behavior for callers
+    // that don't pass status. Other menu types fall back to "has a record" as before.
+    const canDelete = menuType === BoostMenuType.managed ? isDraft !== false : Boolean(record?.id);
+
+    if (canDelete) {
         boostMenuOptions.push({
             id: 1,
             title: 'Delete',

@@ -241,6 +241,54 @@ const buildInboxConfig = (
     return config;
 };
 
+/**
+ * Resolve the credential instance to act on for a boost-recipient lifecycle action
+ * (revoke / suspend / unsuspend).
+ *
+ * If `credentialUri` is provided, resolves that specific instance and verifies it is an
+ * INSTANCE_OF the boost (throws NOT_FOUND otherwise). When omitted, falls back to the
+ * most-recent (non-revoked) instance for the boost + recipient, which may be null.
+ */
+const resolveBoostCredentialInstance = async ({
+    boostId,
+    recipientProfileId,
+    credentialUri,
+}: {
+    boostId: string;
+    recipientProfileId: string;
+    credentialUri?: string;
+}) => {
+    const {
+        getCredentialByUri,
+        getCredentialInstanceForBoostAndProfile,
+        isCredentialInstanceOfBoost,
+    } = await import('@accesslayer/credential/read');
+
+    if (credentialUri) {
+        const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+
+        if (!resolvedCredential) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No credential found for the provided credentialUri',
+            });
+        }
+
+        const isInstance = await isCredentialInstanceOfBoost(resolvedCredential.id, boostId);
+
+        if (!isInstance) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Credential is not an instance of the specified boost',
+            });
+        }
+
+        return resolvedCredential;
+    }
+
+    return getCredentialInstanceForBoostAndProfile(boostId, recipientProfileId);
+};
+
 export const boostsRouter = t.router({
     getBoostAlignments: profileRoute
         .meta({
@@ -1914,40 +1962,11 @@ export const boostsRouter = t.router({
             }
 
             // Get the credential instance — specific instance if credentialUri provided, else most recent
-            let credential;
-            if (credentialUri) {
-                const { getCredentialByUri } = await import('@accesslayer/credential/read');
-                const resolvedCredential = await getCredentialByUri(
-                    decodeURIComponent(credentialUri)
-                );
-                if (!resolvedCredential) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'No credential found for the provided credentialUri',
-                    });
-                }
-                // Verify the credential is an instance of this boost
-                const { neogma } = await import('@instance');
-                const instanceCheck = await neogma.queryRunner.run(
-                    `MATCH (cred:Credential {id: $credId})-[:INSTANCE_OF]->(boost:Boost {id: $boostId}) RETURN cred LIMIT 1`,
-                    { credId: resolvedCredential.id, boostId: boost.id }
-                );
-                if (instanceCheck.records.length === 0) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'Credential is not an instance of the specified boost',
-                    });
-                }
-                credential = resolvedCredential;
-            } else {
-                const { getCredentialInstanceForBoostAndProfile } = await import(
-                    '@accesslayer/credential/read'
-                );
-                credential = await getCredentialInstanceForBoostAndProfile(
-                    boost.id,
-                    resolvedRecipientProfileId
-                );
-            }
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -2035,39 +2054,11 @@ export const boostsRouter = t.router({
             }
 
             // Get the credential instance — specific instance if credentialUri provided, else most recent
-            let credential;
-            if (credentialUri) {
-                const { getCredentialByUri } = await import('@accesslayer/credential/read');
-                const resolvedCredential = await getCredentialByUri(
-                    decodeURIComponent(credentialUri)
-                );
-                if (!resolvedCredential) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'No credential found for the provided credentialUri',
-                    });
-                }
-                const { neogma } = await import('@instance');
-                const instanceCheck = await neogma.queryRunner.run(
-                    `MATCH (cred:Credential {id: $credId})-[:INSTANCE_OF]->(boost:Boost {id: $boostId}) RETURN cred LIMIT 1`,
-                    { credId: resolvedCredential.id, boostId: boost.id }
-                );
-                if (instanceCheck.records.length === 0) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'Credential is not an instance of the specified boost',
-                    });
-                }
-                credential = resolvedCredential;
-            } else {
-                const { getCredentialInstanceForBoostAndProfile } = await import(
-                    '@accesslayer/credential/read'
-                );
-                credential = await getCredentialInstanceForBoostAndProfile(
-                    boost.id,
-                    resolvedRecipientProfileId
-                );
-            }
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -2141,39 +2132,11 @@ export const boostsRouter = t.router({
             }
 
             // Get the credential instance — specific instance if credentialUri provided, else most recent
-            let credential;
-            if (credentialUri) {
-                const { getCredentialByUri } = await import('@accesslayer/credential/read');
-                const resolvedCredential = await getCredentialByUri(
-                    decodeURIComponent(credentialUri)
-                );
-                if (!resolvedCredential) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'No credential found for the provided credentialUri',
-                    });
-                }
-                const { neogma } = await import('@instance');
-                const instanceCheck = await neogma.queryRunner.run(
-                    `MATCH (cred:Credential {id: $credId})-[:INSTANCE_OF]->(boost:Boost {id: $boostId}) RETURN cred LIMIT 1`,
-                    { credId: resolvedCredential.id, boostId: boost.id }
-                );
-                if (instanceCheck.records.length === 0) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: 'Credential is not an instance of the specified boost',
-                    });
-                }
-                credential = resolvedCredential;
-            } else {
-                const { getCredentialInstanceForBoostAndProfile } = await import(
-                    '@accesslayer/credential/read'
-                );
-                credential = await getCredentialInstanceForBoostAndProfile(
-                    boost.id,
-                    resolvedRecipientProfileId
-                );
-            }
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({

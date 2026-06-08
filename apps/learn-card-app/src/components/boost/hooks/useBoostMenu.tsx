@@ -31,6 +31,7 @@ const useBoostMenu = ({
     onCloseModal,
     onDelete,
     onManageIssuances,
+    isDraft,
 }:
     | {
           credential?: VC;
@@ -42,6 +43,7 @@ const useBoostMenu = ({
           onManageIssuances?: never;
           boostUri?: never;
           boostCredential?: never;
+          isDraft?: never;
       }
     | {
           boostUri: string;
@@ -53,6 +55,7 @@ const useBoostMenu = ({
           onManageIssuances?: () => void;
           credential?: never;
           record?: never;
+          isDraft?: boolean;
       }) => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -100,6 +103,7 @@ const useBoostMenu = ({
                 menuType={menuType}
                 categoryType={categoryType}
                 handleManageIssuances={onManageIssuances}
+                isDraft={isDraft}
             />,
             { sectionClassName: '!max-w-[400px]' }
         );

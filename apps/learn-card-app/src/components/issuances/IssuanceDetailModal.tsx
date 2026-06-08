@@ -51,6 +51,8 @@ import {
 
 export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;
+    /** Which issuer surface opened this modal — used for analytics attribution. */
+    surface?: 'managed-boosts' | 'issuer-dashboard';
 }
 
 // Helper to get styling for an event type
@@ -83,7 +85,10 @@ function formatDuration(ms: number): string {
     return 'less than a minute';
 }
 
-export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
+export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
+    item,
+    surface = 'issuer-dashboard',
+}) => {
     const { initWallet } = useWallet();
     const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
     const [isLoadingChain, setIsLoadingChain] = useState(true);
@@ -145,7 +150,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }
                     };
                     track(eventMap[action], {
                         boostUri: item.boostUri!,
-                        surface: 'issuer-dashboard',
+                        surface,
                     });
                     // Invalidate activity queries so the view refreshes
                     queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });

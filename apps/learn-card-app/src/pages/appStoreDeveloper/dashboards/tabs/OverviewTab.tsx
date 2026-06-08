@@ -169,6 +169,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
                 <IssuanceList
                     title="Recent Activity"
+                    surface="issuer-dashboard"
                     integrationId={integration.id}
                     integrationName={integration.name}
                     listingId={selectedListingId}

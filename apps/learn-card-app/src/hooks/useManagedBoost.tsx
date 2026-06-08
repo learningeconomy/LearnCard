@@ -129,7 +129,7 @@ export const useManagedBoost = (
         newModal(
             <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Issuances</h2>
-                <IssuanceList boostUri={boost.uri} />
+                <IssuanceList boostUri={boost.uri} surface="managed-boosts" />
             </div>,
             { sectionClassName: '!max-w-[480px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -144,6 +144,7 @@ export const useManagedBoost = (
         onCloseModal: () => closeModal?.(),
         onDelete: () => closeAllModals?.(),
         onManageIssuances: () => presentManageIssuancesModal(),
+        isDraft,
     });
 
     const handleOptionsMenu = async () => {

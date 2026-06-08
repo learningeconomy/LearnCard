@@ -46,6 +46,8 @@ export interface IssuanceListProps {
     showFilter?: boolean;
     showExport?: boolean;
     refreshKey?: number;
+    /** Which issuer surface this list lives on — forwarded to the detail modal for analytics. */
+    surface?: 'managed-boosts' | 'issuer-dashboard';
 }
 
 export const IssuanceList: React.FC<IssuanceListProps> = ({
@@ -59,6 +61,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
     showFilter,
     showExport,
     refreshKey,
+    surface = 'issuer-dashboard',
 }) => {
     const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
     const [showExportDialog, setShowExportDialog] = useState(false);
@@ -89,7 +92,9 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
-        newModal(<IssuanceDetailModal item={item} />, { sectionClassName: '!max-w-[450px]' });
+        newModal(<IssuanceDetailModal item={item} surface={surface} />, {
+            sectionClassName: '!max-w-[450px]',
+        });
     };
 
     const getActivityStat = (eventTypeFilter: string, activityStats: any) => {
