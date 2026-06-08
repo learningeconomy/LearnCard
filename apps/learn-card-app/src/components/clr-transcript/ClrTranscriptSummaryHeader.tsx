@@ -35,7 +35,13 @@ const ClrTranscriptSummaryHeader: React.FC<{
     };
     const openCompetenciesModal = () => {
         newModal(
-            <ClrCompetencyDetailPanel competencies={model.competencies} adminMode={adminMode} />
+            <ClrCompetencyDetailPanel
+                competencies={model.competencies}
+                courses={model.courses}
+                programs={model.programs}
+                associations={model.associations}
+                adminMode={adminMode}
+            />
         );
     };
 
