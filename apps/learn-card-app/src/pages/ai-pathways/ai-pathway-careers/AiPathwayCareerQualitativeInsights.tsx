@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import AiPathwayCareerGauge from './AiPathwayCareerGauge';
 
 import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
@@ -7,6 +9,7 @@ import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
 export const AiPathwayCareerQualitativeInsights: React.FC<{ career: AiPathwayCareer }> = ({
     career,
 }) => {
+    const { t } = useTranslation();
     return (
         <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-2">
             <div className="w-full flex items-center justify-start">
@@ -15,11 +18,11 @@ export const AiPathwayCareerQualitativeInsights: React.FC<{ career: AiPathwayCar
 
             <div className="w-full flex items-center justify-start gap-4 my-2">
                 <AiPathwayCareerGauge
-                    title="Job Stability"
+                    title={t('aiPathways.jobStability', 'Job Stability')}
                     score={career?.qualitativeInsights.jobSecurityScore}
                 />
                 <AiPathwayCareerGauge
-                    title="Work-Life Balance"
+                    title={t('aiPathways.workLifeBalance', 'Work-Life Balance')}
                     score={career?.qualitativeInsights.workLifeBalanceScore}
                 />
             </div>

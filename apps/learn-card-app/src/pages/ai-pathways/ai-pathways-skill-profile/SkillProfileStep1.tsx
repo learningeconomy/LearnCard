@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+import { useTranslation } from 'react-i18next';
+
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
 export type SkillProfileGoalsData = {
     goals: string[];
@@ -52,6 +57,15 @@ const MONTHS_OPTIONS = [
 ];
 
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
+    const { t } = useTranslation();
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(1, () => {
+        const fields: string[] = [];
+        if (goals.length > 0) fields.push('goals');
+        if (professionalTitle) fields.push('professionalTitle');
+        if (years !== null || months !== null) fields.push('lifetimeExperience');
+        return fields;
+    });
     const [goalInput, setGoalInput] = useState('');
     const [goals, setGoals] = useState<string[]>([]);
     const [professionalTitle, setProfessionalTitle] = useState('');
@@ -115,6 +129,8 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 lifetimeExperience: { years, months },
             }),
         ]);
+        trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 
@@ -138,7 +154,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 <TextInput
                     value={goalInput}
                     onChange={value => setGoalInput(value ?? '')}
-                    placeholder="I want to..."
+                    placeholder={t('aiPathways.iWantTo', 'I want to...')}
                     maxLength={35}
                     onKeyDown={e => {
                         if (e.key === 'Enter') {
@@ -182,7 +198,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 <TextInput
                     value={professionalTitle}
                     onChange={value => setProfessionalTitle(value ?? '')}
-                    placeholder="Professional title..."
+                    placeholder={t('aiPathways.professionalTitle', 'Professional title...')}
                 />
             </div>
 

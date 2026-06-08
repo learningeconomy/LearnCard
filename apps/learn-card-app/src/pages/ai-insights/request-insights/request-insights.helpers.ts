@@ -22,19 +22,19 @@ export enum RequestInsightStatusEnum {
 export const getRequestInsightsOptions = () => [
     {
         id: 1,
-        label: i18next.t('aiInsights.insightsRequestReminder', 'Insights Request Reminder'),
+        label: i18next.i18next.t('aiInsights.insightsRequestReminder', 'Insights Request Reminder'),
         icon: ConnectIcon,
         type: RequestInsightsOptionsEnum.requestReminder,
     },
     {
         id: 2,
-        label: i18next.t('aiInsights.cancelInsightsRequest', 'Cancel Insights Request'),
+        label: i18next.i18next.t('aiInsights.cancelInsightsRequest', 'Cancel Insights Request'),
         icon: TrashBin,
         type: RequestInsightsOptionsEnum.cancelRequest,
     },
     {
         id: 3,
-        label: i18next.t('aiInsights.removeInsights', 'Remove Insights'),
+        label: i18next.i18next.t('aiInsights.removeInsights', 'Remove Insights'),
         icon: TrashBin,
         type: RequestInsightsOptionsEnum.removeConnection,
     },
@@ -43,7 +43,7 @@ export const getRequestInsightsOptions = () => [
 export const buildTeacherStudentContract = ({
     image = '',
     expiresAt = '',
-    reasonForAccessing = i18next.t('aiInsights.teacherReasonForAccessing', 'Your teacher needs this data to view your progress and provide feedback.'),
+    reasonForAccessing = i18next.i18next.t('aiInsights.teacherReasonForAccessing', 'Your teacher needs this data to view your progress and provide feedback.'),
 }: {
     image?: string;
     expiresAt?: string;
@@ -79,8 +79,8 @@ export const buildTeacherStudentContract = ({
             },
         },
         name: 'AI Insights',
-        subtitle: i18next.t('aiInsights.contractSubtitle', 'Share learning progress with your teacher'),
-        description: i18next.t('aiInsights.contractDescription', 'Allows your teacher to view selected insights'),
+        subtitle: i18next.i18next.t('aiInsights.contractSubtitle', 'Share learning progress with your teacher'),
+        description: i18next.i18next.t('aiInsights.contractDescription', 'Allows your teacher to view selected insights'),
         image,
         expiresAt,
         reasonForAccessing,
@@ -109,7 +109,7 @@ export const createTeacherStudentContract = async ({
         image: teacherProfile?.image,
         expiresAt: '',
         reasonForAccessing:
-            i18next.t('aiInsights.teacherReasonForAccessing', 'Your teacher needs this data to view your progress and provide feedback.'),
+            i18next.i18next.t('aiInsights.teacherReasonForAccessing', 'Your teacher needs this data to view your progress and provide feedback.'),
     });
 
     const contractUri = await teacherWallet.invoke.createContract({

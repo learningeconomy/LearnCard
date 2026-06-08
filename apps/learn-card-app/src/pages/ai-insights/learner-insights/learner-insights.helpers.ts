@@ -33,12 +33,12 @@ export type LearnerInsightsFilterOption = Omit<LearnerInsightsSortOption, 'type'
 export const getLearnerInsightsSortOptions = () => [
     {
         id: 1,
-        title: i18next.t('aiInsights.sort.az', 'A-Z'),
+        title: i18next.i18next.t('aiInsights.sort.az', 'A-Z'),
         type: LearnerInsightsSortOptionsEnum.alphabetical,
     },
     {
         id: 2,
-        title: i18next.t('aiInsights.sort.recentlyAdded', 'Recently Added'),
+        title: i18next.i18next.t('aiInsights.sort.recentlyAdded', 'Recently Added'),
         type: LearnerInsightsSortOptionsEnum.recentlyAdded,
     },
 ];
@@ -46,17 +46,17 @@ export const getLearnerInsightsSortOptions = () => [
 export const getLearnerInsightsFilterOptions = () => [
     {
         id: 1,
-        title: i18next.t('aiInsights.filter.all', 'All'),
+        title: i18next.i18next.t('aiInsights.filter.all', 'All'),
         type: LearnerInsightsFilterOptionsEnum.all,
     },
     {
         id: 2,
-        title: i18next.t('aiInsights.filter.pending', 'Pending'),
+        title: i18next.i18next.t('aiInsights.filter.pending', 'Pending'),
         type: LearnerInsightsFilterOptionsEnum.pending,
     },
     {
         id: 3,
-        title: i18next.t('aiInsights.filter.accepted', 'Accepted'),
+        title: i18next.i18next.t('aiInsights.filter.accepted', 'Accepted'),
         type: LearnerInsightsFilterOptionsEnum.accepted,
     },
 ];

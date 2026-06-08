@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { IonSpinner } from '@ionic/react';
 import { X } from 'lucide-react';
 import {
@@ -38,6 +40,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
     initialActiveTab = 'All',
     initialSearchQuery = '',
 }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal();
     const [search, setSearch] = useState(initialSearchQuery);
     const [submittedSearchQuery, setSubmittedSearchQuery] = useState(initialSearchQuery);
@@ -136,7 +139,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                 </div>
 
                 <PathwaySearchInput
-                    placeholder="Skill, goal, or job..."
+                    placeholder={t('aiPathways.skillGoalJobAlt', 'Skill, goal, or job...')}
                     value={search}
                     onValueChange={setSearch}
                     onSearchSubmit={query => {
@@ -182,7 +185,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                     })}
                 </div>
 
-                <SearchInput placeholder="Filter results..." value={filter} onChange={setFilter} />
+                <SearchInput placeholder={t('aiPathways.filterResults', 'Filter results...')} value={filter} onChange={setFilter} />
 
                 {isLoading && visibleCards.length === 0 ? (
                     <div className="flex items-center justify-center py-[40px]">

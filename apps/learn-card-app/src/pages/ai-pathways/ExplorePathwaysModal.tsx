@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
@@ -36,6 +38,7 @@ import GrowSkillsModal from './GrowSkillsModal';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard.types';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 import ExploreRoles from './ExploreRoles';
+import * as m from '../../paraglide/messages.js';
 import {
     useGlobalSemanticSearchSkills,
     useGlobalSkillFrameworks,
@@ -56,6 +59,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
     initialSearchQuery = '',
     option = undefined,
 }) => {
+    const { t } = useTranslation();
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
     const globalSkillFrameworks = useGlobalSkillFrameworks();
@@ -274,7 +278,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                 <PathwaySearchInput
                     variant="simple"
-                    placeholder="Search by skill, goal, or job..."
+                    placeholder={t('aiPathways.searchSkillGoalJob', 'Search by skill, goal, or job...')}
                     value={search}
                     onValueChange={setSearch}
                     onSearchSubmit={setSearch}

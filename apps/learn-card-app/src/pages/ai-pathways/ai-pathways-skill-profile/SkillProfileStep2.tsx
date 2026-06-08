@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+
+import { useTranslation } from 'react-i18next';
+
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +20,8 @@ import {
     useVerifiableData,
 } from 'learn-card-base';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
 export type SkillProfileWorkHistoryData = {
     selectedCredentialUris: string[];
@@ -36,7 +41,7 @@ import X from 'src/components/svgs/X';
 import { MapPin } from 'lucide-react';
 
 import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
-import { useTranslation } from 'react-i18next';
+import * as m from '../../../paraglide/messages.js';
 
 type SkillProfileStep2Props = {
     handleNext: () => void;
@@ -67,6 +72,12 @@ const emptyExperience: WorkExperience = {
 
 const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handleBack }) => {
     const { t } = useTranslation();
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(2, () => {
+        const fields: string[] = [];
+        if (selectedCredentialUris.length > 0) fields.push('selectedCredentialUris');
+        return fields;
+    });
     const { isMobile } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -110,7 +121,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
     const handleAddExperience = async () => {
         const experience = experiences[0];
         if (!experience.jobTitle || !experience.employer) {
-            presentToast(t('toasts.skills.fillJobTitle', 'Please fill in job title and employer'), {
+            presentToast(t('toasts.skills.fillJobTitle', 'toasts.skills.fillJobTitle'), {
                 type: ToastTypeEnum.Error,
                 title: 'Missing required fields',
             });
@@ -224,7 +235,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                 title: `${experience.jobTitle} at ${experience.employer}`,
             });
 
-            presentToast(t('toasts.skills.workHistoryCreated', 'Your work history credential has been created'), {
+            presentToast(t('toasts.skills.workHistoryCreated', 'toasts.skills.workHistoryCreated'), {
                 type: ToastTypeEnum.Success,
                 title: 'Work experience added',
             });
@@ -293,6 +304,8 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
     const handleSaveAndNext = async () => {
         await saveWorkHistory({ selectedCredentialUris });
+        trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 
@@ -418,7 +431,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     onChange={checked =>
                                         updateExperience(index, 'isCurrentJob', checked)
                                     }
-                                    label="Current Job"
+                                    label={t('aiPathways.currentJob', 'Current Job')}
                                 />
                             </div>
                             <TextInput
@@ -473,7 +486,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     onChange={checked =>
                                         updateExperience(index, 'workFromHome', checked)
                                     }
-                                    label="Work from home"
+                                    label={t('aiPathways.workFromHome', 'Work from home')}
                                 />
                             </div>
                             <TextInput
@@ -506,7 +519,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     value={experience.startDate}
                                     onChange={date => updateExperience(index, 'startDate', date)}
                                     isMobile={isMobile}
-                                    label="Month, Year"
+                                    label={t('aiPathways.monthYear', 'Month, Year')}
                                 />
                             </div>
                             <div className="flex flex-col gap-[10px] flex-1">
@@ -522,7 +535,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                         value={experience.endDate}
                                         onChange={date => updateExperience(index, 'endDate', date)}
                                         isMobile={isMobile}
-                                        label="Month, Year"
+                                        label={t('aiPathways.monthYear', 'Month, Year')}
                                         minDate={experience.startDate || undefined}
                                     />
                                 )}

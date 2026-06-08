@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import GrowSkillsCarouselSection from './GrowSkillsCarouselSection';
@@ -16,6 +18,7 @@ import { useGrowSkillsContent } from './useGrowSkillsContent';
 type GrowSkillsPathwaysHomeProps = {};
 
 const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
+    const { t } = useTranslation();
     const { newModal } = useModal();
 
     const { emptyPathways, learningPathwaysData, defaultCards, schoolPrograms } =
@@ -56,7 +59,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 />
 
                 <GrowSkillsCarouselSection
-                    title="Courses"
+                    title={t('aiPathways.courses', 'Courses')}
                     items={schoolPrograms}
                     onViewAll={() => openGrowSkillsModal('Courses')}
                     renderItem={program => <GrowSkillsCourseItem program={program} />}
@@ -64,7 +67,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 />
 
                 <GrowSkillsCarouselSection
-                    title="Media"
+                    title={t('aiPathways.media', 'Media')}
                     items={mediaCards}
                     onViewAll={() => openGrowSkillsModal('Media')}
                     renderItem={card =>
