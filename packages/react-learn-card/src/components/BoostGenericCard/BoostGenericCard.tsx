@@ -5,6 +5,7 @@ import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import AlignmentSkillsCount from './AlignmentSkillsCount';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
+import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -72,7 +73,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 {customThumbComponent || (
                     <section className={defaultThumbClass}>
                         {thumbImgSrc?.trim() ? (
-                            <img
+                            <BadgeThumbnailImg
                                 className="w-full h-full rounded-full object-cover"
                                 src={thumbImgSrc}
                                 alt="Credential Achievement"

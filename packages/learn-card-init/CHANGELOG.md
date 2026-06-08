@@ -1,5 +1,33 @@
 # learn-card-core
 
+## 2.3.21
+
+### Patch Changes
+
+-   [#1256](https://github.com/learningeconomy/LearnCard/pull/1256) [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Node ESM package entrypoints so published-package smoketests can import the SDK packages from clean external workspaces.
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/chapi-plugin@1.1.21
+    -   @learncard/crypto-plugin@1.1.21
+    -   @learncard/did-web-plugin@1.1.21
+    -   @learncard/didkey-plugin@1.1.21
+    -   @learncard/didkit-plugin@1.9.1
+    -   @learncard/dynamic-loader-plugin@1.1.21
+    -   @learncard/encryption-plugin@1.1.21
+    -   @learncard/expiration-plugin@1.2.21
+    -   @learncard/helpers@1.3.3
+    -   @learncard/learn-card-plugin@1.2.21
+    -   @learncard/network-plugin@2.13.1
+    -   @learncard/learn-cloud-plugin@2.3.26
+    -   @learncard/openid4vc-plugin@0.1.2
+    -   @learncard/types@5.17.1
+    -   @learncard/vc-api-plugin@1.1.21
+    -   @learncard/vc-templates-plugin@1.1.21
+    -   @learncard/vc-plugin@1.5.1
+    -   @learncard/vpqr-plugin@1.1.21
+    -   @learncard/core@9.4.21
+    -   @learncard/ethereum-plugin@1.1.22
+
 ## 2.3.20
 
 ### Patch Changes

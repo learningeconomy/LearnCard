@@ -70,10 +70,7 @@ export type VpToken = string | VP | Record<string, string | VP>;
  * replay-binding via `domain`/`challenge`.
  */
 export interface LdpVpSigner {
-    sign: (
-        unsignedVp: UnsignedVP,
-        options: { domain: string; challenge: string }
-    ) => Promise<VP>;
+    sign: (unsignedVp: UnsignedVP, options: { domain: string; challenge: string }) => Promise<VP>;
 }
 
 export interface SignPresentationOptions {
@@ -86,14 +83,16 @@ export interface SignPresentationOptions {
     /**
      * Verifier's `client_id` (from the Authorization Request). For
      * `jwt_vp_json` this becomes the JWT `aud`; for `ldp_vp` it
-     * becomes the LD-proof `domain`.
+     * becomes the LD-proof `domain`; for SD-JWT-VC it becomes the
+     * KB-JWT `aud`.
      */
     audience: string;
 
     /**
      * Verifier's `nonce` (from the Authorization Request). For
      * `jwt_vp_json` this becomes the JWT `nonce`; for `ldp_vp` it
-     * becomes the LD-proof `challenge`.
+     * becomes the LD-proof `challenge`; for SD-JWT-VC it becomes the
+     * KB-JWT `nonce`.
      */
     nonce: string;
 
@@ -109,6 +108,16 @@ export interface SignPresentationOptions {
 
     /** Override `iat` for deterministic tests. Defaults to `Math.floor(Date.now() / 1000)`. */
     iat?: number;
+
+    /**
+     * Required when `vpFormat` is `dc+sd-jwt` / `vc+sd-jwt`. Carries
+     * the source compact form from {@link buildPresentation}.sdJwtSource
+     * along with the user-chosen per-claim consent frame.
+     */
+    sdJwtSource?: {
+        compact: string;
+        disclose?: SdJwtDiscloseFrame;
+    };
 }
 
 export interface SignPresentationHelpers {
@@ -116,7 +125,35 @@ export interface SignPresentationHelpers {
     jwtSigner?: ProofJwtSigner;
     /** Required when `vpFormat === 'ldp_vp'`. */
     ldpVpSigner?: LdpVpSigner;
+    /** Required when `vpFormat` is `dc+sd-jwt` / `vc+sd-jwt`. */
+    sdJwtPresenter?: SdJwtPresenter;
 }
+
+/**
+ * Per-claim presentation frame controlling selective disclosure. Keys
+ * map to claim names declared by the SD-JWT-VC's `_sd` array; values
+ * are `true` to release or `false`/omitted to hide. Nested objects
+ * mirror nested disclosures. Structurally compatible with
+ * `@sd-jwt/types.PresentationFrame` so openid4vc doesn't have to
+ * hard-depend on that package.
+ */
+export type SdJwtDiscloseFrame = { [key: string]: boolean | SdJwtDiscloseFrame };
+
+/**
+ * Callback that invokes `learnCard.invoke.presentSdJwtVc` (or an
+ * equivalent SD-JWT-VC presentation primitive). Receives the source
+ * compact, the verifier's audience+nonce, and the per-claim consent
+ * frame the user chose. Returns the holder-bound compact presentation
+ * that the wallet POSTs as `vp_token`.
+ */
+export type SdJwtPresenter = (
+    compact: string,
+    options: {
+        audience: string;
+        nonce: string;
+        disclose?: SdJwtDiscloseFrame;
+    }
+) => Promise<{ compact: string }>;
 
 export interface SignPresentationResult {
     vpToken: VpToken;
@@ -130,8 +167,11 @@ export interface SignPresentationResult {
 export type VpSignErrorCode =
     | 'missing_jwt_signer'
     | 'missing_ldp_signer'
+    | 'missing_sd_jwt_presenter'
+    | 'missing_sd_jwt_source'
     | 'jwt_sign_failed'
     | 'ldp_sign_failed'
+    | 'sd_jwt_present_failed'
     | 'holder_mismatch'
     | 'invalid_input';
 
@@ -165,6 +205,10 @@ export const signPresentation = async (
     options: SignPresentationOptions,
     helpers: SignPresentationHelpers
 ): Promise<SignPresentationResult> => {
+    if (options.vpFormat === 'dc+sd-jwt' || options.vpFormat === 'vc+sd-jwt') {
+        return presentSdJwt(options, helpers);
+    }
+
     validateInput(options);
 
     if (options.vpFormat === 'jwt_vp_json') {
@@ -172,6 +216,47 @@ export const signPresentation = async (
     }
 
     return signLdpVp(options, helpers);
+};
+
+const presentSdJwt = async (
+    options: SignPresentationOptions,
+    helpers: SignPresentationHelpers
+): Promise<SignPresentationResult> => {
+    if (typeof options.audience !== 'string' || options.audience.length === 0) {
+        throw new VpSignError('invalid_input', 'signPresentation requires a non-empty `audience`');
+    }
+    if (typeof options.nonce !== 'string' || options.nonce.length === 0) {
+        throw new VpSignError('invalid_input', 'signPresentation requires a non-empty `nonce`');
+    }
+    if (!options.sdJwtSource || typeof options.sdJwtSource.compact !== 'string') {
+        throw new VpSignError(
+            'missing_sd_jwt_source',
+            `vpFormat=${options.vpFormat} requires options.sdJwtSource.compact (set by buildPresentation when the chosen credential is an SD-JWT-VC)`
+        );
+    }
+    if (!helpers.sdJwtPresenter) {
+        throw new VpSignError(
+            'missing_sd_jwt_presenter',
+            `vpFormat=${options.vpFormat} requires helpers.sdJwtPresenter`
+        );
+    }
+
+    let presented: { compact: string };
+    try {
+        presented = await helpers.sdJwtPresenter(options.sdJwtSource.compact, {
+            audience: options.audience,
+            nonce: options.nonce,
+            disclose: options.sdJwtSource.disclose,
+        });
+    } catch (e) {
+        throw new VpSignError(
+            'sd_jwt_present_failed',
+            `Failed to build SD-JWT-VC presentation: ${e instanceof Error ? e.message : String(e)}`,
+            { cause: e }
+        );
+    }
+
+    return { vpToken: presented.compact, vpFormat: options.vpFormat };
 };
 
 /* -------------------------------------------------------------------------- */
@@ -224,7 +309,9 @@ const signJwtVp = async (
         typ: 'JWT',
     };
 
-    const jti = options.jti ?? (typeof options.unsignedVp.id === 'string' ? options.unsignedVp.id : undefined);
+    const jti =
+        options.jti ??
+        (typeof options.unsignedVp.id === 'string' ? options.unsignedVp.id : undefined);
 
     const payload: Record<string, unknown> = {
         iss: options.holder,
@@ -256,10 +343,7 @@ const signLdpVp = async (
     helpers: SignPresentationHelpers
 ): Promise<SignPresentationResult> => {
     if (!helpers.ldpVpSigner) {
-        throw new VpSignError(
-            'missing_ldp_signer',
-            'vpFormat=ldp_vp requires helpers.ldpVpSigner'
-        );
+        throw new VpSignError('missing_ldp_signer', 'vpFormat=ldp_vp requires helpers.ldpVpSigner');
     }
 
     let vpToken: VP;

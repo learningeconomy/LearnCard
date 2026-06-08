@@ -46,9 +46,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             <PushNotificationsSettings
                 handleCloseModal={closeModal}
                 settings={settings}
-                handleStateChange={(settingsType: PushNotificationSettingsEnum, settingState: boolean) =>
-                    handleStateChange(settingsType, settingState)
-                }
+                handleStateChange={(
+                    settingsType: PushNotificationSettingsEnum,
+                    settingState: boolean
+                ) => handleStateChange(settingsType, settingState)}
             />
         );
     };

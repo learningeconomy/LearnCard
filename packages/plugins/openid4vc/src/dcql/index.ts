@@ -25,11 +25,7 @@ export type {
 // Holder-side: parse, adapt, select, build, sign, assemble.
 export { parseDcqlQuery } from './parse';
 
-export {
-    adaptCredentialForDcql,
-    adaptCredentialsForDcql,
-    type AdaptableCredential,
-} from './adapt';
+export { adaptCredentialForDcql, adaptCredentialsForDcql, type AdaptableCredential } from './adapt';
 
 export {
     selectCredentialsForDcql,
@@ -42,6 +38,8 @@ export {
     BuildDcqlPresentationError,
     type BuildDcqlPresentationsInput,
     type BuiltDcqlPresentation,
+    type BuiltDcqlVpPresentation,
+    type BuiltDcqlSdJwtPresentation,
     type DcqlChosenCredential,
     type DcqlVpFormat,
     type BuildDcqlPresentationErrorCode,
@@ -51,6 +49,7 @@ export {
     signDcqlPresentations,
     buildDcqlResponse,
     assembleDcqlVpToken,
+    DcqlSignError,
     type DcqlSignedPresentation,
     type DcqlInnerVpToken,
     type DcqlResponse,

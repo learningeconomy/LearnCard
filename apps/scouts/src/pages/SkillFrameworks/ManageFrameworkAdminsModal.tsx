@@ -13,9 +13,7 @@ type ManageFrameworkAdminsModalProps = {
     frameworkId: string;
 };
 
-const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
-    frameworkId,
-}) => {
+const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({ frameworkId }) => {
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();

@@ -2,7 +2,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('testing-tab');
 /**
  * TestingTab - Sandbox Test Credential Sender
- * 
+ *
  * Allows developers to send test credentials to verify their integration works.
  * Mirrors functionality from SandboxTestStep for dashboard use.
  */
@@ -30,8 +30,8 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { CredentialTemplate, BrandingConfig } from '../types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
-import { 
-    extractDynamicVariables, 
+import {
+    extractDynamicVariables,
     OBv3CredentialTemplate,
 } from '../../partner-onboarding/components/CredentialBuilder';
 import { fieldNameToVariable } from '../../partner-onboarding/types';
@@ -71,7 +71,8 @@ const getSampleValue = (varName: string): string => {
     if (lower.includes('student') && lower.includes('name')) return 'Jane Doe';
     if (lower.includes('learner') && lower.includes('name')) return 'Jane Doe';
     if (lower.includes('instructor') || lower.includes('teacher')) return 'Dr. Smith';
-    if (lower.includes('course') && lower.includes('name')) return 'Introduction to Web Development';
+    if (lower.includes('course') && lower.includes('name'))
+        return 'Introduction to Web Development';
     if (lower.includes('course') && lower.includes('id')) return 'CS101';
     if (lower.includes('department')) return 'Computer Science';
     if (lower.includes('name')) return 'Sample Name';
@@ -89,7 +90,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     const { presentToast } = useToast();
 
     // Load full template details on-demand (not loaded by dashboard for performance)
-    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
+        integration.id,
+        basicTemplates
+    );
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>('email');
     const [testEmail, setTestEmail] = useState('');
@@ -119,9 +123,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     }, [templates]);
 
     // Count master templates
-    const masterTemplateCount = useMemo(() => 
-        (templates as ExtendedTemplate[]).filter(t => t.isMasterTemplate).length
-    , [templates]);
+    const masterTemplateCount = useMemo(
+        () => (templates as ExtendedTemplate[]).filter(t => t.isMasterTemplate).length,
+        [templates]
+    );
 
     // Selected template for testing
     const selectedTemplate = useMemo(() => {
@@ -137,13 +142,19 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
         if (selectedTemplate.obv3Template) {
             try {
-                return extractDynamicVariables(selectedTemplate.obv3Template as OBv3CredentialTemplate);
+                return extractDynamicVariables(
+                    selectedTemplate.obv3Template as OBv3CredentialTemplate
+                );
             } catch (e) {
                 // fallback
             }
         }
 
-        return selectedTemplate.fields?.map(f => f.variableName || fieldNameToVariable(f.name || f.label || f.key || '')).filter((v): v is string => Boolean(v)) || [];
+        return (
+            selectedTemplate.fields
+                ?.map(f => f.variableName || fieldNameToVariable(f.name || f.label || f.key || ''))
+                .filter((v): v is string => Boolean(v)) || []
+        );
     }, [selectedTemplate]);
 
     const handleSendTest = async () => {
@@ -151,7 +162,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
         if (!recipient || !selectedTemplate?.boostUri) {
             presentToast(
-                `Please enter a${recipientMode === 'email' ? 'n email' : ' user ID'} and select a template with a saved boost`,
+                `Please enter a${
+                    recipientMode === 'email' ? 'n email' : ' user ID'
+                } and select a template with a saved boost`,
                 { type: ToastTypeEnum.Error }
             );
             return;
@@ -187,7 +200,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
             setTestStatus('success');
             setTestResult({
-                credentialId: result?.inbox?.issuanceId || result?.credentialUri || `test_${Date.now().toString(36)}`,
+                credentialId:
+                    result?.inbox?.issuanceId ||
+                    result?.credentialUri ||
+                    `test_${Date.now().toString(36)}`,
             });
 
             presentToast('Test credential sent successfully!', { type: ToastTypeEnum.Success });
@@ -225,7 +241,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             <div className="text-center py-12">
                 <TestTube2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500 font-medium">No templates to test</p>
-                <p className="text-sm text-gray-400 mt-1">Create and save templates first to test credential issuance</p>
+                <p className="text-sm text-gray-400 mt-1">
+                    Create and save templates first to test credential issuance
+                </p>
             </div>
         );
     }
@@ -234,7 +252,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">Test Credential Issuance</h2>
-                <p className="text-sm text-gray-500">Send a test credential to verify your integration works</p>
+                <p className="text-sm text-gray-500">
+                    Send a test credential to verify your integration works
+                </p>
             </div>
 
             {/* Info Banner */}
@@ -243,8 +263,8 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 <div className="text-sm text-violet-800">
                     <p className="font-medium mb-1">Sandbox Testing</p>
                     <p>
-                        Send a test credential to your own email or user ID to verify everything is configured correctly.
-                        Sample data will be used for dynamic fields.
+                        Send a test credential to your own email or user ID to verify everything is
+                        configured correctly. Sample data will be used for dynamic fields.
                     </p>
                 </div>
             </div>
@@ -256,7 +276,8 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                     <div className="text-sm text-amber-800">
                         <p className="font-medium">Some templates not saved</p>
                         <p className="text-amber-700 mt-0.5">
-                            Save your templates first to be able to test them. Only saved templates can be used for testing.
+                            Save your templates first to be able to test them. Only saved templates
+                            can be used for testing.
                         </p>
                     </div>
                 </div>
@@ -288,7 +309,11 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             )}
                         </div>
 
-                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showTemplateSelector ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                            className={`w-5 h-5 text-gray-400 transition-transform ${
+                                showTemplateSelector ? 'rotate-180' : ''
+                            }`}
+                        />
                     </button>
 
                     {showTemplateSelector && (
@@ -304,18 +329,28 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                         selectedTemplateId === template.id ? 'bg-cyan-50' : ''
                                     }`}
                                 >
-                                    <Award className={`w-4 h-4 ${
-                                        selectedTemplateId === template.id ? 'text-cyan-600' : 'text-gray-400'
-                                    }`} />
+                                    <Award
+                                        className={`w-4 h-4 ${
+                                            selectedTemplateId === template.id
+                                                ? 'text-cyan-600'
+                                                : 'text-gray-400'
+                                        }`}
+                                    />
 
                                     <div className="flex-1 text-left">
-                                        <p className="font-medium text-gray-800 text-sm">{template.name}</p>
+                                        <p className="font-medium text-gray-800 text-sm">
+                                            {template.name}
+                                        </p>
                                     </div>
 
                                     {template.boostUri ? (
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">Saved</span>
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
+                                            Saved
+                                        </span>
                                     ) : (
-                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">Unsaved</span>
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">
+                                            Unsaved
+                                        </span>
                                     )}
 
                                     {selectedTemplateId === template.id && (
@@ -330,7 +365,8 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 {masterTemplateCount > 0 && (
                     <p className="text-xs text-gray-500 flex items-center gap-1">
                         <FileStack className="w-3 h-3" />
-                        {issuableTemplates.length} course boosts available from {masterTemplateCount} master template{masterTemplateCount !== 1 ? 's' : ''}
+                        {issuableTemplates.length} course boosts available from{' '}
+                        {masterTemplateCount} master template{masterTemplateCount !== 1 ? 's' : ''}
                     </p>
                 )}
             </div>
@@ -347,9 +383,14 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
                         {templateVariables.map(varName => (
-                            <div key={varName} className="flex items-center justify-between text-sm">
+                            <div
+                                key={varName}
+                                className="flex items-center justify-between text-sm"
+                            >
                                 <span className="text-gray-600">
-                                    {varName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                    {varName
+                                        .replace(/_/g, ' ')
+                                        .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                                 </span>
                                 <code className="px-2 py-0.5 bg-white border border-gray-200 rounded text-xs text-gray-700">
                                     {getSampleValue(varName)}
@@ -362,9 +403,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
             {/* Recipient Input */}
             <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                    Test Recipient
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Test Recipient</label>
 
                 {/* Mode toggle */}
                 <div className="flex rounded-lg border border-gray-200 overflow-hidden">
@@ -399,13 +438,14 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             <input
                                 type="email"
                                 value={testEmail}
-                                onChange={(e) => setTestEmail(e.target.value)}
+                                onChange={e => setTestEmail(e.target.value)}
                                 placeholder="your-email@example.com"
                                 className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             />
                         </div>
                         <p className="text-xs text-gray-500">
-                            We'll send a test credential to this email so you can verify the claim flow works.
+                            We'll send a test credential to this email so you can verify the claim
+                            flow works.
                         </p>
                     </>
                 ) : (
@@ -415,13 +455,14 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             <input
                                 type="text"
                                 value={testUserId}
-                                onChange={(e) => setTestUserId(e.target.value)}
+                                onChange={e => setTestUserId(e.target.value)}
                                 placeholder="profileId or did:..."
                                 className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             />
                         </div>
                         <p className="text-xs text-gray-500">
-                            The credential will be sent directly to this user's wallet — no email required.
+                            The credential will be sent directly to this user's wallet — no email
+                            required.
                         </p>
                     </>
                 )}
@@ -453,10 +494,17 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                         <div className="flex-1">
                             <p className="font-medium text-emerald-800">Test credential sent!</p>
                             <p className="text-sm text-emerald-700 mt-1">
-                                {recipientMode === 'email'
-                                    ? <>Check your email at <strong>{testEmail}</strong> for the claim link.</>
-                                    : <>The credential has been sent directly to <strong>{testUserId}</strong>'s wallet.</>
-                                }
+                                {recipientMode === 'email' ? (
+                                    <>
+                                        Check your email at <strong>{testEmail}</strong> for the
+                                        claim link.
+                                    </>
+                                ) : (
+                                    <>
+                                        The credential has been sent directly to{' '}
+                                        <strong>{testUserId}</strong>'s wallet.
+                                    </>
+                                )}
                             </p>
                             {testResult.credentialId && (
                                 <p className="text-xs text-emerald-600 mt-2 font-mono">
@@ -483,7 +531,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                     <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
                         <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                            <p className="font-medium text-red-800">Failed to send test credential</p>
+                            <p className="font-medium text-red-800">
+                                Failed to send test credential
+                            </p>
                             <p className="text-sm text-red-700 mt-1">
                                 {testResult.error || 'An unknown error occurred'}
                             </p>

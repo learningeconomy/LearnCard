@@ -123,12 +123,12 @@ In practice, the portable path is: decrypt the bundle, take the individual Verif
 
 The table below reflects what each vendor's public docs describe at the time of writing. Treat it as a starting point — verify against current vendor docs, and do not assume a wallet supports the LearnCard bundle unless it has been tested against the ZIP format.
 
-| Wallet / toolkit | Raw ZIP import | Credential JSON import (after decrypt) | OID4VCI receive | DIDComm receive |
-|---|---|---|---|---|
-| [Spruce / SpruceKit](https://www.sprucekit.dev/sprucekit-mobile/sprucekit-mobile-sdk/core-components/credentialpack) | No | Yes — `CredentialPack.addJsonVc(...)` | Yes | Not documented |
-| [Sphereon Wallet / SSI SDK](https://ssisdk.docs.sphereon.com/mobile-wallet/receiving-credentials) | No | Not documented | Yes | Not documented |
-| [MATTR](https://learn.mattr.global/docs/holding/credential-claiming-overview) | No | Not documented | Yes | Not documented |
-| [Paradym Wallet](https://docs.paradym.id/api-and-dashboard/integrating-with-a-holder-wallet/paradym-wallet) | No | Not documented | Yes | Not documented |
+| Wallet / toolkit                                                                                                     | Raw ZIP import | Credential JSON import (after decrypt) | OID4VCI receive | DIDComm receive |
+| -------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------- | --------------- | --------------- |
+| [Spruce / SpruceKit](https://www.sprucekit.dev/sprucekit-mobile/sprucekit-mobile-sdk/core-components/credentialpack) | No             | Yes — `CredentialPack.addJsonVc(...)`  | Yes             | Not documented  |
+| [Sphereon Wallet / SSI SDK](https://ssisdk.docs.sphereon.com/mobile-wallet/receiving-credentials)                    | No             | Not documented                         | Yes             | Not documented  |
+| [MATTR](https://learn.mattr.global/docs/holding/credential-claiming-overview)                                        | No             | Not documented                         | Yes             | Not documented  |
+| [Paradym Wallet](https://docs.paradym.id/api-and-dashboard/integrating-with-a-holder-wallet/paradym-wallet)          | No             | Not documented                         | Yes             | Not documented  |
 
 ## Related pages
 

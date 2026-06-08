@@ -37,9 +37,7 @@ const buildIssuerInstance = async () => {
             );
         const header = decode(headerSegment);
         const payload = decode(payloadSegment);
-        const compact = await new SignJWT(payload)
-            .setProtectedHeader(header)
-            .sign(privateKey);
+        const compact = await new SignJWT(payload).setProtectedHeader(header).sign(privateKey);
         const parts = compact.split('.');
         return parts[2]!;
     };
@@ -168,6 +166,28 @@ describe('parseSdJwtVc', () => {
             { alg: 'EdDSA', typ: 'JWT' }
         );
         await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({ code: 'invalid_typ' });
+    });
+
+    it('mentions both canonical and legacy typ values in the rejection message for plain "JWT"', async () => {
+        const wrongTyp = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA', typ: 'JWT' }
+        );
+        await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({
+            code: 'invalid_typ',
+            message: expect.stringMatching(/(dc\+sd-jwt.*vc\+sd-jwt|vc\+sd-jwt.*dc\+sd-jwt)/),
+        });
+    });
+
+    it('rejects an unrelated typ string ("invalid")', async () => {
+        const wrongTyp = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA', typ: 'invalid' }
+        );
+        await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({
+            code: 'invalid_typ',
+            message: expect.stringContaining('invalid'),
+        });
     });
 
     it('extracts holderPublicKey from a cnf.jwk claim', async () => {

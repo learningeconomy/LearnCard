@@ -25,3 +25,6 @@ packages/plugins/didkit/src/didkit/pkg/
 **/*.generated.*
 CHANGELOG.md
 **/CHANGELOG.md
+
+# Changesets (tool-generated; @changesets/cli emits double quotes that conflict with our config)
+.changeset/*.md

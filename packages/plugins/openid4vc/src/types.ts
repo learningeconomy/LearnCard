@@ -2,51 +2,19 @@ import { Plugin, LearnCard } from '@learncard/core';
 import { UnsignedVC, VC, UnsignedVP, VP } from '@learncard/types';
 import { ProofOptions } from '@learncard/didkit-plugin';
 
-import {
-    CredentialOffer,
-    ParsedCredentialOfferUri,
-} from './offer/types';
-import {
-    AcceptCredentialOfferOptions,
-    AcceptedCredentialResult,
-} from './vci/types';
-import {
-    AuthCodeFlowHandle,
-    BeginAuthCodeFlowResult,
-} from './vci/auth-code';
-import {
-    StoreAcceptedCredentialsOptions,
-    StoreAcceptedCredentialsResult,
-} from './vci/store';
-import {
-    AuthorizationRequest,
-    ParsedAuthorizationRequest,
-} from './vp/types';
-import {
-    CandidateCredential,
-    PresentationSubmission,
-    SelectionResult,
-} from './vp/select';
-import {
-    ChosenCredential,
-    PreparedPresentation,
-    VpFormat,
-} from './vp/present';
-import {
-    SignPresentationResult,
-} from './vp/sign';
-import {
-    SubmitPresentationResult,
-} from './vp/submit';
+import { CredentialOffer, ParsedCredentialOfferUri } from './offer/types';
+import { AcceptCredentialOfferOptions, AcceptedCredentialResult, TokenResponse } from './vci/types';
+import { AuthCodeFlowHandle, BeginAuthCodeFlowResult } from './vci/auth-code';
+import { StoreAcceptedCredentialsOptions, StoreAcceptedCredentialsResult } from './vci/store';
+import { AuthorizationRequest, ParsedAuthorizationRequest } from './vp/types';
+import { CandidateCredential, PresentationSubmission, SelectionResult } from './vp/select';
+import { ChosenCredential, PreparedPresentation, VpFormat } from './vp/present';
+import { SignPresentationResult } from './vp/sign';
+import { SubmitPresentationResult } from './vp/submit';
 import { DidResolver } from './vp/request-object';
-import {
-    SignIdTokenResult,
-} from './siop/sign';
+import { SignIdTokenResult } from './siop/sign';
 import { ProofJwtSigner } from './vci/types';
-import type {
-    DcqlChosenCredential,
-    BuiltDcqlPresentation,
-} from './dcql/build';
+import type { DcqlChosenCredential, BuiltDcqlPresentation } from './dcql/build';
 import type { DcqlSelectionResult } from './dcql/select';
 import type { DcqlSignedPresentation } from './dcql/respond';
 
@@ -120,6 +88,29 @@ export type OpenID4VCPluginMethods = {
     ) => Promise<AcceptedCredentialResult>;
 
     /**
+     * Exchange a pre-authorized_code offer for an access token without
+     * requesting credentials yet. Use with
+     * {@link requestCredentialsFromPreAuthToken} when retry orchestration
+     * must re-use the same single-use token grant across signer attempts.
+     */
+    exchangePreAuthCodeForToken: (
+        input: string | CredentialOffer,
+        options?: Omit<AcceptCredentialOfferOptions, 'signer'>
+    ) => Promise<TokenResponse>;
+
+    /**
+     * Request credentials using a token previously obtained from
+     * {@link exchangePreAuthCodeForToken}. This step is retry-safe across
+     * signer changes because it does not re-consume the pre-authorized code.
+     */
+    requestCredentialsFromPreAuthToken: (options: {
+        input: string | CredentialOffer;
+        tokenResponse: TokenResponse;
+        options?: Omit<AcceptCredentialOfferOptions, 'signer'>;
+        signer?: AcceptCredentialOfferOptions['signer'];
+    }) => Promise<AcceptedCredentialResult>;
+
+    /**
      * Accept a Credential Offer **and** persist the resulting credentials
      * to the wallet's store + index planes, so they appear in the UI.
      *
@@ -174,14 +165,34 @@ export type OpenID4VCPluginMethods = {
      *   - Builds a proof-of-possession JWT via the host signer.
      *   - POSTs the credential request + returns the issued VC(s).
      */
-    completeCredentialOfferAuthCode: (
-        options: {
-            flowHandle: AuthCodeFlowHandle;
-            code: string;
-            state?: string;
-            signer?: AcceptCredentialOfferOptions['signer'];
-        }
-    ) => Promise<AcceptedCredentialResult>;
+    completeCredentialOfferAuthCode: (options: {
+        flowHandle: AuthCodeFlowHandle;
+        code: string;
+        state?: string;
+        signer?: AcceptCredentialOfferOptions['signer'];
+    }) => Promise<AcceptedCredentialResult>;
+
+    /**
+     * Exchange the OAuth authorization code for a token without issuing a
+     * credential request yet. This is the single-use half of the auth-code
+     * flow (RFC 6749 §4.1.2).
+     */
+    exchangeAuthCodeForToken: (options: {
+        flowHandle: AuthCodeFlowHandle;
+        code: string;
+        state?: string;
+    }) => Promise<TokenResponse>;
+
+    /**
+     * Request credentials using a previously exchanged auth-code token.
+     * This is safe to retry across signer fallback because the OAuth code
+     * has already been consumed.
+     */
+    requestCredentialsFromAuthCodeToken: (options: {
+        flowHandle: AuthCodeFlowHandle;
+        tokenResponse: TokenResponse;
+        signer?: AcceptCredentialOfferOptions['signer'];
+    }) => Promise<AcceptedCredentialResult>;
 
     /**
      * Parse an OpenID4VP Authorization Request URI. Does not hit the
@@ -387,7 +398,6 @@ export type OpenID4VCPluginMethods = {
         /** HTTP-level result of the direct_post submission. Always populated. */
         submitted: SubmitPresentationResult;
     }>;
-
 };
 
 /** Configuration passed to {@link getOpenID4VCPlugin}. */
@@ -445,11 +455,7 @@ export interface OpenID4VCPluginConfig {
 }
 
 /** LearnCard shape the plugin factory consumes. */
-export type OpenID4VCDependentLearnCard = LearnCard<
-    any,
-    'id',
-    OpenID4VCPluginDependentMethods
->;
+export type OpenID4VCDependentLearnCard = LearnCard<any, 'id', OpenID4VCPluginDependentMethods>;
 
 /** LearnCard shape after the plugin has been added. */
 export type OpenID4VCImplicitLearnCard = LearnCard<

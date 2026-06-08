@@ -11,6 +11,7 @@ const log = getLogger('my-feature');
 ```
 
 > **Node.js / tsx scripts** (e.g. `apps/learn-card-app/scripts/`): import from the specific file to avoid loading the full React barrel:
+>
 > ```ts
 > import { getLogger } from 'learn-card-base/src/logging/logger';
 > ```
@@ -21,10 +22,10 @@ const log = getLogger('my-feature');
 log.debug('wallet ready');
 log.info('profile loaded', { profileId: '123' });
 log.warn('cache miss', { key });
-log.error(err);  // just the error — uses error.message
-log.error('sign-in failed', err);  // message + error
-log.info(isEnabled);  // just a value
-log.info('feature', isEnabled, { userId: '123' });  // any combination
+log.error(err); // just the error — uses error.message
+log.error('sign-in failed', err); // message + error
+log.info(isEnabled); // just a value
+log.info('feature', isEnabled, { userId: '123' }); // any combination
 ```
 
 ---
@@ -68,13 +69,13 @@ logger.info('app boot');
 
 All methods accept **any number of arguments in any order** (rest-args). The logger classifies each one and slots it into the right place — nothing is silently dropped or char-spread into the metadata bag.
 
-| Argument type | Handling |
-| --- | --- |
-| **Error** object | First wins the `err` slot — sent to `captureException` (error level) or surfaced as `extra.error` (warn level). Additional Errors collect into `values`. |
-| **String** | First wins the log message. Additional strings collect into `values`. |
-| **Plain object** `{ key: value }` | Treated as metadata. Multiple objects merge into one `extra` bag (later wins on key conflicts). |
-| **Primitive** — `boolean`, `number`, `bigint` | Collected into `values`. Sentry sees `{ value: x }` for a single leftover or `{ values: [...] }` for multiple. |
-| **Array** | Same as a primitive — collected into `values`. |
+| Argument type                                 | Handling                                                                                                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Error** object                              | First wins the `err` slot — sent to `captureException` (error level) or surfaced as `extra.error` (warn level). Additional Errors collect into `values`. |
+| **String**                                    | First wins the log message. Additional strings collect into `values`.                                                                                    |
+| **Plain object** `{ key: value }`             | Treated as metadata. Multiple objects merge into one `extra` bag (later wins on key conflicts).                                                          |
+| **Primitive** — `boolean`, `number`, `bigint` | Collected into `values`. Sentry sees `{ value: x }` for a single leftover or `{ values: [...] }` for multiple.                                           |
+| **Array**                                     | Same as a primitive — collected into `values`.                                                                                                           |
 
 If a method is called with only an `Error` and no string, the log message falls back to `error.message`.
 
@@ -88,20 +89,20 @@ log.debug('wallet ready');
 try {
     await riskyOperation();
 } catch (e) {
-    log.error(e);  // ✓ uses e.message; sends captureException
+    log.error(e); // ✓ uses e.message; sends captureException
 }
 
 // Just a primitive — no wrapping needed
 const isEnabled = false;
-log.info(isEnabled);  // ✓ outputs false directly
-log.info(42);  // ✓ outputs 42 directly
-log.info(['a', 'b']);  // ✓ outputs array directly
+log.info(isEnabled); // ✓ outputs false directly
+log.info(42); // ✓ outputs 42 directly
+log.info(['a', 'b']); // ✓ outputs array directly
 
 // Just an object
 log.debug({ userId: '123', code: 404 });
 
 // Message + error
-log.error('wallet init failed', err);  // ✓ message + captured exception
+log.error('wallet init failed', err); // ✓ message + captured exception
 
 // Message + metadata (object)
 log.warn('slow request', { ms: 450, endpoint: '/trpc/getProfile' });
@@ -208,13 +209,13 @@ configureSentryTransport({
 
 ## Do / Don't
 
-| Do | Don't |
-| --- | --- |
-| `log.error(err)` or `log.error('msg', err)` | `console.error('wallet init failed', err)` in app src |
-| `log.info(isEnabled)` | `log.info('isEnabled', { isEnabled })` — primitives work directly |
+| Do                                                    | Don't                                                                                     |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `log.error(err)` or `log.error('msg', err)`           | `console.error('wallet init failed', err)` in app src                                     |
+| `log.info(isEnabled)`                                 | `log.info('isEnabled', { isEnabled })` — primitives work directly                         |
 | In catch: `log.error(e)` or `log.error('context', e)` | `log.error('failed', e instanceof Error ? e : new Error(String(e)))` — handled internally |
-| `log.warn('...', { key })` | `Sentry.captureException(err)` directly |
-| `{ allowPii: true }` in debug tooling only | Log raw PII fields without the flag |
+| `log.warn('...', { key })`                            | `Sentry.captureException(err)` directly                                                   |
+| `{ allowPii: true }` in debug tooling only            | Log raw PII fields without the flag                                                       |
 
 ---
 

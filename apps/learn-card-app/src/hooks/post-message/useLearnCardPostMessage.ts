@@ -318,10 +318,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     sendResponse(event.source!, event.origin, requestId, 'SUCCESS', result.data);
                 } else {
                     if (debug) {
-                        log.info(
-                            `[LearnCard PostMessage] Action ${action} failed:`,
-                            result.error
-                        );
+                        log.info(`[LearnCard PostMessage] Action ${action} failed:`, result.error);
                     }
                     sendResponse(
                         event.source!,

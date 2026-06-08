@@ -11,7 +11,6 @@
         "lcaApi": "https://api.learncard.app/trpc",
         "xapi": "https://network.learncard.com/xapi",
         "aiService": "https://api.learncloud.ai"
-
     },
     "auth": {
         "keyDerivation": "web3auth",
@@ -62,11 +61,7 @@
     "observability": {
         "sentryDsn": "https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704",
         "sentryEnv": "production-vetpass",
-        "sentryTraceDomains": [
-            "network.vetpass.app",
-            "api.vetpass.app",
-            "cloud.vetpass.app"
-        ],
+        "sentryTraceDomains": ["network.vetpass.app", "api.vetpass.app", "cloud.vetpass.app"],
         "launchDarklyClientId": "69d0174514adc00adb3868b1"
     },
     "links": {
@@ -86,10 +81,7 @@
     "native": {
         "bundleId": "com.vetpass.app",
         "displayName": "VetPass",
-        "deepLinkDomains": [
-            "vetpass.app",
-            "learncard.app"
-        ],
+        "deepLinkDomains": ["vetpass.app", "learncard.app"],
         "customSchemes": [
             "dccrequest",
             "msprequest",

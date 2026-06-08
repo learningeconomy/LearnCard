@@ -4,6 +4,7 @@ import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
+import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
 import {
     getAchievementType,
@@ -80,9 +81,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     const issuanceDate = useMemo(() => getIssuanceDate(credential), [credential]);
     const issuanceDateDisplay = useMemo(
         () =>
-            relativeDate
-                ? moment(issuanceDate).fromNow()
-                : moment(issuanceDate).format('MM/DD/YY'),
+            relativeDate ? moment(issuanceDate).fromNow() : moment(issuanceDate).format('MM/DD/YY'),
         [issuanceDate, relativeDate]
     );
 
@@ -201,12 +200,13 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 </div>
             ) : (
                 <div className={`relative ${thumbSize} rounded-full bg-${subColor}`}>
-                    <img
+                    <BadgeThumbnailImg
                         src={
                             thumbImgSrc ||
                             (typeof credential?.image === 'string' && credential.image) ||
                             credential?.credentialSubject?.image ||
-                            credential?.boostCredential?.image
+                            credential?.boostCredential?.image ||
+                            ''
                         }
                         className="rounded-full object-cover h-full w-full"
                     />

@@ -20,9 +20,9 @@ LearnCard's live wallet protects the key with 2-of-4 Shamir Secret Sharing (devi
 
 Consequences:
 
-- Anyone who obtains both the bundle and its password gains complete control of the wallet, bypassing SSS entirely.
-- The `keys/recovery-phrase.txt.enc` entry is derived from the current SSS recovery share. It is provided for reference and is **not** independently sufficient to recover the key on its own; recovery from a bundle uses the exported seed.
-- Treat the bundle like a password-vault backup: store it offline, use a strong unique password, and rotate the wallet if the bundle is exposed.
+-   Anyone who obtains both the bundle and its password gains complete control of the wallet, bypassing SSS entirely.
+-   The `keys/recovery-phrase.txt.enc` entry is derived from the current SSS recovery share. It is provided for reference and is **not** independently sufficient to recover the key on its own; recovery from a bundle uses the exported seed.
+-   Treat the bundle like a password-vault backup: store it offline, use a strong unique password, and rotate the wallet if the bundle is exposed.
 
 ## Paths
 

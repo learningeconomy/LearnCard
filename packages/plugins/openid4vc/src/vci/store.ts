@@ -1,10 +1,8 @@
 import { LearnCard } from '@learncard/core';
+import type { StoredCredentialEnvelope } from '@learncard/types';
 
-import {
-    NormalizedCredential,
-    W3CVerifiableCredential,
-    normalizeIssuedCredential,
-} from './decode';
+import { NormalizedCredential, W3CVerifiableCredential, normalizeIssuedCredential } from './decode';
+import { extractSdJwtVct, isSdJwtFormat, synthesizeSdJwtVc } from './sd-jwt-vc';
 import { AcceptedCredentialResult } from './types';
 import { VciError } from './errors';
 
@@ -14,7 +12,20 @@ import { VciError } from './errors';
  */
 export const DEFAULT_STORE_PLUGIN = 'LearnCloud';
 
-/** Shape of the record passed to `learnCard.index.<plugin>.add(record)`. */
+/**
+ * Shape of the record passed to `learnCard.index.<plugin>.add(record)`.
+ *
+ * Index records are intentionally LIGHTWEIGHT metadata pointing at a
+ * storage URI — the credential body itself lives on the store plane.
+ * The index carries `format` and `semanticType` as queryable filter
+ * keys; the actual wire-form bytes live on the storage plane and are
+ * reached via `learnCard.read.get(record.uri)`.
+ *
+ * NOTE: do not add credential-body fields here. The storage plane
+ * holds bodies; the index holds metadata pointing at storage URIs.
+ * If you find yourself wanting `rawWireForm` or `compactSdJwt` on the
+ * index, the storage plane needs to evolve instead (see ADR-0001).
+ */
 export interface IndexRecord {
     id: string;
     uri: string;
@@ -22,6 +33,14 @@ export interface IndexRecord {
     title?: string;
     imgUrl?: string;
     boostUri?: string;
+    /**
+     * Format-tagged metadata. Populated by format-aware writers
+     * (currently the SD-JWT-VC path); legacy W3C paths leave these
+     * fields undefined. Format-aware readers filter by these fields
+     * without needing to read the credential body from storage.
+     */
+    format?: import('@learncard/types').CredentialFormat;
+    semanticType?: string;
     /** Index record schema version, matches existing wallet writes. */
     __v: 1;
 }
@@ -52,7 +71,7 @@ export interface StoreAcceptedCredentialsOptions {
      * (e.g. tests, SQLite, a custom in-memory mock). If supplied these take
      * precedence over the `storage` / `encrypt` defaults.
      */
-    upload?: (credential: W3CVerifiableCredential) => Promise<string>;
+    upload?: (credential: W3CVerifiableCredential | StoredCredentialEnvelope) => Promise<string>;
     addToIndex?: (record: IndexRecord) => Promise<unknown>;
     /** Custom id generator. Defaults to crypto.randomUUID() with a fallback. */
     makeId?: () => string;
@@ -115,25 +134,39 @@ export const storeAcceptedCredentials = async (
         const entry = accepted.credentials[i];
 
         try {
-            const normalized: NormalizedCredential = normalizeIssuedCredential(
-                entry.credential,
-                entry.format
-            );
+            const normalized: NormalizedCredential = isSdJwtFormat(entry.format)
+                ? await synthesizeSdJwtVc(entry.credential, entry.format, learnCard)
+                : normalizeIssuedCredential(entry.credential, entry.format);
 
-            const uri = await safeUpload(upload, normalized.vc);
+            // ADR-0001 Phase 2B: SD-JWT-VC writes the native compact via the
+            // storage envelope rather than the transitional W3C wrapper. The
+            // wrapper on `normalized.vc` is now read-time projection only —
+            // it's returned to the caller in `StoredCredentialEntry.vc` for
+            // backwards compatibility but never persisted.
+            const isSdJwt = isSdJwtFormat(entry.format) && normalized.rawWireForm;
+            const uploadBody: W3CVerifiableCredential | StoredCredentialEnvelope = isSdJwt
+                ? {
+                      format: normalized.format ?? 'dc+sd-jwt',
+                      data: normalized.rawWireForm!,
+                  }
+                : normalized.vc;
+
+            const uri = await safeUpload(upload, uploadBody);
 
             const recordId = makeId();
 
             const record: IndexRecord = {
                 id: recordId,
                 uri,
-                category: resolveCategory(options.category, normalized.vc, i),
+                category: resolveCategory(options.category, normalized.vc, i, learnCard),
                 ...(resolveOptional(options.title, normalized.vc, i) && {
                     title: resolveOptional(options.title, normalized.vc, i) as string,
                 }),
                 ...(resolveOptional(options.imgUrl, normalized.vc, i) && {
                     imgUrl: resolveOptional(options.imgUrl, normalized.vc, i) as string,
                 }),
+                ...(normalized.format && { format: normalized.format }),
+                ...(normalized.semanticType && { semanticType: normalized.semanticType }),
                 __v: 1,
             };
 
@@ -155,7 +188,9 @@ export const storeAcceptedCredentials = async (
                         ? e
                         : new VciError(
                               'store_failed',
-                              `Unexpected error while storing credential: ${e instanceof Error ? e.message : String(e)}`,
+                              `Unexpected error while storing credential: ${
+                                  e instanceof Error ? e.message : String(e)
+                              }`,
                               { cause: e }
                           ),
             });
@@ -170,11 +205,12 @@ export const storeAcceptedCredentials = async (
 const resolveCategory = (
     category: StoreAcceptedCredentialsOptions['category'],
     vc: W3CVerifiableCredential,
-    index: number
+    index: number,
+    learnCard: LearnCard<any, any, any>
 ): string => {
     if (typeof category === 'string') return category;
     if (typeof category === 'function') return category(vc, index);
-    return defaultCategoryFor(vc);
+    return defaultCategoryFor(vc, learnCard);
 };
 
 const resolveOptional = <T>(
@@ -191,8 +227,29 @@ const resolveOptional = <T>(
  * Simple heuristic mapping VC `type` entries to wallet categories. Kept
  * small and override-able; the host wallet app usually has richer mapping
  * that the caller can plug in via `options.category`.
+ *
+ * For SD-JWT-VC credentials (carrying an `sdJwtVct` extension field set by
+ * `synthesizeSdJwtVc`), delegates category resolution to the `sd-jwt-vc`
+ * plugin if it's installed — falls back to the W3C type heuristic otherwise.
  */
-const defaultCategoryFor = (vc: W3CVerifiableCredential): string => {
+const defaultCategoryFor = (
+    vc: W3CVerifiableCredential,
+    learnCard: LearnCard<any, any, any>
+): string => {
+    const sdJwtVct = extractSdJwtVct(vc);
+    if (sdJwtVct) {
+        const categorizer = (learnCard?.invoke as Record<string, unknown> | undefined)
+            ?.categorizeSdJwtVct;
+        if (typeof categorizer === 'function') {
+            try {
+                const result = (categorizer as (v: string) => string)(sdJwtVct);
+                if (typeof result === 'string' && result.length > 0) return result;
+            } catch {
+                // fall through to the W3C heuristic below
+            }
+        }
+    }
+
     const types = toTypeArray(vc.type);
 
     // ID documents first — so a credential with both Identity + Achievement
@@ -260,10 +317,7 @@ const resolveUpload = (
     );
 };
 
-const resolveAddToIndex = (
-    learnCard: LearnCard<any, any, any>,
-    storage: string
-): AddToIndexFn => {
+const resolveAddToIndex = (learnCard: LearnCard<any, any, any>, storage: string): AddToIndexFn => {
     const indexPlane = (learnCard as unknown as { index?: Record<string, unknown> }).index;
     const plugin = indexPlane?.[storage] as
         | { add?: (record: IndexRecord) => Promise<unknown> }
@@ -279,15 +333,20 @@ const resolveAddToIndex = (
     return record => plugin.add!(record);
 };
 
-const safeUpload = async (upload: UploadFn, vc: W3CVerifiableCredential): Promise<string> => {
+const safeUpload = async (
+    upload: UploadFn,
+    body: W3CVerifiableCredential | StoredCredentialEnvelope
+): Promise<string> => {
     let uri: string;
 
     try {
-        uri = await upload(vc);
+        uri = await upload(body);
     } catch (e) {
         throw new VciError(
             'store_failed',
-            `Store plane rejected the credential upload: ${e instanceof Error ? e.message : String(e)}`,
+            `Store plane rejected the credential upload: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
             { cause: e }
         );
     }
@@ -308,7 +367,9 @@ const safeAddToIndex = async (addToIndex: AddToIndexFn, record: IndexRecord): Pr
     } catch (e) {
         throw new VciError(
             'index_failed',
-            `Index plane rejected the credential record: ${e instanceof Error ? e.message : String(e)}`,
+            `Index plane rejected the credential record: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
             { cause: e }
         );
     }
@@ -328,8 +389,9 @@ const defaultMakeId = (): string => {
     // Fallback: 16 random bytes hex-encoded. Not RFC-4122 but unique enough
     // for a local index record.
     const bytes = new Uint8Array(16);
-    const cryptoSubtle = (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } })
-        .crypto;
+    const cryptoSubtle = (
+        globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }
+    ).crypto;
     if (cryptoSubtle && typeof cryptoSubtle.getRandomValues === 'function') {
         cryptoSubtle.getRandomValues(bytes);
     } else {
