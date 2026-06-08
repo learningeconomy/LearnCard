@@ -41,6 +41,8 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER = [
     'wef-global-skills-taxonomy',
     'pathsmith-durable-skills-starter-edition',
 ];
+// These timestamp-based ids mirror the seeded JSON fixtures in brain-service.
+// Keep this list in sync with the fixture copies (or derive it from them) when those fixtures change.
 const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> = {
     'wef-global-skills-taxonomy': [
         'skill-1770752882121-4o69efqu6',
@@ -151,9 +153,7 @@ const fetchSeededGlobalSkillFrameworks = async (
         })
     );
 
-    return frameworkConfigs.filter(
-        framework => framework.frameworkId && framework.name && framework.defaultSkillIds
-    );
+    return frameworkConfigs.filter(framework => framework.frameworkId && framework.name);
 };
 
 export const normalizeGlobalSkillFrameworks = (
