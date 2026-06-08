@@ -6,6 +6,7 @@ import { IonPage } from '@ionic/react';
 import { VCDisplayCard2 } from '@learncard/react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
+import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
@@ -82,7 +83,7 @@ export const useVerification = (credential: VC) => {
         const verify = async () => {
             const wallet = await initWallet();
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(verifications);
+            setVCVerifications(prettifyVerificationItems(verifications ?? []));
         };
         verify();
     }, []);
@@ -186,7 +187,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const isIssuerViewSelected =
-        enableRenderMethod && Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const { isMobile } = useDeviceTypeByWidth();
 

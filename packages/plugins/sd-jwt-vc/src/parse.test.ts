@@ -170,6 +170,30 @@ describe('parseSdJwtVc', () => {
         await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({ code: 'invalid_typ' });
     });
 
+    it('mentions both canonical and legacy typ values in the rejection message for plain "JWT"', async () => {
+        const wrongTyp = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA', typ: 'JWT' }
+        );
+        await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({
+            code: 'invalid_typ',
+            message: expect.stringMatching(
+                /(dc\+sd-jwt.*vc\+sd-jwt|vc\+sd-jwt.*dc\+sd-jwt)/
+            ),
+        });
+    });
+
+    it('rejects an unrelated typ string ("invalid")', async () => {
+        const wrongTyp = handCraftSdJwt(
+            { iss: 'did:jwk:test', iat: 1700000000, vct: 'https://example.com/' },
+            { alg: 'EdDSA', typ: 'invalid' }
+        );
+        await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({
+            code: 'invalid_typ',
+            message: expect.stringContaining('invalid'),
+        });
+    });
+
     it('extracts holderPublicKey from a cnf.jwk claim', async () => {
         const holderJwk = {
             kty: 'OKP',

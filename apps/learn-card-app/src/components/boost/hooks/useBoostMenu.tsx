@@ -79,7 +79,7 @@ const useBoostMenu = ({
             await deleteCredentialRecord(record as LCR);
             onDelete?.();
         } else {
-            presentToast("Error deleting credential: unable to locate record ID.", {
+            presentToast('Error deleting credential: unable to locate record ID.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

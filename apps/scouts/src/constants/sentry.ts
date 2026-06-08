@@ -63,7 +63,9 @@ export const initSentry = () => {
             }),
         addBreadcrumb: opts => Sentry.addBreadcrumb(opts),
         withScope: fn =>
-            Sentry.withScope(scope => fn({ setTag: scope.setTag.bind(scope), setExtra: scope.setExtra.bind(scope) })),
+            Sentry.withScope(scope =>
+                fn({ setTag: scope.setTag.bind(scope), setExtra: scope.setExtra.bind(scope) })
+            ),
     });
 };
 

@@ -59,10 +59,7 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
                         sharedUris.push(sharedUri);
                     }
                 } catch (error) {
-                    log.debug(
-                        `Failed to get shared URI for credential ${credential.uri}:`,
-                        error
-                    );
+                    log.debug(`Failed to get shared URI for credential ${credential.uri}:`, error);
                 }
             }
 

@@ -389,3 +389,160 @@ describe('signPresentation — input validation', () => {
         expect(signer.lastPayload?.iss).toBe(HOLDER);
     });
 });
+
+describe('signPresentation — SD-JWT-VC passthrough', () => {
+    const compact =
+        'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.eyJpc3MiOiJkaWQ6d2ViOmlzc3VlciJ9.signature~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkFkYSJd~';
+    const presentedCompact = `${compact}eyJraGVhZGVyIjoia2Ira2J0In0.eyJzZF9oYXNoIjoiYWJjIn0.kbsig`;
+
+    it('routes dc+sd-jwt format through sdJwtPresenter and uses its output as vp_token', async () => {
+        const presenter = jest.fn(async (_compact: string, _opts) => ({
+            compact: presentedCompact,
+        }));
+
+        const result = await signPresentation(
+            {
+                unsignedVp,
+                vpFormat: 'dc+sd-jwt',
+                audience: AUDIENCE,
+                nonce: NONCE,
+                holder: HOLDER,
+                sdJwtSource: { compact },
+            },
+            { sdJwtPresenter: presenter }
+        );
+
+        expect(presenter).toHaveBeenCalledTimes(1);
+        expect(presenter).toHaveBeenCalledWith(compact, {
+            audience: AUDIENCE,
+            nonce: NONCE,
+        });
+        expect(result.vpToken).toBe(presentedCompact);
+        expect(result.vpFormat).toBe('dc+sd-jwt');
+    });
+
+    it('accepts the legacy vc+sd-jwt format string identically', async () => {
+        const presenter = jest.fn(async (_compact: string, _opts) => ({
+            compact: presentedCompact,
+        }));
+
+        const result = await signPresentation(
+            {
+                unsignedVp,
+                vpFormat: 'vc+sd-jwt',
+                audience: AUDIENCE,
+                nonce: NONCE,
+                holder: HOLDER,
+                sdJwtSource: { compact },
+            },
+            { sdJwtPresenter: presenter }
+        );
+
+        expect(result.vpFormat).toBe('vc+sd-jwt');
+        expect(result.vpToken).toBe(presentedCompact);
+    });
+
+    it('throws missing_sd_jwt_source when sdJwtSource is not provided', async () => {
+        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+
+        await expect(
+            signPresentation(
+                {
+                    unsignedVp,
+                    vpFormat: 'dc+sd-jwt',
+                    audience: AUDIENCE,
+                    nonce: NONCE,
+                    holder: HOLDER,
+                },
+                { sdJwtPresenter: presenter }
+            )
+        ).rejects.toMatchObject({
+            name: 'VpSignError',
+            code: 'missing_sd_jwt_source',
+        });
+        expect(presenter).not.toHaveBeenCalled();
+    });
+
+    it('throws missing_sd_jwt_presenter when helpers.sdJwtPresenter is missing', async () => {
+        await expect(
+            signPresentation(
+                {
+                    unsignedVp,
+                    vpFormat: 'dc+sd-jwt',
+                    audience: AUDIENCE,
+                    nonce: NONCE,
+                    holder: HOLDER,
+                    sdJwtSource: { compact },
+                },
+                {}
+            )
+        ).rejects.toMatchObject({
+            name: 'VpSignError',
+            code: 'missing_sd_jwt_presenter',
+        });
+    });
+
+    it('wraps presenter errors in VpSignError with code sd_jwt_present_failed', async () => {
+        const presenter = jest.fn(async () => {
+            throw new Error('verifier rejected nonce');
+        });
+
+        const err = (await signPresentation(
+            {
+                unsignedVp,
+                vpFormat: 'dc+sd-jwt',
+                audience: AUDIENCE,
+                nonce: NONCE,
+                holder: HOLDER,
+                sdJwtSource: { compact },
+            },
+            { sdJwtPresenter: presenter }
+        ).catch(e => e)) as VpSignError;
+
+        expect(err).toBeInstanceOf(VpSignError);
+        expect(err.code).toBe('sd_jwt_present_failed');
+        expect(err.message).toContain('verifier rejected nonce');
+    });
+
+    it('rejects empty audience for SD-JWT path (no VP envelope validation skip)', async () => {
+        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+
+        await expect(
+            signPresentation(
+                {
+                    unsignedVp,
+                    vpFormat: 'dc+sd-jwt',
+                    audience: '',
+                    nonce: NONCE,
+                    holder: HOLDER,
+                    sdJwtSource: { compact },
+                },
+                { sdJwtPresenter: presenter }
+            )
+        ).rejects.toMatchObject({
+            name: 'VpSignError',
+            code: 'invalid_input',
+        });
+    });
+
+    it('rejects empty nonce for SD-JWT path', async () => {
+        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+
+        await expect(
+            signPresentation(
+                {
+                    unsignedVp,
+                    vpFormat: 'dc+sd-jwt',
+                    audience: AUDIENCE,
+                    nonce: '',
+                    holder: HOLDER,
+                    sdJwtSource: { compact },
+                },
+                { sdJwtPresenter: presenter }
+            )
+        ).rejects.toMatchObject({
+            name: 'VpSignError',
+            code: 'invalid_input',
+        });
+    });
+});

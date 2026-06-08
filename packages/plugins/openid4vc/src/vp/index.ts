@@ -83,6 +83,8 @@ export { signPresentation, VpSignError } from './sign';
 export type {
     VpToken,
     LdpVpSigner,
+    SdJwtDiscloseFrame,
+    SdJwtPresenter,
     SignPresentationOptions,
     SignPresentationHelpers,
     SignPresentationResult,

@@ -24,7 +24,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
     onBack,
     completedItems = [],
     title = 'Ready to Go Live!',
-    description = 'You\'ve completed all the setup steps. Activate your integration to start using it in production.',
+    description = "You've completed all the setup steps. Activate your integration to start using it in production.",
 }) => {
     const history = useHistory();
     const { presentToast } = useToast();
@@ -36,7 +36,10 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
     const handleGoLive = async () => {
         if (!integration) {
-            presentToast('No integration selected', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            presentToast('No integration selected', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
             return;
         }
 

@@ -21,165 +21,188 @@ import { z, type ZodIssue } from 'zod';
  * for draft configs.
  */
 const urlOrPlaceholder = () =>
-    z.string().refine(
-        (val) => val.startsWith('TODO_') || z.string().url().safeParse(val).success,
-        { message: 'Invalid URL (TODO_* placeholders are allowed)' },
-    );
+    z.string().refine(val => val.startsWith('TODO_') || z.string().url().safeParse(val).success, {
+        message: 'Invalid URL (TODO_* placeholders are allowed)',
+    });
 
 // -----------------------------------------------------------------
 // Sub-schemas
 // -----------------------------------------------------------------
 
-export const tenantApiConfigSchema = z.object({
-    brainService: urlOrPlaceholder(),
-    brainServiceApi: urlOrPlaceholder(),
-    cloudService: urlOrPlaceholder(),
-    lcaApi: urlOrPlaceholder(),
-    xapi: urlOrPlaceholder().optional(),
-    aiService: urlOrPlaceholder().optional(),
-    corsProxyApiKey: z.string().optional(),
-}).passthrough();
+export const tenantApiConfigSchema = z
+    .object({
+        brainService: urlOrPlaceholder(),
+        brainServiceApi: urlOrPlaceholder(),
+        cloudService: urlOrPlaceholder(),
+        lcaApi: urlOrPlaceholder(),
+        xapi: urlOrPlaceholder().optional(),
+        aiService: urlOrPlaceholder().optional(),
+        corsProxyApiKey: z.string().optional(),
+    })
+    .passthrough();
 
-export const tenantFirebaseConfigSchema = z.object({
-    apiKey: z.string(),
-    authDomain: z.string(),
-    projectId: z.string(),
-    storageBucket: z.string(),
-    messagingSenderId: z.string(),
-    appId: z.string(),
-    measurementId: z.string().optional(),
-    redirectDomain: z.string().optional(),
-    dynamicLinkDomain: z.string().optional(),
-}).passthrough();
+export const tenantFirebaseConfigSchema = z
+    .object({
+        apiKey: z.string(),
+        authDomain: z.string(),
+        projectId: z.string(),
+        storageBucket: z.string(),
+        messagingSenderId: z.string(),
+        appId: z.string(),
+        measurementId: z.string().optional(),
+        redirectDomain: z.string().optional(),
+        dynamicLinkDomain: z.string().optional(),
+    })
+    .passthrough();
 
-export const tenantSSSConfigSchema = z.object({
-    serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
-    enableEmailBackupShare: z.boolean().default(true),
-    requireEmailForPhoneUsers: z.boolean().default(true),
-}).passthrough();
+export const tenantSSSConfigSchema = z
+    .object({
+        serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        enableEmailBackupShare: z.boolean().default(true),
+        requireEmailForPhoneUsers: z.boolean().default(true),
+    })
+    .passthrough();
 
-export const tenantWeb3AuthConfigSchema = z.object({
-    clientId: z.string(),
-    network: z.string(),
-    verifierId: z.string(),
-    rpcTarget: z.string().default('https://rpc.ankr.com/eth'),
-}).passthrough();
+export const tenantWeb3AuthConfigSchema = z
+    .object({
+        clientId: z.string(),
+        network: z.string(),
+        verifierId: z.string(),
+        rpcTarget: z.string().default('https://rpc.ankr.com/eth'),
+    })
+    .passthrough();
 
-export const tenantAuthConfigSchema = z.object({
-    // Open strings — must match a registered factory in providerRegistry.ts.
-    provider: z.string().default('firebase'),
-    keyDerivation: z.string().default('sss'),
+export const tenantAuthConfigSchema = z
+    .object({
+        // Open strings — must match a registered factory in providerRegistry.ts.
+        provider: z.string().default('firebase'),
+        keyDerivation: z.string().default('sss'),
 
-    // Provider-specific config blocks — only the one matching `provider`
-    // is used at runtime. Each block is self-contained with its own schema.
-    // Unknown providers pass through via the parent .passthrough().
-    firebase: tenantFirebaseConfigSchema.optional(),
+        // Provider-specific config blocks — only the one matching `provider`
+        // is used at runtime. Each block is self-contained with its own schema.
+        // Unknown providers pass through via the parent .passthrough().
+        firebase: tenantFirebaseConfigSchema.optional(),
 
-    // Key-derivation strategy config blocks — only the one matching
-    // `keyDerivation` is used at runtime.
-    sss: tenantSSSConfigSchema.optional(),
-    web3Auth: tenantWeb3AuthConfigSchema.optional(),
-}).passthrough();
+        // Key-derivation strategy config blocks — only the one matching
+        // `keyDerivation` is used at runtime.
+        sss: tenantSSSConfigSchema.optional(),
+        web3Auth: tenantWeb3AuthConfigSchema.optional(),
+    })
+    .passthrough();
 
-const deleteSuccessStylesSchema = z.object({
-    containerClass: z.string(),
-    statusBarColor: z.string(),
-}).passthrough();
+const deleteSuccessStylesSchema = z
+    .object({
+        containerClass: z.string(),
+        statusBarColor: z.string(),
+    })
+    .passthrough();
 
-export const tenantBrandingConfigSchema = z.object({
-    name: z.string().default('LearnCard'),
-    shortName: z.string().optional(),
-    logoUrl: z.string().optional(),
-    faviconUrl: z.string().optional(),
-    defaultTheme: z.string().default('colorful'),
-    allowedThemes: z.array(z.string()).optional(),
-    loginRedirectPath: z.string().default('/waitingsofa?loginCompleted=true'),
-    brandingKey: z.string().optional(),
-    headerText: z.string().optional(),
-    homeRoute: z.string().optional(),
+export const tenantBrandingConfigSchema = z
+    .object({
+        name: z.string().default('LearnCard'),
+        shortName: z.string().optional(),
+        logoUrl: z.string().optional(),
+        faviconUrl: z.string().optional(),
+        defaultTheme: z.string().default('colorful'),
+        allowedThemes: z.array(z.string()).optional(),
+        loginRedirectPath: z.string().default('/waitingsofa?loginCompleted=true'),
+        brandingKey: z.string().optional(),
+        headerText: z.string().optional(),
+        homeRoute: z.string().optional(),
 
-    // Asset URLs — when set, these override the bundled LearnCard images.
-    // Relative paths resolve against the app's public directory; absolute
-    // URLs (https://) are used as-is.
-    textLogoUrl: z.string().optional(),
-    textLogoDarkUrl: z.string().optional(),
-    brandMarkUrl: z.string().optional(),
-    brandMarkLightUrl: z.string().optional(),
-    appIconUrl: z.string().optional(),
-    desktopLoginBgUrl: z.string().optional(),
-    desktopLoginBgAltUrl: z.string().optional(),
-    fullLogoUrl: z.string().optional(),
-    fullLogoDarkUrl: z.string().optional(),
+        // Asset URLs — when set, these override the bundled LearnCard images.
+        // Relative paths resolve against the app's public directory; absolute
+        // URLs (https://) are used as-is.
+        textLogoUrl: z.string().optional(),
+        textLogoDarkUrl: z.string().optional(),
+        brandMarkUrl: z.string().optional(),
+        brandMarkLightUrl: z.string().optional(),
+        appIconUrl: z.string().optional(),
+        desktopLoginBgUrl: z.string().optional(),
+        desktopLoginBgAltUrl: z.string().optional(),
+        fullLogoUrl: z.string().optional(),
+        fullLogoDarkUrl: z.string().optional(),
 
-    categoryLabels: z.record(z.string(), z.string()).optional(),
-    categoryColors: z.record(z.string(), z.string()).optional(),
-    navBarColors: z.record(z.string(), z.string()).optional(),
-    statusBarColors: z.record(z.string(), z.string()).optional(),
-    headerTextColors: z.record(z.string(), z.string()).optional(),
-    defaultHeaderTextColor: z.string().optional(),
+        categoryLabels: z.record(z.string(), z.string()).optional(),
+        categoryColors: z.record(z.string(), z.string()).optional(),
+        navBarColors: z.record(z.string(), z.string()).optional(),
+        statusBarColors: z.record(z.string(), z.string()).optional(),
+        headerTextColors: z.record(z.string(), z.string()).optional(),
+        defaultHeaderTextColor: z.string().optional(),
 
-    iconPalettes: z.record(
-        z.string(),
-        z.object({
-            primary: z.string(),
-            primaryLight: z.string().optional(),
-            accent: z.string().optional(),
-            stroke: z.string().optional(),
-        }),
-    ).optional(),
+        iconPalettes: z
+            .record(
+                z.string(),
+                z.object({
+                    primary: z.string(),
+                    primaryLight: z.string().optional(),
+                    accent: z.string().optional(),
+                    stroke: z.string().optional(),
+                })
+            )
+            .optional(),
 
-    deleteSuccessStyles: deleteSuccessStylesSchema.optional(),
-}).passthrough();
+        deleteSuccessStyles: deleteSuccessStylesSchema.optional(),
+    })
+    .passthrough();
 
-export const tenantFeatureConfigSchema = z.object({
-    aiFeatures: z.boolean().default(true),
-    appStore: z.boolean().default(true),
-    analytics: z.boolean().default(true),
-    themeSwitching: z.boolean().default(true),
-    introSlides: z.boolean().default(true),
-    launchPadQuickActions: z.boolean().default(true),
+export const tenantFeatureConfigSchema = z
+    .object({
+        aiFeatures: z.boolean().default(true),
+        appStore: z.boolean().default(true),
+        analytics: z.boolean().default(true),
+        themeSwitching: z.boolean().default(true),
+        introSlides: z.boolean().default(true),
+        launchPadQuickActions: z.boolean().default(true),
 
-    /**
-     * Pathways v2 — greenfield experimental feature at `/pathways`.
-     * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.
-     */
-    pathways: z.boolean().default(false),
-}).passthrough();
+        /**
+         * Pathways v2 — greenfield experimental feature at `/pathways`.
+         * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.
+         */
+        pathways: z.boolean().default(false),
+    })
+    .passthrough();
 
-export const tenantObservabilityConfigSchema = z.object({
-    sentryDsn: z.string().optional(),
-    sentryEnv: z.string().optional(),
-    sentryTraceDomains: z.array(z.string()).optional(),
-    launchDarklyClientId: z.string().default(''),
-    userflowToken: z.string().default(''),
-    googleMapsApiKey: z.string().optional(),
+export const tenantObservabilityConfigSchema = z
+    .object({
+        sentryDsn: z.string().optional(),
+        sentryEnv: z.string().optional(),
+        sentryTraceDomains: z.array(z.string()).optional(),
+        launchDarklyClientId: z.string().default(''),
+        userflowToken: z.string().default(''),
+        googleMapsApiKey: z.string().optional(),
 
-    analyticsProvider: z.enum(['posthog', 'firebase', 'noop']).default('noop'),
-    posthogKey: z.string().optional(),
-    posthogHost: urlOrPlaceholder().optional(),
-}).passthrough();
+        analyticsProvider: z.enum(['posthog', 'firebase', 'noop']).default('noop'),
+        posthogKey: z.string().optional(),
+        posthogHost: urlOrPlaceholder().optional(),
+    })
+    .passthrough();
 
-export const tenantLinksConfigSchema = z.object({
-    appStoreUrl: urlOrPlaceholder().optional(),
-    playStoreUrl: urlOrPlaceholder().optional(),
-    externalAuthRedirectBase: urlOrPlaceholder().optional(),
+export const tenantLinksConfigSchema = z
+    .object({
+        appStoreUrl: urlOrPlaceholder().optional(),
+        playStoreUrl: urlOrPlaceholder().optional(),
+        externalAuthRedirectBase: urlOrPlaceholder().optional(),
 
-    // Legal / informational links.
-    // When omitted, the app auto-generates a dynamic branded URL:
-    //   e.g. https://learncard.com/legal/<tenantId>/terms
-    // Set explicitly to override with a fully custom page.
-    termsOfServiceUrl: urlOrPlaceholder().optional(),
-    privacyPolicyUrl: urlOrPlaceholder().optional(),
-    contactUrl: urlOrPlaceholder().optional(),
-    websiteUrl: urlOrPlaceholder().optional(),
-}).passthrough();
+        // Legal / informational links.
+        // When omitted, the app auto-generates a dynamic branded URL:
+        //   e.g. https://learncard.com/legal/<tenantId>/terms
+        // Set explicitly to override with a fully custom page.
+        termsOfServiceUrl: urlOrPlaceholder().optional(),
+        privacyPolicyUrl: urlOrPlaceholder().optional(),
+        contactUrl: urlOrPlaceholder().optional(),
+        websiteUrl: urlOrPlaceholder().optional(),
+    })
+    .passthrough();
 
-export const tenantNativeConfigSchema = z.object({
-    bundleId: z.string(),
-    displayName: z.string(),
-    deepLinkDomains: z.array(z.string()),
-    customSchemes: z.array(z.string()).optional(),
-}).passthrough();
+export const tenantNativeConfigSchema = z
+    .object({
+        bundleId: z.string(),
+        displayName: z.string(),
+        deepLinkDomains: z.array(z.string()),
+        customSchemes: z.array(z.string()).optional(),
+    })
+    .passthrough();
 
 /**
  * Email / SMS delivery branding.
@@ -188,24 +211,28 @@ export const tenantNativeConfigSchema = z.object({
  * emails locally via @learncard/email-templates using these values.
  * Every field is optional — missing fields fall back to LearnCard defaults.
  */
-export const tenantEmailConfigSchema = z.object({
-    brandName: z.string().optional(),
-    logoUrl: z.string().optional(),
-    logoAlt: z.string().optional(),
-    primaryColor: z.string().optional(),
-    primaryTextColor: z.string().optional(),
-    supportEmail: z.string().optional(),
-    websiteUrl: z.string().optional(),
-    appUrl: z.string().optional(),
-    fromDomain: z.string().optional(),
-    copyrightHolder: z.string().optional(),
-}).passthrough();
+export const tenantEmailConfigSchema = z
+    .object({
+        brandName: z.string().optional(),
+        logoUrl: z.string().optional(),
+        logoAlt: z.string().optional(),
+        primaryColor: z.string().optional(),
+        primaryTextColor: z.string().optional(),
+        supportEmail: z.string().optional(),
+        websiteUrl: z.string().optional(),
+        appUrl: z.string().optional(),
+        fromDomain: z.string().optional(),
+        copyrightHolder: z.string().optional(),
+    })
+    .passthrough();
 
 /** @planned — ecosystem fields reserved for multi-tenant org hierarchy support */
-export const tenantEcosystemConfigSchema = z.object({
-    ecosystemId: z.string().optional(),
-    rootOrgId: z.string().optional(),
-}).passthrough();
+export const tenantEcosystemConfigSchema = z
+    .object({
+        ecosystemId: z.string().optional(),
+        rootOrgId: z.string().optional(),
+    })
+    .passthrough();
 
 // -----------------------------------------------------------------
 // Schema version — bump when making breaking changes to the config shape.
@@ -218,23 +245,25 @@ export const TENANT_CONFIG_SCHEMA_VERSION = 1;
 // Root schema
 // -----------------------------------------------------------------
 
-export const tenantConfigSchema = z.object({
-    schemaVersion: z.number().default(TENANT_CONFIG_SCHEMA_VERSION),
-    tenantId: z.string(),
-    domain: z.string(),
-    devDomain: z.string().optional(),
+export const tenantConfigSchema = z
+    .object({
+        schemaVersion: z.number().default(TENANT_CONFIG_SCHEMA_VERSION),
+        tenantId: z.string(),
+        domain: z.string(),
+        devDomain: z.string().optional(),
 
-    apis: tenantApiConfigSchema,
-    auth: tenantAuthConfigSchema,
-    branding: tenantBrandingConfigSchema,
-    features: tenantFeatureConfigSchema,
-    observability: tenantObservabilityConfigSchema,
-    links: tenantLinksConfigSchema,
+        apis: tenantApiConfigSchema,
+        auth: tenantAuthConfigSchema,
+        branding: tenantBrandingConfigSchema,
+        features: tenantFeatureConfigSchema,
+        observability: tenantObservabilityConfigSchema,
+        links: tenantLinksConfigSchema,
 
-    email: tenantEmailConfigSchema.optional(),
-    native: tenantNativeConfigSchema.optional(),
-    ecosystem: tenantEcosystemConfigSchema.optional(),
-}).passthrough();
+        email: tenantEmailConfigSchema.optional(),
+        native: tenantNativeConfigSchema.optional(),
+        ecosystem: tenantEcosystemConfigSchema.optional(),
+    })
+    .passthrough();
 
 // -----------------------------------------------------------------
 // Inferred types
@@ -283,7 +312,10 @@ export const parseTenantConfig = (raw: unknown, source: string): TenantConfig | 
  */
 const partialTenantConfigSchema = tenantConfigSchema.partial();
 
-export const parsePartialTenantConfig = (raw: unknown, source: string): Partial<TenantConfig> | null => {
+export const parsePartialTenantConfig = (
+    raw: unknown,
+    source: string
+): Partial<TenantConfig> | null => {
     const result = partialTenantConfigSchema.safeParse(raw);
 
     if (result.success) {

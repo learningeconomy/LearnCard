@@ -46,9 +46,12 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         credential?: any;
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string, credential?: any) => {
-        setPendingCredential({ credentialUri, boostUri, credential });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
 
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);

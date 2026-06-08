@@ -9,3 +9,4 @@ export * from './decode';
 export * from './store';
 export * from './pkce';
 export * from './auth-code';
+export * from './nonce';

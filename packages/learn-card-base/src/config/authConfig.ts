@@ -95,10 +95,7 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     }
 
     // Forward any other provider blocks that arrived via .passthrough()
-    const knownKeys = new Set([
-        'provider', 'keyDerivation',
-        'firebase', 'sss', 'web3Auth',
-    ]);
+    const knownKeys = new Set(['provider', 'keyDerivation', 'firebase', 'sss', 'web3Auth']);
 
     for (const [key, value] of Object.entries(tenant.auth)) {
         if (!knownKeys.has(key) && value && typeof value === 'object' && !Array.isArray(value)) {
@@ -153,7 +150,8 @@ const getEnvVar = (key: string): string | undefined => {
 
     // Runtime injection (e.g. Docker / Vite runtime config)
     if (typeof window !== 'undefined' && (window as Record<string, unknown>).__ENV__) {
-        const val = (window as Record<string, unknown> & { __ENV__: Record<string, string> }).__ENV__[key];
+        const val = (window as Record<string, unknown> & { __ENV__: Record<string, string> })
+            .__ENV__[key];
         if (val !== undefined) return val;
     }
 
@@ -166,15 +164,13 @@ const getEnvVar = (key: string): string | undefined => {
  */
 const readEnv = (suffix: string, legacySuffix?: string): string | undefined => {
     return (
-        getEnvVar(`VITE_${suffix}`) ??
-        getEnvVar(`REACT_APP_${legacySuffix ?? suffix}`) ??
-        undefined
+        getEnvVar(`VITE_${suffix}`) ?? getEnvVar(`REACT_APP_${legacySuffix ?? suffix}`) ?? undefined
     );
 };
 
 /**
  * Get the auth configuration from environment variables and tenant overrides.
- * 
+ *
  * @example
  * ```ts
  * const config = getAuthConfig();
@@ -188,11 +184,13 @@ const readEnv = (suffix: string, legacySuffix?: string): string | undefined => {
 export const getAuthConfig = (): AuthConfig => {
     const authProvider: AuthProviderType =
         _authConfigOverrides?.authProvider ??
-        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') ?? 'firebase';
+        readEnv('AUTH_PROVIDER', 'AUTH_PROVIDER') ??
+        'firebase';
 
     const keyDerivation: string =
         _authConfigOverrides?.keyDerivation ??
-        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ?? 'sss';
+        readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ??
+        'sss';
 
     // Build providerConfig — start with tenant config, then overlay ENV vars.
     //
@@ -200,10 +198,10 @@ export const getAuthConfig = (): AuthConfig => {
     // booleans) within each provider block so that deployments can customise
     // infra without touching config files. Provider/strategy *selection*
     // (authProvider, keyDerivation) is handled above and still config-wins.
-    const providerConfig: Record<string, Record<string, unknown>> =
-        _authConfigOverrides?.providerConfig
-            ? { ..._authConfigOverrides.providerConfig }
-            : {};
+    const providerConfig: Record<
+        string,
+        Record<string, unknown>
+    > = _authConfigOverrides?.providerConfig ? { ..._authConfigOverrides.providerConfig } : {};
 
     // SSS — ENV wins over tenant config for each operational value
     {
@@ -214,27 +212,52 @@ export const getAuthConfig = (): AuthConfig => {
             (tenantSss.serverUrl as string | undefined) ??
             'http://localhost:5100/api';
 
-        const enableEmailBackupShareEnv = readEnv('ENABLE_EMAIL_BACKUP_SHARE', 'ENABLE_EMAIL_BACKUP_SHARE');
-        const enableEmailBackupShare = enableEmailBackupShareEnv !== undefined
-            ? enableEmailBackupShareEnv !== 'false'
-            : (tenantSss.enableEmailBackupShare as boolean | undefined) ?? true;
+        const enableEmailBackupShareEnv = readEnv(
+            'ENABLE_EMAIL_BACKUP_SHARE',
+            'ENABLE_EMAIL_BACKUP_SHARE'
+        );
+        const enableEmailBackupShare =
+            enableEmailBackupShareEnv !== undefined
+                ? enableEmailBackupShareEnv !== 'false'
+                : (tenantSss.enableEmailBackupShare as boolean | undefined) ?? true;
 
-        const requireEmailEnv = readEnv('REQUIRE_EMAIL_FOR_PHONE_USERS', 'REQUIRE_EMAIL_FOR_PHONE_USERS');
-        const requireEmailForPhoneUsers = requireEmailEnv !== undefined
-            ? requireEmailEnv !== 'false'
-            : (tenantSss.requireEmailForPhoneUsers as boolean | undefined) ?? true;
+        const requireEmailEnv = readEnv(
+            'REQUIRE_EMAIL_FOR_PHONE_USERS',
+            'REQUIRE_EMAIL_FOR_PHONE_USERS'
+        );
+        const requireEmailForPhoneUsers =
+            requireEmailEnv !== undefined
+                ? requireEmailEnv !== 'false'
+                : (tenantSss.requireEmailForPhoneUsers as boolean | undefined) ?? true;
 
-        providerConfig.sss = { ...tenantSss, serverUrl, enableEmailBackupShare, requireEmailForPhoneUsers };
+        providerConfig.sss = {
+            ...tenantSss,
+            serverUrl,
+            enableEmailBackupShare,
+            requireEmailForPhoneUsers,
+        };
     }
 
     // Web3Auth — ENV wins over tenant config for each operational value
     {
         const tenantW3A = (providerConfig.web3Auth ?? {}) as Record<string, unknown>;
 
-        const clientId = readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ?? (tenantW3A.clientId as string | undefined) ?? '';
-        const network = readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ?? (tenantW3A.network as string | undefined) ?? '';
-        const verifierId = readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ?? (tenantW3A.verifierId as string | undefined) ?? '';
-        const rpcTarget = readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ?? (tenantW3A.rpcTarget as string | undefined) ?? 'https://cloudflare-eth.com';
+        const clientId =
+            readEnv('WEB3AUTH_CLIENT_ID', 'WEB3AUTH_CLIENT_ID') ??
+            (tenantW3A.clientId as string | undefined) ??
+            '';
+        const network =
+            readEnv('WEB3AUTH_NETWORK', 'WEB3AUTH_NETWORK') ??
+            (tenantW3A.network as string | undefined) ??
+            '';
+        const verifierId =
+            readEnv('WEB3AUTH_VERIFIER_ID', 'WEB3AUTH_VERIFIER_ID') ??
+            (tenantW3A.verifierId as string | undefined) ??
+            '';
+        const rpcTarget =
+            readEnv('WEB3AUTH_RPC_TARGET', 'WEB3AUTH_RPC_TARGET') ??
+            (tenantW3A.rpcTarget as string | undefined) ??
+            'https://cloudflare-eth.com';
 
         if (clientId || network || verifierId || Object.keys(tenantW3A).length > 0) {
             providerConfig.web3Auth = { ...tenantW3A, clientId, network, verifierId, rpcTarget };
@@ -279,10 +302,21 @@ export const shouldUseSSS = (): boolean => {
  *
  * To add a future strategy, just add an entry here.
  */
-const STRATEGY_CAPABILITIES: Record<string, import('@learncard/types').KeyDerivationCapabilities> = {
-    sss: { recovery: true, deviceLinking: true, localKeyPersistence: true, contactMethodUpgrade: true },
-    web3auth: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
-};
+const STRATEGY_CAPABILITIES: Record<string, import('@learncard/types').KeyDerivationCapabilities> =
+    {
+        sss: {
+            recovery: true,
+            deviceLinking: true,
+            localKeyPersistence: true,
+            contactMethodUpgrade: true,
+        },
+        web3auth: {
+            recovery: false,
+            deviceLinking: false,
+            localKeyPersistence: false,
+            contactMethodUpgrade: false,
+        },
+    };
 
 const DEFAULT_CAPABILITIES: import('@learncard/types').KeyDerivationCapabilities = {
     recovery: false,

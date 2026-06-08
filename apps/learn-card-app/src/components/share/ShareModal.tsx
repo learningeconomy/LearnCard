@@ -39,7 +39,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                 profileId: string;
                 expiresIn: number | null;
             } = await wallet?.invoke?.generateInvite(challenge, expiration);
-            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${generatedInvite?.challenge}&profileId=${generatedInvite?.profileId}`;
+            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${
+                generatedInvite?.challenge
+            }&profileId=${generatedInvite?.profileId}`;
             setInviteLink(_inviteLink);
             // Treat null as 0 for "never expire"
             setExpiresIn(generatedInvite?.expiresIn === null ? 0 : generatedInvite?.expiresIn);

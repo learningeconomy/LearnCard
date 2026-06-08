@@ -54,6 +54,7 @@ COPY packages/plugins/ler-rs/package.json packages/plugins/ler-rs/
 COPY packages/plugins/open-badge-v2/package.json packages/plugins/open-badge-v2/
 COPY packages/plugins/openid4vc/package.json packages/plugins/openid4vc/
 COPY packages/plugins/render-method/package.json packages/plugins/render-method/
+COPY packages/plugins/sd-jwt-vc/package.json packages/plugins/sd-jwt-vc/
 COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
@@ -100,6 +101,7 @@ COPY packages/plugins/ler-rs packages/plugins/ler-rs
 COPY packages/plugins/open-badge-v2 packages/plugins/open-badge-v2
 COPY packages/plugins/openid4vc packages/plugins/openid4vc
 COPY packages/plugins/render-method packages/plugins/render-method
+COPY packages/plugins/sd-jwt-vc packages/plugins/sd-jwt-vc
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates

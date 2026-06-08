@@ -211,8 +211,12 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 });
 
                                 const now = Date.now();
-                                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
                                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                                     method: ProfileBuildMethod.Notification,
                                     itemType: 'credential',

@@ -97,8 +97,9 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 </h2>
 
                                 <p className="text-gray-600 text-center text-sm">
-                                    To receive this credential, you'll need to confirm your identity. 
-                                    This lets the issuer securely deliver it to your wallet.
+                                    To receive this credential, you'll need to confirm your
+                                    identity. This lets the issuer securely deliver it to your
+                                    wallet.
                                 </p>
 
                                 {/* What happens section */}
@@ -143,8 +144,8 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                     <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
 
                                     <p>
-                                        Your identity is only shared with the issuer to complete this exchange. 
-                                        You're always in control of your data.
+                                        Your identity is only shared with the issuer to complete
+                                        this exchange. You're always in control of your data.
                                     </p>
                                 </div>
                             </div>
