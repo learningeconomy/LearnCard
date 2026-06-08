@@ -13,6 +13,7 @@ import {
     resolveSkillFrameworkNeo4jConnection,
     seedSkillFrameworkFixtures,
 } from '../src/seed/seedSkillFrameworks';
+import { getProfileByProfileId } from '../src/accesslayer/profile/read';
 
 type SkillFrameworkCommand = 'seed' | 'add-admin';
 
@@ -142,9 +143,6 @@ const parseCliOptions = (): CliOptions => {
     throw new Error('Stage must be either local or staging.');
 };
 
-const normalizeProfileId = (profileId: string): string =>
-    profileId.toLowerCase().replace(':', '%3A');
-
 const ensureStageMessage = (stage: Stage, usedDefaultStage: boolean): void => {
     console.log('');
 
@@ -158,20 +156,6 @@ const ensureStageMessage = (stage: Stage, usedDefaultStage: boolean): void => {
     }
 
     console.log('Using local environment.');
-};
-
-const countProfileById = async (
-    run: (
-        query: string,
-        params?: Record<string, unknown>
-    ) => Promise<{ records: Array<{ get: (key: string) => unknown }> }>,
-    profileId: string
-): Promise<number> => {
-    const result = await run(`MATCH (p:Profile {profileId: $profileId}) RETURN count(p) AS count`, {
-        profileId,
-    });
-
-    return Number(result.records[0]?.get('count') ?? 0);
 };
 
 const runSeed = async (stage: Stage, usedDefaultStage: boolean): Promise<void> => {
@@ -222,18 +206,15 @@ const runAddAdmin = async (
         if (!inlineProfileId) {
             console.log('');
         }
-        const profileId = normalizeProfileId(rawProfileId);
+        const profileId = rawProfileId;
 
         if (!profileId) {
             throw new Error('Profile id is required.');
         }
 
-        const profileCount = await countProfileById(
-            neogma.queryRunner.run.bind(neogma.queryRunner),
-            profileId
-        );
+        const profile = await getProfileByProfileId(profileId);
 
-        if (profileCount === 0) {
+        if (!profile) {
             throw new Error(`No profile found for ${profileId}.`);
         }
 

@@ -12,6 +12,7 @@ import {
     upsertSkillEmbeddings,
     type UpdateSkillEmbeddingFn,
 } from '@helpers/skill-embedding.helpers';
+import { transformProfileId } from '@helpers/profile.helpers';
 
 type QueryRunnerLike = {
     run: (
@@ -338,7 +339,7 @@ export const addSkillFrameworkAdmin = async (
     run: QueryRunnerLike['run'],
     profileId: string
 ): Promise<number> => {
-    const normalizedProfileId = normalizeProfileId(profileId);
+    const normalizedProfileId = transformProfileId(profileId);
     const frameworksResult = await run(
         `MATCH (f:SkillFramework)
          WHERE f.id IN $frameworkIds
@@ -437,9 +438,6 @@ const describeEmbeddingBackfillFailure = (error: unknown): string => {
     return `${message}\nUse \`pnpm skill-frameworks add-admin\` to add admins.`;
 };
 
-const normalizeProfileId = (profileId: string): string =>
-    profileId.trim().toLowerCase().replace(':', '%3A');
-
 const upsertSkillNode = async (
     run: QueryRunnerLike['run'],
     framework: SeedSkillFrameworkFixture,
@@ -509,7 +507,7 @@ export const ensureSeedProfile = async (
     run: QueryRunnerLike['run'],
     profileId: string = DEFAULT_OWNER_PROFILE_ID
 ): Promise<void> => {
-    const normalizedProfileId = normalizeProfileId(profileId);
+    const normalizedProfileId = transformProfileId(profileId);
 
     await run(
         `MERGE (p:Profile {profileId: $profileId})
@@ -541,7 +539,7 @@ export const seedSkillFrameworkFixtures = async (
     options: SeedSkillFrameworksOptions = {}
 ): Promise<{ seededFrameworkIds: string[] }> => {
     const ownerProfileId = options.ownerProfileId ?? DEFAULT_OWNER_PROFILE_ID;
-    const normalizedOwnerProfileId = normalizeProfileId(ownerProfileId);
+    const normalizedOwnerProfileId = transformProfileId(ownerProfileId);
     const fixtures = DEFAULT_SKILL_FRAMEWORKS;
     const adminProfileIds = unique(options.adminProfileIds ?? []);
 
@@ -622,7 +620,7 @@ export const seedSkillFrameworkFixtures = async (
 
     if (adminProfileIds.length > 0) {
         for (const profileId of adminProfileIds) {
-            const normalizedAdminProfileId = normalizeProfileId(profileId);
+            const normalizedAdminProfileId = transformProfileId(profileId);
 
             for (const frameworkId of seededFrameworkIds) {
                 await run(
