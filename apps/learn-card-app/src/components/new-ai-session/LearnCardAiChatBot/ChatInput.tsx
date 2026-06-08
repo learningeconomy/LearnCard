@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+
+import { useTranslation } from 'react-i18next';
+
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
@@ -48,6 +51,7 @@ const getDefaultPlaceholder = (mode: AiSessionMode): string => {
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
+    const { t } = useTranslation();
     const { closeAllModals } = useModal();
     const history = useHistory();
     const $planReady = useStore(planReady);
@@ -201,7 +205,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
                                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                                    aria-label="Close"
+                                    aria-label={t('aiSession.close', 'Close')}
                                 >
                                     ×
                                 </button>

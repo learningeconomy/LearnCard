@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
 import AiSessionsPopOverButton from './AiSessionsPopOverButton';
@@ -33,6 +35,7 @@ export const AiSessionsSearch: React.FC<{
     className,
     hidePopover = false,
 }) => {
+    const { t } = useTranslation();
     return (
         <div className="w-full flex items-center justify-center mt-4">
             <div className="w-full flex items-center max-w-[600px] relative gap-2">
@@ -43,7 +46,7 @@ export const AiSessionsSearch: React.FC<{
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder="Search"
+                        placeholder={t('aiSession.search', 'Search')}
                         onIonInput={e => setSearchInput(e.detail.value)}
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[48px] ${className}`}
                     />

@@ -1679,5 +1679,13 @@
         "previousCredential": "الشهادة السابقة",
         "nextCredential": "الشهادة التالية",
         "noSessionsYet": "لا توجد جلسات بعد"
+    },
+    "aiSession": {
+        "loadingTitle": "تحميل العنوان",
+        "close": "إغلاق",
+        "newTopic": "موضوع جديد",
+        "browse": "...تصفح",
+        "somethingElse": "...شيء آخر",
+        "search": "بحث"
     }
 }

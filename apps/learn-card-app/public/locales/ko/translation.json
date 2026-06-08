@@ -1679,5 +1679,13 @@
         "previousCredential": "이전 자격증명",
         "nextCredential": "다음 자격증명",
         "noSessionsYet": "아직 세션이 없습니다"
+    },
+    "aiSession": {
+        "loadingTitle": "제목 로딩 중",
+        "close": "닫기",
+        "newTopic": "새 주제",
+        "browse": "탐색...",
+        "somethingElse": "다른 것...",
+        "search": "검색"
     }
 }

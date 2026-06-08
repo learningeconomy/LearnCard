@@ -1679,5 +1679,13 @@
         "previousCredential": "Credencial anterior",
         "nextCredential": "Siguiente credencial",
         "noSessionsYet": "Aún no hay sesiones"
+    },
+    "aiSession": {
+        "loadingTitle": "Cargando título",
+        "close": "Cerrar",
+        "newTopic": "Nuevo tema",
+        "browse": "Explorar...",
+        "somethingElse": "Algo más...",
+        "search": "Buscar"
     }
 }

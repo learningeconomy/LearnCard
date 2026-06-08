@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
 
@@ -11,6 +13,7 @@ export const ExistingTopicSearch: React.FC<{
     search: string | null | undefined;
     setSearch: React.Dispatch<React.SetStateAction<string | null | undefined>>;
 }> = ({ search, setSearch }) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
@@ -41,7 +44,7 @@ export const ExistingTopicSearch: React.FC<{
                     className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] !px-4 ${
                         isDesktop ? '' : 'border-solid border-[1px] border-grayscale-200'
                     }`}
-                    placeholder="Browse..."
+                    placeholder={t('aiSession.browse', 'Browse...')}
                 />
                 <button
                     className={` p-2 rounded-[16px] flex items-center justify-center ml-2 min-h-[44px] min-w-[44px] ${
