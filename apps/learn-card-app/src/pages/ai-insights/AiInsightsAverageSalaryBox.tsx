@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import type { OccupationDetailsResponse } from 'learn-card-base';
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
@@ -27,6 +29,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
     isLoading = false,
     salaryType = 'per_year',
 }) => {
+    const { t } = useTranslation();
     const [selectedOccupation, setSelectedOccupation] = useState<
         OccupationDetailsResponse | undefined
     >(occupation);
@@ -140,7 +143,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
     return (
         <div className="relative flex flex-col gap-[30px] w-full max-w-[600px] mx-auto rounded-[15px] bg-white py-[25px] px-[15px] shadow-bottom-4-4 overflow-visible">
             <h2 className="text-[18px] font-bold text-grayscale-900 font-poppins text-left leading-[24px] tracking-[0.32px]">
-                Average Salaries
+                {t('aiInsights.averageSalaries', 'Average Salaries')}
             </h2>
 
             <div className="rounded-[10px] border-[1px] border-solid border-grayscale-200 bg-grayscale-50 p-[10px] flex flex-col gap-[10px] items-start">
@@ -150,7 +153,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                     </p>
                     <button
                         type="button"
-                        aria-label="Choose role"
+                        aria-label={t('aiInsights.chooseRole', 'Choose role')}
                         aria-expanded={isRoleMenuOpen}
                         onClick={handleChooseRole}
                         className={`ml-auto flex h-[30px] w-[30px] items-center justify-center rounded-full transition-colors p-[5px] ${
@@ -173,7 +176,7 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                 </div>
 
                 {isLoading ? (
-                    <p className="text-sm text-grayscale-600">Finding salary data...</p>
+                    <p className="text-sm text-grayscale-600">{t('aiInsights.findingSalaryData', 'Finding salary data...')}</p>
                 ) : activeOccupation && selectedWages ? (
                     <>
                         <p className="flex flex-wrap items-end gap-1 leading-none">
@@ -181,25 +184,25 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                                 {formattedMedianSalary}
                             </span>
                             <span className="text-[12px] text-grayscale-700 leading-[16px]">
-                                {salaryTypeLabel} average
+                                {salaryTypeLabel} {t('aiInsights.average', 'average')}
                             </span>
                         </p>
 
                         <div className="flex flex-col items-start text-[12px] text-grayscale-600 font-bold">
                             <p>
-                                Range: {formattedMinSalary} - {formattedMaxSalary}
+                                {t('aiInsights.range', { ...{ min: formattedMinSalary, max: formattedMaxSalary }, defaultValue: 'Range: {{min}} - {{max}}' })}
                             </p>
 
                             {totalEmploymentCount && (
                                 <p className="text-left">
-                                    About {totalEmploymentCount} {pluralizedTitle} worldwide
+                                    {t('aiInsights.aboutCount', { ...{ count: totalEmploymentCount, title: pluralizedTitle }, defaultValue: 'About {{count}} {{title}} worldwide' })}
                                 </p>
                             )}
                         </div>
                     </>
                 ) : (
                     <p className="text-sm text-grayscale-600">
-                        We could not find salary data for this title yet.
+                        {t('aiInsights.salaryDataNotFound', 'We could not find salary data for this title yet.')}
                     </p>
                 )}
             </div>

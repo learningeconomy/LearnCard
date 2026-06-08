@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import AiInsightsExploreMoreModal from './AiInsightsExploreMoreModal';
 
 import { useModal, ModalTypes } from 'learn-card-base';
@@ -21,7 +23,7 @@ export const AiInsightsExploreMoreButton: React.FC = () => {
                 onClick={handleExploreMore}
                 className="text-grayscale-700 font-semibold flex items-center gap-[6px]"
             >
-                Explore Your Insights
+                {t('aiInsights.exploreYourInsights', 'Explore Your Insights')}
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"

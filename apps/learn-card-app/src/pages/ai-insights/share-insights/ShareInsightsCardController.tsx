@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import ShareChildInsightsModal from '../child-insights/ShareChildInsightsModal';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import ShareInsightsModal from './ShareInsightsModal';
@@ -12,6 +14,7 @@ export const ShareInsightsCardController: React.FC<{
     childProfile?: LCNProfile;
     childProfileManager?: LCNProfileManager;
 }> = ({ childProfile, childProfileManager }) => {
+    const { t } = useTranslation();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -37,8 +40,8 @@ export const ShareInsightsCardController: React.FC<{
             className="h-full p-6 bg-grayscale-50 flex flex-col items-center justify-center border-l-[1px] border-solid border-grayscale-200"
         >
             <QRCodeScanner className="text-indigo-600 h-[30px] w-[30px] min-h-[30px] min-w-[30px] mb-2" />
-            <span className="text-indigo-600 text-sm leading-[16px] font-semibold">Share</span>
-            <span className="text-indigo-600 text-sm leading-[16px] font-semibold">Insights</span>
+            <span className="text-indigo-600 text-sm leading-[16px] font-semibold">{t('aiInsights.share', 'Share')}</span>
+            <span className="text-indigo-600 text-sm leading-[16px] font-semibold">{t('aiInsights.insights', 'Insights')}</span>
         </button>
     );
 };

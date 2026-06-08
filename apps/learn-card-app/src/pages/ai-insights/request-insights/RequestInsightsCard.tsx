@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import RequestInsightsModal from './RequestInsightsModal';
@@ -7,6 +9,7 @@ import RequestInsightsModal from './RequestInsightsModal';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 export const RequestInsightsCard: React.FC<{ contractUri: string }> = ({ contractUri }) => {
+    const { t } = useTranslation();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -29,10 +32,10 @@ export const RequestInsightsCard: React.FC<{ contractUri: string }> = ({ contrac
 
                 <div className="w-full flex items-start justify-center flex-col ml-[12px] px-2 text-left">
                     <p className="text-[17px] text-grayscale-900 font-semibold line-clamp-1">
-                        Request Insights
+                        {t('aiInsights.requestAccess', 'Request Insights')}
                     </p>
                     <p className="text-sm font-poppins text-grayscale-700">
-                        Request access to view your students learning insights.
+                        {t('aiInsights.requestAccessDescription', 'Request access to view your students learning insights.')}
                     </p>
                 </div>
 

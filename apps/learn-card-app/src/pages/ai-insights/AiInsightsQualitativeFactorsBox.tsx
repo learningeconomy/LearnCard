@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
 
+import { useTranslation } from 'react-i18next';
+import { Trans } from 'react-i18next';
+
 import { type OccupationDetailsResponse, useVerifiableData } from 'learn-card-base';
 
 import AiPathwayCareerGauge from '../ai-pathways/ai-pathway-careers/AiPathwayCareerGauge';
@@ -15,9 +18,7 @@ type AiInsightsQualitativeFactorsBoxProps = {
 };
 
 type GaugeComparisonCopy = {
-    leadingText: string;
-    highlightText: string;
-    trailingText: string;
+    messageKey: string;
     highlightClassName: string;
 };
 
@@ -144,9 +145,7 @@ const getWorkLifeBalanceCopy = (
 ): GaugeComparisonCopy => {
     if (userScore === undefined) {
         return {
-            leadingText: 'Your current work life balance is ',
-            highlightText: 'ready to compare',
-            trailingText: ' once you finish your profile.',
+            messageKey: 'aiInsights.workLife.ready',
             highlightClassName: 'text-grayscale-900',
         };
     }
@@ -155,44 +154,34 @@ const getWorkLifeBalanceCopy = (
 
     if (delta >= 33) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is very low',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.workLife.veryLow',
             highlightClassName: 'text-rose-600',
         };
     }
 
     if (delta >= 15) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is low',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.workLife.low',
             highlightClassName: 'text-rose-600',
         };
     }
 
     if (delta <= -33) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is very strong',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.workLife.veryStrong',
             highlightClassName: 'text-emerald-601',
         };
     }
 
     if (delta <= -15) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is strong',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.workLife.strong',
             highlightClassName: 'text-emerald-601',
         };
     }
 
     return {
-        leadingText: 'Your current work life balance is ',
-        highlightText: 'about in line with others',
-        trailingText: '.',
+        messageKey: 'aiInsights.workLife.aboutInLine',
         highlightClassName: 'text-grayscale-900',
     };
 };
@@ -203,9 +192,7 @@ const getJobStabilityCopy = (
 ): GaugeComparisonCopy => {
     if (userScore === undefined) {
         return {
-            leadingText: 'Others felt their jobs are ',
-            highlightText: 'ready to compare',
-            trailingText: ' once you finish your profile.',
+            messageKey: 'aiInsights.jobStability.ready',
             highlightClassName: 'text-grayscale-900',
         };
     }
@@ -214,54 +201,46 @@ const getJobStabilityCopy = (
 
     if (delta >= 33) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is very low',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.jobStability.veryLow',
             highlightClassName: 'text-rose-600',
         };
     }
 
     if (delta >= 15) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is low',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.jobStability.low',
             highlightClassName: 'text-rose-600',
         };
     }
 
     if (delta <= -33) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is very strong',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.jobStability.veryStrong',
             highlightClassName: 'text-emerald-601',
         };
     }
 
     if (delta <= -15) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is strong',
-            trailingText: ' compared to others.',
+            messageKey: 'aiInsights.jobStability.strong',
             highlightClassName: 'text-emerald-601',
         };
     }
 
     return {
-        leadingText: 'Your current job stability is ',
-        highlightText: 'about in line',
-        trailingText: ' with others.',
+        messageKey: 'aiInsights.jobStability.aboutInLine',
         highlightClassName: 'text-grayscale-900',
     };
 };
 
 const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => {
+    const { t } = useTranslation();
     return (
         <p className="text-sm font-poppins text-grayscale-600 text-center max-w-[250px] mx-auto">
-            {copy.leadingText}
-            <span className={`font-bold ${copy.highlightClassName}`}>{copy.highlightText}</span>
-            {copy.trailingText}
+            <TransP
+                m={m[copy.messageKey]()}
+                components={[<span className={`font-bold ${copy.highlightClassName}`} />]}
+            />
         </p>
     );
 };
@@ -305,16 +284,16 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
     return (
         <div className="flex flex-col gap-5 w-full">
             <h2 className="text-[17px] font-bold text-grayscale-900 font-poppins text-left leading-[24px]">
-                Qualitative Factors
+                {t('aiInsights.qualitativeFactors', 'Qualitative Factors')}
             </h2>
 
             {isBusy ? (
-                <p className="text-sm text-grayscale-600">Finding qualitative data...</p>
+                <p className="text-sm text-grayscale-600">{t('aiInsights.findingQualitativeData', 'Finding qualitative data...')}</p>
             ) : occupation ? (
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-6">
                     <div className="flex flex-col items-center gap-3">
                         <AiPathwayCareerGauge
-                            title="Work Life Balance"
+                            title={t('aiInsights.workLifeBalance', 'Work Life Balance')}
                             score={workLifeBalanceBenchmarkScore}
                             userScore={workLifeBalanceUserScore}
                         />
@@ -323,7 +302,7 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
 
                     <div className="flex flex-col items-center gap-3">
                         <AiPathwayCareerGauge
-                            title="Job Stability"
+                            title={t('aiInsights.jobStability', 'Job Stability')}
                             score={jobStabilityBenchmarkScore}
                             userScore={jobStabilityUserScore}
                         />
@@ -332,12 +311,12 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
                 </div>
             ) : (
                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Add a professional title to see qualitative factors here.
+                    {t('aiInsights.addTitleForQualitativeFactors', 'Add a professional title to see qualitative factors here.')}
                 </p>
             )}
 
             <p className="text-xs text-grayscale-500 leading-relaxed text-left">
-                Based on your answers and occupation data.
+                {t('aiInsights.basedOnAnswersAndData', 'Based on your answers and occupation data.')}
             </p>
         </div>
     );

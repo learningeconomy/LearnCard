@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { IonPage, IonContent } from '@ionic/react';
 import AiInsightsTopSkills from '../AiInsightsTopSkills';
 import AiInsightsLearningSnapshots from '../AiInsightsLearningSnapshots';
@@ -27,6 +29,7 @@ export const LearnerInsightsPreview: React.FC<{
     readStatus?: 'unseen' | 'seen' | null | undefined;
     status?: 'pending' | 'accepted' | 'denied' | null | undefined;
 }> = ({ profile, readStatus, status }) => {
+    const { t } = useTranslation();
     const { closeModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
 
@@ -83,7 +86,7 @@ export const LearnerInsightsPreview: React.FC<{
                         className={`bg-white p-3 h-[45px] rounded-full  flex items-center justify-center shadow-button-bottom text-grayscale-900 w-full`}
                         onClick={closeModal}
                     >
-                        Back
+                        {t('aiInsights.back', 'Back')}
                     </button>
                 </div>
             </footer>

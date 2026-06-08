@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
 import type { SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
@@ -80,6 +82,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
     isLoading = false,
     salaryType = 'per_year',
 }) => {
+    const { t } = useTranslation();
     const selectedWages = useMemo(() => {
         if (!occupation) {
             return undefined;
@@ -175,9 +178,9 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         return (
             <div className="w-full rounded-[18px] border border-grayscale-200 bg-grayscale-10 px-4 py-4 font-poppins">
                 <h3 className="text-[18px] font-semibold text-grayscale-900">
-                    Your Market Comparison
+                    {t('aiInsights.yourMarketComparison', 'Your Market Comparison')}
                 </h3>
-                <p className="mt-2 text-sm text-grayscale-600">Finding market data...</p>
+                <p className="mt-2 text-sm text-grayscale-600">{t('aiInsights.findingMarketData', 'Finding market data...')}</p>
             </div>
         );
     }
@@ -186,10 +189,10 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         return (
             <div className="w-full rounded-[18px] border border-grayscale-200 bg-grayscale-10 px-4 py-4 font-poppins">
                 <h3 className="text-[18px] font-semibold text-grayscale-900">
-                    Your Market Comparison
+                    {t('aiInsights.yourMarketComparison', 'Your Market Comparison')}
                 </h3>
                 <p className="mt-2 text-sm text-grayscale-600">
-                    Add your salary to see how you compare against the market.
+                    {t('aiInsights.addSalaryToCompare', 'Add your salary to see how you compare against the market.')}
                 </p>
             </div>
         );
@@ -199,11 +202,10 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         <div className="w-full font-poppins flex flex-col gap-4">
             <div className="flex flex-col gap-[10px]">
                 <h3 className="text-[17px] font-bold text-grayscale-900 leading-[24px] text-left">
-                    Your Market Comparison
+                    {t('aiInsights.yourMarketComparison', 'Your Market Comparison')}
                 </h3>
                 <p className="text-[14px] text-grayscale-600 leading-[18px] text-left">
-                    It looks like you make more than {comparisonPercentLabel ?? 0}% of other{' '}
-                    {toTitleCase(titlePlural)} in the market.
+                    {t('aiInsights.makeMoreThan', { ...{ percent: comparisonPercentLabel ?? 0, title: toTitleCase(titlePlural) }, defaultValue: 'It looks like you make more than {{percent}}% of other {{title}} in the market.' })}
                 </p>
             </div>
 
@@ -264,7 +266,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="flex flex-col items-center">
                     <p className="text-[12px] font-semibold leading-[14px] text-grayscale-600">
-                        MARKET LOW
+                        {t('aiInsights.marketLow', 'MARKET LOW')}
                     </p>
                     <p className="text-[12px] font-bold text-grayscale-900 leading-[16px] tracking-[0.72px]">
                         {marketLowLabel}
@@ -272,7 +274,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 </div>
                 <div className="flex flex-col items-center">
                     <p className="text-[12px] font-semibold leading-[14px] text-grayscale-600">
-                        MARKET AVG
+                        {t('aiInsights.marketAvg', 'MARKET AVG')}
                     </p>
                     <p className="text-[12px] font-bold text-grayscale-900 leading-[16px] tracking-[0.72px]">
                         {marketAvgLabel}
@@ -280,7 +282,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 </div>
                 <div className="flex flex-col items-center">
                     <p className="text-[12px] font-semibold leading-[14px] text-grayscale-600">
-                        MARKET HIGH
+                        {t('aiInsights.marketHigh', 'MARKET HIGH')}
                     </p>
                     <p className="text-[12px] font-bold text-grayscale-900 leading-[16px] tracking-[0.72px]">
                         {marketHighLabel}

@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import LearnerInsightsSearch from '../learner-insights/LearnerInsightsSearch';
 import { useConsentFlowByUri } from '../../consentFlow/useConsentFlow';
 
@@ -75,13 +77,13 @@ const SharedInsightsRow: React.FC<{ request: SharedRequest; refetch: () => void 
                             </span>
                         )}
                         {request.status === 'accepted' ? (
-                            <span className="font-semibold text-emerald-700">Accepted</span>
+                            <span className="font-semibold text-emerald-700">{t('aiInsights.accepted', 'Accepted')}</span>
                         ) : request.status === 'pending' ? (
-                            <span className="font-semibold text-indigo-600">Pending</span>
+                            <span className="font-semibold text-indigo-600">{t('aiInsights.pending', 'Pending')}</span>
                         ) : request.status === 'denied' ? (
-                            <span className="font-semibold text-rose-600">Denied</span>
+                            <span className="font-semibold text-rose-600">{t('aiInsights.denied', 'Denied')}</span>
                         ) : (
-                            <span className="font-semibold text-grayscale-600">Unknown</span>
+                            <span className="font-semibold text-grayscale-600">{t('aiInsights.unknown', 'Unknown')}</span>
                         )}
                     </p>
                 </div>
@@ -164,7 +166,7 @@ const SharedInsights: React.FC = () => {
                     <section className="flex flex-col items-center justify-center my-[30px]">
                         <FloatingBottleIcon />
                         <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                            {showNoSearchResults ? 'No Search Results' : 'No Shared Insights'}
+                            {showNoSearchResults ? t('aiInsights.noSearchResults', 'No Search Results') : t('aiInsights.noSharedInsights', 'No Shared Insights')}
                         </p>
                     </section>
                 )}

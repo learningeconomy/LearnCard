@@ -2,6 +2,9 @@ import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 
+import { useTranslation } from 'react-i18next';
+import { Trans } from 'react-i18next';
+
 import RequestInsightsSkeletonLoader from './RequestInsightsSkeletonLoader';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
@@ -52,12 +55,12 @@ export const RequestInsightsFromUserModal: React.FC<{
         const profileId = profile?.profileId ?? '';
 
         if (isPendingRequest) {
-            presentToast('Insights request already pending.');
+            presentToast(t('toasts.ai.alreadyPending', 'Insights request already pending.'));
             return;
         }
 
         if (isAcceptedRequest) {
-            presentToast('Insights request already accepted.');
+            presentToast(t('toasts.ai.alreadyAccepted', 'Insights request already accepted.'));
             return;
         }
 
@@ -77,17 +80,17 @@ export const RequestInsightsFromUserModal: React.FC<{
         });
         closeModal();
 
-        presentToast('AI Insights request sent!');
+        presentToast(t('toasts.ai.requestSent', 'AI Insights request sent!'));
 
         onSuccessCallback?.();
     };
 
-    let requestButtonLabel = 'Login to Request';
+    let requestButtonLabel = t('aiInsights.loginToRequest', 'Login to Request');
 
-    if (isPending) requestButtonLabel = 'Sending...';
-    else if (isPendingRequest) requestButtonLabel = 'Request Pending';
-    else if (isAcceptedRequest) requestButtonLabel = 'Request Accepted';
-    else if (isAuthenticated) requestButtonLabel = 'Send Request';
+    if (isPending) requestButtonLabel = t('aiInsights.sending', 'Sending...');
+    else if (isPendingRequest) requestButtonLabel = t('aiInsights.requestPending', 'Request Pending');
+    else if (isAcceptedRequest) requestButtonLabel = t('aiInsights.requestAccepted', 'Request Accepted');
+    else if (isAuthenticated) requestButtonLabel = t('aiInsights.sendRequest', 'Send Request');
 
     return (
         <div className="h-full w-full flex items-center justify-center">
@@ -115,13 +118,25 @@ export const RequestInsightsFromUserModal: React.FC<{
                     </div>
                     {isAuthenticated ? (
                         <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-                            Request Insights from <br /> {profile?.displayName}
+                            {t('aiInsights.requestInsightsFrom', { ...{ name: profile?.displayName ?? '' }, defaultValue: 'Request Insights from <br /> {{name}}' })}
                         </p>
                     ) : (
                         <p className="text-grayscale-900 text-[16px] text-center">
-                            Please <span className="font-semibold">Login</span> to{' '}
-                            <span className="font-semibold">Request Insights</span> from <br />{' '}
-                            <span className="font-semibold">{profile?.displayName}</span>
+                            <Trans
+
+                                i18nKey="aiInsights.loginToRequestFrom"
+
+                                defaults="Please <0>Login</0> to <1>Request Insights</1> from <br /> <2>{{name}}</2>"
+
+                                values={{ name: profile?.displayName ?? '' }}
+
+                                components={[
+                                    <span className="font-semibold" />,
+                                    <span className="font-semibold" />,
+                                    <span className="font-semibold" />,
+                                ]}
+
+                            />
                         </p>
                     )}
                 </div>
@@ -167,6 +182,7 @@ export const RequestInsightsFromUserModalWrapper: React.FC<{
     profileId: string;
     redirectToLink: string;
 }> = ({ profileId, redirectToLink }) => {
+    const { t } = useTranslation();
     const history = useHistory();
     const location = useLocation();
     const currentUser = useCurrentUser();

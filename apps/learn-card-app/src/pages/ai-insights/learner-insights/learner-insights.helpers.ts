@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+import i18next from 'i18next';
+
 import { useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
@@ -28,33 +30,33 @@ export type LearnerInsightsFilterOption = Omit<LearnerInsightsSortOption, 'type'
     type: LearnerInsightsFilterOptionsEnum;
 };
 
-export const LEARNER_INSIGHTS_SORT_OPTIONS: LearnerInsightsSortOption[] = [
+export const getLearnerInsightsSortOptions = () => [
     {
         id: 1,
-        title: 'A-Z',
+        title: i18next.t('aiInsights.sort.az', 'A-Z'),
         type: LearnerInsightsSortOptionsEnum.alphabetical,
     },
     {
         id: 2,
-        title: 'Recently Added',
+        title: i18next.t('aiInsights.sort.recentlyAdded', 'Recently Added'),
         type: LearnerInsightsSortOptionsEnum.recentlyAdded,
     },
 ];
 
-export const LEARNER_INSIGHTS_FILTER_OPTIONS: LearnerInsightsFilterOption[] = [
+export const getLearnerInsightsFilterOptions = () => [
     {
         id: 1,
-        title: 'All',
+        title: i18next.t('aiInsights.filter.all', 'All'),
         type: LearnerInsightsFilterOptionsEnum.all,
     },
     {
         id: 2,
-        title: 'Pending',
+        title: i18next.t('aiInsights.filter.pending', 'Pending'),
         type: LearnerInsightsFilterOptionsEnum.pending,
     },
     {
         id: 3,
-        title: 'Accepted',
+        title: i18next.t('aiInsights.filter.accepted', 'Accepted'),
         type: LearnerInsightsFilterOptionsEnum.accepted,
     },
 ];

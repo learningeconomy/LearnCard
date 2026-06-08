@@ -1,4 +1,7 @@
 import React, { useMemo } from 'react';
+
+import { useTranslation } from 'react-i18next';
+
 import { useVerifiableData } from 'learn-card-base';
 import {
     SKILL_PROFILE_PROFILE_KEY,
@@ -22,6 +25,7 @@ import AiInsightsAverageSalaryBox from './AiInsightsAverageSalaryBox';
 type AiInsightsWidgetsProps = {};
 
 const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
+    const { t } = useTranslation();
     const { data: profileData } = useVerifiableData<SkillProfileProfileData>(
         SKILL_PROFILE_PROFILE_KEY,
         {
@@ -105,7 +109,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
 
                 {occupationLoading ? (
                     <div className="py-2">
-                        <p className="text-sm text-grayscale-600">Finding career data...</p>
+                        <p className="text-sm text-grayscale-600">{t('aiInsights.findingCareerData', 'Finding career data...')}</p>
                     </div>
                 ) : hasOccupationData && occupation ? (
                     <>
@@ -154,8 +158,8 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
                     <div className="py-2">
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {professionalTitle
-                                ? 'We could not find career data for this title yet.'
-                                : 'Add a professional title to see career data here.'}
+                                ? t('aiInsights.careerDataNotFound', 'We could not find career data for this title yet.')
+                                : t('aiInsights.addTitleForCareerData', 'Add a professional title to see career data here.')}
                         </p>
                     </div>
                 )}

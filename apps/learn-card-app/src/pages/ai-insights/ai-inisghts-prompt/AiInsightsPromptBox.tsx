@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import { useTranslation } from 'react-i18next';
+
 import AiInsightsPromptBoxInput from './AiInsightsPromptBoxInput';
 
 import {
@@ -81,7 +83,7 @@ export const AiInsightsPromptBox: React.FC = () => {
                     promptIsEmpty ? 'bg-grayscale-600 opacity-50' : 'bg-indigo-600'
                 }`}
             >
-                Let's Go!
+                {t('aiInsights.letsGo', 'Let\'s Go!')}
             </button>
         </form>
     );

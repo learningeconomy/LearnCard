@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import Trophy from 'learn-card-base/svgs/Trophy';
 import SproutIcon from 'learn-card-base/svgs/SproutIcon';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
@@ -28,6 +30,7 @@ const AiInsightsLearningSnapshots: React.FC<{
     aiInsightCredential?: any;
     isSharedView?: boolean;
 }> = ({ isLoading, aiInsightCredential, isSharedView = false }) => {
+    const { t } = useTranslation();
     const { data: currentUserAiInsightCredential, isLoading: aiInsightCredentialLoading } =
         useAiInsightCredential();
 
@@ -48,21 +51,21 @@ const AiInsightsLearningSnapshots: React.FC<{
 
     const insights: AiInsightsLearningSnapshot[] = [
         {
-            label: 'Strongest Area',
+            label: t('aiInsights.strongestArea', 'Strongest Area'),
             title: resolvedAiInsightCredential?.insights?.strongestArea?.title,
             description: resolvedAiInsightCredential?.insights?.strongestArea?.summary,
             type: AiInsightsLearningSnapshotType.StrongestArea,
             icon: <Trophy className="w-[25px] h-[25px] text-emerald-700" />,
         },
         {
-            label: 'Weakness',
+            label: t('aiInsights.weakness', 'Weakness'),
             title: resolvedAiInsightCredential?.insights?.weakestArea?.title,
             description: resolvedAiInsightCredential?.insights?.weakestArea?.summary,
             type: AiInsightsLearningSnapshotType.Weakness,
             icon: <WrenchIcon className="w-[25px] h-[25px] text-orange-600" />,
         },
         {
-            label: 'Room for Growth',
+            label: t('aiInsights.roomForGrowth', 'Room for Growth'),
             title: resolvedAiInsightCredential?.insights?.roomForGrowth?.title,
             description: resolvedAiInsightCredential?.insights?.roomForGrowth?.summary,
             type: AiInsightsLearningSnapshotType.RoomForGrowth,
@@ -82,7 +85,7 @@ const AiInsightsLearningSnapshots: React.FC<{
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-4-4 p-[15px] rounded-[15px]">
             <div className="w-full flex items-center justify-start">
                 <AiPathwaysIconWithShape className="w-auto h-[40px]" />
-                <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>
+                <h2 className="text-xl text-grayscale-800 font-notoSans">{t('aiInsights.learningSnapshots', 'Learning Snapshots')}</h2>
             </div>
 
             <div className="w-full flex flex-col items-start justify-start mt-4">

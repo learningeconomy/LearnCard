@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from 'react';
+
+import { useTranslation } from 'react-i18next';
+
 import {
     SearchInput,
     fetchOccupationDetailsForKeyword,
@@ -121,6 +124,7 @@ const RoleSection: React.FC<RoleSectionProps> = ({
     loadingMessage,
     isLoading = false,
 }) => {
+    const { t } = useTranslation();
     return (
         <section className="flex flex-col gap-[8px]">
             <p className="text-[12px] font-[500] text-grayscale-500 leading-[16px] tracking-[0.72px] uppercase text-left">
@@ -154,7 +158,7 @@ const RoleSection: React.FC<RoleSectionProps> = ({
                                 {formatEstimatedSalary(
                                     occupation.Wages?.NationalWagesList,
                                     salaryType
-                                ) || 'Salary not available'}
+                                ) || t('aiInsights.salaryNotAvailable', 'Salary not available')}
                             </p>
                         </button>
                     ))}
@@ -204,7 +208,7 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
             <div className="min-h-0 overflow-y-auto hide-scrollbar">
                 <div className="sticky top-0 z-10 border-b border-grayscale-100 bg-white/95 px-[12px] py-[12px] backdrop-blur">
                     <SearchInput
-                        placeholder="Search roles..."
+                        placeholder={t('aiInsights.searchRoles', 'Search roles...')}
                         value={search}
                         onChange={setSearch}
                         className="w-full text-left"
@@ -215,41 +219,41 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
                 <div className="flex flex-col gap-[12px] px-[12px] py-[12px]">
                     {searchTerm.length > 0 && !isSearchActive ? (
                         <p className="px-[10px] py-[10px] text-[14px] leading-[20px] text-grayscale-600">
-                            Type at least 2 letters to search.
+                            {t('aiInsights.typeToSearch', 'Type at least 2 letters to search.')}
                         </p>
                     ) : isLoadingSearchResults ? (
                         <div className="flex items-center justify-center gap-[10px] px-[10px] py-[10px] text-grayscale-600 min-h-[125px]">
                             <span className="h-[16px] w-[16px] shrink-0 animate-spin rounded-full border-2 border-grayscale-200 border-t-grayscale-900" />
-                            <span className="text-[14px] leading-[20px]">Searching roles...</span>
+                            <span className="text-[14px] leading-[20px]">{t('aiInsights.searchingRoles', 'Searching roles...')}</span>
                         </div>
                     ) : isSearchActive ? (
                         <RoleSection
-                            title="Search Results"
+                            title={t('aiInsights.searchResults', 'Search Results')}
                             occupations={occupationsToDisplay}
                             selectedOccupation={selectedOccupation}
                             salaryType={salaryType}
                             onSelectOccupation={handleSelectOccupation}
-                            emptyMessage="No roles found for that search."
+                            emptyMessage={t('aiInsights.noRolesFound', 'No roles found for that search.')}
                         />
                     ) : (
                         <>
                             <RoleSection
-                                title="Suggested Roles"
+                                title={t('aiInsights.suggestedRoles', 'Suggested Roles')}
                                 occupations={suggestedOccupations}
                                 selectedOccupation={selectedOccupation}
                                 salaryType={salaryType}
                                 onSelectOccupation={handleSelectOccupation}
-                                emptyMessage="No suggested roles available yet."
+                                emptyMessage={t('aiInsights.noSuggestedRoles', 'No suggested roles available yet.')}
                             />
 
                             <RoleSection
-                                title="More Roles"
+                                title={t('aiInsights.moreRoles', 'More Roles')}
                                 occupations={moreRoles}
                                 selectedOccupation={selectedOccupation}
                                 salaryType={salaryType}
                                 onSelectOccupation={handleSelectOccupation}
-                                emptyMessage="No additional roles are available yet."
-                                loadingMessage="Loading more roles..."
+                                emptyMessage={t('aiInsights.noAdditionalRoles', 'No additional roles are available yet.')}
+                                loadingMessage={t('aiInsights.loadingMoreRoles', 'Loading more roles...')}
                                 isLoading={moreRolesLoading}
                             />
                         </>

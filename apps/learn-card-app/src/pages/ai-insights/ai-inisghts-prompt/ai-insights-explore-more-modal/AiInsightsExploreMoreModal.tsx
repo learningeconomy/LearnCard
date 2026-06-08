@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import X from 'learn-card-base/svgs/X';
 import AiInsightsPromptBox from '../AiInsightsPromptBox';
 import AiInsightsPromptList from '../ai-insights-prompt-list/AiInsightsPromptList';
@@ -15,7 +17,7 @@ export const AiInsightsExploreMoreModal: React.FC = () => {
             <div className="flex-shrink-0 flex flex-col p-4 gap-4">
                 <div className="flex items-center justify-between gap-[10px]">
                     <h1 className="text-2xl font-semibold text-indigo-500">
-                        Explore Your Insights
+                        {t('aiInsights.exploreYourInsights', 'Explore Your Insights')}
                     </h1>
                     <button
                         onClick={() => closeModal()}

@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+import { Trans } from 'react-i18next';
+
 import AiInsightsParentConsent from '../ai-insights-parent-consent/AiInsightsParentConsent';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConnectIcon from 'learn-card-base/svgs/ConnectIcon';
@@ -27,6 +30,7 @@ export const ShareInsightsWithUser: React.FC<{
     childProfileId?: string;
     bypassParentConsent?: boolean;
 }> = ({ targetProfile, childProfileId, bypassParentConsent }) => {
+    const { t } = useTranslation();
     const { presentToast } = useToast();
     const { closeModal, closeAllModals, newModal } = useModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -64,16 +68,16 @@ export const ShareInsightsWithUser: React.FC<{
             childProfileId,
         });
 
-        presentToast('Insights shared!');
+        presentToast(t('toasts.ai.insightsShared', 'Insights shared!'));
         closeModal();
     };
 
-    let buttonText = 'Share Insights';
-    if (isChild && !bypassParentConsent) buttonText = 'Get Permission';
+    let buttonText = t('aiInsights.shareInsights', 'Share Insights');
+    if (isChild && !bypassParentConsent) buttonText = t('aiInsights.getPermission', 'Get Permission');
 
     let text = (
         <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-            Share Insights with <br /> {_targetProfile?.displayName}
+            {t('aiInsights.shareInsightsWith', { ...{ name: _targetProfile?.displayName ?? '' }, defaultValue: 'Share Insights with <br /> {{name}}' })}
         </p>
     );
 
@@ -83,8 +87,20 @@ export const ShareInsightsWithUser: React.FC<{
 
         text = (
             <p className="text-grayscale-900 text-[17px] text-center">
-                <span className="font-semibold">{childName}</span> wants to share their insights
-                with <span className="font-semibold">{_targetProfile?.displayName}</span>
+                <Trans
+
+                    i18nKey="aiInsights.wantsToShare"
+
+                    defaults="<0>{{childName}}</0> wants to share their insights with <1>{{targetName}}</1>"
+
+                    values={{ childName: childName ?? '', targetName: _targetProfile?.displayName ?? '' }}
+
+                    components={[
+                        <span className="font-semibold" />,
+                        <span className="font-semibold" />,
+                    ]}
+
+                />
             </p>
         );
     }

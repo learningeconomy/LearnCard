@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+import { Trans } from 'react-i18next';
+
 import { switchedProfileStore, UserProfilePicture } from 'learn-card-base';
 import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
 
@@ -17,6 +20,7 @@ export const AiInsightsUserRequestsToast: React.FC<{
         hideCloseButton?: boolean;
     };
 }> = ({ contractUri, options }) => {
+    const { t } = useTranslation();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -52,10 +56,20 @@ export const AiInsightsUserRequestsToast: React.FC<{
                 </div>
                 <div className="flex flex-col text-left">
                     <p className="text-grayscale-900 text-sm">
-                        <span className="font-semibold">{contract?.owner?.displayName}</span> has
-                        requested to view{' '}
-                        <span className="font-semibold">{currentLCNUser?.displayName}</span>'s
-                        insights.
+                        <Trans
+
+                            i18nKey="aiInsights.hasRequestedToView"
+
+                            defaults="<0>{{ownerName}}</0> has requested to view <1>{{userName}}</1>\'s insights."
+
+                            values={{ ownerName: contract?.owner?.displayName ?? '', userName: currentLCNUser?.displayName ?? '' }}
+
+                            components={[
+                                <span className="font-semibold" />,
+                                <span className="font-semibold" />,
+                            ]}
+
+                        />
                     </p>
                 </div>
             </div>
@@ -71,7 +85,7 @@ export const AiInsightsUserRequestsToast: React.FC<{
                             }}
                             name="notification-claim-button"
                         >
-                            Get Permission
+                            {t('aiInsights.getPermission', 'Get Permission')}
                         </button>
                     ) : (
                         <FullScreenConsentFlow

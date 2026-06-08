@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useTranslation } from 'react-i18next';
+
 import { IonTextarea } from '@ionic/react';
 
 export const AiInsightsPromptBoxInput: React.FC<{
@@ -13,7 +15,7 @@ export const AiInsightsPromptBoxInput: React.FC<{
                 onIonInput={e => {
                     setPrompt(e.detail.value as string);
                 }}
-                placeholder="Ask about your skills..."
+                placeholder={t('aiInsights.askAboutSkills', 'Ask about your skills...')}
                 className="w-full font-notoSans text-left bg-indigo-50 px-4 rounded-[10px] text-grayscale-900 text-[17px]"
                 autoGrow
                 rows={2}
