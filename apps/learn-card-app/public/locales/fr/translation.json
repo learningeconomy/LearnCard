@@ -1679,5 +1679,13 @@
         "previousCredential": "Certificat précédent",
         "nextCredential": "Certificat suivant",
         "noSessionsYet": "Pas encore de sessions"
+    },
+    "aiSession": {
+        "loadingTitle": "Chargement du titre",
+        "close": "Fermer",
+        "newTopic": "Nouveau sujet",
+        "browse": "Parcourir...",
+        "somethingElse": "Autre chose...",
+        "search": "Rechercher"
     }
 }

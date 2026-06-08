@@ -1652,5 +1652,13 @@
         "previousCredential": "Previous credential",
         "nextCredential": "Next credential",
         "noSessionsYet": "No sessions yet"
+    },
+    "aiSession": {
+        "loadingTitle": "Loading title",
+        "close": "Close",
+        "newTopic": "New Topic",
+        "browse": "Browse...",
+        "somethingElse": "Something else...",
+        "search": "Search"
     }
 }

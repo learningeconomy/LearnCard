@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import { m } from '../../../../paraglide/messages.js';
+
 import { ArrowUp } from 'lucide-react';
 
 import { isPlatformIOS, ProfilePicture, useDeviceTypeByWidth, useKeyboardHeight } from 'learn-card-base';
@@ -51,7 +53,7 @@ export const TopicInput: React.FC<{
                     value={topic}
                     onChange={e => setTopic(e.target.value)}
                     className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[15px] py-[12px] focus:outline-none"
-                    placeholder="Something else..."
+                    placeholder={m['aiSession.somethingElse']()}
                     autoComplete="off"
                 />
                 <button
