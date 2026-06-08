@@ -21,9 +21,11 @@ import type {
 } from '../../helpers/clrRenderer.helpers';
 import { gradeColor } from './clr.helpers';
 import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import type { VC } from '@learncard/types';
 
 const ClrCourseDetailPanel: React.FC<{
     course: CourseDisplayModel;
+    boost: VC;
     adminMode?: boolean;
     associations?: AssociationDisplayModel[];
     competencies?: CompetencyDisplayModel[];
@@ -31,6 +33,7 @@ const ClrCourseDetailPanel: React.FC<{
     issuerLogo?: string;
 }> = ({
     course,
+    boost,
     adminMode = false,
     associations = [],
     competencies = [],
@@ -276,6 +279,8 @@ const ClrCourseDetailPanel: React.FC<{
                     course={course}
                     issuerName={issuerName}
                     issuerLogo={issuerLogo}
+                    skillCount={courseCompetencies.length}
+                    credential={boost}
                 />
 
                 {/* Admin provenance */}

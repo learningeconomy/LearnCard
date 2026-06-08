@@ -20,9 +20,11 @@ import type {
     CompetencyDisplayModel,
     AssociationDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
+import type { VC } from '@learncard/types';
 
 const ClrProgramDetailPanel: React.FC<{
     program: ProgramDisplayModel;
+    boost: VC;
     onClose?: () => void;
     adminMode?: boolean;
     associations?: AssociationDisplayModel[];
@@ -31,6 +33,7 @@ const ClrProgramDetailPanel: React.FC<{
     issuerLogo?: string;
 }> = ({
     program,
+    boost,
     adminMode = false,
     associations = [],
     competencies = [],
@@ -48,7 +51,7 @@ const ClrProgramDetailPanel: React.FC<{
     );
 
     return (
-        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100 overflow-y-scroll">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -186,6 +189,8 @@ const ClrProgramDetailPanel: React.FC<{
                     program={program}
                     issuerName={issuerName}
                     issuerLogo={issuerLogo}
+                    skillCount={programCompetencies.length}
+                    credential={boost}
                 />
 
                 {/* Admin provenance */}

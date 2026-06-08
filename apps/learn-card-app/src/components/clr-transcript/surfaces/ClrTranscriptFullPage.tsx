@@ -38,6 +38,7 @@ const ClrTranscriptFullPage: React.FC<{
         newModal(
             <ClrProgramDetailPanel
                 program={program}
+                boost={boost}
                 adminMode={adminMode}
                 associations={model.associations}
                 competencies={model.competencies}
@@ -51,6 +52,7 @@ const ClrTranscriptFullPage: React.FC<{
         newModal(
             <ClrCourseDetailPanel
                 course={course}
+                boost={boost}
                 adminMode={adminMode}
                 associations={model.associations}
                 competencies={model.competencies}
