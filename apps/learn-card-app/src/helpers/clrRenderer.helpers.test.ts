@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { VC } from '@learncard/types';
 
 import { clrUniversityTranscript } from '../../../../packages/credential-library/src/fixtures/clr/university-transcript';
 import { clrNdStudentTranscript } from '../../../../packages/credential-library/src/fixtures/clr/nd-student-transcript';
 import { clrGreatPlainsFull } from '../../../../packages/credential-library/src/fixtures/clr/great-plains-full';
 
 import { normalizeClrTranscriptDisplayModel, selectClrTranscriptView } from './clrRenderer.helpers';
+import { getClrTranscriptKind } from '../components/clr-transcript/clrKind.helpers';
 
 describe('normalizeClrTranscriptDisplayModel', () => {
     it('maps CLR shell and structured transcript fields (university fixture)', () => {
@@ -49,7 +51,9 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         );
 
         expect(model.evidence.some(evidence => evidence.isLargeInlineDataUri)).toBeTruthy();
-        expect(model.warnings.some(warning => warning.code === 'LARGE_INLINE_EVIDENCE')).toBeTruthy();
+        expect(
+            model.warnings.some(warning => warning.code === 'LARGE_INLINE_EVIDENCE')
+        ).toBeTruthy();
         expect(model.assessments.length).toBeGreaterThan(0);
         expect(model.otherRecords.length).toBeGreaterThan(0);
         expect(
@@ -97,5 +101,33 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         expect(selectClrTranscriptView(model, { viewer: 'registrar', surface: 'embed' })).toBe(
             'VerifierInspectionView'
         );
+    });
+
+    it('uses title heuristics when structured CLR signals are sparse', () => {
+        expect(
+            getClrTranscriptKind({
+                id: 'urn:test:title-transcript',
+                type: ['VerifiableCredential', 'ClrCredential'],
+                name: 'Official Academic Transcript',
+                issuer: { id: 'did:test:issuer', name: 'Issuer' },
+                credentialSubject: {
+                    id: 'did:test:learner',
+                    type: ['ClrSubject'],
+                },
+            } as unknown as VC)
+        ).toBe('transcript');
+
+        expect(
+            getClrTranscriptKind({
+                id: 'urn:test:title-degree',
+                type: ['VerifiableCredential', 'ClrCredential'],
+                name: 'Bachelor of Science in Biology',
+                issuer: { id: 'did:test:issuer', name: 'Issuer' },
+                credentialSubject: {
+                    id: 'did:test:learner',
+                    type: ['ClrSubject'],
+                },
+            } as unknown as VC)
+        ).toBe('degree');
     });
 });

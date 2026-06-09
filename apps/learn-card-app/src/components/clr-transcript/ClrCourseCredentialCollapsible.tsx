@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { FlatIcon } from './ClrStatCard';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { ChevronDown, ChevronUp, Paperclip } from 'lucide-react';
