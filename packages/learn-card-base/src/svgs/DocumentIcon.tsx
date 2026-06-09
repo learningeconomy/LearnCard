@@ -1,4 +1,3 @@
-import { fill } from 'lodash';
 import React from 'react';
 
 export const DocumentIcon: React.FC<{
@@ -14,6 +13,7 @@ export const DocumentIcon: React.FC<{
                 height="51"
                 viewBox="0 0 51 51"
                 fill="none"
+                className={className}
             >
                 <path
                     fillRule="evenodd"
@@ -131,6 +131,7 @@ export const DocumentIcon: React.FC<{
                 height="51"
                 viewBox="0 0 51 51"
                 fill="none"
+                className={className}
             >
                 <path
                     fillRule="evenodd"
@@ -176,6 +177,7 @@ export const DocumentIcon: React.FC<{
                 height="51"
                 viewBox="0 0 51 51"
                 fill="none"
+                className={className}
             >
                 <path
                     fillRule="evenodd"
@@ -220,6 +222,7 @@ export const DocumentIcon: React.FC<{
             height="51"
             viewBox="0 0 51 51"
             fill="none"
+            className={className}
         >
             <path
                 fillRule="evenodd"
