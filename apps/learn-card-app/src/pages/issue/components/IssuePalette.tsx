@@ -34,6 +34,7 @@ interface IssuePaletteProps {
     onRecipientModeChange: (mode: 'self' | 'other') => void;
     onRecipientValueChange: (value: string) => void;
     selectedSkills: SelectedSkill[];
+    resolvedSkills: ResolvedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
     onResolvedSkillsChange: (resolved: ResolvedSkill[]) => void;
 }
@@ -48,11 +49,13 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     onRecipientModeChange,
     onRecipientValueChange,
     selectedSkills,
+    resolvedSkills,
     onSelectedSkillsChange,
     onResolvedSkillsChange,
 }) => {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [recipientTouched, setRecipientTouched] = useState(false);
+    const [nameTouched, setNameTouched] = useState(false);
 
     const ach = template?.credentialSubject?.achievement;
 
@@ -92,6 +95,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     });
 
     const name = ach?.name?.value ?? '';
+    const nameInvalid = nameTouched && !name.trim();
     const description = ach?.description?.value ?? '';
     const hasImage = Boolean(ach?.image?.value);
 
@@ -136,6 +140,70 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
             {template && (
                 <>
                     <section className={`${CARD_CLASS} space-y-4`}>
+                        <h3 className="text-base font-semibold text-grayscale-900">
+                            Who is this for?
+                        </h3>
+                        <p className="text-sm text-grayscale-600 leading-relaxed -mt-2">
+                            This shapes the preview and how it’s delivered.
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setRecipientTouched(false);
+                                    onRecipientModeChange('self');
+                                }}
+                                className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm transition-colors ${
+                                    recipientMode === 'self'
+                                        ? 'bg-grayscale-900 text-white'
+                                        : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                }`}
+                            >
+                                Myself
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onRecipientModeChange('other')}
+                                className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm transition-colors ${
+                                    recipientMode === 'other'
+                                        ? 'bg-grayscale-900 text-white'
+                                        : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                }`}
+                            >
+                                Someone else
+                            </button>
+                        </div>
+                        {recipientMode === 'other' && (
+                            <div>
+                                <label className={LABEL_CLASS}>Email or username</label>
+                                <input
+                                    type="text"
+                                    value={recipientValue}
+                                    onChange={e => onRecipientValueChange(e.target.value)}
+                                    onBlur={() => setRecipientTouched(true)}
+                                    placeholder="name@example.com or @username"
+                                    className={INPUT_CLASS}
+                                />
+                                {recipientValue && isEmailRecipient(recipientValue) ? (
+                                    <p className="mt-1.5 text-xs text-grayscale-400">
+                                        They’ll get a link to claim it.
+                                    </p>
+                                ) : recipientTouched &&
+                                  recipientValue.trim() &&
+                                  !isPlausibleRecipient(recipientValue) ? (
+                                    <p className="mt-1.5 text-xs text-amber-600">
+                                        Enter an email or @username.
+                                    </p>
+                                ) : (
+                                    <p className="mt-1.5 text-xs text-grayscale-400">
+                                        Enter an email or @username.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    <section className={`${CARD_CLASS} space-y-4`}>
                         <h3 className="text-base font-semibold text-grayscale-900">Details</h3>
                         <div>
                             <label className={LABEL_CLASS}>Name</label>
@@ -143,12 +211,20 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                 type="text"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
+                                onBlur={() => setNameTouched(true)}
                                 placeholder="e.g. Web Development Fundamentals"
-                                className={INPUT_CLASS}
+                                className={`${INPUT_CLASS} ${
+                                    nameInvalid ? '!border-red-400 focus:!ring-red-500' : ''
+                                }`}
                             />
+                            {nameInvalid && (
+                                <p className="mt-1.5 text-xs text-red-600">
+                                    Give your credential a name to continue.
+                                </p>
+                            )}
                         </div>
                         <div>
-                            <label className={LABEL_CLASS}>Description</label>
+                            <label className={LABEL_CLASS}>Description (optional)</label>
                             <textarea
                                 value={description}
                                 onChange={e =>
@@ -186,6 +262,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
 
                     <SkillsSection
                         selectedSkills={selectedSkills}
+                        resolvedSkills={resolvedSkills}
                         onSelectedSkillsChange={onSelectedSkillsChange}
                         onResolvedSkillsChange={onResolvedSkillsChange}
                     />
@@ -254,67 +331,6 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                     </span>
                                     section.
                                 </p>
-                            </div>
-                        )}
-                    </section>
-
-                    <section className={`${CARD_CLASS} space-y-4`}>
-                        <h3 className="text-base font-semibold text-grayscale-900">
-                            Who is this for?
-                        </h3>
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setRecipientTouched(false);
-                                    onRecipientModeChange('self');
-                                }}
-                                className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm transition-colors ${
-                                    recipientMode === 'self'
-                                        ? 'bg-grayscale-900 text-white'
-                                        : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
-                                }`}
-                            >
-                                Myself
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onRecipientModeChange('other')}
-                                className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm transition-colors ${
-                                    recipientMode === 'other'
-                                        ? 'bg-grayscale-900 text-white'
-                                        : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
-                                }`}
-                            >
-                                Someone else
-                            </button>
-                        </div>
-                        {recipientMode === 'other' && (
-                            <div>
-                                <label className={LABEL_CLASS}>Email or username</label>
-                                <input
-                                    type="text"
-                                    value={recipientValue}
-                                    onChange={e => onRecipientValueChange(e.target.value)}
-                                    onBlur={() => setRecipientTouched(true)}
-                                    placeholder="name@example.com or @username"
-                                    className={INPUT_CLASS}
-                                />
-                                {recipientValue && isEmailRecipient(recipientValue) ? (
-                                    <p className="mt-1.5 text-xs text-grayscale-400">
-                                        They’ll get a link to claim it.
-                                    </p>
-                                ) : recipientTouched &&
-                                  recipientValue.trim() &&
-                                  !isPlausibleRecipient(recipientValue) ? (
-                                    <p className="mt-1.5 text-xs text-amber-600">
-                                        Enter an email or @username.
-                                    </p>
-                                ) : (
-                                    <p className="mt-1.5 text-xs text-grayscale-400">
-                                        Enter an email or @username.
-                                    </p>
-                                )}
                             </div>
                         )}
                     </section>

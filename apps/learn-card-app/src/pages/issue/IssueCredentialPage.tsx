@@ -48,6 +48,7 @@ const IssueCredentialPage: React.FC = () => {
     const [recipientValue, setRecipientValue] = useState('');
 
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
+    const [resolvedSkills, setResolvedSkills] = useState<ResolvedSkill[]>([]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -55,8 +56,7 @@ const IssueCredentialPage: React.FC = () => {
 
     const ach = template?.credentialSubject?.achievement;
     const nameValid = Boolean(ach?.name?.value?.trim());
-    const descriptionValid = Boolean(ach?.description?.value?.trim());
-    const detailsValid = nameValid && descriptionValid;
+    const detailsValid = nameValid;
     const recipientValid = recipientMode === 'self' || isPlausibleRecipient(recipientValue);
     const canIssue = Boolean(template) && detailsValid && recipientValid && !isSubmitting;
 
@@ -67,8 +67,6 @@ const IssueCredentialPage: React.FC = () => {
         ? 'Pick a type to begin'
         : !nameValid
         ? 'Add a name to continue'
-        : !descriptionValid
-        ? 'Add a description to continue'
         : !recipientValid
         ? 'Add a recipient to continue'
         : null;
@@ -96,6 +94,7 @@ const IssueCredentialPage: React.FC = () => {
     }, []);
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
+        setResolvedSkills(resolved);
         setTemplate(prev => {
             if (!prev) return prev;
             const alignment = skillsToAlignmentTemplates(resolved);
@@ -180,6 +179,7 @@ const IssueCredentialPage: React.FC = () => {
         setRecipientMode('self');
         setRecipientValue('');
         setSelectedSkills([]);
+        setResolvedSkills([]);
         setError(null);
     }, []);
 
@@ -240,7 +240,7 @@ const IssueCredentialPage: React.FC = () => {
                                             )}
                                         </button>
                                         {!canIssue && !isSubmitting && missingHint && (
-                                            <span className="text-[11px] text-grayscale-400 leading-none animate-fade-in-up">
+                                            <span className="text-xs font-medium text-amber-600 leading-none animate-fade-in-up">
                                                 {missingHint}
                                             </span>
                                         )}
@@ -272,6 +272,7 @@ const IssueCredentialPage: React.FC = () => {
                                         onRecipientModeChange={setRecipientMode}
                                         onRecipientValueChange={setRecipientValue}
                                         selectedSkills={selectedSkills}
+                                        resolvedSkills={resolvedSkills}
                                         onSelectedSkillsChange={setSelectedSkills}
                                         onResolvedSkillsChange={handleResolvedSkillsChange}
                                     />

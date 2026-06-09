@@ -10,6 +10,7 @@ export interface ResolvedSkill {
     targetDescription?: string;
     targetCode?: string;
     frameworkName?: string;
+    icon?: string;
 }
 
 const getNetworkDomain = (): string => {
