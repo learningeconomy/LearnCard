@@ -267,6 +267,7 @@ const IssueCredentialPage: React.FC = () => {
                         credential={previewCredential}
                         credentialType={selectedType?.baseSimpleType ?? null}
                         claimLink={claimLink}
+                        linkOptions={linkOptions}
                         onIssueAnother={reset}
                         onViewWallet={() => history.push('/wallet')}
                     />
