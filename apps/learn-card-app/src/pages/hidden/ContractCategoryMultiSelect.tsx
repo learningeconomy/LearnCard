@@ -15,21 +15,7 @@ import {
 } from 'learn-card-base';
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { SetState } from 'packages/shared-types/dist';
-
-const WRITE_HIDDEN_CONTRACT_CATEGORIES: CredentialCategoryEnum[] = [
-    CredentialCategoryEnum.goals,
-    CredentialCategoryEnum.professionalTitle,
-    CredentialCategoryEnum.roleExperience,
-    CredentialCategoryEnum.workExperience,
-    CredentialCategoryEnum.payRate,
-    CredentialCategoryEnum.workLifeBalance,
-    CredentialCategoryEnum.jobStability,
-    CredentialCategoryEnum.selfAssignedSkills,
-    CredentialCategoryEnum.verifiableData,
-];
-
-const isWriteHiddenContractCategory = (category: string) =>
-    WRITE_HIDDEN_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum);
+import { isVerifiableDataContractCategory } from '../../helpers/contract.helpers';
 
 type ContractCategoryMultiSelectProps = {
     values: Record<CredentialCategoryEnum, { required?: boolean; defaultEnabled?: boolean }>;
@@ -58,7 +44,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         if (
             mode === 'write' &&
             hideVerifiableDataOnWrite &&
-            isWriteHiddenContractCategory(category)
+            isVerifiableDataContractCategory(category)
         ) {
             return false;
         }
@@ -70,7 +56,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         if (mode !== 'write' || !hideVerifiableDataOnWrite) return;
 
         const hiddenCategories = Object.keys(values).filter(category =>
-            isWriteHiddenContractCategory(category)
+            isVerifiableDataContractCategory(category)
         );
 
         if (hiddenCategories.length === 0) return;

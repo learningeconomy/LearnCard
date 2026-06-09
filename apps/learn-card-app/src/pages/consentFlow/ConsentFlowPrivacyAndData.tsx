@@ -17,13 +17,17 @@ import useGuardianGate from 'src/hooks/useGuardianGate';
 import { IonToggle } from '@ionic/react';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowReadSharing from './ConsentFlowReadSharing';
+import ConsentFlowReadSharingItem from './ConsentFlowReadSharingItem';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
 import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsText';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 
 import { curriedStateSlice } from '@learncard/helpers';
-import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import {
+    getPrivacyAndDataInfo,
+    isVerifiableDataContractCategory,
+} from '../../helpers/contract.helpers';
 
 type ConsentFlowPrivacyAndDataProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -177,10 +181,36 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
         return <></>;
     }
 
-    const contractCategoryReadDataExists =
-        Object.keys(contractDetails.contract.read.credentials.categories ?? {}).length > 0;
+    const contractCategoryReadCategories = Object.keys(
+        contractDetails.contract.read.credentials.categories ?? {}
+    );
+    const contractCategoryReadDataExists = contractCategoryReadCategories.some(
+        category => !isVerifiableDataContractCategory(category)
+    );
+    const contractPersonalReadCategories = Object.keys(
+        contractDetails.contract.read.personal ?? {}
+    );
+    const verifiableDataCategories = contractCategoryReadCategories.filter(
+        isVerifiableDataContractCategory
+    );
+    const verifiableDataPersonalItems = verifiableDataCategories.map(category => (
+        <ConsentFlowReadSharingItem
+            key={category}
+            term={
+                terms.read.credentials.categories[category] ?? {
+                    shareAll: false,
+                    shared: [],
+                    sharing: false,
+                }
+            }
+            setTerm={newTerm => updateSlice('read')('credentials')('categories')(category, newTerm)}
+            category={category}
+            required={contractDetails.contract.read.credentials.categories[category]?.required}
+            contractOwnerDid={contractDetails.owner?.did}
+        />
+    ));
     const contractPersonalReadDataExists =
-        Object.keys(contractDetails.contract.read.personal ?? {}).length > 0;
+        contractPersonalReadCategories.length > 0 || verifiableDataCategories.length > 0;
     const contractCategoryWriteDataExists =
         Object.keys(contractDetails.contract.write.credentials.categories ?? {}).length > 0;
     // const contractPersonalWriteDataExists =
@@ -256,6 +286,9 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 setState={updateSlice('read')}
                                 contractOwnerDid={contractDetails.owner?.did}
                                 showPersonal={false}
+                                categoryFilter={category =>
+                                    !isVerifiableDataContractCategory(category)
+                                }
                                 contractDetails={contractDetails}
                                 app={app}
                             />
@@ -308,6 +341,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                             setState={updateSlice('read')}
                             contractOwnerDid={contractDetails.owner?.did}
                             showCategories={false}
+                            showPersonal
+                            extraPersonalItems={verifiableDataPersonalItems}
                         />
                     </div>
                 )}
@@ -351,8 +386,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     Turning on{' '}
                                     <span className="font-[600] font-notoSans">Allow All</span> will
                                     let the app issue credentials and add them to your{' '}
-                                    {brandingConfig?.name}. If turned off, you can selectively choose
-                                    which wallet categories that the app can add to.
+                                    {brandingConfig?.name}. If turned off, you can selectively
+                                    choose which wallet categories that the app can add to.
                                 </p>
                             </div>
 

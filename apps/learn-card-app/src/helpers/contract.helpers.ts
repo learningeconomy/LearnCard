@@ -52,6 +52,21 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     ...AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
 ];
 
+export const VERIFIABLE_DATA_CONTRACT_CATEGORIES = [
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
+    CredentialCategoryEnum.verifiableData,
+];
+
+export const isVerifiableDataContractCategory = (category: string) =>
+    VERIFIABLE_DATA_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum);
+
 export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
 
 export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {
