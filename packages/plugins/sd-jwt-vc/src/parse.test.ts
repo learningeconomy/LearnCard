@@ -37,9 +37,7 @@ const buildIssuerInstance = async () => {
             );
         const header = decode(headerSegment);
         const payload = decode(payloadSegment);
-        const compact = await new SignJWT(payload)
-            .setProtectedHeader(header)
-            .sign(privateKey);
+        const compact = await new SignJWT(payload).setProtectedHeader(header).sign(privateKey);
         const parts = compact.split('.');
         return parts[2]!;
     };
@@ -177,9 +175,7 @@ describe('parseSdJwtVc', () => {
         );
         await expect(parseSdJwtVc(wrongTyp)).rejects.toMatchObject({
             code: 'invalid_typ',
-            message: expect.stringMatching(
-                /(dc\+sd-jwt.*vc\+sd-jwt|vc\+sd-jwt.*dc\+sd-jwt)/
-            ),
+            message: expect.stringMatching(/(dc\+sd-jwt.*vc\+sd-jwt|vc\+sd-jwt.*dc\+sd-jwt)/),
         });
     });
 

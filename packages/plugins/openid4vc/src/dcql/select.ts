@@ -173,7 +173,7 @@ export const selectCredentialsForDcql = async (
         matches,
         reason: result.can_be_satisfied
             ? undefined
-            : 'No combination of held credentials satisfies the verifier\'s DCQL query',
+            : "No combination of held credentials satisfies the verifier's DCQL query",
         raw: result as DcqlQueryResult,
     };
 };

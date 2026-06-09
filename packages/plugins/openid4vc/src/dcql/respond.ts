@@ -32,11 +32,7 @@
  * Submission to `response_uri` happens in the next slice via an
  * extension to `vp/submit.ts` that takes an object-form `vp_token`.
  */
-import {
-    signPresentation,
-    type LdpVpSigner,
-    type SdJwtPresenter,
-} from '../vp/sign';
+import { signPresentation, type LdpVpSigner, type SdJwtPresenter } from '../vp/sign';
 import type { ProofJwtSigner } from '../vci/types';
 
 import type { BuiltDcqlPresentation } from './build';
@@ -107,11 +103,7 @@ export interface DcqlResponse {
 export class DcqlSignError extends Error {
     readonly code: 'missing_sd_jwt_presenter' | 'sd_jwt_present_failed';
 
-    constructor(
-        code: DcqlSignError['code'],
-        message: string,
-        options?: { cause?: unknown }
-    ) {
+    constructor(code: DcqlSignError['code'], message: string, options?: { cause?: unknown }) {
         super(message);
         this.name = 'DcqlSignError';
         this.code = code;

@@ -74,9 +74,7 @@ export type StoredCredentialEnvelope = {
  * path and the envelope path. Performs a shallow structural check —
  * does not validate `data` semantics for the chosen format.
  */
-export const isStoredCredentialEnvelope = (
-    value: unknown
-): value is StoredCredentialEnvelope => {
+export const isStoredCredentialEnvelope = (value: unknown): value is StoredCredentialEnvelope => {
     if (!value || typeof value !== 'object') return false;
     const candidate = value as Record<string, unknown>;
     if (typeof candidate.format !== 'string') return false;

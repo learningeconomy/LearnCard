@@ -53,7 +53,9 @@ export const didWebLearnCardFromSeed = async ({
     };
 
     const didkitLc = await cryptoLc.addPlugin(
-        await (await getDidkit())(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
+        await (
+            await getDidkit()
+        )(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
     );
 
     const didkeyLc = await didkitLc.addPlugin(

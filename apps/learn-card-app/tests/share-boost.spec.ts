@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('share-boost.spec');
 
 test.describe('Share boost link', () => {
