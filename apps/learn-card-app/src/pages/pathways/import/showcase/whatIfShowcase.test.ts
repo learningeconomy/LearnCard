@@ -20,15 +20,12 @@ import { generateScenarios } from '../../what-if/generators';
 
 vi.mock('learn-card-base', () => ({
     getLogger: () =>
-        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
-            .mockLearnCardBaseLogger(),
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
 }));
 
-import {
-    WHAT_IF_PREVIEW,
-    WHAT_IF_SHOWCASE,
-    buildWhatIfShowcase,
-} from './whatIfShowcase';
+import { WHAT_IF_PREVIEW, WHAT_IF_SHOWCASE, buildWhatIfShowcase } from './whatIfShowcase';
 
 const NOW = '2026-04-21T00:00:00.000Z';
 
@@ -68,7 +65,11 @@ describe('buildWhatIfShowcase', () => {
 
             if (!result.success) {
                 throw new Error(
-                    `Pathway "${p.title}" failed schema:\n${JSON.stringify(result.error.issues, null, 2)}`,
+                    `Pathway "${p.title}" failed schema:\n${JSON.stringify(
+                        result.error.issues,
+                        null,
+                        2
+                    )}`
                 );
             }
 
@@ -104,9 +105,7 @@ describe('buildWhatIfShowcase', () => {
                 expect(supportingIds.has(node.stage.policy.pathwayRef)).toBe(true);
             }
             if (node.stage.termination.kind === 'pathway-completed') {
-                expect(supportingIds.has(node.stage.termination.pathwayRef)).toBe(
-                    true,
-                );
+                expect(supportingIds.has(node.stage.termination.pathwayRef)).toBe(true);
             }
         }
     });
@@ -121,9 +120,7 @@ describe('buildWhatIfShowcase', () => {
         expect(primary.destinationNodeId).toBeDefined();
 
         // Pick a non-destination focus; the route should be computable.
-        const nonDest = primary.nodes.find(
-            n => n.id !== primary.destinationNodeId,
-        )!;
+        const nonDest = primary.nodes.find(n => n.id !== primary.destinationNodeId)!;
 
         const route = computeSuggestedRoute(primary, nonDest.id);
 
@@ -164,9 +161,7 @@ describe('buildWhatIfShowcase', () => {
             expect(p.chosenRoute!.length).toBeGreaterThanOrEqual(2);
 
             // Last id must be the destination.
-            expect(p.chosenRoute![p.chosenRoute!.length - 1]).toBe(
-                p.destinationNodeId,
-            );
+            expect(p.chosenRoute![p.chosenRoute!.length - 1]).toBe(p.destinationNodeId);
 
             // Every id must be a real node in the pathway.
             const nodeIdSet = new Set(p.nodes.map(n => n.id));
@@ -184,8 +179,7 @@ describe('buildWhatIfShowcase', () => {
         });
 
         const realizedStepCount =
-            primary.nodes.length +
-            supporting.reduce((sum, s) => sum + s.nodes.length, 0);
+            primary.nodes.length + supporting.reduce((sum, s) => sum + s.nodes.length, 0);
 
         expect(WHAT_IF_PREVIEW.totalStepCount).toBe(realizedStepCount);
         expect(WHAT_IF_PREVIEW.subPathwayCount).toBe(supporting.length);

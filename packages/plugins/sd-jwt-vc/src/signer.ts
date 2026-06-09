@@ -138,9 +138,7 @@ const decodeJsonSegment = (segment: string): Record<string, unknown> => {
     const text =
         typeof Buffer !== 'undefined'
             ? Buffer.from(padded, 'base64').toString('utf-8')
-            : new TextDecoder().decode(
-                  Uint8Array.from(atob(padded), c => c.charCodeAt(0))
-              );
+            : new TextDecoder().decode(Uint8Array.from(atob(padded), c => c.charCodeAt(0)));
     const parsed = JSON.parse(text);
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error('JWS segment is not a JSON object');

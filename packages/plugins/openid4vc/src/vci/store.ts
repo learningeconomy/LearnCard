@@ -1,11 +1,7 @@
 import { LearnCard } from '@learncard/core';
 import type { StoredCredentialEnvelope } from '@learncard/types';
 
-import {
-    NormalizedCredential,
-    W3CVerifiableCredential,
-    normalizeIssuedCredential,
-} from './decode';
+import { NormalizedCredential, W3CVerifiableCredential, normalizeIssuedCredential } from './decode';
 import { extractSdJwtVct, isSdJwtFormat, synthesizeSdJwtVc } from './sd-jwt-vc';
 import { AcceptedCredentialResult } from './types';
 import { VciError } from './errors';
@@ -75,9 +71,7 @@ export interface StoreAcceptedCredentialsOptions {
      * (e.g. tests, SQLite, a custom in-memory mock). If supplied these take
      * precedence over the `storage` / `encrypt` defaults.
      */
-    upload?: (
-        credential: W3CVerifiableCredential | StoredCredentialEnvelope
-    ) => Promise<string>;
+    upload?: (credential: W3CVerifiableCredential | StoredCredentialEnvelope) => Promise<string>;
     addToIndex?: (record: IndexRecord) => Promise<unknown>;
     /** Custom id generator. Defaults to crypto.randomUUID() with a fallback. */
     makeId?: () => string;
@@ -194,7 +188,9 @@ export const storeAcceptedCredentials = async (
                         ? e
                         : new VciError(
                               'store_failed',
-                              `Unexpected error while storing credential: ${e instanceof Error ? e.message : String(e)}`,
+                              `Unexpected error while storing credential: ${
+                                  e instanceof Error ? e.message : String(e)
+                              }`,
                               { cause: e }
                           ),
             });
@@ -321,10 +317,7 @@ const resolveUpload = (
     );
 };
 
-const resolveAddToIndex = (
-    learnCard: LearnCard<any, any, any>,
-    storage: string
-): AddToIndexFn => {
+const resolveAddToIndex = (learnCard: LearnCard<any, any, any>, storage: string): AddToIndexFn => {
     const indexPlane = (learnCard as unknown as { index?: Record<string, unknown> }).index;
     const plugin = indexPlane?.[storage] as
         | { add?: (record: IndexRecord) => Promise<unknown> }
@@ -351,7 +344,9 @@ const safeUpload = async (
     } catch (e) {
         throw new VciError(
             'store_failed',
-            `Store plane rejected the credential upload: ${e instanceof Error ? e.message : String(e)}`,
+            `Store plane rejected the credential upload: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
             { cause: e }
         );
     }
@@ -372,7 +367,9 @@ const safeAddToIndex = async (addToIndex: AddToIndexFn, record: IndexRecord): Pr
     } catch (e) {
         throw new VciError(
             'index_failed',
-            `Index plane rejected the credential record: ${e instanceof Error ? e.message : String(e)}`,
+            `Index plane rejected the credential record: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
             { cause: e }
         );
     }
@@ -392,8 +389,9 @@ const defaultMakeId = (): string => {
     // Fallback: 16 random bytes hex-encoded. Not RFC-4122 but unique enough
     // for a local index record.
     const bytes = new Uint8Array(16);
-    const cryptoSubtle = (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } })
-        .crypto;
+    const cryptoSubtle = (
+        globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }
+    ).crypto;
     if (cryptoSubtle && typeof cryptoSubtle.getRandomValues === 'function') {
         cryptoSubtle.getRandomValues(bytes);
     } else {
