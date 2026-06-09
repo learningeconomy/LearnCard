@@ -18,6 +18,7 @@ import {
     ToastTypeEnum,
     getLogger,
     useGetCurrentLCNUser,
+    useSigningAuthority,
 } from 'learn-card-base';
 import { validateCredentialJsonLd } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
 import { templateToJson } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
@@ -40,6 +41,8 @@ const IssueCredentialPage: React.FC = () => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
+        useSigningAuthority();
 
     const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(null);
     const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(null);
@@ -145,15 +148,20 @@ const IssueCredentialPage: React.FC = () => {
             credentialSubjectImage = recipients[0].image;
         }
 
+        const filledJson = fill(json) as Record<string, unknown>;
+        const credentialSubject = filledJson.credentialSubject as
+            | Record<string, unknown>
+            | undefined;
+
         return {
-            ...(fill(json) as Record<string, unknown>),
+            ...filledJson,
             issuer: {
                 id: currentLCNUser?.did || 'did:web:preview',
                 name: issuerName,
                 ...(issuerImage ? { image: issuerImage } : {}),
             },
             credentialSubject: {
-                ...((fill(json) as any).credentialSubject || {}),
+                ...(credentialSubject || {}),
                 ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
                 ...(credentialSubjectImage ? { image: credentialSubjectImage } : {}),
             },
@@ -174,11 +182,34 @@ const IssueCredentialPage: React.FC = () => {
                 return;
             }
 
+            let claimLinkSA: { name?: string; endpoint?: string } | undefined;
+
+            if (recipientMode === 'link') {
+                const rsas = await getRegisteredSigningAuthorities(wallet);
+                if (rsas && rsas.length > 0) {
+                    const rsa = rsas[0];
+                    claimLinkSA = {
+                        name: rsa?.relationship?.name,
+                        endpoint: rsa?.signingAuthority?.endpoint,
+                    };
+                } else {
+                    const { registeredSigningAuthority: rsa, signingAuthority: sa } =
+                        await getRegisteredSigningAuthority(wallet);
+                    if (sa) {
+                        claimLinkSA = {
+                            name: sa.name,
+                            endpoint: sa.endpoint,
+                        };
+                    }
+                }
+            }
+
             const result = await issueViaBoost(wallet, template, {
                 mode: recipientMode,
                 recipients,
                 linkOptions,
                 currentLCNUser,
+                claimLinkSA,
             });
 
             presentToast('Credential issued.', {
@@ -195,7 +226,7 @@ const IssueCredentialPage: React.FC = () => {
             setError(
                 /network|fetch|connection/i.test(message)
                     ? 'Connection issue. Please check your internet and try again.'
-                    : 'Something went wrong issuing your credential. Please try again.'
+                    : message || 'Something went wrong issuing your credential. Please try again.'
             );
         } finally {
             setIsSubmitting(false);
@@ -209,6 +240,8 @@ const IssueCredentialPage: React.FC = () => {
         linkOptions,
         currentLCNUser,
         presentToast,
+        getRegisteredSigningAuthorities,
+        getRegisteredSigningAuthority,
     ]);
 
     const reset = useCallback(() => {

@@ -8,6 +8,35 @@ const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 
+const Avatar: React.FC<{
+    image?: string;
+    name: string;
+    sizeClass: string;
+    fallbackClass: string;
+}> = ({ image, name, sizeClass, fallbackClass }) => {
+    const [errored, setErrored] = useState(false);
+    const initial = (name || '?').charAt(0).toUpperCase();
+
+    if (image && !errored) {
+        return (
+            <img
+                src={image}
+                alt={name}
+                onError={() => setErrored(true)}
+                className={`${sizeClass} rounded-full object-cover bg-grayscale-100`}
+            />
+        );
+    }
+
+    return (
+        <div
+            className={`${sizeClass} rounded-full flex items-center justify-center font-bold ${fallbackClass}`}
+        >
+            {initial}
+        </div>
+    );
+};
+
 interface RecipientPickerProps {
     mode: RecipientMode;
     onModeChange: (mode: RecipientMode) => void;
@@ -125,17 +154,12 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                     className="flex items-center gap-1.5 py-1.5 pl-2 pr-3 rounded-full bg-grayscale-900 text-white text-sm"
                                 >
                                     {recipient.kind === 'profile' ? (
-                                        recipient.image ? (
-                                            <img
-                                                src={recipient.image}
-                                                alt={recipient.displayName}
-                                                className="w-5 h-5 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-5 h-5 rounded-full bg-grayscale-700 flex items-center justify-center text-[10px] font-bold">
-                                                {recipient.displayName.charAt(0).toUpperCase()}
-                                            </div>
-                                        )
+                                        <Avatar
+                                            image={recipient.image}
+                                            name={recipient.displayName}
+                                            sizeClass="w-5 h-5"
+                                            fallbackClass="bg-grayscale-700 text-white text-[10px]"
+                                        />
                                     ) : (
                                         <Mail className="w-4 h-4 text-grayscale-400" />
                                     )}
@@ -204,19 +228,12 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                                 }
                                                 className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
                                             >
-                                                {profile.image ? (
-                                                    <img
-                                                        src={profile.image}
-                                                        alt={profile.displayName}
-                                                        className="w-8 h-8 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-grayscale-200 flex items-center justify-center text-grayscale-600 font-medium">
-                                                        {(profile.displayName || profile.profileId)
-                                                            .charAt(0)
-                                                            .toUpperCase()}
-                                                    </div>
-                                                )}
+                                                <Avatar
+                                                    image={profile.image}
+                                                    name={profile.displayName || profile.profileId}
+                                                    sizeClass="w-8 h-8"
+                                                    fallbackClass="bg-grayscale-200 text-grayscale-600"
+                                                />
                                                 <div className="flex flex-col min-w-0">
                                                     <span className="text-sm font-medium text-grayscale-900 truncate">
                                                         {profile.displayName || profile.profileId}

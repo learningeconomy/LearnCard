@@ -1,5 +1,7 @@
 import { getLogger } from 'learn-card-base';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
 
 import {
     OBv3CredentialTemplate,
@@ -187,7 +189,96 @@ export const issueAndSendSimpleCredential = async (
 ): Promise<IssueAndSendResult> =>
     issueAndSendCredential(wallet, buildSimpleTemplate(input), recipient);
 
-export const isEmailRecipient = (value: string): boolean =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+export interface IssueViaBoostOptions {
+    mode: RecipientMode;
+    recipients: Recipient[];
+    linkOptions: LinkOptions;
+    currentLCNUser?: { profileId?: string; did?: string };
+    claimLinkSA?: { name?: string; endpoint?: string };
+}
 
-export { dynamicField };
+export interface IssueViaBoostResult {
+    credentialUri: string;
+    claimLink?: string;
+}
+
+export const issueViaBoost = async (
+    wallet: BespokeLearnCard,
+    template: OBv3CredentialTemplate,
+    options: IssueViaBoostOptions
+): Promise<IssueViaBoostResult> => {
+    const issuerDid = wallet.id.did();
+    if (!issuerDid) throw new Error('No issuer DID available — is the wallet initialized?');
+
+    const structuralErrors = validateTemplate(template);
+    if (structuralErrors.length > 0) {
+        throw new Error(structuralErrors.map(e => `${e.field}: ${e.message}`).join('; '));
+    }
+
+    const unsigned = fillTemplateSystemVars(template, issuerDid);
+    const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
+        string,
+        unknown
+    >;
+
+    const boostUri = await wallet.invoke.createBoost(signedCredential);
+
+    let claimLink: string | undefined;
+
+    if (options.mode === 'self') {
+        const ownProfileIdOrDid = options.currentLCNUser?.profileId || issuerDid;
+        const response = await wallet.invoke.send({
+            type: 'boost',
+            recipient: ownProfileIdOrDid,
+            templateUri: boostUri,
+        });
+
+        if (response.uri) {
+            await wallet.invoke.acceptCredential(response.uri);
+            if (wallet.store?.LearnCloud?.uploadEncrypted) {
+                await wallet.store.LearnCloud.uploadEncrypted(signedCredential);
+            }
+        }
+    } else if (options.mode === 'people') {
+        for (const recipient of options.recipients) {
+            const recipientIdentifier =
+                recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+            await wallet.invoke.send({
+                type: 'boost',
+                recipient: recipientIdentifier,
+                templateUri: boostUri,
+            });
+        }
+    } else if (options.mode === 'link') {
+        if (!options.claimLinkSA || !options.claimLinkSA.name || !options.claimLinkSA.endpoint) {
+            throw new Error(
+                "Couldn't set up a shareable link — no signing authority is configured."
+            );
+        }
+
+        let ttlSeconds: number | undefined;
+        if (options.linkOptions.expiresAt) {
+            const expiration = new Date(options.linkOptions.expiresAt).getTime();
+            const now = Date.now();
+            ttlSeconds = Math.floor((expiration - now) / 1000);
+        }
+
+        const claimLinkResponse = await wallet.invoke.generateClaimLink(
+            boostUri,
+            { name: options.claimLinkSA.name, endpoint: options.claimLinkSA.endpoint },
+            {
+                ttlSeconds,
+                totalUses: options.linkOptions.maxClaims,
+            }
+        );
+
+        claimLink = `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+            claimLinkResponse.boostUri
+        }&challenge=${claimLinkResponse.challenge}`;
+    }
+
+    return {
+        credentialUri: boostUri,
+        claimLink,
+    };
+};
