@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -28,11 +28,10 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
     const styleSet = getStyleSet(StyleSetEnum.defaults);
-    const tabsScrollRef = useRef<HTMLDivElement | null>(null);
     const pointerStartRef = useRef<{ x: number; scrollLeft: number } | null>(null);
     const hasDraggedRef = useRef(false);
 
-    const dragThreshold = 8;
+    const dragThreshold = 16;
 
     const primaryColor = colorSet.primaryColor;
     const primaryColorShade = colorSet.primaryColorShade;
@@ -57,12 +56,6 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
             scrollLeft: event.currentTarget.scrollLeft,
         };
         hasDraggedRef.current = false;
-
-        try {
-            event.currentTarget.setPointerCapture(event.pointerId);
-        } catch {
-            // Ignore browsers that do not support pointer capture on this element.
-        }
     };
 
     const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -81,14 +74,6 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
         if (event.pointerType !== 'mouse') return;
 
         pointerStartRef.current = null;
-
-        try {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-            }
-        } catch {
-            // Ignore browsers that do not support pointer capture release here.
-        }
     };
 
     const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -99,9 +84,27 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
         hasDraggedRef.current = false;
     };
 
+    useEffect(() => {
+        const resetDragState = () => {
+            pointerStartRef.current = null;
+            hasDraggedRef.current = false;
+        };
+
+        window.addEventListener('mouseup', resetDragState);
+        window.addEventListener('pointerup', resetDragState);
+        window.addEventListener('pointercancel', resetDragState);
+        window.addEventListener('blur', resetDragState);
+
+        return () => {
+            window.removeEventListener('mouseup', resetDragState);
+            window.removeEventListener('pointerup', resetDragState);
+            window.removeEventListener('pointercancel', resetDragState);
+            window.removeEventListener('blur', resetDragState);
+        };
+    }, []);
+
     return (
         <div
-            ref={tabsScrollRef}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
