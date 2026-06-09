@@ -131,14 +131,6 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
     }
     if (verifierState === VERIFIER_STATES.unknownVerifier) {
-        // https://welibrary.atlassian.net/browse/LC-704
-        // https://welibrary.atlassian.net/browse/LC-694
-        // removes question mark when credential is unknown
-        // leaving this comment here incase we want to bring it back
-
-        // Hiding verifier badges for troops everywhere per https://welibrary.atlassian.net/browse/LC-741
-        //   Adding back the orange question mark icon since we do/will want it everywhere we're using this component
-
         if (showText) {
             return (
                 <div
@@ -152,7 +144,10 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
             );
         }
 
-        return <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
+        // Icon-only mode intentionally renders nothing for unknown issuers: a bare "?"
+        // badge with no context reads as an error. Context is only shown via the labeled
+        // showText=true variant above (e.g. when a credential is opened).
+        return <></>;
     }
     if (verifierState === VERIFIER_STATES.appIssuer) {
         if (showText) {
