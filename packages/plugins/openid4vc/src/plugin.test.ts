@@ -18,14 +18,8 @@ import { exportJWK, generateKeyPair, importJWK, jwtVerify, JWK } from 'jose';
 import { UnsignedVP, VP, JWKWithPrivateKey } from '@learncard/types';
 
 import { getOpenID4VCPlugin } from './plugin';
-import type {
-    OpenID4VCDependentLearnCard,
-    OpenID4VCPluginMethods,
-} from './types';
-import type {
-    AuthorizationRequest,
-    PresentationDefinition,
-} from './vp/types';
+import type { OpenID4VCDependentLearnCard, OpenID4VCPluginMethods } from './types';
+import type { AuthorizationRequest, PresentationDefinition } from './vp/types';
 import { BuildPresentationError } from './vp/present';
 import { VpSignError } from './vp/sign';
 import { VpSubmitError } from './vp/submit';
@@ -35,8 +29,7 @@ import { VpSubmitError } from './vp/submit';
 /* -------------------------------------------------------------------------- */
 
 const toB64url = (input: string | Uint8Array): string => {
-    const bytes =
-        typeof input === 'string' ? new TextEncoder().encode(input) : input;
+    const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input;
     return Buffer.from(bytes)
         .toString('base64')
         .replace(/\+/g, '-')
@@ -49,7 +42,9 @@ const toB64url = (input: string | Uint8Array): string => {
  * the canonical "keys without DNS" method and what walt.id / EUDI use
  * for wallet-side holder bindings.
  */
-const didJwkFromPublicJwk = (pub: JWK): {
+const didJwkFromPublicJwk = (
+    pub: JWK
+): {
     did: string;
     kid: string;
 } => {
@@ -131,9 +126,10 @@ const buildMockLearnCard = async (): Promise<MockLearnCardHandle> => {
                     },
                 } as unknown as VP;
             },
-            issueCredential: async (c: unknown) => c as ReturnType<
-                NonNullable<OpenID4VCDependentLearnCard['invoke']>['issueCredential']
-            >,
+            issueCredential: async (c: unknown) =>
+                c as ReturnType<
+                    NonNullable<OpenID4VCDependentLearnCard['invoke']>['issueCredential']
+                >,
         },
     } as unknown as OpenID4VCDependentLearnCard;
 
@@ -181,11 +177,7 @@ const DEFAULT_PD: PresentationDefinition = {
             constraints: {
                 fields: [
                     {
-                        path: [
-                            '$.type',
-                            '$.vc.type',
-                            '$.verifiableCredential.type',
-                        ],
+                        path: ['$.type', '$.vc.type', '$.verifiableCredential.type'],
                         filter: {
                             type: 'array',
                             contains: { const: 'UniversityDegree' },
@@ -206,12 +198,14 @@ const DEFAULT_PD: PresentationDefinition = {
  *  - Responds 200 with `{ redirect_uri }` by default; overridable via
  *    `setResponse` to simulate verifier rejection.
  */
-const buildFakeVerifier = (opts: {
-    pd?: PresentationDefinition;
-    nonce?: string;
-    state?: string;
-    verifierOrigin?: string;
-} = {}): FakeVerifier => {
+const buildFakeVerifier = (
+    opts: {
+        pd?: PresentationDefinition;
+        nonce?: string;
+        state?: string;
+        verifierOrigin?: string;
+    } = {}
+): FakeVerifier => {
     const verifierOrigin = opts.verifierOrigin ?? 'https://verifier.test';
     const nonce = opts.nonce ?? 'nonce-abcdef';
     const state = opts.state ?? 'state-xyz';
@@ -259,23 +253,20 @@ const buildFakeVerifier = (opts: {
                 }
 
                 const body = String(init?.body ?? '');
-                const form = Object.fromEntries(
-                    new URLSearchParams(body).entries()
-                );
+                const form = Object.fromEntries(new URLSearchParams(body).entries());
 
                 const record: VerifierRecord = { form };
 
                 if (form.vp_token && looksLikeJws(form.vp_token)) {
-                    record.decodedVp = await verifyInboundVpJwt(
-                        form.vp_token,
-                        { expectedAudience: clientId, expectedNonce: nonce }
-                    );
+                    record.decodedVp = await verifyInboundVpJwt(form.vp_token, {
+                        expectedAudience: clientId,
+                        expectedNonce: nonce,
+                    });
                 }
 
                 submissions.push(record);
 
-                const resolved =
-                    typeof responder === 'function' ? responder(record) : responder;
+                const resolved = typeof responder === 'function' ? responder(record) : responder;
 
                 const bodyOut =
                     resolved.body === undefined
@@ -287,9 +278,7 @@ const buildFakeVerifier = (opts: {
                 return makeResponse(
                     resolved.status,
                     bodyOut,
-                    typeof resolved.body === 'string'
-                        ? 'text/plain'
-                        : 'application/json'
+                    typeof resolved.body === 'string' ? 'text/plain' : 'application/json'
                 );
             }
 
@@ -334,9 +323,7 @@ const verifyInboundVpJwt = async (
     // The iss claim holds the holder DID. did:jwk encodes the public
     // key in the DID itself — we just decode it, import, verify.
     const [, payloadB64] = jwt.split('.');
-    const payloadJson = JSON.parse(
-        Buffer.from(payloadB64!, 'base64').toString('utf8')
-    );
+    const payloadJson = JSON.parse(Buffer.from(payloadB64!, 'base64').toString('utf8'));
 
     if (typeof payloadJson.iss !== 'string') {
         throw new Error('FakeVerifier: VP JWT has no iss claim');
@@ -384,10 +371,7 @@ const degreeVc = (holderDid: string): Record<string, unknown> => ({
     },
 });
 
-const getPlugin = (
-    mock: MockLearnCardHandle,
-    fetchImpl: typeof fetch
-): OpenID4VCPluginMethods => {
+const getPlugin = (mock: MockLearnCardHandle, fetchImpl: typeof fetch): OpenID4VCPluginMethods => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, { fetch: fetchImpl });
 
     // Every method of OpenID4VCPluginMethods is exposed as
@@ -431,9 +415,7 @@ describe('OpenID4VC plugin — presentCredentials end-to-end', () => {
 
         // Verifier accepted it (our fake responds 200 + redirect_uri).
         expect(result.submitted.status).toBe(200);
-        expect(result.submitted.redirectUri).toBe(
-            'https://verifier.test/success/state-xyz'
-        );
+        expect(result.submitted.redirectUri).toBe('https://verifier.test/success/state-xyz');
 
         // The verifier verified the JWS signature (it would have thrown
         // otherwise) and successfully decoded the VP envelope.
@@ -654,9 +636,7 @@ describe('OpenID4VC plugin — presentCredentials surface guarantees', () => {
             ]
         );
 
-        expect(preview.request.presentation_definition?.id).toBe(
-            verifier.session.pd.id
-        );
+        expect(preview.request.presentation_definition?.id).toBe(verifier.session.pd.id);
         expect(preview.selection.canSatisfy).toBe(true);
         expect(preview.selection.descriptors).toHaveLength(1);
         expect(preview.selection.descriptors[0].candidates).toHaveLength(1);
@@ -793,4 +773,3 @@ describe('OpenID4VC plugin — SD-JWT-VC matcher wiring', () => {
         expect(preview.selection?.canSatisfy).toBe(true);
     });
 });
-

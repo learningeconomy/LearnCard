@@ -14,8 +14,8 @@ export const CourseDisplayIcon: React.FC<{ className?: string; version?: string 
                 xmlns="http://www.w3.org/2000/svg"
                 className={className}
             >
-                <g clip-path="url(#clip0_2803_60702)">
-                    <g clip-path="url(#clip1_2803_60702)">
+                <g>
+                    <g>
                         <rect x="4.32129" y="10" width="9.28571" height="7.14286" fill="#8B91A7" />
                         <path
                             d="M15.3926 10.714L19.3211 9.64258L21.1069 16.0711L17.1783 17.1426L15.3926 10.714Z"
@@ -27,19 +27,6 @@ export const CourseDisplayIcon: React.FC<{ className?: string; version?: string 
                         />
                     </g>
                 </g>
-                <defs>
-                    <clipPath id="clip0_2803_60702">
-                        <rect width="25" height="25" fill="#353E64" transform="translate(0.75)" />
-                    </clipPath>
-                    <clipPath id="clip1_2803_60702">
-                        <rect
-                            width="25"
-                            height="22.5801"
-                            fill="#353E64"
-                            transform="translate(0.75 1.42773)"
-                        />
-                    </clipPath>
-                </defs>
             </svg>
         );
     }
@@ -53,8 +40,8 @@ export const CourseDisplayIcon: React.FC<{ className?: string; version?: string 
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <g clip-path="url(#clip0_2803_60702)">
-                <g clip-path="url(#clip1_2803_60702)">
+            <g>
+                <g>
                     <rect x="4.32129" y="10" width="9.28571" height="7.14286" fill="#E2E3E980" />
                     <path
                         d="M15.3926 10.714L19.3211 9.64258L21.1069 16.0711L17.1783 17.1426L15.3926 10.714Z"
@@ -66,19 +53,6 @@ export const CourseDisplayIcon: React.FC<{ className?: string; version?: string 
                     />
                 </g>
             </g>
-            <defs>
-                <clipPath id="clip0_2803_60702">
-                    <rect width="25" height="25" fill="white" transform="translate(0.75)" />
-                </clipPath>
-                <clipPath id="clip1_2803_60702">
-                    <rect
-                        width="25"
-                        height="22.5801"
-                        fill="white"
-                        transform="translate(0.75 1.42773)"
-                    />
-                </clipPath>
-            </defs>
         </svg>
     );
 };

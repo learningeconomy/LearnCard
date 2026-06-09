@@ -23,18 +23,18 @@ export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane>
 ] extends [1 & Plugins]
     ? any
     : {
-        [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-        ? never
-        : Plugins[Index]['name'];
-    }[number];
+          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+              ? never
+              : Plugins[Index]['name'];
+      }[number];
 
 export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugins
     ? never
     : {
-        [Index in keyof Plugins]: {
-            [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
-        }[ControlPlane];
-    }[number];
+          [Index in keyof Plugins]: {
+              [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
+          }[ControlPlane];
+      }[number];
 
 export type GetPlaneProviders<
     Plugins extends Plugin[],
@@ -42,14 +42,14 @@ export type GetPlaneProviders<
 > = any[] extends Plugins
     ? any
     : {
-        [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-        ? never
-        : OmitNevers<{
-            [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
-            ? { name: Name; displayName?: string; description?: string }
-            : never;
-        }>;
-    }[number];
+          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+              ? never
+              : OmitNevers<{
+                    [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
+                        ? { name: Name; displayName?: string; description?: string }
+                        : never;
+                }>;
+      }[number];
 
 // --- Read --- \\
 
@@ -73,10 +73,7 @@ export type EncryptionParams = {
 };
 
 export type StorePlane = {
-    upload: (
-        vc: VC | VP | StoredCredentialEnvelope,
-        options?: PlaneOptions
-    ) => Promise<string>;
+    upload: (vc: VC | VP | StoredCredentialEnvelope, options?: PlaneOptions) => Promise<string>;
     uploadMany?: (
         vcs: Array<VC | VP | StoredCredentialEnvelope>,
         options?: PlaneOptions
@@ -174,10 +171,7 @@ export type CachePlane = {
     ) => Promise<boolean>;
     flushIndex: () => Promise<boolean>;
     getVc: (uri: string) => Promise<VC | VP | StoredCredentialEnvelope | undefined>;
-    setVc: (
-        uri: string,
-        value: VC | VP | StoredCredentialEnvelope | undefined
-    ) => Promise<boolean>;
+    setVc: (uri: string, value: VC | VP | StoredCredentialEnvelope | undefined) => Promise<boolean>;
     flushVc: () => Promise<boolean>;
 };
 export type PluginCachePlane = CachePlane;

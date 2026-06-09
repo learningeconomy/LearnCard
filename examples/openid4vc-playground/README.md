@@ -4,12 +4,12 @@ A curated, click-to-launch UI for testing every OID4VCI / OID4VP flow that the L
 
 ## Why this exists
 
-When you change anything in the OID4VC code path (the plugin, the `ClaimFromRequest` page, the `Oid4vpExchange` consent screen, the `useCredentialOfferAcceptance` hook), you need a way to quickly see *every* permutation:
+When you change anything in the OID4VC code path (the plugin, the `ClaimFromRequest` page, the `Oid4vpExchange` consent screen, the `useCredentialOfferAcceptance` hook), you need a way to quickly see _every_ permutation:
 
-- Did I break the PIN modal?
-- Does the multi-candidate picker still appear?
-- Does the JARM "encrypted response" badge show up?
-- Did the auth-code flow regress?
+-   Did I break the PIN modal?
+-   Does the multi-candidate picker still appear?
+-   Does the JARM "encrypted response" badge show up?
+-   Did the auth-code flow regress?
 
 The playground is the curated checklist + one-click launcher for those answers. Every scenario lives in `src/scenarios.ts` so the catalogue is the executable spec for what flows the wallet supports.
 
@@ -29,10 +29,10 @@ pnpm dev
 
 Then run the LearnCard app in another terminal (see below). The embedded provider currently ships two scenarios:
 
-| Scenario | Purpose |
-|---|---|
-| **SD-JWT-VC with cnf binding (issuance)** | Mints an SD-JWT-VC with `cnf.jwk` derived from the wallet's proof. Required before the verify scenario. |
-| **SD-JWT-VC presentation, PEX** | Verifies the wallet's presentation — checks issuer signature, KB-JWT, sd_hash, and reports which claims were released vs. hidden. Surfaces the verdict in the playground status panel. |
+| Scenario                                  | Purpose                                                                                                                                                                                |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SD-JWT-VC with cnf binding (issuance)** | Mints an SD-JWT-VC with `cnf.jwk` derived from the wallet's proof. Required before the verify scenario.                                                                                |
+| **SD-JWT-VC presentation, PEX**           | Verifies the wallet's presentation — checks issuer signature, KB-JWT, sd_hash, and reports which claims were released vs. hidden. Surfaces the verdict in the playground status panel. |
 
 Security posture: the embedded issuer does NOT verify the wallet's proof-of-possession signature (it would need a heavy DID resolver to support did:web). The verifier-side checks (issuer signature, KB-JWT signature, disclosure-hash integrity, nonce + vct binding) are fully enforced — that's what the engineer is actually testing.
 
@@ -61,34 +61,36 @@ pnpm start
 
 Then in the playground, click any scenario card. The panel surfaces three ways to drive the flow:
 
-- **Open in browser** (primary) — same-machine link into the running LCA dev server (`http://localhost:3000/oid4vp?...` or `/oid4vci?...`). No OS deep-link handler needed; opens in a new tab.
-- **Open via deep link** — the raw `openid4vp://` / `openid-credential-offer://` URI for installed wallet apps + PWAs.
-- **QR code** — scan from a phone (run `pnpm dev --host` in the playground first so the page is reachable on LAN).
+-   **Open in browser** (primary) — same-machine link into the running LCA dev server (`http://localhost:3000/oid4vp?...` or `/oid4vci?...`). No OS deep-link handler needed; opens in a new tab.
+-   **Open via deep link** — the raw `openid4vp://` / `openid-credential-offer://` URI for installed wallet apps + PWAs.
+-   **QR code** — scan from a phone (run `pnpm dev --host` in the playground first so the page is reachable on LAN).
 
 The "LearnCard dev URL" field at the top of the page is persisted to localStorage so you only set it once. Change it if you run the LCA app on a non-default port (e.g. `localhost:4000` via `pnpm start-p-4000`).
 
 ## What's covered in v1
 
 ### Issuance (OID4VCI)
-| Scenario                 | Exercises                                                       |
-|--------------------------|-----------------------------------------------------------------|
-| Pre-auth, no PIN         | Offer parser + token exchange + credential issuance happy path  |
-| Pre-auth with PIN        | PIN modal flow + `tx_code` passthrough on token exchange        |
-| Authorization code flow  | PKCE + authorize redirect + token exchange (Slice 4)            |
+
+| Scenario                | Exercises                                                      |
+| ----------------------- | -------------------------------------------------------------- |
+| Pre-auth, no PIN        | Offer parser + token exchange + credential issuance happy path |
+| Pre-auth with PIN       | PIN modal flow + `tx_code` passthrough on token exchange       |
+| Authorization code flow | PKCE + authorize redirect + token exchange (Slice 4)           |
 
 ### Verification (OID4VP)
-| Scenario                  | Exercises                                                   |
-|---------------------------|-------------------------------------------------------------|
-| PEX, single descriptor    | PEX matcher + consent screen happy path with one row        |
-| PEX, multi-candidate      | Per-row picker + selected-index threading through `buildChosenList` |
-| JARM (encrypted response) | JARM badge on consent screen + encrypted response transport |
 
-## What's *not* yet in v1
+| Scenario                  | Exercises                                                           |
+| ------------------------- | ------------------------------------------------------------------- |
+| PEX, single descriptor    | PEX matcher + consent screen happy path with one row                |
+| PEX, multi-candidate      | Per-row picker + selected-index threading through `buildChosenList` |
+| JARM (encrypted response) | JARM badge on consent screen + encrypted response transport         |
+
+## What's _not_ yet in v1
 
 The framework is sized for these but the scenarios aren't filled in. Each is a config block in `src/scenarios.ts` plus a server impl in `server/api.ts`:
 
-- **VCI**: multi-credential offer, already-claimed (replay), expired offer
-- **VP**: PEX multi-descriptor, PEX with `purpose` + `constraints.fields[]`, DCQL single, DCQL with claims, can't-satisfy
+-   **VCI**: multi-credential offer, already-claimed (replay), expired offer
+-   **VP**: PEX multi-descriptor, PEX with `purpose` + `constraints.fields[]`, DCQL single, DCQL with claims, can't-satisfy
 
 ## Architecture
 
@@ -109,14 +111,15 @@ examples/openid4vc-playground/
 
 Two non-obvious decisions worth knowing:
 
-- **Vite middleware over a separate Express server.** Lets `pnpm dev` start everything with one command. The walt.id calls happen Node-side so the issuer signing key never leaves the dev machine.
-- **By-reference → by-value rewriting.** walt.id Docker emits `credential_offer_uri=http://localhost:7002/...`, but the LearnCard wallet rejects HTTP on that field (a pre-auth code over plain HTTP would be a credential leak). The playground server resolves the reference and inlines the JSON before handing the URI to the browser. See `server/waltid.ts → resolveOfferToByValue`.
+-   **Vite middleware over a separate Express server.** Lets `pnpm dev` start everything with one command. The walt.id calls happen Node-side so the issuer signing key never leaves the dev machine.
+-   **By-reference → by-value rewriting.** walt.id Docker emits `credential_offer_uri=http://localhost:7002/...`, but the LearnCard wallet rejects HTTP on that field (a pre-auth code over plain HTTP would be a credential leak). The playground server resolves the reference and inlines the JSON before handing the URI to the browser. See `server/waltid.ts → resolveOfferToByValue`.
 
 ## Adding a scenario
 
 Two-step:
 
 1. **Describe it** in `src/scenarios.ts`:
+
     ```ts
     {
         id: 'vp-pex-multi-descriptor',
