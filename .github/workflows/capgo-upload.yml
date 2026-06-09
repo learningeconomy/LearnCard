@@ -159,11 +159,11 @@ jobs:
                       "${{ inputs.channel }}" \
                       "${{ inputs.app_id }}" 2>&1); then
                       echo "$OUTPUT"
-                      if echo "$OUTPUT" | grep -qiE 'already exist'; then
-                          echo "Channel already exists — continuing."
-                      else
-                          exit 1
-                      fi
+                       if echo "$OUTPUT" | grep -qiE 'already exist|duplicate key value violates unique constraint'; then
+                           echo "Channel already exists — continuing."
+                       else
+                           exit 1
+                       fi
                   else
                       echo "$OUTPUT"
                   fi

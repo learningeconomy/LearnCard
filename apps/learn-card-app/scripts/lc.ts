@@ -1900,7 +1900,7 @@ const printHelp = () => {
     log.info(dim('    pnpm lc sync vetpass alpha'));
     log.info(dim('    pnpm lc open vetpass ios'));
     log.info('');
-    log.info(bold('  \ud83d\udee0 Tools'));
+    log.info(bold('  🛠 Tools'));
     log.info('');
     log.info(
         `  ${cyan('pnpm lc viewer')}                     ${dim('Launch the Credential Viewer')}`
@@ -1908,6 +1908,14 @@ const printHelp = () => {
     log.info(
         `  ${cyan('pnpm lc seed app [flags]')}           ${dim(
             'Seed app store listing into local DB'
+        )}`
+    );
+    log.info(
+        `  ${cyan('pnpm skill-frameworks seed [stage]')} ${dim('Seed default skill frameworks')}`
+    );
+    log.info(
+        `  ${cyan('pnpm skill-frameworks add-admin [stage] [profileId]')} ${dim(
+            'Grant framework admin access to an existing profile'
         )}`
     );
     log.info(
