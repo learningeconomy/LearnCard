@@ -4,6 +4,8 @@ import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown } from 'lucide-react
 import { useFilestack } from 'learn-card-base';
 import { isEmailRecipient } from '../../../components/simple-send/simpleSend.helpers';
 import { isPlausibleRecipient } from './recipientValidation';
+import { RecipientPicker } from './RecipientPicker';
+import { RecipientMode, Recipient, LinkOptions } from './recipientTypes';
 import {
     MediaAttachments,
     type SimpleMediaAttachment,
@@ -29,10 +31,12 @@ interface IssuePaletteProps {
     template: OBv3CredentialTemplate | null;
     onSelectType: (entry: CredentialTypeEntry) => void;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
-    recipientMode: 'self' | 'other';
-    recipientValue: string;
-    onRecipientModeChange: (mode: 'self' | 'other') => void;
-    onRecipientValueChange: (value: string) => void;
+    recipientMode: RecipientMode;
+    recipients: Recipient[];
+    linkOptions: LinkOptions;
+    onRecipientModeChange: (mode: RecipientMode) => void;
+    onRecipientsChange: (recipients: Recipient[]) => void;
+    onLinkOptionsChange: (options: LinkOptions) => void;
     selectedSkills: SelectedSkill[];
     resolvedSkills: ResolvedSkill[];
     onSelectedSkillsChange: (skills: SelectedSkill[]) => void;
@@ -45,9 +49,11 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     onSelectType,
     onChangeTemplate,
     recipientMode,
-    recipientValue,
+    recipients,
+    linkOptions,
     onRecipientModeChange,
-    onRecipientValueChange,
+    onRecipientsChange,
+    onLinkOptionsChange,
     selectedSkills,
     resolvedSkills,
     onSelectedSkillsChange,
@@ -140,67 +146,14 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
             {template && (
                 <>
                     <section className={`${CARD_CLASS} space-y-4`}>
-                        <h3 className="text-base font-semibold text-grayscale-900">
-                            Who is this for?
-                        </h3>
-                        <p className="text-sm text-grayscale-600 leading-relaxed -mt-2">
-                            This shapes the preview and how it’s delivered.
-                        </p>
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setRecipientTouched(false);
-                                    onRecipientModeChange('self');
-                                }}
-                                className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm transition-colors ${
-                                    recipientMode === 'self'
-                                        ? 'bg-grayscale-900 text-white'
-                                        : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
-                                }`}
-                            >
-                                Myself
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onRecipientModeChange('other')}
-                                className={`flex-1 py-2.5 px-3 rounded-full font-medium text-sm transition-colors ${
-                                    recipientMode === 'other'
-                                        ? 'bg-grayscale-900 text-white'
-                                        : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
-                                }`}
-                            >
-                                Someone else
-                            </button>
-                        </div>
-                        {recipientMode === 'other' && (
-                            <div>
-                                <label className={LABEL_CLASS}>Email or username</label>
-                                <input
-                                    type="text"
-                                    value={recipientValue}
-                                    onChange={e => onRecipientValueChange(e.target.value)}
-                                    onBlur={() => setRecipientTouched(true)}
-                                    placeholder="name@example.com or @username"
-                                    className={INPUT_CLASS}
-                                />
-                                {recipientValue && isEmailRecipient(recipientValue) ? (
-                                    <p className="mt-1.5 text-xs text-grayscale-400">
-                                        They’ll get a link to claim it.
-                                    </p>
-                                ) : recipientTouched &&
-                                  recipientValue.trim() &&
-                                  !isPlausibleRecipient(recipientValue) ? (
-                                    <p className="mt-1.5 text-xs text-amber-600">
-                                        Enter an email or @username.
-                                    </p>
-                                ) : (
-                                    <p className="mt-1.5 text-xs text-grayscale-400">
-                                        Enter an email or @username.
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                        <RecipientPicker
+                            mode={recipientMode}
+                            onModeChange={onRecipientModeChange}
+                            recipients={recipients}
+                            onRecipientsChange={onRecipientsChange}
+                            linkOptions={linkOptions}
+                            onLinkOptionsChange={onLinkOptionsChange}
+                        />
                     </section>
 
                     <section className={`${CARD_CLASS} space-y-4`}>

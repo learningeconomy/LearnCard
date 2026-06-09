@@ -19,6 +19,7 @@ interface IssueSuccessProps {
     credentialUri: string;
     credential: Record<string, unknown> | null;
     credentialType: SimpleCredentialType | null;
+    claimLink?: string | null;
     onIssueAnother: () => void;
     onViewWallet: () => void;
 }
@@ -27,15 +28,18 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
     credentialUri,
     credential,
     credentialType,
+    claimLink,
     onIssueAnother,
     onViewWallet,
 }) => {
     const { presentToast } = useToast();
     const [copied, setCopied] = useState(false);
 
+    const linkToCopy = claimLink || credentialUri;
+
     const handleCopy = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(credentialUri);
+            await navigator.clipboard.writeText(linkToCopy);
             setCopied(true);
             presentToast('Link copied.', {
                 type: ToastTypeEnum.Success,
@@ -45,14 +49,14 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
         } catch (e) {
             log.error('issue-success.copy_failed', e);
         }
-    }, [credentialUri, presentToast]);
+    }, [linkToCopy, presentToast]);
 
     const handleShare = useCallback(async () => {
         if (typeof navigator !== 'undefined' && navigator.share) {
             try {
                 await navigator.share({
                     title: 'A credential for you',
-                    url: credentialUri,
+                    url: linkToCopy,
                 });
                 return;
             } catch (e) {
@@ -61,7 +65,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             }
         }
         await handleCopy();
-    }, [credentialUri, handleCopy]);
+    }, [linkToCopy, handleCopy]);
 
     return (
         <div className="font-poppins relative min-h-full flex items-center justify-center px-6 py-12 overflow-hidden">

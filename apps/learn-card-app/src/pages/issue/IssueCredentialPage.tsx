@@ -8,9 +8,10 @@ import {
     SimpleSendRecipient,
     buildSimpleTemplate,
     issueAndSendCredential,
+    issueViaBoost,
 } from '../../components/simple-send/simpleSend.helpers';
 import type { CredentialTypeEntry } from './components/credentialTypeCatalog';
-import { isPlausibleRecipient } from './components/recipientValidation';
+import { RecipientMode, Recipient, LinkOptions } from './components/recipientTypes';
 import {
     useWallet,
     useToast,
@@ -44,8 +45,9 @@ const IssueCredentialPage: React.FC = () => {
     const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(null);
     const [showJson, setShowJson] = useState(false);
 
-    const [recipientMode, setRecipientMode] = useState<'self' | 'other'>('self');
-    const [recipientValue, setRecipientValue] = useState('');
+    const [recipientMode, setRecipientMode] = useState<RecipientMode>('self');
+    const [recipients, setRecipients] = useState<Recipient[]>([]);
+    const [linkOptions, setLinkOptions] = useState<LinkOptions>({});
 
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
     const [resolvedSkills, setResolvedSkills] = useState<ResolvedSkill[]>([]);
@@ -53,11 +55,15 @@ const IssueCredentialPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [issuedUri, setIssuedUri] = useState<string | null>(null);
+    const [claimLink, setClaimLink] = useState<string | null>(null);
 
     const ach = template?.credentialSubject?.achievement;
     const nameValid = Boolean(ach?.name?.value?.trim());
     const detailsValid = nameValid;
-    const recipientValid = recipientMode === 'self' || isPlausibleRecipient(recipientValue);
+    const recipientValid =
+        recipientMode === 'self' ||
+        recipientMode === 'link' ||
+        (recipientMode === 'people' && recipients.length > 0);
     const canIssue = Boolean(template) && detailsValid && recipientValid && !isSubmitting;
 
     const issuerName = currentLCNUser?.displayName?.trim() || 'You';
@@ -126,6 +132,19 @@ const IssueCredentialPage: React.FC = () => {
             }
             return obj;
         };
+
+        let credentialSubjectName = undefined;
+        let credentialSubjectImage = undefined;
+
+        if (
+            recipientMode === 'people' &&
+            recipients.length === 1 &&
+            recipients[0].kind === 'profile'
+        ) {
+            credentialSubjectName = recipients[0].displayName;
+            credentialSubjectImage = recipients[0].image;
+        }
+
         return {
             ...(fill(json) as Record<string, unknown>),
             issuer: {
@@ -133,9 +152,14 @@ const IssueCredentialPage: React.FC = () => {
                 name: issuerName,
                 ...(issuerImage ? { image: issuerImage } : {}),
             },
+            credentialSubject: {
+                ...((fill(json) as any).credentialSubject || {}),
+                ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
+                ...(credentialSubjectImage ? { image: credentialSubjectImage } : {}),
+            },
             validFrom: new Date().toISOString(),
         };
-    }, [template, issuerName, issuerImage, currentLCNUser?.did]);
+    }, [template, issuerName, issuerImage, currentLCNUser?.did, recipientMode, recipients]);
 
     const handleIssue = useCallback(async () => {
         if (!template || !canIssue) return;
@@ -149,16 +173,22 @@ const IssueCredentialPage: React.FC = () => {
                 setIsSubmitting(false);
                 return;
             }
-            const recipient: SimpleSendRecipient =
-                recipientMode === 'self'
-                    ? { kind: 'self' }
-                    : { kind: 'identifier', value: recipientValue.trim() };
-            const result = await issueAndSendCredential(wallet, template, recipient);
+
+            const result = await issueViaBoost(wallet, template, {
+                mode: recipientMode,
+                recipients,
+                linkOptions,
+                currentLCNUser,
+            });
+
             presentToast('Credential issued.', {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
             setIssuedUri(result.credentialUri);
+            if (result.claimLink) {
+                setClaimLink(result.claimLink);
+            }
         } catch (e) {
             log.error('issue.failed', e);
             const message = (e as Error)?.message ?? '';
@@ -170,14 +200,25 @@ const IssueCredentialPage: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [template, canIssue, initWallet, recipientMode, recipientValue, presentToast]);
+    }, [
+        template,
+        canIssue,
+        initWallet,
+        recipientMode,
+        recipients,
+        linkOptions,
+        currentLCNUser,
+        presentToast,
+    ]);
 
     const reset = useCallback(() => {
         setIssuedUri(null);
+        setClaimLink(null);
         setSelectedType(null);
         setTemplate(null);
         setRecipientMode('self');
-        setRecipientValue('');
+        setRecipients([]);
+        setLinkOptions({});
         setSelectedSkills([]);
         setResolvedSkills([]);
         setError(null);
@@ -192,6 +233,7 @@ const IssueCredentialPage: React.FC = () => {
                         credentialUri={issuedUri}
                         credential={previewCredential}
                         credentialType={selectedType?.baseSimpleType ?? null}
+                        claimLink={claimLink}
                         onIssueAnother={reset}
                         onViewWallet={() => history.push('/wallet')}
                     />
@@ -268,9 +310,11 @@ const IssueCredentialPage: React.FC = () => {
                                         onSelectType={handleSelectType}
                                         onChangeTemplate={setTemplate}
                                         recipientMode={recipientMode}
-                                        recipientValue={recipientValue}
+                                        recipients={recipients}
+                                        linkOptions={linkOptions}
                                         onRecipientModeChange={setRecipientMode}
-                                        onRecipientValueChange={setRecipientValue}
+                                        onRecipientsChange={setRecipients}
+                                        onLinkOptionsChange={setLinkOptions}
                                         selectedSkills={selectedSkills}
                                         resolvedSkills={resolvedSkills}
                                         onSelectedSkillsChange={setSelectedSkills}
