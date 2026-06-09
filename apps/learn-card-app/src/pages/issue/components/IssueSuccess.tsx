@@ -95,7 +95,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
         if (!credentialType || !credential) return null;
         return (
             <div className="flex justify-center">
-                <div className="w-[200px] motion-safe:animate-reveal-card">
+                <div className="w-[160px] motion-safe:animate-reveal-card">
                     <BoostEarnedCard
                         credential={credential as any}
                         categoryType={

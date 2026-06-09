@@ -31,13 +31,13 @@ const useChangePulse = (value: string): boolean => {
 };
 
 const SkeletonCard: React.FC = () => (
-    <div className="w-[230px] rounded-[20px] bg-white border border-grayscale-200 shadow-sm overflow-hidden animate-fade-in-up">
-        <div className="h-[160px] bg-grayscale-100 flex items-center justify-center">
-            <ImageIcon className="w-10 h-10 text-grayscale-300" />
+    <div className="w-[160px] h-[275px] rounded-[20px] bg-white border border-grayscale-200 shadow-sm overflow-hidden animate-fade-in-up flex flex-col">
+        <div className="h-[110px] w-[110px] my-[10px] mx-auto rounded-full bg-grayscale-100 flex items-center justify-center shrink-0">
+            <ImageIcon className="w-8 h-8 text-grayscale-300" />
         </div>
-        <div className="p-5 space-y-3">
-            <div className="h-4 rounded-full bg-grayscale-100 w-3/4 mx-auto" />
-            <div className="h-3 rounded-full bg-grayscale-100 w-1/2 mx-auto" />
+        <div className="px-2 pb-5 flex-1 flex flex-col justify-end space-y-3">
+            <div className="h-3 rounded-full bg-grayscale-100 w-3/4 mx-auto" />
+            <div className="h-2 rounded-full bg-grayscale-100 w-1/2 mx-auto" />
         </div>
     </div>
 );
@@ -55,7 +55,7 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
         <div className="w-full flex flex-col items-center gap-4">
             {credentialType && credential ? (
                 <div
-                    className={`w-[230px] rounded-[24px] transition-all duration-300 animate-fade-in-up motion-reduce:animate-none ${
+                    className={`w-[160px] rounded-[24px] transition-all duration-300 animate-fade-in-up motion-reduce:animate-none ${
                         popping ? 'motion-safe:animate-card-pop' : ''
                     } ${glowing ? 'motion-safe:animate-glow-pulse' : ''}`}
                 >
