@@ -15,7 +15,8 @@ export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
     setContract: SetState<ConsentFlowContractDetails>;
     mode: 'read' | 'write';
     allowedCategories?: CredentialCategoryEnum[];
-}> = ({ selectedCategories, setContract, mode, allowedCategories }) => {
+    titleOverrides?: Partial<Record<CredentialCategoryEnum, string>>;
+}> = ({ selectedCategories, setContract, mode, allowedCategories, titleOverrides }) => {
     const [_selectedCategories, setSelectedCategories] = useState(Object.keys(selectedCategories));
     const categoryList = allowedCategories ?? CONTRACT_CATEGORIES;
 
@@ -70,7 +71,7 @@ export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
         <div className="flex flex-col items-center gap-[10px] w-full py-4 px-2">
             {categoryList.map(category => {
                 const metadata = contractCategoryNameToCategoryMetadata(category);
-                const title = metadata?.title ?? category;
+                const title = titleOverrides?.[category] ?? metadata?.title ?? category;
                 const IconWithShape = metadata?.IconWithShape;
 
                 const isActive = _selectedCategories.includes(category);

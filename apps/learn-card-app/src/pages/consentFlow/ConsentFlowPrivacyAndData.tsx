@@ -27,6 +27,7 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import {
     getPrivacyAndDataInfo,
     isVerifiableDataContractCategory,
+    VERIFIABLE_DATA_CONTRACT_CATEGORIES,
 } from '../../helpers/contract.helpers';
 
 type ConsentFlowPrivacyAndDataProps = {
@@ -190,9 +191,9 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const contractPersonalReadCategories = Object.keys(
         contractDetails.contract.read.personal ?? {}
     );
-    const verifiableDataCategories = contractCategoryReadCategories.filter(
-        isVerifiableDataContractCategory
-    );
+    const verifiableDataCategories = VERIFIABLE_DATA_CONTRACT_CATEGORIES.filter(category =>
+        contractCategoryReadCategories.includes(category)
+    ).filter(isVerifiableDataContractCategory);
     const verifiableDataPersonalItems = verifiableDataCategories.map(category => (
         <ConsentFlowReadSharingItem
             key={category}
@@ -205,6 +206,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
             }
             setTerm={newTerm => updateSlice('read')('credentials')('categories')(category, newTerm)}
             category={category}
+            titleOverride={category === 'Role Experience' ? 'Experience in Role' : undefined}
             required={contractDetails.contract.read.credentials.categories[category]?.required}
             contractOwnerDid={contractDetails.owner?.did}
         />

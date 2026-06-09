@@ -186,6 +186,7 @@ export const getFullTermsForContract = (
 export const getInfoFromContractKey = (key: string) => {
     const metadata = contractCategoryNameToCategoryMetadata(key);
     const options = metadata ?? boostCategoryMetadata[key as BoostCategoryOptionsEnum];
+    const isVerifiableDataCategory = isVerifiableDataContractCategory(key);
 
     // prefer the wallet title + icon
     const walletOptions = walletPageData.find(data => {
@@ -216,7 +217,9 @@ export const getInfoFromContractKey = (key: string) => {
             title: walletOptions?.title ?? options.title,
             plural: options.plural ?? `${key}s`,
             iconClassName: 'text-white',
-            iconCircleClass: `bg-${options.color ?? 'cyan-700'}`,
+            iconCircleClass: isVerifiableDataCategory
+                ? 'bg-transparent'
+                : `bg-${options.color ?? 'cyan-700'}`,
         };
     } else {
         return {

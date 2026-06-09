@@ -1,7 +1,14 @@
 import React from 'react';
 import { z } from 'zod';
 
-import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import BrokenStar from 'learn-card-base/svgs/BrokenStar';
+import PuzzlePiece, { TiltedPuzzlePiece } from 'learn-card-base/svgs/PuzzlePiece';
+import TwoToneProfile from 'learn-card-base/svgs/TwoToneProfile';
+import TwoToneTimeCircle from 'learn-card-base/svgs/TwoToneTimeCircle';
+import TwoToneWork from 'learn-card-base/svgs/TwoToneWork';
+import TwoToneWallet from 'learn-card-base/svgs/TwoToneWallet';
+import Scale from 'learn-card-base/svgs/Scale';
+import TwoToneLock from 'learn-card-base/svgs/TwoToneLock';
 import Graduation from 'learn-card-base/svgs/Graduation';
 import Briefcase from 'learn-card-base/svgs/Briefcase';
 import KeyIcon from 'learn-card-base/svgs/KeyIcon';
@@ -1012,8 +1019,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Verifiable Data',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: BrokenStar,
+        IconWithShape: BrokenStar,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.goals]: {
@@ -1026,8 +1033,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Goals',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: BrokenStar,
+        IconWithShape: BrokenStar,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.professionalTitle]: {
@@ -1040,8 +1047,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Professional Titles',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: TwoToneProfile,
+        IconWithShape: TwoToneProfile,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.roleExperience]: {
@@ -1054,8 +1061,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Role Experience',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: TwoToneTimeCircle,
+        IconWithShape: TwoToneTimeCircle,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.workExperience]: {
@@ -1068,8 +1075,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Work Experience',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: TwoToneWork,
+        IconWithShape: TwoToneWork,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.payRate]: {
@@ -1082,8 +1089,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Pay Rates',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: TwoToneWallet,
+        IconWithShape: TwoToneWallet,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.workLifeBalance]: {
@@ -1096,8 +1103,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Work Life Balance',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: Scale,
+        IconWithShape: Scale,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.jobStability]: {
@@ -1110,8 +1117,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Job Stability',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: TwoToneLock,
+        IconWithShape: TwoToneLock,
         ShapeIcon: Hexagon,
     },
     [CredentialCategoryEnum.selfAssignedSkills]: {
@@ -1124,8 +1131,8 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         plural: 'Self-Assigned Skills',
         subColor: 'gray-400',
         color: 'gray-500',
-        IconComponent: PuzzlePiece,
-        IconWithShape: Hexagon,
+        IconComponent: TiltedPuzzlePiece,
+        IconWithShape: TiltedPuzzlePiece,
         ShapeIcon: Hexagon,
     },
 
@@ -1143,13 +1150,6 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         defaultImageSrc: '',
         walletColor: '',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.currency],
-    },
-    [CredentialCategoryEnum.goals]: {
-        boostType: BoostCategoryOptionsEnum.goals,
-        walletSubtype: WalletCategoryTypes.goals,
-        defaultImageSrc: '',
-        walletColor: '',
-        ...boostCategoryMetadata[BoostCategoryOptionsEnum.goals],
     },
     [CredentialCategoryEnum.relationship]: {
         boostType: BoostCategoryOptionsEnum.relationship,
