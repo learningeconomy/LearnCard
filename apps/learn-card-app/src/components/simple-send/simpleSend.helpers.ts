@@ -1,4 +1,5 @@
 import { getLogger } from 'learn-card-base';
+import base64url from 'base64url';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
@@ -272,9 +273,13 @@ export const issueViaBoost = async (
             }
         );
 
-        claimLink = `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
-            claimLinkResponse.boostUri
-        }&challenge=${claimLinkResponse.challenge}`;
+        const data = {
+            boostUri: claimLinkResponse.boostUri,
+            challenge: claimLinkResponse.challenge,
+        };
+        claimLink = `${getAppBaseUrl()}/interactions/claim/${base64url.encode(
+            JSON.stringify(data)
+        )}?iuv=1`;
     }
 
     return {
