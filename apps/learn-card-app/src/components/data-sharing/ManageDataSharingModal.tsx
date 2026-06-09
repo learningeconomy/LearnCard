@@ -58,25 +58,27 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
     const contracts = consentedContracts ?? [];
 
     return (
-        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-                <button onClick={handleClose} className="p-1 -ml-1">
-                    <ChevronLeft className="w-6 h-6 text-grayscale-700" />
-                </button>
+        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full flex flex-col !overflow-hidden">
+            <div className="shrink-0 p-6 pb-4">
+                <div className="flex items-center gap-3 mb-3">
+                    <button onClick={handleClose} className="p-1 -ml-1" aria-label="Back">
+                        <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                    </button>
 
-                <div className="flex items-center gap-2">
-                    <Shield className="w-6 h-6 text-emerald-600" />
-                    <h2 className="text-xl font-semibold text-grayscale-900">Data Sharing</h2>
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-6 h-6 text-emerald-600" />
+                        <h2 className="text-xl font-semibold text-grayscale-900">Data Sharing</h2>
+                    </div>
                 </div>
+
+                <p className="text-sm text-grayscale-600">
+                    Apps and services you've given permission to access your {brandingConfig?.name}{' '}
+                    data.
+                </p>
             </div>
 
-            <p className="text-sm text-grayscale-600 mb-4">
-                Apps and services you've given permission to access your {brandingConfig?.name}{' '}
-                data.
-            </p>
-
             {contracts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-col items-center justify-center px-6 pt-4 pb-10 text-center">
                     <Shield className="w-12 h-12 text-grayscale-300 mb-4" />
 
                     <p className="text-grayscale-600 font-medium">No data sharing yet</p>
@@ -86,24 +88,26 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                     </p>
                 </div>
             ) : (
-                <div className="flex-1 overflow-y-auto -mx-2 px-2">
-                    <div className="flex flex-col gap-2">
-                        {contracts.map(contract => (
-                            <ConsentedContractRow
-                                key={contract.uri}
-                                contract={contract}
-                                onUpdate={refetch}
-                            />
-                        ))}
+                <>
+                    <div className="modal-scrollable flex-1 min-h-0 overflow-y-auto px-4">
+                        <div className="flex flex-col gap-1 py-1">
+                            {contracts.map(contract => (
+                                <ConsentedContractRow
+                                    key={contract.uri}
+                                    contract={contract}
+                                    onUpdate={refetch}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
 
-            <div className="mt-4 pt-4 border-t border-grayscale-100">
-                <p className="text-xs text-grayscale-500 text-center">
-                    You can revoke access at any time by tapping on a service.
-                </p>
-            </div>
+                    <div className="shrink-0 px-6 py-4 border-t border-grayscale-100">
+                        <p className="text-xs text-grayscale-500 text-center">
+                            You can revoke access at any time by tapping on a service.
+                        </p>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
@@ -136,7 +140,7 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     return (
         <button
             onClick={handleOpenDetails}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-grayscale-50 transition-colors text-left w-full"
+            className="flex items-center gap-3 p-3 rounded-xl hover:bg-grayscale-10 transition-colors text-left w-full"
         >
             {image ? (
                 <img src={image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
