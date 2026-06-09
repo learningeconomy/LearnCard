@@ -284,6 +284,13 @@ export const brandNewUser: DashboardViewModel = {
             'Browse other pathways'
         ),
     },
+    dataTrust: {
+        places: 0,
+        canRead: 0,
+        canWrite: 0,
+        proof: [],
+        onManage: noop,
+    },
     activity: {
         notifications: [],
         pendingContractRequests: [],
@@ -354,6 +361,21 @@ export const activeLearner: DashboardViewModel = {
             'Explore journeys',
             'Browse other pathways'
         ),
+    },
+    dataTrust: {
+        places: 7,
+        canRead: 4,
+        canWrite: 2,
+        proof: [
+            { uri: 'ct-1', name: 'State University', image: PORTRAIT.acme },
+            { uri: 'ct-2', name: 'Khan Academy' },
+            { uri: 'ct-3', name: 'Acme Corp', image: PORTRAIT.maya },
+            { uri: 'ct-4', name: 'SXSW EDU', image: PORTRAIT.jordan },
+            { uri: 'ct-5', name: 'City Library' },
+            { uri: 'ct-6', name: 'Coursera' },
+            { uri: 'ct-7', name: 'Local Co-op' },
+        ],
+        onManage: noop,
     },
     activity: {
         notifications: [

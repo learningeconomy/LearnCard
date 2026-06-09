@@ -28,6 +28,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { buildPermissionText } from './consentSummary';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
@@ -130,36 +131,7 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     const name = contractDetails?.name ?? 'Unknown App';
     const image = contractDetails?.image;
 
-    // Count only accepted permissions (where sharing !== false)
-    const acceptedReadCount = contract.terms?.read?.credentials?.categories
-        ? Object.entries(contract.terms.read.credentials.categories).filter(([_, config]) => {
-              const cfg = config as { sharing?: boolean };
-              return cfg.sharing !== false;
-          }).length
-        : 0;
-
-    const acceptedWriteCount = contract.terms?.write?.credentials?.categories
-        ? Object.entries(contract.terms.write.credentials.categories).filter(([_, config]) => {
-              if (typeof config === 'boolean') return config;
-              const cfg = config as { sharing?: boolean };
-              return cfg.sharing !== false;
-          }).length
-        : 0;
-
-    let permissionText = '';
-
-    if (acceptedReadCount > 0) {
-        permissionText += `${acceptedReadCount} read`;
-    }
-
-    if (acceptedWriteCount > 0) {
-        permissionText += permissionText ? ', ' : '';
-        permissionText += `${acceptedWriteCount} write`;
-    }
-
-    if (!permissionText) {
-        permissionText = 'No permissions';
-    }
+    const permissionText = buildPermissionText(contract);
 
     return (
         <button

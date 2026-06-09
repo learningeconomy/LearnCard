@@ -47,6 +47,24 @@ export const BrandNewUserNarrow: Story = {
     parameters: { viewport: { defaultViewport: 'tablet' } },
 };
 
+export const DataSharingSomeState: Story = {
+    args: {
+        vm: {
+            ...activeLearner,
+            dataTrust: {
+                places: 2,
+                canRead: 2,
+                canWrite: 0,
+                proof: [
+                    { uri: 'ct-1', name: 'State University' },
+                    { uri: 'ct-2', name: 'Khan Academy' },
+                ],
+                onManage: () => undefined,
+            },
+        },
+    },
+};
+
 const Playground: React.FC<{
     hasCredentials: boolean;
     credentialCount: number;

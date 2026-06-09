@@ -141,6 +141,20 @@ export type DashboardTopSkillsViewModel = {
     onViewAll: () => void;
 } | null;
 
+export type DashboardDataTrustProofItem = {
+    uri: string;
+    name: string;
+    image?: string;
+};
+
+export type DashboardDataTrustViewModel = {
+    places: number;
+    canRead: number;
+    canWrite: number;
+    proof: DashboardDataTrustProofItem[];
+    onManage: () => void;
+};
+
 export type DashboardHeroSlot = 'getStarted' | 'goal';
 
 export type DashboardViewModel = {
@@ -156,6 +170,7 @@ export type DashboardViewModel = {
     onReviewGoal: () => void;
     primaryButtonClass?: string;
     slots: DashboardSlots;
+    dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningSnapshots: DashboardLearningSnapshotsViewModel;
     topSkills: DashboardTopSkillsViewModel;

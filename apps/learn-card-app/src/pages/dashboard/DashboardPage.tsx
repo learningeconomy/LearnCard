@@ -29,8 +29,12 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
+import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+
 import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
+import ManageDataSharingModal from '../../components/data-sharing/ManageDataSharingModal';
+import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -53,6 +57,7 @@ import type {
     DashboardLearningSnapshotsViewModel,
     DashboardLearningSnapshot,
     DashboardTopSkillsViewModel,
+    DashboardDataTrustViewModel,
 } from './DashboardView.types';
 import { buildLearningSnapshots } from './helpers/learningSnapshots';
 import { buildTopSkills } from './helpers/topSkills';
@@ -181,6 +186,8 @@ const DashboardPage: React.FC = () => {
     const { data: receivedConnectionRequests = [] } = useGetConnectionsRequests();
     const { data: connections = [] } = useGetConnections();
 
+    const { data: consentedContracts = [] } = useConsentedContracts();
+
     const showAiInsights = Boolean(flags?.showAiInsights);
     const { isAiEnabled } = useAiFeatureGate();
     const aiInsightsAllowed = showAiInsights && isAiEnabled;
@@ -213,6 +220,13 @@ const DashboardPage: React.FC = () => {
                 connections={connections ?? []}
                 qrOnly
             />
+        );
+    };
+    const openManageDataSharing = () => {
+        openHeaderModal(
+            <ManageDataSharingModal />,
+            { sectionClassName: '!bg-transparent !shadow-none' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
         );
     };
 
@@ -442,6 +456,11 @@ const DashboardPage: React.FC = () => {
         return { skills: dashboardTopSkills, onViewAll: goToSkills };
     }, [aiInsightsAllowed, dashboardTopSkills]);
 
+    const dataTrust = useMemo<DashboardDataTrustViewModel>(() => {
+        const summary = summarizeConsent(consentedContracts);
+        return { ...summary, onManage: openManageDataSharing };
+    }, [consentedContracts]);
+
     const viewModel: DashboardViewModel = {
         brandName: brandingConfig.name,
         header: {
@@ -473,6 +492,7 @@ const DashboardPage: React.FC = () => {
         onReviewGoal: goToReviews,
         primaryButtonClass,
         slots: resolvedSlots,
+        dataTrust,
         activity: {
             notifications: unreadNotifications,
             pendingContractRequests,

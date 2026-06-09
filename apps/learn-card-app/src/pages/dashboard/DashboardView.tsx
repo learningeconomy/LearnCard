@@ -12,6 +12,7 @@ import ActivityCard from './components/ActivityCard';
 import LearningSnapshotsCard from './components/LearningSnapshotsCard';
 import TopSkillsCard from './components/TopSkillsCard';
 import AppsCard from './components/AppsCard';
+import DataTrustCard from './components/DataTrustCard';
 import type { DashboardViewModel } from './DashboardView.types';
 
 type DashboardViewProps = {
@@ -32,6 +33,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
         onReviewGoal,
         primaryButtonClass,
         slots,
+        dataTrust,
         activity,
         learningSnapshots,
         topSkills,
@@ -113,6 +115,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
 
                 <GenericErrorBoundary>
                     <QuickActionsRow slots={slots} />
+                </GenericErrorBoundary>
+
+                <GenericErrorBoundary>
+                    <DataTrustCard vm={dataTrust} />
                 </GenericErrorBoundary>
 
                 {showInsightsRow && (
