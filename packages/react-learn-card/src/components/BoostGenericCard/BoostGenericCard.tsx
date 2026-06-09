@@ -115,19 +115,21 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                             customTitle
                         )}
 
-                        {/* Issuer */}
-                        {customIssuerName || (
-                            <span className="text-[12px] text-grayscale-700 mt-1">
-                                by <span className="font-bold">{issuerName}</span>
-                            </span>
-                        )}
+                        {/* Issuer & Verifier */}
+                        <div className="mt-1 flex w-full items-center justify-center gap-1 px-4">
+                            {customIssuerName || (
+                                <span className="min-w-0 truncate text-[12px] text-grayscale-700">
+                                    by <span className="font-bold">{issuerName}</span>
+                                </span>
+                            )}
+                            {verifierBadge && <span className="shrink-0">{verifierBadge}</span>}
+                        </div>
 
-                        {/* Date & Verifier */}
+                        {/* Date */}
                         {customDateDisplay || (
-                            <div className="text-[11px] text-grayscale-700 mt-1 flex flex-col items-center">
-                                {verifierBadge}
-                                <span>{dateDisplay}</span>
-                            </div>
+                            <span className="text-[11px] text-grayscale-700 mt-1">
+                                {dateDisplay}
+                            </span>
                         )}
 
                         {/* Skills count if in modal */}
