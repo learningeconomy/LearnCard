@@ -213,7 +213,7 @@ const runAddAdmin = async (
 
         // Raw existence check instead of @accesslayer/profile/read, which transitively
         // imports @models and hits a circular-dependency TDZ under tsx.
-        const normalizedProfileId = profileId.toLowerCase().replace(':', '%3A');
+        const normalizedProfileId = profileId.toLowerCase().replaceAll(':', '%3A');
         const profileResult = await neogma.queryRunner.run(
             `MATCH (p:Profile {profileId: $profileId}) RETURN p.profileId AS profileId LIMIT 1`,
             { profileId: normalizedProfileId }

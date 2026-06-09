@@ -14,7 +14,8 @@ import {
 } from '@helpers/skill-embedding.helpers';
 // Inlined from @helpers/profile.helpers to avoid importing the access/model layer
 // (it transitively pulls in @models, which hits a circular-dependency TDZ under tsx).
-const transformProfileId = (rawInput: string): string => rawInput.toLowerCase().replace(':', '%3A');
+const transformProfileId = (rawInput: string): string =>
+    rawInput.toLowerCase().replaceAll(':', '%3A');
 
 type QueryRunnerLike = {
     run: (
