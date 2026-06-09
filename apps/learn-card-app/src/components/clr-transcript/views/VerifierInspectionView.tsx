@@ -1,7 +1,9 @@
 import React from 'react';
 
 import ClrTranscriptWarningsPanel from '../ClrTranscriptWarningsPanel';
-import ClrTranscriptEvidenceList from '../ClrTranscriptEvidenceList';
+import ClrTranscriptEvidenceList, {
+    createTranscriptEvidenceSourceSummaries,
+} from '../ClrTranscriptEvidenceList';
 import StructuredTranscriptView from './StructuredTranscriptView';
 import SparseAcademicRecordView from './SparseAcademicRecordView';
 
@@ -10,6 +12,8 @@ import type { ClrTranscriptDisplayModel } from '../../../helpers/clrRenderer.hel
 const VerifierInspectionView: React.FC<{
     model: ClrTranscriptDisplayModel;
 }> = ({ model }) => {
+    const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
+
     return (
         <div className="space-y-4">
             <ClrTranscriptWarningsPanel warnings={model.warnings} />
@@ -18,7 +22,16 @@ const VerifierInspectionView: React.FC<{
             ) : (
                 <SparseAcademicRecordView model={model} showSource />
             )}
-            <ClrTranscriptEvidenceList evidence={model.evidence} />
+            <ClrTranscriptEvidenceList
+                evidence={model.evidence}
+                sourceSummaries={createTranscriptEvidenceSourceSummaries({
+                    transcriptCredentialId: model.header.id.value,
+                    transcriptTitle,
+                    transcriptIssuedAt: model.header.issuedAt?.value,
+                    courses: model.courses,
+                    programs: model.programs,
+                })}
+            />
             <div className="bg-white border border-grayscale-200 rounded-xl p-3">
                 <p className="text-xs text-grayscale-600">
                     Signed nested credentials: {model.verification.nestedCredentialSignedCount}

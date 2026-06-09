@@ -1,8 +1,16 @@
 import React from 'react';
 
 import MediaAttachmentsBox from '../../pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 
 import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
+
+export type ClrEvidenceSourceSummary = {
+    kind: 'transcript' | 'course' | 'program';
+    title: string;
+    humanCode?: string;
+    dateLabel?: string;
+};
 
 type EvidenceKind = 'document' | 'photo' | 'video' | 'link';
 
@@ -62,10 +70,75 @@ const toEvidenceAttachment = (item: EvidenceDisplayModel) => ({
     url: getEvidenceUrl(item),
 });
 
+const toEvidenceAttachmentWithSource = (
+    item: EvidenceDisplayModel,
+    sourceSummaries?: Record<string, ClrEvidenceSourceSummary>
+) => ({
+    ...toEvidenceAttachment(item),
+    sourceContext: sourceSummaries?.[item.sourceCredentialId],
+});
+
+export const createTranscriptEvidenceSourceSummaries = ({
+    transcriptCredentialId,
+    transcriptTitle,
+    transcriptIssuedAt,
+    courses,
+    programs,
+}: {
+    transcriptCredentialId: string;
+    transcriptTitle?: string;
+    transcriptIssuedAt?: string;
+    courses: Array<{
+        sourceCredentialId: string;
+        name?: { value?: string };
+        humanCode?: { value?: string };
+        earnedAt?: { value?: string };
+    }>;
+    programs: Array<{
+        sourceCredentialId: string;
+        name?: { value?: string };
+        earnedAt?: { value?: string };
+    }>;
+}): Record<string, ClrEvidenceSourceSummary> => {
+    const summaries: Record<string, ClrEvidenceSourceSummary> = {
+        [transcriptCredentialId]: {
+            kind: 'transcript',
+            title: transcriptTitle || 'Transcript',
+            dateLabel: transcriptIssuedAt
+                ? `Issued ${formatClrDate(transcriptIssuedAt)}`
+                : undefined,
+        },
+    };
+
+    courses.forEach(course => {
+        summaries[course.sourceCredentialId] = {
+            kind: 'course',
+            title: course.name?.value ?? 'Course',
+            humanCode: course.humanCode?.value,
+            dateLabel: course.earnedAt?.value
+                ? `Added ${formatClrDate(course.earnedAt.value)}`
+                : undefined,
+        };
+    });
+
+    programs.forEach(program => {
+        summaries[program.sourceCredentialId] = {
+            kind: 'program',
+            title: program.name?.value ?? 'Program',
+            dateLabel: program.earnedAt?.value
+                ? `Added ${formatClrDate(program.earnedAt.value)}`
+                : undefined,
+        };
+    });
+
+    return summaries;
+};
+
 const ClrTranscriptEvidenceList: React.FC<{
     evidence: EvidenceDisplayModel[];
     compact?: boolean;
-}> = ({ evidence, compact = false }) => {
+    sourceSummaries?: Record<string, ClrEvidenceSourceSummary>;
+}> = ({ evidence, compact = false, sourceSummaries }) => {
     if (evidence.length === 0) return null;
 
     if (compact) {
@@ -76,7 +149,11 @@ const ClrTranscriptEvidenceList: React.FC<{
         );
     }
 
-    return <MediaAttachmentsBox evidence={evidence.map(toEvidenceAttachment)} />;
+    return (
+        <MediaAttachmentsBox
+            evidence={evidence.map(item => toEvidenceAttachmentWithSource(item, sourceSummaries))}
+        />
+    );
 };
 
 export default ClrTranscriptEvidenceList;

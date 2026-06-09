@@ -7,7 +7,9 @@ import { CertificateDisplayIcon } from 'learn-card-base';
 import ClrCompetencyBlock from './ClrCompetencyBlock';
 import ClrAlignmentList from './ClrAlignmentList';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
-import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import ClrTranscriptEvidenceList, {
+    type ClrEvidenceSourceSummary,
+} from './ClrTranscriptEvidenceList';
 import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
@@ -48,6 +50,15 @@ const ClrProgramDetailPanel: React.FC<{
         competencies,
         associations
     );
+    const evidenceSourceSummaries: Record<string, ClrEvidenceSourceSummary> = {
+        [program.sourceCredentialId]: {
+            kind: 'program',
+            title: program.name?.value ?? 'Program',
+            dateLabel: program.earnedAt?.value
+                ? `Added ${formatClrDate(program.earnedAt.value)}`
+                : undefined,
+        },
+    };
 
     return (
         <div className="space-y-5 pb-10 h-full bg-grayscale-100 overflow-y-scroll">
@@ -177,7 +188,10 @@ const ClrProgramDetailPanel: React.FC<{
                 {/* Evidence & attachments scoped to this program */}
                 {program.evidence.length > 0 && (
                     <div className="bg-white border border-grayscale-200 rounded-2xl p-4">
-                        <ClrTranscriptEvidenceList evidence={program.evidence} />
+                        <ClrTranscriptEvidenceList
+                            evidence={program.evidence}
+                            sourceSummaries={evidenceSourceSummaries}
+                        />
                     </div>
                 )}
 

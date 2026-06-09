@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import prettyBytes from 'pretty-bytes';
 
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
+import { CertificateDisplayIcon } from 'learn-card-base';
+import Graduation from 'learn-card-base/svgs/Graduation';
+import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import DocumentIcon from 'learn-card-base/svgs/DocumentIcon';
 import LinkIcon from 'apps/learn-card-app/src/components/svgs/LinkIcon';
 import { Image as ImageIcon, Play } from 'lucide-react';
@@ -27,6 +31,14 @@ type Attachment = {
     type: 'photo' | 'document' | 'video' | 'link' | 'text';
     description?: string;
     narrative?: string;
+    sourceContext?: AttachmentSourceContext;
+};
+
+type AttachmentSourceContext = {
+    kind: 'transcript' | 'course' | 'program';
+    title: string;
+    humanCode?: string;
+    dateLabel?: string;
 };
 
 type Evidence = {
@@ -37,6 +49,7 @@ type Evidence = {
     narrative: string;
     genre: string;
     url: string;
+    sourceContext?: AttachmentSourceContext;
 };
 
 type MediaMetadata = {
@@ -136,6 +149,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         description: ev.description,
                         narrative: ev.narrative ?? '',
                         type,
+                        sourceContext: ev.sourceContext,
                     };
                 })
             );
@@ -327,13 +341,52 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         </div>
                     </>
                 );
-                const className = `flex w-full items-center gap-2 rounded-[20px] border border-grayscale-200 bg-white text-left shadow-box-bottom transition-colors hover:bg-grayscale-10 ${
-                    attachment.type === 'photo' || attachment.type === 'video' ? 'p-1' : 'p-2'
-                }`;
+                const className = `flex w-full items-center gap-2 rounded-[20px] border border-grayscale-200 bg-white text-left transition-colors hover:bg-grayscale-10 ${
+                    attachment.sourceContext ? 'shadow-none' : 'shadow-box-bottom'
+                } ${attachment.type === 'photo' || attachment.type === 'video' ? 'p-1' : 'p-2'}`;
                 const canOpen = Boolean(previewUrl && attachment.type !== 'text');
+                const wrapWithSourceHeader = (node: React.ReactNode) => {
+                    if (!attachment.sourceContext) return node;
+
+                    const headerIcon =
+                        attachment.sourceContext.kind === 'course' ? (
+                            <StudiesIcon className="w-4 h-4" />
+                        ) : attachment.sourceContext.kind === 'program' ? (
+                            <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                        ) : (
+                            <Graduation className="w-4 h-4 text-grayscale-500" />
+                        );
+
+                    return (
+                        <div className="w-full rounded-[28px] border border-grayscale-200 bg-white p-4 shadow-box-bottom space-y-3">
+                            <div className="flex items-center gap-2 min-w-0 px-1">
+                                {attachment.sourceContext.dateLabel && (
+                                    <p className="shrink-0 text-[13px] text-grayscale-700">
+                                        {attachment.sourceContext.dateLabel}
+                                    </p>
+                                )}
+                                {attachment.sourceContext.dateLabel && (
+                                    <span className="shrink-0 text-grayscale-700">•</span>
+                                )}
+                                <span className="shrink-0 text-grayscale-700">
+                                    <FlatIcon>{headerIcon}</FlatIcon>
+                                </span>
+                                {attachment.sourceContext.humanCode && (
+                                    <p className="shrink-0 text-[13px] font-semibold text-grayscale-700">
+                                        {attachment.sourceContext.humanCode}
+                                    </p>
+                                )}
+                                <p className="min-w-0 truncate text-[13px] text-grayscale-700">
+                                    {attachment.sourceContext.title}
+                                </p>
+                            </div>
+                            {node}
+                        </div>
+                    );
+                };
 
                 if (canOpen && isPreviewableMedia) {
-                    return (
+                    return wrapWithSourceHeader(
                         <button
                             key={`${attachment.url}-${index}`}
                             type="button"
@@ -349,7 +402,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                 }
 
                 if (canOpen) {
-                    return (
+                    return wrapWithSourceHeader(
                         <a
                             key={`${attachment.url}-${index}`}
                             href={previewUrl}
@@ -363,7 +416,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                     );
                 }
 
-                return (
+                return wrapWithSourceHeader(
                     <div key={`${attachment.url}-${index}`} className={className}>
                         {content}
                     </div>

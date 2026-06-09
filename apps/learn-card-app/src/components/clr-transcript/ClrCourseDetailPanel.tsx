@@ -7,7 +7,9 @@ import ClrCompetencyBlock from './ClrCompetencyBlock';
 import ClrGradeScale from './ClrGradeScale';
 import ClrProvenanceTable from './ClrProvenanceTable';
 import ClrAlignmentList from './ClrAlignmentList';
-import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import ClrTranscriptEvidenceList, {
+    type ClrEvidenceSourceSummary,
+} from './ClrTranscriptEvidenceList';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
@@ -58,6 +60,16 @@ const ClrCourseDetailPanel: React.FC<{
 
     // Competencies linked to this course via explicit CLR associations (no heuristics).
     const courseCompetencies = getLinkedCompetencies(id, competencies, associations);
+    const evidenceSourceSummaries: Record<string, ClrEvidenceSourceSummary> = {
+        [course.sourceCredentialId]: {
+            kind: 'course',
+            title: course.name?.value ?? 'Course',
+            humanCode: course.humanCode?.value,
+            dateLabel: course.earnedAt?.value
+                ? `Added ${formatClrDate(course.earnedAt.value)}`
+                : undefined,
+        },
+    };
 
     // Grade scale from allowedValues on the primary result
     const allowedGrades = primaryResult?.allowedValue?.value ?? [];
@@ -270,7 +282,10 @@ const ClrCourseDetailPanel: React.FC<{
                 {/* Evidence & attachments scoped to this course */}
                 {course.evidence.length > 0 && (
                     <div className="bg-white border border-grayscale-200 rounded-2xl p-4">
-                        <ClrTranscriptEvidenceList evidence={course.evidence} />
+                        <ClrTranscriptEvidenceList
+                            evidence={course.evidence}
+                            sourceSummaries={evidenceSourceSummaries}
+                        />
                     </div>
                 )}
 

@@ -5,6 +5,7 @@ import ClrIssuerBadge from './ClrIssuerBadge';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
 import ClrCompetencyDetailPanel from './ClrCompetencyDetailPanel';
 import ClrVerificationPills from './ClrVerificationPills';
+import { createTranscriptEvidenceSourceSummaries } from './ClrTranscriptEvidenceList';
 import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
@@ -32,7 +33,18 @@ const ClrTranscriptSummaryHeader: React.FC<{
         });
     };
     const openEvidenceModal = () => {
-        newModal(<ClrEvidenceDetailPanel evidence={model.evidence} />);
+        newModal(
+            <ClrEvidenceDetailPanel
+                evidence={model.evidence}
+                sourceSummaries={createTranscriptEvidenceSourceSummaries({
+                    transcriptCredentialId: model.header.id.value,
+                    transcriptTitle,
+                    transcriptIssuedAt: model.header.issuedAt?.value,
+                    courses: model.courses,
+                    programs: model.programs,
+                })}
+            />
+        );
     };
     const openCompetenciesModal = () => {
         newModal(

@@ -1,6 +1,8 @@
 import React from 'react';
 
-import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
+import ClrTranscriptEvidenceList, {
+    type ClrEvidenceSourceSummary,
+} from './ClrTranscriptEvidenceList';
 import PaperClip from '../svgs/PaperClip';
 import X from '../svgs/X';
 
@@ -10,7 +12,8 @@ import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 const ClrEvidenceDetailPanel: React.FC<{
     evidence: EvidenceDisplayModel[];
-}> = ({ evidence }) => {
+    sourceSummaries?: Record<string, ClrEvidenceSourceSummary>;
+}> = ({ evidence, sourceSummaries }) => {
     const { closeModal } = useModal();
     const evidenceCount = evidence.length;
 
@@ -37,7 +40,7 @@ const ClrEvidenceDetailPanel: React.FC<{
             </div>
 
             <div className="px-5">
-                <ClrTranscriptEvidenceList evidence={evidence} />
+                <ClrTranscriptEvidenceList evidence={evidence} sourceSummaries={sourceSummaries} />
             </div>
         </div>
     );
