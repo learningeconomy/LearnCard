@@ -1,8 +1,8 @@
 import React from 'react';
 
 import X from '../svgs/X';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import ClrCompetencyBlock from './ClrCompetencyBlock';
-import { FlatIcon } from './ClrStatCard';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';

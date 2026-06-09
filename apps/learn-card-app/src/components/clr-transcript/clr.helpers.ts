@@ -4,9 +4,11 @@ import { Directory, Filesystem } from '@capacitor/filesystem';
 
 import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
+/** Keeps the evidence picker focused on items that can actually be downloaded. */
 export const getDownloadableEvidence = (evidence: EvidenceDisplayModel[]): EvidenceDisplayModel[] =>
     evidence.filter(e => e.id?.value);
 
+/** Builds a filesystem-safe filename while preserving a real extension when one is already present. */
 export const toSafeFileName = (name: string | undefined, mimeType: string | undefined): string => {
     const base = (name || 'evidence').trim().replace(/[^\w.\-]/g, '_');
     if (/\.\w{2,5}$/.test(base)) return base;
@@ -19,6 +21,7 @@ export const toSafeFileName = (name: string | undefined, mimeType: string | unde
     return `${base}${ext}`;
 };
 
+/** Downloads inline data URIs or remote evidence links using the best available platform path. */
 export const downloadEvidence = async (item: EvidenceDisplayModel): Promise<boolean> => {
     const raw = item.id?.value;
     if (!raw) return false;
@@ -56,20 +59,49 @@ export const downloadEvidence = async (item: EvidenceDisplayModel): Promise<bool
 };
 
 // "BachelorDegree" → "Bachelor Degree", "LearningProgram" → "Learning Program"
+/** Inserts spaces between camelCase segments so achievement types read naturally in the UI. */
 export const formatAchievementType = (type: string): string =>
     type.replace(/([a-z])([A-Z])/g, '$1 $2');
 
 // "BachelorDegree" → "Degree", "AssociateDegree" → "Degree", "Certificate" → "Certificate"
+/** Returns the last semantic word from an achievement type for compact labels. */
 export const inferProgramKind = (type: string): string => {
     const words = formatAchievementType(type).split(' ');
     return words[words.length - 1] ?? type;
 };
 
+/** Turns a program type plus count into a readable summary label. */
 export const achievementTypeLabel = (type: string, count: number): string => {
     const singular = inferProgramKind(type).replace(/s$/i, '');
     return count === 1 ? `1 ${singular}` : `${count} ${singular}s`;
 };
 
+/** Normalizes GPA-like values without changing non-numeric text. */
+export const formatClrGpa = (value: string | number | boolean | undefined): string => {
+    if (value === undefined) return '';
+
+    if (typeof value === 'number') {
+        return Number.isFinite(value)
+            ? new Intl.NumberFormat('en-US', {
+                  maximumFractionDigits: 4,
+              }).format(value)
+            : String(value);
+    }
+
+    if (typeof value === 'boolean') return String(value);
+
+    const trimmed = value.trim();
+    if (trimmed === '') return trimmed;
+
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) return trimmed;
+
+    return new Intl.NumberFormat('en-US', {
+        maximumFractionDigits: 4,
+    }).format(parsed);
+};
+
+/** Maps grade bands to the existing semantic text colors used across the app. */
 export const gradeColor = (grade: string): string => {
     if (/^A/.test(grade)) return 'text-emerald-700';
     if (/^B/.test(grade)) return 'text-sky-700';
@@ -79,6 +111,7 @@ export const gradeColor = (grade: string): string => {
     return 'text-grayscale-600';
 };
 
+/** Maps grade bands to a matching background and border treatment. */
 export const gradeColorBackground = (grade: string): string => {
     if (['A+', 'A', 'A-'].includes(grade)) return 'bg-emerald-100 border-emerald-400';
     if (['B+', 'B', 'B-'].includes(grade)) return 'bg-sky-100 border-sky-300';
@@ -88,6 +121,7 @@ export const gradeColorBackground = (grade: string): string => {
     return 'bg-emerald-100 border-emerald-400';
 };
 
+/** Converts an ISO date into a coarse academic term label for grouping. */
 const deriveDisplayTerm = (isoDate: string): string => {
     const d = new Date(isoDate);
     if (isNaN(d.getTime())) return 'Undated';
@@ -100,6 +134,7 @@ const deriveDisplayTerm = (isoDate: string): string => {
 
 export type TermGroup = { label: string; courses: CourseDisplayModel[] };
 
+/** Groups courses by explicit term, then falls back to a derived academic term. */
 export const groupByTerm = (courses: CourseDisplayModel[]): TermGroup[] => {
     const map = new Map<string, CourseDisplayModel[]>();
     for (const course of courses) {

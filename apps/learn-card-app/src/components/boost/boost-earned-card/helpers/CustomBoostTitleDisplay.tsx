@@ -2,9 +2,14 @@ import React from 'react';
 
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
-import { DisplayTypeEnum, getAttachmentTypeIcon, BoostMediaOptionsEnum } from 'learn-card-base';
+import {
+    DisplayTypeEnum,
+    getAttachmentTypeIcon,
+    BoostMediaOptionsEnum,
+} from 'learn-card-base';
 import { VC } from '@learncard/types';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
+import ClrTranscriptTitleDisplay from '../../../../components/clr-transcript/ClrTranscriptTitleDisplay';
 
 export const CustomBoostTitleDisplay: React.FC<{
     displayType?: DisplayTypeEnum;
@@ -75,6 +80,12 @@ export const CustomBoostTitleDisplay: React.FC<{
                 </div> */}
             </div>
         );
+    }
+
+    const isClrCredential = credential?.type?.includes('ClrCredential');
+
+    if (credential && isClrCredential) {
+        return <ClrTranscriptTitleDisplay credential={credential} fallbackTitle={title} />;
     }
 
     if (isEarnedBoost) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { FlatIcon } from './ClrStatCard';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 import type { CompetencyDisplayModel, ResultDisplayModel } from '../../helpers/clrRenderer.helpers';

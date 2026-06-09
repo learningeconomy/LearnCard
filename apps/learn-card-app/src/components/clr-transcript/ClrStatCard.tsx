@@ -1,6 +1,7 @@
 import React from 'react';
 
 import PaperClip from '../svgs/PaperClip';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
@@ -11,10 +12,6 @@ type StatCardConfig = {
     icon?: React.ReactNode;
     variant: 'highlight' | 'default';
 };
-
-export const FlatIcon = ({ children }: { children: React.ReactNode }) => (
-    <span className="[&_path]:!fill-current [&_path]:!stroke-none shrink-0">{children}</span>
-);
 
 const STAT_CARD_CONFIG: Record<StatCardType, StatCardConfig> = {
     gpa: {

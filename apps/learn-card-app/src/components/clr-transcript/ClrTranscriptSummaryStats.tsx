@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { formatClrGpa } from './clr.helpers';
 
 const ClrTranscriptSummaryStats: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -22,7 +23,9 @@ const ClrTranscriptSummaryStats: React.FC<{
 
     return (
         <div className="flex flex-wrap gap-3">
-            {model.summary.gpa && <Card title="GPA" value={String(model.summary.gpa.value)} />}
+            {model.summary.gpa && (
+                <Card title="GPA" value={formatClrGpa(model.summary.gpa.value)} />
+            )}
             {model.summary.courseCount > 0 && (
                 <Card title="Courses" value={model.summary.courseCount} />
             )}

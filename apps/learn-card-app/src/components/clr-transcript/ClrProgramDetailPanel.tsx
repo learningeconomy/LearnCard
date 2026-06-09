@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
-import { FlatIcon } from './ClrStatCard';
+import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import ClrCompetencyBlock from './ClrCompetencyBlock';
