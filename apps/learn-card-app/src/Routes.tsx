@@ -160,6 +160,9 @@ const LearnerContextPromptTestPage = lazyWithRetry(
 );
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
+const ClrTranscriptRendererDemo = lazyWithRetry(
+    () => import('./pages/dev/ClrTranscriptRendererDemo')
+);
 const AiPathwaysDiscovery = lazyWithRetry(
     () => import('./pages/ai-pathways/ai-pathways-discovery/AiPathwaysDiscovery')
 );
@@ -441,6 +444,11 @@ export const Routes: React.FC = () => {
                         <Route exact path="/hidden/seed" component={LoginWithSeed} />
 
                         <PrivateRoute exact path="/cli" component={DevCli} />
+                        <SentryRoute
+                            exact
+                            path="/dev/clr-transcript"
+                            component={ClrTranscriptRendererDemo}
+                        />
                     </Switch>
                 </GenericErrorBoundary>
             </Suspense>

@@ -1,6 +1,6 @@
 import { getBespokeLearnCard, BespokeLearnCard } from './wallet.helpers';
 import { Page } from '@playwright/test';
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('connect-apps.helpers');
 
 export const MOCK_APP_REGISTRY = {
