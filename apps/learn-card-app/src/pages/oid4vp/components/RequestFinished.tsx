@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
-import {
-    BoostPageViewMode,
-    VerifierHeader,
-    type VerifierDisplayInfo,
-} from 'learn-card-base';
+import { BoostPageViewMode, VerifierHeader, type VerifierDisplayInfo } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import type { VC } from '@learncard/types';
 
@@ -13,14 +9,18 @@ import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/Boo
 
 export interface SharedClaimsEntry {
     credentialId?: string; // candidate.id when present
-    vct?: string;          // SD-JWT vct, for display
+    vct?: string; // SD-JWT vct, for display
     credentialName?: string; // best-effort title (boost name, vct human, fallback)
     disclosedClaims: Record<string, unknown>;
     hiddenClaimKeys: string[];
 }
 
 const humanizeClaimKey = (key: string) => {
-    return key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ').replace(/^./, str => str.toUpperCase()).trim();
+    return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/[_-]/g, ' ')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
 };
 
 export const humanizeVct = (vct: string | undefined): string | undefined => {
@@ -131,8 +131,8 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
 }) => {
     const clientName = clientDisplay?.name?.trim();
     const headlineSummary =
-        summary
-        ?? (clientName
+        summary ??
+        (clientName
             ? `Your credentials were shared with ${clientName}.`
             : 'Your credentials were shared successfully.');
 
@@ -156,13 +156,9 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
                         <CheckCircle2 className="w-9 h-9 text-white" />
                     </div>
 
-                    <h1 className="text-xl font-semibold text-white mb-1">
-                        Credentials shared
-                    </h1>
+                    <h1 className="text-xl font-semibold text-white mb-1">Credentials shared</h1>
 
-                    <p className="text-sm text-white/85 leading-relaxed px-2">
-                        {headlineSummary}
-                    </p>
+                    <p className="text-sm text-white/85 leading-relaxed px-2">{headlineSummary}</p>
                 </div>
 
                 <div className="p-6 space-y-5">
@@ -183,15 +179,11 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
 
                             <div className="flex flex-wrap justify-center gap-3">
                                 {credentialsToShow.map((vc, index) => (
-                                    <div
-                                        key={index}
-                                        className="w-[184px] shrink-0"
-                                    >
+                                    <div key={index} className="w-[184px] shrink-0">
                                         <BoostEarnedCard
                                             credential={vc}
                                             categoryType={
-                                                getDefaultCategoryForCredential(vc)
-                                                || 'Achievement'
+                                                getDefaultCategoryForCredential(vc) || 'Achievement'
                                             }
                                             boostPageViewMode={BoostPageViewMode.Card}
                                             useWrapper={false}
@@ -250,7 +242,7 @@ const RequestFinished: React.FC<RequestFinishedProps> = ({
 const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }) => {
     const [isOpen, setIsOpen] = useState(false);
     const disclosedKeys = Object.keys(entry.disclosedClaims);
-    
+
     return (
         <div className="border border-grayscale-200 rounded-xl overflow-hidden">
             <button
@@ -266,7 +258,7 @@ const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }
                     <ChevronDown className="w-4 h-4 text-grayscale-500 shrink-0" />
                 )}
             </button>
-            
+
             {isOpen && (
                 <div className="p-4 bg-white border-t border-grayscale-200 space-y-3">
                     {disclosedKeys.length > 0 ? (
@@ -279,7 +271,9 @@ const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }
                                             {humanizeClaimKey(key)}
                                         </span>
                                         <span className="text-xs text-grayscale-600">
-                                            {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                                            {typeof val === 'object'
+                                                ? JSON.stringify(val)
+                                                : String(val)}
                                         </span>
                                     </li>
                                 );
@@ -288,11 +282,12 @@ const SharedClaimsAccordion: React.FC<{ entry: SharedClaimsEntry }> = ({ entry }
                     ) : (
                         <p className="text-sm text-grayscale-600 italic">No claims shared</p>
                     )}
-                    
+
                     {entry.hiddenClaimKeys.length > 0 && (
                         <div className="pt-3 mt-3 border-t border-grayscale-100">
                             <p className="text-xs text-grayscale-500">
-                                Kept private: {entry.hiddenClaimKeys.map(humanizeClaimKey).join(', ')}
+                                Kept private:{' '}
+                                {entry.hiddenClaimKeys.map(humanizeClaimKey).join(', ')}
                             </p>
                         </div>
                     )}

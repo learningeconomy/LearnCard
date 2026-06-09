@@ -1,14 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    AlertCircle,
-    CheckCircle2,
-    Copy,
-    Globe,
-    Loader2,
-    Smartphone,
-    X,
-    Lock,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, Globe, Loader2, Smartphone, X, Lock } from 'lucide-react';
 import QRCode from 'qrcode';
 
 import { fetchStatus, type LaunchSuccess } from '../api';
@@ -60,7 +51,7 @@ const LaunchPanel: React.FC<LaunchPanelProps> = ({
             width: 240,
             margin: 1,
             color: { dark: '#18224E', light: '#FFFFFF' },
-        }).catch((err) => {
+        }).catch(err => {
             // eslint-disable-next-line no-console
             console.error('QR render failed', err);
         });
@@ -209,10 +200,7 @@ const LaunchPanel: React.FC<LaunchPanelProps> = ({
  *   - VCI → `/oid4vci?offer=<credential-offer-uri>`
  *   - VP  → `/oid4vp?request=<authorization-request-uri>`
  */
-const buildBrowserUrl = (
-    lcaBaseUrl: string,
-    launch: LaunchSuccess
-): string | undefined => {
+const buildBrowserUrl = (lcaBaseUrl: string, launch: LaunchSuccess): string | undefined => {
     const trimmed = lcaBaseUrl.trim();
     if (!trimmed) return undefined;
 
@@ -238,16 +226,19 @@ const StatusBadge: React.FC<{ state: StatusState; kind: 'vci' | 'vp'; providerId
     kind,
     providerId,
 }) => {
-    const baseClass =
-        'p-3 rounded-xl border flex items-start gap-2 text-xs leading-relaxed';
+    const baseClass = 'p-3 rounded-xl border flex items-start gap-2 text-xs leading-relaxed';
 
     if (state.kind === 'success') {
         if (providerId === 'embedded' && state.detail) {
-            const match = state.detail.match(/^(.*?) Disclosed: (.*?). Hidden: (.*?). KB-JWT: (present|absent).$/);
+            const match = state.detail.match(
+                /^(.*?) Disclosed: (.*?). Hidden: (.*?). KB-JWT: (present|absent).$/
+            );
             if (match) {
                 const [, , disclosed, hidden, kbJwt] = match;
                 return (
-                    <div className={`${baseClass} bg-emerald-50 border-emerald-100 text-emerald-800 flex-col`}>
+                    <div
+                        className={`${baseClass} bg-emerald-50 border-emerald-100 text-emerald-800 flex-col`}
+                    >
                         <div className="flex items-center gap-2 font-semibold">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>Presentation verified</span>
@@ -255,17 +246,29 @@ const StatusBadge: React.FC<{ state: StatusState; kind: 'vci' | 'vp'; providerId
                         <div className="flex flex-col gap-1 mt-1 w-full pl-6">
                             <div className="flex justify-between gap-4">
                                 <span className="text-emerald-700/70 shrink-0">Shared</span>
-                                <span className="text-emerald-900 font-medium text-right break-words">{disclosed === '(none)' ? 'nothing' : disclosed}</span>
+                                <span className="text-emerald-900 font-medium text-right break-words">
+                                    {disclosed === '(none)' ? 'nothing' : disclosed}
+                                </span>
                             </div>
                             <div className="flex justify-between gap-4">
                                 <span className="text-emerald-700/70 shrink-0">Kept private</span>
-                                <span className="text-emerald-900 font-medium text-right break-words">{hidden === '(none)' ? 'nothing' : hidden}</span>
+                                <span className="text-emerald-900 font-medium text-right break-words">
+                                    {hidden === '(none)' ? 'nothing' : hidden}
+                                </span>
                             </div>
                             <div className="flex justify-between items-center gap-4">
                                 <span className="text-emerald-700/70 shrink-0">Key binding</span>
-                                <span className={`flex items-center gap-1 font-medium ${kbJwt === 'present' ? 'text-emerald-900' : 'text-grayscale-500'}`}>
+                                <span
+                                    className={`flex items-center gap-1 font-medium ${
+                                        kbJwt === 'present'
+                                            ? 'text-emerald-900'
+                                            : 'text-grayscale-500'
+                                    }`}
+                                >
                                     {kbJwt === 'present' ? (
-                                        <>Verified <Lock className="w-3 h-3" /></>
+                                        <>
+                                            Verified <Lock className="w-3 h-3" />
+                                        </>
                                     ) : (
                                         'Absent'
                                     )}
@@ -310,8 +313,8 @@ const StatusBadge: React.FC<{ state: StatusState; kind: 'vci' | 'vp'; providerId
                 {state.kind === 'pending' && state.detail
                     ? state.detail
                     : kind === 'vp'
-                      ? 'Waiting for the wallet to present\u2026'
-                      : 'Watch the wallet to confirm issuance.'}
+                    ? 'Waiting for the wallet to present\u2026'
+                    : 'Watch the wallet to confirm issuance.'}
             </span>
         </div>
     );

@@ -36,14 +36,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Buffer } from 'node:buffer';
 
-import {
-    exportJWK,
-    generateKeyPair,
-    importJWK,
-    SignJWT,
-    type JWK,
-    type KeyLike,
-} from 'jose';
+import { exportJWK, generateKeyPair, importJWK, SignJWT, type JWK, type KeyLike } from 'jose';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { decodeSdJwt, getClaims } from '@sd-jwt/decode';
 
@@ -244,7 +237,11 @@ const buildPresentationDefinition = (sessionId: string, vct: string) => ({
 export const getEmbeddedVerifyStatus = (state: string): VerifierSession['verdict'] => {
     const session = verifierSessions.get(state);
     if (!session) {
-        return { status: 'fail', detail: 'Unknown state — session not found', receivedAt: Date.now() };
+        return {
+            status: 'fail',
+            detail: 'Unknown state — session not found',
+            receivedAt: Date.now(),
+        };
     }
     return session.verdict;
 };
@@ -275,7 +272,10 @@ export const handleEmbeddedRequest = async (
         if (method === 'GET' && path === '/embedded/issuer/.well-known/openid-credential-issuer') {
             return await handleIssuerMetadata(res, publicBaseUrl);
         }
-        if (method === 'GET' && path === '/embedded/issuer/.well-known/oauth-authorization-server') {
+        if (
+            method === 'GET' &&
+            path === '/embedded/issuer/.well-known/oauth-authorization-server'
+        ) {
             return await handleAsMetadata(res, publicBaseUrl);
         }
         if (method === 'POST' && path === '/embedded/issuer/token') {
@@ -359,10 +359,7 @@ const handleIssuerMetadata = async (
     });
 };
 
-const handleAsMetadata = async (
-    res: ServerResponse,
-    publicBaseUrl: string
-): Promise<boolean> => {
+const handleAsMetadata = async (res: ServerResponse, publicBaseUrl: string): Promise<boolean> => {
     return writeJson(res, 200, {
         issuer: `${publicBaseUrl}/embedded/issuer`,
         token_endpoint: `${publicBaseUrl}/embedded/issuer/token`,
@@ -691,9 +688,7 @@ const verifyEmbeddedPresentation = async (opts: {
         const cnf = (decoded.jwt?.payload as { cnf?: { jwk?: JWK } } | undefined)?.cnf;
         const holderJwk = cnf?.jwk;
         if (!holderJwk) {
-            throw new Error(
-                'KB-JWT present but credential has no cnf.jwk — issuer-side bug'
-            );
+            throw new Error('KB-JWT present but credential has no cnf.jwk — issuer-side bug');
         }
 
         const kbJwt = decoded.kbJwt!;
@@ -709,12 +704,16 @@ const verifyEmbeddedPresentation = async (opts: {
         };
         if (kbPayload.nonce !== opts.expectedNonce) {
             throw new Error(
-                `KB-JWT nonce mismatch: expected "${opts.expectedNonce}", got "${String(kbPayload.nonce)}"`
+                `KB-JWT nonce mismatch: expected "${opts.expectedNonce}", got "${String(
+                    kbPayload.nonce
+                )}"`
             );
         }
         if (opts.expectedAudience && kbPayload.aud !== opts.expectedAudience) {
             throw new Error(
-                `KB-JWT aud mismatch: expected "${opts.expectedAudience}", got "${String(kbPayload.aud)}"`
+                `KB-JWT aud mismatch: expected "${opts.expectedAudience}", got "${String(
+                    kbPayload.aud
+                )}"`
             );
         }
         if (typeof kbPayload.sd_hash !== 'string' || kbPayload.sd_hash.length === 0) {
@@ -809,8 +808,7 @@ const decodeDidKeyToJwk = async (didKey: string): Promise<JWK | undefined> => {
     };
 };
 
-const BASE58_ALPHABET =
-    '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 const base58btcDecode = (s: string): Uint8Array | undefined => {
     const bytes: number[] = [0];
@@ -843,15 +841,11 @@ const extractKbJwtCompact = (presentation: string): string | undefined => {
     return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(tail) ? tail : undefined;
 };
 
-const sha256Hasher = async (
-    data: string | ArrayBuffer,
-    alg: string
-): Promise<Uint8Array> => {
+const sha256Hasher = async (data: string | ArrayBuffer, alg: string): Promise<Uint8Array> => {
     if (alg !== 'sha-256' && alg !== 'SHA-256' && alg !== 'sha256') {
         throw new Error(`Unsupported hash algorithm: ${alg}`);
     }
-    const bytes =
-        typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
+    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
     const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
     return new Uint8Array(digest);
 };

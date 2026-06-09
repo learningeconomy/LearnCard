@@ -20,8 +20,9 @@ import { computeSuggestedRoute } from '../../map/route';
 
 vi.mock('learn-card-base', () => ({
     getLogger: () =>
-        (globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown })
-            .mockLearnCardBaseLogger(),
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
 }));
 
 import {
@@ -68,7 +69,11 @@ describe('buildSmartStartShowcase', () => {
 
             if (!result.success) {
                 throw new Error(
-                    `Pathway "${p.title}" failed schema:\n${JSON.stringify(result.error.issues, null, 2)}`,
+                    `Pathway "${p.title}" failed schema:\n${JSON.stringify(
+                        result.error.issues,
+                        null,
+                        2
+                    )}`
                 );
             }
 
@@ -88,7 +93,7 @@ describe('buildSmartStartShowcase', () => {
 
             if (issues.length > 0) {
                 throw new Error(
-                    `Pathway "${p.title}" has validation issues: ${JSON.stringify(issues, null, 2)}`,
+                    `Pathway "${p.title}" has validation issues: ${JSON.stringify(issues, null, 2)}`
                 );
             }
 
@@ -120,12 +125,10 @@ describe('buildSmartStartShowcase', () => {
                 // must target the same sub-pathway — otherwise the
                 // node would claim to embed X but be satisfied by Y.
                 if (
-                    node.stage.policy.kind === 'composite'
-                    && node.stage.termination.kind === 'pathway-completed'
+                    node.stage.policy.kind === 'composite' &&
+                    node.stage.termination.kind === 'pathway-completed'
                 ) {
-                    expect(node.stage.policy.pathwayRef).toBe(
-                        node.stage.termination.pathwayRef,
-                    );
+                    expect(node.stage.policy.pathwayRef).toBe(node.stage.termination.pathwayRef);
                 }
             }
         }
@@ -162,7 +165,7 @@ describe('buildSmartStartShowcase', () => {
         // projection) must carry the alignment — the orientation
         // node and the certificate itself are intentionally exempt.
         const badgeNodes = wef.nodes.filter(
-            n => n.credentialProjection?.achievementType === 'digital-badge',
+            n => n.credentialProjection?.achievementType === 'digital-badge'
         );
 
         // Four foundational badges.
@@ -241,9 +244,7 @@ describe('buildSmartStartShowcase', () => {
         expect(route).not.toBeNull();
         expect(route!.destinationId).toBe(primary.destinationNodeId);
         expect(route!.nodeIds[0]).toBe(firstNodeId);
-        expect(route!.nodeIds[route!.nodeIds.length - 1]).toBe(
-            primary.destinationNodeId,
-        );
+        expect(route!.nodeIds[route!.nodeIds.length - 1]).toBe(primary.destinationNodeId);
     });
 
     it('is pure under a deterministic id factory (two calls are deep-equal)', () => {
@@ -286,8 +287,7 @@ describe('buildSmartStartShowcase', () => {
         });
 
         const realizedTotal =
-            primary.nodes.length
-            + supporting.reduce((sum, p) => sum + p.nodes.length, 0);
+            primary.nodes.length + supporting.reduce((sum, p) => sum + p.nodes.length, 0);
 
         expect(realizedTotal).toBe(SMART_START_PREVIEW.totalStepCount);
         expect(supporting.length).toBe(SMART_START_PREVIEW.subPathwayCount);

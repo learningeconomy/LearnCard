@@ -35,24 +35,33 @@ const generateUuid = (): string => {
 
     throw new Error(
         'crypto.randomUUID is not available in this environment. ' +
-        'Please use a modern runtime with Web Crypto API support for secure UUID generation.'
+            'Please use a modern runtime with Web Crypto API support for secure UUID generation.'
     );
 };
 
-const patchIds = (obj: Record<string, unknown>): Record<string, unknown> => {
+const patchIds = (
+    obj: Record<string, unknown>,
+    idMap: Map<string, string>
+): Record<string, unknown> => {
     const result: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(obj)) {
         if (key === 'id' && typeof value === 'string' && value.startsWith('urn:uuid:')) {
-            result[key] = `urn:uuid:${generateUuid()}`;
+            // Reuse the same replacement for every occurrence of the same source id so
+            // internal CLR references stay aligned after regeneration.
+            const patchedId = idMap.get(value) ?? `urn:uuid:${generateUuid()}`;
+            if (!idMap.has(value)) {
+                idMap.set(value, patchedId);
+            }
+            result[key] = patchedId;
         } else if (Array.isArray(value)) {
             result[key] = value.map(item =>
                 item && typeof item === 'object' && !Array.isArray(item)
-                    ? patchIds(item as Record<string, unknown>)
+                    ? patchIds(item as Record<string, unknown>, idMap)
                     : item
             );
         } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            result[key] = patchIds(value as Record<string, unknown>);
+            result[key] = patchIds(value as Record<string, unknown>, idMap);
         } else {
             result[key] = value;
         }
@@ -61,10 +70,29 @@ const patchIds = (obj: Record<string, unknown>): Record<string, unknown> => {
     return result;
 };
 
-const patchIssuer = (
-    issuer: unknown,
-    issuerDid: string
-): string | Record<string, unknown> => {
+const remapUuidReferences = (value: unknown, idMap: Map<string, string>): unknown => {
+    if (typeof value === 'string') {
+        // Rewrite explicit references that still point at the original ids.
+        return idMap.get(value) ?? value;
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(item => remapUuidReferences(item, idMap));
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
+                key,
+                remapUuidReferences(nestedValue, idMap),
+            ])
+        );
+    }
+
+    return value;
+};
+
+const patchIssuer = (issuer: unknown, issuerDid: string): string | Record<string, unknown> => {
     if (typeof issuer === 'string') {
         return issuerDid;
     }
@@ -76,10 +104,7 @@ const patchIssuer = (
     return issuerDid;
 };
 
-const patchSubject = (
-    subject: unknown,
-    subjectDid: string
-): unknown => {
+const patchSubject = (subject: unknown, subjectDid: string): unknown => {
     if (Array.isArray(subject)) {
         return subject.map(s => patchSubject(s, subjectDid));
     }
@@ -113,10 +138,7 @@ const patchSubject = (
  * await wallet.store.LearnCloud.uploadEncrypted(signed);
  * ```
  */
-export const prepareFixture = (
-    fixture: CredentialFixture,
-    options: PrepareOptions
-): UnsignedVC => {
+export const prepareFixture = (fixture: CredentialFixture, options: PrepareOptions): UnsignedVC => {
     const { issuerDid, subjectDid, validFrom, validUntil, freshIds = true } = options;
 
     // Deep clone
@@ -124,7 +146,11 @@ export const prepareFixture = (
 
     // Patch UUIDs
     if (freshIds) {
-        credential = patchIds(credential);
+        const idMap = new Map<string, string>();
+        // First replace generated ids, then walk the credential again to update
+        // any references that target those ids.
+        credential = patchIds(credential, idMap);
+        credential = remapUuidReferences(credential, idMap) as Record<string, unknown>;
     }
 
     // Patch issuer
@@ -182,7 +208,5 @@ export const prepareFixture = (
  * const signed = await wallet.invoke.issueCredential(unsigned);
  * ```
  */
-export const prepareFixtureById = (
-    fixtureId: string,
-    options: PrepareOptions
-): UnsignedVC => prepareFixture(getFixture(fixtureId), options);
+export const prepareFixtureById = (fixtureId: string, options: PrepareOptions): UnsignedVC =>
+    prepareFixture(getFixture(fixtureId), options);

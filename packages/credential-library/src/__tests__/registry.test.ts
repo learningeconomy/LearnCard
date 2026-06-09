@@ -69,9 +69,7 @@ describe('Fixture validation', () => {
     describe('Valid fixtures pass their declared validator', () => {
         const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
 
-        it.each(
-            validFixtures().map(f => [f.id, f] as const)
-        )('%s', (_id, fixture) => {
+        it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
 
             const result = fixture.validator.safeParse(fixture.credential);
@@ -83,9 +81,7 @@ describe('Fixture validation', () => {
     describe('Valid fixtures also pass base UnsignedVC validator', () => {
         const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
 
-        it.each(
-            validFixtures().map(f => [f.id, f] as const)
-        )('%s', (_id, fixture) => {
+        it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             const result = UnsignedVCValidator.safeParse(fixture.credential);
 
             expect(result.success).toBe(true);
@@ -96,9 +92,7 @@ describe('Fixture validation', () => {
         const invalidFixtures = () =>
             getAllFixtures().filter(f => f.validity === 'invalid' || f.validity === 'tampered');
 
-        it.each(
-            invalidFixtures().map(f => [f.id, f] as const)
-        )('%s', (_id, fixture) => {
+        it.each(invalidFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
 
             const result = fixture.validator.safeParse(fixture.credential);
@@ -166,8 +160,7 @@ describe('Query API', () => {
         expect(results.length).toBeGreaterThan(0);
 
         for (const f of results) {
-            const hasAny =
-                f.features.includes('endorsement') || f.features.includes('results');
+            const hasAny = f.features.includes('endorsement') || f.features.includes('results');
 
             expect(hasAny).toBe(true);
         }
@@ -180,9 +173,9 @@ describe('Query API', () => {
         expect(valid.length).toBeGreaterThan(0);
         expect(invalid.length).toBeGreaterThan(0);
         expect(valid.every(f => f.validity === 'valid')).toBe(true);
-        expect(
-            invalid.every(f => f.validity === 'invalid' || f.validity === 'tampered')
-        ).toBe(true);
+        expect(invalid.every(f => f.validity === 'invalid' || f.validity === 'tampered')).toBe(
+            true
+        );
     });
 
     it('filters by tags', () => {
@@ -270,6 +263,11 @@ describe('prepareFixture', () => {
     const issuerDid = 'did:key:z6MkTestIssuer123';
     const subjectDid = 'did:key:z6MkTestSubject456';
 
+    type UnknownRecord = Record<string, unknown>;
+    type UnknownArrayRecord = Record<string, unknown> & {
+        [key: string]: unknown;
+    };
+
     it('replaces string issuer with provided DID', () => {
         const fixture = getFixture('vc-v2/basic');
         const prepared = prepareFixture(fixture, { issuerDid });
@@ -299,6 +297,77 @@ describe('prepareFixture', () => {
 
         expect(prepared.id).toMatch(/^urn:uuid:/);
         expect(prepared.id).not.toBe(fixture.credential.id);
+    });
+
+    it('keeps internal CLR references aligned when fresh IDs are generated', () => {
+        const fixture = getFixture('clr/westbridge-full');
+        const prepared = prepareFixture(fixture, { issuerDid });
+
+        const ids = new Set<string>();
+        const collectIds = (value: unknown): void => {
+            if (Array.isArray(value)) {
+                value.forEach(collectIds);
+                return;
+            }
+
+            if (!value || typeof value !== 'object') return;
+
+            const record = value as Record<string, unknown>;
+            if (typeof record.id === 'string') {
+                ids.add(record.id);
+            }
+
+            Object.values(record).forEach(collectIds);
+        };
+
+        collectIds(prepared);
+
+        const subject = prepared.credentialSubject as UnknownRecord;
+        const nested = subject.verifiableCredential as UnknownRecord[];
+
+        const programVc = nested.find(vc => {
+            const vcSubject = vc.credentialSubject as UnknownRecord | undefined;
+            const achievement = vcSubject?.achievement as UnknownRecord | undefined;
+            return achievement?.achievementType === 'BachelorDegree';
+        }) as UnknownRecord | undefined;
+
+        const programSubject = programVc?.credentialSubject as UnknownRecord | undefined;
+        const programAchievement = programSubject?.achievement as UnknownRecord | undefined;
+        const programResults = Array.isArray(programSubject?.result)
+            ? (programSubject?.result as UnknownArrayRecord[])
+            : [];
+        const programResultDescriptions = Array.isArray(programAchievement?.resultDescription)
+            ? (programAchievement?.resultDescription as UnknownArrayRecord[])
+            : [];
+        const programResultDescriptionId = programResults[0]?.resultDescription as
+            | string
+            | undefined;
+        const programResultDescription = programResultDescriptions[0]?.id as string | undefined;
+
+        expect(programResultDescriptionId).toBe(programResultDescription);
+        expect(programResultDescriptionId && ids.has(programResultDescriptionId)).toBe(true);
+
+        const nestedAssociations = subject.association as UnknownRecord[];
+        for (const assoc of nestedAssociations) {
+            const sourceId = assoc.sourceId as string | undefined;
+            const targetId = assoc.targetId as string | undefined;
+
+            expect(sourceId && ids.has(sourceId)).toBe(true);
+            expect(targetId && ids.has(targetId)).toBe(true);
+        }
+
+        const gpaRecord = nested.find(vc => {
+            const vcSubject = vc.credentialSubject as UnknownRecord | undefined;
+            const achievement = vcSubject?.achievement as UnknownRecord | undefined;
+            return achievement?.achievementType === 'BachelorDegree';
+        }) as UnknownRecord | undefined;
+        const gpaSubject = gpaRecord?.credentialSubject as UnknownRecord | undefined;
+        const gpaResults = Array.isArray(gpaSubject?.result)
+            ? (gpaSubject?.result as UnknownArrayRecord[])
+            : [];
+        const gpaResultDescriptionId = gpaResults[0]?.resultDescription as string | undefined;
+
+        expect(gpaResultDescriptionId && ids.has(gpaResultDescriptionId)).toBe(true);
     });
 
     it('preserves original UUIDs when freshIds is false', () => {
