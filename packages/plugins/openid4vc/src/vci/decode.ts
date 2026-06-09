@@ -50,7 +50,9 @@ export interface W3CVerifiableCredential {
     expirationDate?: string;
     validFrom?: string;
     validUntil?: string;
-    credentialSubject?: { id?: string; [k: string]: unknown } | Array<{ id?: string; [k: string]: unknown }>;
+    credentialSubject?:
+        | { id?: string; [k: string]: unknown }
+        | Array<{ id?: string; [k: string]: unknown }>;
     credentialStatus?: unknown;
     credentialSchema?: unknown;
     proof?: unknown;
@@ -118,7 +120,9 @@ const decodeJwtVc = (credential: unknown, format: string): NormalizedCredential 
     } catch (e) {
         throw new VciError(
             'unsupported_format',
-            `Failed to decode ${format} credential as a JWT: ${e instanceof Error ? e.message : String(e)}`,
+            `Failed to decode ${format} credential as a JWT: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
             { cause: e }
         );
     }
@@ -191,7 +195,8 @@ const decodeJwtVc = (credential: unknown, format: string): NormalizedCredential 
         (typeof vc.validFrom === 'string' ? vc.validFrom : undefined) ??
         new Date().toISOString();
 
-    const issuerId = pickIssuerId(vc.issuer) ?? (typeof payload.iss === 'string' ? payload.iss : undefined);
+    const issuerId =
+        pickIssuerId(vc.issuer) ?? (typeof payload.iss === 'string' ? payload.iss : undefined);
 
     let kid: string | undefined;
     try {

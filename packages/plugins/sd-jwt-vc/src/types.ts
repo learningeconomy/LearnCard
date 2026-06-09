@@ -109,10 +109,7 @@ export type SdJwtVcDependentLearnCard = LearnCard<any, 'id', SdJwtVcPluginDepend
 export type SdJwtVcPluginMethods = VerifyExtension & {
     parseSdJwtVc: (compact: string) => Promise<ParsedSdJwtVc>;
 
-    verifySdJwtVc: (
-        compact: string,
-        options?: VerifySdJwtVcOptions
-    ) => Promise<VerificationCheck>;
+    verifySdJwtVc: (compact: string, options?: VerifySdJwtVcOptions) => Promise<VerificationCheck>;
 
     decodeSdJwtClaims: (compact: string) => Promise<Record<string, unknown>>;
 

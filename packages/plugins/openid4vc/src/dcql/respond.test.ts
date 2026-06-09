@@ -18,7 +18,9 @@ const HOLDER = 'did:jwk:holder';
 const AUDIENCE = 'https://verifier.example/openid4vc/verify';
 const NONCE = 'nonce-for-respond-tests';
 
-const makeJwtSigner = (overrides: Partial<ProofJwtSigner> = {}): ProofJwtSigner & {
+const makeJwtSigner = (
+    overrides: Partial<ProofJwtSigner> = {}
+): ProofJwtSigner & {
     signCalls: Array<{ header: Record<string, unknown>; payload: Record<string, unknown> }>;
 } => {
     const signer = {
@@ -167,9 +169,7 @@ describe('buildDcqlResponse — end-to-end orchestration', () => {
 
 function makeJwtVc(vcBody: Record<string, unknown>): string {
     const header = base64url(JSON.stringify({ alg: 'EdDSA', typ: 'JWT' }));
-    const payload = base64url(
-        JSON.stringify({ iss: 'did:jwk:abc', sub: HOLDER, vc: vcBody })
-    );
+    const payload = base64url(JSON.stringify({ iss: 'did:jwk:abc', sub: HOLDER, vc: vcBody }));
     return `${header}.${payload}.signature`;
 }
 
@@ -240,10 +240,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
         });
 
         await expect(
-            signDcqlPresentations(
-                { built, audience: AUDIENCE, nonce: NONCE, holder: HOLDER },
-                {}
-            )
+            signDcqlPresentations({ built, audience: AUDIENCE, nonce: NONCE, holder: HOLDER }, {})
         ).rejects.toMatchObject({
             name: 'DcqlSignError',
             code: 'missing_sd_jwt_presenter',

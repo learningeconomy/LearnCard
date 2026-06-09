@@ -87,18 +87,15 @@ export const SCENARIOS: Scenario[] = [
         name: 'Pre-auth offer (no PIN)',
         description:
             'The simplest issuance path: a pre-authorized credential offer with no transaction code.',
-        exercises:
-            'Offer parser + token exchange + credential issuance happy path.',
+        exercises: 'Offer parser + token exchange + credential issuance happy path.',
         supportedProviders: ['waltid'],
     },
     {
         id: 'vci-pre-auth-pin',
         kind: 'vci',
         name: 'Pre-auth offer with PIN',
-        description:
-            'Offer that requires the holder to type a transaction code before redeeming.',
-        exercises:
-            'PIN modal flow + tx_code passthrough on the token exchange.',
+        description: 'Offer that requires the holder to type a transaction code before redeeming.',
+        exercises: 'PIN modal flow + tx_code passthrough on the token exchange.',
         supportedProviders: ['waltid'],
         note: 'Wallet will prompt for PIN. Use **1234**.',
     },
@@ -108,8 +105,7 @@ export const SCENARIOS: Scenario[] = [
         name: 'Authorization code flow',
         description:
             'OAuth-style flow: wallet opens an authorize URL, gets a code, exchanges it for the credential.',
-        exercises:
-            'PKCE + authorize redirect + token exchange (Slice 4 of the VCI plugin).',
+        exercises: 'PKCE + authorize redirect + token exchange (Slice 4 of the VCI plugin).',
         supportedProviders: ['waltid'],
     },
     {
@@ -180,10 +176,8 @@ export const SCENARIOS: Scenario[] = [
         id: 'vp-pex-single',
         kind: 'vp',
         name: 'PEX, single descriptor',
-        description:
-            'Verifier asks for one credential type via DIF Presentation Exchange.',
-        exercises:
-            'PEX matcher + consent screen happy path with a single row.',
+        description: 'Verifier asks for one credential type via DIF Presentation Exchange.',
+        exercises: 'PEX matcher + consent screen happy path with a single row.',
         supportedProviders: ['waltid'],
     },
     {
@@ -192,8 +186,7 @@ export const SCENARIOS: Scenario[] = [
         name: 'PEX, multi-candidate (picker)',
         description:
             'Verifier asks for a credential the holder has multiple of \u2014 the consent screen shows a picker.',
-        exercises:
-            'Per-row candidate picker + selected-index threading through buildChosenList.',
+        exercises: 'Per-row candidate picker + selected-index threading through buildChosenList.',
         supportedProviders: ['waltid'],
         note: 'Issue at least 2 UniversityDegree VCs first via the VCI scenarios.',
     },
@@ -214,8 +207,7 @@ export const SCENARIOS: Scenario[] = [
         name: 'JARM (encrypted response)',
         description:
             'Verifier requests `response_mode=direct_post.jwt` \u2014 wallet encrypts the response object to the verifier\u2019s key.',
-        exercises:
-            'JARM badge on consent screen + encrypted response transport.',
+        exercises: 'JARM badge on consent screen + encrypted response transport.',
         supportedProviders: ['waltid'],
     },
 
@@ -255,8 +247,7 @@ export const SCENARIOS: Scenario[] = [
         name: 'SIOPv2 id_token only',
         description:
             'Verifier requests `response_type=id_token` \u2014 wallet proves DID control without sharing any VCs.',
-        exercises:
-            'Plugin\u2019s SIOPv2 sign path (Slice 8) standalone.',
+        exercises: 'Plugin\u2019s SIOPv2 sign path (Slice 8) standalone.',
         supportedProviders: [],
         note: 'Both walt.id and EUDI verifiers require a credential query \u2014 neither exposes pure SIOPv2. Would need a SIOPv2-only verifier (Sphereon, EBSI conformance, or in-process mock).',
     },
@@ -279,8 +270,7 @@ export const PROVIDERS: ProviderInfo[] = [
     {
         id: 'embedded',
         name: 'Embedded (no external deps)',
-        blurb:
-            'In-process issuer + verifier baked into the playground. Use for SD-JWT-VC dev-loop testing with zero infrastructure.',
+        blurb: 'In-process issuer + verifier baked into the playground. Use for SD-JWT-VC dev-loop testing with zero infrastructure.',
         enabled: true,
     },
     {
@@ -304,6 +294,4 @@ export const PROVIDERS: ProviderInfo[] = [
 ];
 
 export const filterScenarios = (kind: ScenarioKind, providerId: ProviderId): Scenario[] =>
-    SCENARIOS.filter(
-        s => s.kind === kind && s.supportedProviders.includes(providerId)
-    );
+    SCENARIOS.filter(s => s.kind === kind && s.supportedProviders.includes(providerId));

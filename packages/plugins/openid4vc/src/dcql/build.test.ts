@@ -121,10 +121,7 @@ describe('buildDcqlPresentations — happy paths', () => {
         });
 
         expect(built).toHaveLength(1);
-        expect(built[0]?.unsignedVp.verifiableCredential).toEqual([
-            universityDegreeJwt,
-            second,
-        ]);
+        expect(built[0]?.unsignedVp.verifiableCredential).toEqual([universityDegreeJwt, second]);
         expect(built[0]?.candidates).toHaveLength(2);
     });
 
@@ -350,9 +347,7 @@ describe('buildDcqlPresentations — typed errors', () => {
         try {
             buildDcqlPresentations({
                 query: baseQuery,
-                chosen: [
-                    { credentialQueryId: 'degree', candidate: { credential: 'not-a-jwt' } },
-                ],
+                chosen: [{ credentialQueryId: 'degree', candidate: { credential: 'not-a-jwt' } }],
                 holder: 'did:jwk:h',
             });
             fail('expected throw');
