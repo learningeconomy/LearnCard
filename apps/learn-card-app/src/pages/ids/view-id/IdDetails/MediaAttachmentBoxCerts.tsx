@@ -7,7 +7,7 @@ import Graduation from 'learn-card-base/svgs/Graduation';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import DocumentIcon from 'learn-card-base/svgs/DocumentIcon';
 import LinkIcon from 'apps/learn-card-app/src/components/svgs/LinkIcon';
-import { Image as ImageIcon, Play } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { Lightbox, LightboxItem } from '@learncard/react';
 
 import { getMediaBaseUrl } from 'learn-card-base/helpers/urlHelpers';
@@ -289,7 +289,6 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         : undefined,
                                 }}
                             >
-                                <Play className="h-8 w-8 fill-white text-white" />
                                 {videoMeta?.videoLength && (
                                     <span className="absolute bottom-1.5 right-1.5 rounded bg-grayscale-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                                         {videoMeta.videoLength}
@@ -319,7 +318,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         <div
                             className={`shrink-0 overflow-hidden rounded-[16px] border border-grayscale-200 bg-white  ${
                                 attachment.type === 'photo' || attachment.type === 'video'
-                                    ? 'p-0 h-[75px] w-[75px]'
+                                    ? `p-0 h-[75px] ${
+                                          attachment.type === 'photo' ? 'w-[75px]' : 'w-[100px]'
+                                      }`
                                     : 'p-1.5 h-[65px] w-[65px]'
                             } `}
                         >
