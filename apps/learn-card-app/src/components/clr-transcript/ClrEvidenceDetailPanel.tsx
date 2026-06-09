@@ -18,7 +18,7 @@ const ClrEvidenceDetailPanel: React.FC<{
     const evidenceCount = evidence.length;
 
     return (
-        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto safe-area-top-margin">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
