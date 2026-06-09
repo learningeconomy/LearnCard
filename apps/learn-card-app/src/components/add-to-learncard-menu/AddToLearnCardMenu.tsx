@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('add-to-learn-card-menu');
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
@@ -7,8 +10,24 @@ import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
+import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import CheckListContainer from '../learncard/checklist/CheckListContainer';
+
+const importPasteOrUploadClaimModal = () =>
+    import('../paste-or-upload-claim/PasteOrUploadClaimModal');
+
+const LazyPasteOrUploadClaimModal = lazy(importPasteOrUploadClaimModal);
+
+const PasteOrUploadClaimModalFallback: React.FC = () => (
+    <IonPage>
+        <IonContent>
+            <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
+                <IonSpinner name="crescent" className="text-grayscale-700" />
+            </div>
+        </IonContent>
+    </IonPage>
+);
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
 import BoostTemplateSelector from '../boost/boost-template/BoostTemplateSelector';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
@@ -36,6 +55,7 @@ export enum AddToLearnCardMenuEnum {
     createCredential = 'createCredential',
     uploadCredential = 'uploadCredential',
     claimCredential = 'claimCredential',
+    useClaimLink = 'useClaimLink',
 }
 
 export type AddToLearnCardMenuItem = {
@@ -53,6 +73,12 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
+
+    useEffect(() => {
+        void importPasteOrUploadClaimModal().catch(err => {
+            log.error('[ClaimLink] Failed to preload PasteOrUploadClaimModal chunk:', err);
+        });
+    }, []);
 
     const handleNewSession = async (showAiAppSelector?: boolean) => {
         chatBotStore.set.resetStore();
@@ -115,6 +141,18 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         closeModal();
 
         QRCodeScannerStore.set.showScanner(true);
+    };
+
+    const handleUseClaimLinkButton = () => {
+        closeModal();
+
+        newModal(
+            <Suspense fallback={<PasteOrUploadClaimModalFallback />}>
+                <LazyPasteOrUploadClaimModal />
+            </Suspense>,
+            { hideButton: true, sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
     };
 
     const addToLearnCardMenuItems: AddToLearnCardMenuItem[] = [];
@@ -180,10 +218,17 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.claimCredential,
             Icon: ScanIcon,
-            label: 'Claim Credential',
+            label: 'Scan a QR Code',
             onClick: () => handleClaimCredentialButton(),
         });
     }
+
+    addToLearnCardMenuItems.push({
+        type: AddToLearnCardMenuEnum.useClaimLink,
+        Icon: LinkOutlinedIcon,
+        label: 'Use a Claim Link',
+        onClick: () => handleUseClaimLinkButton(),
+    });
 
     return (
         <div className={`w-full flex flex-col justify-center p-4 ${className}`}>

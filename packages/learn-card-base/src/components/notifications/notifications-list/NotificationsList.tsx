@@ -7,6 +7,9 @@ import { VCClaim } from 'learn-card-base/components/vcmodal/VCModal';
 
 import { useWallet, useAcceptCredentialMutation, useToast, ToastTypeEnum } from 'learn-card-base';
 
+import { getLogger } from '../../../logging/logger';
+const log = getLogger('notifications-list');
+
 export const NotificationItem: React.FC<{
     notification: NotificationProps;
 }> = ({ notification }) => {
@@ -42,12 +45,12 @@ export const NotificationItem: React.FC<{
                         });
 
                         setIsClaimed(true);
-                        console.log('acceptCredential::success', data);
+                        log.debug('acceptCredential::success', data);
                     },
                 }
             );
         } catch (err) {
-            console.log('acceptCredential::error', err?.message);
+            log.debug('acceptCredential::error', err?.message);
         }
     };
 

@@ -15,6 +15,8 @@ import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
+import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getSdJwtVcPlugin } from '@learncard/sd-jwt-vc-plugin';
 
 import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -41,6 +43,7 @@ export const didWebNetworkLearnCardFromSeed = async ({
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
+    openid4vc,
     debug,
 }: DidWebNetworkLearnCardFromSeed['args']): Promise<
     DidWebNetworkLearnCardFromSeed['returnValue']
@@ -97,11 +100,15 @@ export const didWebNetworkLearnCardFromSeed = async ({
         await getVerifyBoostPlugin(chapiLc, trustedBoostRegistry)
     );
 
-    const lcLc = await boostVerificationLc.addPlugin(getLearnCardPlugin(boostVerificationLc));
+    const sdJwtVcLc = await boostVerificationLc.addPlugin(getSdJwtVcPlugin(boostVerificationLc));
+
+    const lcLc = await sdJwtVcLc.addPlugin(getLearnCardPlugin(sdJwtVcLc));
 
     const didWebLc = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
 
-    return didWebLc.addPlugin(
+    const networkLc = await didWebLc.addPlugin(
         await getLearnCardNetworkPlugin(didWebLc, network, { guardianApprovalGetter, extraHeaders })
     );
+
+    return networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
 };

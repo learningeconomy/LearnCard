@@ -5,6 +5,8 @@ import { useWallet, useIsLoggedIn } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { Gift, Shield, ChevronRight, X, Loader2, CheckCircle, Info } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('exchange-did-auth');
 
 interface ExchangeDidAuthProps {
     verifiablePresentationRequest?: {
@@ -53,7 +55,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                 onSubmit(didAuthVp);
             }
         } catch (err) {
-            console.error('Failed to create DID Auth VP:', err);
+            log.error('Failed to create DID Auth VP:', err);
             setError('Something went wrong. Please try again.');
             setIsLoading(false);
         }
@@ -95,8 +97,9 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 </h2>
 
                                 <p className="text-gray-600 text-center text-sm">
-                                    To receive this credential, you'll need to confirm your identity. 
-                                    This lets the issuer securely deliver it to your wallet.
+                                    To receive this credential, you'll need to confirm your
+                                    identity. This lets the issuer securely deliver it to your
+                                    wallet.
                                 </p>
 
                                 {/* What happens section */}
@@ -141,8 +144,8 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                     <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
 
                                     <p>
-                                        Your identity is only shared with the issuer to complete this exchange. 
-                                        You're always in control of your data.
+                                        Your identity is only shared with the issuer to complete
+                                        this exchange. You're always in control of your data.
                                     </p>
                                 </div>
                             </div>

@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { IonPage, IonContent, IonToast } from '@ionic/react';
 import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-preview-modal');
 
 import { useModal } from 'learn-card-base';
 import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCardPostMessage';
@@ -41,11 +43,15 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
+        credential?: any;
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
-        setPendingCredential({ credentialUri, boostUri });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
 
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
@@ -74,7 +80,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
             const url = new URL(embedUrl);
             return url.origin;
         } catch (error) {
-            console.error('[Preview] Invalid embedUrl:', embedUrl);
+            log.error('Invalid embedUrl', embedUrl);
             setErrorMessage(`Invalid embed URL: ${embedUrl}`);
             setShowErrorToast(true);
             return '';
@@ -341,6 +347,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 <CredentialClaimModal
                     credentialUri={pendingCredential.credentialUri}
                     boostUri={pendingCredential.boostUri}
+                    credential={pendingCredential.credential}
                     onDismiss={handleDismissClaimModal}
                 />
             )}

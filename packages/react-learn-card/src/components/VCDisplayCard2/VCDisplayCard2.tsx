@@ -79,7 +79,6 @@ export type VCDisplayCard2Props = {
     customContentSlot?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
-    hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
 };
 
@@ -128,7 +127,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customContentSlot,
     customBodyContentSlot,
     unknownVerifierTitle,
-    hideAwardedTo,
     hideFrontFaceDetails,
 }) => {
     const {
@@ -223,7 +221,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
-                hideAwardedTo={hideAwardedTo}
                 hideFrontFaceDetails={hideFrontFaceDetails}
             />
         );
@@ -257,7 +254,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
-                hideAwardedTo={hideAwardedTo}
                 hideFrontFaceDetails={hideFrontFaceDetails}
             />
         );
@@ -304,7 +300,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         <Flipper className="w-full" flipKey={isFront}>
             <Flipped flipId="card">
                 <section
-                    className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl"
+                    className="vc-display-card font-poppins flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl"
                     role="button"
                     onClick={() => setIsFront(!isFront)}
                 >
@@ -441,7 +437,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         <Flipped inverseFlipId="card">
                                             <button
                                                 type="button"
-                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[24px] py-[8px] rounded-[40px] text-[16px] font-poppins font-medium leading-normal mt-[40px] w-fit select-none"
                                                 onClick={() => setIsFront(!isFront)}
                                             >
                                                 Details
@@ -452,7 +448,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         <Flipped inverseFlipId="card">
                                             <button
                                                 type="button"
-                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[24px] py-[8px] rounded-[40px] text-[16px] font-poppins font-medium leading-normal mt-[40px] w-fit select-none"
                                                 onClick={() => setIsFront(!isFront)}
                                             >
                                                 <span className="flex gap-[10px] items-center">

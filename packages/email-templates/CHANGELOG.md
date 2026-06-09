@@ -1,5 +1,11 @@
 # @learncard/email-templates
 
+## 1.0.2
+
+### Patch Changes
+
+-   [`53b315f16688fbe74f9f01f771cb3fe6263f33b6`](https://github.com/learningeconomy/LearnCard/commit/53b315f16688fbe74f9f01f771cb3fe6263f33b6) - Publish to npm so partner repos can install `@learncard/email-templates` as a regular dependency. The package was previously marked `private` and skipped by the release pipeline; this also adds a `files` allowlist so only the built `dist/` is included in the tarball.
+
 ## 1.0.1
 
 ### Patch Changes

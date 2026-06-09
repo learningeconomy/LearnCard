@@ -1,0 +1,303 @@
+---
+/**
+ * /practice — Northstar Practice Exams.
+ *
+ * Five timed exam rows. Each "Take exam" button simulates a score
+ * (deterministic per-row seed so the demo reads consistently on
+ * screenshots, not a true random) and updates the score ring in the
+ * hero. Once all five are done, "Submit practice log" fires the
+ * `issuePracticeScore` action — which signs a VC whose
+ * `credentialSubject.practiceScore` the pathway reactor matches
+ * against its `score-threshold >= 80` termination.
+ *
+ * The exam scores are pre-seeded to average 84% — comfortably above
+ * the 80% threshold so the pathway auto-advances on submit. If a
+ * future revision wants to demo the "threshold not met" branch, tweak
+ * the seeds to produce a sub-80 average; the reactor will log a
+ * `threshold-unmet` skip and the node will stay open.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Deterministic per-exam scores. Picked to average 84% (above the 80
+// threshold) and to look honestly uneven — nobody aces five exams in
+// a row. These values are consumed client-side by the "Take exam"
+// button (which reveals them one at a time for pacing drama).
+const exams = [
+    { id: 'ec2', title: 'Exam 1 · Compute services', score: 82 },
+    { id: 's3', title: 'Exam 2 · Storage services', score: 78 },
+    { id: 'iam', title: 'Exam 3 · Identity & access', score: 88 },
+    { id: 'vpc', title: 'Exam 4 · Networking', score: 86 },
+    { id: 'mixed', title: 'Exam 5 · Mixed review', score: 86 },
+];
+---
+
+<BaseLayout title="Practice Exams" activeNav="practice">
+    <div class="container container-narrow">
+        <p class="page-eyebrow">Northstar · Practice Exams</p>
+
+        <h1 class="page-title">Timed practice exams</h1>
+
+        <p class="page-lede">
+            Five timed exams spread across the major AWS cert-prep domains.
+            Clear an 80% average and Northstar issues a score credential
+            your pathway will recognise as exam-readiness.
+        </p>
+
+        <div class="score-hero" style="--pct: 0;" id="score-hero">
+            <div class="score-ring" id="score-ring">
+                <div class="score-ring-inner" id="score-ring-inner">&mdash;</div>
+            </div>
+
+            <div class="score-meta">
+                <h3 id="score-title">No exams taken yet</h3>
+                <p id="score-subtitle">
+                    Take all five exams to unlock the score-credential submission.
+                </p>
+            </div>
+        </div>
+
+        <div
+            class="banner is-info"
+            id="status-banner"
+            style="margin-top: 24px;"
+        >
+            <span class="banner-icon" aria-hidden="true">i</span>
+            <span id="status-text">
+                Hit <strong>Take exam</strong> on each row. Your running average shows up top.
+            </span>
+        </div>
+
+        <h2 class="section-title">Exam sessions</h2>
+
+        <section class="card u-stack exam-list">
+            {exams.map(ex => (
+                <div
+                    class="card-row"
+                    data-exam-id={ex.id}
+                    data-exam-score={ex.score}
+                >
+                    <span style="flex: 1;">
+                        <span class="card-row-title">{ex.title}</span>
+                        <span class="card-row-meta">
+                            50 questions &middot; 60 minutes
+                        </span>
+                    </span>
+                    <div class="exam-row-actions">
+                        <span
+                            class="exam-score-badge"
+                            data-role="score-badge"
+                        >Not taken</span>
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-role="take-exam"
+                            style="padding: 8px 14px; min-height: 36px; font-size: 13px;"
+                        >
+                            Take exam
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </section>
+
+        <div style="margin-top: 28px;">
+            <button
+                class="btn btn-success btn-block"
+                id="submit-btn"
+                disabled
+            >
+                <span id="submit-label">Take all 5 exams to continue</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        import { actions } from 'astro:actions';
+        import { createPartnerConnect } from '@learncard/partner-connect';
+
+        // Scripts in Astro files run through esbuild's JS dep-scanner
+        // before the full TS pipeline; TS-only syntax (type aliases,
+        // `as unknown as`, generic method params) makes the scanner
+        // bail and the entire script never loads — click handlers
+        // never bind. Keep this block in plain JS.
+        //
+        // Each page creates its OWN SDK instance rather than sharing
+        // the BaseLayout's via window. Astro loads page + layout
+        // scripts as modules in document order, and the page script
+        // often runs before the layout's — so reading window.__northstar
+        // here races against undefined and throws, discarding every
+        // handler attached below. Duplicate createPartnerConnect calls
+        // are cheap (stacked postMessage listeners, no side effects).
+        const learnCard = createPartnerConnect();
+
+        // -- Exam state ---------------------------------------------------
+
+        const examRows = Array.from(
+            document.querySelectorAll('.card-row[data-exam-id]'),
+        );
+
+        const submitBtn = document.getElementById('submit-btn');
+        const submitLabel = document.getElementById('submit-label');
+        const scoreRing = document.getElementById('score-ring');
+        const scoreRingInner = document.getElementById('score-ring-inner');
+        const scoreHero = document.getElementById('score-hero');
+        const scoreTitle = document.getElementById('score-title');
+        const scoreSubtitle = document.getElementById('score-subtitle');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+
+        const taken = new Map();
+
+        const refresh = () => {
+            const total = examRows.length;
+            const count = taken.size;
+            const scores = Array.from(taken.values());
+            const avg =
+                scores.length > 0
+                    ? Math.round(
+                          scores.reduce((s, v) => s + v, 0) / scores.length,
+                      )
+                    : 0;
+
+            if (scoreRingInner) {
+                scoreRingInner.textContent = avg > 0 ? `${avg}%` : '\u2014';
+            }
+            if (scoreHero) {
+                scoreHero.style.setProperty('--pct', String(avg));
+            }
+            if (scoreTitle) {
+                scoreTitle.textContent =
+                    count === 0
+                        ? 'No exams taken yet'
+                        : count < total
+                            ? `${count} of ${total} exams done`
+                            : 'All five exams complete';
+            }
+            if (scoreSubtitle) {
+                scoreSubtitle.textContent =
+                    count === 0
+                        ? 'Take all five exams to unlock the score-credential submission.'
+                        : count < total
+                            ? `Running average: ${avg}%. ${total - count} to go.`
+                            : avg >= 80
+                                ? `Final average: ${avg}%. You cleared the 80% threshold — submit to send your score credential.`
+                                : `Final average: ${avg}%. Below the 80% threshold — you can still submit, but the pathway won't auto-advance until you retake.`;
+            }
+
+            if (submitBtn && submitLabel) {
+                const allDone = count === total;
+                submitBtn.disabled = !allDone;
+                submitLabel.textContent = allDone
+                    ? 'Submit practice log'
+                    : `Take ${total - count} more exam${total - count === 1 ? '' : 's'}`;
+            }
+        };
+
+        examRows.forEach(row => {
+            const examId = row.dataset.examId ?? '';
+            const score = Number(row.dataset.examScore ?? 0);
+            const btn = row.querySelector('[data-role="take-exam"]');
+            const badge = row.querySelector('[data-role="score-badge"]');
+
+            btn?.addEventListener('click', () => {
+                if (!btn || !badge) return;
+                if (taken.has(examId)) return;
+
+                // Brief "Taking…" state so clicking feels like it's
+                // actually running an exam, not instantly populating.
+                btn.disabled = true;
+                btn.innerHTML =
+                    '<span class="spinner" aria-hidden="true" style="border-top-color: var(--brand-900); border-color: var(--ink-300);"></span>';
+
+                window.setTimeout(() => {
+                    taken.set(examId, score);
+                    badge.textContent = `${score}%`;
+                    badge.classList.remove('is-pass', 'is-fail');
+                    badge.classList.add(score >= 80 ? 'is-pass' : 'is-fail');
+                    btn.innerHTML = 'Retake';
+                    btn.disabled = false;
+                    // Clicking again would retake at the same seeded
+                    // score — good enough for a demo. We let it so
+                    // the learner can play with the hero-ring
+                    // animation.
+                    btn.addEventListener('click', () => {
+                        taken.delete(examId);
+                        badge.textContent = 'Not taken';
+                        badge.classList.remove('is-pass', 'is-fail');
+                        btn.innerHTML = 'Take exam';
+                        refresh();
+                    }, { once: true });
+
+                    refresh();
+                }, 450);
+            });
+        });
+
+        refresh();
+
+        // -- Submit flow --------------------------------------------------
+
+        const setStatus = (kind, html) => {
+            if (!statusBanner || !statusText) return;
+            statusBanner.classList.remove('is-info', 'is-success', 'is-error');
+            statusBanner.classList.add(`is-${kind}`);
+            statusText.innerHTML = html;
+        };
+
+        submitBtn?.addEventListener('click', async () => {
+            if (!submitBtn || !submitLabel) return;
+
+            const scores = Array.from(taken.values());
+            const avg = Math.round(
+                scores.reduce((s, v) => s + v, 0) / scores.length,
+            );
+
+            submitBtn.disabled = true;
+            submitLabel.innerHTML =
+                '<span class="spinner" aria-hidden="true"></span> Issuing your score credential&hellip;';
+
+            try {
+                const identity = await learnCard.requestIdentity();
+                const learnerDid = identity?.user?.did;
+
+                if (!learnerDid) {
+                    throw new Error('Could not read your wallet DID. Is LearnCard connected?');
+                }
+
+                const result = await actions.issuePracticeScore({
+                    learnerDid,
+                    practiceScore: avg,
+                    examCount: scores.length,
+                });
+
+                if (result.error || !result.data?.credential) {
+                    throw new Error('Northstar failed to sign your score credential.');
+                }
+
+                await learnCard.sendCredential(result.data.credential);
+
+                setStatus(
+                    'success',
+                    `<strong>Score credential sent!</strong> Your ${avg}% average is in your wallet. ${
+                        avg >= 80
+                            ? 'Your pathway should unlock the next step now.'
+                            : 'Below the 80% threshold — retake to try again.'
+                    }`,
+                );
+                submitLabel.textContent = '\u2713 Score sent';
+                window.dispatchEvent(new CustomEvent('northstar:auth-changed'));
+            } catch (err) {
+                console.error('[practice] submit failed:', err);
+                setStatus(
+                    'error',
+                    `Something went wrong: ${
+                        err instanceof Error ? err.message : 'unknown error'
+                    }. Please try again.`,
+                );
+                submitBtn.disabled = false;
+                submitLabel.textContent = 'Submit practice log';
+            }
+        });
+    </script>
+</BaseLayout>

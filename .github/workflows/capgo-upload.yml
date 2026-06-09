@@ -1,10 +1,14 @@
 name: CapGo Upload (Reusable)
 
+# Reusable workflow: build a Capacitor app and push a JS bundle to a Capgo
+# channel. Callers control which project, which channel, and (for the LCA app)
+# which tenant + stage to prepare.
+
 on:
     workflow_call:
         inputs:
             project:
-                description: NX project name to build
+                description: NX project name to build (e.g. learn-card-app)
                 required: true
                 type: string
             app_id:
@@ -12,11 +16,11 @@ on:
                 required: true
                 type: string
             version:
-                description: Version to upload (e.g., 1.2.3)
+                description: Bundle version to upload (e.g. 1.2.3, 1.2.3-staging.abcdef0)
                 required: true
                 type: string
             build_path:
-                description: Path to built web assets
+                description: Path to built web assets (e.g. apps/learn-card-app/build)
                 required: true
                 type: string
             package_json:
@@ -32,9 +36,34 @@ on:
                 required: true
                 type: string
             channel:
-                description: CapGo default channel name to upload to (ex.g. production, 1.0.1)
+                description: CapGo channel name to upload to (e.g. production, staging, pr-123)
                 required: true
                 type: string
+            ref:
+                description: Git ref to check out. Defaults to the caller's ref.
+                required: false
+                type: string
+                default: ''
+            tenant:
+                description: Tenant name for prepare-native-config (LCA only). Empty to skip.
+                required: false
+                type: string
+                default: ''
+            stage:
+                description: Stage flag for prepare-native-config (LCA only). Empty for no stage.
+                required: false
+                type: string
+                default: ''
+            self_assign:
+                description: |
+                    If 'true', run `channel set ... --self-assign` after upload so this
+                    bundle becomes the default for the channel. PR previews pass 'true'
+                    so the in-app switcher (CapacitorUpdater.setChannel) can opt into the
+                    latest PR bundle. Set to 'false' only for channels that should not be
+                    self-settable.
+                required: false
+                type: string
+                default: 'true'
         secrets:
             CAPGO_TOKEN:
                 required: true
@@ -48,6 +77,8 @@ jobs:
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
+              with:
+                  ref: ${{ inputs.ref }}
 
             - name: Setup Node.js 20.x
               uses: actions/setup-node@v4
@@ -73,8 +104,26 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-pnpm-store-
 
+            # Skip mongodb-memory-server's postinstall Mongo binary download — a
+            # backend-only transitive dep, unused by the frontend build. Its cached
+            # `.tgz.downloading` temp file has flaked install with ENOENT.
             - name: Install dependencies
+              env:
+                  MONGOMS_DISABLE_POSTINSTALL: '1'
               run: pnpm install --no-frozen-lockfile
+
+            # Prepare tenant config for learn-card-app builds. For other projects
+            # (e.g. scouts) the tenant input is left empty and this step is skipped.
+            - name: Prepare tenant config
+              if: inputs.tenant != ''
+              working-directory: apps/learn-card-app
+              run: |
+                  STAGE_FLAG=""
+                  if [[ -n "${{ inputs.stage }}" ]]; then
+                    STAGE_FLAG="--stage ${{ inputs.stage }}"
+                  fi
+                  echo "Preparing tenant config: ${{ inputs.tenant }} $STAGE_FLAG"
+                  npx tsx scripts/prepare-native-config.ts "${{ inputs.tenant }}" $STAGE_FLAG
 
             - name: Build ${{ inputs.project }}
               run: pnpm exec nx build ${{ inputs.project }}
@@ -94,23 +143,62 @@ jobs:
                   VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
+                  VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
+                  VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
 
-            - name: Create Release (CapGo)
+            # Ensure the channel exists before uploading. `channel add` errors if
+            # the channel already exists, so swallow only that case — auth, network,
+            # and invalid-id errors must still fail the job. Secret is passed via env
+            # (CAPGO_TOKEN) rather than --apikey to keep it out of process listings.
+            - name: Ensure CapGo channel exists
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+              run: |
+                  set -o pipefail
+                  if ! OUTPUT=$(npx @capgo/cli@latest channel add \
+                      "${{ inputs.channel }}" \
+                      "${{ inputs.app_id }}" 2>&1); then
+                      echo "$OUTPUT"
+                       if echo "$OUTPUT" | grep -qiE 'already exist|duplicate key value violates unique constraint'; then
+                           echo "Channel already exists — continuing."
+                       else
+                           exit 1
+                       fi
+                  else
+                      echo "$OUTPUT"
+                  fi
+
+            # Inputs are passed through env and referenced as quoted shell vars so
+            # a crafted value (e.g. a version string read from a fork PR's
+            # package.json) can't break out into shell injection.
+            - name: Upload bundle (CapGo)
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  APP_ID: ${{ inputs.app_id }}
+                  BUILD_PATH: ${{ inputs.build_path }}
+                  CHANNEL: ${{ inputs.channel }}
+                  VERSION: ${{ inputs.version }}
+                  PACKAGE_JSON: ${{ inputs.package_json }}
+                  NODE_MODULES_PATH: ${{ inputs.node_modules_path }}
               run: >-
                   npx @capgo/cli@latest bundle upload
-                  ${{ inputs.app_id }}
+                  "$APP_ID"
                   --delta
-                  --apikey ${{ secrets.CAPGO_TOKEN }}
-                  --path ${{ inputs.build_path }}
-                  --channel ${{ inputs.channel }}
-                  --bundle ${{ inputs.version }}
-                  --package-json ${{ inputs.package_json }}
-                  --node-modules ${{ inputs.node_modules_path }}
+                  --path "$BUILD_PATH"
+                  --channel "$CHANNEL"
+                  --bundle "$VERSION"
+                  --package-json "$PACKAGE_JSON"
+                  --node-modules "$NODE_MODULES_PATH"
 
-            - name: Set Release (CapGo)
+            - name: Set channel default (CapGo)
+              if: inputs.self_assign == 'true'
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  APP_ID: ${{ inputs.app_id }}
+                  CHANNEL: ${{ inputs.channel }}
+                  VERSION: ${{ inputs.version }}
               run: >-
-                  npx @capgo/cli@latest channel set ${{ inputs.channel }}
-                  --apikey ${{ secrets.CAPGO_TOKEN }}
-                  --bundle ${{ inputs.version }}
+                  npx @capgo/cli@latest channel set "$CHANNEL"
+                  --bundle "$VERSION"
                   --self-assign
-                  ${{ inputs.app_id }}
+                  "$APP_ID"

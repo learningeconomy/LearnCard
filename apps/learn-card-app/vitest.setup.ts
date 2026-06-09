@@ -1,10 +1,29 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import { TextEncoder, TextDecoder as NodeTextDecoder } from 'util';
+import { createMockLogger } from './src/test-utils/mockLearnCardBaseLogger';
 
-// Polyfill for Node.js environment
-global.TextEncoder = TextEncoder;
-global.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
+const defineGlobalValue = <T>(key: string, value: T): void => {
+    Object.defineProperty(globalThis, key, {
+        configurable: true,
+        writable: true,
+        value,
+    });
+
+    if (typeof window !== 'undefined') {
+        Object.defineProperty(window, key, {
+            configurable: true,
+            writable: true,
+            value,
+        });
+    }
+};
+
+// Polyfill for Node.js/jsdom environment.
+defineGlobalValue('TextEncoder', TextEncoder);
+defineGlobalValue('TextDecoder', NodeTextDecoder as unknown as typeof TextDecoder);
+
+defineGlobalValue('mockLearnCardBaseLogger', createMockLogger);
 
 // Define global constants that are normally set by webpack DefinePlugin
 (global as any).LCN_API_URL = 'http://localhost:4000/api';

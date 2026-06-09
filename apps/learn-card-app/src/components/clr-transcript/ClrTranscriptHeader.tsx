@@ -1,0 +1,80 @@
+import React from 'react';
+
+import ClrIssuerAddress from './ClrIssuerAddress';
+import ClrTranscriptSourceField from './ClrTranscriptSourceField';
+import ClrTranscriptTrustBadge from './ClrTranscriptTrustBadge';
+
+import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
+
+const ClrTranscriptHeader: React.FC<{
+    model: ClrTranscriptDisplayModel;
+    showSource?: boolean;
+}> = ({ model, showSource = false }) => {
+    return (
+        <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-4">
+            {model.meta.partial && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    <p className="text-xs font-medium text-amber-800">
+                        Partial transcript — the issuer indicated this record does not contain all
+                        known achievements.
+                    </p>
+                </div>
+            )}
+            <div className="space-y-2">
+                <ClrTranscriptSourceField
+                    label="Credential"
+                    field={model.header.title}
+                    showSource={showSource}
+                />
+                {model.header.description && (
+                    <ClrTranscriptSourceField
+                        label="Description"
+                        field={model.header.description}
+                        showSource={showSource}
+                    />
+                )}
+                <ClrTranscriptSourceField
+                    label="Issuer"
+                    field={model.header.issuerName}
+                    showSource={showSource}
+                />
+                {model.header.issuerAddress && (
+                    <ClrIssuerAddress
+                        address={model.header.issuerAddress}
+                        showSource={showSource}
+                    />
+                )}
+                <ClrTranscriptSourceField
+                    label="Learner"
+                    field={model.header.learnerName}
+                    showSource={showSource}
+                />
+                <ClrTranscriptSourceField
+                    label="Issued"
+                    field={model.header.issuedAt}
+                    showSource={showSource}
+                />
+                {model.header.awardedDate && (
+                    <ClrTranscriptSourceField
+                        label="Awarded"
+                        field={model.header.awardedDate}
+                        showSource={showSource}
+                    />
+                )}
+                {model.header.validUntil && (
+                    <ClrTranscriptSourceField
+                        label="Valid until"
+                        field={model.header.validUntil}
+                        showSource={showSource}
+                    />
+                )}
+            </div>
+            <ClrTranscriptTrustBadge
+                verification={model.verification}
+                evidenceCount={model.summary.evidenceCount}
+            />
+        </div>
+    );
+};
+
+export default ClrTranscriptHeader;

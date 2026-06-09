@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.90.8",
+    "version": "1.90.14",
     "private": true,
     "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
@@ -23,7 +23,7 @@
         "@capacitor/splash-screen": "^8.0.1",
         "@capacitor/status-bar": "^8.0.2",
         "@capawesome/capacitor-badge": "8.0.2",
-        "@capgo/capacitor-updater": "8.45.10",
+        "@capgo/capacitor-updater": "8.47.7",
         "@datadog/browser-logs": "^4.50.1",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
@@ -61,7 +61,7 @@
         "date-fns": "^4.1.0",
         "firebase": "12.8.0",
         "immer": "^10.1.1",
-        "ionicons": "^5.5.4",
+        "ionicons": "8.0.13",
         "json-stringify-deterministic": "^1.0.12",
         "jszip": "^3.10.1",
         "jwt-decode": "^3.1.2",

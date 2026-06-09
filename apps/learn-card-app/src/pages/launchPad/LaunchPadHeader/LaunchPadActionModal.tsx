@@ -1,61 +1,67 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
-import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
+import CheckListContainer from '../../../components/learncard/checklist/CheckListContainer';
+import AiPassportPersonalizationContainer from '../../../components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
-import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
-import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
-import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
-import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
+import AISessionsQuickNav from '../../../components/svgs/quicknav/AISessionsQuickNav';
+import BoostsQuickNav from '../../../components/svgs/quicknav/BoostsQuickNav';
+import CredentialQuickNav from '../../../components/svgs/quicknav/CredentialQuickNav';
+import ClaimCredentialQuickNav from '../../../components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
-import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
-import Checkmark from 'learn-card-base/svgs/Checkmark';
-import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
-import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
-import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
+import ResumeQuickNav from '../../../components/svgs/quicknav/ResumeQuickNav';
+import CaretDown from 'learn-card-base/svgs/CaretDown';
+import StudiesQuickNav from '../../../components/svgs/quicknav/StudiesQuickNav';
+import ShareInsightsQuickNav from '../../../components/svgs/quicknav/ShareInsightsQuickNav';
+import UnderstandSkillsQuickNav from '../../../components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
-import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
-import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import FamiliesQuickNav from '../../../components/svgs/quicknav/FamiliesQuickNav';
+import RequestInsightsQuickNav from '../../../components/svgs/quicknav/RequestInsightsQuickNav';
 import AddToLearnCardQuickNav from '../../../components/svgs/quicknav/AddToLearnCardQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
-import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
-import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
-import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
-import CreateApiTokenQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateApiTokenQuickNav';
-import CreateSigningAuthorityQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateSigningAuthorityQuickNav';
-import CreateConsentFlowQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateConsentFlowQuickNav';
-import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchNetworksQuickNav';
-import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
-import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
-import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
-import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
-import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
+import AddUserQuickNav from '../../../components/svgs/quicknav/AddUserQuickNav';
+import ImportCredentialQuickNav from '../../../components/svgs/quicknav/ImportCredentialQuickNav';
+import SwitchAccountQuickNav from '../../../components/svgs/quicknav/SwitchAccountQuickNav';
+import CreateApiTokenQuickNav from '../../../components/svgs/quicknav/CreateApiTokenQuickNav';
+import CreateSigningAuthorityQuickNav from '../../../components/svgs/quicknav/CreateSigningAuthorityQuickNav';
+import CreateConsentFlowQuickNav from '../../../components/svgs/quicknav/CreateConsentFlowQuickNav';
+import SwitchNetworksQuickNav from '../../../components/svgs/quicknav/SwitchNetworksQuickNav';
+import ReadDocsQuickNav from '../../../components/svgs/quicknav/ReadDocsQuickNav';
+import AddChildQuickNav from '../../../components/svgs/quicknav/AddChildQuickNav';
+import SwitchChildQuickNav from '../../../components/svgs/quicknav/SwitchChildQuickNav';
+import NavBarPassportIcon from '../../../components/svgs/NavBarPassportIcon';
+import NavBarLaunchPadIcon from '../../../components/svgs/NavBarLaunchPadIcon';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
 import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
 import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
-import { roleIcons } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
-import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
-import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
-import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
-import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
-import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
-import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
-import AdminToolsOptionsContainer from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
+import {
+    roleIcons,
+    iconBgColors,
+} from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
+import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import { useTheme } from '../../../theme/hooks/useTheme';
+import { IconSetEnum } from '../../../theme/icons/index';
+import AccountSwitcherModal from '../../../components/learncard/AccountSwitcherModal';
+import { SwitcherStepEnum } from '../../../components/learncard/switcher.helpers';
+import FamilyBoostPreviewWrapper from '../../../components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
+import useGetFamilyCredential from '../../../hooks/useGetFamilyCredential';
+import AdminToolsOptionsContainer from '../../adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
 import {
     adminToolOptions,
     AdminToolOptionsEnum,
     developerToolOptions,
-} from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
-import AdminToolsCreateProfileSimple from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
-import useBoostModal from 'apps/learn-card-app/src/components/boost/hooks/useBoostModal';
-import { openDeveloperDocs } from 'apps/learn-card-app/src/helpers/externalLinkHelpers';
+} from '../../adminToolsPage/AdminToolsModal/admin-tools.helpers';
+import AdminToolsCreateProfileSimple from '../../adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
+import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import { openDeveloperDocs } from '../../../helpers/externalLinkHelpers';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -81,6 +87,9 @@ import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
 import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('launch-pad-action-modal');
 
 const getIconForActionButton = (
     label: string,
@@ -429,7 +438,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const actionModalCardBgColor = themeColors?.defaults?.actionModalCardBgColor;
     const actionModalCardTextColor = themeColors?.defaults?.actionModalCardTextColor;
     const actionModalButtonBorderColor = themeColors?.defaults?.actionModalButtonBorderColor;
-    const { data: lcNetworkProfile } = useGetProfile();
+    const { data: lcNetworkProfile, refetch: refetchProfile } = useGetProfile();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: contractsData, refetch: refetchContracts } = useGetContracts();
     const { presentToast } = useToast();
@@ -452,38 +461,15 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
 
-    const roleScrollRef = useRef<HTMLDivElement>(null);
-    const selectedRoleRef = useRef<HTMLButtonElement>(null);
-    const isCenteringRef = useRef(false);
-    const isInitialRoleSetRef = useRef(true);
-
-    // Filter out counselor for the visible roles list
-    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
-
-    // Handle infinite scroll - jump to middle set when reaching edges
-    const handleScroll = () => {
-        // Skip jump logic while centering to avoid conflicts
-        if (isCenteringRef.current) return;
-        if (!roleScrollRef.current) return;
-        const container = roleScrollRef.current;
-        const scrollLeft = container.scrollLeft;
-        const scrollWidth = container.scrollWidth;
-        const clientWidth = container.clientWidth;
-        const oneSetWidth = (scrollWidth - clientWidth) / 2;
-
-        // If scrolled to the left clone set, jump to middle
-        if (scrollLeft < oneSetWidth * 0.1) {
-            container.scrollLeft = scrollLeft + oneSetWidth;
-        }
-        // If scrolled to the right clone set, jump to middle
-        else if (scrollLeft > oneSetWidth * 1.9) {
-            container.scrollLeft = scrollLeft - oneSetWidth;
-        }
-    };
-
     const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
         setRole(newRole);
         setOptimisticRole(newRole);
+
+        // The wallet write is the only step whose failure means the role did
+        // NOT actually change. Roll back optimistic state + surface an error
+        // toast only if THIS step throws — cache-refresh failures below
+        // should not trigger a rollback (the server state already reflects
+        // the new role at that point).
         try {
             const wallet = await initWallet();
             await wallet?.invoke?.updateProfile({
@@ -496,49 +482,31 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            return;
         }
-    };
 
-    // Center the selected role in the scroll container (in the middle set)
-    const centerRole = (smooth = true) => {
-        if (selectedRoleRef.current && roleScrollRef.current) {
-            isCenteringRef.current = true;
-            const container = roleScrollRef.current;
-            const selectedElement = selectedRoleRef.current;
-
-            // Use getBoundingClientRect for accurate pill center positioning
-            const containerRect = container.getBoundingClientRect();
-            const elementRect = selectedElement.getBoundingClientRect();
-
-            // Calculate the center of the pill relative to the container's visible area
-            const elementCenterInViewport = elementRect.left + elementRect.width / 2;
-            const containerCenterInViewport = containerRect.left + containerRect.width / 2;
-
-            // Adjust scroll by the difference to center the pill
-            const scrollAdjustment = elementCenterInViewport - containerCenterInViewport;
-
-            container.scrollTo({
-                left: container.scrollLeft + scrollAdjustment,
-                behavior: smooth ? 'smooth' : 'instant',
-            });
-            // Re-enable infinite scroll after animation completes
-            setTimeout(
-                () => {
-                    isCenteringRef.current = false;
-                },
-                smooth ? 400 : 50
-            );
+        // useGetProfile has a 5-minute staleTime and wallet.invoke.updateProfile
+        // does not invalidate its cache — explicitly refetch so subsequent
+        // mounts of LaunchPadActionModal see the new role (otherwise the
+        // dropdown reverts to the stale cached value on next "+" open). If the
+        // refetch itself fails (transient network blip, etc.) the role has
+        // still been updated on the server — don't roll back, don't alarm the
+        // user; the cache will re-sync on next reload or staleTime expiry.
+        try {
+            await refetchProfile();
+        } catch (e) {
+            log.error('Failed to refresh profile cache after role change', e);
         }
-    };
 
-    // Center on role change (instant for initial set, smooth for user changes)
-    useEffect(() => {
-        if (role === null) return;
-        const useInstant = isInitialRoleSetRef.current;
-        isInitialRoleSetRef.current = false;
-        const timer = setTimeout(() => centerRole(!useInstant), useInstant ? 150 : 50);
-        return () => clearTimeout(timer);
-    }, [role]);
+        const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
+        presentToast(`You're now a ${newRoleTitle}.`, {
+            title: 'Role updated',
+            type: ToastTypeEnum.Success,
+            hasDismissButton: true,
+            hasCheckmark: true,
+            autoDismiss: false,
+        });
+    };
 
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
@@ -555,29 +523,42 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = profileType === 'child';
-    const { isAiEnabled } = useAiFeatureGate();
-
-    const selectedBorderColor: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: '#5EEAD4',
-        [LearnCardRolesEnum.guardian]: '#C4B5FD',
-        [LearnCardRolesEnum.teacher]: '#FDE047',
-        [LearnCardRolesEnum.admin]: '#67E8F9',
-        [LearnCardRolesEnum.counselor]: '#C4B5FD',
-        [LearnCardRolesEnum.developer]: '#BEF264',
-    };
-
-    const selectedBgColor: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: '#CCFBF1',
-        [LearnCardRolesEnum.guardian]: '#EDE9FE',
-        [LearnCardRolesEnum.teacher]: '#FEF9C3',
-        [LearnCardRolesEnum.admin]: '#CFFAFE',
-        [LearnCardRolesEnum.counselor]: '#EDE9FE',
-        [LearnCardRolesEnum.developer]: '#ECFCCB',
-    };
+    const { isAiEnabled, isLoading: isAiFeatureLoading } = useAiFeatureGate();
 
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
+
+    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
+    const roleIconSrc = roleIcons[activeRole];
+    const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
+
+    // Counselor is hidden from the role picker on the launchpad — OnboardingRoles
+    // already filters it for the mobile bottom-sheet path, and we replicate that
+    // here for the desktop Menu so both surfaces show the same five roles.
+    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
+
+    // Pill button contents shared between the desktop MenuButton and the mobile
+    // trigger so the trigger looks identical across breakpoints.
+    const rolePillContents = (
+        <span className="p-[3px] pr-[8px] flex items-center justify-center gap-2">
+            <span
+                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                style={roleIconBgStyle}
+            >
+                <img
+                    src={roleIconSrc}
+                    alt={`${roleLabel} icon`}
+                    className="h-[20px] w-[20px] object-contain"
+                />
+            </span>
+            <span>{roleLabel}</span>
+            {!isChildProfile && <CaretDown className="ml-[2px]" />}
+        </span>
+    );
+    const rolePillClassName = `rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold ${
+        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
+    }`;
 
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
@@ -804,13 +785,93 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 >
                     <X className="w-[30px] h-[30px] text-grayscale-600" />
                 </button>
-                <p className="text-grayscale-700 font-normal text-[16px] font-poppins py-[20px]">
+                <p className="text-grayscale-700 font-normal text-[16px] font-poppins pt-[20px] pb-[12px]">
                     <span className="mr-2">{emoji}</span>
                     <span>
                         {greeting}
                         {name ? `, ${name}` : ''}
                     </span>
                 </p>
+                <div className="w-full flex items-center justify-center pb-[12px]">
+                    {isChildProfile ? (
+                        // Child profiles are pinned to Learner — render the pill
+                        // as a non-interactive label.
+                        <button type="button" disabled className={rolePillClassName}>
+                            {rolePillContents}
+                        </button>
+                    ) : isDesktop ? (
+                        // Desktop: inline HeadlessUI Menu — true dropdown UI.
+                        <Menu as="div" className="relative inline-block">
+                            <MenuButton className={rolePillClassName}>
+                                {rolePillContents}
+                            </MenuButton>
+                            <MenuItems
+                                anchor="bottom"
+                                className="bg-white rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[8px] my-[6px] focus:outline-none z-[1000] min-w-[200px] flex flex-col gap-[4px]"
+                            >
+                                {visibleRoles.map(roleItem => {
+                                    const isSelected = roleItem.type === activeRole;
+                                    return (
+                                        <MenuItem key={roleItem.id}>
+                                            {({ focus }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRoleChange(roleItem.type)}
+                                                    className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 ${
+                                                        focus ? 'bg-grayscale-100' : ''
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                                                        style={{
+                                                            backgroundColor:
+                                                                iconBgColors[roleItem.type],
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={roleIcons[roleItem.type]}
+                                                            alt={`${roleItem.title} icon`}
+                                                            className="h-[20px] w-[20px] object-contain"
+                                                        />
+                                                    </span>
+                                                    <span className="flex-1 text-left">
+                                                        {roleItem.title}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
+                                                    )}
+                                                </button>
+                                            )}
+                                        </MenuItem>
+                                    );
+                                })}
+                            </MenuItems>
+                        </Menu>
+                    ) : (
+                        // Mobile/native: bottom-sheet modal, tap-to-pick.
+                        <button
+                            type="button"
+                            onClick={() =>
+                                newModal(
+                                    <LaunchPadRoleSelector
+                                        role={activeRole}
+                                        setRole={handleRoleChange}
+                                    />,
+                                    {
+                                        sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                    },
+                                    {
+                                        mobile: ModalTypes.BottomSheet,
+                                        desktop: ModalTypes.BottomSheet,
+                                    }
+                                )
+                            }
+                            className={rolePillClassName}
+                        >
+                            {rolePillContents}
+                        </button>
+                    )}
+                </div>
                 <h3
                     className={`text-[20px] font-poppins font-semibold ${
                         !actionModalCardTextColor ? 'text-grayscale-800' : ''
@@ -824,131 +885,58 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             </div>
 
             <div className="mt-1 flex flex-wrap justify-center gap-4">
-                {actions.map((label, i) => (
-                    <ActionButton
-                        key={`${label}-${i}`}
-                        label={label}
-                        bg={
-                            !actionModalButtonColors
-                                ? colorByLabel[label] ?? bgColors[i % bgColors.length]
-                                : ''
-                        }
-                        bgHex={
-                            actionModalButtonColors
-                                ? actionModalButtonColors[i % actionModalButtonColors.length]
-                                : undefined
-                        }
-                        textColor={actionModalTextColor}
-                        borderColor={actionModalButtonBorderColor}
-                        role={activeRole}
-                        onClick={
-                            label === 'View Family' && familyUri
-                                ? () => {
-                                      closeModal();
-                                      newModal(
-                                          <FamilyBoostPreviewWrapper uri={familyUri} />,
-                                          {},
-                                          {
-                                              desktop: ModalTypes.FullScreen,
-                                              mobile: ModalTypes.FullScreen,
-                                          }
-                                      );
-                                      history.push('/families');
-                                  }
-                                : label === 'View Learner Insights'
-                                ? handleViewLearnerInsights
-                                : label === 'View Child Insights'
-                                ? handleViewChildInsights
-                                : label === 'Edit Skills Frameworks'
-                                ? handleEditSkillsFrameworks
-                                : label === 'Request Learner Insights'
-                                ? () => void handleRequestLearnerInsights()
-                                : label === 'Add to LearnCard'
-                                ? handleAddToLearnCard
-                                : undefined
-                        }
-                    />
-                ))}
-            </div>
-            <div
-                className={`rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] py-[10px] ${
-                    !actionModalCardBgColor ? 'bg-white' : ''
-                }`}
-            >
-                <div
-                    ref={roleScrollRef}
-                    onScroll={handleScroll}
-                    className="w-full flex items-center gap-[10px] overflow-x-auto scrollbar-hide"
-                >
-                    {[0, 1, 2].map(setIndex =>
-                        visibleRoles.map(roleItem => {
-                            const isSelected = activeRole === roleItem.type;
-                            const roleIcon = roleIcons[roleItem.type];
-                            const shouldAssignRef = setIndex === 1 && isSelected;
-
-                            return (
-                                <button
-                                    key={`${setIndex}-${roleItem.type}`}
-                                    ref={shouldAssignRef ? selectedRoleRef : null}
-                                    type="button"
-                                    disabled={isChildProfile}
-                                    onClick={
-                                        isChildProfile
-                                            ? undefined
-                                            : () => handleRoleChange(roleItem.type)
-                                    }
-                                    className={`flex-shrink-0 rounded-[43px] border border-solid transition-all ${
-                                        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
-                                    }`}
-                                    style={
-                                        isSelected
-                                            ? {
-                                                  borderColor: selectedBorderColor[roleItem.type],
-                                                  backgroundColor: selectedBgColor[roleItem.type],
-                                              }
-                                            : {
-                                                  borderColor: '#E2E3E9',
-                                                  backgroundColor: 'white',
-                                                  opacity: 0.6,
-                                              }
-                                    }
-                                >
-                                    <span className="py-[5px] pl-[10px] pr-[5px] flex items-center gap-[15px]">
-                                        <span className="flex items-center gap-2">
-                                            <img
-                                                src={roleIcon}
-                                                alt={`${roleItem.title} icon`}
-                                                className="h-[22px] w-[22px] object-contain"
-                                            />
-                                            <span
-                                                className={`${
-                                                    isSelected
-                                                        ? 'text-grayscale-900'
-                                                        : 'text-grayscale-600'
-                                                } text-[14px] font-poppins font-semibold`}
-                                            >
-                                                {roleItem.title}
-                                            </span>
-                                        </span>
-                                        {isSelected ? (
-                                            <span
-                                                className="flex items-center justify-center h-[24px] w-[24px] rounded-full"
-                                                style={{ backgroundColor: 'white' }}
-                                            >
-                                                <Checkmark
-                                                    version="no-padding"
-                                                    className="h-[15px] w-[15px] text-[#18224E]"
-                                                />
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center h-[24px] w-[24px] rounded-full bg-grayscale-200" />
-                                        )}
-                                    </span>
-                                </button>
-                            );
-                        })
-                    )}
-                </div>
+                {isAiFeatureLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                          <div
+                              key={`skeleton-${i}`}
+                              className="w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] rounded-[20px] bg-grayscale-200 animate-pulse"
+                          />
+                      ))
+                    : actions.map((label, i) => (
+                          <ActionButton
+                              key={`${label}-${i}`}
+                              label={label}
+                              bg={
+                                  !actionModalButtonColors
+                                      ? colorByLabel[label] ?? bgColors[i % bgColors.length]
+                                      : ''
+                              }
+                              bgHex={
+                                  actionModalButtonColors
+                                      ? actionModalButtonColors[i % actionModalButtonColors.length]
+                                      : undefined
+                              }
+                              textColor={actionModalTextColor}
+                              borderColor={actionModalButtonBorderColor}
+                              role={activeRole}
+                              onClick={
+                                  label === 'View Family' && familyUri
+                                      ? () => {
+                                            closeModal();
+                                            newModal(
+                                                <FamilyBoostPreviewWrapper uri={familyUri} />,
+                                                {},
+                                                {
+                                                    desktop: ModalTypes.FullScreen,
+                                                    mobile: ModalTypes.FullScreen,
+                                                }
+                                            );
+                                            history.push('/families');
+                                        }
+                                      : label === 'View Learner Insights'
+                                      ? handleViewLearnerInsights
+                                      : label === 'View Child Insights'
+                                      ? handleViewChildInsights
+                                      : label === 'Edit Skills Frameworks'
+                                      ? handleEditSkillsFrameworks
+                                      : label === 'Request Learner Insights'
+                                      ? () => void handleRequestLearnerInsights()
+                                      : label === 'Add to LearnCard'
+                                      ? handleAddToLearnCard
+                                      : undefined
+                              }
+                          />
+                      ))}
             </div>
             {showFooterNav && (
                 <div className="mt-1 grid grid-cols-2 gap-3">

@@ -11,12 +11,15 @@ import {
     DeleteMessageCommand,
 } from '@aws-sdk/client-sqs';
 
+import { neogma } from '@instance';
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
+import { statusListsFastifyPlugin } from './status-lists';
 import { sendNotification } from '@helpers/notifications.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
+import { maybeAutoSeedSkillFrameworks } from './seed/seedSkillFrameworks';
 import { LCNNotificationValidator } from '@learncard/types';
 
 const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
@@ -105,12 +108,26 @@ server.get('/docs', (_request, reply) => {
 
 server.register(didFastifyPlugin);
 server.register(skillsViewerFastifyPlugin);
+server.register(statusListsFastifyPlugin);
 
 (async () => {
     try {
         console.log('Server starting on port ', process.env.PORT || 3000);
         await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
-        await startSkillEmbeddingBackfill();
+
+        try {
+            await maybeAutoSeedSkillFrameworks(neogma.queryRunner.run.bind(neogma.queryRunner), {
+                log: console,
+            });
+        } catch (error) {
+            console.error('Skill framework auto-bootstrap failed', error);
+        }
+
+        try {
+            await startSkillEmbeddingBackfill();
+        } catch (error) {
+            console.error('Skill embedding backfill failed', error);
+        }
     } catch (err) {
         console.error(err);
         process.exit(1);

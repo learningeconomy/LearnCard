@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('native-sssstorage');
 /**
  * Native SSS Device Share Storage
  *
@@ -91,19 +93,19 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         const db = sqliteStore.get.db();
 
         if (!db) {
-            console.warn('[NativeSSSStorage] No SQLite DB available, falling back to no-op');
+            log.warn('[NativeSSSStorage] No SQLite DB available, falling back to no-op');
             return;
         }
 
         try {
             await db.open();
 
-            await db.run(
-                `INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`,
-                [shareId, share]
-            );
+            await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
+                shareId,
+                share,
+            ]);
         } catch (e) {
-            console.error('[NativeSSSStorage] storeDeviceShare failed', e);
+            log.error('[NativeSSSStorage] storeDeviceShare failed', e);
         } finally {
             try {
                 if ((await db?.isDBOpen())?.result) await db?.close();
@@ -122,16 +124,15 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         try {
             await db.open();
 
-            const res = await db.query(
-                `SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`,
-                [shareId]
-            );
+            const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
+                shareId,
+            ]);
 
             const share = res?.values?.[0]?.share ?? null;
 
             return typeof share === 'string' && share.length > 0 ? share : null;
         } catch (e) {
-            console.warn('[NativeSSSStorage] getDeviceShare failed', e);
+            log.warn('[NativeSSSStorage] getDeviceShare failed', e);
             return null;
         } finally {
             try {
@@ -160,7 +161,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
                 tableEnsured = false;
             }
         } catch (e) {
-            console.warn('[NativeSSSStorage] clearAllShares failed', e);
+            log.warn('[NativeSSSStorage] clearAllShares failed', e);
         } finally {
             try {
                 if ((await db?.isDBOpen())?.result) await db?.close();
@@ -175,19 +176,19 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         const db = sqliteStore.get.db();
 
         if (!db) {
-            console.warn('[NativeSSSStorage] No SQLite DB available, falling back to no-op');
+            log.warn('[NativeSSSStorage] No SQLite DB available, falling back to no-op');
             return;
         }
 
         try {
             await db.open();
 
-            await db.run(
-                `INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`,
-                [versionId, String(version)]
-            );
+            await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
+                versionId,
+                String(version),
+            ]);
         } catch (e) {
-            console.error('[NativeSSSStorage] storeShareVersion failed', e);
+            log.error('[NativeSSSStorage] storeShareVersion failed', e);
         } finally {
             try {
                 if ((await db?.isDBOpen())?.result) await db?.close();
@@ -206,10 +207,9 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         try {
             await db.open();
 
-            const res = await db.query(
-                `SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`,
-                [versionId]
-            );
+            const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
+                versionId,
+            ]);
 
             const raw = res?.values?.[0]?.share ?? null;
 
@@ -219,7 +219,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
 
             return Number.isFinite(parsed) ? parsed : null;
         } catch (e) {
-            console.warn('[NativeSSSStorage] getShareVersion failed', e);
+            log.warn('[NativeSSSStorage] getShareVersion failed', e);
             return null;
         } finally {
             try {
@@ -248,9 +248,10 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
                 if (row.id.endsWith(':version')) continue;
 
                 const share = row.share;
-                const preview = share.length > 16
-                    ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
-                    : share;
+                const preview =
+                    share.length > 16
+                        ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
+                        : share;
 
                 // Look up companion version
                 const versionRow = rows.find(r => r.id === `${row.id}:version`);
@@ -265,7 +266,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
 
             return entries;
         } catch (e) {
-            console.warn('[NativeSSSStorage] listAllShares failed', e);
+            log.warn('[NativeSSSStorage] listAllShares failed', e);
             return [];
         } finally {
             try {
@@ -287,7 +288,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
             await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [`${id}:version`]);
         } catch (e) {
-            console.warn('[NativeSSSStorage] deleteShare failed', e);
+            log.warn('[NativeSSSStorage] deleteShare failed', e);
         } finally {
             try {
                 if ((await db?.isDBOpen())?.result) await db?.close();

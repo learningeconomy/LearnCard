@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-upload-file');
 
 import {
     checklistStore,
@@ -46,10 +48,7 @@ const TYPE_LABEL: Record<UploadTypesEnum, string> = {
     [UploadTypesEnum.RawVC]: 'Credential',
 };
 
-const formatTypeLabel = (
-    type: UploadTypesEnum,
-    { plural = false }: { plural?: boolean } = {}
-) => {
+const formatTypeLabel = (type: UploadTypesEnum, { plural = false }: { plural?: boolean } = {}) => {
     const base = TYPE_LABEL[type] ?? type;
     return plural ? `${base}s` : base;
 };
@@ -137,7 +136,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [parsedCredentials, setParsedCredentials] = useState<Array<{ vc: any; metadata?: { name?: string; category?: string } }>>([]);
+    const [parsedCredentials, setParsedCredentials] = useState<
+        Array<{ vc: any; metadata?: { name?: string; category?: string } }>
+    >([]);
 
     const fetchNewContractCredentials = () =>
         queryClient.refetchQueries({
@@ -168,7 +169,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { fileInfo, rawArtifactCredential };
         } catch (error) {
             setIsUploading(false);
-            console.log('getFile::error', error);
+            log.info('getFile::error', error);
         }
     };
 
@@ -202,7 +203,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { fileInfos, rawArtifactCredentials };
         } catch (error) {
             setIsUploading(false);
-            console.log('getFiles::error', error);
+            log.info('getFiles::error', error);
         }
     };
 
@@ -254,12 +255,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                                 throw new Error(result.error || 'Failed to upload file');
                             }
                         } catch (err) {
-                            console.error('Error uploading file:', err);
+                            log.error('Error uploading file:', err);
                             throw err;
                         }
                     } catch (innerErr) {
                         failedUploads++;
-                        console.error('❌ Error processing file:', innerErr);
+                        log.error('❌ Error processing file:', innerErr);
                         return null;
                     }
                 })
@@ -278,21 +279,15 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     const fileList = formatFileNameList(filenames);
                     const categoryList = formatCategoryList(categories);
                     if (successCount === 1) {
-                        presentToast(
-                            `Successfully added to ${categoryList}.`,
-                            {
-                                title: `Credential ${fileList} Successfully Added`,
-                                ...SUCCESS_TOAST_OPTIONS,
-                            }
-                        );
+                        presentToast(`Successfully added to ${categoryList}.`, {
+                            title: `Credential ${fileList} Successfully Added`,
+                            ...SUCCESS_TOAST_OPTIONS,
+                        });
                     } else {
-                        presentToast(
-                            `Successfully added to ${categoryList}.`,
-                            {
-                                title: `${successCount} credentials added from ${fileList}`,
-                                ...SUCCESS_TOAST_OPTIONS,
-                            }
-                        );
+                        presentToast(`Successfully added to ${categoryList}.`, {
+                            title: `${successCount} credentials added from ${fileList}`,
+                            ...SUCCESS_TOAST_OPTIONS,
+                        });
                     }
                 } else if (failedUploads === totalUploads) {
                     presentToast(`All uploads failed. Please try again.`, {
@@ -318,9 +313,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 }
             }, TOAST_PAUSE_MS);
 
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             setIsUploading(false);
             checklistStore.set.updateIsParsing(uploadType, false);
 
@@ -343,7 +336,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     duration: 5000,
                 });
             }, 500);
-            console.error('getJsonFiles::error', error);
+            log.error('getJsonFiles::error', error);
         }
     };
 
@@ -380,20 +373,22 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { vc, credentialUri };
         } catch (error) {
             setIsSaving(false);
-            console.log('saveFile::error', error);
+            log.info('saveFile::error', error);
         }
     };
 
     /**
      * Parse a single file without storing anything. Call storeSelectedCredentials after user review.
      */
-    const fetchParsedCredentials = async (fileType: UploadTypesEnum): Promise<Array<{ vc: any; metadata?: any }>> => {
+    const fetchParsedCredentials = async (
+        fileType: UploadTypesEnum
+    ): Promise<Array<{ vc: any; metadata?: any }>> => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
             const wallet = await initWallet();
             const did = wallet?.id?.did();
             if (!base64Data) {
-                console.warn('fetchParsedCredentials: no file data, call getFile() first');
+                log.warn('fetchParsedCredentials: no file data, call getFile() first');
                 checklistStore.set.updateIsParsing(fileType, false);
                 return [];
             }
@@ -404,7 +399,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return results;
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('fetchParsedCredentials::error', error);
+            log.error('fetchParsedCredentials::error', error);
             throw error;
         }
     };
@@ -412,7 +407,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     /**
      * Parse multiple files (e.g. transcripts) without storing anything.
      */
-    const fetchParsedCredentialsFromFiles = async (fileType: UploadTypesEnum): Promise<Array<{ vc: any; metadata?: any }>> => {
+    const fetchParsedCredentialsFromFiles = async (
+        fileType: UploadTypesEnum
+    ): Promise<Array<{ vc: any; metadata?: any }>> => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
             const wallet = await initWallet();
@@ -421,7 +418,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const allVcs: Array<{ vc: any; metadata?: any }> = [];
             for (const rawVC of rawArtifactCredentials) {
-                const vcs = await uploadFile({ did, file: rawVC?.rawArtifact?.data ?? '', fileType });
+                const vcs = await uploadFile({
+                    did,
+                    file: rawVC?.rawArtifact?.data ?? '',
+                    fileType,
+                });
                 allVcs.push(...(vcs?.vcs ?? []));
             }
 
@@ -430,7 +431,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return allVcs;
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('fetchParsedCredentialsFromFiles::error', error);
+            log.error('fetchParsedCredentialsFromFiles::error', error);
             throw error;
         }
     };
@@ -462,8 +463,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const issuedVCs = await Promise.all(
                     selectedVcs.map(async vc => {
                         const issuedVc = await wallet.invoke.issueCredential(vc);
-                        const { credentialUri: uri, category } =
-                            await storeAndAddVCToWallet(issuedVc);
+                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
+                            issuedVc
+                        );
                         return { uri, category };
                     })
                 );
@@ -482,9 +484,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             }
 
             // Background sync — don't block toast on these
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             syncAll.mutate();
             aiInsightMutation.mutate();
             setParsedCredentials([]);
@@ -502,24 +502,25 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileCount > 1 ? 'these files' : 'this file'}.`,
+                        `No credentials could be extracted from ${
+                            fileCount > 1 ? 'these files' : 'this file'
+                        }.`,
                         {
                             title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
                 } else {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`Successfully added to ${categoryList}.`, {
+                        title: `${totalCredentials} credential${
+                            totalCredentials > 1 ? 's' : ''
+                        } parsed from ${fileList}`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
-            console.error('storeSelectedCredentials::error', error);
+            log.error('storeSelectedCredentials::error', error);
             setTimeout(() => {
                 presentToast(`Something went wrong saving your credentials.`, {
                     title: 'Error',
@@ -548,23 +549,25 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const issuedVCs = await Promise.all(
                     vcs.vcs.map(async ({ vc }) => {
                         const issuedVc = await wallet.invoke.issueCredential(vc);
-                        const { credentialUri: uri, category } =
-                            await storeAndAddVCToWallet(issuedVc);
+                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
+                            issuedVc
+                        );
                         return { uri, category };
                     })
                 );
 
                 // Group VCs by category and update the store
-                recordsByCategory = issuedVCs.reduce<
-                    Partial<Record<CredentialCategory, string[]>>
-                >((records, { category, uri }) => {
-                    if (!uri) return records;
+                recordsByCategory = issuedVCs.reduce<Partial<Record<CredentialCategory, string[]>>>(
+                    (records, { category, uri }) => {
+                        if (!uri) return records;
 
-                    const key = category;
-                    const existing = records[key] ?? [];
-                    records[key] = [...existing, uri];
-                    return records;
-                }, {});
+                        const key = category;
+                        const existing = records[key] ?? [];
+                        records[key] = [...existing, uri];
+                        return records;
+                    },
+                    {}
+                );
 
                 // Update the store with the new credentials
                 newCredsStore.set.addNewCreds(recordsByCategory);
@@ -574,9 +577,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const categories = Object.keys(recordsByCategory);
 
             // Background sync — don't block toast on these
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             syncAll.mutate();
             aiInsightMutation.mutate();
             checklistStore.set.updateIsParsing(fileType, false);
@@ -589,26 +590,22 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             setTimeout(() => {
                 if (totalCredentials === 0) {
-                    presentToast(
-                        `No credentials could be extracted from this file.`,
-                        {
-                            title: `${typeLabel} ${fileList} saved`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`No credentials could be extracted from this file.`, {
+                        title: `${typeLabel} ${fileList} saved`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 } else {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`Successfully added to ${categoryList}.`, {
+                        title: `${totalCredentials} credential${
+                            totalCredentials > 1 ? 's' : ''
+                        } parsed from ${fileList}`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('handleSaveResume::error', error);
+            log.error('handleSaveResume::error', error);
             setTimeout(() => {
                 presentToast(`Something went wrong uploading your ${fileType}.`, {
                     title: 'Error',
@@ -687,8 +684,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
                         // Merge into aggregate for the toast
                         for (const [cat, uris] of Object.entries(recordsByCategory)) {
-                            const existing = aggregateRecordsByCategory[cat as CredentialCategory] ?? [];
-                            aggregateRecordsByCategory[cat as CredentialCategory] = [...existing, ...uris];
+                            const existing =
+                                aggregateRecordsByCategory[cat as CredentialCategory] ?? [];
+                            aggregateRecordsByCategory[cat as CredentialCategory] = [
+                                ...existing,
+                                ...uris,
+                            ];
                         }
                     } else if (fname) {
                         filenamesWithoutCreds.push(fname);
@@ -696,7 +697,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
                     onFileSettled();
                 } catch (error) {
-                    console.error('Error processing file:', error);
+                    log.error('Error processing file:', error);
                     onFileSettled();
                     // Continue with next file even if one fails
                 }
@@ -709,11 +710,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             // Background sync — don't block toast on these
             fetchNewContractCredentials().catch(err =>
-                console.error('fetchNewContractCredentials failed', err)
+                log.error('fetchNewContractCredentials failed', err)
             );
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             syncAll.mutate();
             aiInsightMutation.mutate();
             closeModal();
@@ -728,7 +727,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileCount > 1 ? 'these files' : 'this file'}.`,
+                        `No credentials could be extracted from ${
+                            fileCount > 1 ? 'these files' : 'this file'
+                        }.`,
                         {
                             title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
@@ -739,17 +740,16 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         filenamesWithoutCreds.length > 0
                             ? ` No credentials were parsed from ${fileListWithoutCreds}.`
                             : '';
-                    presentToast(
-                        `Successfully added to ${categoryList}.${tail}`,
-                        {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileListWithCreds}`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`Successfully added to ${categoryList}.${tail}`, {
+                        title: `${totalCredentials} credential${
+                            totalCredentials > 1 ? 's' : ''
+                        } parsed from ${fileListWithCreds}`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
-            console.error('Error in parseFiles:', error);
+            log.error('Error in parseFiles:', error);
             checklistStore.set.updateIsParsing(fileType, false);
             setTimeout(() => {
                 presentToast(`Something went wrong uploading your ${fileType}.`, {

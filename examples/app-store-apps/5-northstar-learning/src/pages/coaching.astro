@@ -1,0 +1,265 @@
+---
+/**
+ * /coaching — Northstar AI Coach.
+ *
+ * A decorative AI-chat mock with pre-canned messages. The "AI" isn't
+ * real — it's a scripted conversation that reveals one message at a
+ * time so the page reads like a coaching session without any LLM
+ * dependency. Once the script finishes, the "Finish drill" button
+ * enables; clicking fires `issueCoachingBadge`, which signs an
+ * OBv3-shaped VC whose `credentialSubject.achievement.id` is the
+ * exact URL the pathway's node-3 `ob-achievement` termination reads.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="AI Coach" activeNav="coaching">
+    <div class="container container-narrow">
+        <p class="page-eyebrow">Northstar · AI Coach</p>
+
+        <h1 class="page-title">Gap-close drill</h1>
+
+        <p class="page-lede">
+            Based on your practice exams, your AI coach picked three weak areas
+            to drill. Talk through each one &mdash; when you&rsquo;re done the coach
+            issues an Open Badge your pathway can recognise.
+        </p>
+
+        <div
+            class="banner is-info"
+            id="status-banner"
+        >
+            <span class="banner-icon" aria-hidden="true">i</span>
+            <span id="status-text">
+                Tap <strong>Next</strong> to move through the drill. The coach will let you know when you&rsquo;re done.
+            </span>
+        </div>
+
+        <div class="chat" id="chat" aria-live="polite">
+            <div class="chat-bubble is-ai">
+                <strong>Northstar AI Coach</strong>
+                <div style="margin-top: 4px;">
+                    Hey &mdash; looked at your practice scores. You&rsquo;re solid on compute and storage,
+                    but we should drill <em>IAM cross-account roles</em>, <em>VPC peering</em>,
+                    and the <em>cost explorer</em>. Ready?
+                </div>
+                <div class="chat-skill-chips">
+                    <span class="chat-skill-chip">IAM</span>
+                    <span class="chat-skill-chip">VPC</span>
+                    <span class="chat-skill-chip">Cost</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                id="next-btn"
+                style="flex: 1;"
+            >
+                Next
+            </button>
+            <button
+                type="button"
+                class="btn btn-success"
+                id="finish-btn"
+                style="flex: 1;"
+                disabled
+            >
+                <span id="finish-label">Finish the drill first</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        import { actions } from 'astro:actions';
+        import { createPartnerConnect } from '@learncard/partner-connect';
+
+        // Plain JS — Astro inline scripts get pre-scanned by esbuild
+        // in JS mode; TS-only syntax makes the scanner bail and the
+        // whole script fails to load (click handlers never bind).
+        //
+        // Each page creates its OWN SDK instance rather than reading
+        // window.__northstar — page scripts and the BaseLayout's
+        // script load as independent modules in document order, and
+        // the page often runs first, so the global isn't set yet and
+        // any read on it throws (wiping every handler below).
+        const learnCard = createPartnerConnect();
+
+        // -- Scripted conversation ---------------------------------------
+
+        // Scripted sequence. Deliberately short — the point is that
+        // the drill ends with a fireable "Finish drill" button, not
+        // that the page teaches AWS. Real copy would load from the
+        // coaching backend; for the demo we hand-author it so every
+        // screenshot reads the same.
+        const script = [
+            {
+                role: 'user',
+                text: 'Let’s start with IAM cross-account roles. I keep confusing `AssumeRole` trust vs permissions policies.',
+            },
+            {
+                role: 'ai',
+                text: 'Common trap. Think of it as two doors: the *trust* policy sits on the role and says "who can walk up to me". The *permissions* policy sits on the role too and says "what they can do once inside". Exam loves to swap them. Quick check?',
+            },
+            {
+                role: 'user',
+                text: 'Yeah, give me one.',
+            },
+            {
+                role: 'ai',
+                text: 'Account A has a role with a trust policy naming Account B\'s user Alice. Alice calls AssumeRole. Does she need any IAM permission on *her* side too?',
+            },
+            {
+                role: 'user',
+                text: 'Yes — Alice needs `sts:AssumeRole` on the target role, even though the trust side names her.',
+            },
+            {
+                role: 'ai',
+                text: 'Nailed it. Both sides have to consent. Let\'s move to VPC peering — tell me what *doesn\'t* work across a peering connection.',
+            },
+            {
+                role: 'user',
+                text: 'No transitive routing. If A peers with B and B peers with C, A still can\'t reach C.',
+            },
+            {
+                role: 'ai',
+                text: 'Right. You\'d need a Transit Gateway for that. Last one — cost explorer. When do the daily line items lag behind reality?',
+            },
+            {
+                role: 'user',
+                text: 'Up to 24 hours for usage, and monthly for some RI/SP items.',
+            },
+            {
+                role: 'ai',
+                text: 'Solid session. You\'re in cert-ready territory on all three topics. Hit **Finish drill** below and I\'ll issue the Open Badge to your wallet.',
+                chips: ['IAM', 'VPC', 'Cost'],
+            },
+        ];
+
+        const chat = document.getElementById('chat');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const finishLabel = document.getElementById('finish-label');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+
+        let cursor = 0;
+
+        const appendTurn = (turn) => {
+            if (!chat) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble is-${turn.role}`;
+            const textEl = document.createElement('div');
+
+            // Intentionally render as markdown-ish — `**bold**` and
+            // `*em*` → HTML. Tiny helper to avoid pulling in a parser
+            // just for two inline styles in the scripted copy.
+            const safe = turn.text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            textEl.innerHTML = safe;
+            bubble.appendChild(textEl);
+
+            if (turn.chips?.length) {
+                const chipRow = document.createElement('div');
+                chipRow.className = 'chat-skill-chips';
+                turn.chips.forEach(c => {
+                    const chip = document.createElement('span');
+                    chip.className = 'chat-skill-chip';
+                    chip.textContent = c;
+                    chipRow.appendChild(chip);
+                });
+                bubble.appendChild(chipRow);
+            }
+
+            chat.appendChild(bubble);
+            // Scroll the newest bubble into view inside the page.
+            bubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
+
+        const advance = () => {
+            if (cursor >= script.length) {
+                // Drill complete — unlock the finish button, retire
+                // the Next button.
+                if (nextBtn) {
+                    nextBtn.disabled = true;
+                    nextBtn.textContent = '\u2713 Drill complete';
+                }
+                if (finishBtn && finishLabel) {
+                    finishBtn.disabled = false;
+                    finishLabel.textContent = 'Finish drill';
+                }
+                return;
+            }
+            appendTurn(script[cursor]);
+            cursor += 1;
+            if (cursor >= script.length) {
+                // Schedule one more tick so the unlock state flips
+                // *after* the final bubble is painted.
+                window.setTimeout(advance, 300);
+            }
+        };
+
+        nextBtn?.addEventListener('click', () => advance());
+
+        // -- Finish (issuance) flow --------------------------------------
+
+        const setStatus = (kind, html) => {
+            if (!statusBanner || !statusText) return;
+            statusBanner.classList.remove('is-info', 'is-success', 'is-error');
+            statusBanner.classList.add(`is-${kind}`);
+            statusText.innerHTML = html;
+        };
+
+        finishBtn?.addEventListener('click', async () => {
+            if (!finishBtn || !finishLabel) return;
+
+            finishBtn.disabled = true;
+            finishLabel.innerHTML =
+                '<span class="spinner" aria-hidden="true"></span> Issuing your Open Badge&hellip;';
+
+            try {
+                const identity = await learnCard.requestIdentity();
+                const learnerDid = identity?.user?.did;
+
+                if (!learnerDid) {
+                    throw new Error('Could not read your wallet DID. Is LearnCard connected?');
+                }
+
+                const result = await actions.issueCoachingBadge({ learnerDid });
+
+                if (result.error || !result.data?.credential) {
+                    throw new Error('Northstar failed to sign your coaching Open Badge.');
+                }
+
+                await learnCard.sendCredential(result.data.credential);
+
+                setStatus(
+                    'success',
+                    '<strong>Open Badge sent!</strong> Your gap-close drill achievement is in your wallet. Your pathway should recognise it and unlock the next step.',
+                );
+                finishLabel.textContent = '\u2713 Badge sent';
+                window.dispatchEvent(new CustomEvent('northstar:auth-changed'));
+            } catch (err) {
+                console.error('[coaching] finish failed:', err);
+                setStatus(
+                    'error',
+                    `Something went wrong: ${
+                        err instanceof Error ? err.message : 'unknown error'
+                    }. Please try again.`,
+                );
+                finishBtn.disabled = false;
+                finishLabel.textContent = 'Finish drill';
+            }
+        });
+    </script>
+</BaseLayout>

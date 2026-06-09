@@ -29,6 +29,7 @@ import {
     ConsentFlowDataQuery,
     ConsentFlowTermsQuery,
     ConsentFlowTransactionsQuery,
+    HolderExportMetadata,
     LCNProfile,
 } from '@learncard/types';
 import { FlatBoostType } from 'types/boost';
@@ -38,6 +39,7 @@ import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/co
 import { ProfileType } from 'types/profile';
 import { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -303,6 +305,119 @@ export const getConsentedContractsForProfile = async (
     }));
 };
 
+const HOLDER_EXPORT_PAGE_SIZE = 100;
+const HOLDER_EXPORT_MAX_CONSENT_RECORDS = 500;
+const HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD = 500;
+
+export const getHolderExportMetadataForProfile = async (
+    profile: ProfileType,
+    domain: string
+): Promise<HolderExportMetadata> => {
+    const consentRecords: HolderExportMetadata['consentRecords'] = [];
+    const warnings: string[] = [];
+    let cursor: string | undefined;
+    let truncated = false;
+
+    while (consentRecords.length < HOLDER_EXPORT_MAX_CONSENT_RECORDS) {
+        const remainingRecords = HOLDER_EXPORT_MAX_CONSENT_RECORDS - consentRecords.length;
+        const pageLimit = Math.min(HOLDER_EXPORT_PAGE_SIZE, remainingRecords);
+        const records = await getConsentedContractsForProfile(profile, {
+            query: {},
+            limit: pageLimit + 1,
+            cursor,
+            domain,
+        });
+        const page = records.slice(0, pageLimit);
+
+        for (const record of page) {
+            const transactions: HolderExportMetadata['consentRecords'][number]['transactions'] = [];
+            let transactionCursor: string | undefined;
+
+            while (transactions.length < HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD) {
+                const remainingTransactions =
+                    HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD - transactions.length;
+                const transactionLimit = Math.min(HOLDER_EXPORT_PAGE_SIZE, remainingTransactions);
+                const transactionResults = await getTransactionsForTerms(record.terms.id, {
+                    query: {},
+                    limit: transactionLimit + 1,
+                    cursor: transactionCursor,
+                });
+                const transactionPage = transactionResults.slice(0, transactionLimit);
+
+                transactions.push(
+                    ...transactionPage.map(transaction => {
+                        const { credentials, ...rest } = transaction;
+
+                        return {
+                            ...rest,
+                            uris: credentials.map(credential =>
+                                getCredentialUri(credential.id, domain)
+                            ),
+                        };
+                    })
+                );
+
+                transactionCursor =
+                    transactionResults.length > transactionLimit
+                        ? transactionPage.at(-1)?.date
+                        : undefined;
+
+                if (!transactionCursor) break;
+            }
+
+            if (transactionCursor) {
+                truncated = true;
+                warnings.push(
+                    `Transactions for terms ${record.terms.id} were capped at ${HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD}`
+                );
+            }
+
+            consentRecords.push({
+                termsUri: constructUri('terms', record.terms.id, domain),
+                status: record.terms.status,
+                contract: {
+                    contract: record.contract.contract,
+                    name: record.contract.name,
+                    subtitle: record.contract.subtitle,
+                    description: record.contract.description,
+                    reasonForAccessing: record.contract.reasonForAccessing,
+                    needsGuardianConsent: record.contract.needsGuardianConsent,
+                    redirectUrl: record.contract.redirectUrl,
+                    frontDoorBoostUri: record.contract.frontDoorBoostUri,
+                    image: record.contract.image,
+                    createdAt: record.contract.createdAt,
+                    updatedAt: record.contract.updatedAt,
+                    uri: constructUri('contract', record.contract.id, domain),
+                    owner: record.owner,
+                    ...(record.contract.expiresAt ? { expiresAt: record.contract.expiresAt } : {}),
+                    autoBoosts: record.autoBoosts,
+                },
+                terms: record.terms.terms,
+                transactions,
+            });
+        }
+
+        cursor = records.length > pageLimit ? page.at(-1)?.terms.updatedAt : undefined;
+
+        if (!cursor) break;
+    }
+
+    if (cursor) {
+        truncated = true;
+        warnings.push(`Consent records were capped at ${HOLDER_EXPORT_MAX_CONSENT_RECORDS}`);
+    }
+
+    return {
+        consentRecords,
+        truncated,
+        warnings,
+        limits: {
+            maxConsentRecords: HOLDER_EXPORT_MAX_CONSENT_RECORDS,
+            maxTransactionsPerConsentRecord: HOLDER_EXPORT_MAX_TRANSACTIONS_PER_CONSENT_RECORD,
+        },
+    };
+};
+
 export const getConsentedDataForProfile = async (
     profileId: string,
     { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
@@ -413,8 +528,9 @@ export const getConsentedDataBetweenProfiles = async (
 ): Promise<ConsentFlowContractDataForDid[]> => {
     const { id, ...params } = query;
     const convertedContractQuery = id ? convertObjectRegExpToNeo4j({ id }) : {};
-    const { whereClause: contractWhereClause, params: contractQueryParams } = buildWhereForQueryBuilder('contract', convertedContractQuery as any);
-    
+    const { whereClause: contractWhereClause, params: contractQueryParams } =
+        buildWhereForQueryBuilder('contract', convertedContractQuery as any);
+
     const _dbQuery = new QueryBuilder(
         new BindParam({
             params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
@@ -497,8 +613,11 @@ export const getTransactionsForTerms = async (
     }: { query?: ConsentFlowTransactionsQuery; limit: number; cursor?: string }
 ): Promise<(DbTransactionType & { credentials: CredentialType[] })[]> => {
     const convertedQuery = flattenObject(matchQuery);
-    const { whereClause, params: transactionQueryParams } = buildWhereForQueryBuilder('transaction', convertedQuery as any);
-    
+    const { whereClause, params: transactionQueryParams } = buildWhereForQueryBuilder(
+        'transaction',
+        convertedQuery as any
+    );
+
     const query = new QueryBuilder(new BindParam({ cursor, ...transactionQueryParams }))
         .match({
             related: [
@@ -507,11 +626,7 @@ export const getTransactionsForTerms = async (
                 { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
-        .where(
-            `${whereClause}${
-                cursor ? ' AND transaction.date < $cursor' : ''
-            }`
-        )
+        .where(`${whereClause}${cursor ? ' AND transaction.date < $cursor' : ''}`)
         .with('transaction')
         .match({
             optional: true,

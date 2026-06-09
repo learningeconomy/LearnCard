@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-flow-testing-tab');
 /**
  * ConsentFlowTestingTab - Test consent redirect and credential sending
  *
@@ -46,7 +48,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
-    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
+        integration.id,
+        basicTemplates
+    );
 
     const [testDid, setTestDid] = useState('');
     const [testStatus, setTestStatus] = useState<TestStatus>('idle');
@@ -59,10 +64,12 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
     // Pull saved config from integration's guide state
     const guideState = integration?.guideState as GuideState | undefined;
-    const savedConfig = guideState?.config?.consentFlowConfig as {
-        contractUri?: string;
-        redirectUrl?: string;
-    } | undefined;
+    const savedConfig = guideState?.config?.consentFlowConfig as
+        | {
+              contractUri?: string;
+              redirectUrl?: string;
+          }
+        | undefined;
 
     const contractUri = savedConfig?.contractUri || '';
     const redirectUrl = savedConfig?.redirectUrl || '';
@@ -75,9 +82,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     }, [contractUri, redirectUrl]);
 
     // Get sendable templates
-    const sendableTemplates = useMemo(() =>
-        templates.filter(t => t.boostUri), [templates]
-    );
+    const sendableTemplates = useMemo(() => templates.filter(t => t.boostUri), [templates]);
 
     const selectedTemplate = useMemo(() => {
         if (selectedTemplateId) return sendableTemplates.find(t => t.id === selectedTemplateId);
@@ -113,7 +118,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
             presentToast('Test credential sent!', { type: ToastTypeEnum.Success });
         } catch (err) {
-            console.error('Test send failed:', err);
+            log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
                 error: err instanceof Error ? err.message : 'Failed to send credential',
@@ -146,8 +151,12 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </div>
 
                     <div>
-                        <h3 className="font-medium text-gray-800 text-sm">Step 1: Test Consent Redirect</h3>
-                        <p className="text-xs text-gray-500">Open the consent flow and grant consent as a test user</p>
+                        <h3 className="font-medium text-gray-800 text-sm">
+                            Step 1: Test Consent Redirect
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                            Open the consent flow and grant consent as a test user
+                        </p>
                     </div>
                 </div>
 
@@ -171,7 +180,8 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Missing configuration:</strong> Complete the Build guide to set your contract URI and callback URL.
+                            <strong>Missing configuration:</strong> Complete the Build guide to set
+                            your contract URI and callback URL.
                         </p>
                     </div>
                 )}
@@ -185,8 +195,12 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </div>
 
                     <div>
-                        <h3 className="font-medium text-gray-800 text-sm">Step 2: Verify Callback Parameters</h3>
-                        <p className="text-xs text-gray-500">After consent, check that your callback received these parameters</p>
+                        <h3 className="font-medium text-gray-800 text-sm">
+                            Step 2: Verify Callback Parameters
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                            After consent, check that your callback received these parameters
+                        </p>
                     </div>
                 </div>
 
@@ -194,14 +208,16 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <code className="text-xs font-semibold text-gray-700">did</code>
                         <p className="text-xs text-gray-500 mt-1">
-                            The user&apos;s decentralized identifier. Store this to send them credentials later.
+                            The user&apos;s decentralized identifier. Store this to send them
+                            credentials later.
                         </p>
                     </div>
 
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <code className="text-xs font-semibold text-gray-700">vp</code>
                         <p className="text-xs text-gray-500 mt-1">
-                            A VP JWT proving consent. Verify this server-side to confirm authorization.
+                            A VP JWT proving consent. Verify this server-side to confirm
+                            authorization.
                         </p>
                     </div>
                 </div>
@@ -209,7 +225,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 <CodeOutputPanel
                     title="Example callback your server receives"
                     snippets={{
-                        curl: `GET ${redirectUrl || 'https://your-app.com/api/learncard/callback'}?did=did:web:...&vp=eyJhbGciOiJFZDI1NTE5...`,
+                        curl: `GET ${
+                            redirectUrl || 'https://your-app.com/api/learncard/callback'
+                        }?did=did:web:...&vp=eyJhbGciOiJFZDI1NTE5...`,
                     }}
                 />
             </div>
@@ -222,22 +240,29 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </div>
 
                     <div>
-                        <h3 className="font-medium text-gray-800 text-sm">Step 3: Send Test Credential</h3>
-                        <p className="text-xs text-gray-500">Send a credential to the DID you received from the callback</p>
+                        <h3 className="font-medium text-gray-800 text-sm">
+                            Step 3: Send Test Credential
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                            Send a credential to the DID you received from the callback
+                        </p>
                     </div>
                 </div>
 
                 {sendableTemplates.length === 0 ? (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>No saved templates:</strong> Create and save a credential template in the Templates tab first.
+                            <strong>No saved templates:</strong> Create and save a credential
+                            template in the Templates tab first.
                         </p>
                     </div>
                 ) : (
                     <>
                         {/* Template Selector */}
                         <div className="space-y-2">
-                            <label className="block text-xs font-medium text-gray-600">Template</label>
+                            <label className="block text-xs font-medium text-gray-600">
+                                Template
+                            </label>
                             <div className="relative">
                                 <button
                                     onClick={() => setShowTemplateSelector(!showTemplateSelector)}
@@ -249,7 +274,11 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                         {selectedTemplate?.name || 'Select a template'}
                                     </span>
 
-                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showTemplateSelector ? 'rotate-180' : ''}`} />
+                                    <ChevronDown
+                                        className={`w-4 h-4 text-gray-400 transition-transform ${
+                                            showTemplateSelector ? 'rotate-180' : ''
+                                        }`}
+                                    />
                                 </button>
 
                                 {showTemplateSelector && (
@@ -257,14 +286,21 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                         {sendableTemplates.map(t => (
                                             <button
                                                 key={t.id}
-                                                onClick={() => { setSelectedTemplateId(t.id); setShowTemplateSelector(false); }}
+                                                onClick={() => {
+                                                    setSelectedTemplateId(t.id);
+                                                    setShowTemplateSelector(false);
+                                                }}
                                                 className={`w-full flex items-center gap-2 p-3 text-sm hover:bg-gray-50 ${
                                                     selectedTemplateId === t.id ? 'bg-cyan-50' : ''
                                                 }`}
                                             >
                                                 <Award className="w-4 h-4 text-gray-400" />
-                                                <span className="flex-1 text-left text-gray-800">{t.name}</span>
-                                                {selectedTemplateId === t.id && <CheckCircle2 className="w-4 h-4 text-cyan-600" />}
+                                                <span className="flex-1 text-left text-gray-800">
+                                                    {t.name}
+                                                </span>
+                                                {selectedTemplateId === t.id && (
+                                                    <CheckCircle2 className="w-4 h-4 text-cyan-600" />
+                                                )}
                                             </button>
                                         ))}
                                     </div>
@@ -275,13 +311,14 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         {/* DID Input */}
                         <div className="space-y-2">
                             <label className="block text-xs font-medium text-gray-600">
-                                Recipient DID <span className="text-gray-400">(from consent callback)</span>
+                                Recipient DID{' '}
+                                <span className="text-gray-400">(from consent callback)</span>
                             </label>
 
                             <input
                                 type="text"
                                 value={testDid}
-                                onChange={(e) => setTestDid(e.target.value)}
+                                onChange={e => setTestDid(e.target.value)}
                                 placeholder="did:web:... or did:key:..."
                                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                             />
@@ -302,7 +339,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         {testStatus === 'sending' && (
                             <div className="flex items-center justify-center gap-3 px-6 py-3 bg-gray-100 rounded-xl">
                                 <Loader2 className="w-5 h-5 text-cyan-600 animate-spin" />
-                                <span className="text-gray-700 font-medium text-sm">Sending credential...</span>
+                                <span className="text-gray-700 font-medium text-sm">
+                                    Sending credential...
+                                </span>
                             </div>
                         )}
 
@@ -311,7 +350,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                                     <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                        <p className="font-medium text-emerald-800 text-sm">Credential sent!</p>
+                                        <p className="font-medium text-emerald-800 text-sm">
+                                            Credential sent!
+                                        </p>
                                         <p className="text-xs text-emerald-700 mt-1">
                                             The recipient should see it in their LearnCard wallet.
                                         </p>
@@ -324,7 +365,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 </div>
 
                                 <button
-                                    onClick={() => { setTestStatus('idle'); setTestResult(null); }}
+                                    onClick={() => {
+                                        setTestStatus('idle');
+                                        setTestResult(null);
+                                    }}
                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
@@ -338,13 +382,20 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
                                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                        <p className="font-medium text-red-800 text-sm">Send failed</p>
-                                        <p className="text-xs text-red-700 mt-1">{testResult.error}</p>
+                                        <p className="font-medium text-red-800 text-sm">
+                                            Send failed
+                                        </p>
+                                        <p className="text-xs text-red-700 mt-1">
+                                            {testResult.error}
+                                        </p>
                                     </div>
                                 </div>
 
                                 <button
-                                    onClick={() => { setTestStatus('idle'); setTestResult(null); }}
+                                    onClick={() => {
+                                        setTestStatus('idle');
+                                        setTestResult(null);
+                                    }}
                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
@@ -366,15 +417,24 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
-                        <span>Use a second account to test the consent flow as a real user would experience it</span>
+                        <span>
+                            Use a second account to test the consent flow as a real user would
+                            experience it
+                        </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
-                        <span>Copy the <code className="bg-gray-200 px-1 rounded text-xs">did</code> from your callback logs and paste it above</span>
+                        <span>
+                            Copy the <code className="bg-gray-200 px-1 rounded text-xs">did</code>{' '}
+                            from your callback logs and paste it above
+                        </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
-                        <span>Check the Connections tab after testing to verify the consent was recorded</span>
+                        <span>
+                            Check the Connections tab after testing to verify the consent was
+                            recorded
+                        </span>
                     </li>
                 </ul>
             </div>

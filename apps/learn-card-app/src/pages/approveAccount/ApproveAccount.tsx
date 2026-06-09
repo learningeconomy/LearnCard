@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { IonContent, IonPage, IonSpinner, IonButton } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('approve-account');
 
 import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
@@ -72,7 +74,7 @@ const ApproveAccount: React.FC = () => {
                 if (res?.message) setMessage(res.message);
                 else setMessage('Profile approved successfully.');
             } catch (e: unknown) {
-                console.error('approve-account error', e);
+                log.error('approve-account error', e);
                 setError(toErrorMessage(e));
             } finally {
                 setLoading(false);

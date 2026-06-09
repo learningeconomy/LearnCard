@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-media-preview');
 
 import MediaLoader from './helpers/MediaLoader';
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
@@ -34,7 +36,7 @@ export function getFilestackPreviewUrl(fileUrl: string): string {
 
         return `https://cdn.filestackcontent.com/preview/${handle}`;
     } catch (e) {
-        console.error('Failed to generate Filestack preview URL:', e);
+        log.error('Failed to generate Filestack preview URL:', e);
         return '';
     }
 }
@@ -87,7 +89,7 @@ export const BoostMediaPreview: React.FC<{
             const metadata = await getVideoMetadata(attachment?.url || '');
             setVideoMetaData(metadata);
         } catch (error) {
-            console.error('Failed to get video metadata:', error);
+            log.error('Failed to get video metadata:', error);
         } finally {
             setIsMediaLoading(false);
         }
@@ -99,7 +101,7 @@ export const BoostMediaPreview: React.FC<{
             const url = getFilestackPreviewUrl(attachment?.url || '');
             setDocumentUrl(url);
         } catch (error) {
-            console.error('Failed to get document metadata:', error);
+            log.error('Failed to get document metadata:', error);
         } finally {
             setIsMediaLoading(false);
         }
@@ -273,6 +275,7 @@ export const BoostMediaPreview: React.FC<{
                                 credential={credential}
                                 categoryType={BoostCategoryOptionsEnum.accomplishment}
                                 verificationItems={verifications}
+                                renderMethodCredential={credential}
                                 displayType={DisplayTypeEnum.Media}
                             />
                         )}

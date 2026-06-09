@@ -1,23 +1,26 @@
 {
     "name": "@learncard/didkit-plugin-node",
-    "version": "0.2.13",
+    "version": "0.2.19",
     "description": "Node-native DIDKit plugin for LearnCard (N-API addon wrapper)",
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "files": [
         "dist",
-        "native"
+        "native/Cargo.lock",
+        "native/Cargo.toml",
+        "native/build.rs",
+        "native/src"
     ],
     "napi": {
         "name": "index",
         "triples": {
-            "defaults": true,
+            "defaults": false,
             "additional": [
                 "x86_64-unknown-linux-gnu",
                 "aarch64-unknown-linux-gnu",
-                "x86_64-unknown-linux-musl",
-                "aarch64-unknown-linux-musl"
+                "x86_64-apple-darwin",
+                "aarch64-apple-darwin"
             ]
         }
     },
@@ -26,16 +29,20 @@
         "build:debug": "napi build --platform --cargo-cwd native && tsc -p tsconfig.json",
         "test": "jest --passWithNoTests",
         "artifacts": "napi artifacts",
-        "prepublishOnly": "napi prepublish -t npm"
+        "create-npm-dir": "napi create-npm-dir -t .",
+        "prepublishOnly": "napi prepublish -t npm --skip-gh-release"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
+    "publishConfig": {
+        "access": "public"
+    },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/WeLibraryOS/LearnCard.git"
+        "url": "git+https://github.com/learningeconomy/LearnCard.git"
     },
     "bugs": {
-        "url": "https://github.com/WeLibraryOS/LearnCard/issues"
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
     "dependencies": {
         "@learncard/core": "workspace:*",

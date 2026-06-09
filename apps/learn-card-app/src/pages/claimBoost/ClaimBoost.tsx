@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
+import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import RenderMethodDisplay from '../../components/render-method/RenderMethodDisplay';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import ClaimBoostLoading from './ClaimBoostLoading';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
@@ -29,9 +33,17 @@ import {
     ModalTypes,
     useToast,
     ToastTypeEnum,
+    boostPreviewStore,
 } from 'learn-card-base';
 
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
@@ -44,7 +56,10 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
     getAchievementType,
     getDefaultCategoryForCredential,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
+import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
@@ -126,11 +141,14 @@ const ClaimBoost: React.FC<{
     const { initWallet, addVCtoWallet } = useWallet();
     const [presentAlert, dismissAlert] = useIonAlert();
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
+    const enableRenderMethod = useRenderMethodEnabled();
 
     const rawBoostUri = query.get('boostUri') || uri;
     const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
@@ -176,9 +194,9 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
-                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
-                }`
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(
+                    boostUri
+                )}${challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''}`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');
@@ -188,7 +206,7 @@ const ClaimBoost: React.FC<{
             setBoost(boostVC);
             verify(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -208,6 +226,8 @@ const ClaimBoost: React.FC<{
 
         try {
             setIsClaimLoading(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(boostUri, challenge);
             await addVCtoWallet({ uri: claimedBoostUri });
@@ -220,6 +240,21 @@ const ClaimBoost: React.FC<{
                     boostType: category,
                     achievementType,
                     method: 'Claim Modal',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.ClaimLink,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 
@@ -261,7 +296,7 @@ const ClaimBoost: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 
@@ -320,6 +355,13 @@ const ClaimBoost: React.FC<{
     if (boost) category = getDefaultCategoryForCredential(boost);
 
     const isFamily = category === CredentialCategoryEnum.family;
+    const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
+    const renderMethod =
+        enableRenderMethod && renderMethodSource
+            ? getSvgMustacheRenderMethod(renderMethodSource)
+            : null;
+    const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
+    const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
     let actionButtonText = 'Accept';
 
@@ -333,6 +375,14 @@ const ClaimBoost: React.FC<{
         actionButtonText = 'Accept';
         if (isFamily) actionButtonText = 'Join';
     }
+
+    useEffect(() => {
+        boostPreviewStore.set.updateSelectedDisplayView(
+            enableRenderMethod && renderMethod
+                ? BoostPreviewDisplayViewEnum.Issuer
+                : BoostPreviewDisplayViewEnum.Default
+        );
+    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -374,12 +424,37 @@ const ClaimBoost: React.FC<{
         backgroundStyles.backgroundColor = wallpaperBackgroundColor;
     }
 
+    const isIssuerViewSelected =
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+
+    const renderClaimCredentialDisplay = (credentialToDisplay: VC) => (
+        <VCDisplayCardWrapper2
+            useCurrentUserName
+            credential={credentialToDisplay}
+            customBodyCardComponent={credentialBodyOverride}
+            customFooterComponent={<div />}
+            checkProof={false}
+            // isFrontOverride={isFront}
+            setIsFrontOverride={setIsFront}
+            hideNavButtons
+            hideFrontFaceDetails={false}
+            claimStatusText={actionButtonText}
+            handleClaim={handleClaimBoost}
+        />
+    );
+    const boostCredentialWithId = boost
+        ? ({ ...((_boost ?? boost) as VC), boostId: boostUri } as VC)
+        : undefined;
+
     const openDetailsSideModal = () => {
         newModal(
             <BoostDetailsSideMenu
-                credential={{ ..._boost, boostId: boostUri }}
+                credential={boostCredentialWithId as VC}
                 categoryType={category}
                 verificationItems={vcVerifications}
+                renderMethodCredential={renderMethodSource as VC}
             />,
             {
                 className: '!bg-transparent',
@@ -434,37 +509,37 @@ const ClaimBoost: React.FC<{
 
                             {boost && !loading && !vc && (
                                 <div>
-                                    <VCDisplayCardWrapper2
-                                        useCurrentUserName
-                                        credential={{ ..._boost, boostId: boostUri }}
-                                        customBodyCardComponent={credentialBodyOverride}
-                                        customFooterComponent={<div />}
-                                        checkProof={false}
-                                        // isFrontOverride={isFront}
-                                        setIsFrontOverride={setIsFront}
-                                        hideNavButtons
-                                        hideFrontFaceDetails={false}
-                                        claimStatusText={actionButtonText}
-                                        handleClaim={handleClaimBoost}
-                                    />
+                                    {isIssuerViewSelected && renderMethod ? (
+                                        <RenderMethodDisplay
+                                            vc={displayCredential}
+                                            renderMethod={renderMethod}
+                                            fallback={
+                                                boostCredentialWithId
+                                                    ? renderClaimCredentialDisplay(
+                                                          boostCredentialWithId
+                                                      )
+                                                    : null
+                                            }
+                                            className="w-full"
+                                        />
+                                    ) : boostCredentialWithId ? (
+                                        renderClaimCredentialDisplay(boostCredentialWithId)
+                                    ) : null}
                                 </div>
                             )}
 
                             {vc && !loading && (
                                 <>
-                                    <VCDisplayCardWrapper2
-                                        useCurrentUserName
-                                        credential={vc}
-                                        customBodyCardComponent={credentialBodyOverride}
-                                        customFooterComponent={<div />}
-                                        checkProof={false}
-                                        // isFrontOverride={isFront}
-                                        setIsFrontOverride={setIsFront}
-                                        hideNavButtons
-                                        hideFrontFaceDetails={false}
-                                        claimStatusText={actionButtonText}
-                                        handleClaim={handleClaimBoost}
-                                    />
+                                    {isIssuerViewSelected && renderMethod ? (
+                                        <RenderMethodDisplay
+                                            vc={displayCredential}
+                                            renderMethod={renderMethod}
+                                            fallback={renderClaimCredentialDisplay(vc)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        renderClaimCredentialDisplay(vc)
+                                    )}
                                 </>
                             )}
                         </div>
@@ -486,6 +561,7 @@ const ClaimBoost: React.FC<{
                         verificationItems={vcVerifications}
                         credential={boost}
                         categoryType={category}
+                        renderMethodCredential={renderMethodSource as VC}
                     />
                 )}
             </div>

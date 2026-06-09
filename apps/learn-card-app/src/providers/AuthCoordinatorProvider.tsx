@@ -53,12 +53,14 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
+    getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
 } from 'learn-card-base';
+
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { walletStore, switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { pushUtilities } from 'learn-card-base/utils/pushUtilities';
@@ -117,6 +119,8 @@ import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
+const log = getLogger('auth-coordinator');
+
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches the device share then renders the approver modal
 // ---------------------------------------------------------------------------
@@ -152,10 +156,9 @@ const DeviceLinkOverlay: React.FC<{
                 // Fetch the share version if the strategy supports it
                 const version = await keyDerivation.getLocalShareVersion?.();
 
-                console.debug(
-                    '[Device Link] approver local shareVersion:',
-                    version ?? '(none — will not be sent to Device B)'
-                );
+                log.debug('[Device Link] approver local shareVersion:', {
+                    shareVersion: version ?? '(none — will not be sent to Device B)',
+                });
 
                 if (!cancelled && version != null) {
                     setShareVersion(version);
@@ -285,9 +288,7 @@ registerAuthProviderFactory('firebase', () =>
                           const { user } = await FirebaseAuthentication.getCurrentUser();
 
                           if (user) {
-                              console.debug(
-                                  '[Auth] Native Firebase user found — using NATIVE token'
-                              );
+                              log.debug('[Auth] Native Firebase user found — using NATIVE token');
                               const result = await FirebaseAuthentication.getIdToken({
                                   forceRefresh: forceRefresh ?? false,
                               });
@@ -320,7 +321,7 @@ registerAuthProviderFactory('firebase', () =>
                 try {
                     await FirebaseAuthentication.signOut();
                 } catch (e) {
-                    console.warn('Native FirebaseAuthentication.signOut failed', e);
+                    log.warn('Native FirebaseAuthentication.signOut failed', e);
                 }
             }
 
@@ -583,12 +584,10 @@ const AuthSessionManager: React.FC<{
 
         const applyQrShare = async () => {
             try {
-                console.debug(
-                    '[QR Login Pickup] received share:',
-                    qrShare.substring(0, 8) + '...',
-                    '| shareVersion raw:',
-                    qrVersionStr
-                );
+                log.debug('[QR Login Pickup] received share', {
+                    sharePrefix: qrShare.substring(0, 8) + '...',
+                    shareVersionRaw: qrVersionStr,
+                });
 
                 await keyDerivation.storeLocalKey(qrShare);
 
@@ -597,21 +596,22 @@ const AuthSessionManager: React.FC<{
                     const version = parseInt(qrVersionStr, 10);
 
                     if (!isNaN(version)) {
-                        console.debug('[QR Login Pickup] storing shareVersion:', version);
+                        log.debug('[QR Login Pickup] storing shareVersion', {
+                            shareVersion: version,
+                        });
                         await keyDerivation.storeLocalShareVersion?.(version);
                     } else {
-                        console.warn(
-                            '[QR Login Pickup] shareVersion is not a valid number:',
-                            qrVersionStr
-                        );
+                        log.warn('[QR Login Pickup] shareVersion is not a valid number', {
+                            qrVersionStr,
+                        });
                     }
                 } else {
-                    console.warn('[QR Login Pickup] no shareVersion received from approver device');
+                    log.warn('[QR Login Pickup] no shareVersion received from approver device');
                 }
 
                 await coordinator.initialize();
             } catch (e) {
-                console.warn('[QR Login Pickup] failed', e);
+                log.warn('[QR Login Pickup] failed', e);
             }
         };
 
@@ -683,17 +683,15 @@ const AuthSessionManager: React.FC<{
             const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
             if (!vpJwt || typeof vpJwt !== 'string') {
-                console.error(
-                    '[signDidAuthVp] getDidAuthVp returned non-string:',
-                    typeof vpJwt,
-                    vpJwt
-                );
+                log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
+                    type: typeof vpJwt,
+                });
                 throw new Error('Failed to sign DID-Auth VP JWT');
             }
 
             return vpJwt;
         } catch (e) {
-            console.error('[signDidAuthVp] error:', e);
+            log.error('[signDidAuthVp] error', e);
             throw e instanceof Error ? e : new Error(String(e));
         }
     }, []);
@@ -861,6 +859,7 @@ const AuthSessionManager: React.FC<{
     useAuthCoordinatorAutoSetup(coordinator, {
         generatePrivateKey: generateEd25519PrivateKey,
         didFromPrivateKey,
+        autoSetupNeedsSetup: false,
 
         onReady: (_privateKey, did) => {
             emitAuthSuccess(
@@ -893,7 +892,7 @@ const AuthSessionManager: React.FC<{
                 const newWallet = await getBespokeLearnCard(privateKey, persistedSwitchedDid);
 
                 if (!newWallet) {
-                    console.error('Failed to initialize wallet from private key');
+                    log.error('Failed to initialize wallet from private key');
                     return;
                 }
 
@@ -907,7 +906,7 @@ const AuthSessionManager: React.FC<{
                     try {
                         await setPlatformPrivateKey(privateKey);
                     } catch (e) {
-                        console.warn('Failed to persist private key to secure storage', e);
+                        log.warn('Failed to persist private key to secure storage', e);
                     }
                 }
 
@@ -929,7 +928,7 @@ const AuthSessionManager: React.FC<{
                 try {
                     await pushUtilities.syncPushToken();
                 } catch (e) {
-                    console.warn('Push token sync failed', e);
+                    log.warn('Push token sync failed', e);
                 }
 
                 setWallet(newWallet);
@@ -975,7 +974,7 @@ const AuthSessionManager: React.FC<{
                     }
                 }
             } catch (e) {
-                console.error('Wallet initialization failed', e);
+                log.error('Wallet initialization failed', e);
                 walletInitRef.current = false;
             }
         };
@@ -1042,7 +1041,7 @@ const AuthSessionManager: React.FC<{
                 setLcnProfile(cachedProfile ?? null);
             }
         } catch (e) {
-            console.warn('LCN profile fetch failed', e);
+            log.warn('LCN profile fetch failed', e);
             setLcnProfile(null);
         } finally {
             setLcnProfileLoading(false);
@@ -1187,13 +1186,12 @@ const AuthSessionManager: React.FC<{
                             await keyDerivation.storeLocalKey(deviceShare);
 
                             if (shareVersion != null) {
-                                console.debug(
-                                    '[Recovery via Device] storing shareVersion:',
-                                    shareVersion
-                                );
+                                log.debug('[Recovery via Device] storing shareVersion', {
+                                    shareVersion,
+                                });
                                 await keyDerivation.storeLocalShareVersion?.(shareVersion);
                             } else {
-                                console.warn(
+                                log.warn(
                                     '[Recovery via Device] no shareVersion received from approver device'
                                 );
                             }
@@ -1321,10 +1319,7 @@ const AuthSessionManager: React.FC<{
                                     newEmail
                                 );
                             } catch (e) {
-                                console.warn(
-                                    'Email backup share after upgrade failed (non-fatal):',
-                                    e
-                                );
+                                log.warn('Email backup share after upgrade failed (non-fatal)', e);
                             }
                         }
 
@@ -1428,12 +1423,10 @@ const AuthSessionManager: React.FC<{
                             providerType: string;
                         } | null
                     ) => {
-                        console.debug(
-                            '[setupMethod] starting, privateKey length:',
-                            currentPrivateKey?.length,
-                            'method:',
-                            input.method
-                        );
+                        log.debug('[setupMethod] starting', {
+                            privateKeyLength: currentPrivateKey?.length,
+                            method: input.method,
+                        });
 
                         let token: string;
 
@@ -1447,11 +1440,9 @@ const AuthSessionManager: React.FC<{
 
                         const providerType = authProvider.getProviderType();
 
-                        console.debug(
-                            '[setupMethod] got token, providerType:',
+                        log.debug('[setupMethod] got token, calling setupRecoveryMethod', {
                             providerType,
-                            'calling setupRecoveryMethod'
-                        );
+                        });
 
                         return keyDerivation.setupRecoveryMethod!({
                             token,
@@ -1590,7 +1581,7 @@ const getCachedPrivateKey = async (): Promise<string | null> => {
     try {
         return await getCurrentUserPrivateKey();
     } catch (e) {
-        console.warn('getCachedPrivateKey failed', e);
+        log.warn('getCachedPrivateKey failed', e);
         return null;
     }
 };
@@ -1660,7 +1651,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         try {
             await queryClient.clear();
         } catch (e) {
-            console.warn('Failed to clear query cache', e);
+            log.warn('Failed to clear query cache', e);
         }
 
         walletStore.set.wallet(null);
@@ -1678,7 +1669,7 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         try {
             await clearDBRef.current();
         } catch (e) {
-            console.warn('Failed to clear SQLite DB', e);
+            log.warn('Failed to clear SQLite DB', e);
         }
 
         currentUserStore.set.currentUser(null);
@@ -1694,19 +1685,19 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         try {
             await clearPlatformPrivateKey();
         } catch (e) {
-            console.warn('Failed to clear platform private key', e);
+            log.warn('Failed to clear platform private key', e);
         }
 
         try {
             await clearWebSecureAll();
         } catch (e) {
-            console.warn('Failed to clear secure storage', e);
+            log.warn('Failed to clear secure storage', e);
         }
 
         try {
             await clearAllIndexedDB(keyDerivation);
         } catch (e) {
-            console.warn('Failed to clear IndexedDB', e);
+            log.warn('Failed to clear IndexedDB', e);
         }
     }, [queryClient, keyDerivation]);
 

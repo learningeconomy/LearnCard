@@ -8,6 +8,8 @@ import {
     categoryMetadata,
     CredentialCategoryEnum,
 } from 'learn-card-base/types/boostAndCredentialMetadata';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('network-consent');
 
 const NETWORK_CONTRACT_URI =
     'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891';
@@ -57,16 +59,13 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
                         sharedUris.push(sharedUri);
                     }
                 } catch (error) {
-                    console.log(
-                        `Failed to get shared URI for credential ${credential.uri}:`,
-                        error
-                    );
+                    log.debug(`Failed to get shared URI for credential ${credential.uri}:`, error);
                 }
             }
 
             categoryCredentials[category] = sharedUris;
         } catch (error) {
-            console.log(`Failed to get credentials for category ${category}:`, error);
+            log.debug(`Failed to get credentials for category ${category}:`, error);
             categoryCredentials[category] = [];
         }
     }
@@ -139,7 +138,7 @@ export const useNetworkConsentMutation = () => {
 
                 return { success: true, alreadyConsented: false };
             } catch (error) {
-                console.error('Network consent error:', error);
+                log.error('Network consent error:', error);
                 return { success: false, error: String(error) };
             }
         },

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/react",
-    "version": "2.9.24",
+    "version": "2.9.29",
     "description": "",
     "main": "dist/cjs",
     "module": "dist/esm",
@@ -65,7 +65,8 @@
         "rollup-plugin-styles": "^4.0.0",
         "storybook": "^7.0.18",
         "style-loader": "^3.3.1",
-        "tailwindcss": "^3.0.24"
+        "tailwindcss": "^3.0.24",
+        "vite": "^6.4.2"
     },
     "dependencies": {
         "@learncard/init": "workspace:*",

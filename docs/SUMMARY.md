@@ -15,6 +15,7 @@
 ## ✅ How-To Guides
 
 -   [Send Credentials](how-to-guides/send-credentials.md)
+-   [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)
 -   [Create Signing Authority](how-to-guides/create-signing-authority.md)
 -   [Interoperate with LearnCard](how-to-guides/interoperate-with-learncard.md)
 -   [Verify My Issuer](how-to-guides/verify-my-issuer.md)
@@ -68,6 +69,7 @@
 -   [LearnCloud Network API](sdks/learncard-network/README.md)
     -   [Authentication](sdks/learncard-network/authentication.md)
     -   [Usage Examples](sdks/learncard-network/usage-examples.md)
+    -   [Bitstring Status Lists](sdks/learncard-network/bitstring-status-lists.md)
     -   [Key Management & QR Login API](sdks/learncard-network/lca-api-key-management.md)
     -   [Skill Frameworks & OpenSALT](sdks/learncard-network/skills-and-opensalt.md)
     -   [Architecture](sdks/learncard-network/architecture.md)
@@ -104,6 +106,7 @@
 -   [Partner Connect SDK](sdks/partner-connect.md)
 -   [Plugins](sdks/official-plugins/README.md)
 -   [LearnCard CLI](sdks/learncard-cli.md)
+    -   [Holder Continuity Export](sdks/learncard-cli.md#holder-continuity-export)
 
 ## 🧠 Core Concepts
 
@@ -116,9 +119,11 @@
     -   [Network Profiles](core-concepts/identities-and-keys/network-profiles.md)
     -   [Signing Authorities](core-concepts/identities-and-keys/signing-authorities.md)
     -   [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)
+-   [Holder Continuity](core-concepts/holder-continuity.md)
 -   [Credentials & Data](core-concepts/credentials-and-data/README.md)
     -   [Verifiable Credentials (VCs)](core-concepts/credentials-and-data/verifiable-credentials-vcs.md)
     -   [Credential Lifecycle](core-concepts/credentials-and-data/credential-lifecycle.md)
+    -   [Credential Status & Bitstring Status Lists](core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)
     -   [Schemas, Types, & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
     -   [Building Verifiable Credentials](core-concepts/credentials-and-data/building-verifiable-credentials.md)
     -   [Boost Credentials](core-concepts/credentials-and-data/boost-credentials.md)

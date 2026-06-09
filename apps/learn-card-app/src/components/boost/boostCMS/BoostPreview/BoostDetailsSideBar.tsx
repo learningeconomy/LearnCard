@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
 import { IonFooter } from '@ionic/react';
+import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
+import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import CredentialResultsBox from './CredentialResultsBox';
+import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -29,6 +32,7 @@ import {
     DisplayTypeEnum,
 } from 'learn-card-base';
 import { VC, VerificationItem } from '@learncard/types';
+import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
 
 type BoostDetailsSideBarProps = {
@@ -42,6 +46,7 @@ type BoostDetailsSideBarProps = {
     hideEndorsementRequestCard?: boolean;
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
+    renderMethodCredential?: VC | UnsignedVC;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -54,7 +59,10 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     hideEndorsementRequestCard = false,
     isEarnedBoost,
     isClrChildCredential = false,
+    renderMethodCredential,
 }) => {
+    const enableRenderMethod = useRenderMethodEnabled();
+
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -137,7 +145,16 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         )}
                     </TruncateTextBox>
 
+                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
+                        <BoostDisplayStyleSelector
+                            credential={renderMethodCredential}
+                            enableRenderMethod={enableRenderMethod}
+                        />
+                    )}
+
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
+
+                    <SdJwtVcClaimsBox credential={credential} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

@@ -28,7 +28,7 @@ const config: CapacitorConfig = {
     plugins: {
         SplashScreen: {
             launchShowDuration: 6000,
-            launchAutoHide: true,
+            launchAutoHide: false,
             backgroundColor: '#00BA88',
             showSpinner: false,
             spinnerColor: '#ffffff',
@@ -62,7 +62,7 @@ const config: CapacitorConfig = {
             // Bump this value whenever you bump native binaries; do NOT add a parallel
             // tenant-level override — that's how channels drift and OTA updates land in
             // an empty channel (see PR #1063 incident).
-            defaultChannel: '1.0.7', // bumped here https://github.com/learningeconomy/LearnCard/pull/1203
+            defaultChannel: '1.0.8', // bumped here https://github.com/learningeconomy/LearnCard/pull/1203
         },
     },
 };

@@ -2,6 +2,9 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-header');
 
 import {
     LaunchPadAppListItem,
@@ -21,11 +24,15 @@ import {
     closeInsightsSession,
     resetChatStores,
     disconnectWebSocket,
+    currentTopicUri,
+    currentAiPathwayUri,
+    sessionStartedAt,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import X from '../../svgs/X';
 import { AiSessionMode } from '../newAiSession.helpers';
 import { chatBotStore } from '../../../stores/chatBotStore';
+import { publishWalletEvent } from '../../../pages/pathways/events/walletEventBus';
 
 interface ChatHeaderProps {
     mode: AiSessionMode;
@@ -35,12 +42,7 @@ interface ChatHeaderProps {
     onClose?: () => void;
 }
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({
-    mode,
-    aiApp,
-    initialTopic,
-    onClose,
-}) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopic, onClose }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
     const $currentThreadId = useStore(currentThreadId);
@@ -65,6 +67,54 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         : currentThread?.title ?? initialTopic;
     const isTitleLoading = !derivedTitle;
 
+    /**
+     * Publish an `AiSessionCompleted` event to the pathway-progress
+     * bus. Best-effort \u2014 failures must not block the finish flow.
+     * Only fires when we actually have a topicUri (tutor sessions
+     * started via `startTopicWithUri` / `startLearningPathway`);
+     * onboarding / skill-profile sessions that never set a topic
+     * produce no event, which is the right behavior \u2014 there's no
+     * pathway node to advance.
+     *
+     * Originally lived in `FinishSessionButton.tsx`. That component
+     * was deleted upstream when the chat UI was refactored to put the
+     * close button in `ChatHeader`; we ported the publish call here
+     * so `session-completed` terminations still tick over from a
+     * tutor session ending.
+     */
+    const publishAiSessionCompleted = (source: 'user-finish' | 'auto-end'): void => {
+        const threadId = currentThreadId.get();
+        const topicUri = currentTopicUri.get();
+
+        if (!threadId || !topicUri) return;
+
+        const startedAt = sessionStartedAt.get();
+        const endedAt = new Date().toISOString();
+
+        const durationSec = startedAt
+            ? Math.max(
+                  0,
+                  Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000)
+              )
+            : undefined;
+
+        try {
+            publishWalletEvent({
+                kind: 'ai-session-completed',
+                eventId: uuidv4(),
+                threadId,
+                topicUri,
+                ...(currentAiPathwayUri.get() ? { aiPathwayUri: currentAiPathwayUri.get()! } : {}),
+                endedAt,
+                ...(durationSec !== undefined ? { durationSec } : {}),
+                source,
+            });
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            log.error('[ChatHeader] failed to publish ai-session-completed:', err);
+        }
+    };
+
     const handleFinishSession = async () => {
         if (onClose) {
             onClose();
@@ -84,8 +134,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         // exit cleanly to topics. Without this, X retriggers finishSession
         // which just rebuilds the same end state.
         const hasEndedAlready =
-            $sessionEnded ||
-            (currentThread?.summaries && currentThread.summaries.length > 0);
+            $sessionEnded || (currentThread?.summaries && currentThread.summaries.length > 0);
         if (hasEndedAlready) {
             disconnectWebSocket();
             resetChatStores();
@@ -108,6 +157,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             history.push('/ai/topics');
             return;
         }
+
+        // Publish BEFORE `finishSession` runs \u2014 the callback fires after
+        // the service-side end-session response, by which time the chat
+        // store may have been partially reset by other flows. Publishing
+        // here guarantees threadId/topicUri are still populated. The
+        // pathway reactor's idempotency keeps a duplicate publish on the
+        // callback side from double-counting.
+        publishAiSessionCompleted('user-finish');
 
         finishSession(async () => {
             await fetchNewContractCredentials();

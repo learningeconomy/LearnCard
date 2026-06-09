@@ -14,6 +14,8 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getSdJwtVcPlugin } from '@learncard/sd-jwt-vc-plugin';
 
 import { NetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -39,6 +41,7 @@ export const networkLearnCardFromSeed = async ({
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
+    openid4vc,
     debug,
 }: NetworkLearnCardFromSeed['args']): Promise<NetworkLearnCardFromSeed['returnValue']> => {
     const network = typeof _network === 'boolean' ? 'https://network.learncard.com/trpc' : _network;
@@ -93,9 +96,13 @@ export const networkLearnCardFromSeed = async ({
         await getVerifyBoostPlugin(chapiLc, trustedBoostRegistry)
     );
 
-    const lcLc = await boostVerificationLc.addPlugin(getLearnCardPlugin(boostVerificationLc));
+    const sdJwtVcLc = await boostVerificationLc.addPlugin(getSdJwtVcPlugin(boostVerificationLc));
 
-    return lcLc.addPlugin(
+    const lcLc = await sdJwtVcLc.addPlugin(getLearnCardPlugin(sdJwtVcLc));
+
+    const networkLc = await lcLc.addPlugin(
         await getLearnCardNetworkPlugin(lcLc, network, { guardianApprovalGetter, extraHeaders })
     );
+
+    return networkLc.addPlugin(getOpenID4VCPlugin(networkLc, openid4vc));
 };

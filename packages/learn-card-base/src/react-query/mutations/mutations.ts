@@ -1,9 +1,15 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CredentialCategory, useWallet } from 'learn-card-base';
+import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CredentialCategory } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
 import { cloneDeep } from 'lodash';
 import { UnsignedVC, VC } from '@learncard/types';
+import { queueAiInsightCredentialRefresh } from './ai-passport';
+import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
+import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('mutations');
 
 // ** CONNECTION MUTATIONS **
 
@@ -140,11 +146,52 @@ export const useAcceptCredentialMutation = () => {
 export const useDeleteCredentialRecord = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
+    const ENABLE_DELETE_CREDENTIAL_LOGS = false;
 
-    return useMutation<{ uri: string; category: string | undefined }, Error, LCR>({
+    const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
+        if (!ENABLE_DELETE_CREDENTIAL_LOGS) return;
+
+        try {
+            if (data) {
+                log.debug(`[DeleteCredentialRecord] ${message}`, data);
+            } else {
+                log.debug(`[DeleteCredentialRecord] ${message}`);
+            }
+        } catch {
+            // logging should never break deletion flows
+        }
+    };
+
+    type DeleteCredentialResult = {
+        uri: string;
+        category: string | undefined;
+        contractUri?: string;
+    };
+
+    type DeleteCredentialContext = {
+        currentQuery?: LCR[];
+        oldStaleTime?: unknown;
+        oldListStaleTime?: unknown;
+        category?: string;
+        uri: string;
+    };
+
+    const isMissingDeleteCredentialFromAllContractsProcedureError = (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+
+        return (
+            message.includes('contracts.deleteCredentialFromAllContracts') ||
+            message.includes(
+                'No procedure found on path "contracts.deleteCredentialFromAllContracts"'
+            )
+        );
+    };
+
+    return useMutation<DeleteCredentialResult, Error, LCR, DeleteCredentialContext>({
         mutationFn: async record => {
             try {
-                console.log('deleting record (in mutation)', record);
+                log.debug('deleting record (in mutation)', record);
                 const wallet = await initWallet();
                 // Preemptively empty LC cache
                 await wallet.cache.flushIndex();
@@ -156,35 +203,38 @@ export const useDeleteCredentialRecord = () => {
 
                     // Also try SQLite index for completeness (if available)
                     try {
-                        const sqliteIndex = await wallet.index.SQLite?.get?.().catch(console.error);
+                        const sqliteIndex = await wallet.index.SQLite?.get?.().catch(err =>
+                            log.error('SQLite index get failed', err)
+                        );
                         const foundIndex = sqliteIndex?.find(index => index?.uri === record.uri);
 
                         if (foundIndex?.id) {
                             await wallet.index.SQLite?.remove?.(foundIndex.id);
                         }
                     } catch (error) {
-                        console.error('SQLite removal error:', error);
+                        log.error('SQLite removal error:', error);
                     }
                 } else {
-                    console.error('Record ID not provided for deletion');
+                    log.error('Record ID not provided for deletion');
                 }
 
                 return {
                     uri: record.uri,
                     category: record.metadata?.category,
+                    contractUri: record.metadata?.contractUri,
                 };
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
             }
         },
         onMutate: async record => {
-            console.log('deleting record (in mutation onMutate)', record);
+            log.debug('deleting record (in mutation onMutate)', record);
             const uri = record.uri;
             const category = record.category;
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (!category) {
-                return { uri };
+                return { uri } satisfies DeleteCredentialContext;
             }
 
             // Cancel related queries
@@ -199,40 +249,38 @@ export const useDeleteCredentialRecord = () => {
             });
 
             // Get current cached data
-            const currentQuery = queryClient.getQueryData([
+            const currentQuery = queryClient.getQueryData<LCR[]>([
                 'useGetCredentials',
                 didWeb ?? '',
                 category,
-            ]);
-            const currentQueryList = queryClient.getQueryData([
-                'useGetCredentialList',
-                didWeb ?? '',
-                category,
-            ]);
+            ]) as LCR[] | undefined;
+            const currentQueryList = queryClient.getQueryData<
+                InfiniteData<{
+                    cursor?: string;
+                    hasMore: boolean;
+                    records: LCR[];
+                }>
+            >(['useGetCredentialList', didWeb ?? '', category]);
 
-            console.log('optimistic update');
+            log.debug('optimistic update');
 
             // Update cache optimistically
             if (currentQuery || currentQueryList) {
                 // Filter out the credential from useGetCredentials cache
-                const updatedQuery = currentQuery
-                    ? currentQuery.filter((index: any) => {
-                          return index?.uri !== uri;
-                      })
-                    : undefined;
+                const updatedQuery = currentQuery?.filter(index => index?.uri !== uri);
 
                 // Update useGetCredentialList cache
                 const updatedQueryList = cloneDeep(currentQueryList);
-                if ((updatedQueryList as any)?.pages?.[0]?.records) {
-                    (updatedQueryList as any).pages[0].records = (
-                        updatedQueryList as any
-                    ).pages[0].records.filter((index: any) => {
-                        return index.uri !== uri;
-                    });
+                if (updatedQueryList?.pages?.[0]?.records) {
+                    updatedQueryList.pages[0].records = updatedQueryList.pages[0].records.filter(
+                        index => {
+                            return index.uri !== uri;
+                        }
+                    );
                 }
 
                 // Save original stale times to restore later
-                const oldStaleTime =
+                const oldStaleTime: any =
                     queryClient.getQueryDefaults([
                         'useGetCredentials',
                         didWeb ?? '',
@@ -240,7 +288,7 @@ export const useDeleteCredentialRecord = () => {
                         true,
                     ])?.staleTime ?? 0;
 
-                const oldListStaleTime =
+                const oldListStaleTime: any =
                     queryClient.getQueryDefaults(['useGetCredentialList', didWeb ?? '', category])
                         ?.staleTime ?? 0;
 
@@ -258,23 +306,27 @@ export const useDeleteCredentialRecord = () => {
                     updatedQuery
                 );
 
-                console.log('setting list', updatedQueryList);
+                log.debug('setting list', updatedQueryList);
                 queryClient.setQueryData(
                     ['useGetCredentialList', didWeb ?? '', category],
                     updatedQueryList
                 );
 
-                // Return context for onError
-                return {
-                    currentQuery,
+                const context: DeleteCredentialContext = {
+                    uri,
+                    ...(category ? { category } : {}),
+                    ...(currentQuery ? { currentQuery } : {}),
                     oldStaleTime,
                     oldListStaleTime,
-                    category,
-                    uri,
                 };
+
+                return context;
             }
 
-            return { uri, category };
+            return {
+                uri,
+                ...(category ? { category } : {}),
+            };
         },
         onError: (_, __, context) => {
             // On error, restore previous query data if it exists
@@ -289,7 +341,7 @@ export const useDeleteCredentialRecord = () => {
             }
         },
         onSuccess: result => {
-            const { category, uri } = result;
+            const { category } = result;
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (category) {
@@ -304,6 +356,99 @@ export const useDeleteCredentialRecord = () => {
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
                 });
             }
+
+            logDeleteCredentialRefresh('Scheduling credential cleanup task', {
+                uri: result.uri,
+                category,
+                contractUri: result.contractUri ?? null,
+            });
+
+            setTimeout(() => {
+                const walletPromise = initWallet();
+
+                void (async () => {
+                    logDeleteCredentialRefresh('Running credential cleanup after delete', {
+                        uri: result.uri,
+                        category,
+                        contractUri: result.contractUri ?? null,
+                    });
+
+                    const wallet = await walletPromise;
+
+                    const cleanupResult = await deleteCredentialFromAllContracts({
+                        wallet,
+                        queryClient,
+                        deletedUris: [result.uri],
+                    });
+
+                    logDeleteCredentialRefresh('Credential cleanup completed after delete', {
+                        uri: result.uri,
+                        category,
+                        contractUri: result.contractUri ?? null,
+                        contractsUpdated: cleanupResult.contractsUpdated,
+                        removedSharedUris: cleanupResult.removedSharedUris,
+                    });
+
+                    logDeleteCredentialRefresh(
+                        'Queueing AI Insight refresh after credential cleanup',
+                        {
+                            uri: result.uri,
+                            category,
+                            contractUri: result.contractUri ?? null,
+                            contractsUpdated: cleanupResult.contractsUpdated,
+                            removedSharedUris: cleanupResult.removedSharedUris,
+                        }
+                    );
+                    await queueAiInsightCredentialRefresh({
+                        wallet,
+                        queryClient,
+                    });
+                })().catch(error => {
+                    if (isMissingDeleteCredentialFromAllContractsProcedureError(error)) {
+                        logDeleteCredentialRefresh(
+                            'Credential cleanup procedure missing; running full sync fallback',
+                            {
+                                uri: result.uri,
+                                category,
+                                contractUri: result.contractUri ?? null,
+                            }
+                        );
+
+                        void (async () => {
+                            const wallet = await walletPromise;
+
+                            await syncAllCredentialsToContracts.mutateAsync();
+
+                            logDeleteCredentialRefresh(
+                                'Queueing AI Insight refresh after full sync fallback',
+                                {
+                                    uri: result.uri,
+                                    category,
+                                    contractUri: result.contractUri ?? null,
+                                }
+                            );
+
+                            await queueAiInsightCredentialRefresh({
+                                wallet,
+                                queryClient,
+                            });
+                        })().catch(cleanupFallbackError => {
+                            if (ENABLE_DELETE_CREDENTIAL_LOGS) {
+                                log.error(
+                                    'Failed to run full sync fallback after cleanup failure:',
+                                    cleanupFallbackError
+                                );
+                            }
+                        });
+
+                        return;
+                    }
+
+                    if (ENABLE_DELETE_CREDENTIAL_LOGS) {
+                        log.error('Failed to run post-delete cleanup:', error);
+                    }
+                });
+            }, 0);
 
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
         },

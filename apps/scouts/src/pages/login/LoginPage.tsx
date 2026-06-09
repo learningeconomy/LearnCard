@@ -37,6 +37,8 @@ import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {
     const flags = useFlags();
@@ -97,7 +99,7 @@ const LoginPage: React.FC = () => {
                     redirectStore.set.authRedirect(null);
                     chapiStore.set.isChapiInteraction(null);
                 } catch (e) {
-                    console.error(e);
+                    log.error(e);
                 }
                 history.push(redirectTo);
             } else if (lcnRedirectTo) {
@@ -175,17 +177,23 @@ const LoginPage: React.FC = () => {
                                 <QrLoginRequester
                                     serverUrl={getSSSConfig().serverUrl}
                                     onApproved={(deviceShare, _approverDid, hint, version) => {
-                                        window.sessionStorage.setItem('qr_login_device_share', deviceShare);
+                                        window.sessionStorage.setItem(
+                                            'qr_login_device_share',
+                                            deviceShare
+                                        );
 
                                         if (version != null) {
-                                            window.sessionStorage.setItem('qr_login_share_version', String(version));
+                                            window.sessionStorage.setItem(
+                                                'qr_login_share_version',
+                                                String(version)
+                                            );
                                         }
 
                                         setAccountHint(hint ?? null);
                                         setQrApproved(true);
                                     }}
                                     onCancel={() => setShowQrLogin(false)}
-                                    renderQrCode={(data) => (
+                                    renderQrCode={data => (
                                         <QRCodeSVG value={data} size={192} level="M" />
                                     )}
                                 />
@@ -195,16 +203,37 @@ const LoginPage: React.FC = () => {
                         <IonRow className="w-full flex items-center justify-center p-4">
                             <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-2xl p-8 text-center font-poppins">
                                 <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg
+                                        width="28"
+                                        height="28"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        className="text-emerald-600"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
                                 </div>
 
-                                <h2 className="text-xl font-semibold text-grayscale-900 mb-2">You're all set!</h2>
+                                <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
+                                    You're all set!
+                                </h2>
 
                                 <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
-                                    {accountHint
-                                        ? <>Sign in with <span className="font-medium text-grayscale-900">{accountHint}</span> to access your account.</>
-                                        : 'Now just sign in below to access your account.'
-                                    }
+                                    {accountHint ? (
+                                        <>
+                                            Sign in with{' '}
+                                            <span className="font-medium text-grayscale-900">
+                                                {accountHint}
+                                            </span>{' '}
+                                            to access your account.
+                                        </>
+                                    ) : (
+                                        'Now just sign in below to access your account.'
+                                    )}
                                 </p>
 
                                 <button
@@ -220,94 +249,115 @@ const LoginPage: React.FC = () => {
                             </div>
                         </IonRow>
                     ) : (
-                    <>
-                    {showLinkedBanner && (
-                        <IonRow className="w-full flex items-center justify-center px-4 mb-2">
-                            <div className="w-full max-w-[500px] p-3 bg-emerald-50 border border-emerald-100 rounded-[20px] flex items-center justify-center gap-2.5">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-600 shrink-0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <>
+                            {showLinkedBanner && (
+                                <IonRow className="w-full flex items-center justify-center px-4 mb-2">
+                                    <div className="w-full max-w-[500px] p-3 bg-emerald-50 border border-emerald-100 rounded-[20px] flex items-center justify-center gap-2.5">
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            className="text-emerald-600 shrink-0"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
 
-                                <span className="text-sm text-emerald-700 font-medium">
-                                    {accountHint
-                                        ? <>Sign in with <span className="font-semibold">{accountHint}</span> to finish</>
-                                        : 'Device linked — sign in to finish'
-                                    }
-                                </span>
-                            </div>
-                        </IonRow>
-                    )}
-
-                    <IonRow className="social-logins-container">
-                        <div className="w-full flex items-center justify-center">
-                            {enableWorldScoutsLogin && (
-                                <button
-                                    className={`flex items-center justify-center border-solid border-2 rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
-                                        activeLoginType === LoginTypesEnum.scoutsSSO
-                                            ? activeLoginTypeStyles
-                                            : 'border-gray-100'
-                                    }`}
-                                    onClick={() => setActiveLoginType(LoginTypesEnum.scoutsSSO)}
-                                >
-                                    <img
-                                        src={WorldScoutsIcon}
-                                        alt="world scouts icon"
-                                        className="w-[50px] h-auto rounded-full"
-                                    />
-                                </button>
+                                        <span className="text-sm text-emerald-700 font-medium">
+                                            {accountHint ? (
+                                                <>
+                                                    Sign in with{' '}
+                                                    <span className="font-semibold">
+                                                        {accountHint}
+                                                    </span>{' '}
+                                                    to finish
+                                                </>
+                                            ) : (
+                                                'Device linked — sign in to finish'
+                                            )}
+                                        </span>
+                                    </div>
+                                </IonRow>
                             )}
 
-                            <button
-                                className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
-                                    activeLoginType === LoginTypesEnum.email
-                                        ? activeLoginTypeStyles
-                                        : 'border-gray-100'
-                                }`}
-                                onClick={() => setActiveLoginType(LoginTypesEnum.email)}
-                            >
-                                <img
-                                    src={EmailIcon}
-                                    alt="email icon"
-                                    className="w-[30px] h-[30px]"
+                            <IonRow className="social-logins-container">
+                                <div className="w-full flex items-center justify-center">
+                                    {enableWorldScoutsLogin && (
+                                        <button
+                                            className={`flex items-center justify-center border-solid border-2 rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                                activeLoginType === LoginTypesEnum.scoutsSSO
+                                                    ? activeLoginTypeStyles
+                                                    : 'border-gray-100'
+                                            }`}
+                                            onClick={() =>
+                                                setActiveLoginType(LoginTypesEnum.scoutsSSO)
+                                            }
+                                        >
+                                            <img
+                                                src={WorldScoutsIcon}
+                                                alt="world scouts icon"
+                                                className="w-[50px] h-auto rounded-full"
+                                            />
+                                        </button>
+                                    )}
+
+                                    <button
+                                        className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                            activeLoginType === LoginTypesEnum.email
+                                                ? activeLoginTypeStyles
+                                                : 'border-gray-100'
+                                        }`}
+                                        onClick={() => setActiveLoginType(LoginTypesEnum.email)}
+                                    >
+                                        <img
+                                            src={EmailIcon}
+                                            alt="email icon"
+                                            className="w-[30px] h-[30px]"
+                                        />
+                                    </button>
+
+                                    {enableSmsLogin && (
+                                        <button
+                                            className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                                activeLoginType === LoginTypesEnum.phone
+                                                    ? activeLoginTypeStyles
+                                                    : 'border-gray-100'
+                                            }`}
+                                            onClick={() => setActiveLoginType(LoginTypesEnum.phone)}
+                                        >
+                                            <img
+                                                src={PhoneIcon}
+                                                alt="phone icon"
+                                                className="w-[30px] h-[30px]"
+                                            />
+                                        </button>
+                                    )}
+                                </div>
+                                <IonRow className="w-full max-w-[500px] ion-padding-horizontal">
+                                    {LoginTypeForm}
+                                </IonRow>
+                                <SocialLogins
+                                    branding={BrandingEnum.scoutPass}
+                                    activeLoginType={activeLoginType}
+                                    setActiveLoginType={setActiveLoginType}
+                                    extraSocialLogins={extraSocialLogins}
                                 />
-                            </button>
+                            </IonRow>
 
-                            {enableSmsLogin && (
+                            <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
                                 <button
-                                    className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
-                                        activeLoginType === LoginTypesEnum.phone
-                                            ? activeLoginTypeStyles
-                                            : 'border-gray-100'
-                                    }`}
-                                    onClick={() => setActiveLoginType(LoginTypesEnum.phone)}
+                                    onClick={() => setShowQrLogin(true)}
+                                    className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
                                 >
-                                    <img
-                                        src={PhoneIcon}
-                                        alt="phone icon"
-                                        className="w-[30px] h-[30px]"
-                                    />
+                                    Sign in from another device
                                 </button>
-                            )}
-                        </div>
-                        <IonRow className="w-full max-w-[500px] ion-padding-horizontal">
-                            {LoginTypeForm}
-                        </IonRow>
-                        <SocialLogins
-                            branding={BrandingEnum.scoutPass}
-                            activeLoginType={activeLoginType}
-                            setActiveLoginType={setActiveLoginType}
-                            extraSocialLogins={extraSocialLogins}
-                        />
-                    </IonRow>
-
-                    <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
-                        <button
-                            onClick={() => setShowQrLogin(true)}
-                            className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
-                        >
-                            Sign in from another device
-                        </button>
-                    </IonRow>
-                    </>)
-                    }
+                            </IonRow>
+                        </>
+                    )}
                 </IonGrid>
                 <LoginFooter />
             </IonContent>

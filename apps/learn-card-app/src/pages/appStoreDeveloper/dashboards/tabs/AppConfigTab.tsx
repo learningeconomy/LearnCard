@@ -1,9 +1,11 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-config-tab');
 /**
  * AppConfigTab - App Configuration for Embedded Apps
- * 
+ *
  * For embed-app integrations: URL checker, permission configuration,
  * consent contract selection, and header configuration examples.
- * 
+ *
  * Mirrors functionality from EmbedAppGuide's YourAppStep.
  */
 
@@ -67,7 +69,7 @@ const PERMISSIONS: Permission[] = [
     {
         id: 'issue-credentials',
         name: 'Issue Credentials',
-        description: 'Send credentials to the user\'s wallet',
+        description: "Send credentials to the user's wallet",
         icon: <Award className="w-4 h-4" />,
     },
     {
@@ -92,12 +94,12 @@ const PERMISSIONS: Permission[] = [
 
 /**
  * Check if a URL can be embedded in an iframe
- * 
+ *
  * IMPORTANT: CORS headers are NOT required for iframe embedding!
  * What matters for iframe embedding:
  * - X-Frame-Options header (must NOT be DENY or SAMEORIGIN unless same origin)
  * - Content-Security-Policy frame-ancestors directive
- * 
+ *
  * We can't directly check these headers from the browser due to CORS,
  * but we CAN check if the URL is valid and uses HTTPS.
  * The actual iframe embedding test is done in the Preview.
@@ -129,7 +131,11 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
         if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
             results[0] = { ...results[0], status: 'warn', message: 'HTTP okay for localhost' };
         } else {
-            results[0] = { ...results[0], status: 'fail', message: 'HTTPS required for production' };
+            results[0] = {
+                ...results[0],
+                status: 'fail',
+                message: 'HTTPS required for production',
+            };
         }
     } else {
         results[0] = { ...results[0], status: 'fail', message: 'Must be HTTP or HTTPS' };
@@ -138,12 +144,12 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     // For iframe embedding, we can't reliably check X-Frame-Options from the browser
     // because the browser won't expose those headers due to CORS restrictions.
     // The best test is to actually try embedding in an iframe (Preview button).
-    // 
+    //
     // We'll mark this as "info" status and explain the user should use Preview.
     results[2] = {
         ...results[2],
         status: 'warn',
-        message: 'Use Preview to test embedding'
+        message: 'Use Preview to test embedding',
     };
 
     return results;
@@ -165,7 +171,9 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     const { data: listings } = useListingsForIntegration(integration.id);
     const updateListingMutation = useUpdateListing();
 
-    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(externalListing || null);
+    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(
+        externalListing || null
+    );
     const [appUrl, setAppUrl] = useState('');
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['identity']);
     const [isChecking, setIsChecking] = useState(false);
@@ -328,10 +336,16 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
                 },
             });
 
-            presentToast('Configuration saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('Configuration saved!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
         } catch (err) {
-            console.error('Failed to save config:', err);
-            presentToast('Failed to save configuration', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to save config:', err);
+            presentToast('Failed to save configuration', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -442,10 +456,12 @@ module.exports = nextConfig;`;
             {/* App Selector */}
             {listings && listings.length > 0 && (
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select App</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select App
+                    </label>
                     <select
                         value={selectedListing?.listing_id || ''}
-                        onChange={(e) => {
+                        onChange={e => {
                             const listing = listings.find(l => l.listing_id === e.target.value);
                             setSelectedListing(listing || null);
 
@@ -453,7 +469,8 @@ module.exports = nextConfig;`;
                                 try {
                                     const config = JSON.parse(listing.launch_config_json || '{}');
                                     if (config.url) setAppUrl(config.url);
-                                    if (config.permissions) setSelectedPermissions(config.permissions);
+                                    if (config.permissions)
+                                        setSelectedPermissions(config.permissions);
                                 } catch (err) {
                                     // ignore
                                 }
@@ -495,7 +512,7 @@ module.exports = nextConfig;`;
                                     onChange={handleUrlChange}
                                     placeholder="https://your-app.com"
                                     className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
-                                    onKeyDown={(e) => {
+                                    onKeyDown={e => {
                                         if (e.key === 'Enter' && appUrl.trim()) {
                                             handleCheckUrl();
                                         }
@@ -524,12 +541,17 @@ module.exports = nextConfig;`;
 
                     {/* URL Check Results */}
                     {checkResults && (
-                        <div className={`p-4 rounded-xl border ${
-                            isChecking ? 'bg-gray-50 border-gray-200' :
-                            allPassed ? 'bg-emerald-50 border-emerald-200' :
-                            hasFailed ? 'bg-red-50 border-red-200' :
-                            'bg-gray-50 border-gray-200'
-                        }`}>
+                        <div
+                            className={`p-4 rounded-xl border ${
+                                isChecking
+                                    ? 'bg-gray-50 border-gray-200'
+                                    : allPassed
+                                    ? 'bg-emerald-50 border-emerald-200'
+                                    : hasFailed
+                                    ? 'bg-red-50 border-red-200'
+                                    : 'bg-gray-50 border-gray-200'
+                            }`}
+                        >
                             <div className="flex items-center gap-2 mb-3">
                                 {isChecking ? (
                                     <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
@@ -541,16 +563,24 @@ module.exports = nextConfig;`;
                                     <Search className="w-5 h-5 text-gray-400" />
                                 )}
 
-                                <h4 className={`font-medium ${
-                                    isChecking ? 'text-gray-700' :
-                                    allPassed ? 'text-emerald-800' :
-                                    hasFailed ? 'text-red-800' :
-                                    'text-gray-700'
-                                }`}>
-                                    {isChecking ? 'Checking your URL...' :
-                                     allPassed ? 'Looking good!' :
-                                     hasFailed ? 'Some issues found' :
-                                     'URL Check Results'}
+                                <h4
+                                    className={`font-medium ${
+                                        isChecking
+                                            ? 'text-gray-700'
+                                            : allPassed
+                                            ? 'text-emerald-800'
+                                            : hasFailed
+                                            ? 'text-red-800'
+                                            : 'text-gray-700'
+                                    }`}
+                                >
+                                    {isChecking
+                                        ? 'Checking your URL...'
+                                        : allPassed
+                                        ? 'Looking good!'
+                                        : hasFailed
+                                        ? 'Some issues found'
+                                        : 'URL Check Results'}
                                 </h4>
                             </div>
 
@@ -560,22 +590,33 @@ module.exports = nextConfig;`;
                                         {getCheckIcon(result.id)}
 
                                         <div className="flex-1">
-                                            <span className="text-sm font-medium text-gray-700">{result.label}</span>
+                                            <span className="text-sm font-medium text-gray-700">
+                                                {result.label}
+                                            </span>
                                         </div>
 
                                         <div className="flex items-center gap-2">
                                             {result.message && (
-                                                <span className={`text-xs ${
-                                                    result.status === 'pass' ? 'text-emerald-600' :
-                                                    result.status === 'fail' ? 'text-red-600' :
-                                                    result.status === 'warn' ? 'text-amber-600' :
-                                                    'text-gray-500'
-                                                }`}>
+                                                <span
+                                                    className={`text-xs ${
+                                                        result.status === 'pass'
+                                                            ? 'text-emerald-600'
+                                                            : result.status === 'fail'
+                                                            ? 'text-red-600'
+                                                            : result.status === 'warn'
+                                                            ? 'text-amber-600'
+                                                            : 'text-gray-500'
+                                                    }`}
+                                                >
                                                     {result.message}
                                                 </span>
                                             )}
 
-                                            {getStatusIcon(isChecking && result.status === 'pending' ? 'checking' : result.status)}
+                                            {getStatusIcon(
+                                                isChecking && result.status === 'pending'
+                                                    ? 'checking'
+                                                    : result.status
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -583,13 +624,15 @@ module.exports = nextConfig;`;
 
                             {!isChecking && hasFailed && (
                                 <p className="mt-3 text-xs text-red-600">
-                                    Fix the issues above before going live. See header examples below.
+                                    Fix the issues above before going live. See header examples
+                                    below.
                                 </p>
                             )}
 
                             {!isChecking && allPassed && (
                                 <p className="mt-3 text-xs text-emerald-600">
-                                    Your URL passed basic checks. You may still need to configure iframe headers (X-Frame-Options).
+                                    Your URL passed basic checks. You may still need to configure
+                                    iframe headers (X-Frame-Options).
                                 </p>
                             )}
                         </div>
@@ -604,8 +647,12 @@ module.exports = nextConfig;`;
                             <div className="flex items-center gap-3">
                                 <Shield className="w-5 h-5 text-amber-600" />
                                 <div className="text-left">
-                                    <h3 className="font-medium text-gray-800">Required Response Headers</h3>
-                                    <p className="text-xs text-gray-500">Configure your server to allow iframe embedding</p>
+                                    <h3 className="font-medium text-gray-800">
+                                        Required Response Headers
+                                    </h3>
+                                    <p className="text-xs text-gray-500">
+                                        Configure your server to allow iframe embedding
+                                    </p>
                                 </div>
                             </div>
 
@@ -620,12 +667,18 @@ module.exports = nextConfig;`;
                             <div className="p-4 border-t border-gray-200 space-y-4">
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Express.js</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Express.js
+                                        </span>
                                         <button
                                             onClick={() => handleCopy(expressCode, 'express')}
                                             className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                         >
-                                            {copied === 'express' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                            {copied === 'express' ? (
+                                                <Check className="w-3 h-3 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-3 h-3" />
+                                            )}
                                         </button>
                                     </div>
                                     <CodeBlock code={expressCode} maxHeight="max-h-40" />
@@ -633,12 +686,18 @@ module.exports = nextConfig;`;
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Next.js</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Next.js
+                                        </span>
                                         <button
                                             onClick={() => handleCopy(nextCode, 'next')}
                                             className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                         >
-                                            {copied === 'next' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                            {copied === 'next' ? (
+                                                <Check className="w-3 h-3 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-3 h-3" />
+                                            )}
                                         </button>
                                     </div>
                                     <CodeBlock code={nextCode} maxHeight="max-h-40" />
@@ -646,12 +705,18 @@ module.exports = nextConfig;`;
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Nginx</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Nginx
+                                        </span>
                                         <button
                                             onClick={() => handleCopy(nginxCode, 'nginx')}
                                             className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                         >
-                                            {copied === 'nginx' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                            {copied === 'nginx' ? (
+                                                <Check className="w-3 h-3 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-3 h-3" />
+                                            )}
                                         </button>
                                     </div>
                                     <CodeBlock code={nginxCode} maxHeight="max-h-32" />
@@ -664,7 +729,9 @@ module.exports = nextConfig;`;
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Permissions</label>
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Permissions
+                                </label>
                                 <p className="text-xs text-gray-500">
                                     Select what your app can access from the wallet
                                 </p>
@@ -693,13 +760,25 @@ module.exports = nextConfig;`;
                                                 : 'border-gray-200 hover:border-gray-300'
                                         } ${perm.required ? 'cursor-default' : ''}`}
                                     >
-                                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-cyan-100 text-cyan-600' : 'bg-gray-100 text-gray-500'}`}>
+                                        <div
+                                            className={`p-2 rounded-lg ${
+                                                isSelected
+                                                    ? 'bg-cyan-100 text-cyan-600'
+                                                    : 'bg-gray-100 text-gray-500'
+                                            }`}
+                                        >
                                             {perm.icon}
                                         </div>
 
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <span className={`font-medium text-sm ${isSelected ? 'text-cyan-700' : 'text-gray-700'}`}>
+                                                <span
+                                                    className={`font-medium text-sm ${
+                                                        isSelected
+                                                            ? 'text-cyan-700'
+                                                            : 'text-gray-700'
+                                                    }`}
+                                                >
                                                     {perm.name}
                                                 </span>
                                                 {perm.required && (
@@ -713,12 +792,18 @@ module.exports = nextConfig;`;
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-0.5">{perm.description}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                {perm.description}
+                                            </p>
                                         </div>
 
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                            isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-gray-300'
-                                        }`}>
+                                        <div
+                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                                isSelected
+                                                    ? 'border-cyan-500 bg-cyan-500'
+                                                    : 'border-gray-300'
+                                            }`}
+                                        >
                                             {isSelected && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                     </button>
@@ -766,7 +851,10 @@ module.exports = nextConfig;`;
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
                             <strong className="text-gray-700">Blank iframe?</strong>
-                            <span className="text-gray-600"> — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN</span>
+                            <span className="text-gray-600">
+                                {' '}
+                                — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN
+                            </span>
                         </div>
                     </div>
 
@@ -782,7 +870,10 @@ module.exports = nextConfig;`;
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
                             <strong className="text-gray-700">CORS errors?</strong>
-                            <span className="text-gray-600"> — Add Access-Control-Allow-Origin header</span>
+                            <span className="text-gray-600">
+                                {' '}
+                                — Add Access-Control-Allow-Origin header
+                            </span>
                         </div>
                     </div>
                 </div>

@@ -29,6 +29,9 @@ type SendBoostCredentialOptions = {
     mediaAttachments?: BoostCMSMediaAttachment[];
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-helpers');
+
 /**
  * Builds the `templateData` payload that `sendBoost` / `addBoostSomeone`
  * forward to the network when a recipient has per-recipient media attachments
@@ -371,7 +374,7 @@ export const updateBoost = async (
             (updatedCredential.credentialSubject as any).achievement ?? {};
         (updatedCredential.credentialSubject as any).achievement.alignment = alignments;
     } catch (e) {
-        console.warn('Failed to set nested alignments on updatedCredential', e);
+        log.warn('Failed to set nested alignments on updatedCredential', e);
     }
 
     const updatedBoost = await wallet?.invoke?.updateBoost(boostUri, {

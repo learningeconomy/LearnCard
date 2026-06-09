@@ -1,0 +1,79 @@
+---
+/**
+ * Northstar landing — the app's "front door". A concise hero that
+ * frames Northstar as a three-product AWS cert-prep suite, plus three
+ * product cards that link to the course / practice / coaching pages.
+ *
+ * Intentionally light on content: we want visitors to land, see the
+ * three products, and click into one. Most of the actual storytelling
+ * happens on the per-product pages where there's real UI to drive.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="AWS Cloud Practitioner prep" activeNav="home">
+    <div class="container">
+        <section class="hero">
+            <div>
+                <p class="page-eyebrow">Northstar Learning</p>
+
+                <h1 class="page-title">
+                    One platform for the AWS Cloud Practitioner cert.
+                </h1>
+
+                <p class="page-lede">
+                    Study the fundamentals, grind through timed practice exams, and drill your weakest topics
+                    with an AI coach &mdash; all verifiable, all inside the credentials
+                    you already carry.
+                </p>
+
+                <div class="u-stack">
+                    <a href="/course" class="btn btn-primary">Start with the course</a>
+                </div>
+            </div>
+
+            <div class="hero-art" aria-hidden="true">
+                <span class="hero-art-label">
+                    Northstar &middot; AWS Cloud Practitioner Track
+                </span>
+            </div>
+        </section>
+
+        <h2 class="section-title">Three products, one pathway</h2>
+
+        <p class="page-lede">
+            Each product issues its own verifiable credential when you finish.
+            Plug them into any pathway that recognises the matching requirement kind.
+        </p>
+
+        <div class="product-grid">
+            <a href="/course" class="product-card">
+                <span class="product-card-icon" aria-hidden="true">&#x25B6;</span>
+                <h3 class="product-card-title">Cloud Essentials</h3>
+                <p class="product-card-desc">
+                    Video-led intro to EC2, S3, IAM, and VPC. Issues a typed
+                    completion credential &mdash; matched by <em>credential-type</em>.
+                </p>
+            </a>
+
+            <a href="/practice" class="product-card">
+                <span class="product-card-icon" aria-hidden="true">&#x2714;</span>
+                <h3 class="product-card-title">Practice Exams</h3>
+                <p class="product-card-desc">
+                    Five timed exams with a live score ring. Issues a score VC &mdash;
+                    matched by <em>score-threshold</em> on <code>practiceScore &gt;= 80</code>.
+                </p>
+            </a>
+
+            <a href="/coaching" class="product-card">
+                <span class="product-card-icon" aria-hidden="true">&#x2B50;</span>
+                <h3 class="product-card-title">AI Coach</h3>
+                <p class="product-card-desc">
+                    Focused gap-close drills on the topics your practice flagged.
+                    Issues an Open Badge &mdash; matched by <em>ob-achievement</em>.
+                </p>
+            </a>
+        </div>
+    </div>
+</BaseLayout>

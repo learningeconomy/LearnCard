@@ -62,7 +62,6 @@ env:
     AWS_DEFAULT_REGION: us-east-1
     SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
 
-
 jobs:
     # ============================================================================
     # DETERMINE WHAT'S AFFECTED
@@ -408,6 +407,11 @@ jobs:
                   SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
                   OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
                   OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
+                  # LC-1644 perf bench backend telemetry (admin-only). POSTHOG_HOST is a var (non-secret),
+                  # POSTHOG_API_KEY is a secret. GIT_SHA is the deploy commit for tagging events.
+                  POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+                  GIT_SHA: ${{ github.sha }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -655,16 +659,24 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
+            # Force-push to the deploy branch (Netlify auto-deploys from it). The deploy
+            # branch is a pointer to the source tip, not a dev branch — force-pushing
+            # prevents a diverged pointer (e.g. from a direct hotfix) from deadlocking the
+            # deploy on a non-fast-forward rejection. --force-with-lease refuses if the
+            # remote tip isn't the one we just fetched, guarding concurrent updates.
             - name: Push to production branch
               if: |
                   needs.determine-affected.outputs.is_release == 'true' ||
                   (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
               run: |
+                  BRANCH="${{ steps.vars.outputs.netlify_branch }}"
+                  git fetch origin "$BRANCH" || true
                   if [[ "${{ steps.vars.outputs.force_push }}" == 'true' ]]; then
-                    git push --force origin HEAD:${{ steps.vars.outputs.netlify_branch }}
+                    git push --force origin HEAD:"$BRANCH"
+                  elif git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null; then
+                    git push --force-with-lease="$BRANCH:origin/$BRANCH" origin HEAD:"$BRANCH"
                   else
-                    git push origin HEAD:${{ steps.vars.outputs.netlify_branch }}
+                    git push origin HEAD:"$BRANCH"
                   fi
 
             - name: Get App Version
@@ -743,7 +755,14 @@ jobs:
     # ============================================================================
     tag-jira-release:
         name: Tag Jira Release
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
         continue-on-error: true
         if: |
             always() &&
@@ -964,9 +983,9 @@ jobs:
         uses: ./.github/workflows/fastlane-deploy-native-apps.yml
         with:
             environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
-            googlePlayReleaseTrack: "production"
+            googlePlayReleaseTrack: 'production'
             submitToAppStore: true
-            releaseNotes: "- Critical Bug Fixes and Security Patches"
+            releaseNotes: '- Critical Bug Fixes and Security Patches'
         secrets: inherit
 
     # ============================================================================
@@ -1089,12 +1108,39 @@ jobs:
               run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
 
     # ============================================================================
+    # SMOKETEST PUBLISHED NPM PACKAGES (verify external installability)
+    # Calls the reusable smoketest-npm-packages workflow against the freshly
+    # published `latest` dist-tags from a clean directory with no monorepo
+    # context. Catches regressions like the didkit-plugin-node@0.2.14
+    # workspace:* leak that broke `npx @learncard/cli` for external users.
+    # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
+    # so a failure here WILL mark the deploy workflow run as failed. Treat
+    # smoketest failures as a real signal — the package was published but is
+    # broken for external consumers. Nightly cron in smoketest-npm-packages.yml
+    # provides a second line of defense.
+    # ============================================================================
+    smoketest-published-packages:
+        name: Smoketest Published NPM Packages
+        needs: publish-npm
+        if: |
+            always() &&
+            needs.publish-npm.result == 'success'
+        uses: ./.github/workflows/smoketest-npm-packages.yml
+
+    # ============================================================================
     # SMOKETEST (after deploys — one job per target environment)
     # Fires when any deploy in this run succeeded, gated on the run's target.
     # ============================================================================
     smoketest-staging:
         name: Smoketest Staging
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
         if: |
             always() &&
             !cancelled() &&
@@ -1115,7 +1161,14 @@ jobs:
 
     smoketest-production:
         name: Smoketest Production
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
         if: |
             always() &&
             !cancelled() &&
@@ -1136,7 +1189,14 @@ jobs:
 
     smoketest-scouts:
         name: Smoketest Scouts
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
         if: |
             always() &&
             !cancelled() &&

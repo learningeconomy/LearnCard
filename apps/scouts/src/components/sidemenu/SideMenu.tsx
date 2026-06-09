@@ -18,6 +18,8 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { ModalTypes, useIsCurrentUserLCNUser, useModal, useScreenWidth } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('side-menu');
 
 const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnum.scoutPass }) => {
     const { newModal, closeModal } = useModal({
@@ -56,7 +58,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                         Sentry.setTag('packageVersion', currentBundle.version);
                     }
                 } catch (error) {
-                    console.error('Error getting bundle version:', error);
+                    log.error('Error getting bundle version:', error);
                     // Fallback to package version
                     firstStartupStore.set.version(__PACKAGE_VERSION__ || '');
                     Sentry.setTag('packageVersion', __PACKAGE_VERSION__ || '');

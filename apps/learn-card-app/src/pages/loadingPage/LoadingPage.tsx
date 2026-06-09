@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('loading-page');
 
 import { IonCol, IonContent, IonPage, IonRow, IonSpinner } from '@ionic/react';
 
@@ -23,16 +25,17 @@ const LoadingPage: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent
-                fullscreen
-                className="flex items-center justify-center"
-            >
+            <IonContent fullscreen className="flex items-center justify-center">
                 <IonRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
                 >
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={textLogo} alt="Logo" className="mb-8 max-w-[300px] max-h-[80px] object-contain" />
+                        <img
+                            src={textLogo}
+                            alt="Logo"
+                            className="mb-8 max-w-[300px] max-h-[80px] object-contain"
+                        />
                     </IonCol>
                 </IonRow>
             </IonContent>
@@ -49,16 +52,17 @@ export const LoadingPageDumb: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent
-                fullscreen
-                className="flex items-center justify-center"
-            >
+            <IonContent fullscreen className="flex items-center justify-center">
                 <IonRow
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loaderColor }}
                 >
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={textLogo} alt="Logo" className="mb-8 max-w-[300px] max-h-[80px] object-contain" />
+                        <img
+                            src={textLogo}
+                            alt="Logo"
+                            className="mb-8 max-w-[300px] max-h-[80px] object-contain"
+                        />
                     </IonCol>
                 </IonRow>
             </IonContent>
@@ -110,7 +114,7 @@ export const LoadingPage2: React.FC = React.memo(() => {
                     redirectStore.set.authRedirect(null);
                     chapiStore.set.isChapiInteraction(null);
                 } catch (e) {
-                    console.error(e);
+                    log.error(e);
                 }
                 history.push(redirectTo);
             } else if (lcnRedirectTo) {

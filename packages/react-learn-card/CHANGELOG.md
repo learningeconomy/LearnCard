@@ -1,5 +1,42 @@
 # @welibraryos/react-learn-card
 
+## 2.9.29
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/init@2.3.21
+
+## 2.9.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.20
+
+## 2.9.27
+
+### Patch Changes
+
+-   [#1242](https://github.com/learningeconomy/LearnCard/pull/1242) [`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88) Thanks [@smurflo2](https://github.com/smurflo2)! - Better, prettier handling for issuer/issuee names when they're missing or dids
+
+-   Updated dependencies [[`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    -   @learncard/init@2.3.19
+
+## 2.9.26
+
+### Patch Changes
+
+-   Updated dependencies [[`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344)]:
+    -   @learncard/init@2.3.18
+
+## 2.9.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.16
+
 ## 2.9.24
 
 ### Patch Changes

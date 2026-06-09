@@ -1,21 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { VC, VP } from '@learncard/types';
-import {
-    IonContent,
-    IonPage,
-    IonFooter,
-    IonToolbar,
-    IonRow,
-    IonLoading,
-} from '@ionic/react';
+import { IonContent, IonPage, IonFooter, IonToolbar, IonRow, IonLoading } from '@ionic/react';
 import { Gift, Check, X as XIcon, Loader2, AlertCircle, Home, HelpCircle } from 'lucide-react';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import X from 'learn-card-base/svgs/X';
 
 import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
     getAchievementType,
@@ -23,6 +27,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
@@ -77,6 +82,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const { presentToast } = useToast();
     const { storeAndAddVCToWallet } = useWallet();
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -87,10 +94,21 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             return;
         }
         setClaiming(true);
+        // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+        capture();
 
         try {
-            await Promise.all(
-                selectedCredentials.map(credential => {
+            // Capture the stored credential URIs so we can publish
+            // a `credential-ingested` bus event for each one. Without
+            // this, the VC-API `/request` claim path silently skips
+            // the pathway-progress reactor — unlike the
+            // `useAddCredentialToWallet` mutation (in
+            // `apps/learn-card-app/src/components/boost/mutations.ts`)
+            // which publishes the event in `onSuccess`. Exchange
+            // acceptance calls `storeAndAddVCToWallet` directly, so
+            // we do the publish inline here.
+            const storeResults = await Promise.all(
+                selectedCredentials.map((credential, i) => {
                     const name = credential.name || 'Credential';
                     const category = getDefaultCategoryForCredential(credential);
                     const achievementType = getAchievementType(credential);
@@ -99,11 +117,52 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         category: category,
                         boostType: achievementType,
                         method: 'VC-API Request',
+                        msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                    });
+
+                    const now = Date.now();
+                    const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                    const accountCreatedAt = Number(
+                        localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                    );
+                    track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                        method: ProfileBuildMethod.VcApiRequest,
+                        itemType: 'credential',
+                        itemCount: 1,
+                        // LC-1853: increment per credential within this batch.
+                        totalItemsAfter: snapshotRef.current.credentialCount + 1 + i,
+                        msSinceAccountCreated: now - accountCreatedAt,
+                        msSinceSessionStart: now - sessionStart,
                     });
 
                     return storeAndAddVCToWallet(credential, { title: name }, 'LearnCloud', true);
                 })
             );
+
+            // Publish one `credential-ingested` event per claimed
+            // VC. Wrapped in try/catch (matching
+            // `useAddCredentialToWallet`): a corrupted VC or a bad
+            // bus listener must never break the core claim flow —
+            // the reactor's dedup-by-eventId tolerates a future
+            // replay sweep that catches anything we drop here.
+            selectedCredentials.forEach((credential, index) => {
+                const credentialUri = storeResults[index]?.credentialUri;
+
+                if (!credentialUri) return;
+
+                try {
+                    publishWalletEvent({
+                        kind: 'credential-ingested',
+                        eventId: uuidv4(),
+                        credentialUri,
+                        vc: credential as unknown as Record<string, unknown>,
+                        ingestedAt: new Date().toISOString(),
+                        source: 'vc-api-exchange',
+                    });
+                } catch (err) {
+                    log.error('failed to publish ingest event', err);
+                }
+            });
 
             setIsClaimed(true);
 
@@ -114,7 +173,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
             onAccept({}, selectedCredentials.length);
         } catch (e) {
-            console.error('Error claiming credential(s)', e);
+            log.error('Error claiming credential(s)', e);
             if (e instanceof Error && e?.message?.includes('exists')) {
                 presentToast(`You have already claimed this credential.`, {
                     type: ToastTypeEnum.Error,
@@ -165,8 +224,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     </h1>
 
                     <p className="text-gray-600 text-sm max-w-md mx-auto">
-                        Tap each credential to select or deselect it. 
-                        Only selected credentials will be added to your wallet.
+                        Tap each credential to select or deselect it. Only selected credentials will
+                        be added to your wallet.
                     </p>
                 </div>
 
@@ -176,15 +235,17 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         <div key={index} className="w-[160px]">
                             <BoostEarnedCard
                                 credential={cred}
-                                categoryType={getDefaultCategoryForCredential(cred) || 'achievement'}
+                                categoryType={
+                                    getDefaultCategoryForCredential(cred) || 'achievement'
+                                }
                                 boostPageViewMode={BoostPageViewMode.Card}
                                 useWrapper={false}
                                 showChecked={true}
                                 initialCheckmarkState={selectedIndices.has(index)}
                                 onCheckMarkClick={() => toggleCredentialSelection(index)}
                                 className={`shadow-md transition-all ${
-                                    selectedIndices.has(index) 
-                                        ? 'ring-2 ring-emerald-500 ring-offset-2' 
+                                    selectedIndices.has(index)
+                                        ? 'ring-2 ring-emerald-500 ring-offset-2'
                                         : 'opacity-60'
                                 }`}
                             />
@@ -196,24 +257,32 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 <div className="mt-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                selectedCredentials.length > 0 ? 'bg-emerald-100' : 'bg-gray-100'
-                            }`}>
-                                <Check className={`w-5 h-5 ${
-                                    selectedCredentials.length > 0 ? 'text-emerald-600' : 'text-gray-400'
-                                }`} />
+                            <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    selectedCredentials.length > 0
+                                        ? 'bg-emerald-100'
+                                        : 'bg-gray-100'
+                                }`}
+                            >
+                                <Check
+                                    className={`w-5 h-5 ${
+                                        selectedCredentials.length > 0
+                                            ? 'text-emerald-600'
+                                            : 'text-gray-400'
+                                    }`}
+                                />
                             </div>
 
                             <div>
                                 <p className="font-medium text-gray-900">
-                                    {selectedCredentials.length} of {credentials.length} credential{credentials.length !== 1 ? 's' : ''} selected
+                                    {selectedCredentials.length} of {credentials.length} credential
+                                    {credentials.length !== 1 ? 's' : ''} selected
                                 </p>
 
                                 <p className="text-sm text-gray-500">
-                                    {selectedCredentials.length === 0 
+                                    {selectedCredentials.length === 0
                                         ? 'Select at least one to continue'
-                                        : 'These will be added to your wallet'
-                                    }
+                                        : 'These will be added to your wallet'}
                                 </p>
                             </div>
                         </div>
@@ -229,7 +298,9 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             }}
                             className="text-sm text-cyan-600 hover:text-cyan-700 font-medium"
                         >
-                            {selectedCredentials.length === credentials.length ? 'Deselect All' : 'Select All'}
+                            {selectedCredentials.length === credentials.length
+                                ? 'Deselect All'
+                                : 'Select All'}
                         </button>
                     </div>
                 </div>
@@ -262,7 +333,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             <div className="p-6">
                                 <div className="space-y-4 mb-6">
                                     <p className="text-gray-600 text-center text-sm">
-                                        The credential link you followed doesn't have any credentials to claim. This could happen if:
+                                        The credential link you followed doesn't have any
+                                        credentials to claim. This could happen if:
                                     </p>
 
                                     <ul className="text-sm text-gray-500 space-y-2 pl-4">
@@ -287,7 +359,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                         </p>
 
                                         <p className="text-sm text-cyan-800">
-                                            Contact the person or organization that sent you this link to request a new one.
+                                            Contact the person or organization that sent you this
+                                            link to request a new one.
                                         </p>
                                     </div>
                                 </div>
@@ -303,7 +376,9 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     </button>
 
                                     <button
-                                        onClick={() => window.open('mailto:support@learncard.com', '_blank')}
+                                        onClick={() =>
+                                            window.open('mailto:support@learncard.com', '_blank')
+                                        }
                                         className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
                                     >
                                         <HelpCircle className="w-4 h-4" />

@@ -8,6 +8,8 @@ import { ThreeDotVertical } from '@learncard/react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-skill-framework');
 
 type ViewSkillFrameworkProps = {
     framework: SkillFramework;
@@ -15,9 +17,6 @@ type ViewSkillFrameworkProps = {
 
 const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) => {
     const { closeModal } = useModal();
-
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    console.log(framework);
 
     // Local editable copy to support in-place editing in Sheet mode
     const [data, setData] = useState<SkillFramework>(framework);
