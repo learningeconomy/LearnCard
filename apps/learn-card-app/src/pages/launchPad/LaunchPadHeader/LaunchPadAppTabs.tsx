@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -28,6 +28,11 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
     const styleSet = getStyleSet(StyleSetEnum.defaults);
+    const tabsScrollRef = useRef<HTMLDivElement | null>(null);
+    const pointerStartRef = useRef<{ x: number; scrollLeft: number } | null>(null);
+    const hasDraggedRef = useRef(false);
+
+    const dragThreshold = 8;
 
     const primaryColor = colorSet.primaryColor;
     const primaryColorShade = colorSet.primaryColorShade;
@@ -44,8 +49,66 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
         });
     }, [flags?.pluginVisibility]);
 
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.pointerType !== 'mouse') return;
+
+        pointerStartRef.current = {
+            x: event.clientX,
+            scrollLeft: event.currentTarget.scrollLeft,
+        };
+        hasDraggedRef.current = false;
+
+        try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+            // Ignore browsers that do not support pointer capture on this element.
+        }
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.pointerType !== 'mouse' || !pointerStartRef.current) return;
+
+        const deltaX = event.clientX - pointerStartRef.current.x;
+
+        if (Math.abs(deltaX) > dragThreshold) {
+            hasDraggedRef.current = true;
+        }
+
+        event.currentTarget.scrollLeft = pointerStartRef.current.scrollLeft - deltaX;
+    };
+
+    const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.pointerType !== 'mouse') return;
+
+        pointerStartRef.current = null;
+
+        try {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+        } catch {
+            // Ignore browsers that do not support pointer capture release here.
+        }
+    };
+
+    const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (!hasDraggedRef.current) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        hasDraggedRef.current = false;
+    };
+
     return (
-        <div className="flex text-grayscale-900 w-full overflow-x-auto scrollbar-hide">
+        <div
+            ref={tabsScrollRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onClickCapture={handleClickCapture}
+            className="flex text-grayscale-900 w-full overflow-x-auto scrollbar-hide select-none cursor-grab active:cursor-grabbing"
+        >
             {visibleTabs.map((option, index) => {
                 const isActive = option === tab;
 
