@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 import IDDisplayCard from '../id/IDDisplayCard';
 import { VCDisplayCard2 } from '@learncard/react';
@@ -118,6 +120,22 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     onDotsClick,
 }) => {
     const currentUser = useCurrentUser();
+
+    // Documents and links must open in the in-app browser on native; photos and
+    // videos are handled internally by the card's lightbox.
+    const handleMediaAttachmentClick = useCallback(
+        async (url: string, type: 'photo' | 'document' | 'video' | 'link') => {
+            if (type !== 'document' && type !== 'link') return;
+            if (!url) return;
+
+            if (Capacitor.isNativePlatform()) {
+                await Browser.open({ url });
+            } else {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+        },
+        []
+    );
 
     const credential = useMemo(() => unwrapBoostCredential(_credential), [_credential]);
 
@@ -331,6 +349,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             showDetailsBtn={showDetailsBtn}
             hideQRCode={hideQRCode}
             onMediaClick={onMediaClick}
+            onMediaAttachmentClick={handleMediaAttachmentClick}
             enableLightbox={true}
             bottomButton={bottomButton}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
