@@ -13,7 +13,6 @@ import {
     resolveSkillFrameworkNeo4jConnection,
     seedSkillFrameworkFixtures,
 } from '../src/seed/seedSkillFrameworks';
-import { getProfileByProfileId } from '../src/accesslayer/profile/read';
 
 type SkillFrameworkCommand = 'seed' | 'add-admin';
 
@@ -212,9 +211,15 @@ const runAddAdmin = async (
             throw new Error('Profile id is required.');
         }
 
-        const profile = await getProfileByProfileId(profileId);
+        // Raw existence check instead of @accesslayer/profile/read, which transitively
+        // imports @models and hits a circular-dependency TDZ under tsx.
+        const normalizedProfileId = profileId.toLowerCase().replace(':', '%3A');
+        const profileResult = await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: $profileId}) RETURN p.profileId AS profileId LIMIT 1`,
+            { profileId: normalizedProfileId }
+        );
 
-        if (!profile) {
+        if (!profileResult.records[0]?.get('profileId')) {
             throw new Error(`No profile found for ${profileId}.`);
         }
 
