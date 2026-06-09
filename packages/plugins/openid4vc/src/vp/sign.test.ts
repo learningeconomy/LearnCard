@@ -1,10 +1,6 @@
 import { UnsignedVP, VP } from '@learncard/types';
 
-import {
-    signPresentation,
-    VpSignError,
-    LdpVpSigner,
-} from './sign';
+import { signPresentation, VpSignError, LdpVpSigner } from './sign';
 import { ProofJwtSigner } from '../vci/types';
 
 /* ---------------------------------- fixtures --------------------------------- */
@@ -60,10 +56,7 @@ const makeLdpSigner = (): LdpVpSigner & {
         lastOptions: undefined as { domain: string; challenge: string } | undefined,
         signCount: 0,
         sign: jest.fn(
-            async (
-                vp: UnsignedVP,
-                opts: { domain: string; challenge: string }
-            ): Promise<VP> => {
+            async (vp: UnsignedVP, opts: { domain: string; challenge: string }): Promise<VP> => {
                 signer.lastInput = vp;
                 signer.lastOptions = opts;
                 signer.signCount += 1;

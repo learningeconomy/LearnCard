@@ -18,32 +18,30 @@ jest.mock('@learncard/learn-cloud-client', () => ({
 
 import { getLearnCloudPlugin } from '../';
 
-const makeW3cVc = () =>
-    ({
-        '@context': ['https://www.w3.org/ns/credentials/v2'],
-        type: ['VerifiableCredential', 'TestCredential'],
-        issuer: 'did:web:issuer.example',
-        credentialSubject: { id: 'did:key:holder', name: 'Ada' },
-        validFrom: '2024-01-01T00:00:00.000Z',
-        proof: {
-            type: 'Ed25519Signature2020',
-            created: '2024-01-01T00:00:00.000Z',
-            proofPurpose: 'assertionMethod',
-            verificationMethod: 'did:web:issuer.example#key-1',
-        },
-    });
+const makeW3cVc = () => ({
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    type: ['VerifiableCredential', 'TestCredential'],
+    issuer: 'did:web:issuer.example',
+    credentialSubject: { id: 'did:key:holder', name: 'Ada' },
+    validFrom: '2024-01-01T00:00:00.000Z',
+    proof: {
+        type: 'Ed25519Signature2020',
+        created: '2024-01-01T00:00:00.000Z',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:web:issuer.example#key-1',
+    },
+});
 
-const makeLearnCard = () =>
-    ({
-        id: {
-            did: () => 'did:key:z6MkHolder',
-        },
-        invoke: {
-            getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
-            decryptDagJwe: jest.fn(async value => value),
-        },
-        debug: jest.fn(),
-    });
+const makeLearnCard = () => ({
+    id: {
+        did: () => 'did:key:z6MkHolder',
+    },
+    invoke: {
+        getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
+        decryptDagJwe: jest.fn(async value => value),
+    },
+    debug: jest.fn(),
+});
 
 describe('LearnCloud Plugin', () => {
     beforeEach(() => {

@@ -31,6 +31,8 @@ export * from './components/boost/boost';
 export * from './components/boost/BoostRecipients';
 export * from './components/boost/boostFooter/BoostFooter';
 export * from './components/CredentialBadge/CredentialBadge';
+export * from './components/CredentialBadge/CredentialBadgeNew';
+export * from './components/CredentialBadge/CredentialCLRBadge';
 export * from './components/headerBranding/headerBrandingHelpers';
 export * from './components/CredentialSubjectDisplay/CredentialSubjectDisplay';
 export * from './components/RadioButton';

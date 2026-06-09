@@ -16,81 +16,94 @@ const universityDegreeJwt = makeJwtVc({
 });
 
 describe('buildDcqlQuery', () => {
-    it('returns a parsed query for a hand-rolled valid input', async () => { const query = buildDcqlQuery({
-        credentials: [
-            {
-                id: 'degree',
-                format: 'jwt_vc_json',
-                meta: { type_values: [['VerifiableCredential', 'UniversityDegree']] },
-            },
-        ],
-    });
-    
-    expect(query.credentials).toHaveLength(1);
-    expect(query.credentials[0]?.id).toBe('degree'); });
+    it('returns a parsed query for a hand-rolled valid input', async () => {
+        const query = buildDcqlQuery({
+            credentials: [
+                {
+                    id: 'degree',
+                    format: 'jwt_vc_json',
+                    meta: { type_values: [['VerifiableCredential', 'UniversityDegree']] },
+                },
+            ],
+        });
 
-    it('throws VpError for malformed input', async () => { // No `credentials` field at all → both parse and validate
-    // would reject. Caller gets the plugin's stable error code.
-    expect(() => buildDcqlQuery({ wrong: 'shape' })).toThrow(); });
+        expect(query.credentials).toHaveLength(1);
+        expect(query.credentials[0]?.id).toBe('degree');
+    });
+
+    it('throws VpError for malformed input', async () => {
+        // No `credentials` field at all → both parse and validate
+        // would reject. Caller gets the plugin's stable error code.
+        expect(() => buildDcqlQuery({ wrong: 'shape' })).toThrow();
+    });
 });
 
 describe('requestW3cVc — single-credential builder', () => {
-    it('produces a query the holder selector accepts', async () => { const query = requestW3cVc({
-        id: 'degree',
-        types: ['VerifiableCredential', 'UniversityDegree'],
-    });
-    
-    // Round-trip: hand the composed query to the holder selector
-    // alongside a matching candidate; canSatisfy must be true.
-    const result = await selectCredentialsForDcql([{ credential: universityDegreeJwt }],
-    query);
-    
-    expect(result.canSatisfy).toBe(true);
-    expect(result.matches.degree?.candidates).toHaveLength(1); });
+    it('produces a query the holder selector accepts', async () => {
+        const query = requestW3cVc({
+            id: 'degree',
+            types: ['VerifiableCredential', 'UniversityDegree'],
+        });
 
-    it('defaults format to jwt_vc_json', async () => { const query = requestW3cVc({
-        id: 'any',
-        types: ['VerifiableCredential', 'UniversityDegree'],
-    });
-    
-    expect(query.credentials[0]?.format).toBe('jwt_vc_json'); });
+        // Round-trip: hand the composed query to the holder selector
+        // alongside a matching candidate; canSatisfy must be true.
+        const result = await selectCredentialsForDcql([{ credential: universityDegreeJwt }], query);
 
-    it('honors an explicit ldp_vc format', async () => { const query = requestW3cVc({
-        id: 'any',
-        format: 'ldp_vc',
-        types: ['VerifiableCredential', 'UniversityDegree'],
+        expect(result.canSatisfy).toBe(true);
+        expect(result.matches.degree?.candidates).toHaveLength(1);
     });
-    
-    expect(query.credentials[0]?.format).toBe('ldp_vc'); });
 
-    it('threads claim filters through to the holder side', async () => { const restrictiveQuery = requestW3cVc({
-        id: 'bsc_only',
-        types: ['VerifiableCredential', 'UniversityDegree'],
-        claims: [
-            {
-                path: ['credentialSubject', 'degreeName'],
-                values: ['BSc Comp Sci'],
-            },
-        ],
-    });
-    
-    const otherDegree = makeJwtVc({
-        type: ['VerifiableCredential', 'UniversityDegree'],
-        credentialSubject: { degreeName: 'MSc Linguistics' },
-    });
-    
-    const result = await selectCredentialsForDcql([{ credential: universityDegreeJwt }, { credential: otherDegree }],
-    restrictiveQuery);
-    
-    // Only the BSc must match — the MSc is dropped by the values filter.
-    expect(result.matches.bsc_only?.candidates).toHaveLength(1);
-    expect(result.matches.bsc_only?.candidates[0]?.credential).toBe(
-        universityDegreeJwt
-    ); });
+    it('defaults format to jwt_vc_json', async () => {
+        const query = requestW3cVc({
+            id: 'any',
+            types: ['VerifiableCredential', 'UniversityDegree'],
+        });
 
-    it('rejects an empty types array up front', async () => { // Better than letting the dcql library's valibot stack
-    // trace surface to UI code.
-    expect(() => requestW3cVc({ id: 'x', types: [] })).toThrow(/types/); });
+        expect(query.credentials[0]?.format).toBe('jwt_vc_json');
+    });
+
+    it('honors an explicit ldp_vc format', async () => {
+        const query = requestW3cVc({
+            id: 'any',
+            format: 'ldp_vc',
+            types: ['VerifiableCredential', 'UniversityDegree'],
+        });
+
+        expect(query.credentials[0]?.format).toBe('ldp_vc');
+    });
+
+    it('threads claim filters through to the holder side', async () => {
+        const restrictiveQuery = requestW3cVc({
+            id: 'bsc_only',
+            types: ['VerifiableCredential', 'UniversityDegree'],
+            claims: [
+                {
+                    path: ['credentialSubject', 'degreeName'],
+                    values: ['BSc Comp Sci'],
+                },
+            ],
+        });
+
+        const otherDegree = makeJwtVc({
+            type: ['VerifiableCredential', 'UniversityDegree'],
+            credentialSubject: { degreeName: 'MSc Linguistics' },
+        });
+
+        const result = await selectCredentialsForDcql(
+            [{ credential: universityDegreeJwt }, { credential: otherDegree }],
+            restrictiveQuery
+        );
+
+        // Only the BSc must match — the MSc is dropped by the values filter.
+        expect(result.matches.bsc_only?.candidates).toHaveLength(1);
+        expect(result.matches.bsc_only?.candidates[0]?.credential).toBe(universityDegreeJwt);
+    });
+
+    it('rejects an empty types array up front', async () => {
+        // Better than letting the dcql library's valibot stack
+        // trace surface to UI code.
+        expect(() => requestW3cVc({ id: 'x', types: [] })).toThrow(/types/);
+    });
 });
 
 /* ----------------------------- helpers --------------------------------- */

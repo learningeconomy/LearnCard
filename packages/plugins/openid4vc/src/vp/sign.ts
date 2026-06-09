@@ -70,10 +70,7 @@ export type VpToken = string | VP | Record<string, string | VP>;
  * replay-binding via `domain`/`challenge`.
  */
 export interface LdpVpSigner {
-    sign: (
-        unsignedVp: UnsignedVP,
-        options: { domain: string; challenge: string }
-    ) => Promise<VP>;
+    sign: (unsignedVp: UnsignedVP, options: { domain: string; challenge: string }) => Promise<VP>;
 }
 
 export interface SignPresentationOptions {
@@ -254,9 +251,7 @@ const presentSdJwt = async (
     } catch (e) {
         throw new VpSignError(
             'sd_jwt_present_failed',
-            `Failed to build SD-JWT-VC presentation: ${
-                e instanceof Error ? e.message : String(e)
-            }`,
+            `Failed to build SD-JWT-VC presentation: ${e instanceof Error ? e.message : String(e)}`,
             { cause: e }
         );
     }
@@ -314,7 +309,9 @@ const signJwtVp = async (
         typ: 'JWT',
     };
 
-    const jti = options.jti ?? (typeof options.unsignedVp.id === 'string' ? options.unsignedVp.id : undefined);
+    const jti =
+        options.jti ??
+        (typeof options.unsignedVp.id === 'string' ? options.unsignedVp.id : undefined);
 
     const payload: Record<string, unknown> = {
         iss: options.holder,
@@ -346,10 +343,7 @@ const signLdpVp = async (
     helpers: SignPresentationHelpers
 ): Promise<SignPresentationResult> => {
     if (!helpers.ldpVpSigner) {
-        throw new VpSignError(
-            'missing_ldp_signer',
-            'vpFormat=ldp_vp requires helpers.ldpVpSigner'
-        );
+        throw new VpSignError('missing_ldp_signer', 'vpFormat=ldp_vp requires helpers.ldpVpSigner');
     }
 
     let vpToken: VP;

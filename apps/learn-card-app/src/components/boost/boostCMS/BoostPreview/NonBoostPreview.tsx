@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
@@ -12,6 +12,12 @@ import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import {
+    normalizeClrTranscriptDisplayModel,
+    ClrTranscriptSurface,
+} from '../../../../helpers/clrRenderer.helpers';
+import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -33,6 +39,8 @@ type IssueHistory = {
 
 type NonBoostPreviewProps = {
     credential: VC;
+    boostUri?: string;
+    credentialUri?: string;
     verificationItems: VerificationItem[];
     categoryType: BoostCategoryOptionsEnum;
     customThumbComponent: React.ReactNode;
@@ -59,10 +67,13 @@ type NonBoostPreviewProps = {
     existingEndorsements?: VC[];
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
+    isClrCredential?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     credential,
+    boostUri,
+    credentialUri,
     verificationItems,
     categoryType,
     issueHistory,
@@ -89,6 +100,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     existingEndorsements,
     isEarnedBoost,
     isClrChildCredential = false,
+    isClrCredential = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const { initWallet } = useWallet();
@@ -185,10 +197,26 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const isIssuerViewSelected =
-        enableRenderMethod && Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
+
+    const bgColor = isClrCredential ? 'bg-grayscale-100' : '';
+
+    const clrModel = useMemo(
+        () =>
+            isClrCredential || isClrChildCredential
+                ? normalizeClrTranscriptDisplayModel(
+                      credential as unknown as Record<string, unknown>
+                  )
+                : null,
+        [credential, isClrCredential, isClrChildCredential]
+    );
+    const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
+    const hasClrEvidence = clrEvidence.length > 0;
 
     const credentialDisplay = (
         <VCDisplayCardWrapper2
@@ -220,30 +248,49 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         />
     );
 
+    let credentialContent: React.ReactNode;
+    if ((isClrCredential || isClrChildCredential) && clrModel) {
+        credentialContent = (
+            <ClrTranscriptFullPage
+                model={clrModel}
+                boost={credential}
+                // boostUri comes from boost cards; credentialUri from direct credential views
+                boostUri={boostUri ?? credentialUri}
+                options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
+            />
+        );
+    } else if (isIssuerViewSelected && renderMethod) {
+        credentialContent = (
+            <RenderMethodDisplay
+                vc={credential}
+                renderMethod={renderMethod}
+                fallback={credentialDisplay}
+                className="w-full"
+            />
+        );
+    } else {
+        credentialContent = credentialDisplay;
+    }
+
     return (
         <IonPage>
-            <div className="flex h-full">
-                <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+            <div className={`flex h-full ${bgColor}`}>
+                <section
+                    className={`flex h-full overflow-y-scroll pb-[80px] flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0`}
+                >
                     <div
-                        className={`w-full px-2 flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                        className={`w-full ${
+                            isMobile && isClrCredential ? 'px-0' : 'px-2'
+                        } flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                             isCertificate ? 'certificate-display-zoom' : ''
                         } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                     >
                         <section
-                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+                            } ${isMobile && isClrCredential ? '!p-0' : 'px-6'}`}
                         >
-                            {isIssuerViewSelected && renderMethod ? (
-                                <RenderMethodDisplay
-                                    vc={credential}
-                                    renderMethod={renderMethod}
-                                    fallback={credentialDisplay}
-                                    className="w-full"
-                                />
-                            ) : (
-                                credentialDisplay
-                            )}
+                            {credentialContent}
                         </section>
                     </div>
                 </section>
@@ -256,7 +303,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         useFullCloseButton={!isMobile}
                     />
                 </footer>
-                {!isMobile && (
+                {!isMobile && !isClrCredential && (
                     <BoostDetailsSideBar
                         credential={selectedCredential}
                         categoryType={categoryType}

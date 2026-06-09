@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import neo4j from 'neo4j-driver';
 import { randomUUID } from 'crypto';
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('app-store.helpers');
 
 const NEO4J_URI = 'bolt://localhost:7687';
