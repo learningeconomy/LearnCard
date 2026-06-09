@@ -56,9 +56,11 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
     const [expandedRecord, setExpandedRecord] = useState<number | null>(null);
 
     const guideState = integration?.guideState as GuideState | undefined;
-    const savedConfig = guideState?.config?.consentFlowConfig as {
-        contractUri?: string;
-    } | undefined;
+    const savedConfig = guideState?.config?.consentFlowConfig as
+        | {
+              contractUri?: string;
+          }
+        | undefined;
 
     const contractUri = savedConfig?.contractUri || '';
 
@@ -94,15 +96,17 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
             <div className="space-y-6">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">Connected Users</h2>
-                    <p className="text-sm text-gray-500">Users who have consented to share data with you</p>
+                    <p className="text-sm text-gray-500">
+                        Users who have consented to share data with you
+                    </p>
                 </div>
 
                 <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
                     <Shield className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-500 font-medium">No contract configured</p>
                     <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
-                        Complete the Build guide to create a consent flow contract first.
-                        Consent records will appear here once users start granting consent.
+                        Complete the Build guide to create a consent flow contract first. Consent
+                        records will appear here once users start granting consent.
                     </p>
                 </div>
             </div>
@@ -124,13 +128,17 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
             <div className="space-y-6">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">Connected Users</h2>
-                    <p className="text-sm text-gray-500">Users who have consented to share data with you</p>
+                    <p className="text-sm text-gray-500">
+                        Users who have consented to share data with you
+                    </p>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-medium text-red-800 text-sm">Failed to load consent data</p>
+                        <p className="font-medium text-red-800 text-sm">
+                            Failed to load consent data
+                        </p>
                         <p className="text-xs text-red-700 mt-1">
                             {error instanceof Error ? error.message : 'Unknown error'}
                         </p>
@@ -184,8 +192,8 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                     <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                     <p className="text-gray-500 font-medium">No consent records yet</p>
                     <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
-                        Users who grant consent via your redirect flow will appear here.
-                        Try the consent flow from the Testing tab first.
+                        Users who grant consent via your redirect flow will appear here. Try the
+                        consent flow from the Testing tab first.
                     </p>
                 </div>
             ) : (
@@ -211,19 +219,22 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
 
                                     <div className="flex-1 text-left">
                                         <p className="text-sm font-medium text-gray-800">
-                                            {getConsentRecordDisplayName(record.personal || {}) || `Consent Record #${records.length - idx}`}
+                                            {getConsentRecordDisplayName(record.personal || {}) ||
+                                                `Consent Record #${records.length - idx}`}
                                         </p>
 
                                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
-                                                {consentDate.toLocaleDateString()} {consentDate.toLocaleTimeString()}
+                                                {consentDate.toLocaleDateString()}{' '}
+                                                {consentDate.toLocaleTimeString()}
                                             </span>
 
                                             {personalKeys.length > 0 && (
                                                 <span className="flex items-center gap-1">
                                                     <Database className="w-3 h-3" />
-                                                    {personalKeys.length} field{personalKeys.length !== 1 ? 's' : ''} shared
+                                                    {personalKeys.length} field
+                                                    {personalKeys.length !== 1 ? 's' : ''} shared
                                                 </span>
                                             )}
                                         </div>
@@ -241,11 +252,16 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         {/* Personal Data */}
                                         {personalKeys.length > 0 && (
                                             <div className="mt-3">
-                                                <p className="text-xs font-medium text-gray-600 mb-2">Shared Personal Data</p>
+                                                <p className="text-xs font-medium text-gray-600 mb-2">
+                                                    Shared Personal Data
+                                                </p>
 
                                                 <div className="space-y-1">
                                                     {personalKeys.map(key => (
-                                                        <div key={key} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                                        <div
+                                                            key={key}
+                                                            className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                                                        >
                                                             <span className="text-xs text-gray-500 capitalize">
                                                                 {key.replace(/_/g, ' ')}
                                                             </span>
@@ -261,7 +277,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         {/* Credential Categories */}
                                         {credCategories.length > 0 && (
                                             <div>
-                                                <p className="text-xs font-medium text-gray-600 mb-2">Shared Credential Categories</p>
+                                                <p className="text-xs font-medium text-gray-600 mb-2">
+                                                    Shared Credential Categories
+                                                </p>
 
                                                 <div className="flex flex-wrap gap-2">
                                                     {credCategories.map(cat => (
@@ -269,7 +287,15 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                                             key={cat}
                                                             className="px-2 py-1 bg-cyan-50 text-cyan-700 rounded-lg text-xs"
                                                         >
-                                                            {cat} ({(record.credentials.categories[cat] || []).length})
+                                                            {cat} (
+                                                            {
+                                                                (
+                                                                    record.credentials.categories[
+                                                                        cat
+                                                                    ] || []
+                                                                ).length
+                                                            }
+                                                            )
                                                         </span>
                                                     ))}
                                                 </div>
@@ -277,11 +303,12 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         )}
 
                                         {/* No data shared */}
-                                        {personalKeys.length === 0 && credCategories.length === 0 && (
-                                            <p className="mt-3 text-xs text-gray-400 italic">
-                                                Consent granted with no additional data shared
-                                            </p>
-                                        )}
+                                        {personalKeys.length === 0 &&
+                                            credCategories.length === 0 && (
+                                                <p className="mt-3 text-xs text-gray-400 italic">
+                                                    Consent granted with no additional data shared
+                                                </p>
+                                            )}
                                     </div>
                                 )}
                             </div>

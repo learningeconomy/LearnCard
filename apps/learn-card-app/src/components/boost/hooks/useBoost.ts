@@ -20,11 +20,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
     const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
 
-    const boostSomeoneElse = async (
-        issueTo: BoostCMSIssueTo[],
-        wallet: any,
-        boostUri: string
-    ) => {
+    const boostSomeoneElse = async (issueTo: BoostCMSIssueTo[], wallet: any, boostUri: string) => {
         try {
             setIsLoading(true);
 

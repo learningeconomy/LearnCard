@@ -139,10 +139,7 @@ export const useWallet = () => {
                 try {
                     await waitForSQLiteReady();
                 } catch (readyErr) {
-                    log.warn(
-                        'Waiting for SQLite readiness failed; continuing anyway',
-                        readyErr
-                    );
+                    log.warn('Waiting for SQLite readiness failed; continuing anyway', readyErr);
                 }
             }
 

@@ -374,15 +374,15 @@ export const useResolveBoosts = (uris?: (string | undefined)[], enabled = true) 
         queries:
             enabled && validUris
                 ? validUris.map(uri => ({
-                    queryKey: ['useResolveBoost', uri],
-                    queryFn: async (): Promise<VC> => {
-                        if (!uri) throw new Error('Boost URI is required.');
-                        const wallet = await initWallet();
-                        const vc = await wallet.invoke.resolveFromLCN(uri);
-                        if (!vc) throw new Error('Unresolveable boost.');
-                        return vc as VC;
-                    },
-                }))
+                      queryKey: ['useResolveBoost', uri],
+                      queryFn: async (): Promise<VC> => {
+                          if (!uri) throw new Error('Boost URI is required.');
+                          const wallet = await initWallet();
+                          const vc = await wallet.invoke.resolveFromLCN(uri);
+                          if (!vc) throw new Error('Unresolveable boost.');
+                          return vc as VC;
+                      },
+                  }))
                 : [],
     });
     return queries.map((result, index) => ({ ...result, uri: validUris?.[index] }));

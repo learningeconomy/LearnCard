@@ -1088,7 +1088,10 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                         if (records && records.length > 0) {
                             // Remove the record from the index
                             await wallet.index.LearnCloud.remove?.(records[0]!.id);
-                            log.debug('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
+                            log.debug(
+                                '[useSyncRevokedCredentials] Removed revoked credential from index:',
+                                uri
+                            );
                         }
                     } catch (e) {
                         log.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);

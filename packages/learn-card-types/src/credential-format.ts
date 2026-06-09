@@ -4,10 +4,9 @@ import type { VC } from './vc';
 /**
  * Wire-format identifier for a credential at rest in the wallet.
  *
- * Introduced by ADR-0001 (format-tagged credential storage). Phase 1
- * adds this as OPTIONAL metadata on `CredentialRecord`; existing W3C
- * records continue to work without it. Format-aware code paths use
- * this value to dispatch on the correct wire-form representation.
+ * Optional metadata on `CredentialRecord`. Existing W3C records work
+ * without it. Format-aware code paths use this value to dispatch on
+ * the correct wire-form representation. See ADR-0001 for rationale.
  *
  * Values follow OID4VCI / OID4VP draft-16 conventions:
  *   - `w3c-vc-2.0`  — JSON-LD VC, VCDM 2.0 `@context`
@@ -26,6 +25,62 @@ export const CredentialFormatValidator = z.enum([
     'mso_mdoc',
 ]);
 export type CredentialFormat = z.infer<typeof CredentialFormatValidator>;
+
+/**
+ * Storage-plane envelope for native (non-W3C) credential formats.
+ *
+ * The storage plane previously accepted only `VC | VP`, which forced
+ * SD-JWT-VC to synthesize a JSON-LD wrapper around the compact form
+ * just to satisfy the type — even though the underlying transport
+ * (LearnCloud tRPC) accepts any JSON-serializable value.
+ *
+ * The envelope is the on-wire shape for any credential that is NOT a
+ * W3C VC/VP. Consumers identify the envelope by the presence of both
+ * `format` and `data` fields (use `isStoredCredentialEnvelope`).
+ *
+ * Per-format `data` conventions:
+ *   - `dc+sd-jwt` / `vc+sd-jwt`: the compact `<JWT>~<disclosures>~`
+ *     string (no KB-JWT — that is per-presentation).
+ *   - `jwt-vc-json`: the compact JWS string.
+ *   - `mso_mdoc`: base64url-encoded CBOR bytes. The TypeScript type
+ *     allows `Uint8Array` for in-memory ergonomics; storage plugins
+ *     MUST convert to a base64url string at the transport boundary.
+ *     The Zod validator (used at the wire layer) is string-only.
+ *
+ * W3C VCs continue to flow through `upload(vc: VC)` directly — they
+ * do not use the envelope. This keeps the legacy partner surface
+ * untouched.
+ */
+// Wire validator: data is `string` only because JSON transport (tRPC, OpenAPI)
+// cannot carry Uint8Array natively. Storage plugins encode binary `Uint8Array`
+// data to base64url BEFORE the validator runs at the transport boundary.
+// The TypeScript type below is intentionally wider (`string | Uint8Array`) to
+// preserve in-memory ergonomics for plugins doing the conversion.
+export const StoredCredentialEnvelopeValidator = z
+    .object({
+        format: CredentialFormatValidator,
+        data: z.string(),
+    })
+    .passthrough();
+export type StoredCredentialEnvelope = {
+    format: CredentialFormat;
+    data: string | Uint8Array;
+    [key: string]: unknown;
+};
+
+/**
+ * Runtime typeguard for the storage envelope shape. Storage plugins
+ * use this to branch in `upload`/`read.get` between the legacy W3C
+ * path and the envelope path. Performs a shallow structural check —
+ * does not validate `data` semantics for the chosen format.
+ */
+export const isStoredCredentialEnvelope = (value: unknown): value is StoredCredentialEnvelope => {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as Record<string, unknown>;
+    if (typeof candidate.format !== 'string') return false;
+    if (!CredentialFormatValidator.safeParse(candidate.format).success) return false;
+    return typeof candidate.data === 'string' || candidate.data instanceof Uint8Array;
+};
 
 /**
  * Format-discriminated read view over a stored credential. Returned
@@ -57,17 +112,10 @@ export type StoredCredential =
 /**
  * Unified display projection for any credential format. Returned by
  * the `toDisplayViewModel(stored, learnCard)` adapter that lands in
- * Phase 2 of the ADR-0001 migration (per-format adapters: W3C, JWT-VC,
- * SD-JWT-VC, mDoc).
- *
  * UI components consume this shape regardless of underlying format,
  * so the same BoostEarnedCard / category view / search index works
  * across all credential types. The format-specific decoding logic
- * lives in the adapter, not the UI.
- *
- * Phase 1 ships this interface only; the adapter implementation lands
- * in Phase 2. UI code can start importing the type immediately so the
- * Phase 2 PRs are pure additions.
+ * lives in the per-format display adapter, not the UI.
  */
 export interface CredentialDisplayViewModel {
     /** Source format of the underlying credential. */

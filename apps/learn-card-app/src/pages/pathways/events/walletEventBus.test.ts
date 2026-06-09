@@ -4,6 +4,13 @@ import type { CredentialIngestedEvent, WalletEvent } from '../types';
 
 import { createWalletEventBus } from './walletEventBus';
 
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
+}));
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
@@ -14,9 +21,7 @@ beforeEach(() => {
     seq = 0;
 });
 
-const makeEvent = (
-    overrides: Partial<CredentialIngestedEvent> = {},
-): CredentialIngestedEvent => {
+const makeEvent = (overrides: Partial<CredentialIngestedEvent> = {}): CredentialIngestedEvent => {
     seq += 1;
 
     return {
@@ -190,7 +195,7 @@ describe('walletEventBus — validation', () => {
             bus.publish({
                 kind: 'credential-ingested',
                 // Missing eventId, credentialUri, etc.
-            } as unknown as WalletEvent),
+            } as unknown as WalletEvent)
         ).toThrow();
     });
 

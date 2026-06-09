@@ -1,5 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts, useWallet } from 'learn-card-base';
+import {
+    useModal,
+    useGetCurrentUserTroopIdsResolved,
+    useGetMultipleBoosts,
+    useWallet,
+} from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SkillFrameworkType } from '@learncard/types';
@@ -63,7 +68,10 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
     }, [troopIds?.globalAdmin, troopIds?.nationalAdmin]);
 
     // Extract just the URIs for the query hook
-    const boostUris = useMemo(() => networkBoostIds.map(({ boostId }) => boostId), [networkBoostIds]);
+    const boostUris = useMemo(
+        () => networkBoostIds.map(({ boostId }) => boostId),
+        [networkBoostIds]
+    );
 
     // Fetch all boosts in parallel using useQueries
     const boostQueries = useGetMultipleBoosts(boostUris);
@@ -123,7 +131,8 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         updateNetworksMutation.mutate(selected);
     };
 
-    const isLoading = isLoadingCredentials || isLoadingFramework || boostQueries.some(q => q.isLoading);
+    const isLoading =
+        isLoadingCredentials || isLoadingFramework || boostQueries.some(q => q.isLoading);
 
     return (
         <section className="bg-grayscale-100 rounded-[20px] flex flex-col max-w-[600px]">

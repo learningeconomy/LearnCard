@@ -37,8 +37,17 @@ export const CheckListUploadResume: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFile, isUploading, isSaving, fetchParsedCredentials, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Data, rawArtifactCredential } =
-        useUploadFile(UploadTypesEnum.Resume);
+    const {
+        getFile,
+        isUploading,
+        isSaving,
+        fetchParsedCredentials,
+        storeSelectedCredentials,
+        parsedCredentials,
+        setParsedCredentials,
+        base64Data,
+        rawArtifactCredential,
+    } = useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
@@ -76,9 +85,11 @@ export const CheckListUploadResume: React.FC = () => {
                         });
                         setShowReview(true);
                     } else {
-                        storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                            () => handleSetResume()
-                        );
+                        storeSelectedCredentials(
+                            [],
+                            rawArtifactCredential,
+                            UploadTypesEnum.Resume
+                        ).finally(() => handleSetResume());
                     }
                 })
                 .catch(error => {
@@ -93,9 +104,11 @@ export const CheckListUploadResume: React.FC = () => {
                         duration: 7000,
                     });
                     // Still store the raw artifact so the file isn't lost
-                    storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                        () => handleSetResume()
-                    );
+                    storeSelectedCredentials(
+                        [],
+                        rawArtifactCredential,
+                        UploadTypesEnum.Resume
+                    ).finally(() => handleSetResume());
                 });
         }
     }, [base64Data, rawArtifactCredential]);
@@ -140,7 +153,9 @@ export const CheckListUploadResume: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+                const record = await wallet.index.LearnCloud.get({
+                    category: UploadTypesEnum.Resume,
+                });
                 const recordUri = record?.[0]?.uri as string;
                 if (!recordUri) return;
                 await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
@@ -271,7 +286,9 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                        {savedCredentialCount} credential
+                                        {savedCredentialCount !== 1 ? 's' : ''} saved to your
+                                        wallet.
                                     </p>
                                 </div>
                             )}
@@ -283,8 +300,19 @@ export const CheckListUploadResume: React.FC = () => {
                                         fill="none"
                                         viewBox="0 0 24 24"
                                     >
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                        />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
                                         Processing your resume in the background...

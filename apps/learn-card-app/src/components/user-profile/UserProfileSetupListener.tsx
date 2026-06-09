@@ -73,7 +73,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
             <NewJoinNetworkPrompt
                 title="Setup Your Profile"
                 handleCloseModal={() => setIsModalOpen(false)}
-                handleLogout={() => { }}
+                handleLogout={() => {}}
                 showCancelButton={false}
                 showDeleteAccountButton={false}
                 showNetworkModal

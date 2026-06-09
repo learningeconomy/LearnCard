@@ -11,7 +11,9 @@ const friendly = (kind: FriendlyErrorInfo['kind']): FriendlyErrorInfo => ({
     suggestion: 's',
 });
 
-const sigResolutionError = new Error('No valid public key JWKs found in DID document for did:web:…');
+const sigResolutionError = new Error(
+    'No valid public key JWKs found in DID document for did:web:…'
+);
 const transportError = new Error('fetch failed');
 const formatGapError = new Error('unsupported_format');
 const trustGapError = new Error('Issuer not trusted');
@@ -183,6 +185,27 @@ describe('decideRecovery', () => {
             });
 
             expect(decision.kind).toBe('retry_silent');
+        });
+
+        it('matches OID4VCI 1.0 Final body.error = "invalid_credential_request" (EUDI dialect)', () => {
+            const wrapped = Object.assign(new Error('Generic'), {
+                name: 'VciError',
+                code: 'credential_request_failed',
+                status: 400,
+                body: { error: 'invalid_credential_request' },
+            });
+
+            const decision = decideRecovery({
+                friendly: friendly('request_invalid'),
+                raw: wrapped,
+                attempted: { ...createEmptyAttemptLog(), signersTried: ['did:web'] },
+                availableSigners: ['did:web', 'did:key'],
+            });
+
+            expect(decision.kind).toBe('retry_silent');
+            if (decision.kind === 'retry_silent') {
+                expect(decision.nextStrategy).toEqual({ axis: 'signer', id: 'did:key' });
+            }
         });
 
         it('does NOT match VciError + credential_request_failed at 4xx (user error, not server)', () => {

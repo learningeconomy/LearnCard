@@ -33,6 +33,17 @@ import * as dcql from 'dcql';
 
 import { adaptCredentialsForDcql, type AdaptableCredential } from './adapt';
 import type { DcqlQuery, DcqlQueryResult } from './types';
+import type { SdJwtParser } from '../vp/select';
+
+export interface SelectForDcqlOptions {
+    /**
+     * Required when SD-JWT candidates are in the pool; ignored otherwise.
+     * Same runtime-feature-detect injection seam as the PEX matcher's
+     * `SelectCredentialsOptions.sdJwtParser`. Plugin-level callers wire
+     * this to `learnCard.invoke.parseSdJwtVc`.
+     */
+    sdJwtParser?: SdJwtParser;
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -108,11 +119,14 @@ export interface DcqlSelectionResult {
  * (sd-jwt-vc, mso_mdoc — see `./adapt.ts`) without erroring; those
  * simply don't appear in `matches[*].candidates`.
  */
-export const selectCredentialsForDcql = (
+export const selectCredentialsForDcql = async (
     candidates: readonly AdaptableCredential[],
-    query: import('./types').DcqlQuery
-): DcqlSelectionResult => {
-    const adapted = adaptCredentialsForDcql(candidates);
+    query: import('./types').DcqlQuery,
+    options: SelectForDcqlOptions = {}
+): Promise<DcqlSelectionResult> => {
+    const adapted = await adaptCredentialsForDcql(candidates, {
+        sdJwtParser: options.sdJwtParser,
+    });
     const dcqlCredentials = adapted.map(a => a.adapted);
 
     // The dcql library's matcher takes the validated query + the
@@ -159,7 +173,7 @@ export const selectCredentialsForDcql = (
         matches,
         reason: result.can_be_satisfied
             ? undefined
-            : 'No combination of held credentials satisfies the verifier\'s DCQL query',
+            : "No combination of held credentials satisfies the verifier's DCQL query",
         raw: result as DcqlQueryResult,
     };
 };

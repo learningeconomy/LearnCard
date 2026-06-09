@@ -11,7 +11,10 @@ interface SigningAuthorityStepProps {
     onBack: () => void;
 }
 
-export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onComplete, onBack }) => {
+export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
+    onComplete,
+    onBack,
+}) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -71,7 +74,10 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            presentToast('Failed to create signing authority', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setCreating(false);
         }
@@ -82,22 +88,26 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Signing Authority</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Set Up Signing Authority
+                </h3>
 
                 <p className="text-gray-600">
-                    A signing authority cryptographically signs your credentials, making them verifiable. 
-                    This proves the credentials actually came from you.
+                    A signing authority cryptographically signs your credentials, making them
+                    verifiable. This proves the credentials actually came from you.
                 </p>
             </div>
 
             {/* Status */}
-            <div className={`flex items-center gap-3 p-4 rounded-xl border ${
-                loading 
-                    ? 'bg-gray-50 border-gray-200' 
-                    : hasSigningAuthority 
-                        ? 'bg-emerald-50 border-emerald-200' 
+            <div
+                className={`flex items-center gap-3 p-4 rounded-xl border ${
+                    loading
+                        ? 'bg-gray-50 border-gray-200'
+                        : hasSigningAuthority
+                        ? 'bg-emerald-50 border-emerald-200'
                         : 'bg-amber-50 border-amber-200'
-            }`}>
+                }`}
+            >
                 {loading ? (
                     <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
                 ) : hasSigningAuthority ? (
@@ -107,29 +117,33 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                 )}
 
                 <div>
-                    <p className={`font-medium ${
-                        loading 
-                            ? 'text-gray-700' 
-                            : hasSigningAuthority 
-                                ? 'text-emerald-800' 
+                    <p
+                        className={`font-medium ${
+                            loading
+                                ? 'text-gray-700'
+                                : hasSigningAuthority
+                                ? 'text-emerald-800'
                                 : 'text-amber-800'
-                    }`}>
-                        {loading 
-                            ? 'Checking...' 
-                            : hasSigningAuthority 
-                                ? 'Signing authority configured' 
-                                : 'No signing authority found'}
+                        }`}
+                    >
+                        {loading
+                            ? 'Checking...'
+                            : hasSigningAuthority
+                            ? 'Signing authority configured'
+                            : 'No signing authority found'}
                     </p>
 
-                    <p className={`text-sm ${
-                        loading 
-                            ? 'text-gray-500' 
-                            : hasSigningAuthority 
-                                ? 'text-emerald-700' 
+                    <p
+                        className={`text-sm ${
+                            loading
+                                ? 'text-gray-500'
+                                : hasSigningAuthority
+                                ? 'text-emerald-700'
                                 : 'text-amber-700'
-                    }`}>
-                        {hasSigningAuthority 
-                            ? `Using: ${primarySA?.name}` 
+                        }`}
+                    >
+                        {hasSigningAuthority
+                            ? `Using: ${primarySA?.name}`
                             : 'Create one to sign credentials'}
                     </p>
                 </div>

@@ -55,12 +55,15 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
                 }
             }
 
-            return new Promise(async (resolve) => {
-                const listener = await BarcodeScanner.addListener('barcodeScanned', async (result) => {
-                    await listener.remove();
-                    await BarcodeScanner.stopScan();
-                    resolve(result.barcode?.rawValue ?? null);
-                });
+            return new Promise(async resolve => {
+                const listener = await BarcodeScanner.addListener(
+                    'barcodeScanned',
+                    async result => {
+                        await listener.remove();
+                        await BarcodeScanner.stopScan();
+                        resolve(result.barcode?.rawValue ?? null);
+                    }
+                );
 
                 await BarcodeScanner.startScan({
                     formats: [BarcodeFormat.QrCode],

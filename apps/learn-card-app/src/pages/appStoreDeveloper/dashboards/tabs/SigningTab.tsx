@@ -90,13 +90,15 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
             </div>
 
             {/* Status */}
-            <div className={`p-4 rounded-xl border flex items-start gap-3 ${
-                loading
-                    ? 'bg-gray-50 border-gray-200'
-                    : hasSigningAuthority
-                    ? 'bg-emerald-50 border-emerald-200'
-                    : 'bg-amber-50 border-amber-200'
-            }`}>
+            <div
+                className={`p-4 rounded-xl border flex items-start gap-3 ${
+                    loading
+                        ? 'bg-gray-50 border-gray-200'
+                        : hasSigningAuthority
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-amber-50 border-amber-200'
+                }`}
+            >
                 {loading ? (
                     <Loader2 className="w-5 h-5 text-gray-400 mt-0.5 animate-spin" />
                 ) : hasSigningAuthority ? (
@@ -106,9 +108,15 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                 )}
 
                 <div>
-                    <h3 className={`font-medium ${
-                        loading ? 'text-gray-600' : hasSigningAuthority ? 'text-emerald-800' : 'text-amber-800'
-                    }`}>
+                    <h3
+                        className={`font-medium ${
+                            loading
+                                ? 'text-gray-600'
+                                : hasSigningAuthority
+                                ? 'text-emerald-800'
+                                : 'text-amber-800'
+                        }`}
+                    >
                         {loading
                             ? 'Checking...'
                             : hasSigningAuthority
@@ -117,9 +125,11 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                     </h3>
 
                     {!loading && (
-                        <p className={`text-sm mt-1 ${
-                            hasSigningAuthority ? 'text-emerald-700' : 'text-amber-700'
-                        }`}>
+                        <p
+                            className={`text-sm mt-1 ${
+                                hasSigningAuthority ? 'text-emerald-700' : 'text-amber-700'
+                            }`}
+                        >
                             {hasSigningAuthority
                                 ? `Using: ${primarySA?.name}`
                                 : 'Create one below to sign credentials'}
@@ -172,8 +182,8 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
 
             <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <p>
-                    A signing authority cryptographically signs your credentials, making them verifiable.
-                    This proves the credentials actually came from you.
+                    A signing authority cryptographically signs your credentials, making them
+                    verifiable. This proves the credentials actually came from you.
                 </p>
             </div>
         </div>

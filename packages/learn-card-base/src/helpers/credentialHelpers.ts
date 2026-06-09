@@ -853,16 +853,9 @@ export const getCredentialName = (credential: VC): string => {
     // rendered nameless. Critical for vanilla VCDM credentials issued
     // via OID4VCI by issuers that don't ship a learncard-flavored
     // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
-    const humanizedType = humanizeCredentialType(
-        getMostSpecificCredentialType(credentialTypes)
-    );
+    const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
 
-    return (
-        credential?.name ||
-        name ||
-        credentialSubjectAchievementName ||
-        humanizedType
-    );
+    return credential?.name || name || credentialSubjectAchievementName || humanizedType;
 };
 
 export const getCredentialType = (credential: VC) => {

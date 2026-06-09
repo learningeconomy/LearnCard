@@ -240,10 +240,16 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
 
     const handleCleanup = async () => {
         if (!recipientProfileId.trim()) {
-            presentToast('Recipient profile ID required for cleanup', { type: ToastTypeEnum.Error });
+            presentToast('Recipient profile ID required for cleanup', {
+                type: ToastTypeEnum.Error,
+            });
             return;
         }
-        if (!window.confirm(`Delete ALL credentials/notifications/activity for ${recipientProfileId.trim()}?`)) {
+        if (
+            !window.confirm(
+                `Delete ALL credentials/notifications/activity for ${recipientProfileId.trim()}?`
+            )
+        ) {
             return;
         }
         try {
@@ -275,7 +281,9 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
 
     const renderPercentileRow = (label: string, p: { p50: number; p95: number; p99: number }) => (
         <tr key={label} className="border-b border-grayscale-100 last:border-0">
-            <td className="py-[6px] pr-[12px] font-[600] text-[13px] text-grayscale-700 font-notoSans">{label}</td>
+            <td className="py-[6px] pr-[12px] font-[600] text-[13px] text-grayscale-700 font-notoSans">
+                {label}
+            </td>
             <td className="py-[6px] pr-[12px] text-[13px] font-mono text-grayscale-900">{p.p50}</td>
             <td className="py-[6px] pr-[12px] text-[13px] font-mono text-grayscale-900">{p.p95}</td>
             <td className="py-[6px] text-[13px] font-mono text-grayscale-900">{p.p99}</td>
@@ -290,7 +298,11 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                 <div className="p-[20px] flex flex-col gap-[16px]">
                     <div>
                         <label className={labelClass}>Listing ID</label>
-                        <input className={inputClass} value={listingId} onChange={e => setListingId(e.target.value)} />
+                        <input
+                            className={inputClass}
+                            value={listingId}
+                            onChange={e => setListingId(e.target.value)}
+                        />
                     </div>
 
                     <div>
@@ -305,7 +317,11 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
 
                     <div>
                         <label className={labelClass}>Template Alias</label>
-                        <input className={inputClass} value={templateAlias} onChange={e => setTemplateAlias(e.target.value)} />
+                        <input
+                            className={inputClass}
+                            value={templateAlias}
+                            onChange={e => setTemplateAlias(e.target.value)}
+                        />
                     </div>
 
                     <div className="flex gap-[12px]">
@@ -317,7 +333,11 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                                 max={100}
                                 className={inputClass}
                                 value={iterations}
-                                onChange={e => setIterations(Math.max(1, Math.min(100, Number(e.target.value))))}
+                                onChange={e =>
+                                    setIterations(
+                                        Math.max(1, Math.min(100, Number(e.target.value)))
+                                    )
+                                }
                             />
                         </div>
                         <div className="flex-1">
@@ -328,7 +348,9 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                                 max={10}
                                 className={inputClass}
                                 value={warmup}
-                                onChange={e => setWarmup(Math.max(0, Math.min(10, Number(e.target.value))))}
+                                onChange={e =>
+                                    setWarmup(Math.max(0, Math.min(10, Number(e.target.value))))
+                                }
                             />
                         </div>
                     </div>
@@ -373,7 +395,9 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
 
                     {status === 'error' && errorMessage && (
                         <div className="bg-red-50 border border-red-200 rounded-[12px] p-[16px]">
-                            <p className="text-[13px] text-red-700 font-mono break-all">{errorMessage}</p>
+                            <p className="text-[13px] text-red-700 font-mono break-all">
+                                {errorMessage}
+                            </p>
                         </div>
                     )}
 
@@ -383,9 +407,11 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                             Frontend Telemetry Test (single iteration)
                         </h3>
                         <p className="text-[12px] text-grayscale-600 font-notoSans mb-[12px]">
-                            Triggers a single <code className="font-mono">sendCredential</code> and mounts the real claim modal so the
-                            full frontend perf flow fires. Click Accept inside the modal to emit{' '}
-                            <code className="font-mono">frontend.sendcredential.iteration</code> with all phase timings.
+                            Triggers a single <code className="font-mono">sendCredential</code> and
+                            mounts the real claim modal so the full frontend perf flow fires. Click
+                            Accept inside the modal to emit{' '}
+                            <code className="font-mono">frontend.sendcredential.iteration</code>{' '}
+                            with all phase timings.
                         </p>
 
                         <label className="flex items-center gap-[8px] mb-[12px] text-[13px] text-grayscale-700 font-notoSans">
@@ -394,13 +420,17 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                                 checked={autoCleanupBeforeRun}
                                 onChange={e => setAutoCleanupBeforeRun(e.target.checked)}
                             />
-                            Auto-cleanup recipient before each run (avoids <code className="font-mono">alreadyClaimed=true</code> after first iteration)
+                            Auto-cleanup recipient before each run (avoids{' '}
+                            <code className="font-mono">alreadyClaimed=true</code> after first
+                            iteration)
                         </label>
 
                         <div className="flex gap-[12px] items-center">
                             <button
                                 onClick={handleSingleSendCredential}
-                                disabled={singleStatus === 'running' || singleStatus === 'modal-open'}
+                                disabled={
+                                    singleStatus === 'running' || singleStatus === 'modal-open'
+                                }
                                 className="rounded-full bg-cyan-600 text-white px-[18px] py-[12px] text-[15px] font-[600] font-notoSans disabled:opacity-50 flex items-center justify-center gap-[8px]"
                             >
                                 {singleStatus === 'running' && (
@@ -409,19 +439,22 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                                 {singleStatus === 'running'
                                     ? 'Triggering…'
                                     : singleStatus === 'modal-open'
-                                      ? 'Modal open…'
-                                      : 'Trigger Single sendCredential'}
+                                    ? 'Modal open…'
+                                    : 'Trigger Single sendCredential'}
                             </button>
                             {iterationCount > 0 && (
                                 <span className="text-[13px] text-grayscale-600 font-notoSans">
-                                    {iterationCount} iteration{iterationCount === 1 ? '' : 's'} fired
+                                    {iterationCount} iteration{iterationCount === 1 ? '' : 's'}{' '}
+                                    fired
                                 </span>
                             )}
                         </div>
 
                         {singleStatus === 'error' && singleError && (
                             <div className="bg-red-50 border border-red-200 rounded-[12px] p-[12px] mt-[12px]">
-                                <p className="text-[13px] text-red-700 font-mono break-all">{singleError}</p>
+                                <p className="text-[13px] text-red-700 font-mono break-all">
+                                    {singleError}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -429,23 +462,38 @@ const AdminToolsAppEventPerfBenchOption: FC<{ option: AdminToolOption }> = ({ op
                     {status === 'done' && result && (
                         <div className="bg-emerald-50 border border-emerald-200 rounded-[12px] p-[16px] flex flex-col gap-[12px]">
                             <p className="text-[14px] font-[600] text-emerald-800 font-notoSans">
-                                Run {result.runId} — {result.summary.iteration_count} iterations, {result.summary.errors} errors
+                                Run {result.runId} — {result.summary.iteration_count} iterations,{' '}
+                                {result.summary.errors} errors
                             </p>
                             <table className="w-full text-left">
                                 <thead>
                                     <tr>
-                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans pr-[12px]">Phase</th>
-                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans pr-[12px]">p50</th>
-                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans pr-[12px]">p95</th>
-                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans">p99</th>
+                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans pr-[12px]">
+                                            Phase
+                                        </th>
+                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans pr-[12px]">
+                                            p50
+                                        </th>
+                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans pr-[12px]">
+                                            p95
+                                        </th>
+                                        <th className="text-[12px] font-[600] text-grayscale-500 font-notoSans">
+                                            p99
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {renderPercentileRow('total', result.summary.total)}
                                     {renderPercentileRow('sa_issue', result.summary.sa_issue)}
                                     {renderPercentileRow('sa_http', result.summary.sa_http)}
-                                    {renderPercentileRow('parallel_reads', result.summary.parallel_reads)}
-                                    {renderPercentileRow('owner_and_sa_reads', result.summary.owner_and_sa_reads)}
+                                    {renderPercentileRow(
+                                        'parallel_reads',
+                                        result.summary.parallel_reads
+                                    )}
+                                    {renderPercentileRow(
+                                        'owner_and_sa_reads',
+                                        result.summary.owner_and_sa_reads
+                                    )}
                                     {renderPercentileRow(
                                         'log_activity_and_send_boost',
                                         result.summary.log_activity_and_send_boost

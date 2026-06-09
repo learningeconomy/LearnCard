@@ -41,16 +41,16 @@ export function isOriginTrusted(origin: string): boolean {
 export function addTrustedOrigin(origin: string, appName?: string): void {
     try {
         const trusted = getTrustedOrigins();
-        
+
         // Check if already exists
         const existingIndex = trusted.findIndex(item => item.origin === origin);
-        
+
         const newEntry: TrustedOriginData = {
             origin,
             consentedAt: Date.now(),
             appName,
         };
-        
+
         if (existingIndex >= 0) {
             // Update existing entry
             trusted[existingIndex] = newEntry;
@@ -58,7 +58,7 @@ export function addTrustedOrigin(origin: string, appName?: string): void {
             // Add new entry
             trusted.push(newEntry);
         }
-        
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(trusted));
         log.info('Added trusted origin', origin);
     } catch (error) {
