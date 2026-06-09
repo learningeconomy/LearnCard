@@ -644,6 +644,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                                     setContract={setContract}
                                     onChange={updateWriteCredentials('categories') as any}
                                     mode="write"
+                                    hideVerifiableDataOnWrite
                                 />
                             </div>
 

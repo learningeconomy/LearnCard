@@ -16,6 +16,21 @@ import {
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { SetState } from 'packages/shared-types/dist';
 
+const WRITE_HIDDEN_CONTRACT_CATEGORIES: CredentialCategoryEnum[] = [
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
+    CredentialCategoryEnum.verifiableData,
+];
+
+const isWriteHiddenContractCategory = (category: string) =>
+    WRITE_HIDDEN_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum);
+
 type ContractCategoryMultiSelectProps = {
     values: Record<CredentialCategoryEnum, { required?: boolean; defaultEnabled?: boolean }>;
     onChange: (
@@ -25,6 +40,7 @@ type ContractCategoryMultiSelectProps = {
     className?: string;
     setContract?: SetState<ConsentFlowContractDetails>;
     mode?: 'read' | 'write';
+    hideVerifiableDataOnWrite?: boolean;
 };
 
 const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = ({
@@ -34,8 +50,39 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
     className = '',
     setContract = () => {},
     mode = 'read',
+    hideVerifiableDataOnWrite = false,
 }) => {
     const { newModal } = useModal();
+
+    const visibleCategories = Object.keys(values).filter(category => {
+        if (
+            mode === 'write' &&
+            hideVerifiableDataOnWrite &&
+            isWriteHiddenContractCategory(category)
+        ) {
+            return false;
+        }
+
+        return true;
+    });
+
+    React.useEffect(() => {
+        if (mode !== 'write' || !hideVerifiableDataOnWrite) return;
+
+        const hiddenCategories = Object.keys(values).filter(category =>
+            isWriteHiddenContractCategory(category)
+        );
+
+        if (hiddenCategories.length === 0) return;
+
+        onChange(
+            produce(values, draft => {
+                hiddenCategories.forEach(category => {
+                    delete draft[category as CredentialCategoryEnum];
+                });
+            })
+        );
+    }, [hideVerifiableDataOnWrite, mode, onChange, values]);
 
     const handleOpenCategoryPickerModal = () => {
         newModal(
@@ -43,6 +90,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 selectedCategories={values}
                 setContract={setContract}
                 mode={mode}
+                allowedCategories={visibleCategories as CredentialCategoryEnum[]}
             />,
             {
                 sectionClassName: '!max-w-[500px]',
@@ -66,7 +114,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         );
     };
 
-    const inputs = Object.entries(values).map(([category, value], index) => {
+    const inputs = visibleCategories.map((category, index) => {
         const metadata = contractCategoryNameToCategoryMetadata(category);
         const { title, IconWithShape } = metadata || {};
 
