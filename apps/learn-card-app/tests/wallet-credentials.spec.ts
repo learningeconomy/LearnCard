@@ -9,7 +9,7 @@ import {
 import { TEST_USER_2_SEED, TEST_USER_PROFILE_ID, TEST_USER_2_PROFILE_ID } from './constants';
 import { mockDidKitWasmForContext } from './route.helpers';
 
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('wallet-credentials.spec');
 
 test.describe('Wallet Credentials', () => {
