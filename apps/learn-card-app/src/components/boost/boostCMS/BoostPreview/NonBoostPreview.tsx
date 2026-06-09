@@ -299,10 +299,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
                     <BoostFooter
                         handleClose={handleCloseModal}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
+                        handleDetails={
+                            isMobile && !isClrCredential ? () => openDetailsSideModal() : undefined
+                        }
                         handleShare={handleShareBoost}
                         handleDotMenu={onDotsClick}
-                        useFullCloseButton={!isMobile}
+                        useFullCloseButton={!isMobile || isClrCredential}
                     />
                 </footer>
                 {!isMobile && !isClrCredential && (
