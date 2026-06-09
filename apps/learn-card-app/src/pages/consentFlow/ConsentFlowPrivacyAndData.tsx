@@ -17,10 +17,10 @@ import useGuardianGate from 'src/hooks/useGuardianGate';
 import { IonToggle } from '@ionic/react';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowReadSharing from './ConsentFlowReadSharing';
-import ConsentFlowReadSharingItem from './ConsentFlowReadSharingItem';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
 import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsText';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
+import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
@@ -98,15 +98,36 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     }>({ oneTimeShare: false, customDuration: '' });
 
     const [loadingShareAllCredentials, setLoadingShareAllCredentials] = useState(false);
+    const updateSlice = curriedStateSlice(setTerms);
+
+    const updateRead = curriedStateSlice(updateSlice('read'));
+
+    const updateWrite = curriedStateSlice(updateSlice('write'));
+    const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
+
     const { initWallet } = useWallet();
+    const readTerms = {
+        anonymize: false,
+        personal: {},
+        ...(terms.read ?? {}),
+        credentials: {
+            shareAll: false,
+            sharing: false,
+            categories: {},
+            ...(terms.read?.credentials ?? {}),
+            categories: terms.read?.credentials?.categories ?? {},
+        },
+    } as ConsentFlowTerms['read'];
+    const readCredentials = readTerms.credentials;
+
     useEffect(() => {
         const populateCredsForLiveSync = async () => {
             // we need to populate the terms.read.credentials.categories.[Category].shared array if live syncing (shareAll) is turned on
             //   this is because live sync only properly syncs *new* credentials, we need to populate the shared array for initial sharing
             //   Note: this has the side effect of always triggering the save condition if a user has more than 15 credentials in a category with shareAll
             //         since the contract terms endpoint only returns 15 uris
-            const categoriesWithLiveSync = Object.keys(terms.read.credentials.categories).filter(
-                category => terms.read.credentials.categories[category].shareAll
+            const categoriesWithLiveSync = Object.keys(readCredentials.categories ?? {}).filter(
+                category => readCredentials.categories?.[category]?.shareAll
             );
 
             if (categoriesWithLiveSync.length > 0) {
@@ -115,14 +136,27 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                     const wallet = await initWallet();
 
                     const updatedTerms = cloneDeep(terms);
+                    updatedTerms.read ??= readTerms;
+                    updatedTerms.read.credentials ??= {
+                        shareAll: false,
+                        sharing: false,
+                        categories: {},
+                    };
+                    updatedTerms.read.credentials.categories ??= {};
                     await Promise.all(
                         categoriesWithLiveSync.map(async category => {
                             const allCategoryCredUris = (
                                 await wallet.index.LearnCloud.get({ category })
                             ).map(item => item.uri);
 
-                            updatedTerms.read.credentials.categories[category].shared =
-                                allCategoryCredUris;
+                            updatedTerms.read.credentials.categories[category] = {
+                                ...(updatedTerms.read.credentials.categories[category] ?? {
+                                    shareAll: true,
+                                    sharing: true,
+                                    shared: [],
+                                }),
+                                shared: allCategoryCredUris,
+                            };
                         })
                     );
 
@@ -140,23 +174,80 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
         populateCredsForLiveSync();
     }, [terms]);
 
+    const handleUpdateVerifiableDataCategory = async (
+        category: string,
+        mode: 'liveSync' | 'shareOnce' | 'deny'
+    ) => {
+        try {
+            if (mode === 'deny') {
+                setTerms(draft => {
+                    draft.read ??= {
+                        anonymize: false,
+                        credentials: { shareAll: false, sharing: false, categories: {} },
+                        personal: {},
+                    };
+
+                    draft.read.credentials ??= {
+                        shareAll: false,
+                        sharing: false,
+                        categories: {},
+                    };
+                    draft.read.credentials.categories ??= {};
+
+                    draft.read.credentials.categories[category] = {
+                        shareAll: false,
+                        shared: [],
+                        sharing: false,
+                    };
+                });
+                return;
+            }
+
+            const wallet = await initWallet();
+            const shared = (await wallet.index.LearnCloud.get({ category })).map(item => item.uri);
+
+            setTerms(draft => {
+                draft.read ??= {
+                    anonymize: false,
+                    credentials: { shareAll: false, sharing: false, categories: {} },
+                    personal: {},
+                };
+
+                draft.read.credentials ??= { shareAll: false, sharing: false, categories: {} };
+                draft.read.credentials.categories ??= {};
+
+                draft.read.credentials.categories[category] = {
+                    shareAll: mode === 'liveSync',
+                    shared,
+                    sharing: true,
+                };
+            });
+        } catch (error) {
+            presentToast('Connection issue. Please check your internet and try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
     const isUpdated = !isEqual(initialTerms, terms);
 
-    const updateSlice = curriedStateSlice(setTerms);
+    const allReadToggle = Object.keys(readCredentials.categories ?? {})
+        .filter(category => !isVerifiableDataContractCategory(category))
+        .every(category => {
+            const categoryState = readCredentials.categories?.[category];
 
-    const updateRead = curriedStateSlice(updateSlice('read'));
-
-    const updateWrite = curriedStateSlice(updateSlice('write'));
-    const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
-
-    const allReadToggle = Object.values(terms.read.credentials.categories).every(
-        category => category.sharing && category.shareAll
-    );
+            return Boolean(categoryState?.sharing && categoryState.shareAll);
+        });
     const allWriteToggle = Object.values(terms.write.credentials.categories).every(Boolean);
 
     const handleToggleAllCategoryReadToggles = () => {
         updateSlice('read', oldRead => {
             Object.keys(oldRead.credentials.categories).forEach(key => {
+                if (isVerifiableDataContractCategory(key)) {
+                    return;
+                }
+
                 const category = oldRead.credentials.categories[key];
                 const required =
                     contractDetails?.contract.read.credentials.categories[key]?.required;
@@ -195,20 +286,19 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
         contractCategoryReadCategories.includes(category)
     ).filter(isVerifiableDataContractCategory);
     const verifiableDataPersonalItems = verifiableDataCategories.map(category => (
-        <ConsentFlowReadSharingItem
+        <ConsentFlowVerifiableDataSharingItem
             key={category}
             term={
-                terms.read.credentials.categories[category] ?? {
+                readTerms.credentials?.categories?.[category] ?? {
                     shareAll: false,
                     shared: [],
                     sharing: false,
                 }
             }
-            setTerm={newTerm => updateSlice('read')('credentials')('categories')(category, newTerm)}
             category={category}
             titleOverride={category === 'Role Experience' ? 'Experience in Role' : undefined}
             required={contractDetails.contract.read.credentials.categories[category]?.required}
-            contractOwnerDid={contractDetails.owner?.did}
+            onModeChange={mode => handleUpdateVerifiableDataCategory(category, mode)}
         />
     ));
     const contractPersonalReadDataExists =
@@ -325,8 +415,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     mode="ios"
                                     className="[--background:white]"
                                     color="emerald-700"
-                                    onClick={() => updateRead('anonymize', !terms.read.anonymize)}
-                                    checked={terms.read.anonymize}
+                                    onClick={() => updateRead('anonymize', !readTerms.anonymize)}
+                                    checked={readTerms.anonymize}
                                 />
                             </div>
 
@@ -339,7 +429,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
                         <ConsentFlowReadSharing
                             contract={contractDetails.contract.read}
-                            terms={terms.read}
+                            terms={readTerms}
                             setState={updateSlice('read')}
                             contractOwnerDid={contractDetails.owner?.did}
                             showCategories={false}

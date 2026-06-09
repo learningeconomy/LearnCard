@@ -5,7 +5,6 @@ import { IonRippleEffect } from '@ionic/react';
 
 import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 'learn-card-base';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
-import ConsentFlowReadSharingStatus from './ConsentFlowReadSharingStatus';
 import ConsentFlowReadSharingModal from './ConsentFlowReadSharingModal';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 
@@ -87,7 +86,6 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                         {/* TODO pluralize for everything except Work History */}
                         {titleOverride ?? title}
                     </h4>
-                    {/* </section> */}
 
                     {required && (
                         <span className="text-[14px] text-grayscale-600 text-left self-start">
