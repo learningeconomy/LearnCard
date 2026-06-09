@@ -19,7 +19,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/crypto-plugin.cjs.development.js',
+        outfile: 'dist/crypto-plugin.cjs.development.cjs',
         ...buildOptions,
     },
     {
@@ -31,7 +31,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/crypto-plugin.cjs.production.min.js',
+        outfile: 'dist/crypto-plugin.cjs.production.min.cjs',
         ...buildOptions,
     },
     {

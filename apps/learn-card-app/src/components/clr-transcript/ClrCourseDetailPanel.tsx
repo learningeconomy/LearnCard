@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 
 import X from '../svgs/X';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
+import ClrCompetencyBlock from './ClrCompetencyBlock';
 import ClrGradeScale from './ClrGradeScale';
 import ClrProvenanceTable from './ClrProvenanceTable';
+import ClrAlignmentList from './ClrAlignmentList';
+import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import { CertificateDisplayIcon } from 'learn-card-base';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import ClrCourseCredentialCollapsible from './ClrCourseCredentialCollapsible';
@@ -16,15 +20,26 @@ import type {
     AssociationDisplayModel,
 } from '../../helpers/clrRenderer.helpers';
 import { gradeColor } from './clr.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import type { VC } from '@learncard/types';
 
 const ClrCourseDetailPanel: React.FC<{
     course: CourseDisplayModel;
+    boost: VC;
     adminMode?: boolean;
     associations?: AssociationDisplayModel[];
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-}> = ({ course, adminMode = false, associations = [], competencies = [], issuerName }: Props) => {
+    issuerLogo?: string;
+}> = ({
+    course,
+    boost,
+    adminMode = false,
+    associations = [],
+    competencies = [],
+    issuerName,
+    issuerLogo,
+}) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
 
@@ -41,21 +56,14 @@ const ClrCourseDetailPanel: React.FC<{
         a => a.associationType === 'isChildOf' && a.sourceId === id && a.targetName
     );
 
-    // Find competencies linked to this course via associations
-    const linkedCompetencyIds = new Set(
-        associations
-            .filter(a => a.targetId === id && a.associationType === 'isRelatedTo')
-            .map(a => a.sourceId)
-    );
-    const courseCompetencies = competencies.filter(c =>
-        linkedCompetencyIds.has(c.sourceCredentialId)
-    );
+    // Competencies linked to this course via explicit CLR associations (no heuristics).
+    const courseCompetencies = getLinkedCompetencies(id, competencies, associations);
 
     // Grade scale from allowedValues on the primary result
     const allowedGrades = primaryResult?.allowedValue?.value ?? [];
 
     return (
-        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100 overflow-y-auto">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -233,27 +241,47 @@ const ClrCourseDetailPanel: React.FC<{
                                 {courseCompetencies.length === 1 ? 'y' : 'ies'}
                             </p>
                             <span className="text-grayscale-400 text-xs">
-                                {competenciesOpen ? '∧' : '∨'}
+                                {competenciesOpen ? (
+                                    <ChevronUp size={16} />
+                                ) : (
+                                    <ChevronDown size={16} />
+                                )}
                             </span>
                         </button>
                         {competenciesOpen && (
-                            <div className="px-4 pb-4 flex flex-wrap gap-2">
+                            <div className="px-4 pb-4 space-y-4">
                                 {courseCompetencies.map(c => (
-                                    <span
+                                    <ClrCompetencyBlock
                                         key={c.sourceCredentialId}
-                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-grayscale-700 bg-grayscale-50 border border-grayscale-200 rounded-full px-3 py-1.5"
-                                    >
-                                        <span className="text-sm leading-none">🔡</span>
-                                        {c.name?.value ?? 'Competency'}
-                                    </span>
+                                        competency={c}
+                                        adminMode={adminMode}
+                                    />
                                 ))}
                             </div>
                         )}
                     </div>
                 )}
 
+                {/* Aligned competency frameworks (achievement.alignment) */}
+                {course.alignments.length > 0 && (
+                    <ClrAlignmentList alignments={course.alignments} />
+                )}
+
+                {/* Evidence & attachments scoped to this course */}
+                {course.evidence.length > 0 && (
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4">
+                        <ClrTranscriptEvidenceList evidence={course.evidence} />
+                    </div>
+                )}
+
                 {/* Source credential collapsible */}
-                <ClrCourseCredentialCollapsible course={course} issuerName={issuerName} />
+                <ClrCourseCredentialCollapsible
+                    course={course}
+                    issuerName={issuerName}
+                    issuerLogo={issuerLogo}
+                    skillCount={courseCompetencies.length}
+                    credential={boost}
+                />
 
                 {/* Admin provenance */}
                 {adminMode && (

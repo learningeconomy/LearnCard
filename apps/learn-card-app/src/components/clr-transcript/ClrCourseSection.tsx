@@ -28,6 +28,8 @@ const ClrCourseSection: React.FC<{
                 courses={model.courses}
                 onSelectCourse={onSelectCourse}
                 adminMode={adminMode}
+                competencies={model.competencies}
+                associations={model.associations}
             />
         </div>
     );

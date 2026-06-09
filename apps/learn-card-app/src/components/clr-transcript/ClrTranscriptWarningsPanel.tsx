@@ -1,3 +1,4 @@
+import React from 'react';
 import type { DisplayWarning } from '../../helpers/clrRenderer.helpers';
 
 const ClrTranscriptWarningsPanel: React.FC<{

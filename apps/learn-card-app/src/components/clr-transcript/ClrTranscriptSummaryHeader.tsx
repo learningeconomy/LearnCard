@@ -4,6 +4,7 @@ import { StatCard } from './ClrStatCard';
 import ClrIssuerBadge from './ClrIssuerBadge';
 import ClrEvidenceDetailPanel from './ClrEvidenceDetailPanel';
 import ClrCompetencyDetailPanel from './ClrCompetencyDetailPanel';
+import ClrVerificationPills from './ClrVerificationPills';
 import ShareBoostLink from '../boost/boost-options-menu/ShareBoostLink';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
@@ -35,7 +36,13 @@ const ClrTranscriptSummaryHeader: React.FC<{
     };
     const openCompetenciesModal = () => {
         newModal(
-            <ClrCompetencyDetailPanel competencies={model.competencies} adminMode={adminMode} />
+            <ClrCompetencyDetailPanel
+                competencies={model.competencies}
+                courses={model.courses}
+                programs={model.programs}
+                associations={model.associations}
+                adminMode={adminMode}
+            />
         );
     };
 
@@ -141,10 +148,18 @@ const ClrTranscriptSummaryHeader: React.FC<{
                 )}
             </div>
 
-            {/* Verification badge + issuer logo */}
-            <div className="flex items-end justify-between gap-3 flex-wrap">
-                <div className="bg-grayscale-100 rounded-full px-2 py-1">
-                    <CredentialVerificationDisplay credential={boost} showText />
+            {/* Verification badge + pills + issuer logo */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <div className="bg-grayscale-100 rounded-full px-2 py-1">
+                        <CredentialVerificationDisplay
+                            className="!bg-grayscale-100"
+                            iconClassName="!w-4 !h-4"
+                            credential={boost}
+                            showText
+                        />
+                    </div>
+                    <ClrVerificationPills boost={boost} />
                 </div>
 
                 <ClrIssuerBadge logoSrc={issuerLogo} issuerName={model.header.issuerName?.value} />

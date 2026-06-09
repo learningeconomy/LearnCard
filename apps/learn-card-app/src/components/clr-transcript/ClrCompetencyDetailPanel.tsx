@@ -1,48 +1,139 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import X from '../svgs/X';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
-import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import ClrCompetencyBlock from './ClrCompetencyBlock';
+import { CertificateDisplayIcon } from 'learn-card-base';
 import { SkillsIcon } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 
 import { useModal } from 'learn-card-base';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import type { CompetencyDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import type {
+    AssociationDisplayModel,
+    CompetencyDisplayModel,
+    CourseDisplayModel,
+    ProgramDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
+
+type CompetencySection = {
+    id: string;
+    dateLabel?: string;
+    humanCode?: string;
+    title?: string;
+    competencies: CompetencyDisplayModel[];
+};
 
 const ClrCompetencyDetailPanel: React.FC<{
     competencies: CompetencyDisplayModel[];
+    courses: CourseDisplayModel[];
+    programs: ProgramDisplayModel[];
+    associations: AssociationDisplayModel[];
     adminMode?: boolean;
-}> = ({ competencies, adminMode = false }) => {
+}> = ({ competencies, courses, programs, associations, adminMode = false }) => {
     const { closeModal } = useModal();
-    const [open, setOpen] = useState(true);
-    const [selectedCompetencyId, setSelectedCompetencyId] = useState(
-        competencies[0]?.sourceCredentialId
+
+    const linkedCourseSections: CompetencySection[] = courses
+        .map(course => {
+            const courseCompetencies = getLinkedCompetencies(
+                course.sourceCredentialId,
+                competencies,
+                associations
+            );
+
+            if (courseCompetencies.length === 0) return undefined;
+
+            return {
+                id: `course-${course.sourceCredentialId}`,
+                dateLabel: course.earnedAt?.value
+                    ? `Earned ${formatClrDate(course.earnedAt.value)}`
+                    : undefined,
+                humanCode: course.humanCode?.value,
+                title: course.name?.value ?? 'Course',
+                competencies: courseCompetencies,
+            };
+        })
+        .filter((section): section is CompetencySection => section !== undefined);
+
+    const linkedProgramSections: CompetencySection[] = programs
+        .map(program => {
+            const programCompetencies = getLinkedCompetencies(
+                program.sourceCredentialId,
+                competencies,
+                associations
+            );
+
+            if (programCompetencies.length === 0) return undefined;
+
+            return {
+                id: `program-${program.sourceCredentialId}`,
+                dateLabel: program.earnedAt?.value
+                    ? `Awarded ${formatClrDate(program.earnedAt.value)}`
+                    : undefined,
+                title: program.name?.value ?? 'Program',
+                competencies: programCompetencies,
+            };
+        })
+        .filter((section): section is CompetencySection => section !== undefined);
+
+    const linkedCompetencyIds = new Set<string>();
+    [...linkedCourseSections, ...linkedProgramSections].forEach(section => {
+        section.competencies.forEach(competency =>
+            linkedCompetencyIds.add(competency.sourceCredentialId)
+        );
+    });
+
+    const unlinkedCompetencies = competencies.filter(
+        competency => !linkedCompetencyIds.has(competency.sourceCredentialId)
     );
-    const selectedCompetency =
-        competencies.find(competency => competency.sourceCredentialId === selectedCompetencyId) ??
-        competencies[0];
 
-    const getScaleLabel = (
-        result: CompetencyDisplayModel['results'][number]
-    ): string | undefined => {
-        if (result.valueMin && result.valueMax) {
-            return `${result.valueMin.value}–${result.valueMax.value}`;
-        }
+    const renderSection = (
+        section: CompetencySection,
+        icon: React.ReactNode,
+        emptyHeader = false
+    ) => (
+        <div
+            key={section.id}
+            className="bg-white border border-grayscale-200 rounded-[20px] shadow-box-bottom overflow-hidden w-full"
+        >
+            {!emptyHeader && section.title && (
+                <div className="px-3 py-3 flex items-center gap-2 min-w-0">
+                    {section.dateLabel && (
+                        <p className="shrink-0 text-[13px] text-grayscale-700">
+                            {section.dateLabel}
+                        </p>
+                    )}
+                    {section.dateLabel && <span className="shrink-0 text-grayscale-700">•</span>}
+                    <span className="shrink-0 text-grayscale-700">
+                        <FlatIcon>{icon}</FlatIcon>
+                    </span>
+                    {section.humanCode && (
+                        <p className="shrink-0 text-[13px] font-semibold text-grayscale-700">
+                            {section.humanCode}
+                        </p>
+                    )}
+                    <p className="min-w-0 truncate text-[13px] text-grayscale-700">
+                        {section.title}
+                    </p>
+                </div>
+            )}
 
-        if (result.valueMax) {
-            return `max ${result.valueMax.value}`;
-        }
+            <div className="border-b border-grayscale-100 border-solid w-[95%] mx-auto" />
 
-        if (result.allowedValue && result.allowedValue.value.length > 0) {
-            return result.allowedValue.value.join(', ');
-        }
-
-        return undefined;
-    };
+            <div className="p-5 space-y-4">
+                {section.competencies.map(competency => (
+                    <ClrCompetencyBlock
+                        key={competency.sourceCredentialId}
+                        competency={competency}
+                        adminMode={adminMode}
+                    />
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div className="space-y-5 pb-10 h-full bg-grayscale-100 overflow-y-auto">
-            {/* Header */}
             <div className="bg-white rounded-b-[15px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -64,155 +155,33 @@ const ClrCompetencyDetailPanel: React.FC<{
             </div>
 
             <div className="px-5 space-y-4">
-                <div className="bg-white border border-grayscale-200 rounded-[15px] shadow-box-bottom overflow-hidden">
-                    <button
-                        type="button"
-                        onClick={() => setOpen(o => !o)}
-                        className="w-full flex items-center justify-between px-4 py-3.5"
-                    >
-                        <p className="text-sm font-semibold text-grayscale-900">
-                            {competencies.length} Competenc
-                            {competencies.length === 1 ? 'y' : 'ies'}
-                        </p>
-                        <span className="text-grayscale-600 text-xs">
-                            {open ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-                        </span>
-                    </button>
+                {linkedCourseSections.map(section =>
+                    renderSection(section, <StudiesIcon className="w-4 h-4" />)
+                )}
 
-                    {open && (
-                        <div className="px-4 pb-4 space-y-4">
-                            <div className="flex flex-wrap gap-2">
-                                {competencies.map(competency => {
-                                    const isSelected =
-                                        competency.sourceCredentialId ===
-                                        selectedCompetency?.sourceCredentialId;
-                                    return (
-                                        <button
-                                            key={competency.sourceCredentialId}
-                                            type="button"
-                                            onClick={() =>
-                                                setSelectedCompetencyId(
-                                                    competency.sourceCredentialId
-                                                )
-                                            }
-                                            className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                                                isSelected
-                                                    ? 'bg-indigo-50 border border-solid border-indigo-200 text-indigo-900'
-                                                    : 'bg-grayscale-100 border-grayscale-200 text-grayscale-700 hover:bg-grayscale-100'
-                                            }`}
-                                        >
-                                            <span
-                                                className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
-                                                    isSelected
-                                                        ? 'bg-white/15 text-indigo-900'
-                                                        : 'bg-grayscale-100 text-grayscale-500'
-                                                }`}
-                                            >
-                                                <FlatIcon>
-                                                    <SkillsIcon className="w-6 h-6 text-grayscale-600" />
-                                                </FlatIcon>
-                                            </span>
-                                            <span className="truncate">
-                                                {competency.name?.value ?? 'Competency'}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                {linkedProgramSections.map(section =>
+                    renderSection(
+                        section,
+                        <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-500" />
+                    )
+                )}
+
+                {unlinkedCompetencies.length > 0 &&
+                    renderSection(
+                        {
+                            id: 'other-competencies',
+                            title: undefined,
+                            competencies: unlinkedCompetencies,
+                        },
+                        <SkillsIcon className="w-4 h-4" />,
+                        true
                     )}
-                </div>
 
-                {selectedCompetency && (
-                    <div className="bg-white border border-grayscale-200 rounded-[15px] overflow-hidden shadow-box-bottom">
-                        <div className="px-5 py-3.5 bg-grayscale-50 border-b border-grayscale-100">
-                            <p className="text-[15px] font-semibold text-grayscale-900">
-                                {selectedCompetency.name?.value ?? 'Competency'}
-                            </p>
-                            {selectedCompetency.earnedAt?.value && (
-                                <p className="text-xs text-grayscale-500 mt-1">
-                                    Earned {formatClrDate(selectedCompetency.earnedAt.value)}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="px-5 py-4 space-y-3">
-                            {selectedCompetency.description?.value && (
-                                <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    {selectedCompetency.description.value}
-                                </p>
-                            )}
-
-                            {selectedCompetency.results.length > 0 && (
-                                <div className="space-y-3">
-                                    {selectedCompetency.results.map((result, index) => {
-                                        const scale = getScaleLabel(result);
-                                        const label = result.label?.value ?? 'Competency Level';
-
-                                        return (
-                                            <div
-                                                key={index}
-                                                className="rounded-[15px] border border-grayscale-200 bg-white p-4 space-y-3"
-                                            >
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-semibold uppercase tracking-wider text-grayscale-500">
-                                                            Category
-                                                        </p>
-                                                        <p className="text-base font-medium text-grayscale-700 mt-1">
-                                                            {label}
-                                                            {adminMode &&
-                                                                result.resultType?.value && (
-                                                                    <span className="text-grayscale-400 ml-1">
-                                                                        [{result.resultType.value}]
-                                                                    </span>
-                                                                )}
-                                                        </p>
-                                                    </div>
-                                                    <div className="shrink-0 text-right">
-                                                        <p className="text-xs font-semibold uppercase tracking-wider text-grayscale-500">
-                                                            Score
-                                                        </p>
-                                                        <span className="inline-flex items-center rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-900 mt-1">
-                                                            {String(result.value.value)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                {scale && (
-                                                    <div>
-                                                        <p className="text-xs font-semibold uppercase tracking-wider text-grayscale-500 mb-2">
-                                                            Scale
-                                                        </p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {scale.split(',').map(item => (
-                                                                <span
-                                                                    key={item.trim()}
-                                                                    className="inline-flex items-center rounded-full border border-grayscale-200 bg-grayscale-50 px-3 py-1 text-xs font-medium text-grayscale-600"
-                                                                >
-                                                                    {item.trim()}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {adminMode && (
-                                <div className="pt-1 border-t border-grayscale-100">
-                                    <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
-                                        Source credential
-                                    </p>
-                                    <p className="text-xs font-mono text-grayscale-400 break-all mt-1">
-                                        {selectedCompetency.sourceCredentialId}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                {competencies.length === 0 && (
+                    <div className="bg-white border border-grayscale-200 rounded-[20px] p-6">
+                        <p className="text-sm text-grayscale-600">
+                            No competencies were included in this record.
+                        </p>
                     </div>
                 )}
             </div>

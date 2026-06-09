@@ -7,6 +7,7 @@ import CredentialIDBadge from './CredentialIDBadge';
 import CredentialCLRBadge from './CredentialCLRBadge';
 import CredentialCLRBadgePill, { type ClrBadgeKind } from './CredentialCLRBadgePill';
 import CredentialMediaBadge from './CredentialMediaBadge';
+import BadgeThumbnailImg from './BadgeThumbnailImg';
 
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { VC } from '@learncard/types';
@@ -166,13 +167,12 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         <div
                             className={`relative flex items-center justify-center w-[70%] h-[70%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
                         >
-                            <img
+                            <BadgeThumbnailImg
                                 src={insertParamsToFilestackUrl(
                                     badgeThumbnail,
                                     'resize=width:200/quality=value:75/'
                                 )}
-                                alt="badge thumbnail"
-                                className={`${badgeThumbnailCustomClass}`}
+                                className={badgeThumbnailCustomClass}
                             />
                         </div>
                         {isCertDisplayType && (

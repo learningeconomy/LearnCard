@@ -756,7 +756,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         </span>
                         {!isNetworkUser && !isNetworkUserLoading && (
                             <button
-                                onClick={handlePresentJoinNetworkModal}
+                                onClick={() => {
+                                    void handlePresentJoinNetworkModal();
+                                }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
                                 Complete Profile

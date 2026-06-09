@@ -4,26 +4,53 @@ import X from '../svgs/X';
 import { FlatIcon } from 'learn-card-base/components/FlatIcon';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CertificateDisplayIcon } from 'learn-card-base';
+import ClrCompetencyBlock from './ClrCompetencyBlock';
+import ClrAlignmentList from './ClrAlignmentList';
 import ClrTranscriptResultsList from './ClrTranscriptResultsList';
+import ClrTranscriptEvidenceList from './ClrTranscriptEvidenceList';
 import ClrProgramCredentialCollapsible from './ClrProgramCredentialCollapsible';
 
 import { useModal } from 'learn-card-base';
 
 import { formatAchievementType } from './clr.helpers';
-import { formatClrDate } from '../../helpers/clrRenderer.helpers';
-import type { ProgramDisplayModel } from '../../helpers/clrRenderer.helpers';
+import { formatClrDate, getLinkedCompetencies } from '../../helpers/clrRenderer.helpers';
+import type {
+    ProgramDisplayModel,
+    CompetencyDisplayModel,
+    AssociationDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
+import type { VC } from '@learncard/types';
 
 const ClrProgramDetailPanel: React.FC<{
     program: ProgramDisplayModel;
+    boost: VC;
     onClose?: () => void;
     adminMode?: boolean;
+    associations?: AssociationDisplayModel[];
+    competencies?: CompetencyDisplayModel[];
     issuerName?: string;
-}> = ({ program, adminMode = false, issuerName }) => {
+    issuerLogo?: string;
+}> = ({
+    program,
+    boost,
+    adminMode = false,
+    associations = [],
+    competencies = [],
+    issuerName,
+    issuerLogo,
+}) => {
     const { closeModal } = useModal();
     const [resultsOpen, setResultsOpen] = useState(true);
 
+    // Competencies linked to this program via explicit CLR associations (no heuristics).
+    const programCompetencies = getLinkedCompetencies(
+        program.sourceCredentialId,
+        competencies,
+        associations
+    );
+
     return (
-        <div className="space-y-5 pb-10 h-full bg-grayscale-100">
+        <div className="space-y-5 pb-10 h-full bg-grayscale-100 overflow-y-scroll">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -123,8 +150,45 @@ const ClrProgramDetailPanel: React.FC<{
                     </div>
                 )}
 
+                {/* Competencies linked to this program */}
+                {programCompetencies.length > 0 && (
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-4">
+                        <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
+                            {programCompetencies.length} Competenc
+                            {programCompetencies.length === 1 ? 'y' : 'ies'}
+                        </p>
+                        <div className="space-y-4">
+                            {programCompetencies.map(c => (
+                                <ClrCompetencyBlock
+                                    key={c.sourceCredentialId}
+                                    competency={c}
+                                    adminMode={adminMode}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Aligned competency frameworks (achievement.alignment) */}
+                {program.alignments.length > 0 && (
+                    <ClrAlignmentList alignments={program.alignments} />
+                )}
+
+                {/* Evidence & attachments scoped to this program */}
+                {program.evidence.length > 0 && (
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4">
+                        <ClrTranscriptEvidenceList evidence={program.evidence} />
+                    </div>
+                )}
+
                 {/* Source credential collapsible */}
-                <ClrProgramCredentialCollapsible program={program} issuerName={issuerName} />
+                <ClrProgramCredentialCollapsible
+                    program={program}
+                    issuerName={issuerName}
+                    issuerLogo={issuerLogo}
+                    skillCount={programCompetencies.length}
+                    credential={boost}
+                />
 
                 {/* Admin provenance */}
                 {adminMode && (

@@ -32,13 +32,18 @@ const ClrTranscriptFullPage: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
+    const issuerLogo = model.header.image?.value;
 
     const handleSelectProgram = (program: ProgramDisplayModel) => {
         newModal(
             <ClrProgramDetailPanel
                 program={program}
+                boost={boost}
                 adminMode={adminMode}
+                associations={model.associations}
+                competencies={model.competencies}
                 issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
             />
         );
     };
@@ -47,10 +52,12 @@ const ClrTranscriptFullPage: React.FC<{
         newModal(
             <ClrCourseDetailPanel
                 course={course}
+                boost={boost}
                 adminMode={adminMode}
                 associations={model.associations}
                 competencies={model.competencies}
                 issuerName={model.header.issuerName?.value}
+                issuerLogo={issuerLogo}
             />
         );
     };

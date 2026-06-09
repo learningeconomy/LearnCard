@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import prettyBytes from 'pretty-bytes';
 
-import Camera from 'learn-card-base/svgs/Camera';
+import DocumentIcon from 'learn-card-base/svgs/DocumentIcon';
 import LinkIcon from 'apps/learn-card-app/src/components/svgs/LinkIcon';
-import VideoIcon from 'apps/learn-card-app/src/components/svgs/VideoIcon';
-import GenericDocumentIcon from 'apps/learn-card-app/src/components/svgs/GenericDocumentIcon';
+import { Image as ImageIcon, Play } from 'lucide-react';
+import { Lightbox, LightboxItem } from '@learncard/react';
 
 import { getMediaBaseUrl } from 'learn-card-base/helpers/urlHelpers';
-import { Lightbox, LightboxItem } from '@learncard/react';
-import { getVideoMetadata as parseVideoMetadata } from 'learn-card-base';
 
 import {
     getFileMetadata as getFileMetadataHelper,
@@ -22,8 +20,6 @@ import {
     ResolvedDocumentResource,
     resolvePdfDocumentResource,
 } from './helpers/pdfDocumentResource.helpers';
-
-import useTheme from '../../../../theme/hooks/useTheme';
 
 type Attachment = {
     title: string;
@@ -59,13 +55,15 @@ type VideoMetadata = {
     imageUrl?: string;
 };
 
-type ParsedVideoMetadata = Awaited<ReturnType<typeof parseVideoMetadata>>;
-
-const normalizeAttachmentType = (
-    value: string | undefined
-): Attachment['type'] | undefined => {
+const normalizeAttachmentType = (value: string | undefined): Attachment['type'] | undefined => {
     const normalized = value?.toLowerCase();
-    if (normalized === 'photo' || normalized === 'video' || normalized === 'document' || normalized === 'link' || normalized === 'text') {
+    if (
+        normalized === 'photo' ||
+        normalized === 'video' ||
+        normalized === 'document' ||
+        normalized === 'link' ||
+        normalized === 'text'
+    ) {
         return normalized;
     }
     return undefined;
@@ -76,7 +74,6 @@ type MediaAttachmentsBoxProps = {
     evidence?: Evidence[];
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
-    title?: string;
 };
 
 const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
@@ -84,7 +81,6 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     evidence,
     getFileMetadata = getFileMetadataHelper,
     getVideoMetadata = getVideoMetadataHelper,
-    title = 'Attachments',
 }) => {
     const [documentMetadata, setDocumentMetadata] = useState<{
         [documentUrl: string]: MediaMetadata | undefined;
@@ -95,12 +91,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const [videoMetadata, setVideoMetadata] = useState<{
         [videoUrl: string]: VideoMetadata | undefined;
     }>({});
-    const [parsedMetaData, setParsedMetaData] = useState<ParsedVideoMetadata | null>(null);
 
     const [evidenceAttachments, setEvidenceAttachments] = useState<Attachment[] | null>(null);
-
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
+    const [currentLightboxUrl, setCurrentLightboxUrl] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         const resolveEvidenceAttachments = async () => {
@@ -156,48 +149,12 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const allowedTypes = ['link', 'photo', 'video', 'document', 'text'] as const;
     const safeEvidenceAttachments = (evidenceAttachments ?? []).map(item => ({
         ...item,
-        type: allowedTypes.includes(item.type as any)
-            ? (item.type as Attachment['type'])
-            : 'link',
+        type: allowedTypes.includes(item.type as any) ? (item.type as Attachment['type']) : 'link',
     }));
     const combinedAttachments = [...(attachments ?? []), ...safeEvidenceAttachments];
-
-    const mediaAttachments: Attachment[] = [];
-    const documentsAndLinks: Attachment[] = [];
-    const textAttachments: Attachment[] = [];
-    combinedAttachments.forEach(a => {
-        switch (a.type) {
-            case 'document':
-            case 'link':
-                documentsAndLinks.push(a);
-                break;
-            case 'photo':
-            case 'video':
-                mediaAttachments.push(a);
-                break;
-            case 'text':
-                textAttachments.push(a);
-                break;
-            default:
-                break;
-        }
-    });
-
-    const firstVideoUrl = mediaAttachments.find(attachment => attachment.type === 'video')?.url;
-
-    useEffect(() => {
-        const handleParseVideoMetadata = async () => {
-            if (!firstVideoUrl) {
-                setParsedMetaData(null);
-                return;
-            }
-
-            const parsedVideoMetadata = await parseVideoMetadata(firstVideoUrl);
-            setParsedMetaData(parsedVideoMetadata);
-        };
-
-        handleParseVideoMetadata();
-    }, [firstVideoUrl]);
+    const lightboxItems = combinedAttachments.filter(
+        a => a.type === 'photo' || a.type === 'video'
+    ) as LightboxItem[];
 
     useEffect(() => {
         let shouldIgnore = false;
@@ -261,236 +218,157 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
         };
     }, [attachments, evidenceAttachments, getFileMetadata, getVideoMetadata]);
 
-    const [currentLightboxUrl, setCurrentLightboxUrl] = useState<string | undefined>(undefined);
-    const lightboxItems = mediaAttachments.filter(
-        a => a.type === 'photo' || a.type === 'video'
-    ) as LightboxItem[];
-    const handleMediaAttachmentClick = (url: string, type: Attachment['type']) => {
-        if (type === 'photo' || type === 'video') {
-            setCurrentLightboxUrl(url);
-        }
-    };
-
     if (combinedAttachments.length === 0) return null;
 
     return (
-        <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-            <h3 className="text-[17px] text-grayscale-900 font-poppins">{title}</h3>
-            {mediaAttachments.length > 0 && (
-                <div className="flex gap-[5px] justify-between flex-wrap w-full">
-                    <Lightbox
-                        items={lightboxItems}
-                        currentUrl={currentLightboxUrl}
-                        setCurrentUrl={setCurrentLightboxUrl}
-                    />
-                    {mediaAttachments.map((media, index) => {
-                        let innerContent: React.ReactNode;
-                        let title = media.title;
+        <div className="w-full space-y-2">
+            <Lightbox
+                items={lightboxItems}
+                currentUrl={currentLightboxUrl}
+                setCurrentUrl={setCurrentLightboxUrl}
+            />
+            {combinedAttachments.map((attachment, index) => {
+                const documentResource =
+                    attachment.type === 'document' ? documentResources[attachment.url] : undefined;
+                const metadata =
+                    attachment.type === 'document' ? documentMetadata[attachment.url] : undefined;
+                const videoMeta =
+                    attachment.type === 'video' ? videoMetadata[attachment.url] : undefined;
+                const previewUrl = documentResource?.previewUrl ?? attachment.url;
+                const title =
+                    attachment.title || videoMeta?.title || attachment.description || 'Evidence';
+                const subtitle =
+                    attachment.type === 'link'
+                        ? getMediaBaseUrl(attachment.url)
+                        : attachment.url?.split('/').filter(Boolean).pop() ?? '';
+                const fileDetails = [
+                    metadata?.fileExtension?.toUpperCase(),
+                    metadata?.sizeInBytes ? prettyBytes(metadata.sizeInBytes) : undefined,
+                ].filter(Boolean);
+                const isPreviewableMedia =
+                    attachment.type === 'photo' || attachment.type === 'video';
 
-                        if (media.type === 'video') {
-                            const metadata = videoMetadata[media.url];
-                            title = (title || metadata?.title) ?? '';
-                            const baseUrl = getMediaBaseUrl(media.url);
-                            const thumbnailUrl = parsedMetaData?.thumbnailUrl || metadata?.imageUrl;
-
-                            innerContent = (
-                                <div
-                                    className="bg-cover bg-no-repeat bg-center relative font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px] h-full"
-                                    style={{
-                                        backgroundImage: thumbnailUrl
-                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
-                                                  thumbnailUrl ?? ''
-                                              })`
-                                            : undefined,
-                                    }}
-                                >
-                                    {!thumbnailUrl && <VideoIcon size="60" className="m-auto" />}
-                                    <div className="absolute bottom-[10px] left-[10px] z-10 flex items-center gap-[5px]">
-                                        {thumbnailUrl && <VideoIcon />}
-                                        {metadata?.videoLength && (
-                                            <span className="leading-[23px]">
-                                                {metadata.videoLength}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        } else {
-                            innerContent = (
-                                <div className="h-full w-full flex items-center justify-center">
-                                    <img className="object-cover h-full w-full" src={media.url} />
-                                    <Camera className="absolute bottom-[10px] left-[10px] z-10 w-[25px] text-white" />
-                                </div>
-                            );
-                        }
-
-                        return (
-                            <button
-                                key={index}
-                                className="flex bg-grayscale-100 items-center rounded-[15px] w-full"
-                                onClick={e => {
-                                    e.stopPropagation();
-                                    handleMediaAttachmentClick(media.url, media.type);
-                                }}
-                            >
-                                <div className="relative h-[80px] w-[80px] rounded-[15px] overflow-hidden flex-shrink-0">
-                                    {innerContent}
-                                </div>
-                                <div>
-                                    {title && (
-                                        <div className="text-left text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
-                                            {title}
-                                        </div>
-                                    )}
-                                    {media?.description && (
-                                        <span className="text-left text-grayscale-900 text-[12px] px-[10px] line-clamp-3">
-                                            {media.description ?? ''}
-                                        </span>
-                                    )}
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-            {documentsAndLinks.length > 0 && (
-                <div className="w-full flex flex-col gap-[5px]">
-                    {documentsAndLinks.map((docOrLink, index) => {
-                        const documentResource =
-                            docOrLink.type === 'document'
-                                ? documentResources[docOrLink.url]
-                                : undefined;
-                        const metadata =
-                            docOrLink.type === 'document'
-                                ? documentMetadata[docOrLink.url]
-                                : undefined;
-                        const { fileExtension, sizeInBytes, numberOfPages } = metadata ?? {};
-                        const previewUrl = documentResource?.previewUrl ?? docOrLink.url;
-
-                        let baseUrl = '';
-                        if (docOrLink.type === 'link') {
-                            baseUrl = getMediaBaseUrl(docOrLink.url);
-                        }
-
-                        const innerContent = (
-                            <div className="flex flex-col gap-[5px]">
-                                <div className="flex gap-[5px] items-center">
-                                    {docOrLink.type === 'document' && (
-                                        <GenericDocumentIcon className="shrink-0" />
-                                    )}
-                                    {docOrLink.type === 'link' && <LinkIcon className="shrink-0" />}
-
-                                    <div className="flex flex-col w-full min-w-0">
-                                        <span className="text-grayscale-900 font-[400]">
-                                            {docOrLink.title ?? 'No title'}
-                                        </span>
-                                        <span className="text-grayscale-900 font-[400]">
-                                            {docOrLink.description ?? ''}
-                                        </span>
-                                        <span className="text-grayscale-900 font-[400]">
-                                            {docOrLink.narrative ?? ''}
-                                        </span>
-                                        {docOrLink.type === 'document' && metadata && (
-                                            <div className="text-grayscale-700 font-[500] text-[12px] font-poppins">
-                                                {fileExtension && (
-                                                    <span className="uppercase">
-                                                        {fileExtension}
-                                                    </span>
-                                                )}
-                                                {fileExtension &&
-                                                    (numberOfPages || sizeInBytes) &&
-                                                    ' • '}
-                                                {numberOfPages && (
-                                                    <span>
-                                                        {numberOfPages} page
-                                                        {numberOfPages === 1 ? '' : 's'}
-                                                    </span>
-                                                )}
-                                                {numberOfPages && sizeInBytes && ' • '}
-                                                {sizeInBytes && (
-                                                    <span>{prettyBytes(sizeInBytes)}</span>
-                                                )}
-                                            </div>
-                                        )}
-                                        {docOrLink.type === 'link' && (
-                                            <div
-                                                className={`text-${primaryColor} font-[500] text-[12px] font-poppins`}
-                                            >
-                                                {baseUrl}
-                                            </div>
-                                        )}
-                                        {docOrLink.type === 'document' &&
-                                            documentResource?.isPdfDataSource && (
-                                                <div className="flex items-center gap-[12px] pt-[4px]">
-                                                    <a
-                                                        href={previewUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
-                                                        onClick={e => e.stopPropagation()}
-                                                    >
-                                                        Preview PDF
-                                                    </a>
-                                                    <a
-                                                        href={documentResource.downloadUrl}
-                                                        download={documentResource.downloadName}
-                                                        className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
-                                                        onClick={e => e.stopPropagation()}
-                                                    >
-                                                        Download PDF
-                                                    </a>
-                                                </div>
-                                            )}
-                                    </div>
-                                </div>
+                const preview = (() => {
+                    if (attachment.type === 'photo') {
+                        return attachment.url ? (
+                            <img
+                                className="h-full w-full rounded-[14px] object-cover"
+                                src={attachment.url}
+                                alt={title}
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-grayscale-100">
+                                <ImageIcon className="h-8 w-8 text-grayscale-500" />
                             </div>
                         );
+                    }
 
-                        const className = `row-attachment ${docOrLink.type} bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px] text-left`;
-
-                        const shouldRenderPreviewActionsOnly =
-                            docOrLink.type === 'document' && documentResource?.isPdfDataSource;
-
-                        if (shouldRenderPreviewActionsOnly) {
-                            return (
-                                <div key={index} className={className}>
-                                    {innerContent}
-                                </div>
-                            );
-                        }
+                    if (attachment.type === 'video') {
+                        const thumbnailUrl = videoMeta?.imageUrl;
 
                         return (
-                            <a
-                                key={index}
-                                href={previewUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={className}
-                                onClick={e => e.stopPropagation()}
+                            <div
+                                className="relative flex h-full w-full items-center justify-center rounded-[14px] bg-grayscale-900 bg-cover bg-center"
+                                style={{
+                                    backgroundImage: thumbnailUrl
+                                        ? `linear-gradient(180deg, rgba(0,0,0,0.05), rgba(0,0,0,0.45)), url(${thumbnailUrl})`
+                                        : undefined,
+                                }}
                             >
-                                {innerContent}
-                            </a>
+                                <Play className="h-8 w-8 fill-white text-white" />
+                                {videoMeta?.videoLength && (
+                                    <span className="absolute bottom-1.5 right-1.5 rounded bg-grayscale-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                        {videoMeta.videoLength}
+                                    </span>
+                                )}
+                            </div>
                         );
-                    })}
-                </div>
-            )}
-            {textAttachments &&
-                textAttachments.map((text, index) => (
-                    <div
-                        key={index}
-                        className="flex flex-col justify-start bg-grayscale-100 items-start rounded-[15px] w-full"
-                    >
-                        <span className="text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
-                            {text.title ?? 'No title'}
-                        </span>
-                        <span className="text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
-                            {text.description ?? ''}
-                        </span>
-                        <span className="text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
-                            {text.narrative ?? ''}
-                        </span>
+                    }
+
+                    if (attachment.type === 'document') {
+                        return (
+                            <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-white">
+                                <DocumentIcon className="h-[50px] w-[50px] text-grayscale-500" />
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-white">
+                            <LinkIcon className="h-[40px] w-[40px] text-grayscale-500" />
+                        </div>
+                    );
+                })();
+
+                const content = (
+                    <>
+                        <div
+                            className={`shrink-0 overflow-hidden rounded-[16px] border border-grayscale-200 bg-white  ${
+                                attachment.type === 'photo' || attachment.type === 'video'
+                                    ? 'p-0 h-[75px] w-[75px]'
+                                    : 'p-1.5 h-[65px] w-[65px]'
+                            } `}
+                        >
+                            {preview}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-[15px] font-medium text-grayscale-800">
+                                {title}
+                            </p>
+                            {subtitle && (
+                                <p className="truncate font-medium text-[13px] text-grayscale-600">
+                                    {subtitle}
+                                </p>
+                            )}
+                            <p className="truncate text-[13px] font-medium uppercase text-grayscale-600">
+                                {attachment.type === 'photo' ? 'Image' : attachment.type}
+                                {fileDetails.length > 0 && ` • ${fileDetails.join(' • ')}`}
+                            </p>
+                        </div>
+                    </>
+                );
+                const className = `flex w-full items-center gap-2 rounded-[20px] border border-grayscale-200 bg-white text-left shadow-box-bottom transition-colors hover:bg-grayscale-10 ${
+                    attachment.type === 'photo' || attachment.type === 'video' ? 'p-1' : 'p-2'
+                }`;
+                const canOpen = Boolean(previewUrl && attachment.type !== 'text');
+
+                if (canOpen && isPreviewableMedia) {
+                    return (
+                        <button
+                            key={`${attachment.url}-${index}`}
+                            type="button"
+                            className={className}
+                            onClick={e => {
+                                e.stopPropagation();
+                                setCurrentLightboxUrl(attachment.url);
+                            }}
+                        >
+                            {content}
+                        </button>
+                    );
+                }
+
+                if (canOpen) {
+                    return (
+                        <a
+                            key={`${attachment.url}-${index}`}
+                            href={previewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={className}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {content}
+                        </a>
+                    );
+                }
+
+                return (
+                    <div key={`${attachment.url}-${index}`} className={className}>
+                        {content}
                     </div>
-                ))}
+                );
+            })}
         </div>
     );
 };

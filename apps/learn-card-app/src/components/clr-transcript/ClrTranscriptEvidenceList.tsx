@@ -4,34 +4,69 @@ import MediaAttachmentsBox from '../../pages/ids/view-id/IdDetails/MediaAttachme
 
 import type { EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
+type EvidenceKind = 'document' | 'photo' | 'video' | 'link';
+
+const getEvidenceUrl = (item: EvidenceDisplayModel): string => item.id?.value ?? '';
+
+const getEvidenceTypeText = (item: EvidenceDisplayModel): string => {
+    const rawType = item.type?.value;
+
+    return Array.isArray(rawType) ? rawType.join(' ').toLowerCase() : rawType?.toLowerCase() ?? '';
+};
+
+const inferEvidenceKind = (item: EvidenceDisplayModel): EvidenceKind => {
+    const url = getEvidenceUrl(item);
+    const mime = item.mimeType?.toLowerCase();
+    const genre = item.genre?.value?.toLowerCase() ?? '';
+    const type = getEvidenceTypeText(item);
+
+    if (
+        mime?.startsWith('image/') ||
+        /\.(png|jpe?g|gif|webp|svg)(?:\?|$)/i.test(url) ||
+        genre.includes('image') ||
+        type.includes('image')
+    ) {
+        return 'photo';
+    }
+
+    if (
+        mime?.startsWith('video/') ||
+        /\.(mp4|webm|mov|m4v)(?:\?|$)/i.test(url) ||
+        /youtube\.com|youtu\.be|vimeo\.com|loom\.com/i.test(url) ||
+        genre.includes('video') ||
+        type.includes('video')
+    ) {
+        return 'video';
+    }
+
+    if (
+        mime === 'application/pdf' ||
+        /\.(pdf|docx?|pptx?|xlsx?|csv|txt|md|zip)(?:\?|$)/i.test(url) ||
+        genre.includes('document') ||
+        genre.includes('pdf') ||
+        type.includes('document')
+    ) {
+        return 'document';
+    }
+
+    return 'link';
+};
+
+const toEvidenceAttachment = (item: EvidenceDisplayModel) => ({
+    id: getEvidenceUrl(item),
+    type: ['EvidenceFile'] as Array<'Evidence' | 'EvidenceFile'>,
+    name: item.name?.value ?? '',
+    description: item.description?.value ?? '',
+    narrative: item.narrative?.value ?? '',
+    genre: inferEvidenceKind(item),
+    url: getEvidenceUrl(item),
+});
+
 const ClrTranscriptEvidenceList: React.FC<{
     evidence: EvidenceDisplayModel[];
     compact?: boolean;
 }> = ({ evidence, compact = false }) => {
     if (evidence.length === 0) return null;
-
-    const inferEvidenceGenre = (item: EvidenceDisplayModel): string => {
-        const url = item.id?.value ?? '';
-        const mime = item.mimeType;
-
-        if (mime?.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(url)) return 'photo';
-        if (mime?.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(url)) return 'video';
-        if (mime === 'application/pdf' || /\.pdf(?:\?|$)/i.test(url)) return 'document';
-
-        return item.genre?.value?.toLowerCase() ?? 'text';
-    };
-
-    const toEvidenceAttachment = (item: EvidenceDisplayModel) => ({
-        id: item.id?.value ?? '',
-        type: [inferEvidenceGenre(item) === 'text' ? 'Evidence' : 'EvidenceFile'] as Array<
-            'Evidence' | 'EvidenceFile'
-        >,
-        name: item.name?.value ?? '',
-        description: item.description?.value ?? '',
-        narrative: item.narrative?.value ?? '',
-        genre: inferEvidenceGenre(item),
-        url: item.id?.value ?? '',
-    });
 
     if (compact) {
         return (
@@ -41,7 +76,7 @@ const ClrTranscriptEvidenceList: React.FC<{
         );
     }
 
-    return <MediaAttachmentsBox title="Evidence" evidence={evidence.map(toEvidenceAttachment)} />;
+    return <MediaAttachmentsBox evidence={evidence.map(toEvidenceAttachment)} />;
 };
 
 export default ClrTranscriptEvidenceList;

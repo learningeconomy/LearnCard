@@ -34,9 +34,9 @@ export const clrWestbridgeFull: CredentialFixture = {
         description:
             'Official academic transcript for the Bachelor of Science in Data Science awarded to Jordan A. Reyes, covering eight semesters of coursework, competency assessments, and degree conferral.',
         image: {
-            id: 'https://westbridge.edu/seals/transcript-seal-2025.png',
+            id: 'https://westbridgeuniversity.com/wp-content/uploads/2021/03/logo-with-bg-fill.jpg',
             type: 'Image',
-            caption: 'Official seal of Westbridge University',
+            caption: 'Westbridge University official logo',
         },
         issuer: {
             id: 'did:web:registrar.westbridge.edu',
@@ -48,9 +48,9 @@ export const clrWestbridgeFull: CredentialFixture = {
             email: 'registrar@westbridge.edu',
             phone: '+1-555-742-0100',
             image: {
-                id: 'https://westbridge.edu/assets/seal-official.png',
+                id: 'https://westbridgeuniversity.com/wp-content/uploads/2021/03/logo-with-bg-fill.jpg',
                 type: 'Image',
-                caption: 'Westbridge University official seal',
+                caption: 'Westbridge University official logo',
             },
             address: {
                 type: ['Address'],
@@ -79,7 +79,8 @@ export const clrWestbridgeFull: CredentialFixture = {
                 id: 'https://registrar.westbridge.edu/transcripts/t-wb-2025-001.pdf',
                 type: ['Evidence'],
                 name: 'Official Academic Transcript',
-                description: 'Official sealed academic transcript issued by the Westbridge University Office of the Registrar.',
+                description:
+                    'Official sealed academic transcript issued by the Westbridge University Office of the Registrar.',
                 genre: 'Document',
                 audience: 'Employer, Graduate School Admissions',
             },
@@ -102,20 +103,46 @@ export const clrWestbridgeFull: CredentialFixture = {
             id: 'did:example:wb-student-2025-001',
             type: ['ClrSubject'],
             identifier: [
-                { type: 'IdentityObject', identityHash: 'Jordan A. Reyes', identityType: 'name', hashed: false },
-                { type: 'IdentityObject', identityHash: 'j.reyes@westbridge.edu', identityType: 'emailAddress', hashed: false },
-                { type: 'IdentityObject', identityHash: '20210042', identityType: 'studentId', hashed: false },
-                { type: 'IdentityObject', identityHash: '1999-03-14', identityType: 'dateOfBirth', hashed: false },
+                {
+                    type: 'IdentityObject',
+                    identityHash: 'Jordan A. Reyes',
+                    identityType: 'name',
+                    hashed: false,
+                },
+                {
+                    type: 'IdentityObject',
+                    identityHash: 'j.reyes@westbridge.edu',
+                    identityType: 'emailAddress',
+                    hashed: false,
+                },
+                {
+                    type: 'IdentityObject',
+                    identityHash: '20210042',
+                    identityType: 'studentId',
+                    hashed: false,
+                },
+                {
+                    type: 'IdentityObject',
+                    identityHash: '1999-03-14',
+                    identityType: 'dateOfBirth',
+                    hashed: false,
+                },
             ],
             verifiableCredential: [
-
                 // ── YEAR 1 · FALL 2021 ────────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds101',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 101 — Introduction to Data Science',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2021-12-15T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -125,12 +152,17 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Introduction to Data Science',
-                            description: 'Foundational survey of the data science lifecycle: data collection, cleaning, exploratory analysis, visualization, and basic predictive modeling using Python.',
+                            description:
+                                'Foundational survey of the data science lifecycle: data collection, cleaning, exploratory analysis, visualization, and basic predictive modeling using Python.',
                             humanCode: 'DS 101',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['foundation', 'python', 'visualization'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             alignment: [
                                 {
                                     type: ['Alignment'],
@@ -139,24 +171,56 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     targetFramework: 'Westbridge DS Competency Framework v2',
                                     targetType: 'CFItem',
                                     targetUrl: 'https://westbridge.edu/frameworks/ds/FOUND.1',
-                                    targetDescription: 'Demonstrates foundational knowledge of the data science lifecycle.',
+                                    targetDescription:
+                                        'Demonstrates foundational knowledge of the data science lifecycle.',
                                 },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2021',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-math151',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'MATH 151 — Calculus I',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2021-12-15T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -166,27 +230,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Calculus I',
-                            description: 'Limits, derivatives, and integrals of single-variable functions. Applications to optimization, rates of change, and area under curves.',
+                            description:
+                                'Limits, derivatives, and integrals of single-variable functions. Applications to optimization, rates of change, and area under curves.',
                             humanCode: 'MATH 151',
                             fieldOfStudy: 'Mathematics',
                             inLanguage: 'en',
                             tag: ['calculus', 'mathematics', 'foundation'],
-                            creator: { id: 'https://westbridge.edu/departments/mathematics', type: ['Profile'], name: 'Department of Mathematics' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/mathematics',
+                                type: ['Profile'],
+                                name: 'Department of Mathematics',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A-', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A-',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 4,
                         term: 'Fall 2021',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-cs101',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'CS 101 — Introduction to Programming',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2021-12-15T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -196,17 +296,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Introduction to Programming',
-                            description: 'Programming fundamentals using Python: variables, control flow, functions, data structures, file I/O, and introductory object-oriented design.',
+                            description:
+                                'Programming fundamentals using Python: variables, control flow, functions, data structures, file I/O, and introductory object-oriented design.',
                             humanCode: 'CS 101',
                             fieldOfStudy: 'Computer Science',
                             inLanguage: 'en',
                             tag: ['python', 'programming', 'foundation'],
-                            creator: { id: 'https://westbridge.edu/departments/computer-science', type: ['Profile'], name: 'Department of Computer Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/computer-science',
+                                type: ['Profile'],
+                                name: 'Department of Computer Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2021',
                     },
@@ -214,11 +343,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 1 · SPRING 2022 ──────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-stat201',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'STAT 201 — Statistics and Probability',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2022-05-10T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -228,12 +364,17 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Statistics and Probability',
-                            description: 'Descriptive statistics, probability distributions, sampling theory, hypothesis testing, confidence intervals, and linear regression.',
+                            description:
+                                'Descriptive statistics, probability distributions, sampling theory, hypothesis testing, confidence intervals, and linear regression.',
                             humanCode: 'STAT 201',
                             fieldOfStudy: 'Statistics',
                             inLanguage: 'en',
                             tag: ['statistics', 'probability', 'inference'],
-                            creator: { id: 'https://westbridge.edu/departments/statistics', type: ['Profile'], name: 'Department of Statistics and Applied Mathematics' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/statistics',
+                                type: ['Profile'],
+                                name: 'Department of Statistics and Applied Mathematics',
+                            },
                             alignment: [
                                 {
                                     type: ['Alignment'],
@@ -242,24 +383,56 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     targetFramework: 'Westbridge DS Competency Framework v2',
                                     targetType: 'CFItem',
                                     targetUrl: 'https://westbridge.edu/frameworks/ds/STAT.1',
-                                    targetDescription: 'Applies statistical reasoning to interpret data and draw valid inferences.',
+                                    targetDescription:
+                                        'Applies statistical reasoning to interpret data and draw valid inferences.',
                                 },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2022',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-math201',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'MATH 201 — Linear Algebra',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2022-05-10T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -269,27 +442,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Linear Algebra',
-                            description: 'Vectors, matrices, systems of linear equations, eigenvalues and eigenvectors, orthogonality, and applications to data transformations.',
+                            description:
+                                'Vectors, matrices, systems of linear equations, eigenvalues and eigenvectors, orthogonality, and applications to data transformations.',
                             humanCode: 'MATH 201',
                             fieldOfStudy: 'Mathematics',
                             inLanguage: 'en',
                             tag: ['linear-algebra', 'mathematics'],
-                            creator: { id: 'https://westbridge.edu/departments/mathematics', type: ['Profile'], name: 'Department of Mathematics' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/mathematics',
+                                type: ['Profile'],
+                                name: 'Department of Mathematics',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'B+', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'B+',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2022',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds110',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 110 — Data Wrangling and Visualization',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2022-05-10T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -299,17 +508,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Data Wrangling and Visualization',
-                            description: 'Practical data acquisition, cleaning, transformation, and visual storytelling using pandas, Matplotlib, and Seaborn.',
+                            description:
+                                'Practical data acquisition, cleaning, transformation, and visual storytelling using pandas, Matplotlib, and Seaborn.',
                             humanCode: 'DS 110',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['pandas', 'visualization', 'python'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2022',
                     },
@@ -317,11 +555,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 2 · FALL 2022 ────────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds201',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 201 — Machine Learning Fundamentals',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2022-12-14T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -331,12 +576,17 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Machine Learning Fundamentals',
-                            description: 'Supervised and unsupervised learning algorithms: linear regression, logistic regression, decision trees, k-means, dimensionality reduction. Evaluation metrics and cross-validation.',
+                            description:
+                                'Supervised and unsupervised learning algorithms: linear regression, logistic regression, decision trees, k-means, dimensionality reduction. Evaluation metrics and cross-validation.',
                             humanCode: 'DS 201',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['machine-learning', 'sklearn', 'modeling'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             alignment: [
                                 {
                                     type: ['Alignment'],
@@ -345,24 +595,56 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     targetFramework: 'Westbridge DS Competency Framework v2',
                                     targetType: 'CFItem',
                                     targetUrl: 'https://westbridge.edu/frameworks/ds/ML.1',
-                                    targetDescription: 'Applies core ML algorithms and selects appropriate evaluation strategies.',
+                                    targetDescription:
+                                        'Applies core ML algorithms and selects appropriate evaluation strategies.',
                                 },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2022',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-cs201',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'CS 201 — Data Structures and Algorithms',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2022-12-14T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -372,27 +654,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Data Structures and Algorithms',
-                            description: 'Arrays, linked lists, trees, graphs, hash tables, sorting algorithms, and complexity analysis.',
+                            description:
+                                'Arrays, linked lists, trees, graphs, hash tables, sorting algorithms, and complexity analysis.',
                             humanCode: 'CS 201',
                             fieldOfStudy: 'Computer Science',
                             inLanguage: 'en',
                             tag: ['algorithms', 'complexity', 'data-structures'],
-                            creator: { id: 'https://westbridge.edu/departments/computer-science', type: ['Profile'], name: 'Department of Computer Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/computer-science',
+                                type: ['Profile'],
+                                name: 'Department of Computer Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A-', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A-',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2022',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-comm201',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'COMM 201 — Technical Communication for Scientists',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2022-12-14T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -402,17 +720,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Technical Communication for Scientists',
-                            description: 'Scientific writing, data storytelling, report structure, visualization critique, and oral presentation skills for technical audiences.',
+                            description:
+                                'Scientific writing, data storytelling, report structure, visualization critique, and oral presentation skills for technical audiences.',
                             humanCode: 'COMM 201',
                             fieldOfStudy: 'Communications',
                             inLanguage: 'en',
                             tag: ['writing', 'communication', 'presentation'],
-                            creator: { id: 'https://westbridge.edu/departments/communications', type: ['Profile'], name: 'Department of Communications and Media' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/communications',
+                                type: ['Profile'],
+                                name: 'Department of Communications and Media',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 2,
                         term: 'Fall 2022',
                     },
@@ -420,11 +767,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 2 · SPRING 2023 ──────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds211',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 211 — Statistical Modeling',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2023-05-09T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -434,27 +788,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Statistical Modeling',
-                            description: 'Generalized linear models, regularization, time-series analysis, survival analysis, and model diagnostics.',
+                            description:
+                                'Generalized linear models, regularization, time-series analysis, survival analysis, and model diagnostics.',
                             humanCode: 'DS 211',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['modeling', 'statistics', 'regression'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2023',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-cs310',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'CS 310 — Database Systems',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2023-05-09T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -464,27 +854,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Database Systems',
-                            description: 'Relational model, SQL, query optimization, transactions, NoSQL databases, and data warehousing patterns for analytics.',
+                            description:
+                                'Relational model, SQL, query optimization, transactions, NoSQL databases, and data warehousing patterns for analytics.',
                             humanCode: 'CS 310',
                             fieldOfStudy: 'Computer Science',
                             inLanguage: 'en',
                             tag: ['sql', 'databases', 'nosql'],
-                            creator: { id: 'https://westbridge.edu/departments/computer-science', type: ['Profile'], name: 'Department of Computer Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/computer-science',
+                                type: ['Profile'],
+                                name: 'Department of Computer Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A-', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A-',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2023',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-econ201',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'ECON 201 — Econometrics',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2023-05-09T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -494,17 +920,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Econometrics',
-                            description: 'Causal inference, instrumental variables, difference-in-differences, panel data models, and applied regression in economic contexts.',
+                            description:
+                                'Causal inference, instrumental variables, difference-in-differences, panel data models, and applied regression in economic contexts.',
                             humanCode: 'ECON 201',
                             fieldOfStudy: 'Economics',
                             inLanguage: 'en',
                             tag: ['causal-inference', 'economics', 'regression'],
-                            creator: { id: 'https://westbridge.edu/departments/economics', type: ['Profile'], name: 'Department of Economics' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/economics',
+                                type: ['Profile'],
+                                name: 'Department of Economics',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'B+', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'B+',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2023',
                     },
@@ -512,11 +967,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 3 · FALL 2023 ────────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds301',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 301 — Deep Learning',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2023-12-13T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -526,12 +988,17 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Deep Learning',
-                            description: 'Neural network architectures, backpropagation, CNNs, RNNs, transformers, and training at scale using PyTorch.',
+                            description:
+                                'Neural network architectures, backpropagation, CNNs, RNNs, transformers, and training at scale using PyTorch.',
                             humanCode: 'DS 301',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['deep-learning', 'pytorch', 'neural-networks'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             alignment: [
                                 {
                                     type: ['Alignment'],
@@ -540,24 +1007,56 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     targetFramework: 'Westbridge DS Competency Framework v2',
                                     targetType: 'CFItem',
                                     targetUrl: 'https://westbridge.edu/frameworks/ds/ML.3',
-                                    targetDescription: 'Designs, trains, and evaluates deep neural network models for real-world tasks.',
+                                    targetDescription:
+                                        'Designs, trains, and evaluates deep neural network models for real-world tasks.',
                                 },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2023',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds310',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 310 — Natural Language Processing',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2023-12-13T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -567,27 +1066,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Natural Language Processing',
-                            description: 'Text preprocessing, word embeddings, sequence models, attention mechanisms, and pre-trained language model fine-tuning.',
+                            description:
+                                'Text preprocessing, word embeddings, sequence models, attention mechanisms, and pre-trained language model fine-tuning.',
                             humanCode: 'DS 310',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['nlp', 'transformers', 'llm'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2023',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-phil310',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'PHIL 310 — Ethics in Artificial Intelligence',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2023-12-13T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -597,12 +1132,17 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Ethics in Artificial Intelligence',
-                            description: 'Algorithmic bias, fairness, transparency, accountability, privacy, and the societal implications of automated decision-making.',
+                            description:
+                                'Algorithmic bias, fairness, transparency, accountability, privacy, and the societal implications of automated decision-making.',
                             humanCode: 'PHIL 310',
                             fieldOfStudy: 'Philosophy',
                             inLanguage: 'en',
                             tag: ['ethics', 'ai', 'fairness'],
-                            creator: { id: 'https://westbridge.edu/departments/philosophy', type: ['Profile'], name: 'Department of Philosophy' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/philosophy',
+                                type: ['Profile'],
+                                name: 'Department of Philosophy',
+                            },
                             alignment: [
                                 {
                                     type: ['Alignment'],
@@ -611,14 +1151,39 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     targetFramework: 'Westbridge DS Competency Framework v2',
                                     targetType: 'CFItem',
                                     targetUrl: 'https://westbridge.edu/frameworks/ds/ETHICS.1',
-                                    targetDescription: 'Evaluates AI systems for bias, fairness, and ethical risk.',
+                                    targetDescription:
+                                        'Evaluates AI systems for bias, fairness, and ethical risk.',
                                 },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2023',
                     },
@@ -626,11 +1191,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 3 · SPRING 2024 ──────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds311',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 311 — Computer Vision',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2024-05-07T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -640,27 +1212,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Computer Vision',
-                            description: 'Image classification, object detection, semantic segmentation, and generative models using convolutional and vision transformer architectures.',
+                            description:
+                                'Image classification, object detection, semantic segmentation, and generative models using convolutional and vision transformer architectures.',
                             humanCode: 'DS 311',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['computer-vision', 'cnn', 'vit'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2024',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds320',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 320 — Big Data Engineering',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2024-05-07T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -670,27 +1278,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Big Data Engineering',
-                            description: 'Distributed computing with Spark, streaming data pipelines with Kafka, data lake architectures, and cloud-native processing on AWS and GCP.',
+                            description:
+                                'Distributed computing with Spark, streaming data pipelines with Kafka, data lake architectures, and cloud-native processing on AWS and GCP.',
                             humanCode: 'DS 320',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['spark', 'kafka', 'cloud', 'distributed'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A-', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A-',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2024',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-stat401',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'STAT 401 — Bayesian Statistics',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2024-05-07T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -700,17 +1344,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Bayesian Statistics',
-                            description: 'Bayesian inference, prior and posterior distributions, MCMC sampling, hierarchical models, and probabilistic programming with Stan.',
+                            description:
+                                'Bayesian inference, prior and posterior distributions, MCMC sampling, hierarchical models, and probabilistic programming with Stan.',
                             humanCode: 'STAT 401',
                             fieldOfStudy: 'Statistics',
                             inLanguage: 'en',
                             tag: ['bayesian', 'mcmc', 'statistics'],
-                            creator: { id: 'https://westbridge.edu/departments/statistics', type: ['Profile'], name: 'Department of Statistics and Applied Mathematics' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/statistics',
+                                type: ['Profile'],
+                                name: 'Department of Statistics and Applied Mathematics',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2024',
                     },
@@ -718,11 +1391,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 4 · FALL 2024 ────────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds401',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 401 — Advanced Topics in AI',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2024-12-11T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -732,27 +1412,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Advanced Topics in AI',
-                            description: 'Reinforcement learning, multi-agent systems, causal ML, and emerging research directions in large-scale foundation models.',
+                            description:
+                                'Reinforcement learning, multi-agent systems, causal ML, and emerging research directions in large-scale foundation models.',
                             humanCode: 'DS 401',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['reinforcement-learning', 'causal-ml', 'research'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2024',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds410',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 410 — MLOps and Production Systems',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2024-12-11T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -762,27 +1478,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'MLOps and Production Systems',
-                            description: 'Model versioning, experiment tracking, CI/CD for ML, monitoring, drift detection, and responsible deployment practices.',
+                            description:
+                                'Model versioning, experiment tracking, CI/CD for ML, monitoring, drift detection, and responsible deployment practices.',
                             humanCode: 'DS 410',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['mlops', 'deployment', 'monitoring'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A-', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A-',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2024',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds420',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 420 — Data Privacy and Security',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2024-12-11T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -792,17 +1544,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Data Privacy and Security',
-                            description: 'Differential privacy, federated learning, anonymization techniques, adversarial attacks, and regulatory compliance (GDPR, FERPA).',
+                            description:
+                                'Differential privacy, federated learning, anonymization techniques, adversarial attacks, and regulatory compliance (GDPR, FERPA).',
                             humanCode: 'DS 420',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['privacy', 'security', 'differential-privacy'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Fall 2024',
                     },
@@ -810,18 +1591,26 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── YEAR 4 · SPRING 2025 ──────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds490',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 490 — Data Science Capstone',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-07T00:00:00Z',
                     evidence: [
                         {
                             id: 'https://westbridge.edu/capstone/2025/reyes-jordan-report.pdf',
                             type: ['Evidence'],
                             name: 'Capstone Final Report',
-                            description: 'Full written report for DS 490 capstone project: "Equitable Predictive Models for Community Health Resource Allocation".',
+                            description:
+                                'Full written report for DS 490 capstone project: "Equitable Predictive Models for Community Health Resource Allocation".',
                             genre: 'Document',
                             audience: 'Faculty, Industry Partner',
                         },
@@ -834,27 +1623,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Data Science Capstone',
-                            description: 'Year-long applied research project with an external partner. Students formulate a problem, collect and analyze data, and deliver a production-ready solution with full documentation.',
+                            description:
+                                'Year-long applied research project with an external partner. Students formulate a problem, collect and analyze data, and deliver a production-ready solution with full documentation.',
                             humanCode: 'DS 490',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['capstone', 'research', 'applied'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A+', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A+',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 6,
                         term: 'Spring 2025',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds450',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 450 — Research Methods in Data Science',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-07T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -864,27 +1689,63 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Research Methods in Data Science',
-                            description: 'Experimental design, reproducible research workflows, literature review, IRB protocols, and dissemination of findings through papers and open-source code.',
+                            description:
+                                'Experimental design, reproducible research workflows, literature review, IRB protocols, and dissemination of findings through papers and open-source code.',
                             humanCode: 'DS 450',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['research', 'reproducibility', 'methodology'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2025',
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-ds460',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'DS 460 — Data Science for Social Impact',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-07T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -894,17 +1755,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Course',
                             name: 'Data Science for Social Impact',
-                            description: 'Applications of data science to public health, education, climate, and civic technology. Covers community-engaged research and responsible disclosure.',
+                            description:
+                                'Applications of data science to public health, education, climate, and civic technology. Covers community-engaged research and responsible disclosure.',
                             humanCode: 'DS 460',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['social-impact', 'public-health', 'civic-tech'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-letter', type: ['ResultDescription'], name: 'Letter Grade', resultType: 'LetterGrade', allowedValue: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-letter',
+                                    type: ['ResultDescription'],
+                                    name: 'Letter Grade',
+                                    resultType: 'LetterGrade',
+                                    allowedValue: [
+                                        'A+',
+                                        'A',
+                                        'A-',
+                                        'B+',
+                                        'B',
+                                        'B-',
+                                        'C+',
+                                        'C',
+                                        'C-',
+                                        'D',
+                                        'F',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'A', resultDescription: 'urn:uuid:wb-rd-letter' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'A',
+                                resultDescription: 'urn:uuid:wb-rd-letter',
+                            },
+                        ],
                         creditsEarned: 3,
                         term: 'Spring 2025',
                     },
@@ -912,11 +1802,18 @@ export const clrWestbridgeFull: CredentialFixture = {
 
                 // ── DEGREE ────────────────────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-degree-001',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'Bachelor of Science in Data Science',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-18T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -926,12 +1823,17 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'BachelorDegree',
                             name: 'Bachelor of Science in Data Science',
-                            description: 'A four-year undergraduate program preparing graduates to extract insight from complex data through rigorous quantitative, computational, and ethical training.',
+                            description:
+                                'A four-year undergraduate program preparing graduates to extract insight from complex data through rigorous quantitative, computational, and ethical training.',
                             humanCode: 'BS-DS',
                             fieldOfStudy: 'Data Science',
                             inLanguage: 'en',
                             tag: ['degree', 'undergraduate', 'data-science'],
-                            creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                            creator: {
+                                id: 'https://westbridge.edu/departments/data-science',
+                                type: ['Profile'],
+                                name: 'Department of Data Science',
+                            },
                             alignment: [
                                 {
                                     type: ['Alignment'],
@@ -939,29 +1841,60 @@ export const clrWestbridgeFull: CredentialFixture = {
                                     targetName: 'ACM Data Science Curricular Guidance',
                                     targetFramework: 'ACM Computing Curricula 2021',
                                     targetType: 'CFRubric',
-                                    targetUrl: 'https://www.acm.org/education/curricula-recommendations',
-                                    targetDescription: 'Program aligns with ACM 2021 data science undergraduate guidelines.',
+                                    targetUrl:
+                                        'https://www.acm.org/education/curricula-recommendations',
+                                    targetDescription:
+                                        'Program aligns with ACM 2021 data science undergraduate guidelines.',
                                 },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-gpa', type: ['ResultDescription'], name: 'Cumulative GPA', resultType: 'GradePointAverage', valueMin: '0.0', valueMax: '4.0' },
-                                { id: 'urn:uuid:wb-rd-credits', type: ['ResultDescription'], name: 'Total Credits Earned', resultType: 'RawScore', valueMin: '0', valueMax: '128' },
+                                {
+                                    id: 'urn:uuid:wb-rd-gpa',
+                                    type: ['ResultDescription'],
+                                    name: 'Cumulative GPA',
+                                    resultType: 'GradePointAverage',
+                                    valueMin: '0.0',
+                                    valueMax: '4.0',
+                                },
+                                {
+                                    id: 'urn:uuid:wb-rd-credits',
+                                    type: ['ResultDescription'],
+                                    name: 'Total Credits Earned',
+                                    resultType: 'RawScore',
+                                    valueMin: '0',
+                                    valueMax: '128',
+                                },
                             ],
                         },
                         result: [
-                            { type: ['Result'], value: 3.87, resultDescription: 'urn:uuid:wb-rd-gpa' },
-                            { type: ['Result'], value: 81, resultDescription: 'urn:uuid:wb-rd-credits' },
+                            {
+                                type: ['Result'],
+                                value: 3.87,
+                                resultDescription: 'urn:uuid:wb-rd-gpa',
+                            },
+                            {
+                                type: ['Result'],
+                                value: 81,
+                                resultDescription: 'urn:uuid:wb-rd-credits',
+                            },
                         ],
                     },
                 },
 
                 // ── COMPETENCIES ──────────────────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-comp-001',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'Competency — Statistical Reasoning',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-18T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -971,24 +1904,56 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Competency',
                             name: 'Statistical Reasoning',
-                            description: 'Ability to select and apply appropriate statistical methods, interpret results, communicate uncertainty, and critique statistical claims.',
+                            description:
+                                'Ability to select and apply appropriate statistical methods, interpret results, communicate uncertainty, and critique statistical claims.',
                             fieldOfStudy: 'Data Science',
                             alignment: [
-                                { type: ['Alignment'], targetCode: 'DS.STAT.2', targetName: 'Advanced Statistical Reasoning', targetFramework: 'Westbridge DS Competency Framework v2', targetType: 'CFItem', targetUrl: 'https://westbridge.edu/frameworks/ds/STAT.2' },
+                                {
+                                    type: ['Alignment'],
+                                    targetCode: 'DS.STAT.2',
+                                    targetName: 'Advanced Statistical Reasoning',
+                                    targetFramework: 'Westbridge DS Competency Framework v2',
+                                    targetType: 'CFItem',
+                                    targetUrl: 'https://westbridge.edu/frameworks/ds/STAT.2',
+                                },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-comp-level', type: ['ResultDescription'], name: 'Competency Level', resultType: 'CompetencyLevel', allowedValue: ['Developing', 'Proficient', 'Advanced', 'Distinguished'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-comp-level',
+                                    type: ['ResultDescription'],
+                                    name: 'Competency Level',
+                                    resultType: 'RubricCriterionLevel',
+                                    allowedValue: [
+                                        'Developing',
+                                        'Proficient',
+                                        'Advanced',
+                                        'Distinguished',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'Distinguished', resultDescription: 'urn:uuid:wb-rd-comp-level' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'Distinguished',
+                                resultDescription: 'urn:uuid:wb-rd-comp-level',
+                            },
+                        ],
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-comp-002',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'Competency — Data Communication',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-18T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -998,21 +1963,46 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Competency',
                             name: 'Data Communication',
-                            description: 'Ability to synthesize analytical findings into clear written, visual, and oral narratives for both technical and non-technical audiences.',
+                            description:
+                                'Ability to synthesize analytical findings into clear written, visual, and oral narratives for both technical and non-technical audiences.',
                             fieldOfStudy: 'Data Science',
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-comp-level', type: ['ResultDescription'], name: 'Competency Level', resultType: 'CompetencyLevel', allowedValue: ['Developing', 'Proficient', 'Advanced', 'Distinguished'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-comp-level',
+                                    type: ['ResultDescription'],
+                                    name: 'Competency Level',
+                                    resultType: 'RubricCriterionLevel',
+                                    allowedValue: [
+                                        'Developing',
+                                        'Proficient',
+                                        'Advanced',
+                                        'Distinguished',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'Distinguished', resultDescription: 'urn:uuid:wb-rd-comp-level' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'Distinguished',
+                                resultDescription: 'urn:uuid:wb-rd-comp-level',
+                            },
+                        ],
                     },
                 },
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-comp-003',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'Competency — Ethical AI Practice',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2025-05-18T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -1022,26 +2012,58 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Competency',
                             name: 'Ethical AI Practice',
-                            description: 'Ability to identify, analyze, and mitigate bias, fairness, and harm in AI systems; applies ethical frameworks to real-world deployment decisions.',
+                            description:
+                                'Ability to identify, analyze, and mitigate bias, fairness, and harm in AI systems; applies ethical frameworks to real-world deployment decisions.',
                             fieldOfStudy: 'Data Science',
                             alignment: [
-                                { type: ['Alignment'], targetCode: 'DS.ETHICS.2', targetName: 'Ethical AI Deployment', targetFramework: 'Westbridge DS Competency Framework v2', targetType: 'CFItem', targetUrl: 'https://westbridge.edu/frameworks/ds/ETHICS.2' },
+                                {
+                                    type: ['Alignment'],
+                                    targetCode: 'DS.ETHICS.2',
+                                    targetName: 'Ethical AI Deployment',
+                                    targetFramework: 'Westbridge DS Competency Framework v2',
+                                    targetType: 'CFItem',
+                                    targetUrl: 'https://westbridge.edu/frameworks/ds/ETHICS.2',
+                                },
                             ],
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-comp-level', type: ['ResultDescription'], name: 'Competency Level', resultType: 'CompetencyLevel', allowedValue: ['Developing', 'Proficient', 'Advanced', 'Distinguished'] },
+                                {
+                                    id: 'urn:uuid:wb-rd-comp-level',
+                                    type: ['ResultDescription'],
+                                    name: 'Competency Level',
+                                    resultType: 'RubricCriterionLevel',
+                                    allowedValue: [
+                                        'Developing',
+                                        'Proficient',
+                                        'Advanced',
+                                        'Distinguished',
+                                    ],
+                                },
                             ],
                         },
-                        result: [{ type: ['Result'], value: 'Advanced', resultDescription: 'urn:uuid:wb-rd-comp-level' }],
+                        result: [
+                            {
+                                type: ['Result'],
+                                value: 'Advanced',
+                                resultDescription: 'urn:uuid:wb-rd-comp-level',
+                            },
+                        ],
                     },
                 },
 
                 // ── STANDARDIZED ASSESSMENT ───────────────────────────────────────
                 {
-                    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'],
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    ],
                     id: 'urn:uuid:wb-assess-001',
                     type: ['VerifiableCredential', 'AchievementCredential'],
                     name: 'ACT Score Report',
-                    issuer: { id: 'did:web:registrar.westbridge.edu', type: ['Profile'], name: 'Westbridge University' },
+                    issuer: {
+                        id: 'did:web:registrar.westbridge.edu',
+                        type: ['Profile'],
+                        name: 'Westbridge University',
+                    },
                     validFrom: '2021-04-17T00:00:00Z',
                     credentialSubject: {
                         id: 'did:example:wb-student-2025-001',
@@ -1051,24 +2073,91 @@ export const clrWestbridgeFull: CredentialFixture = {
                             type: ['Achievement'],
                             achievementType: 'Assessment',
                             name: 'ACT College Readiness Assessment',
-                            description: 'ACT standardized college readiness test scores submitted during undergraduate admission. Scores reported on a 1–36 scale per section.',
+                            description:
+                                'ACT standardized college readiness test scores submitted during undergraduate admission. Scores reported on a 1–36 scale per section.',
                             fieldOfStudy: 'Assessment',
                             resultDescription: [
-                                { id: 'urn:uuid:wb-rd-act-composite', type: ['ResultDescription'], name: 'Composite',    resultType: 'RawScore', valueMin: '1', valueMax: '36' },
-                                { id: 'urn:uuid:wb-rd-act-english',   type: ['ResultDescription'], name: 'English',     resultType: 'RawScore', valueMin: '1', valueMax: '36' },
-                                { id: 'urn:uuid:wb-rd-act-math',      type: ['ResultDescription'], name: 'Mathematics', resultType: 'RawScore', valueMin: '1', valueMax: '36' },
-                                { id: 'urn:uuid:wb-rd-act-reading',   type: ['ResultDescription'], name: 'Reading',     resultType: 'RawScore', valueMin: '1', valueMax: '36' },
-                                { id: 'urn:uuid:wb-rd-act-science',   type: ['ResultDescription'], name: 'Science',     resultType: 'RawScore', valueMin: '1', valueMax: '36' },
-                                { id: 'urn:uuid:wb-rd-act-writing',   type: ['ResultDescription'], name: 'Writing',     resultType: 'RawScore', valueMin: '2', valueMax: '12' },
+                                {
+                                    id: 'urn:uuid:wb-rd-act-composite',
+                                    type: ['ResultDescription'],
+                                    name: 'Composite',
+                                    resultType: 'RawScore',
+                                    valueMin: '1',
+                                    valueMax: '36',
+                                },
+                                {
+                                    id: 'urn:uuid:wb-rd-act-english',
+                                    type: ['ResultDescription'],
+                                    name: 'English',
+                                    resultType: 'RawScore',
+                                    valueMin: '1',
+                                    valueMax: '36',
+                                },
+                                {
+                                    id: 'urn:uuid:wb-rd-act-math',
+                                    type: ['ResultDescription'],
+                                    name: 'Mathematics',
+                                    resultType: 'RawScore',
+                                    valueMin: '1',
+                                    valueMax: '36',
+                                },
+                                {
+                                    id: 'urn:uuid:wb-rd-act-reading',
+                                    type: ['ResultDescription'],
+                                    name: 'Reading',
+                                    resultType: 'RawScore',
+                                    valueMin: '1',
+                                    valueMax: '36',
+                                },
+                                {
+                                    id: 'urn:uuid:wb-rd-act-science',
+                                    type: ['ResultDescription'],
+                                    name: 'Science',
+                                    resultType: 'RawScore',
+                                    valueMin: '1',
+                                    valueMax: '36',
+                                },
+                                {
+                                    id: 'urn:uuid:wb-rd-act-writing',
+                                    type: ['ResultDescription'],
+                                    name: 'Writing',
+                                    resultType: 'RawScore',
+                                    valueMin: '2',
+                                    valueMax: '12',
+                                },
                             ],
                         },
                         result: [
-                            { type: ['Result'], value: 34, resultDescription: 'urn:uuid:wb-rd-act-composite' },
-                            { type: ['Result'], value: 35, resultDescription: 'urn:uuid:wb-rd-act-english' },
-                            { type: ['Result'], value: 33, resultDescription: 'urn:uuid:wb-rd-act-math' },
-                            { type: ['Result'], value: 35, resultDescription: 'urn:uuid:wb-rd-act-reading' },
-                            { type: ['Result'], value: 33, resultDescription: 'urn:uuid:wb-rd-act-science' },
-                            { type: ['Result'], value: 10, resultDescription: 'urn:uuid:wb-rd-act-writing' },
+                            {
+                                type: ['Result'],
+                                value: 34,
+                                resultDescription: 'urn:uuid:wb-rd-act-composite',
+                            },
+                            {
+                                type: ['Result'],
+                                value: 35,
+                                resultDescription: 'urn:uuid:wb-rd-act-english',
+                            },
+                            {
+                                type: ['Result'],
+                                value: 33,
+                                resultDescription: 'urn:uuid:wb-rd-act-math',
+                            },
+                            {
+                                type: ['Result'],
+                                value: 35,
+                                resultDescription: 'urn:uuid:wb-rd-act-reading',
+                            },
+                            {
+                                type: ['Result'],
+                                value: 33,
+                                resultDescription: 'urn:uuid:wb-rd-act-science',
+                            },
+                            {
+                                type: ['Result'],
+                                value: 10,
+                                resultDescription: 'urn:uuid:wb-rd-act-writing',
+                            },
                         ],
                     },
                 },
@@ -1082,62 +2171,353 @@ export const clrWestbridgeFull: CredentialFixture = {
                     name: 'Bachelor of Science in Data Science',
                     humanCode: 'BS-DS',
                     fieldOfStudy: 'Data Science',
-                    creator: { id: 'https://westbridge.edu/departments/data-science', type: ['Profile'], name: 'Department of Data Science' },
+                    creator: {
+                        id: 'https://westbridge.edu/departments/data-science',
+                        type: ['Profile'],
+                        name: 'Department of Data Science',
+                    },
                     resultDescription: [
-                        { id: 'urn:uuid:wb-rd-gpa', type: ['ResultDescription'], name: 'Cumulative GPA', resultType: 'GradePointAverage', valueMin: '0.0', valueMax: '4.0' },
+                        {
+                            id: 'urn:uuid:wb-rd-gpa',
+                            type: ['ResultDescription'],
+                            name: 'Cumulative GPA',
+                            resultType: 'GradePointAverage',
+                            valueMin: '0.0',
+                            valueMax: '4.0',
+                        },
                     ],
                 },
             ],
 
             association: [
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds101',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-math151', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-cs101',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-stat201', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-math201', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds110',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds201',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-cs201',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-comm201', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds211',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-cs310',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-econ201', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds301',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds310',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-phil310', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds311',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds320',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-stat401', targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds401',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds410',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds420',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds490',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds450',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isChildOf', sourceId: 'urn:uuid:wb-ds460',   targetId: 'urn:uuid:wb-degree-001' },
+                // ── COURSE → DEGREE (isChildOf) ───────────────────────────────────
+                // Every course is a component of the BS in Data Science.
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds101',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 101 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-math151',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // MATH 151 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-cs101',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // CS 101 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-stat201',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // STAT 201 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-math201',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // MATH 201 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds110',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 110 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds201',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 201 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-cs201',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // CS 201 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-comm201',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // COMM 201 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds211',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 211 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-cs310',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // CS 310 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-econ201',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // ECON 201 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds301',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 301 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds310',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 310 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-phil310',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // PHIL 310 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds311',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 311 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds320',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 320 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-stat401',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // STAT 401 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds401',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 401 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds410',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 410 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds420',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 420 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds490',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 490 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds450',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 450 → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isChildOf',
+                    sourceId: 'urn:uuid:wb-ds460',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // DS 460 → BS-DS
 
-                { type: ['Association'], associationType: 'isRelatedTo', sourceId: 'urn:uuid:wb-comp-001',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isRelatedTo', sourceId: 'urn:uuid:wb-comp-002',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isRelatedTo', sourceId: 'urn:uuid:wb-comp-003',   targetId: 'urn:uuid:wb-degree-001' },
-                { type: ['Association'], associationType: 'isRelatedTo', sourceId: 'urn:uuid:wb-assess-001', targetId: 'urn:uuid:wb-degree-001' },
+                // ── COMPETENCY / ASSESSMENT → DEGREE (isRelatedTo) ────────────────
+                // Program-level: all three competencies and the ACT score are related to
+                // the degree as a whole (demonstrated across the full program).
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-001',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // Statistical Reasoning → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-002',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // Data Communication → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-003',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // Ethical AI Practice → BS-DS
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-assess-001',
+                    targetId: 'urn:uuid:wb-degree-001',
+                }, // ACT → BS-DS
 
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds101',   targetId: 'urn:uuid:wb-ds110' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds101',   targetId: 'urn:uuid:wb-ds201' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds110',   targetId: 'urn:uuid:wb-ds201' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-math151', targetId: 'urn:uuid:wb-math201' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-cs101',   targetId: 'urn:uuid:wb-cs201' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-stat201', targetId: 'urn:uuid:wb-ds211' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-cs101',   targetId: 'urn:uuid:wb-cs310' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-cs201',   targetId: 'urn:uuid:wb-cs310' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds201',   targetId: 'urn:uuid:wb-ds301' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds201',   targetId: 'urn:uuid:wb-ds310' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds211',   targetId: 'urn:uuid:wb-ds311' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds320',   targetId: 'urn:uuid:wb-ds401' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-phil310', targetId: 'urn:uuid:wb-ds420' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds301',   targetId: 'urn:uuid:wb-ds401' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds301',   targetId: 'urn:uuid:wb-ds490' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds401',   targetId: 'urn:uuid:wb-ds490' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds410',   targetId: 'urn:uuid:wb-ds490' },
-                { type: ['Association'], associationType: 'precedes', sourceId: 'urn:uuid:wb-ds450',   targetId: 'urn:uuid:wb-ds490' },
+                // ── COMPETENCY → COURSE (isRelatedTo) ─────────────────────────────
+                // Course-level: each competency is also tied to the specific course(s)
+                // that develop it, derived from matching alignment framework families.
+                // Statistical Reasoning (DS.STAT.*) — STAT 201, DS 211, STAT 401
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-001',
+                    targetId: 'urn:uuid:wb-stat201',
+                }, // Statistical Reasoning → STAT 201
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-001',
+                    targetId: 'urn:uuid:wb-ds211',
+                }, // Statistical Reasoning → DS 211
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-001',
+                    targetId: 'urn:uuid:wb-stat401',
+                }, // Statistical Reasoning → STAT 401
+                // Data Communication — COMM 201
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-002',
+                    targetId: 'urn:uuid:wb-comm201',
+                }, // Data Communication → COMM 201
+                // Ethical AI Practice (DS.ETHICS.*) — PHIL 310, DS 420
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-003',
+                    targetId: 'urn:uuid:wb-phil310',
+                }, // Ethical AI Practice → PHIL 310
+                {
+                    type: ['Association'],
+                    associationType: 'isRelatedTo',
+                    sourceId: 'urn:uuid:wb-comp-003',
+                    targetId: 'urn:uuid:wb-ds420',
+                }, // Ethical AI Practice → DS 420
+
+                // ── PREREQUISITES (precedes) ──────────────────────────────────────
+                // A → B means A must be completed before B.
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds101',
+                    targetId: 'urn:uuid:wb-ds110',
+                }, // DS 101 → DS 110
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds101',
+                    targetId: 'urn:uuid:wb-ds201',
+                }, // DS 101 → DS 201
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds110',
+                    targetId: 'urn:uuid:wb-ds201',
+                }, // DS 110 → DS 201
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-math151',
+                    targetId: 'urn:uuid:wb-math201',
+                }, // MATH 151 → MATH 201
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-cs101',
+                    targetId: 'urn:uuid:wb-cs201',
+                }, // CS 101 → CS 201
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-stat201',
+                    targetId: 'urn:uuid:wb-ds211',
+                }, // STAT 201 → DS 211
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-cs101',
+                    targetId: 'urn:uuid:wb-cs310',
+                }, // CS 101 → CS 310
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-cs201',
+                    targetId: 'urn:uuid:wb-cs310',
+                }, // CS 201 → CS 310
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds201',
+                    targetId: 'urn:uuid:wb-ds301',
+                }, // DS 201 → DS 301
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds201',
+                    targetId: 'urn:uuid:wb-ds310',
+                }, // DS 201 → DS 310
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds211',
+                    targetId: 'urn:uuid:wb-ds311',
+                }, // DS 211 → DS 311
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds320',
+                    targetId: 'urn:uuid:wb-ds401',
+                }, // DS 320 → DS 401
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-phil310',
+                    targetId: 'urn:uuid:wb-ds420',
+                }, // PHIL 310 → DS 420
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds301',
+                    targetId: 'urn:uuid:wb-ds401',
+                }, // DS 301 → DS 401
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds301',
+                    targetId: 'urn:uuid:wb-ds490',
+                }, // DS 301 → DS 490
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds401',
+                    targetId: 'urn:uuid:wb-ds490',
+                }, // DS 401 → DS 490
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds410',
+                    targetId: 'urn:uuid:wb-ds490',
+                }, // DS 410 → DS 490
+                {
+                    type: ['Association'],
+                    associationType: 'precedes',
+                    sourceId: 'urn:uuid:wb-ds450',
+                    targetId: 'urn:uuid:wb-ds490',
+                }, // DS 450 → DS 490
             ],
         },
     },
