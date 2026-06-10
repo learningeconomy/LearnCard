@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 interface GoalCaptureProps {
     initial?: string;
@@ -92,7 +93,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                     onClick={onSkip}
                     className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
-                    Skip for now
+                    {m['pathways.skipForNow']()}
                 </button>
             </div>
         </div>

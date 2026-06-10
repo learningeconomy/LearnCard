@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import type { PathwaySuggestion } from './suggestPathways';
 
@@ -88,7 +89,7 @@ const SuggestionGrid: React.FC<SuggestionGridProps> = ({
             onClick={onBack}
             className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
         >
-            Back
+            {m['pathways.back']()}
         </button>
     </div>
 );

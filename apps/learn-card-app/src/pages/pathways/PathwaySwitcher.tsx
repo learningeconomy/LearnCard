@@ -42,6 +42,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { IonIcon } from '@ionic/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -595,7 +596,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
      * `max-w-[240px]` budget can't accommodate full titles either
      * way.
      */
-    const fullTitle = activePathway?.title ?? 'Pathways';
+    const fullTitle = activePathway?.title ?? m['pathways.title']();
 
     const colonIdx = fullTitle.indexOf(':');
 

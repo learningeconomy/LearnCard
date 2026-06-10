@@ -7,6 +7,7 @@
  */
 
 import React, { Suspense } from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { Redirect, Route, Switch, useRouteMatch } from 'react-router-dom';
@@ -121,7 +122,7 @@ const PathwaysShell: React.FC = () => {
                         */}
                         {!isOnOnboard && (
                             <PathwaysHeader
-                                title={activePathway?.title ?? 'Pathways'}
+                                title={activePathway?.title ?? m['pathways.title']()}
                                 subtitle={activePathway?.goal}
                             />
                         )}

@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { AnimatePresence, motion } from 'motion/react';
 import { v4 as uuid } from 'uuid';
@@ -26,7 +27,7 @@ const RELATIONSHIP_OPTIONS: Array<{
     { value: 'mentor', label: 'Mentor' },
     { value: 'peer', label: 'Peer' },
     { value: 'guardian', label: 'Guardian' },
-    { value: 'institution', label: 'Institution' },
+    { value: 'institution', label: m['pathways.institution']() },
 ];
 
 const TRUST_TIER_BY_RELATIONSHIP: Record<

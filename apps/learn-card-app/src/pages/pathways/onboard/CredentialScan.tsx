@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import type { WalletSignal } from './suggestPathways';
 
@@ -76,7 +77,7 @@ const CredentialScan: React.FC<CredentialScanProps> = ({ onContinue, onBack }) =
                     onClick={onBack}
                     className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
-                    Back
+                    {m['pathways.back']()}
                 </button>
             </div>
         </div>
