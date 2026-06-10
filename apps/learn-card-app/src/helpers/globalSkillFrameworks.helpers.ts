@@ -4,7 +4,8 @@ import { useQueries } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 
 import { useWallet, useIsLoggedIn, useTenantConfig } from 'learn-card-base';
-import type { TenantConfig } from 'learn-card-base';
+
+import { isProductionBrainService } from './globalSkillFrameworks.utils';
 
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
@@ -75,24 +76,6 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> 
         'skill-1772824804950-w4yyfkxzt',
         'skill-1772824804950-w96zstc5o',
     ],
-};
-
-const PRODUCTION_BRAIN_SERVICE_HOSTS = new Set(['network.learncard.com', 'network.vetpass.app']);
-
-const isProductionBrainService = (tenantConfig?: TenantConfig): boolean => {
-    const brainServiceUrl = tenantConfig?.apis?.brainService?.trim();
-
-    if (!brainServiceUrl) {
-        return false;
-    }
-
-    try {
-        const hostname = new URL(brainServiceUrl).hostname.toLowerCase();
-
-        return PRODUCTION_BRAIN_SERVICE_HOSTS.has(hostname);
-    } catch {
-        return false;
-    }
 };
 
 const fetchAllAvailableFrameworks = async (
@@ -207,7 +190,7 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const tenantConfig = useTenantConfig();
-    const useSeededFrameworks = !isProductionBrainService(tenantConfig);
+    const useSeededFrameworks = !isProductionBrainService(tenantConfig?.apis?.brainService);
 
     const { data: seededFrameworks = [] } = useQuery({
         queryKey: [
