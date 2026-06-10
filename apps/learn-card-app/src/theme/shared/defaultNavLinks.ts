@@ -28,8 +28,8 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
 export const DEFAULT_SIDE_MENU_SECONDARY_LINKS: SideMenuLink[] = [
     { id: SideMenuLinksEnum.wallet, label: 'Passport', path: '/passport' },
     { id: SideMenuLinksEnum.aiTopics, label: 'AI Sessions', path: '/ai/topics' },
-    { id: SideMenuLinksEnum.aiInsights, label: 'AI Insights', path: '/ai/insights' },
-    { id: SideMenuLinksEnum.aiPathways, label: 'AI Pathways', path: '/ai/pathways' },
+    { id: SideMenuLinksEnum.aiInsights, label: 'Insights', path: '/ai/insights' },
+    { id: SideMenuLinksEnum.aiPathways, label: 'Pathways', path: '/ai/pathways' },
     // Pathways v2 \u2014 currently labelled "Journeys" to avoid
     // clashing with the legacy `AI Pathways` entry above. Once the
     // legacy feature is retired we can reclaim the "Pathways" label

@@ -54,10 +54,8 @@ import DashboardView from './DashboardView';
 import type {
     DashboardViewModel,
     DashboardEmptyTip,
-    DashboardLearningSnapshotsViewModel,
-    DashboardLearningSnapshot,
-    DashboardTopSkillsViewModel,
     DashboardDataTrustViewModel,
+    DashboardLearningProfileViewModel,
 } from './DashboardView.types';
 import { buildLearningSnapshots } from './helpers/learningSnapshots';
 import { buildTopSkills } from './helpers/topSkills';
@@ -130,8 +128,8 @@ const DashboardPage: React.FC = () => {
     const headerSkillPills = useMemo(
         () =>
             (selfAssignedSkills ?? [])
-                .filter(s => s?.statement?.trim())
-                .map(s => ({ id: s.id, label: s.statement.trim() })),
+                .filter((s: any) => s?.statement?.trim())
+                .map((s: any) => ({ id: s.id, label: s.statement.trim() })),
         [selfAssignedSkills]
     );
 
@@ -206,7 +204,7 @@ const DashboardPage: React.FC = () => {
         ][];
         const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
 
-        return buildTopSkills(getTopSkills(aggregatedSkills, 3));
+        return buildTopSkills(getTopSkills(aggregatedSkills, 15), 3);
     }, [aiInsightsAllowed, skillsCredentials]);
 
     const openMyLearnCard = () => {
@@ -214,12 +212,12 @@ const DashboardPage: React.FC = () => {
     };
     const openQrScanner = () => {
         openHeaderModal(
-            <QrCodeUserCardModal
-                branding={BrandingEnum.learncard}
-                history={history}
-                connections={connections ?? []}
-                qrOnly
-            />
+            React.createElement(QrCodeUserCardModal as any, {
+                branding: BrandingEnum.learncard,
+                history,
+                connections: connections ?? [],
+                qrOnly: true,
+            })
         );
     };
     const openManageDataSharing = () => {
@@ -439,22 +437,43 @@ const DashboardPage: React.FC = () => {
         },
     ];
 
-    const learningSnapshots = useMemo<DashboardLearningSnapshotsViewModel>(() => {
-        if (!aiInsightsAllowed) return null;
+    const learningProfile = useMemo<DashboardLearningProfileViewModel>(() => {
+        const skills = dashboardTopSkills.map(skill => ({
+            name: skill.name,
+            title: skill.title,
+            category: skill.category,
+            strengthTier: skill.strengthTier,
+        }));
 
-        const snapshots: DashboardLearningSnapshot[] = buildLearningSnapshots(
-            existingAiInsightCredential
-        );
-        if (snapshots.length === 0) return null;
+        let strength: DashboardLearningProfileViewModel['strength'] = null;
 
-        return { snapshots, onViewAll: goToInsights };
-    }, [aiInsightsAllowed, existingAiInsightCredential]);
+        if (aiInsightsAllowed) {
+            const snapshots = buildLearningSnapshots(existingAiInsightCredential);
+            const strengthSnapshot = snapshots.find(snap => snap.tone === 'strength');
+            if (strengthSnapshot) {
+                strength = {
+                    title: strengthSnapshot.title,
+                    summary: strengthSnapshot.description,
+                };
+            }
+        }
 
-    const topSkills = useMemo<DashboardTopSkillsViewModel>(() => {
-        if (!aiInsightsAllowed || dashboardTopSkills.length === 0) return null;
+        let state: DashboardLearningProfileViewModel['state'] = 'empty';
+        if (strength && skills.length > 0) {
+            state = 'rich';
+        } else if (skills.length > 0 || strength) {
+            state = 'early';
+        }
 
-        return { skills: dashboardTopSkills, onViewAll: goToSkills };
-    }, [aiInsightsAllowed, dashboardTopSkills]);
+        return {
+            state,
+            strength,
+            verifiedRecords: totalCredentialCount,
+            skills,
+            updatedAt: existingAiInsightCredential?.issuanceDate,
+            onViewInsights: goToInsights,
+        };
+    }, [aiInsightsAllowed, dashboardTopSkills, existingAiInsightCredential, totalCredentialCount]);
 
     const dataTrust = useMemo<DashboardDataTrustViewModel>(() => {
         const summary = summarizeConsent(consentedContracts);
@@ -495,14 +514,13 @@ const DashboardPage: React.FC = () => {
         dataTrust,
         activity: {
             notifications: unreadNotifications,
-            pendingContractRequests,
+            pendingContractRequests: pendingContractRequests,
             pendingConnections: receivedConnectionRequests,
             records: allCredentialRecords,
             isLoading: allCredentialsLoading,
             emptyTips,
         },
-        learningSnapshots,
-        topSkills,
+        learningProfile,
         apps: {
             installedApps,
             suggestedApps,

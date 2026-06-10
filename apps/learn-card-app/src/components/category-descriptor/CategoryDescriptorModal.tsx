@@ -64,12 +64,12 @@ const CategoryDescriptorModal: React.FC<{
                 category = BoostCategoryOptionsEnum.family;
                 break;
 
-            case 'AI Insights':
+            case 'Insights':
                 imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
                 category = CredentialCategoryEnum.aiInsight;
                 break;
 
-            case 'AI Pathways':
+            case 'Pathways':
                 imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
                 category = 'aiPathway' as CredentialCategoryEnum;
                 break;

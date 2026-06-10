@@ -299,8 +299,12 @@ export const brandNewUser: DashboardViewModel = {
         isLoading: false,
         emptyTips: meanwhileTips,
     },
-    learningSnapshots: null,
-    topSkills: null,
+    learningProfile: {
+        state: 'empty',
+        verifiedRecords: 0,
+        skills: [],
+        onViewInsights: noop,
+    },
     apps: {
         installedApps: [],
         suggestedApps,
@@ -389,54 +393,36 @@ export const activeLearner: DashboardViewModel = {
         isLoading: false,
         emptyTips: meanwhileTips,
     },
-    learningSnapshots: {
-        snapshots: [
-            {
-                tone: 'strength',
-                label: 'Strongest area',
-                title: 'Quality Assurance & Testing',
-                description:
-                    'Your credentials and skills show deep, consistent strength in test design and QA process.',
-            },
-            {
-                tone: 'weakness',
-                label: 'Needs work',
-                title: 'Data & Analytics',
-                description:
-                    'Few records touch on data analysis — a focused course here would round out your profile.',
-            },
-            {
-                tone: 'growth',
-                label: 'Room for growth',
-                title: 'Team Leadership',
-                description:
-                    'You are ready to step into mentoring and lead roles based on your experience level.',
-            },
-        ],
-        onViewAll: noop,
-    },
-    topSkills: {
+    learningProfile: {
+        state: 'rich',
+        strength: {
+            title: 'Quality Assurance & Testing',
+            summary:
+                'Your credentials and skills show deep, consistent strength in test design and QA process.',
+        },
+        verifiedRecords: 12,
+        updatedAt: new Date().toISOString(),
         skills: [
             {
+                name: 'attention-to-detail',
                 title: 'Attention to Detail',
-                count: 6,
-                description: 'Thoroughness and accuracy when accomplishing a task.',
                 category: 'durable',
+                strengthTier: 'strongest',
             },
             {
+                name: 'critical-thinking',
                 title: 'Critical Thinking',
-                count: 4,
-                description: 'Objective analysis and evaluation to form a judgment.',
                 category: 'stem',
+                strengthTier: 'strong',
             },
             {
+                name: 'communication',
                 title: 'Communication',
-                count: 3,
-                description: 'Conveying information clearly and effectively to others.',
                 category: 'social',
+                strengthTier: 'growing',
             },
         ],
-        onViewAll: noop,
+        onViewInsights: noop,
     },
     apps: {
         installedApps: [
@@ -452,8 +438,12 @@ export const activeLearner: DashboardViewModel = {
 export const returningNoActivity: DashboardViewModel = {
     ...activeLearner,
     goalSummary: null,
-    learningSnapshots: null,
-    topSkills: null,
+    learningProfile: {
+        state: 'empty',
+        verifiedRecords: 0,
+        skills: [],
+        onViewInsights: noop,
+    },
     heroSlot: 'goal',
     checklistItems: checklist({ credential: true, goal: false, skills: true }),
     slots: {

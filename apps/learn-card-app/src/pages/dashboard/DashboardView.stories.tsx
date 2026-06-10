@@ -1,128 +1,56 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { useQueryClient } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 
 import DashboardView from './DashboardView';
-import {
-    brandNewUser,
-    activeLearner,
-    returningNoActivity,
-    pendingOnly,
-    loadingState,
-    personaCredentials,
-} from './dashboard.personas';
-
-const SeedCredentials: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const queryClient = useQueryClient();
-    for (const [uri, vc] of Object.entries(personaCredentials)) {
-        queryClient.setQueryData(['useGetResolvedCredential', uri], vc);
-    }
-    return <>{children}</>;
-};
+import { DASHBOARD_PERSONAS } from './dashboard.personas';
 
 const meta: Meta<typeof DashboardView> = {
-    title: 'Dashboard/DashboardView',
+    title: 'Pages/Dashboard/DashboardView',
     component: DashboardView,
-    parameters: { layout: 'fullscreen' },
     decorators: [
         Story => (
-            <SeedCredentials>
-                <Story />
-            </SeedCredentials>
+            <MemoryRouter>
+                <div className="bg-grayscale-100 min-h-screen w-full">
+                    <Story />
+                </div>
+            </MemoryRouter>
         ),
     ],
+    parameters: {
+        layout: 'fullscreen',
+    },
 };
 
 export default meta;
 type Story = StoryObj<typeof DashboardView>;
 
-export const BrandNewUser: Story = { args: { vm: brandNewUser } };
-export const ActiveLearner: Story = { args: { vm: activeLearner } };
-export const ReturningEmptyFeed: Story = { args: { vm: returningNoActivity } };
-export const PendingActionsOnly: Story = { args: { vm: pendingOnly } };
-export const Loading: Story = { args: { vm: loadingState } };
-
-export const BrandNewUserNarrow: Story = {
-    args: { vm: brandNewUser },
-    parameters: { viewport: { defaultViewport: 'tablet' } },
-};
-
-export const DataSharingSomeState: Story = {
+export const BrandNewUser: Story = {
     args: {
-        vm: {
-            ...activeLearner,
-            dataTrust: {
-                places: 2,
-                canRead: 2,
-                canWrite: 0,
-                proof: [
-                    { uri: 'ct-1', name: 'State University' },
-                    { uri: 'ct-2', name: 'Khan Academy' },
-                ],
-                onManage: () => undefined,
-            },
-        },
+        vm: DASHBOARD_PERSONAS['Brand-new user'],
     },
 };
 
-const Playground: React.FC<{
-    hasCredentials: boolean;
-    credentialCount: number;
-    hasGoal: boolean;
-    hasActivity: boolean;
-    showAiInsights: boolean;
-}> = ({ hasCredentials, credentialCount, hasGoal, hasActivity, showAiInsights }) => {
-    const base = hasGoal ? activeLearner : brandNewUser;
-
-    const vm = {
-        ...base,
-        heroSlot: hasCredentials && hasGoal ? ('goal' as const) : ('getStarted' as const),
-        header: {
-            ...base.header,
-            stats: {
-                ...base.header.stats,
-                credentials: hasCredentials ? credentialCount : 0,
-            },
-        },
-        goalSummary: hasGoal ? activeLearner.goalSummary : null,
-        slots: {
-            collect: {
-                ...base.slots.collect!,
-                label: hasCredentials ? 'View passport' : 'Find credential apps',
-                caption: hasCredentials ? `${credentialCount} credentials` : 'Discover apps',
-            },
-            understand: {
-                ...base.slots.understand!,
-                label: showAiInsights ? 'See insights' : 'See your skills',
-            },
-            navigate: {
-                ...base.slots.navigate!,
-                label: hasGoal ? 'Explore journeys' : 'Set a goal',
-            },
-        },
-        activity: {
-            ...base.activity,
-            notifications: hasActivity ? activeLearner.activity.notifications : [],
-            pendingConnections: hasActivity ? activeLearner.activity.pendingConnections : [],
-            records: hasActivity ? activeLearner.activity.records : [],
-        },
-        learningSnapshots: showAiInsights ? activeLearner.learningSnapshots : null,
-        topSkills: showAiInsights ? activeLearner.topSkills : null,
-    };
-
-    return <DashboardView vm={vm} />;
+export const ActiveLearner: Story = {
+    args: {
+        vm: DASHBOARD_PERSONAS['Active learner'],
+    },
 };
 
-export const ControlsPlayground: StoryObj<typeof Playground> = {
-    render: args => <Playground {...args} />,
+export const ReturningNoActivity: Story = {
     args: {
-        hasCredentials: true,
-        credentialCount: 12,
-        hasGoal: true,
-        hasActivity: true,
-        showAiInsights: true,
+        vm: DASHBOARD_PERSONAS['Returning · empty feed'],
     },
-    argTypes: {
-        credentialCount: { control: { type: 'range', min: 0, max: 99, step: 1 } },
+};
+
+export const PendingOnly: Story = {
+    args: {
+        vm: DASHBOARD_PERSONAS['Pending actions only'],
+    },
+};
+
+export const Loading: Story = {
+    args: {
+        vm: DASHBOARD_PERSONAS['Loading'],
     },
 };

@@ -1,4 +1,9 @@
-import type { DashboardLearningSnapshot } from '../DashboardView.types';
+export type DashboardLearningSnapshot = {
+    label: string;
+    title: string;
+    description: string;
+    tone: 'strength' | 'weakness' | 'growth';
+};
 
 type InsightArea = {
     title?: unknown;

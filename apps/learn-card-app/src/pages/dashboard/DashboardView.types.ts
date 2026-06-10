@@ -106,18 +106,6 @@ export type DashboardAppsViewModel = {
     onInstallSuccess: () => void;
 };
 
-export type DashboardLearningSnapshot = {
-    label: string;
-    title: string;
-    description: string;
-    tone: 'strength' | 'weakness' | 'growth';
-};
-
-export type DashboardLearningSnapshotsViewModel = {
-    snapshots: DashboardLearningSnapshot[];
-    onViewAll: () => void;
-} | null;
-
 export type DashboardSkillCategory =
     | 'durable'
     | 'stem'
@@ -129,17 +117,23 @@ export type DashboardSkillCategory =
     | 'digital'
     | 'medical';
 
-export type DashboardTopSkill = {
+export type DashboardLearningProfileState = 'empty' | 'early' | 'rich';
+
+export type DashboardProfileSkill = {
+    name: string;
     title: string;
-    description: string;
-    count: number;
     category: DashboardSkillCategory | null;
+    strengthTier: 'strongest' | 'strong' | 'growing';
 };
 
-export type DashboardTopSkillsViewModel = {
-    skills: DashboardTopSkill[];
-    onViewAll: () => void;
-} | null;
+export type DashboardLearningProfileViewModel = {
+    state: DashboardLearningProfileState;
+    strength?: { title: string; summary?: string } | null;
+    verifiedRecords: number;
+    skills: DashboardProfileSkill[];
+    updatedAt?: string;
+    onViewInsights: () => void;
+};
 
 export type DashboardDataTrustProofItem = {
     uri: string;
@@ -172,7 +166,6 @@ export type DashboardViewModel = {
     slots: DashboardSlots;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
-    learningSnapshots: DashboardLearningSnapshotsViewModel;
-    topSkills: DashboardTopSkillsViewModel;
+    learningProfile: DashboardLearningProfileViewModel;
     apps: DashboardAppsViewModel;
 };
