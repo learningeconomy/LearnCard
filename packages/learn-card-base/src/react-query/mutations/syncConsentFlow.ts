@@ -92,10 +92,9 @@ const getCategoryInfoForTerms = (
 
     if (!fallbackEntry) return {};
 
-    const [categoryInfo] = fallbackEntry;
-    return {
-        categoryInfo: categoryInfo as ConsentFlowTerms['read']['credentials']['categories'][string],
-    };
+    const [, categoryInfo] = fallbackEntry;
+
+    return { categoryInfo };
 };
 
 /**
