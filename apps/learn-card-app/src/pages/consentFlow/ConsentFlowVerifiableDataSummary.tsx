@@ -256,13 +256,15 @@ export const SelfAssignedSkillsSummary: React.FC = () => {
         .filter(Boolean);
 
     const summary =
-        skillNames.length > 0
-            ? skillNames.length === 1
-                ? skillNames[0]
-                : `${skillNames.slice(0, 2).join(' · ')} (+${skillNames.length - 2} more)`
-            : boostSkills?.length
-            ? `${boostSkills.length} skill${boostSkills.length === 1 ? '' : 's'} selected`
-            : 'No skills selected yet.';
+        skillNames.length === 0
+            ? boostSkills?.length
+                ? `${boostSkills.length} skill${boostSkills.length === 1 ? '' : 's'} selected`
+                : 'No skills selected yet.'
+            : skillNames.length === 1
+            ? skillNames[0]
+            : skillNames.length === 2
+            ? skillNames.join(' · ')
+            : `${skillNames.slice(0, 2).join(' · ')} (+${skillNames.length - 2} more)`;
 
     return (
         <p className="text-[13px] leading-[18px] text-grayscale-600 text-left self-start">
