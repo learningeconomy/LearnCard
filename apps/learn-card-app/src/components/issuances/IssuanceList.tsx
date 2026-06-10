@@ -92,7 +92,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
-        newModal(<IssuanceDetailModal item={item} surface={surface} />, {
+        newModal(<IssuanceDetailModal item={item} surface={surface} onActionComplete={refetch} />, {
             sectionClassName: '!max-w-[450px]',
         });
     };

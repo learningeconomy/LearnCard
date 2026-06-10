@@ -31,8 +31,6 @@ import {
     getLogger,
 } from 'learn-card-base';
 
-import { useQueryClient } from '@tanstack/react-query';
-
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 const log = getLogger('issuance-detail-modal');
@@ -53,6 +51,11 @@ export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;
     /** Which issuer surface opened this modal — used for analytics attribution. */
     surface?: 'managed-boosts' | 'issuer-dashboard';
+    /**
+     * Called after a successful revoke/suspend/unsuspend so the opener can refresh its
+     * data (the activity list manages its own state, not a react-query cache).
+     */
+    onActionComplete?: () => void;
 }
 
 // Helper to get styling for an event type
@@ -88,12 +91,16 @@ function formatDuration(ms: number): string {
 export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
     item,
     surface = 'issuer-dashboard',
+    onActionComplete,
 }) => {
     const { initWallet } = useWallet();
     const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
     const [isLoadingChain, setIsLoadingChain] = useState(true);
     const [chainError, setChainError] = useState<string | null>(null);
     const [showAllEvents, setShowAllEvents] = useState(false);
+    // Optimistic status so this open modal reflects an action immediately (the `item`
+    // prop won't change until the list refetches and the modal is reopened).
+    const [statusOverride, setStatusOverride] = useState<CredentialActivityRecord['status']>();
 
     const revokeRecipient = useRevokeBoostRecipient();
     const suspendRecipient = useSuspendBoostRecipient();
@@ -101,10 +108,9 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { track } = useAnalytics();
-    const queryClient = useQueryClient();
 
-    // Per-instance status comes directly from the activity record
-    const recipientStatus = item.status;
+    // Per-instance status — optimistic override falls back to the activity record.
+    const recipientStatus = statusOverride ?? item.status;
 
     // Only fetch permissions when we have a boost to act on
     const hasBoostAndRecipient = !!(item.boostUri && item.recipientProfile?.profileId);
@@ -152,10 +158,15 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         boostUri: item.boostUri!,
                         surface,
                     });
-                    // Invalidate activity queries so the view refreshes
-                    queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
-                    queryClient.invalidateQueries({ queryKey: ['getActivityChain'] });
-                    queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
+                    // Optimistically reflect the new status in this open modal...
+                    const nextStatus = {
+                        revoke: 'revoked',
+                        suspend: 'suspended',
+                        unsuspend: 'active',
+                    } as const;
+                    setStatusOverride(nextStatus[action]);
+                    // ...and let the opener refetch its list/stats so the row updates too.
+                    onActionComplete?.();
                     presentToast(`${recipientName}'s credential has been ${noun}.`, {
                         type: ToastTypeEnum.Success,
                     });
