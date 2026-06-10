@@ -11,6 +11,7 @@ export type PendingContractSyncJob = {
     status: PendingContractSyncStatus;
     retryCount: number;
     totalCredentials: number;
+    processedCredentials: number;
     completedCredentials: number;
     failedCredentials: number;
     syncedSharedUrisByCategory: Record<string, string[]>;
@@ -70,6 +71,7 @@ export const pendingContractSyncStore = createStore(
             status: existing?.status === 'running' ? 'running' : 'queued',
             retryCount: existing?.retryCount ?? 0,
             totalCredentials: existing?.totalCredentials ?? 0,
+            processedCredentials: existing?.processedCredentials ?? 0,
             completedCredentials: existing?.completedCredentials ?? 0,
             failedCredentials: existing?.failedCredentials ?? 0,
             syncedSharedUrisByCategory: existing?.syncedSharedUrisByCategory ?? {},
@@ -97,6 +99,7 @@ export const pendingContractSyncStore = createStore(
             [id]: {
                 ...job,
                 status: 'running',
+                processedCredentials: 0,
                 failedCredentials: 0,
                 startedAt: job.startedAt ?? now(),
                 updatedAt: now(),
@@ -113,6 +116,21 @@ export const pendingContractSyncStore = createStore(
         set.jobs({
             ...jobs,
             [id]: { ...job, totalCredentials, updatedAt: now() },
+        });
+    },
+    recordCredentialProcessed: (id: string) => {
+        const jobs = get.jobs();
+        const job = jobs[id];
+
+        if (!job) return;
+
+        set.jobs({
+            ...jobs,
+            [id]: {
+                ...job,
+                processedCredentials: job.processedCredentials + 1,
+                updatedAt: now(),
+            },
         });
     },
     recordCredentialSynced: (id: string, category: string, sharedUri: string) => {
@@ -176,6 +194,14 @@ export const pendingContractSyncStore = createStore(
             },
         });
     },
+    removeJob: (id: string) => {
+        const jobs = get.jobs();
+        if (!jobs[id]) return;
+
+        const nextJobs = { ...jobs };
+        delete nextJobs[id];
+        set.jobs(nextJobs);
+    },
     markError: (id: string, error: string) => {
         const jobs = get.jobs();
         const job = jobs[id];
@@ -200,3 +226,4 @@ export const pendingContractSyncStore = createStore(
 
 export const enqueuePendingContractSync = pendingContractSyncStore.set.enqueueContractSyncJob;
 export const usePendingContractSyncJobs = pendingContractSyncStore.use.jobs;
+export const clearPendingContractSyncJob = pendingContractSyncStore.set.removeJob;

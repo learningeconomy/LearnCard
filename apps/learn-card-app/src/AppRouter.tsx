@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -18,6 +18,7 @@ import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSe
 import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
 
 import {
+    type PendingContractSyncJob,
     useIsLoggedIn,
     QRCodeScannerStore,
     usePrefetchCredentials,
@@ -32,6 +33,7 @@ import {
     useContract,
     usePendingContractSync,
     usePendingContractSyncJobs,
+    clearPendingContractSyncJob,
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
@@ -292,6 +294,10 @@ const AppRouter: React.FC = () => {
                 .sort((a, b) => a.createdAt - b.createdAt)[0],
         [pendingContractSyncJobs]
     );
+    const [completedContractSyncJob, setCompletedContractSyncJob] =
+        useState<PendingContractSyncJob | null>(null);
+    const completedContractSyncJobTimeoutRef = useRef<number | null>(null);
+    const completedContractSyncJobIdRef = useRef<string | null>(null);
     const contractSyncTelemetryKeyRef = useRef<string | null>(null);
 
     usePrefetchCredentials('Social Badge', enablePrefetch);
@@ -308,6 +314,43 @@ const AppRouter: React.FC = () => {
     usePendingContractSync(enablePrefetch);
 
     useEffect(() => {
+        const newestDoneJob = Object.values(pendingContractSyncJobs)
+            .filter(job => job.status === 'done' && job.finishedAt)
+            .sort((a, b) => (b.finishedAt ?? 0) - (a.finishedAt ?? 0))[0];
+
+        if (!newestDoneJob || completedContractSyncJobIdRef.current === newestDoneJob.id) {
+            return;
+        }
+
+        completedContractSyncJobIdRef.current = newestDoneJob.id;
+        setCompletedContractSyncJob(newestDoneJob);
+    }, [pendingContractSyncJobs]);
+
+    useEffect(() => {
+        if (!completedContractSyncJob) {
+            return;
+        }
+
+        if (completedContractSyncJobTimeoutRef.current) {
+            window.clearTimeout(completedContractSyncJobTimeoutRef.current);
+        }
+
+        completedContractSyncJobTimeoutRef.current = window.setTimeout(() => {
+            clearPendingContractSyncJob(completedContractSyncJob.id);
+            setCompletedContractSyncJob(null);
+            completedContractSyncJobIdRef.current = null;
+            completedContractSyncJobTimeoutRef.current = null;
+        }, 3500);
+
+        return () => {
+            if (completedContractSyncJobTimeoutRef.current) {
+                window.clearTimeout(completedContractSyncJobTimeoutRef.current);
+                completedContractSyncJobTimeoutRef.current = null;
+            }
+        };
+    }, [completedContractSyncJob]);
+
+    useEffect(() => {
         const jobs = Object.values(pendingContractSyncJobs);
         if (!jobs.length) return;
 
@@ -315,6 +358,7 @@ const AppRouter: React.FC = () => {
         const telemetryKey = [
             newestJob.id,
             newestJob.status,
+            newestJob.processedCredentials,
             newestJob.completedCredentials,
             newestJob.failedCredentials,
             newestJob.retryCount,
@@ -333,6 +377,7 @@ const AppRouter: React.FC = () => {
                     ? newestJob.finishedAt - newestJob.startedAt
                     : undefined,
             totalCredentials: newestJob.totalCredentials,
+            processedCredentials: newestJob.processedCredentials,
             completedCredentials: newestJob.completedCredentials,
             failedCredentials: newestJob.failedCredentials,
             retryCount: newestJob.retryCount,
@@ -459,7 +504,22 @@ const AppRouter: React.FC = () => {
                 </div>
             )}
             {activeContractSyncJob && (
-                <ContractSyncStatusBanner activeContractSyncJob={activeContractSyncJob} />
+                <ContractSyncStatusBanner job={activeContractSyncJob} variant="active" />
+            )}
+            {completedContractSyncJob && (
+                <ContractSyncStatusBanner
+                    job={completedContractSyncJob}
+                    variant="complete"
+                    onDismiss={() => {
+                        if (completedContractSyncJobTimeoutRef.current) {
+                            window.clearTimeout(completedContractSyncJobTimeoutRef.current);
+                            completedContractSyncJobTimeoutRef.current = null;
+                        }
+                        clearPendingContractSyncJob(completedContractSyncJob.id);
+                        setCompletedContractSyncJob(null);
+                        completedContractSyncJobIdRef.current = null;
+                    }}
+                />
             )}
             <Modals />
         </GenericErrorBoundary>

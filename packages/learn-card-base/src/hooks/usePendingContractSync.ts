@@ -73,13 +73,34 @@ export const usePendingContractSync = (enabled = true): void => {
         if (!nextJob) return;
 
         processingJobIdRef.current = nextJob.id;
+        log.info('Selected pending contract sync job', {
+            contractUri: nextJob.contractUri,
+            termsUri: nextJob.termsUri,
+            ownerDid: nextJob.ownerDid,
+            status: nextJob.status,
+            retryCount: nextJob.retryCount,
+            totalCredentials: nextJob.totalCredentials,
+            completedCredentials: nextJob.completedCredentials,
+            failedCredentials: nextJob.failedCredentials,
+        });
 
         const processJob = async (job: PendingContractSyncJob): Promise<void> => {
-            const startedAt = Date.now();
             pendingContractSyncStore.set.markRunning(job.id); // mark job as running
+            log.info('Starting pending contract sync job', {
+                contractUri: job.contractUri,
+                termsUri: job.termsUri,
+                ownerDid: job.ownerDid,
+                retryCount: job.retryCount,
+                completedCredentials: job.completedCredentials,
+                failedCredentials: job.failedCredentials,
+            });
 
             try {
                 const wallet = await initWallet();
+                log.info('Loaded wallet for contract sync job', {
+                    contractUri: job.contractUri,
+                    termsUri: job.termsUri,
+                });
                 const contracts = await getOrFetchConsentedContracts(queryClient, wallet);
                 const consentedContract = contracts.find(
                     contract =>
@@ -89,12 +110,23 @@ export const usePendingContractSync = (enabled = true): void => {
                 );
 
                 if (!consentedContract) {
+                    log.error('Consented contract terms were not found for background sync', {
+                        contractUri: job.contractUri,
+                        termsUri: job.termsUri,
+                        ownerDid: job.ownerDid,
+                    });
                     throw new Error('Consented contract terms were not found for background sync');
                 }
 
                 const categoryEntries = Object.entries(
                     consentedContract.terms.read?.credentials?.categories ?? {}
                 ).filter(([, categoryConfig]) => isCategoryEligibleForSync(categoryConfig));
+                log.info('Resolved contract sync categories', {
+                    contractUri: job.contractUri,
+                    termsUri: job.termsUri,
+                    categoryCount: categoryEntries.length,
+                    categories: categoryEntries.map(([categoryName]) => categoryName),
+                });
 
                 const taskGroups = await Promise.all(
                     categoryEntries.map(async ([categoryName]) => {
@@ -103,6 +135,13 @@ export const usePendingContractSync = (enabled = true): void => {
                             categoryName;
                         const records = await wallet.index.LearnCloud.get({
                             category: credentialCategory,
+                        });
+                        log.info('Loaded contract sync credentials for category', {
+                            contractUri: job.contractUri,
+                            termsUri: job.termsUri,
+                            category: categoryName,
+                            credentialCategory,
+                            credentialCount: records.length,
                         });
 
                         return records.map(
@@ -118,6 +157,11 @@ export const usePendingContractSync = (enabled = true): void => {
 
                 const tasks = taskGroups.flat();
                 pendingContractSyncStore.set.setTotals(job.id, tasks.length);
+                log.info('Prepared contract sync tasks', {
+                    contractUri: job.contractUri,
+                    termsUri: job.termsUri,
+                    taskCount: tasks.length,
+                });
 
                 const sharedUrisByCategory: Record<string, string[]> = {
                     ...job.syncedSharedUrisByCategory,
@@ -127,9 +171,20 @@ export const usePendingContractSync = (enabled = true): void => {
                     tasks,
                     MAX_CONCURRENT_CREDENTIAL_SYNCS,
                     async ({ categoryName, credentialCategory, sourceUri }) => {
-                        const stepStartedAt = Date.now();
-
                         try {
+                            log.info('Starting contract sync credential materialization', {
+                                contractUri: job.contractUri,
+                                termsUri: job.termsUri,
+                                category: categoryName,
+                                credentialCategory,
+                                sourceUri,
+                                processedCredentials:
+                                    pendingContractSyncStore.get.jobs()[job.id]
+                                        ?.processedCredentials,
+                                failedCredentials:
+                                    pendingContractSyncStore.get.jobs()[job.id]?.failedCredentials,
+                            });
+
                             const sharedUri = await getOrCreateSharedUriForWallet(
                                 wallet,
                                 job.ownerDid,
@@ -154,12 +209,13 @@ export const usePendingContractSync = (enabled = true): void => {
                                 categoryName,
                                 sharedUri
                             );
-
                             log.info('Contract sync credential materialized', {
                                 contractUri: job.contractUri,
                                 termsUri: job.termsUri,
                                 category: categoryName,
-                                elapsedMs: Date.now() - stepStartedAt,
+                                credentialCategory,
+                                sourceUri,
+                                sharedUri,
                             });
                         } catch (error) {
                             const message = error instanceof Error ? error.message : String(error);
@@ -168,8 +224,11 @@ export const usePendingContractSync = (enabled = true): void => {
                                 contractUri: job.contractUri,
                                 termsUri: job.termsUri,
                                 category: categoryName,
-                                elapsedMs: Date.now() - stepStartedAt,
+                                credentialCategory,
+                                sourceUri,
                             });
+                        } finally {
+                            pendingContractSyncStore.set.recordCredentialProcessed(job.id);
                         }
                     }
                 );
@@ -184,12 +243,19 @@ export const usePendingContractSync = (enabled = true): void => {
                 ) as Record<string, string[]>;
 
                 if (Object.keys(categoriesToSync).length > 0) {
-                    const syncStartedAt = Date.now();
+                    log.info('Syncing contract terms to contract', {
+                        contractUri: job.contractUri,
+                        termsUri: job.termsUri,
+                        categoryCount: Object.keys(categoriesToSync).length,
+                        credentialCount: Object.values(categoriesToSync).reduce(
+                            (total: number, uris: string[]) => total + uris.length,
+                            0
+                        ),
+                    });
                     await wallet.invoke.syncCredentialsToContract(job.termsUri, categoriesToSync);
                     queryClient.invalidateQueries({
                         queryKey: ['useTermsTransactions', job.termsUri],
                     });
-
                     log.info('Contract sync terms updated', {
                         contractUri: job.contractUri,
                         termsUri: job.termsUri,
@@ -198,12 +264,16 @@ export const usePendingContractSync = (enabled = true): void => {
                             (total: number, uris: string[]) => total + uris.length,
                             0
                         ),
-                        elapsedMs: Date.now() - syncStartedAt,
                     });
                 }
 
                 const latestJob = pendingContractSyncStore.get.jobs()[job.id];
                 if (latestJob?.failedCredentials && latestJob.failedCredentials > 0) {
+                    log.error('Contract sync completed with credential failures', {
+                        contractUri: job.contractUri,
+                        termsUri: job.termsUri,
+                        failedCredentials: latestJob.failedCredentials,
+                    });
                     throw new Error(
                         `Background sync completed with ${latestJob.failedCredentials} failed credential(s)`
                     );
@@ -214,7 +284,6 @@ export const usePendingContractSync = (enabled = true): void => {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
                     credentialCount: tasks.length,
-                    elapsedMs: Date.now() - startedAt,
                 });
             } catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
@@ -222,7 +291,8 @@ export const usePendingContractSync = (enabled = true): void => {
                 log.error('Contract sync job failed', error, {
                     contractUri: job.contractUri,
                     termsUri: job.termsUri,
-                    elapsedMs: Date.now() - startedAt,
+                    ownerDid: job.ownerDid,
+                    retryCount: job.retryCount,
                 });
             }
         };

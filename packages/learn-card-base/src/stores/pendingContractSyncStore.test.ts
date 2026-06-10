@@ -28,12 +28,16 @@ describe('pendingContractSyncStore', () => {
 
         pendingContractSyncStore.set.markRunning(job.id);
         pendingContractSyncStore.set.setTotals(job.id, 2);
+        pendingContractSyncStore.set.recordCredentialProcessed(job.id);
+        pendingContractSyncStore.set.recordCredentialProcessed(job.id);
+        pendingContractSyncStore.set.recordCredentialProcessed(job.id);
         pendingContractSyncStore.set.recordCredentialSynced(job.id, 'Achievement', 'uri:shared:1');
         pendingContractSyncStore.set.recordCredentialSynced(job.id, 'Achievement', 'uri:shared:1');
         pendingContractSyncStore.set.recordCredentialSynced(job.id, 'ID', 'uri:shared:2');
 
         const updated = pendingContractSyncStore.get.jobs()[job.id];
 
+        expect(updated.processedCredentials).toBe(3);
         expect(updated.completedCredentials).toBe(2);
         expect(updated.syncedSharedUrisByCategory.Achievement).toEqual(['uri:shared:1']);
         expect(updated.syncedSharedUrisByCategory.ID).toEqual(['uri:shared:2']);
@@ -49,7 +53,16 @@ describe('pendingContractSyncStore', () => {
         const updated = pendingContractSyncStore.get.jobs()[job.id];
 
         expect(updated.retryCount).toBe(1);
+        expect(updated.processedCredentials).toBe(0);
         expect(updated.failedCredentials).toBe(0);
         expect(updated.status).toBe('running');
+    });
+
+    it('removes completed jobs from the store', () => {
+        const job = enqueuePendingContractSync(JOB_INPUT);
+
+        pendingContractSyncStore.set.removeJob(job.id);
+
+        expect(pendingContractSyncStore.get.jobs()[job.id]).toBeUndefined();
     });
 });
