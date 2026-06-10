@@ -17,11 +17,56 @@ type ConsentFlowRecord = {
 
 type VerifiableDataSummary = {
     uri: string;
-    type?: string | string[];
     name?: string;
     dataPayload?: unknown;
     skills?: string[];
-    read: boolean;
+};
+
+type VerifiableDataSummaryGroup = {
+    name: string;
+    data: Array<{
+        uri: string;
+        name?: string;
+    }>;
+};
+
+type VerifiableDataSummaryEntry = VerifiableDataSummary | VerifiableDataSummaryGroup;
+
+const isWorkExperienceCredential = (credential: any): boolean =>
+    credential?.type?.includes('BoostCredential') &&
+    credential?.credentialSubject?.achievement?.achievementType === 'ext:Job';
+
+const buildVerifiableDataSummaryEntry = (
+    credentialUri: string,
+    credential: any
+): VerifiableDataSummaryEntry => {
+    if (isWorkExperienceCredential(credential)) {
+        return {
+            name: 'Work Experience Credentials',
+            data: [
+                {
+                    name: credential?.name ?? credential?.credentialSubject?.achievement?.name,
+                    uri: credentialUri,
+                },
+            ],
+        };
+    }
+
+    if (
+        credential?.boostCredential?.credentialSubject?.achievement?.name === 'Self-Assigned Skills'
+    ) {
+        return {
+            name: 'Self-Assigned Skills',
+            skills: extractSelfAssignedSkills(credential),
+            uri: credentialUri,
+        };
+    }
+
+    return {
+        name: getSummaryName(credential),
+        dataPayload: credential?.credentialSubject?.dataPayload,
+        uri: credentialUri,
+    };
 };
 
 const extractSelfAssignedSkills = (credential: any): string[] | undefined => {
@@ -105,17 +150,44 @@ const main = async (): Promise<void> => {
 
     const readVerifiableDataSummary = async (
         uri = contractUri
-    ): Promise<VerifiableDataSummary[]> => {
+    ): Promise<VerifiableDataSummaryEntry[]> => {
         const data = await readVerifiableData(uri);
 
-        return data.map(({ uri: credentialUri, credential }) => ({
-            uri: credentialUri,
-            type: credential?.type,
-            name: getSummaryName(credential),
-            dataPayload: credential?.credentialSubject?.dataPayload,
-            skills: extractSelfAssignedSkills(credential),
-            read: Boolean(credential),
-        }));
+        const summaries: VerifiableDataSummaryEntry[] = [];
+
+        for (const { uri: credentialUri, credential } of data) {
+            if (isWorkExperienceCredential(credential)) {
+                const existingGroup = summaries.find(
+                    (entry): entry is VerifiableDataSummaryGroup =>
+                        'data' in entry && entry.name === 'Work Experience Credentials'
+                );
+
+                if (existingGroup) {
+                    existingGroup.data.push({
+                        uri: credentialUri,
+                        name: credential?.name ?? credential?.credentialSubject?.achievement?.name,
+                    });
+                } else {
+                    summaries.push({
+                        name: 'Work Experience Credentials',
+                        data: [
+                            {
+                                uri: credentialUri,
+                                name:
+                                    credential?.name ??
+                                    credential?.credentialSubject?.achievement?.name,
+                            },
+                        ],
+                    });
+                }
+
+                continue;
+            }
+
+            summaries.push(buildVerifiableDataSummaryEntry(credentialUri, credential));
+        }
+
+        return summaries;
     };
 
     const readContract = async (uri = contractUri) => learnCard.invoke.getContract(uri);
@@ -138,6 +210,8 @@ const main = async (): Promise<void> => {
         return learnCard.read.get(firstUri);
     };
 
+    const readUri = async (uri: string) => learnCard.read.get(uri);
+
     const initialRecords = await fetchAllConsentFlowData(contractUri);
 
     console.log('\nConsent records:\n');
@@ -153,9 +227,11 @@ const main = async (): Promise<void> => {
     console.log('  await readContract()');
     console.log('  await getVerifiableDataUris()');
     console.log('  await readVerifiableDataSummary()');
+    console.log('  await readUri(uri)');
     console.log('  await readFirstVerifiableData()');
     console.log('  await readVerifiableData()');
     console.log('  await fetchAllConsentFlowData(contractUri)\n');
+    console.log('To view the full credential use `readUri(uri)`\n');
 
     const server = repl.start({
         prompt: 'consentflow-local> ',
@@ -174,6 +250,7 @@ const main = async (): Promise<void> => {
         getVerifiableDataUris,
         readContract,
         readVerifiableDataSummary,
+        readUri,
         readVerifiableData,
         readFirstVerifiableData,
     });
