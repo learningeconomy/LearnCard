@@ -1,7 +1,4 @@
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
-import { FileViewer } from '@capacitor/file-viewer';
-import { Directory, Filesystem } from '@capacitor/filesystem';
+import { openAttachmentUrl as openSharedAttachmentUrl } from 'learn-card-base/helpers/openAttachmentUrl';
 
 import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
@@ -22,60 +19,8 @@ export const toSafeFileName = (name: string | undefined, mimeType: string | unde
     return `${base}${ext}`;
 };
 
-const isInlineDataUri = (url: string): boolean => url.startsWith('data:');
-
-/** Converts a `data:<mime>;base64,...` URI into a blob URL that browsers can open inline. */
-const dataUriToBlobUrl = (dataUri: string): string => {
-    const [header, base64 = ''] = dataUri.split(',');
-    const mimeType = header.match(/data:([^;]+)/)?.[1] ?? 'application/octet-stream';
-    const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
-    return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-};
-
-/**
- * Opens an evidence/attachment URL using the best available platform path.
- *
- * Inline `data:` URIs cannot be opened directly in the native in-app browser, so
- * on native they are written to the filesystem and opened with the file viewer.
- * On web they are opened inline in a new tab via a blob URL. Remote URLs open in
- * the in-app browser on native and a new tab on web.
- */
-export const openAttachmentUrl = async (
-    url: string | undefined,
-    fileName: string
-): Promise<boolean> => {
-    if (!url) return false;
-
-    try {
-        if (isInlineDataUri(url)) {
-            if (Capacitor.isNativePlatform()) {
-                const base64 = url.split(',')[1];
-
-                await Filesystem.writeFile({
-                    path: fileName,
-                    data: base64,
-                    directory: Directory.Documents,
-                });
-                const { uri } = await Filesystem.getUri({
-                    path: fileName,
-                    directory: Directory.Documents,
-                });
-                await FileViewer.openDocumentFromLocalPath({ path: uri });
-            } else {
-                // Open inline in a new tab. Large data URIs are unreliable in
-                // window.open, so route through a blob URL instead.
-                window.open(dataUriToBlobUrl(url), '_blank', 'noopener');
-            }
-        } else if (Capacitor.isNativePlatform()) {
-            await Browser.open({ url });
-        } else {
-            window.open(url, '_blank', 'noopener');
-        }
-        return true;
-    } catch {
-        return false;
-    }
-};
+export const openAttachmentUrl = (url: string | undefined, fileName: string): Promise<boolean> =>
+    openSharedAttachmentUrl(url, fileName);
 
 /** Downloads inline data URIs or remote evidence links using the best available platform path. */
 export const downloadEvidence = (item: EvidenceDisplayModel): Promise<boolean> =>

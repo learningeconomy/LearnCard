@@ -426,11 +426,11 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             key={`${attachment.url}-${index}`}
                             type="button"
                             className={className}
-                            onClick={e => {
+                            onClick={async e => {
                                 e.stopPropagation();
                                 // Pass the original source (data URI or remote URL), not the
                                 // blob previewUrl — blob URLs can't open in the native browser.
-                                openAttachmentUrl(attachment.url, downloadName);
+                                await openAttachmentUrl(attachment.url, downloadName);
                             }}
                         >
                             {content}

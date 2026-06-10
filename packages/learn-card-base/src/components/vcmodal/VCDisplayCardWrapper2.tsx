@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 
 import IDDisplayCard from '../id/IDDisplayCard';
 import { VCDisplayCard2 } from '@learncard/react';
@@ -23,6 +21,7 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
+import { openAttachmentUrl } from '../../helpers/openAttachmentUrl';
 
 //TODO rewrite this whole thing
 // it was written preboost and once the boost stuff came in
@@ -121,18 +120,11 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
 }) => {
     const currentUser = useCurrentUser();
 
-    // Documents and links must open in the in-app browser on native; photos and
-    // videos are handled internally by the card's lightbox.
     const handleMediaAttachmentClick = useCallback(
         async (url: string, type: 'photo' | 'document' | 'video' | 'link') => {
             if (type !== 'document' && type !== 'link') return;
             if (!url) return;
-
-            if (Capacitor.isNativePlatform()) {
-                await Browser.open({ url });
-            } else {
-                window.open(url, '_blank', 'noopener,noreferrer');
-            }
+            await openAttachmentUrl(url);
         },
         []
     );
