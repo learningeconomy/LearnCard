@@ -283,7 +283,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     );
     const verifiableDataCategories = VERIFIABLE_DATA_CONTRACT_CATEGORIES.filter(category =>
         contractCategoryReadCategories.includes(category)
-    ).filter(isVerifiableDataContractCategory);
+    );
     const verifiableDataPersonalItems = verifiableDataCategories.map(category => (
         <ConsentFlowVerifiableDataSharingItem
             key={category}
