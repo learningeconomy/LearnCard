@@ -107,7 +107,7 @@ function pickSupported(
  * caller can't await. On native this skips the Capacitor Device step — wire
  * `detectInitialLocale()` (async) in a follow-up effect to upgrade the choice.
  *
- * @param supported Branch's SUPPORTED_LANGUAGES list (e.g. `['en','es','de','ar','fr','ko']`)
+ * @param supported Branch's SUPPORTED_LANGUAGES list (e.g. `['en','es','fr','ar']`)
  * @param fallback Last-resort fallback (typically `'en'`)
  */
 export function detectInitialLocaleSync(

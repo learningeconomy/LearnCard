@@ -19,10 +19,8 @@ import { SUPPORTED_LANGUAGES, useLocale, useChangeLocale, type SupportedLanguage
 const LANGUAGE_NATIVE_NAMES: Record<SupportedLanguage, string> = {
     en: 'English',
     es: 'Español',
-    de: 'Deutsch',
-    ar: 'العربية',
     fr: 'Français',
-    ko: '한국어',
+    ar: 'العربية',
 };
 
 /**

@@ -1,6 +1,6 @@
 {
     "baseLocale": "en",
-    "locales": ["en", "es", "de", "ar", "fr", "ko"],
+    "locales": ["en", "es", "fr", "ar"],
     "modules": [
         "https://cdn.jsdelivr.net/npm/@inlang/plugin-i18next@latest/dist/index.js"
     ],

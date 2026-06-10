@@ -4,7 +4,7 @@
 **Companion**: `dispatch/lc-1831-i18n-poc` (PR #1255)  
 **Date**: 2026-06-03  
 **Total leaf keys**: 850  
-**Locales**: en, es, de, ar, fr, ko
+**Locales**: en, es, fr, ar _(final shipping list — English, French, Spanish, Arabic; German/Korean removed)_
 
 ## Key Statistics
 
