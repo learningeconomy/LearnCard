@@ -81,10 +81,9 @@ const getCategoryInfoForTerms = (
     category: string
 ): {
     categoryInfo?: ConsentFlowTerms['read']['credentials']['categories'][string];
-    matchedKey?: string;
 } => {
     const exactMatch = terms.read.credentials.categories[category];
-    if (exactMatch) return { categoryInfo: exactMatch, matchedKey: category };
+    if (exactMatch) return { categoryInfo: exactMatch };
 
     const normalizedCategory = normalizeCategoryKey(category);
     const fallbackEntry = Object.entries(terms.read.credentials.categories).find(
@@ -93,8 +92,10 @@ const getCategoryInfoForTerms = (
 
     if (!fallbackEntry) return {};
 
-    const [matchedKey, categoryInfo] = fallbackEntry;
-    return { categoryInfo, matchedKey };
+    const [categoryInfo] = fallbackEntry;
+    return {
+        categoryInfo: categoryInfo as ConsentFlowTerms['read']['credentials']['categories'][string],
+    };
 };
 
 /**
