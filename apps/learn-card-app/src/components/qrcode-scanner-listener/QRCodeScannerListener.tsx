@@ -12,6 +12,7 @@ import { useToast, ToastTypeEnum, getLogger } from 'learn-card-base';
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
+import * as m from '../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
 
@@ -90,7 +91,7 @@ export const QRCodeScannerListener: React.FC = () => {
             setLoading(false);
 
             presentToast(
-                `Oops! ${error instanceof Error ? error.message : 'There was an error scanning the QR Code.'}`,
+                m['scanner.failed'](),
                 {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -138,7 +139,7 @@ export const QRCodeScannerListener: React.FC = () => {
                         {loading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <IonSpinner color="black" />
-                                <p className="mt-2 font-bold text-lg">Loading...</p>
+                                <p className="mt-2 font-bold text-lg">{m['scanner.processing']()}</p>
                             </section>
                         )}
                         {!loading && contact && (
@@ -151,17 +152,14 @@ export const QRCodeScannerListener: React.FC = () => {
                         {!loading && !contact && (
                             <section className="flex flex-col items-center text-center justify-center h-[90%]">
                                 <h1 className="text-center text-xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                                    Eeek!
+                                    {m['scanner.failed']()}
                                 </h1>
-                                <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
-                                    An error ocurred!
-                                </strong>
                                 <div className="w-full flex items-center justify-center mt-8">
                                     <button
                                         onClick={() => setIsOpen(false)}
                                         className="text-grayscale-900 text-center text-sm"
                                     >
-                                        Cancel
+                                        {m['scanner.close']()}
                                     </button>
                                 </div>
                             </section>

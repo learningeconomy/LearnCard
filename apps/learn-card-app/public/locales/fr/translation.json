@@ -1025,7 +1025,20 @@
     "importCredential": "Importer le titre",
     "processing": "Traitement...",
     "success": "Titre importé avec succès !",
-    "failed": "Échec de l'importation du titre"
+    "failed": "Échec de l'importation du titre",
+    "share": "Partager",
+    "download": "Télécharger",
+    "scanLabel": "Scanner",
+    "saveToPhotos": "Enregistrer dans Photos",
+    "saveAsPhoto": "Enregistrer comme photo",
+    "saveToFiles": "Enregistrer dans Fichiers",
+    "saveAsFile": "Enregistrer comme fichier",
+    "downloadQrCode": "Télécharger le code QR",
+    "downloadQrCodeDescription": "Partagez ou imprimez votre code QR {{brand}}.",
+    "savedToPhotos": "Code QR enregistré dans Photos !",
+    "saveFailed": "Échec de l'enregistrement du code QR.",
+    "savedToDocuments": "Code QR enregistré dans Documents !",
+    "savePdfFailed": "Échec de l'enregistrement du code QR en PDF."
   },
   "error": {
     "generic": "Une erreur est survenue. Veuillez réessayer.",

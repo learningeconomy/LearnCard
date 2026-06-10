@@ -16,6 +16,7 @@ import {
 
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import { userShareOptions, ShareOptionsEnum } from './user-share-options.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 const QrCodeUserCardShareOptions: React.FC<{
     contractUri?: string;
@@ -132,8 +133,10 @@ const QrCodeUserCardShareOptions: React.FC<{
                             >
                                 <option.icon className="w-[30px] text-white" />
                             </button>
-                            <p className="text-grayscale-700 text-center text-[17px]">
-                                {option.label}
+                                <p className="text-grayscale-700 text-center text-[17px]">
+                                {option.type === ShareOptionsEnum.share && m['scanner.share']()}
+                                {option.type === ShareOptionsEnum.download && m['scanner.download']()}
+                                {option.type === ShareOptionsEnum.scan && m['scanner.scanLabel']()}
                             </p>
                         </div>
                     );

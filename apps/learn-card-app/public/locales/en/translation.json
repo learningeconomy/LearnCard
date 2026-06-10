@@ -998,7 +998,20 @@
     "scanQR": "Scan QR Code",
     "scanning": "Scanning...",
     "success": "Credential imported successfully!",
-    "title": "Scan QR Code"
+    "title": "Scan QR Code",
+    "share": "Share",
+    "download": "Download",
+    "scanLabel": "Scan",
+    "saveToPhotos": "Save to Photos",
+    "saveAsPhoto": "Save as Photo",
+    "saveToFiles": "Save to Files",
+    "saveAsFile": "Save as File",
+    "downloadQrCode": "Download QR Code",
+    "downloadQrCodeDescription": "Share or print your {{brand}} QR code.",
+    "savedToPhotos": "QR Code saved to Photos!",
+    "saveFailed": "Failed to save QR Code.",
+    "savedToDocuments": "QR Code saved to Documents!",
+    "savePdfFailed": "Failed to save QR Code PDF."
   },
   "error": {
     "back": "Go Back",

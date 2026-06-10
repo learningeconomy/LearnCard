@@ -1025,7 +1025,20 @@
     "importCredential": "Importar credencial",
     "processing": "Procesando...",
     "success": "¡Credencial importada exitosamente!",
-    "failed": "Error al importar la credencial"
+    "failed": "Error al importar la credencial",
+    "share": "Compartir",
+    "download": "Descargar",
+    "scanLabel": "Escanear",
+    "saveToPhotos": "Guardar en Fotos",
+    "saveAsPhoto": "Guardar como foto",
+    "saveToFiles": "Guardar en Archivos",
+    "saveAsFile": "Guardar como archivo",
+    "downloadQrCode": "Descargar código QR",
+    "downloadQrCodeDescription": "Comparte o imprime tu código QR de {{brand}}.",
+    "savedToPhotos": "¡Código QR guardado en Fotos!",
+    "saveFailed": "Error al guardar el código QR.",
+    "savedToDocuments": "¡Código QR guardado en Documentos!",
+    "savePdfFailed": "Error al guardar el código QR en PDF."
   },
   "error": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",

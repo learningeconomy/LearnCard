@@ -1025,7 +1025,20 @@
     "importCredential": "استيراد شهادة",
     "processing": "جاري المعالجة...",
     "success": "تم استيراد الشهادة بنجاح!",
-    "failed": "فشل استيراد الشهادة"
+    "failed": "فشل استيراد الشهادة",
+    "share": "مشاركة",
+    "download": "تنزيل",
+    "scanLabel": "مسح",
+    "saveToPhotos": "حفظ في الصور",
+    "saveAsPhoto": "حفظ كصورة",
+    "saveToFiles": "حفظ في الملفات",
+    "saveAsFile": "حفظ كملف",
+    "downloadQrCode": "تنزيل رمز QR",
+    "downloadQrCodeDescription": "شارك أو اطبع رمز QR الخاص بك على {{brand}}.",
+    "savedToPhotos": "تم حفظ رمز QR في الصور!",
+    "saveFailed": "فشل حفظ رمز QR.",
+    "savedToDocuments": "تم حفظ رمز QR في المستندات!",
+    "savePdfFailed": "فشل حفظ رمز QR كـ PDF."
   },
   "error": {
     "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",

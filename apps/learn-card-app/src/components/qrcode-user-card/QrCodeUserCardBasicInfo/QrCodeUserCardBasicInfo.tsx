@@ -11,6 +11,7 @@ import {
     UserProfilePicture,
 } from 'learn-card-base';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
+import * as m from '../../../paraglide/messages.js';
 
 const QrCodeUserCardBasicInfo: React.FC<{
     walletDid: string;
@@ -38,12 +39,12 @@ const QrCodeUserCardBasicInfo: React.FC<{
             await Clipboard.write({
                 string: link,
             });
-            presentToast('Link copied to clipboard', {
+            presentToast(m['share.profileLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
-            presentToast('Unable to copy link to clipboard', {
+            presentToast(m['share.profileLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
