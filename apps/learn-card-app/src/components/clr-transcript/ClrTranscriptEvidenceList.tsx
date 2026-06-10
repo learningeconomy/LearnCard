@@ -60,15 +60,18 @@ const inferEvidenceKind = (item: EvidenceDisplayModel): EvidenceKind => {
     return 'link';
 };
 
-const toEvidenceAttachment = (item: EvidenceDisplayModel) => ({
-    id: getEvidenceUrl(item),
-    type: ['EvidenceFile'] as Array<'Evidence' | 'EvidenceFile'>,
-    name: item.name?.value ?? '',
-    description: item.description?.value ?? '',
-    narrative: item.narrative?.value ?? '',
-    genre: inferEvidenceKind(item),
-    url: getEvidenceUrl(item),
-});
+const toEvidenceAttachment = (item: EvidenceDisplayModel) => {
+    const url = getEvidenceUrl(item);
+    return {
+        id: url,
+        type: ['EvidenceFile'] as Array<'Evidence' | 'EvidenceFile'>,
+        name: item.name?.value ?? '',
+        description: item.description?.value ?? '',
+        narrative: item.narrative?.value ?? '',
+        genre: inferEvidenceKind(item),
+        url,
+    };
+};
 
 const toEvidenceAttachmentWithSource = (
     item: EvidenceDisplayModel,

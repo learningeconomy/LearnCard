@@ -1,6 +1,4 @@
-import { Capacitor } from '@capacitor/core';
-import { FileViewer } from '@capacitor/file-viewer';
-import { Directory, Filesystem } from '@capacitor/filesystem';
+import { openAttachmentUrl as openSharedAttachmentUrl } from 'learn-card-base/helpers/openAttachmentUrl';
 
 import type { CourseDisplayModel, EvidenceDisplayModel } from '../../helpers/clrRenderer.helpers';
 
@@ -21,42 +19,12 @@ export const toSafeFileName = (name: string | undefined, mimeType: string | unde
     return `${base}${ext}`;
 };
 
+export const openAttachmentUrl = (url: string | undefined, fileName: string): Promise<boolean> =>
+    openSharedAttachmentUrl(url, fileName);
+
 /** Downloads inline data URIs or remote evidence links using the best available platform path. */
-export const downloadEvidence = async (item: EvidenceDisplayModel): Promise<boolean> => {
-    const raw = item.id?.value;
-    if (!raw) return false;
-
-    const fileName = toSafeFileName(item.name?.value, item.mimeType);
-
-    try {
-        if (item.isInlineDataUri) {
-            const base64 = raw.split(',')[1];
-
-            if (Capacitor.isNativePlatform()) {
-                await Filesystem.writeFile({
-                    path: fileName,
-                    data: base64,
-                    directory: Directory.Documents,
-                });
-                const { uri } = await Filesystem.getUri({
-                    path: fileName,
-                    directory: Directory.Documents,
-                });
-                await FileViewer.openDocumentFromLocalPath({ path: uri });
-            } else {
-                const a = document.createElement('a');
-                a.href = raw;
-                a.download = fileName;
-                a.click();
-            }
-        } else {
-            window.open(raw, '_blank', 'noopener');
-        }
-        return true;
-    } catch {
-        return false;
-    }
-};
+export const downloadEvidence = (item: EvidenceDisplayModel): Promise<boolean> =>
+    openAttachmentUrl(item.id?.value, toSafeFileName(item.name?.value, item.mimeType));
 
 // "BachelorDegree" → "Bachelor Degree", "LearningProgram" → "Learning Program"
 /** Inserts spaces between camelCase segments so achievement types read naturally in the UI. */
