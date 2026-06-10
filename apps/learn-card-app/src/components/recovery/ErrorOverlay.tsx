@@ -6,6 +6,7 @@
 import React from 'react';
 
 import { Overlay } from './Overlay';
+import { m } from '../../paraglide/messages.js';
 
 interface ErrorOverlayProps {
     error: string;
@@ -22,7 +23,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({ error, canRetry, onR
             </div>
 
             <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-grayscale-900">Something went wrong</h2>
+                <h2 className="text-xl font-semibold text-grayscale-900">{m['error.generic']()}</h2>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">{error}</p>
             </div>
@@ -33,7 +34,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({ error, canRetry, onR
                         onClick={onRetry}
                         className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium hover:opacity-90 transition-opacity"
                     >
-                        Try Again
+                        {m['error.retry']()}
                     </button>
                 )}
 

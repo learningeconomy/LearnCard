@@ -7,6 +7,7 @@
 import React from 'react';
 
 import { Overlay } from './Overlay';
+import { m } from '../../paraglide/messages.js';
 
 interface StalledMigrationOverlayProps {
     onRetry: () => void;
@@ -34,7 +35,7 @@ export const StalledMigrationOverlay: React.FC<StalledMigrationOverlayProps> = (
                     onClick={onRetry}
                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium hover:opacity-90 transition-opacity"
                 >
-                    Try Again
+                    {m['error.retry']()}
                 </button>
 
                 <button

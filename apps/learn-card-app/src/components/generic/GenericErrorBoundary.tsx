@@ -1,6 +1,7 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { CredentialCategoryEnum, isLocalhost, isStaleChunkError, guardedChunkReload } from 'learn-card-base';
+import { m } from '../../paraglide/messages.js';
 
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 
@@ -67,9 +68,9 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                         </p>
                     </>
                 ) : category && categorySpilledCup ? (
-                    <p className="font-semibold text-grayscale-900">Oops, there was an error.</p>
+                    <p className="font-semibold text-grayscale-900">{m['error.generic']()}</p>
                 ) : (
-                    <p className="text-grayscale-900">Something went wrong.</p>
+                    <p className="text-grayscale-900">{m['error.generic']()}</p>
                 )}
                 {showError && !isChunkError && (
                     <div className="bg-red-50 p-4 rounded-lg mb-4 w-full max-w-md">
@@ -103,7 +104,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                             resetErrorBoundary ? resetErrorBoundary : () => window.location.reload()
                         }
                     >
-                        Try again
+                        {m['error.retry']()}
                         <ArrowCircle className="ml-[5px]" />
                     </button>
                 ) : (
@@ -116,7 +117,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                                     : () => window.location.reload()
                             }
                         >
-                            Try Again
+                            {m['error.retry']()}
                         </button>
                         {extraButtons?.map(button => (
                             <button
@@ -132,7 +133,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                                 className={`bg-${primaryColor} py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
                                 onClick={() => (window.location.href = '/')}
                             >
-                                Go Home
+                                {m['error.goHome']()}
                             </button>
                         )}
                     </>
