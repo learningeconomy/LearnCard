@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 
 import useBoostMenu, { BoostMenuType } from '../components/boost/hooks/useBoostMenu';
@@ -18,7 +17,8 @@ import {
     UserProfilePicture,
 } from 'learn-card-base';
 
-import { IonItem, IonList } from '@ionic/react';
+import { IssuanceList } from '../components/issuances/IssuanceList';
+import { IssuancesSummary } from '../components/issuances/IssuancesSummary';
 import BoostPreview from '../components/boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../components/boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -124,6 +124,18 @@ export const useManagedBoost = (
         isError: myProfileError,
     } = useGetProfile();
 
+    const presentManageIssuancesModal = () => {
+        if (!boost?.uri) return;
+        newModal(
+            <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Issuances</h2>
+                <IssuanceList boostUri={boost.uri} surface="managed-boosts" />
+            </div>,
+            { sectionClassName: '!max-w-[480px]' },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
+
     const handlePresentBoostMenuModal = useBoostMenu({
         boostUri: boost.uri,
         boostCredential: boostVC,
@@ -131,6 +143,8 @@ export const useManagedBoost = (
         menuType: BoostMenuType.managed,
         onCloseModal: () => closeModal?.(),
         onDelete: () => closeAllModals?.(),
+        onManageIssuances: () => presentManageIssuancesModal(),
+        isDraft,
     });
 
     const handleOptionsMenu = async () => {
@@ -169,8 +183,11 @@ export const useManagedBoost = (
         showVerifications: false,
         issueHistory: issueHistory,
         handleCloseModal: () => closeModal(),
-        onDotsClick: boost?.status === 'DRAFT' ? handleOptionsMenu : undefined,
+        onDotsClick: !showSkeleton ? handleOptionsMenu : undefined,
         formattedDisplayType: formattedDisplayType,
+        issuancesSummaryComponent: boost?.uri ? (
+            <IssuancesSummary boostUri={boost.uri} onManage={presentManageIssuancesModal} />
+        ) : undefined,
         customBodyCardComponent: (
             <BoostPreviewBody
                 recipients={recipients ?? []}
@@ -212,39 +229,6 @@ export const useManagedBoost = (
                 selectedVCType={categoryType}
             />
         ),
-        customIssueHistoryComponent: (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
-                {recipients?.map((recipient, index) => {
-                    return (
-                        <IonItem
-                            key={recipient?.recieved || index}
-                            lines="none"
-                            className={`w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2`}
-                        >
-                            <div className="flex items-center justify-start w-full">
-                                <div className="flex items-center justify-start">
-                                    <UserProfilePicture
-                                        customContainerClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
-                                        customImageClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden object-cover"
-                                        customSize={120}
-                                        user={recipient?.to}
-                                    />
-                                </div>
-                                <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1">
-                                    <p className="text-grayscale-900 font-semibold capitalize text-sm">
-                                        {recipient?.to?.displayName || recipient?.to?.profileId}
-                                    </p>
-                                    <p className="text-grayscale-600 font-normal text-sm">
-                                        {moment(recipient?.received).format('DD MMMM YYYY')} &bull;{' '}
-                                        {moment(recipient?.received).format('h:mm A')}
-                                    </p>
-                                </div>
-                            </div>
-                        </IonItem>
-                    );
-                })}
-            </IonList>
-        ),
         hideQRCode: true,
         previewType,
     };
@@ -255,7 +239,7 @@ export const useManagedBoost = (
         showVerifications: false,
         issueHistory: issueHistory,
         handleCloseModal: () => closeModal(),
-        onDotsClick: isDraft && !showSkeleton ? handleOptionsMenu : undefined,
+        onDotsClick: !showSkeleton ? handleOptionsMenu : undefined,
         issueeOverride: isCertificate
             ? `${filteredRecipients?.length} ${filteredRecipients.length > 1 ? 'people' : 'person'}`
             : undefined,
@@ -268,6 +252,9 @@ export const useManagedBoost = (
                 <UserProfilePicture user={issuerProfileOverride || currentUser} />
             ) : undefined,
         hideIssueDate: true,
+        issuancesSummaryComponent: boost?.uri ? (
+            <IssuancesSummary boostUri={boost.uri} onManage={presentManageIssuancesModal} />
+        ) : undefined,
         customBodyCardComponent: isCertificate ? (
             <CertificatePreviewRecipients recipients={recipients} />
         ) : (
@@ -297,39 +284,6 @@ export const useManagedBoost = (
                 handleSubmit={handleIssueOnClick}
                 selectedVCType={categoryType}
             />
-        ),
-        customIssueHistoryComponent: (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
-                {recipients?.map((recipient, index) => {
-                    return (
-                        <IonItem
-                            key={recipient?.recieved || index}
-                            lines="none"
-                            className="w-[100%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2"
-                        >
-                            <div className="flex items-center justify-start w-full">
-                                <div className="flex items-center justify-start">
-                                    <UserProfilePicture
-                                        customContainerClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
-                                        customImageClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden object-cover"
-                                        customSize={120}
-                                        user={recipient?.to}
-                                    />
-                                </div>
-                                <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1 text-sm">
-                                    <p className="text-grayscale-900 font-semibold capitalize">
-                                        {recipient?.to?.displayName || recipient?.to?.profileId}
-                                    </p>
-                                    <p className="text-grayscale-600 font-normal text-sm">
-                                        {moment(recipient?.received).format('DD MMMM YYYY')} &bull;{' '}
-                                        {moment(recipient?.received).format('h:mm A')}
-                                    </p>
-                                </div>
-                            </div>
-                        </IonItem>
-                    );
-                })}
-            </IonList>
         ),
         formattedDisplayType: formattedDisplayType,
         displayType: cred?.display?.displayType,
