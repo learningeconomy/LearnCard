@@ -4,6 +4,7 @@ import { useQueries } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 
 import { useWallet, useIsLoggedIn, useTenantConfig } from 'learn-card-base';
+import type { TenantConfig } from 'learn-card-base';
 
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
@@ -79,7 +80,7 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> 
 const isProductionEnvironment = (): boolean =>
     typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
 
-const isStagingEnvironment = (tenantConfig?: { observability?: { sentryEnv?: string } }): boolean =>
+const isStagingEnvironment = (tenantConfig?: TenantConfig): boolean =>
     tenantConfig?.observability?.sentryEnv?.startsWith('staging') ?? false;
 
 const fetchAllAvailableFrameworks = async (
