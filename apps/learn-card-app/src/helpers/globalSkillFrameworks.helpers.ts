@@ -80,7 +80,7 @@ const isProductionEnvironment = (): boolean =>
     typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
 
 const isStagingEnvironment = (tenantConfig?: { observability?: { sentryEnv?: string } }): boolean =>
-    tenantConfig?.observability?.sentryEnv === 'staging';
+    tenantConfig?.observability?.sentryEnv?.startsWith('staging') ?? false;
 
 const fetchAllAvailableFrameworks = async (
     wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
