@@ -1094,7 +1094,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 </section>
 
                 <p className="text-center text-sm font-normal px-16 text-grayscale-600 mt-4">
-                    You own your own data.
+                    {m['legal.dataOwnership']()}
                     <br />
                     All connections are encrypted.
                 </p>

@@ -31,6 +31,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -470,7 +471,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 <IonRow className="flex items-center justify-center mt-4 w-full">
                     <IonCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                            You own your own data.
+                            {m['legal.dataOwnership']()}
                             <br />
                             All connections are encrypted.
                         </p>
@@ -484,14 +485,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             onClick={openPP}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Privacy Policy
+                            {m['legal.privacyPolicy']()}
                         </button>
                         <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                         <button
                             onClick={openToS}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Terms of Service
+                            {m['legal.termsOfService']()}
                         </button>
                     </IonCol>
                 </IonRow>

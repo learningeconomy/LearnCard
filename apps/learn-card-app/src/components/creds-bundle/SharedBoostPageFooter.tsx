@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { useIsLoggedIn } from 'learn-card-base';
 
+import { m } from '../../paraglide/messages.js';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 
 const SharedBoostPageFooter: React.FC = () => {
@@ -20,18 +21,18 @@ const SharedBoostPageFooter: React.FC = () => {
                             onClick={openToS}
                             className="flex items-center justify-center text-white font-bold text-xs mr-2"
                         >
-                            Terms of Service •
+                            {m['legal.termsOfService']()} •
                         </button>
                         <button
                             onClick={openPP}
                             className="flex items-center text-white font-bold text-xs"
                         >
-                            Privacy Policy
+                            {m['legal.privacyPolicy']()}
                         </button>
                     </div>
                     <div>
                         <p className="flex text-white text-xs">
-                            POWERED BY CONSENT FLOW • You own your own data • All connections
+                            POWERED BY CONSENT FLOW • {m['legal.dataOwnership']()} • All connections
                             are&nbsp;
                             <u>encrypted</u>
                         </p>
@@ -69,18 +70,18 @@ export const SharedBoostPageFooterMobile: React.FC = () => {
                         onClick={openToS}
                         className="flex items-center justify-center text-emerald-600 font-bold text-xs mr-2"
                     >
-                        Terms of Service <span className="text-grayscale-900">&nbsp;•</span>
+                        {m['legal.termsOfService']()} <span className="text-grayscale-900">&nbsp;•</span>
                     </button>
                     <button
                         onClick={openPP}
                         className="flex items-center text-emerald-600 font-bold text-xs"
                     >
-                        Privacy Policy
+                        {m['legal.privacyPolicy']()}
                     </button>
                 </div>
                 <div>
                     <p className="text-grayscale-900 text-xs text-center">
-                        POWERED BY CONSENT FLOW • You own your own <br /> data • All connections
+                        POWERED BY CONSENT FLOW • {m['legal.dataOwnership']()} <br /> data • All connections
                         are&nbsp;
                         <u>encrypted</u>
                     </p>

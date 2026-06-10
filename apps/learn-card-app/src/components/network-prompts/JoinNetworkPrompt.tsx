@@ -22,6 +22,7 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import RejectNetworkPrompt from './RejectNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -265,7 +266,7 @@ export const JoinNetworkPrompt: React.FC<{
             <div className="flex items-center justify-center mt-4 w-full">
                 <div className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                        You own your own data.
+                        {m['legal.dataOwnership']()}
                         <br />
                         All connections are encrypted.
                     </p>
@@ -276,11 +277,11 @@ export const JoinNetworkPrompt: React.FC<{
             <div className="flex items-center justify-center w-full">
                 <div className="flex items-center justify-center">
                     <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
-                        Privacy Policy
+                        {m['legal.privacyPolicy']()}
                     </button>
                     <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                     <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
-                        Terms of Service
+                        {m['legal.termsOfService']()}
                     </button>
                 </div>
             </div>

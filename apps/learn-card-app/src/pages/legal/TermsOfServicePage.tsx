@@ -2,6 +2,7 @@ import React from 'react';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
+import { m } from '../../paraglide/messages.js';
 import LegalPageLayout from './LegalPageLayout';
 
 const TermsOfServicePage: React.FC = () => {
@@ -42,8 +43,8 @@ const TermsOfServicePage: React.FC = () => {
                 <DefinitionList items={[
                     { term: `${name} Wallet`, definition: 'Your personal learning and employment passport' },
                     { term: 'LearnCloud', definition: 'Secure infrastructure that stores encrypted records and consent metadata' },
-                    { term: 'Consent Layer', definition: 'You decide what data connects to which apps, and for how long' },
-                    { term: 'App Ecosystem', definition: 'Optional third-party tools (education, jobs, productivity) you can connect' },
+                    { term: m['legal.consentLayer'](), definition: m['legal.consentLayerDefinition']() },
+                    { term: m['legal.appEcosystem'](), definition: 'Optional third-party tools (education, jobs, productivity) you can connect' },
                     { term: 'AI Features', definition: 'Optional tools to explore skills, learning, and pathways — not decision-makers' },
                     { term: 'Our Role', definition: 'Infrastructure steward, not data owner, employer, or authority' },
                     { term: 'Your Role', definition: 'Owner of your data and decisions' },
