@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 import IDDisplayCard from '../id/IDDisplayCard';
 import { VCDisplayCard2 } from '@learncard/react';
@@ -21,6 +21,7 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
+import { openAttachmentUrl } from '../../helpers/openAttachmentUrl';
 
 //TODO rewrite this whole thing
 // it was written preboost and once the boost stuff came in
@@ -118,6 +119,15 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     onDotsClick,
 }) => {
     const currentUser = useCurrentUser();
+
+    const handleMediaAttachmentClick = useCallback(
+        async (url: string, type: 'photo' | 'document' | 'video' | 'link') => {
+            if (type !== 'document' && type !== 'link') return;
+            if (!url) return;
+            await openAttachmentUrl(url);
+        },
+        []
+    );
 
     const credential = useMemo(() => unwrapBoostCredential(_credential), [_credential]);
 
@@ -331,6 +341,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             showDetailsBtn={showDetailsBtn}
             hideQRCode={hideQRCode}
             onMediaClick={onMediaClick}
+            onMediaAttachmentClick={handleMediaAttachmentClick}
             enableLightbox={true}
             bottomButton={bottomButton}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}

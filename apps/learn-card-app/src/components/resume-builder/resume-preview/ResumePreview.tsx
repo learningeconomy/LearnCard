@@ -96,6 +96,7 @@ const ResumePreview = forwardRef<
                     }
                 >
                     <ResumePreviewUserInfo
+                        isMobile={isMobile}
                         readOnly={readOnly}
                         qrCodeValue={qrCodeValue}
                         profileDid={profileDid}

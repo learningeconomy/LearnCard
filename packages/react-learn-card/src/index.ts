@@ -7,6 +7,9 @@ export * from './helpers/useHorizontalPages';
 export * from './helpers/useOnMomentumScrollEnd';
 export * from './helpers/useScrollBorders';
 
+// Export DID display helpers
+export * from './helpers/did-display.helpers';
+
 // Export SD-JWT-VC hooks and helpers
 export * from './hooks/useCredentialFormat';
 export * from './hooks/useParsedSdJwtVc';

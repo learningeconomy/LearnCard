@@ -30,22 +30,22 @@ export interface ProfileSnapshot {
 export const AnalyticsEvents = {
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
-    
+
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
     BOOST_CMS_CONFIRMATION: 'boostCMS_confirmation',
     BOOST_CMS_DATA_ENTRY: 'boostCMS_data_entry',
-    
+
     // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
     GENERATE_CLAIM_LINK: 'generate_claim_link',
-    
+
     // Boost Sending
     SELF_BOOST: 'self_boost',
     SEND_BOOST: 'send_boost',
     SEND_BOOST_WITH_ATTACHMENTS: 'send_boost_with_attachments',
-    
+
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
 
@@ -136,7 +136,7 @@ export const AnalyticsEvents = {
      */
     OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
 
-    /** 
+    /**
      * Fired when the resilience orchestrator gave up on an error
      * whose classified `kind` suggested it might have been
      * recoverable (wallet / request_invalid / unknown). Used to mine
@@ -162,7 +162,12 @@ export const AnalyticsEvents = {
     // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
     FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
 
-       // ── LC-1853 Profile-building analytics ──────────────────────────────────
+    // LC-1862 Credential lifecycle management (revoke/suspend/unsuspend)
+    CREDENTIAL_REVOKED: 'credential_revoked',
+    CREDENTIAL_SUSPENDED: 'credential_suspended',
+    CREDENTIAL_UNSUSPENDED: 'credential_unsuspended',
+
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
     ACCOUNT_CREATED: 'account_created',
     PROFILE_ITEM_ADDED: 'profile_item_added',
     ENGAGEMENT_SIGNAL: 'engagement_signal',
@@ -473,13 +478,7 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
         nodeId: string;
         /** Resolved `ActionDescriptor.kind` at click time. */
-        kind:
-            | 'in-app-route'
-            | 'app-listing'
-            | 'ai-session'
-            | 'external-url'
-            | 'mcp-tool'
-            | 'none';
+        kind: 'in-app-route' | 'app-listing' | 'ai-session' | 'external-url' | 'mcp-tool' | 'none';
         /** How the resolver arrived at that kind. */
         source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
         /**
@@ -693,6 +692,20 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.SKILL_PROFILE_COMPLETED]: { totalDurationMs: number };
 
     [AnalyticsEvents.SKILL_PROFILE_ABANDONED]: { step: 1 | 2 | 3 | 4 | 5; stepDurationMs: number };
+
+    // LC-1862 Credential lifecycle management
+    [AnalyticsEvents.CREDENTIAL_REVOKED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_SUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_UNSUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
 }
 
 /**
