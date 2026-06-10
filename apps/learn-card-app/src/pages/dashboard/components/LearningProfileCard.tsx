@@ -18,35 +18,56 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
     const { state, strength, verifiedRecords, skills, updatedAt, onViewInsights } = vm;
 
     const renderSkillPill = (skill: DashboardProfileSkill, index: number) => {
-        let tierClasses = 'bg-grayscale-100 text-grayscale-700';
+        let tierClasses = 'bg-grayscale-100 text-grayscale-600';
         let tierLabel = 'Growing';
+        let filledBars = 1;
+        let barColor = 'bg-grayscale-400';
+
         if (skill.strengthTier === 'strongest') {
-            tierClasses = 'bg-emerald-50 text-emerald-700';
+            tierClasses = 'bg-emerald-600 text-white';
             tierLabel = 'Strongest';
+            filledBars = 3;
+            barColor = 'bg-emerald-600';
         } else if (skill.strengthTier === 'strong') {
             tierClasses = 'bg-emerald-50 text-emerald-700';
             tierLabel = 'Strong';
+            filledBars = 2;
+            barColor = 'bg-emerald-500';
         }
 
         return (
             <div
                 key={skill.name}
-                className="inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-grayscale-200 bg-white"
+                className="inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-grayscale-200 bg-white animate-pop-in opacity-0"
                 style={{ animationDelay: `${index * 100}ms` }}
             >
                 <SkillsIcon className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-medium text-grayscale-900">{skill.title}</span>
-                <span
-                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
-                >
-                    {tierLabel}
-                </span>
+
+                <div className="flex items-center gap-1.5 ml-1">
+                    <div className="flex items-end gap-0.5 h-2.5">
+                        {[1, 2, 3].map(bar => (
+                            <div
+                                key={bar}
+                                className={`w-1 rounded-full ${
+                                    bar <= filledBars ? barColor : 'bg-grayscale-200'
+                                }`}
+                                style={{ height: `${40 + bar * 20}%` }}
+                            />
+                        ))}
+                    </div>
+                    <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
+                    >
+                        {tierLabel}
+                    </span>
+                </div>
             </div>
         );
     };
 
     return (
-        <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up font-poppins w-full flex flex-col gap-3">
+        <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up font-poppins w-full flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
                     Your Learning Profile
@@ -59,12 +80,32 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
             </div>
 
             {state === 'empty' ? (
-                <p className="text-sm text-grayscale-600">
-                    Your learning profile takes shape as you add courses, achievements, and
-                    experiences.
-                </p>
+                <div className="flex flex-col gap-4 mt-1">
+                    <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl border border-dashed border-grayscale-200 bg-grayscale-10 text-grayscale-300 flex items-center justify-center shrink-0">
+                            <Trophy className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0 pt-1">
+                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                Add a course to reveal your strengths.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3].map(i => (
+                            <div
+                                key={i}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-dashed border-grayscale-200 bg-grayscale-10 animate-pulse-opacity"
+                                style={{ animationDelay: `${i * 150}ms` }}
+                            >
+                                <div className="w-3 h-3 rounded-full bg-grayscale-200" />
+                                <div className="w-12 h-2 rounded-full bg-grayscale-200" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4 mt-1">
                     {state === 'early' && (
                         <div className="self-start bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase rounded-full px-2 py-0.5">
                             Early read
@@ -72,19 +113,23 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                     )}
 
                     {strength ? (
-                        <div className="flex items-start gap-2">
-                            <div className="mt-0.5 text-emerald-500 shrink-0">
-                                <Trophy className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm text-grayscale-900 font-medium leading-snug">
-                                    You're strongest in {strength.title}.
-                                </p>
-                                {strength.summary && (
-                                    <p className="text-sm text-grayscale-600 truncate">
-                                        {strength.summary}
+                        <div className="relative overflow-hidden rounded-xl -mx-2 p-2">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer z-10 pointer-events-none" />
+                            <div className="flex items-start gap-3 relative z-0">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                    <Trophy className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0 pt-0.5">
+                                    <p className="text-base text-grayscale-900 font-semibold leading-snug">
+                                        You're strongest in{' '}
+                                        <span className="text-emerald-700">{strength.title}</span>.
                                     </p>
-                                )}
+                                    {strength.summary && (
+                                        <p className="text-sm text-grayscale-600 truncate mt-0.5">
+                                            {strength.summary}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ) : (
