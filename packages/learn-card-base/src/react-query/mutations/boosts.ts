@@ -36,6 +36,7 @@ import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
+import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('boosts');
 
@@ -524,6 +525,7 @@ export const useCreateChildBoost = () => {
 export const useManageSelfAssignedSkillsBoost = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
 
     const { data: profile } = useGetProfile();
     const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
@@ -719,6 +721,11 @@ export const useManageSelfAssignedSkillsBoost = () => {
             queryClient.refetchQueries({
                 queryKey: ['useGetBoostSkills', boostUri],
             });
+            queryClient.invalidateQueries({
+                queryKey: ['useSyncConsentFlow'],
+            });
+
+            syncAllCredentialsToContracts.mutate();
         },
     });
 };

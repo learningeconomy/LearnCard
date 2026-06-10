@@ -19,6 +19,8 @@ export const useSyncAllCredentialsToContractsMutation = () => {
 
     return useMutation<void, Error, void>({
         mutationFn: async () => {
+            console.log('[ConsentSync] full wallet resync started');
+
             resetSyncProgress();
             syncProgressStore.set.isActive(true);
             syncProgressStore.set.phase('scanning');
@@ -26,6 +28,9 @@ export const useSyncAllCredentialsToContractsMutation = () => {
 
             try {
                 const wallet = await initWallet();
+                console.log('[ConsentSync] scanning wallet credentials for consent sync', {
+                    did: wallet.id.did(),
+                });
 
                 // 1) Page defensively through ALL credentials in LearnCloud index
                 const recordsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
@@ -48,9 +53,22 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                         pageRecords.map(async record => {
                             try {
                                 const vc = (await wallet.read.get(record.uri)) as VC | undefined;
-                                const category: CredentialCategory = vc
+                                const isVerifiableDataCredential = Array.isArray(vc?.type)
+                                    ? vc.type.includes('VerifiableData')
+                                    : false;
+                                const category: CredentialCategory = isVerifiableDataCredential
+                                    ? (record.category as CredentialCategory) || 'Achievement'
+                                    : vc
                                     ? await getCategoryForCredential(vc, wallet)
                                     : (record.category as CredentialCategory) || 'Achievement';
+
+                                if (isVerifiableDataCredential) {
+                                    console.log('[ConsentSync] resolved verifiable-data category', {
+                                        uri: record.uri,
+                                        indexedCategory: record.category,
+                                        resolvedCategory: category,
+                                    });
+                                }
 
                                 return { uri: record.uri, category } as const;
                             } catch {
@@ -73,6 +91,16 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                     // Progress: categories found
                     syncProgressStore.set.categoriesFound(Object.keys(recordsByCategory).length);
 
+                    console.log(
+                        '[ConsentSync] category grouping summary',
+                        Object.fromEntries(
+                            Object.entries(recordsByCategory).map(([category, uris]) => [
+                                category,
+                                uris.length,
+                            ])
+                        )
+                    );
+
                     cursor = page?.hasMore ? page?.cursor : undefined;
 
                     if (cursor) {
@@ -90,6 +118,9 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                 const allContracts = await getOrFetchConsentedContracts(queryClient, wallet);
 
                 if (!allContracts?.length) {
+                    console.log(
+                        '[ConsentSync] full wallet resync finished - no consented contracts found'
+                    );
                     syncProgressStore.set.phase('done');
                     syncProgressStore.set.finishedAt(Date.now());
                     syncProgressStore.set.isActive(false);
@@ -106,6 +137,10 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                 //    - Filters per-contract categories by share settings and expiry
                 //    - Creates or reuses shared URIs per contract owner to avoid re-sharing
                 //    - Calls syncCredentialsToContract per contract
+                console.log('[ConsentSync] syncing consented contracts', {
+                    contractCount: allContracts.length,
+                    categoryCount: Object.keys(recordsByCategory).length,
+                });
                 await syncContracts.mutateAsync({
                     recordsByCategory,
                     allContracts: allContracts.map(c => ({
@@ -117,10 +152,13 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                     })),
                 });
 
+                console.log('[ConsentSync] full wallet resync finished');
+
                 syncProgressStore.set.phase('done');
                 syncProgressStore.set.finishedAt(Date.now());
                 syncProgressStore.set.isActive(false);
             } catch (e) {
+                console.log('[ConsentSync] full wallet resync failed', e);
                 syncProgressStore.set.phase('error');
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 syncProgressStore.set.lastError((e as any)?.message ?? 'Unknown error');

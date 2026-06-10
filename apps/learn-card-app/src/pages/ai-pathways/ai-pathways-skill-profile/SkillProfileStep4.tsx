@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RadioGroup, useVerifiableData } from 'learn-card-base';
+import { CredentialCategoryEnum, RadioGroup, useVerifiableData } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
@@ -62,7 +62,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
     } = useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY, {
         name: 'Work Life Balance',
         description: 'Your preferred work-life balance',
-        category: 'Work Life Balance',
+        category: CredentialCategoryEnum.workLifeBalance,
     });
 
     const {
@@ -73,7 +73,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
     } = useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY, {
         name: 'Job Stability',
         description: 'How stable you want your work to feel',
-        category: 'Job Stability',
+        category: CredentialCategoryEnum.jobStability,
     });
 
     const isLoading = workLifeBalanceLoading || jobStabilityLoading;

@@ -77,6 +77,29 @@ const pruneStaleSharedUris = (terms: ConsentFlowTerms, validSharedUris: Set<stri
     return { nextTerms, removed };
 };
 
+const normalizeCategoryKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const getCategoryInfoForTerms = (
+    terms: ConsentFlowTerms,
+    category: string
+): {
+    categoryInfo?: ConsentFlowTerms['read']['credentials']['categories'][string];
+    matchedKey?: string;
+} => {
+    const exactMatch = terms.read.credentials.categories[category];
+    if (exactMatch) return { categoryInfo: exactMatch, matchedKey: category };
+
+    const normalizedCategory = normalizeCategoryKey(category);
+    const fallbackEntry = Object.entries(terms.read.credentials.categories).find(
+        ([key]) => normalizeCategoryKey(key) === normalizedCategory
+    );
+
+    if (!fallbackEntry) return {};
+
+    const [matchedKey, categoryInfo] = fallbackEntry;
+    return { categoryInfo, matchedKey };
+};
+
 /**
  * Sync credentials to each consented contract based on category sharing settings.
  */
@@ -188,8 +211,23 @@ export const useSyncConsentContractsMutation = () => {
                 await Promise.all(
                     (Object.entries(recordsByCategory) as [CredentialCategory, string[]][]).map(
                         async ([category, credUris]) => {
-                            const categoryInfo =
-                                contractTerms.read.credentials.categories[category];
+                            const { categoryInfo, matchedKey } = getCategoryInfoForTerms(
+                                contractTerms,
+                                category
+                            );
+
+                            console.log('[ConsentSync] evaluating category', {
+                                ownerDid: contract.owner.did,
+                                termsUri,
+                                category,
+                                matchedKey,
+                                candidateCount: credUris.length,
+                                hasCategoryInfo: Boolean(categoryInfo),
+                                shareAll: categoryInfo?.shareAll,
+                                sharing: categoryInfo?.sharing,
+                                shareUntil: categoryInfo?.shareUntil,
+                                existingSharedCount: categoryInfo?.shared?.length ?? 0,
+                            });
 
                             logConsentSync('Evaluating category', {
                                 ownerDid: contract.owner.did,
@@ -218,7 +256,7 @@ export const useSyncConsentContractsMutation = () => {
                                             queryClient,
                                             uri,
                                             contractCategoryNameToCategoryMetadata(category)
-                                                ?.credentialType!
+                                                ?.credentialType ?? category
                                         ).catch(err => {
                                             logConsentSyncError('Share URI failed', err, {
                                                 ownerDid: contract.owner.did,
@@ -239,6 +277,12 @@ export const useSyncConsentContractsMutation = () => {
 
                                 if (validUris.length) {
                                     categoryMap[category] = validUris;
+                                    console.log('[ConsentSync] category ready for sync', {
+                                        ownerDid: contract.owner.did,
+                                        termsUri,
+                                        category,
+                                        validSharedCount: validUris.length,
+                                    });
                                     logConsentSync('Category ready for sync', {
                                         ownerDid: contract.owner.did,
                                         termsUri,
@@ -246,6 +290,15 @@ export const useSyncConsentContractsMutation = () => {
                                         validSharedCount: validUris.length,
                                     });
                                 } else {
+                                    console.log(
+                                        '[ConsentSync] category had no new shared URIs to sync',
+                                        {
+                                            ownerDid: contract.owner.did,
+                                            termsUri,
+                                            category,
+                                            candidateCount: credUris.length,
+                                        }
+                                    );
                                     logConsentSync('Category had no new shared URIs to sync', {
                                         ownerDid: contract.owner.did,
                                         termsUri,
@@ -254,6 +307,12 @@ export const useSyncConsentContractsMutation = () => {
                                     });
                                 }
                             } else {
+                                console.log('[ConsentSync] category not eligible for sync', {
+                                    ownerDid: contract.owner.did,
+                                    termsUri,
+                                    category,
+                                    candidateCount: credUris.length,
+                                });
                                 logConsentSync('Category not eligible for sync', {
                                     ownerDid: contract.owner.did,
                                     termsUri,
@@ -270,6 +329,14 @@ export const useSyncConsentContractsMutation = () => {
                         .map(([k, v]) => `${k}:${v?.length ?? 0}`)
                         .join(', ');
 
+                    console.log('[ConsentSync] syncing credentials to contract', {
+                        ownerDid: contract.owner.did,
+                        contractUri: contract.uri,
+                        termsUri,
+                        payloadSummary,
+                        payloadCategories: Object.keys(categoryMap),
+                    });
+
                     logConsentSync('Syncing credentials to contract', {
                         ownerDid: contract.owner.did,
                         contractUri: contract.uri,
@@ -283,6 +350,12 @@ export const useSyncConsentContractsMutation = () => {
                             termsUri,
                             categoryMap as Record<string, string[]>
                         );
+                        console.log('[ConsentSync] syncCredentialsToContract completed', {
+                            ownerDid: contract.owner.did,
+                            contractUri: contract.uri,
+                            termsUri,
+                            payloadSummary,
+                        });
                         logConsentSync('syncCredentialsToContract completed', {
                             ownerDid: contract.owner.did,
                             contractUri: contract.uri,

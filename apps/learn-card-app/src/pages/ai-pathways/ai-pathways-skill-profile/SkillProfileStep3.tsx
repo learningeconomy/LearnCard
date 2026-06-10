@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TextInput, RadioGroup, useVerifiableData } from 'learn-card-base';
+import { CredentialCategoryEnum, TextInput, RadioGroup, useVerifiableData } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
@@ -39,7 +39,7 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
         {
             name: 'Salary Information',
             description: 'Current salary and compensation type',
-            category: 'Pay Rate',
+            category: CredentialCategoryEnum.payRate,
         }
     );
 

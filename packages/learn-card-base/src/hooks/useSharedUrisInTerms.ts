@@ -14,6 +14,12 @@ export const getOrCreateSharedUriForWallet = async (
 ): Promise<string | false> => {
     const didWeb = switchedProfileStore.get.switchedDid();
     const queryKey = ['useGetCredentialList', didWeb ?? '', category];
+    console.log('[ConsentSync] ensuring shared URI for credential', {
+        contractOwnerDid,
+        credUri,
+        category,
+        queryKey,
+    });
     const cache =
         queryClient.getQueryData<
             InfiniteData<{ records: LCR[]; hasMore: boolean; cursor?: string }, string>
@@ -27,13 +33,26 @@ export const getOrCreateSharedUriForWallet = async (
         //   So sacrificing perfomance for now in order to avoid this bug
         // in cache and already shared
         if (alreadyShared) {
+            console.log('[ConsentSync] reusing shared URI from cache', {
+                contractOwnerDid,
+                credUri,
+                category,
+                sharedUri: record.sharedUris?.[contractOwnerDid].at(-1),
+            });
             return record.sharedUris?.[contractOwnerDid].at(-1)!;
         }
 
         // it was already in react query cache, but not shared
         if (record.uri === credUri) {
             const vc = await wallet.read.get(credUri);
-            if (!vc) return false;
+            if (!vc) {
+                console.log('[ConsentSync] failed to read credential before creating shared URI', {
+                    contractOwnerDid,
+                    credUri,
+                    category,
+                });
+                return false;
+            }
 
             // For SmartResume we want to add the generic brain-service wallet's did so that the brain service
             // can decrypt the credentials and send them to SmartResume via their API
@@ -55,6 +74,13 @@ export const getOrCreateSharedUriForWallet = async (
             });
 
             if (!newUri) return false;
+
+            console.log('[ConsentSync] created fresh shared URI', {
+                contractOwnerDid,
+                credUri,
+                category,
+                newUri,
+            });
 
             const newSharedUris = record.sharedUris
                 ? { ...record.sharedUris, [contractOwnerDid]: [newUri] }
@@ -115,16 +141,49 @@ export const getOrCreateSharedUriForWallet = async (
             // re-use existing shared uris if they exist
             const existingSharedUris = mainRecord.sharedUris?.[contractOwnerDid];
             if (existingSharedUris?.length > 0) {
+                console.log('[ConsentSync] reusing shared URI from indexed record', {
+                    contractOwnerDid,
+                    credUri,
+                    category,
+                    sharedUri: existingSharedUris.at(-1),
+                });
                 return existingSharedUris?.at(-1);
             }
 
             const vc = await wallet.read.get(credUri);
-            if (!vc) return false;
+            if (!vc) {
+                console.log(
+                    '[ConsentSync] failed to read credential from indexed record before creating shared URI',
+                    {
+                        contractOwnerDid,
+                        credUri,
+                        category,
+                    }
+                );
+                return false;
+            }
 
             const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
                 recipients: [contractOwnerDid],
             });
-            if (!newUri) return false;
+            if (!newUri) {
+                console.log(
+                    '[ConsentSync] failed to upload shared credential from indexed record',
+                    {
+                        contractOwnerDid,
+                        credUri,
+                        category,
+                    }
+                );
+                return false;
+            }
+
+            console.log('[ConsentSync] created fresh shared URI from indexed record', {
+                contractOwnerDid,
+                credUri,
+                category,
+                newUri,
+            });
 
             await wallet.index.LearnCloud.update(mainRecord.id, {
                 sharedUris: mainRecord.sharedUris
@@ -150,6 +209,12 @@ export const getOrCreateSharedUriForWallet = async (
         oldCursor = page?.cursor;
         page = await wallet.index.LearnCloud.getPage?.({ category }, { cursor: page?.cursor });
     } while (page?.hasMore);
+
+    console.log('[ConsentSync] no indexed credential record found for shared URI creation', {
+        contractOwnerDid,
+        credUri,
+        category,
+    });
 
     return false;
 };

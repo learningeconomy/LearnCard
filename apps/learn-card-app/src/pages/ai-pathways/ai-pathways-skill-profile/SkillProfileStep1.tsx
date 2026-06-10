@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
-import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    TextInput,
+    SelectInput,
+    useSyncAllCredentialsToContractsMutation,
+    useVerifiableData,
+} from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
@@ -62,6 +68,7 @@ const MONTHS_OPTIONS = [
 
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
     const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
     const { markStepCompleted } = useSkillProfileStepFunnel(1, () => {
         const fields: string[] = [];
         if (goals.length > 0) fields.push('goals');
@@ -83,7 +90,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY, {
         name: 'Career Goals',
         description: 'Self-reported career goals and aspirations',
-        category: 'Goals',
+        category: CredentialCategoryEnum.goals,
     });
 
     const {
@@ -94,7 +101,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     } = useVerifiableData<SkillProfileProfessionalTitleData>(SKILL_PROFILE_PROFESSIONAL_TITLE_KEY, {
         name: 'Professional Title',
         description: 'Your current professional title',
-        category: 'Professional Title',
+        category: CredentialCategoryEnum.professionalTitle,
     });
 
     const {
@@ -105,7 +112,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     } = useVerifiableData<SkillProfileRoleExperienceData>(SKILL_PROFILE_ROLE_EXPERIENCE_KEY, {
         name: 'Role Experience',
         description: 'Years and months of experience in your current role',
-        category: 'Role Experience',
+        category: CredentialCategoryEnum.roleExperience,
     });
 
     const isLoading = goalsLoading || professionalTitleLoading || roleExperienceLoading;
@@ -143,11 +150,17 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     };
 
     const handleSaveAndNext = async () => {
-        await Promise.all([
+        const saveResults = await Promise.all([
             saveGoals({ goals }),
             saveProfessionalTitle({ professionalTitle }),
             saveRoleExperience({ lifetimeExperience: { years, months } }),
         ]);
+
+        if (saveResults.some(Boolean)) {
+            console.log('[ConsentSync] My Skills Profile saved, triggering full wallet resync');
+            await syncAllCredentialsToContracts.mutateAsync();
+        }
+
         trackProfileDataAdded();
         markStepCompleted();
         handleNext();
