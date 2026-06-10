@@ -20,8 +20,7 @@ type CurrentGoalCardProps = {
     variant?: 'default' | 'hero';
 };
 
-const DEFAULT_PRIMARY_BUTTON =
-    'bg-grayscale-900 text-white';
+const DEFAULT_PRIMARY_BUTTON = 'bg-grayscale-900 text-white';
 
 const ProgressSegments: React.FC<{ total: number; completed: number }> = ({ total, completed }) => {
     if (total <= 0) return null;
@@ -74,18 +73,16 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                             Set your direction
                         </h2>
                         <p className="mt-2 text-sm text-white/80 leading-relaxed max-w-md">
-                            Pick a goal and we&apos;ll map a personal path with the steps,
-                            skills, and credentials to get there.
+                            Pick a goal and we&apos;ll map a personal path with the steps, skills,
+                            and credentials to get there.
                         </p>
-                        {pathwaysEnabled && (
-                            <button
-                                type="button"
-                                onClick={onContinue}
-                                className={`mt-5 inline-flex w-full desktop:w-auto justify-center py-3 px-6 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
-                            >
-                                Start a journey
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={onContinue}
+                            className={`mt-5 inline-flex w-full desktop:w-auto justify-center py-3 px-6 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                        >
+                            {pathwaysEnabled ? 'Start a journey' : 'Start a pathway'}
+                        </button>
                     </div>
                 </section>
             );
@@ -101,11 +98,9 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                 <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
                     Set a goal and we&apos;ll help you build the path to get there.
                 </p>
-                {pathwaysEnabled && (
-                    <button type="button" onClick={onContinue} className={buttonClass}>
-                        Start a journey
-                    </button>
-                )}
+                <button type="button" onClick={onContinue} className={buttonClass}>
+                    {pathwaysEnabled ? 'Start a journey' : 'Start a pathway'}
+                </button>
             </section>
         );
     }
@@ -189,15 +184,17 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                         </div>
                     )}
 
-                    {pathwaysEnabled && (
-                        <button
-                            type="button"
-                            onClick={onContinue}
-                            className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
-                        >
-                            {nextNode ? 'Continue journey' : 'Open journey'}
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        onClick={onContinue}
+                        className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                    >
+                        {pathwaysEnabled
+                            ? nextNode
+                                ? 'Continue journey'
+                                : 'Open journey'
+                            : 'Navigate pathways'}
+                    </button>
                 </div>
             </section>
         );
@@ -253,11 +250,13 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                 </div>
             )}
 
-            {pathwaysEnabled && (
-                <button type="button" onClick={onContinue} className={buttonClass}>
-                    {nextNode ? 'Continue journey' : 'Open journey'}
-                </button>
-            )}
+            <button type="button" onClick={onContinue} className={buttonClass}>
+                {pathwaysEnabled
+                    ? nextNode
+                        ? 'Continue journey'
+                        : 'Open journey'
+                    : 'Navigate pathways'}
+            </button>
         </section>
     );
 };

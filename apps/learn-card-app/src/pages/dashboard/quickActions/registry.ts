@@ -116,7 +116,7 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
     {
         id: 'set-goal',
         slot: 'navigate',
-        eligible: state => !state.hasGoal,
+        eligible: state => !state.hasGoal && state.pathwaysEnabled,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
@@ -138,15 +138,15 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         }),
     },
     {
-        id: 'set-goal-fallback',
+        id: 'ai-pathways',
         slot: 'navigate',
-        eligible: state => !state.pathwaysEnabled || state.hasGoal,
-        weight: () => 5,
+        eligible: state => !state.pathwaysEnabled,
+        weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'Set another goal',
-            caption: 'Add a new path to follow',
-            onClick: handlers.goToSetGoal,
+            label: 'Navigate pathways',
+            caption: 'Explore AI pathways',
+            onClick: handlers.goToBrowsePathways,
         }),
     },
 ];

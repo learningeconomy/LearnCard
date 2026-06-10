@@ -39,14 +39,28 @@ const LaunchPad: React.FC = () => {
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+        tab: tabParam,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
     const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
 
-    const [tab, setTab] = useState(LaunchPadTabEnum.myApps);
+    const initialTab = (() => {
+        const raw = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+        const match = Object.values(LaunchPadTabEnum).find(option => option === raw);
+        return match ?? LaunchPadTabEnum.myApps;
+    })();
+
+    const [tab, setTab] = useState(initialTab);
     const [filterBy, setFilterBy] = useState<LaunchPadFilterOptionsEnum>(
         LaunchPadFilterOptionsEnum.allApps
     );
@@ -323,7 +337,9 @@ const LaunchPad: React.FC = () => {
                                                                       ? 'Plugin'
                                                                       : 'Plugins'
                                                               }`
-                                                            : `${filteredAvailableApps.length} Search ${
+                                                            : `${
+                                                                  filteredAvailableApps.length
+                                                              } Search ${
                                                                   filteredAvailableApps.length === 1
                                                                       ? 'Result'
                                                                       : 'Results'
@@ -479,14 +495,14 @@ const LaunchPad: React.FC = () => {
                                         const title = isMyApps
                                             ? 'Your apps will live here'
                                             : isAll
-                                              ? 'No apps available right now'
-                                              : `Nothing in ${tab} yet`;
+                                            ? 'No apps available right now'
+                                            : `Nothing in ${tab} yet`;
 
                                         const subtitle = isMyApps
                                             ? 'Install something from the App Store to get started.'
                                             : isAll
-                                              ? 'Check back later — new apps are added all the time.'
-                                              : 'Check back soon, or browse all apps.';
+                                            ? 'Check back later — new apps are added all the time.'
+                                            : 'Check back soon, or browse all apps.';
 
                                         const showCta = !isAll;
 
@@ -504,9 +520,7 @@ const LaunchPad: React.FC = () => {
                                                 </p>
                                                 {showCta && (
                                                     <button
-                                                        onClick={() =>
-                                                            setTab(LaunchPadTabEnum.all)
-                                                        }
+                                                        onClick={() => setTab(LaunchPadTabEnum.all)}
                                                         className="mt-5 px-5 py-2 rounded-full bg-grayscale-900 text-white text-sm font-semibold font-poppins"
                                                     >
                                                         Browse all apps

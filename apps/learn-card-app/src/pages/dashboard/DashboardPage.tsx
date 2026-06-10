@@ -332,10 +332,28 @@ const DashboardPage: React.FC = () => {
     const hasCredentials = totalCredentialCount > 0;
     const hasGoal = !!activePathway;
     const hasSkillProfile = skillProfilePercentage >= 100;
+    const hasDiscoveredApps = installedApps.length > 0;
 
     const goToWallet = () => history.push('/wallet');
+    const goToDiscoverApps = () => history.push('/launchpad?tab=All');
 
-    const showGetStarted = !getStartedDismissed && (!hasCredentials || !hasGoal);
+    const secondChecklistStep = pathwaysEnabled
+        ? {
+              key: 'set-goal',
+              label: 'Set a goal',
+              done: hasGoal,
+              onClick: goToSetGoal,
+          }
+        : {
+              key: 'discover-apps',
+              label: 'Discover apps',
+              done: hasDiscoveredApps,
+              onClick: goToDiscoverApps,
+          };
+
+    const secondStepDone = pathwaysEnabled ? hasGoal : hasDiscoveredApps;
+
+    const showGetStarted = !getStartedDismissed && (!hasCredentials || !secondStepDone);
     const heroSlot: 'getStarted' | 'goal' = showGetStarted ? 'getStarted' : 'goal';
 
     const checklistItems = [
@@ -345,12 +363,7 @@ const DashboardPage: React.FC = () => {
             done: hasCredentials,
             onClick: goToCollect,
         },
-        {
-            key: 'set-goal',
-            label: 'Set a goal',
-            done: hasGoal,
-            onClick: goToSetGoal,
-        },
+        secondChecklistStep,
         {
             key: 'skill-profile',
             label: 'Fill out your skills profile',
@@ -394,6 +407,7 @@ const DashboardPage: React.FC = () => {
         if (heroSlot === 'getStarted' && nextChecklistItem) {
             if (nextChecklistItem.key === 'add-credential') return 'add-first-credential';
             if (nextChecklistItem.key === 'set-goal') return 'set-goal';
+            if (nextChecklistItem.key === 'discover-apps') return 'find-credential-apps';
             return null;
         }
         if (heroSlot === 'goal') {
