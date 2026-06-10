@@ -116,7 +116,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         )}
 
                         {/* Verifier & Issuer */}
-                        <div className="mt-1 w-full px-6 text-center">
+                        <div className="mt-1 w-full px-4 text-center">
                             <span className="line-clamp-2 break-words text-[12px] leading-snug text-grayscale-700">
                                 {verifierBadge && (
                                     <span className="mr-1 inline-block align-middle">
