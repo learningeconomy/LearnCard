@@ -2,4 +2,4 @@
 'learn-card-app': patch
 ---
 
-Fix skill frameworks for local backend with prod backend
+Fix skill frameworks for local frontend with prod backend
