@@ -3,7 +3,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useQueries } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 
-import { useWallet, useIsLoggedIn } from 'learn-card-base';
+import { useWallet, useIsLoggedIn, useTenantConfig } from 'learn-card-base';
 
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
@@ -78,6 +78,9 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> 
 
 const isProductionEnvironment = (): boolean =>
     typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
+
+const isStagingEnvironment = (tenantConfig?: { observability?: { sentryEnv?: string } }): boolean =>
+    tenantConfig?.observability?.sentryEnv === 'staging';
 
 const fetchAllAvailableFrameworks = async (
     wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
@@ -190,7 +193,8 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const flags = useFlags<GlobalSkillFrameworkFlags>();
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
-    const useSeededFrameworks = !isProductionEnvironment();
+    const tenantConfig = useTenantConfig();
+    const useSeededFrameworks = !isProductionEnvironment() || isStagingEnvironment(tenantConfig);
 
     const { data: seededFrameworks = [] } = useQuery({
         queryKey: ['seededGlobalSkillFrameworks', isLoggedIn],
