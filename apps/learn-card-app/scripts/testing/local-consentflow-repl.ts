@@ -225,13 +225,13 @@ const main = async (): Promise<void> => {
 
     console.log('\nReady. Try:');
     console.log('  await readContract()');
-    console.log('  await getVerifiableDataUris()');
     console.log('  await readVerifiableDataSummary()');
     console.log('  await readUri(uri)');
-    console.log('  await readFirstVerifiableData()');
+    console.log('');
+    console.log('  await getVerifiableDataUris()');
     console.log('  await readVerifiableData()');
+    console.log('  await readFirstVerifiableData()');
     console.log('  await fetchAllConsentFlowData(contractUri)\n');
-    console.log('To view the full credential use `readUri(uri)`\n');
 
     const server = repl.start({
         prompt: 'consentflow-local> ',
