@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -12,13 +12,11 @@ import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
-import { ContractSyncStatusBanner } from './components/common/ContractSyncStatusBanner';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
 import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
 
 import {
-    type PendingContractSyncJob,
     useIsLoggedIn,
     QRCodeScannerStore,
     usePrefetchCredentials,
@@ -32,8 +30,6 @@ import {
     useIsCurrentUserLCNUser,
     useContract,
     usePendingContractSync,
-    usePendingContractSyncJobs,
-    clearPendingContractSyncJob,
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
@@ -51,7 +47,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
-import { AnalyticsEvents, useSetAnalyticsUserId, useAnalytics } from '@analytics';
+import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
@@ -286,19 +282,6 @@ const AppRouter: React.FC = () => {
     }, [isLoggedIn]);
 
     const enablePrefetch = isLoggedIn && !isChapiInteraction;
-    const pendingContractSyncJobs = usePendingContractSyncJobs();
-    const activeContractSyncJob = useMemo(
-        () =>
-            Object.values(pendingContractSyncJobs)
-                .filter(job => job.status === 'queued' || job.status === 'running')
-                .sort((a, b) => a.createdAt - b.createdAt)[0],
-        [pendingContractSyncJobs]
-    );
-    const [completedContractSyncJob, setCompletedContractSyncJob] =
-        useState<PendingContractSyncJob | null>(null);
-    const completedContractSyncJobTimeoutRef = useRef<number | null>(null);
-    const completedContractSyncJobIdRef = useRef<string | null>(null);
-    const contractSyncTelemetryKeyRef = useRef<string | null>(null);
 
     usePrefetchCredentials('Social Badge', enablePrefetch);
     usePrefetchCredentials('Achievement', enablePrefetch);
@@ -312,77 +295,6 @@ const AppRouter: React.FC = () => {
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
     usePendingContractSync(enablePrefetch);
-
-    useEffect(() => {
-        const newestDoneJob = Object.values(pendingContractSyncJobs)
-            .filter(job => job.status === 'done' && job.finishedAt)
-            .sort((a, b) => (b.finishedAt ?? 0) - (a.finishedAt ?? 0))[0];
-
-        if (!newestDoneJob || completedContractSyncJobIdRef.current === newestDoneJob.id) {
-            return;
-        }
-
-        completedContractSyncJobIdRef.current = newestDoneJob.id;
-        setCompletedContractSyncJob(newestDoneJob);
-    }, [pendingContractSyncJobs]);
-
-    useEffect(() => {
-        if (!completedContractSyncJob) {
-            return;
-        }
-
-        if (completedContractSyncJobTimeoutRef.current) {
-            window.clearTimeout(completedContractSyncJobTimeoutRef.current);
-        }
-
-        completedContractSyncJobTimeoutRef.current = window.setTimeout(() => {
-            clearPendingContractSyncJob(completedContractSyncJob.id);
-            setCompletedContractSyncJob(null);
-            completedContractSyncJobIdRef.current = null;
-            completedContractSyncJobTimeoutRef.current = null;
-        }, 3500);
-
-        return () => {
-            if (completedContractSyncJobTimeoutRef.current) {
-                window.clearTimeout(completedContractSyncJobTimeoutRef.current);
-                completedContractSyncJobTimeoutRef.current = null;
-            }
-        };
-    }, [completedContractSyncJob]);
-
-    useEffect(() => {
-        const jobs = Object.values(pendingContractSyncJobs);
-        if (!jobs.length) return;
-
-        const newestJob = jobs.sort((a, b) => b.updatedAt - a.updatedAt)[0];
-        const telemetryKey = [
-            newestJob.id,
-            newestJob.status,
-            newestJob.processedCredentials,
-            newestJob.completedCredentials,
-            newestJob.failedCredentials,
-            newestJob.retryCount,
-        ].join(':');
-
-        if (contractSyncTelemetryKeyRef.current === telemetryKey) return;
-        contractSyncTelemetryKeyRef.current = telemetryKey;
-
-        analytics.track(AnalyticsEvents.CONSENT_FLOW_SYNC_JOB, {
-            contractUri: newestJob.contractUri,
-            termsUri: newestJob.termsUri,
-            ownerDid: newestJob.ownerDid,
-            phase: newestJob.status,
-            elapsedMs:
-                newestJob.startedAt && newestJob.finishedAt
-                    ? newestJob.finishedAt - newestJob.startedAt
-                    : undefined,
-            totalCredentials: newestJob.totalCredentials,
-            processedCredentials: newestJob.processedCredentials,
-            completedCredentials: newestJob.completedCredentials,
-            failedCredentials: newestJob.failedCredentials,
-            retryCount: newestJob.retryCount,
-        });
-    }, [analytics, pendingContractSyncJobs]);
 
     // Idle-prefetch route chunks once logged in so navigation from any page
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
@@ -502,24 +414,6 @@ const AppRouter: React.FC = () => {
                         </GenericErrorBoundary>
                     </IonSplitPane>
                 </div>
-            )}
-            {activeContractSyncJob && (
-                <ContractSyncStatusBanner job={activeContractSyncJob} variant="active" />
-            )}
-            {completedContractSyncJob && (
-                <ContractSyncStatusBanner
-                    job={completedContractSyncJob}
-                    variant="complete"
-                    onDismiss={() => {
-                        if (completedContractSyncJobTimeoutRef.current) {
-                            window.clearTimeout(completedContractSyncJobTimeoutRef.current);
-                            completedContractSyncJobTimeoutRef.current = null;
-                        }
-                        clearPendingContractSyncJob(completedContractSyncJob.id);
-                        setCompletedContractSyncJob(null);
-                        completedContractSyncJobIdRef.current = null;
-                    }}
-                />
             )}
             <Modals />
         </GenericErrorBoundary>
