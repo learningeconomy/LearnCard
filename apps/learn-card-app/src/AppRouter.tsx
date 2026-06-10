@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -12,6 +12,7 @@ import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
+import { ContractSyncStatusBanner } from './components/common/ContractSyncStatusBanner';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
 import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
@@ -29,6 +30,8 @@ import {
     useCurrentUser,
     useIsCurrentUserLCNUser,
     useContract,
+    usePendingContractSync,
+    usePendingContractSyncJobs,
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
@@ -46,7 +49,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
-import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
+import { AnalyticsEvents, useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
@@ -124,7 +127,8 @@ const AppRouter: React.FC = () => {
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const analytics = useAnalytics();
+    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
     usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
 
@@ -280,6 +284,15 @@ const AppRouter: React.FC = () => {
     }, [isLoggedIn]);
 
     const enablePrefetch = isLoggedIn && !isChapiInteraction;
+    const pendingContractSyncJobs = usePendingContractSyncJobs();
+    const activeContractSyncJob = useMemo(
+        () =>
+            Object.values(pendingContractSyncJobs)
+                .filter(job => job.status === 'queued' || job.status === 'running')
+                .sort((a, b) => a.createdAt - b.createdAt)[0],
+        [pendingContractSyncJobs]
+    );
+    const contractSyncTelemetryKeyRef = useRef<string | null>(null);
 
     usePrefetchCredentials('Social Badge', enablePrefetch);
     usePrefetchCredentials('Achievement', enablePrefetch);
@@ -292,6 +305,39 @@ const AppRouter: React.FC = () => {
     usePrefetchCredentials(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
+    usePendingContractSync(enablePrefetch);
+
+    useEffect(() => {
+        const jobs = Object.values(pendingContractSyncJobs);
+        if (!jobs.length) return;
+
+        const newestJob = jobs.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        const telemetryKey = [
+            newestJob.id,
+            newestJob.status,
+            newestJob.completedCredentials,
+            newestJob.failedCredentials,
+            newestJob.retryCount,
+        ].join(':');
+
+        if (contractSyncTelemetryKeyRef.current === telemetryKey) return;
+        contractSyncTelemetryKeyRef.current = telemetryKey;
+
+        analytics.track(AnalyticsEvents.CONSENT_FLOW_SYNC_JOB, {
+            contractUri: newestJob.contractUri,
+            termsUri: newestJob.termsUri,
+            ownerDid: newestJob.ownerDid,
+            phase: newestJob.status,
+            elapsedMs:
+                newestJob.startedAt && newestJob.finishedAt
+                    ? newestJob.finishedAt - newestJob.startedAt
+                    : undefined,
+            totalCredentials: newestJob.totalCredentials,
+            completedCredentials: newestJob.completedCredentials,
+            failedCredentials: newestJob.failedCredentials,
+            retryCount: newestJob.retryCount,
+        });
+    }, [analytics, pendingContractSyncJobs]);
 
     // Idle-prefetch route chunks once logged in so navigation from any page
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
@@ -411,6 +457,9 @@ const AppRouter: React.FC = () => {
                         </GenericErrorBoundary>
                     </IonSplitPane>
                 </div>
+            )}
+            {activeContractSyncJob && (
+                <ContractSyncStatusBanner activeContractSyncJob={activeContractSyncJob} />
             )}
             <Modals />
         </GenericErrorBoundary>
