@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { isDid, formatDidDisplayName } from '@learncard/react';
 import { BoostTextSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 type CustomIssuerNameProps = {
@@ -38,11 +39,19 @@ export const CustomIssuerName: React.FC<CustomIssuerNameProps> = ({
         );
     }
 
-    return (
-        <span className="text-[12px] text-grayscale-700 mt-1 line-clamp-1">
-            by <span className="font-bold">{issuerName}</span>
-        </span>
-    );
+    if (issuerName && isDid(issuerName)) {
+        return (
+            <>
+                <span className="font-semibold text-grayscale-900">Digital ID:</span>
+                <br />
+                <span className="text-grayscale-500 underline">
+                    {formatDidDisplayName(issuerName)}
+                </span>
+            </>
+        );
+    }
+
+    return <span className="font-bold">{issuerName}</span>;
 };
 
 export default CustomIssuerName;
