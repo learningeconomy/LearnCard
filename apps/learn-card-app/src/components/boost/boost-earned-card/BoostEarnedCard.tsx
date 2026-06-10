@@ -76,6 +76,7 @@ type BoostEarnedCardProps = {
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
+    isPreview?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -100,6 +101,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
+    isPreview = false,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -344,6 +346,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             isEarnedBoost: true,
             isClrChildCredential,
             isClrCredential,
+            isPreview,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;

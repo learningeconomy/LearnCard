@@ -70,6 +70,7 @@ type NonBoostPreviewProps = {
     isClrChildCredential?: boolean;
     isClrCredential?: boolean;
     displayType?: DisplayTypeEnum;
+    isPreview?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -104,6 +105,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isClrChildCredential = false,
     isClrCredential = false,
     displayType,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const { initWallet } = useWallet();
@@ -128,6 +130,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     useEffect(() => {
+        if (isPreview) return;
+
         const verify = async () => {
             const wallet = await initWallet();
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
@@ -135,7 +139,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         };
 
         verify();
-    }, [credential]);
+    }, [credential, isPreview]);
 
     useEffect(() => {
         if (!isFront) {
@@ -163,6 +167,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 isEarnedBoost={isEarnedBoost}
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={credential as VC | UnsignedVC}
+                isPreview={isPreview}
             />,
             {
                 className: '!bg-transparent',
@@ -325,6 +330,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         isEarnedBoost={isEarnedBoost}
                         isClrChildCredential={isClrChildCredential}
                         renderMethodCredential={credential as VC | UnsignedVC}
+                        isPreview={isPreview}
                     />
                 )}
             </div>

@@ -3,7 +3,7 @@ import { Layers } from 'lucide-react';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
-import { COMMON_TYPES, type CredentialTypeEntry } from './credentialTypeCatalog';
+import { COMMON_TYPES, getTypeByObv3, type CredentialTypeEntry } from './credentialTypeCatalog';
 import { TypeBrowserModal } from './TypeBrowserModal';
 
 interface TypePickerProps {
@@ -41,6 +41,10 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
         selectedObv3Type && !COMMON_TYPES.some(t => t.obv3Type === selectedObv3Type)
     );
 
+    const selectedLabel = selectedObv3Type
+        ? getTypeByObv3(selectedObv3Type)?.label ?? selectedObv3Type
+        : null;
+
     const openBrowser = () => {
         newModal(
             <TypeBrowserModal
@@ -76,7 +80,7 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
                 }`}
             >
                 <Layers className="w-4 h-4" />
-                {selectedIsUncommon ? `Type: ${selectedObv3Type}` : 'Browse all types'}
+                {selectedIsUncommon ? `Type: ${selectedLabel}` : 'Browse all types'}
             </button>
         </div>
     );

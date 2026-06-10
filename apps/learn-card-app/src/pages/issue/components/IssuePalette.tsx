@@ -135,7 +135,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                     What are you issuing?
                 </h2>
                 <p className="text-sm text-grayscale-600 leading-relaxed mb-4">
-                    Pick a type — your credential takes shape as you go.
+                    Pick a type—your credential takes shape as you go.
                 </p>
                 <TypePicker
                     selectedObv3Type={selectedType?.obv3Type ?? null}

@@ -73,6 +73,7 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
                             useWrapper={false}
                             verifierState={false}
                             hideOptionsMenu
+                            isPreview
                             className="shadow-xl"
                         />
                     </div>

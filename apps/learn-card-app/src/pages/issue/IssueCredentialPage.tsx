@@ -136,16 +136,25 @@ const IssueCredentialPage: React.FC = () => {
             return obj;
         };
 
-        let credentialSubjectName = undefined;
-        let credentialSubjectImage = undefined;
+        let credentialSubjectName: string | undefined;
+        let credentialSubjectImage: string | undefined;
+        let showIssuerImage = true;
 
-        if (
+        if (recipientMode === 'self') {
+            credentialSubjectName = currentLCNUser?.displayName || issuerName;
+            credentialSubjectImage = issuerImage;
+        } else if (
             recipientMode === 'people' &&
             recipients.length === 1 &&
             recipients[0].kind === 'profile'
         ) {
             credentialSubjectName = recipients[0].displayName;
             credentialSubjectImage = recipients[0].image;
+        } else {
+            // No specific recipient yet (link / anyone / email / multiple): don't
+            // let the badge fall back to the issuer's photo — show the category's
+            // default artwork instead so the issuer isn't mistaken for the holder.
+            showIssuerImage = false;
         }
 
         const filledJson = fill(json) as Record<string, unknown>;
@@ -158,7 +167,7 @@ const IssueCredentialPage: React.FC = () => {
             issuer: {
                 id: currentLCNUser?.did || 'did:web:preview',
                 name: issuerName,
-                ...(issuerImage ? { image: issuerImage } : {}),
+                ...(showIssuerImage && issuerImage ? { image: issuerImage } : {}),
             },
             credentialSubject: {
                 ...(credentialSubject || {}),
@@ -167,7 +176,15 @@ const IssueCredentialPage: React.FC = () => {
             },
             validFrom: new Date().toISOString(),
         };
-    }, [template, issuerName, issuerImage, currentLCNUser?.did, recipientMode, recipients]);
+    }, [
+        template,
+        issuerName,
+        issuerImage,
+        currentLCNUser?.did,
+        currentLCNUser?.displayName,
+        recipientMode,
+        recipients,
+    ]);
 
     const handleIssue = useCallback(async () => {
         if (!template || !canIssue) return;
