@@ -92,7 +92,6 @@ type OnboardingNetworkFormProps = {
         guardianEmail?: string;
         profileId: string | null | undefined;
         privacyPreferences?: OnboardingPrivacyPreferences;
-        privacyPreferencesSaved?: boolean;
     };
     updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
 };
@@ -144,7 +143,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         guardianEmail,
         profileId,
         privacyPreferences,
-        privacyPreferencesSaved,
     } = formData;
 
     const handleNameChange = (value: string) => {
@@ -363,25 +361,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     const aiEnabled = selectedPrivacyPreferences.isMinor
                         ? false
                         : selectedPrivacyPreferences.aiEnabled;
-                    let preferencesInitialized = Boolean(privacyPreferencesSaved);
+                    let preferencesInitialized = false;
 
-                    if (!preferencesInitialized) {
-                        await updatePreferences({
-                            ...selectedPrivacyPreferences,
-                            aiEnabled,
-                            aiAutoDisabled: selectedPrivacyPreferences.isMinor,
-                            analyticsAutoDisabled: false,
+                    await updatePreferences({
+                        ...selectedPrivacyPreferences,
+                        aiEnabled,
+                        aiAutoDisabled: selectedPrivacyPreferences.isMinor,
+                        analyticsAutoDisabled: false,
+                    })
+                        .then(() => {
+                            preferencesInitialized = true;
                         })
-                            .then(() => {
-                                preferencesInitialized = true;
-                            })
-                            .catch(err => {
-                                log.error(
-                                    'Failed to initialize onboarding privacy preferences (non-blocking):',
-                                    err
-                                );
-                            });
-                    }
+                        .catch(err => {
+                            log.error(
+                                'Failed to persist onboarding privacy preferences after profile creation (non-blocking):',
+                                err
+                            );
+                        });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,

@@ -67,7 +67,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             currentLCNUserDob && currentLCNUserCountry
                 ? getDefaultPrivacyPreferences(currentLCNUserDob, currentLCNUserCountry)
                 : undefined,
-        privacyPreferencesSaved: false,
     });
 
     useEffect(() => {
@@ -174,7 +173,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             privacyPreferences:
                 prev.privacyPreferences ??
                 getDefaultPrivacyPreferences(formData.dob ?? '', formData.country),
-            privacyPreferencesSaved: false,
         }));
         setStep(OnboardingStepsEnum.privacyData);
     }, [formData.country, formData.dob]);
@@ -403,7 +401,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             setAnalyticsEnabled(preferencesToSave.analyticsEnabled);
             updateFormData({
                 privacyPreferences: preferencesToSave,
-                privacyPreferencesSaved: true,
             });
             setStep(OnboardingStepsEnum.selectRole);
         } catch {
@@ -435,7 +432,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                         usMinorConsent: false,
                         euParentalConsentRequested: false,
                         privacyPreferences: undefined,
-                        privacyPreferencesSaved: false,
                     });
                 }}
                 onCountryChange={country => {
@@ -446,7 +442,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                         usMinorConsent: false,
                         euParentalConsentRequested: false,
                         privacyPreferences: undefined,
-                        privacyPreferencesSaved: false,
                     });
                 }}
                 onContinue={handleAgeGateContinue}
@@ -475,7 +470,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                                 getDefaultPrivacyPreferences(formData.dob ?? '', formData.country)),
                             ...updates,
                         },
-                        privacyPreferencesSaved: false,
                     });
                 }}
                 onContinue={handlePrivacyPreferencesContinue}
