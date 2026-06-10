@@ -77,11 +77,23 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> 
     ],
 };
 
-const isProductionEnvironment = (): boolean =>
-    typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
+const PRODUCTION_BRAIN_SERVICE_HOSTS = new Set(['network.learncard.com', 'network.vetpass.app']);
 
-const isStagingEnvironment = (tenantConfig?: TenantConfig): boolean =>
-    tenantConfig?.observability?.sentryEnv?.startsWith('staging') ?? false;
+const isProductionBrainService = (tenantConfig?: TenantConfig): boolean => {
+    const brainServiceUrl = tenantConfig?.apis?.brainService?.trim();
+
+    if (!brainServiceUrl) {
+        return false;
+    }
+
+    try {
+        const hostname = new URL(brainServiceUrl).hostname.toLowerCase();
+
+        return PRODUCTION_BRAIN_SERVICE_HOSTS.has(hostname);
+    } catch {
+        return false;
+    }
+};
 
 const fetchAllAvailableFrameworks = async (
     wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
@@ -195,14 +207,19 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const tenantConfig = useTenantConfig();
-    const useSeededFrameworks = !isProductionEnvironment() || isStagingEnvironment(tenantConfig);
+    const useSeededFrameworks = !isProductionBrainService(tenantConfig);
 
     const { data: seededFrameworks = [] } = useQuery({
-        queryKey: ['seededGlobalSkillFrameworks', isLoggedIn],
+        queryKey: [
+            'seededGlobalSkillFrameworks',
+            isLoggedIn,
+            tenantConfig?.apis?.brainService,
+            useSeededFrameworks,
+        ],
         queryFn: async () => {
             try {
                 const wallet = await initWallet();
-                return fetchSeededGlobalSkillFrameworks(wallet);
+                return await fetchSeededGlobalSkillFrameworks(wallet);
             } catch {
                 return [];
             }
