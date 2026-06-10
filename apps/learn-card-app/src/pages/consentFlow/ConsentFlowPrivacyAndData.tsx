@@ -113,7 +113,6 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
         credentials: {
             shareAll: false,
             sharing: false,
-            categories: {},
             ...(terms.read?.credentials ?? {}),
             categories: terms.read?.credentials?.categories ?? {},
         },
