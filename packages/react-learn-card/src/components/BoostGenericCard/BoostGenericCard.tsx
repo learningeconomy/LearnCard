@@ -116,13 +116,17 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         )}
 
                         {/* Verifier & Issuer */}
-                        <div className="mt-1 flex w-full items-center justify-center gap-1 px-6">
-                            {verifierBadge && <span className="shrink-0">{verifierBadge}</span>}
-                            {customIssuerName || (
-                                <span className="min-w-0 truncate text-[12px] text-grayscale-700">
-                                    by <span className="font-bold">{issuerName}</span>
-                                </span>
-                            )}
+                        <div className="mt-1 w-full px-6 text-center">
+                            <span className="line-clamp-2 break-words text-[12px] leading-snug text-grayscale-700">
+                                {verifierBadge && (
+                                    <span className="mr-1 inline-block align-middle">
+                                        {verifierBadge}
+                                    </span>
+                                )}
+                                {customIssuerName || (
+                                    <span className="font-bold">{issuerName}</span>
+                                )}
+                            </span>
                         </div>
 
                         {/* Date */}
