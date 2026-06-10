@@ -42,7 +42,8 @@ export const CustomIssuerName: React.FC<CustomIssuerNameProps> = ({
     if (issuerName && isDid(issuerName)) {
         return (
             <>
-                <span className="font-semibold text-grayscale-900">Digital ID:</span>{' '}
+                <span className="font-semibold text-grayscale-900">Digital ID:</span>
+                <br />
                 <span className="text-grayscale-500 underline">
                     {formatDidDisplayName(issuerName)}
                 </span>

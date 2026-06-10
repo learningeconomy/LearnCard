@@ -3,13 +3,14 @@ import moment from 'moment';
 import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay, {
+    getInfoFromCredential,
+} from '../CredentialBadge/CredentialVerificationDisplay';
 import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
 import { isDid, formatDidDisplayName } from '@learncard/react';
 import {
     getAchievementType,
     getAchievementTypeDisplayText,
-    getIssuanceDate,
     getIssuer,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
@@ -73,11 +74,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         [achievementType, categoryType]
     );
 
-    const issuanceDate = useMemo(() => getIssuanceDate(credential), [credential]);
-    const issuanceDateDisplay = useMemo(
-        () => moment(issuanceDate).format('MMMM DD YYYY'),
-        [issuanceDate]
-    );
+    const issuanceDateDisplay = useMemo(() => {
+        const { createdAt } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
+            uppercaseDate: false,
+        });
+        return moment(createdAt).format('MMMM DD YYYY');
+    }, [credential]);
 
     const { subColor } = categoryMetadata[categoryType];
 
