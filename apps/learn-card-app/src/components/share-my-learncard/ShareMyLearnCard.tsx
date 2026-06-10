@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 
 import { ProfilePicture, useModal } from 'learn-card-base';
 import ShareTarget from './ShareTarget';
@@ -81,7 +82,7 @@ const ShareMyLearnCard: React.FC<ShareMyLearnCardProps> = () => {
             <section className="w-full flex flex-col items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px] basis-full">
                 <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
                     <span className="text-grayscale-900 font-poppins text-xl font-medium leading-[130%]">
-                        Share
+                        {m['share.title']()}
                     </span>
 
                     <div className="flex items-center justify-center">

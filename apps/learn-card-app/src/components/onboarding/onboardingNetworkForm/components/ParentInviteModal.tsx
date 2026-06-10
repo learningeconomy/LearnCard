@@ -43,7 +43,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             }&profileId=${generated?.profileId}`;
             setInviteLink(_inviteLink);
         } catch (e) {
-            presentToast('Failed to generate invite link');
+            presentToast(m['share.generateLinkFailed']());
         } finally {
             setLoading(false);
         }
@@ -56,9 +56,9 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
     const copyInviteLinkToClipboard = async () => {
         try {
             await Clipboard.write({ string: inviteLink });
-            presentToast('Invite link copied to clipboard');
+            presentToast(m['share.inviteLinkCopied']());
         } catch (e) {
-            presentToast('Unable to copy Invite link');
+            presentToast(m['share.inviteLinkCopyFailed']());
         }
     };
 
