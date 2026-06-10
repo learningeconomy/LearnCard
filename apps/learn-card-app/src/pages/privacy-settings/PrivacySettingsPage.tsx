@@ -79,8 +79,8 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent className="ion-padding">
                 <div className="max-w-[600px] mx-auto flex flex-col gap-4 mt-4">
                     {isMinor && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
-                            <p className="text-sm text-amber-800">
+                        <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
+                            <p className="text-sm text-sky-800">
                                 Some features are restricted for users under 18.
                             </p>
                         </div>

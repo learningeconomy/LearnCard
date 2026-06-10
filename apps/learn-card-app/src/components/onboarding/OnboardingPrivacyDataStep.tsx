@@ -52,8 +52,8 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                 )}
 
                 {isMinor && (
-                    <div className="mt-6 mb-5 p-4 bg-amber-50 border border-amber-200 rounded-[20px]">
-                        <p className="text-sm text-amber-800 leading-relaxed">
+                    <div className="mt-6 mb-5 p-4 bg-sky-50 border border-sky-200 rounded-[20px]">
+                        <p className="text-sm text-sky-800 leading-relaxed">
                             Some features are restricted for users under 18.
                         </p>
                     </div>
@@ -70,7 +70,7 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                                     AI tutoring sessions, insights, and personalization
                                 </p>
                                 {isMinor && (
-                                    <p className="text-xs text-amber-700 mt-2 leading-relaxed">
+                                    <p className="text-xs text-sky-700 mt-2 leading-relaxed">
                                         A guardian can turn this on later.
                                     </p>
                                 )}
