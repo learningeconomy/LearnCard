@@ -39,6 +39,7 @@ import type {
     TemplateRecipientsResponse,
     RequestLearnerContextOptions,
     LearnerContextResponse,
+    SyncStatus,
     SendAiSessionCredentialInput,
     SendAiSessionCredentialResponse,
     AppNotificationInput,
@@ -93,6 +94,8 @@ export class PartnerConnect {
     private pendingRequests: Map<string, PendingRequest>;
     private messageListener: ((event: MessageEvent) => void) | null = null;
     private isInitialized = false;
+    private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
+    private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
@@ -288,10 +291,7 @@ export class PartnerConnect {
             // Replace the wildcard labels with a syntactically-valid host so
             // URL() can parse it; we validate the real shape ourselves below.
             patternUrl = new URL(
-                pattern.replace(
-                    PartnerConnect.WILDCARD_REGEX,
-                    PartnerConnect.WILDCARD_PLACEHOLDER
-                )
+                pattern.replace(PartnerConnect.WILDCARD_REGEX, PartnerConnect.WILDCARD_PLACEHOLDER)
             );
             candidateUrl = new URL(candidate);
         } catch {
@@ -769,10 +769,18 @@ export class PartnerConnect {
      * const context = await learnCard.requestLearnerContext({
      *   includeCredentials: true,
      *   includePersonalData: true,
+     *   waitForSync: true,
      *   format: 'prompt',
      *   instructions: 'Focus on technical skills and certifications',
      *   detailLevel: 'expanded'
      * });
+     *
+     * if (context.status === 'syncing') {
+     *   const unsubscribe = learnCard.onSyncComplete(async () => {
+     *     const readyContext = await learnCard.requestLearnerContext({ waitForSync: true });
+     *     unsubscribe();
+     *   });
+     * }
      *
      * // Use in AI system prompt
      * const systemPrompt = `You are a helpful tutor. ${context.prompt}`;
@@ -791,7 +799,47 @@ export class PartnerConnect {
             format: options?.format ?? 'prompt',
             instructions: options?.instructions,
             detailLevel: options?.detailLevel ?? 'compact',
+            waitForSync: options?.waitForSync ?? false,
         });
+    }
+
+    /**
+     * Get the current LearnCard background data sync status.
+     */
+    public getSyncStatus(): Promise<SyncStatus> {
+        return this.sendMessage<SyncStatus>('GET_SYNC_STATUS');
+    }
+
+    /**
+     * Register a callback that fires when LearnCard reports background sync is ready.
+     * Returns an unsubscribe function.
+     */
+    public onSyncComplete(callback: (status: SyncStatus) => void): () => void {
+        this.syncCompleteCallbacks.add(callback);
+
+        if (!this.syncStatusPollId) {
+            this.syncStatusPollId = setInterval(() => {
+                this.getSyncStatus()
+                    .then(status => {
+                        if (status.status !== 'ready') return;
+
+                        this.syncCompleteCallbacks.forEach(cb => cb(status));
+                        if (this.syncStatusPollId) {
+                            clearInterval(this.syncStatusPollId);
+                            this.syncStatusPollId = null;
+                        }
+                    })
+                    .catch(() => undefined);
+            }, 1000);
+        }
+
+        return () => {
+            this.syncCompleteCallbacks.delete(callback);
+            if (this.syncCompleteCallbacks.size === 0 && this.syncStatusPollId) {
+                clearInterval(this.syncStatusPollId);
+                this.syncStatusPollId = null;
+            }
+        };
     }
 
     /**

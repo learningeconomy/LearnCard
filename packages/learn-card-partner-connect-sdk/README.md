@@ -736,6 +736,38 @@ import type {
 } from '@learncard/partner-connect';
 ```
 
+## Learner Context Sync Readiness
+
+Apps that need a complete learner snapshot can ask LearnCard to wait for background data sync:
+
+```typescript
+const context = await learnCard.requestLearnerContext({
+    includeCredentials: true,
+    waitForSync: true,
+    format: 'structured',
+});
+
+if (context.status === 'syncing') {
+    const unsubscribe = learnCard.onSyncComplete(async () => {
+        const readyContext = await learnCard.requestLearnerContext({
+            includeCredentials: true,
+            waitForSync: true,
+            format: 'structured',
+        });
+
+        unsubscribe();
+        console.log(readyContext.raw?.credentials);
+    });
+}
+```
+
+Use `learnCard.getSyncStatus()` to render your own progress UI:
+
+```typescript
+const syncStatus = await learnCard.getSyncStatus();
+console.log(syncStatus.status, syncStatus.progress);
+```
+
 ## License
 
 MIT
