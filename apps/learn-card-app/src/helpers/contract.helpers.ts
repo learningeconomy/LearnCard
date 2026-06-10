@@ -213,10 +213,10 @@ export const getInfoFromContractKey = (key: string) => {
     if (options) {
         return {
             IconComponent: options.IconComponent,
-            iconSrc: options.CategoryImage,
+            iconSrc: isVerifiableDataCategory ? options.CategoryImage : undefined,
             title: walletOptions?.title ?? options.title,
             plural: options.plural ?? `${key}s`,
-            iconClassName: 'text-white',
+            iconClassName: `text-white ${isVerifiableDataCategory ? '' : 'p-[3px]'}`,
             iconCircleClass: isVerifiableDataCategory
                 ? 'bg-transparent'
                 : `bg-${options.color ?? 'cyan-700'}`,
