@@ -26,6 +26,7 @@ import {
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
+    DisplayTypeEnum,
 } from 'learn-card-base';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
@@ -68,6 +69,7 @@ type NonBoostPreviewProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     isClrCredential?: boolean;
+    displayType?: DisplayTypeEnum;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -101,6 +103,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     isClrCredential = false,
+    displayType,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const { initWallet } = useWallet();
@@ -194,8 +197,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const selectedCredential = credential;
 
-    const isCertificate = credential?.display?.displayType === 'certificate';
-    const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const isCertificate =
+        displayType === DisplayTypeEnum.Certificate ||
+        credential?.display?.displayType === 'certificate';
+    const isID =
+        displayType === DisplayTypeEnum.ID ||
+        credential?.display?.displayType === 'id' ||
+        categoryType === 'ID';
     const isIssuerViewSelected =
         enableRenderMethod &&
         Boolean(renderMethod) &&

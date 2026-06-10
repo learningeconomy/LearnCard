@@ -182,8 +182,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
 
     const selectedCredential = credential;
-    const isCertificate = credential?.display?.displayType === 'certificate';
-    const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const isCertificate =
+        displayType === DisplayTypeEnum.Certificate ||
+        credential?.display?.displayType === 'certificate';
+    const isID =
+        displayType === DisplayTypeEnum.ID ||
+        credential?.display?.displayType === 'id' ||
+        categoryType === 'ID';
     const isIssuerViewSelected =
         enableRenderMethod &&
         Boolean(renderMethod) &&

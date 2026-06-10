@@ -228,7 +228,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         >
                             <span className="flex items-center gap-2">
                                 <SlidersHorizontal className="w-4 h-4" />
-                                More detail (criteria, dates)
+                                More detail
                             </span>
                             <ChevronDown
                                 className={`w-4 h-4 transition-transform ${
