@@ -125,6 +125,7 @@ export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
 export * from './hooks/useSharedUrisInTerms';
+export * from './hooks/usePendingContractSync';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -155,6 +156,7 @@ export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
 export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
+export * from './stores/pendingContractSyncStore';
 export * from './stores/boostPreviewStore';
 export {
     messages,
