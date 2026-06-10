@@ -38,6 +38,9 @@ const ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE: Record<string, DisplayTypeEnum> = {
     Award: DisplayTypeEnum.Award,
     Course: DisplayTypeEnum.Course,
     Certificate: DisplayTypeEnum.Certificate,
+    ApprenticeshipCertificate: DisplayTypeEnum.Certificate,
+    JourneymanCertificate: DisplayTypeEnum.Certificate,
+    MasterCertificate: DisplayTypeEnum.Certificate,
 };
 
 export const getDefaultDisplayType = (

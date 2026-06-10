@@ -173,6 +173,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
         // VC metadata
         title,
         achievementType,
+        formattedAchievementType,
         badgeThumbnail,
         address,
 
@@ -268,6 +269,23 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     const isCertificate = displayType === 'certificate';
     const isFamily = category === BoostCategoryOptionsEnum.family;
 
+    // VCDisplayCard2 overloads `formattedDisplayType` as BOTH the visual face
+    // selector and the subtitle text. Pin `display.displayType` so the face
+    // stays stable, freeing `formattedDisplayType` to carry the achievement
+    // label (e.g. "Degree") — matching the boost preview path.
+    const displayCredential = useMemo(() => {
+        if (!credential || credential?.display?.displayType || !displayType) return credential;
+        return {
+            ...credential,
+            display: {
+                ...(credential.display ?? {}),
+                displayType: String(displayType).toLowerCase(),
+            },
+        };
+    }, [credential, displayType]);
+
+    const subtitleDisplayType = achievementType ? formattedAchievementType : displayType;
+
     if (isFamily) {
         return (
             <FamilyBoostPreview
@@ -290,7 +308,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     return (
         <VCDisplayCard2
             categoryType={_category}
-            credential={credential}
+            credential={displayCredential}
             issueeOverride={overrideIssueName || issueeName}
             issuerOverride={issuerName}
             customThumbComponent={
@@ -348,6 +366,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             customBodyContentSlot={customBodyContentSlot}
             onDotsClick={onDotsClick}
             unknownVerifierTitle={unknownVerifierTitle}
+            formattedDisplayType={subtitleDisplayType}
         />
     );
 };

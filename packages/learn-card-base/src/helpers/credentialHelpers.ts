@@ -146,7 +146,6 @@ export const CATEGORY_MAP: Record<
     MovieTicketCredential: 'Achievement',
 
     // extending ( Achievement ) category
-    Degree: 'Achievement',
     Certificate: 'Achievement',
     'ext:CourseCompletion': 'Achievement',
     'ext:Attendance': 'Achievement',
@@ -211,6 +210,7 @@ export const CATEGORY_MAP: Record<
     'ext:Board': 'Work History',
 
     Assignment: 'Learning History',
+    Degree: 'Learning History',
     AssociateDegree: 'Learning History',
     BachelorDegree: 'Learning History',
     CertificateOfCompletion: 'Learning History',
