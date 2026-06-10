@@ -7,37 +7,16 @@ import {
 } from 'learn-card-base';
 
 import {
-    SKILL_PROFILE_GOALS_KEY,
     type SkillProfileGoalsData,
-    SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
     type SkillProfileProfessionalTitleData,
-    SKILL_PROFILE_ROLE_EXPERIENCE_KEY,
     type SkillProfileRoleExperienceData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
+import { type SkillProfileWorkHistoryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep2';
+import { type SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
 import {
-    SKILL_PROFILE_WORK_HISTORY_KEY,
-    type SkillProfileWorkHistoryData,
-} from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep2';
-import {
-    SKILL_PROFILE_SALARY_KEY,
-    type SkillProfileSalaryData,
-} from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
-import {
-    SKILL_PROFILE_JOB_STABILITY_KEY,
     type SkillProfileJobStabilityData,
-    SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
     type SkillProfileWorkLifeBalanceData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep4';
-
-export const VERIFIABLE_DATA_KEY_BY_CATEGORY: Partial<Record<string, string>> = {
-    Goals: SKILL_PROFILE_GOALS_KEY,
-    'Professional Title': SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
-    'Role Experience': SKILL_PROFILE_ROLE_EXPERIENCE_KEY,
-    'Work Experience': SKILL_PROFILE_WORK_HISTORY_KEY,
-    'Pay Rate': SKILL_PROFILE_SALARY_KEY,
-    'Work Life Balance': SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
-    'Job Stability': SKILL_PROFILE_JOB_STABILITY_KEY,
-};
 
 const WORK_LIFE_BALANCE_LABELS: Record<string, string> = {
     terrible: 'Terrible, Unfair',
@@ -250,7 +229,11 @@ export const SelfAssignedSkillsSummary: React.FC = () => {
             const skillRecord = skill as Record<string, unknown>;
 
             return normalizeText(
-                skillRecord.targetName ?? skillRecord.name ?? skillRecord.title ?? skillRecord.id
+                skillRecord.targetName ??
+                    skillRecord.name ??
+                    skillRecord.title ??
+                    skillRecord.statement ??
+                    skillRecord.id
             );
         })
         .filter(Boolean);

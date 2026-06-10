@@ -5,9 +5,9 @@ import { IonRippleEffect } from '@ionic/react';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import { VERIFIABLE_DATA_KEY_BY_CATEGORY } from './ConsentFlowVerifiableDataConstants';
 import {
     SelfAssignedSkillsSummary,
-    VERIFIABLE_DATA_KEY_BY_CATEGORY,
     VerifiableDataSummary,
 } from './ConsentFlowVerifiableDataSummary';
 
