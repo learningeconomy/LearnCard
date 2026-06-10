@@ -80,8 +80,8 @@ export const IDDisplayIcon: React.FC<{ className?: string; version?: string }> =
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <g clip-path="url(#clip0_2803_60683)">
-                <g clip-path="url(#clip1_2803_60683)">
+            <g clipPath="url(#clip0_2803_60683)">
+                <g clipPath="url(#clip1_2803_60683)">
                     <rect x="0.75" y="3.57031" width="25" height="17.8571" rx="5" fill="white" />
                     <path
                         d="M13.2496 19.2843C16.9972 19.2843 20.0353 16.2463 20.0353 12.4986C20.0353 8.75096 16.9972 5.71289 13.2496 5.71289C9.50193 5.71289 6.46387 8.75096 6.46387 12.4986C6.46387 16.2463 9.50193 19.2843 13.2496 19.2843Z"
