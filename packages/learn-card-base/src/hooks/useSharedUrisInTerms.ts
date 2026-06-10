@@ -27,12 +27,6 @@ export const getOrCreateSharedUriForWallet = async (
         //   So sacrificing perfomance for now in order to avoid this bug
         // in cache and already shared
         if (alreadyShared) {
-            console.log('[ConsentSync] reusing shared URI from cache', {
-                contractOwnerDid,
-                credUri,
-                category,
-                sharedUri: record.sharedUris?.[contractOwnerDid].at(-1),
-            });
             return record.sharedUris?.[contractOwnerDid].at(-1)!;
         }
 
@@ -61,13 +55,6 @@ export const getOrCreateSharedUriForWallet = async (
             });
 
             if (!newUri) return false;
-
-            console.log('[ConsentSync] created fresh shared URI', {
-                contractOwnerDid,
-                credUri,
-                category,
-                newUri,
-            });
 
             const newSharedUris = record.sharedUris
                 ? { ...record.sharedUris, [contractOwnerDid]: [newUri] }

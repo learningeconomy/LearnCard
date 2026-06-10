@@ -106,8 +106,6 @@ const main = async (): Promise<void> => {
     const readVerifiableDataSummary = async (
         uri = contractUri
     ): Promise<VerifiableDataSummary[]> => {
-        console.log('[ConsentSync REPL] readVerifiableDataSummary()', { uri });
-
         const data = await readVerifiableData(uri);
 
         return data.map(({ uri: credentialUri, credential }) => ({
