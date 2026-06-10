@@ -43,6 +43,7 @@ type BoostDetailsSideMenuProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
+    issuancesSummaryComponent?: React.ReactNode;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -56,6 +57,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     renderMethodCredential,
+    issuancesSummaryComponent,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
@@ -149,6 +151,15 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                             </span>
                         )}
                     </TruncateTextBox>
+
+                    {issuancesSummaryComponent && (
+                        <div className="p-[15px] bg-white flex flex-col items-start gap-[10px] rounded-[20px] w-full shadow-bottom-2-4">
+                            <h3 className="text-[22px] leading-[130%] tracking-[-0.25px] text-grayscale-900 font-notoSans">
+                                Issuances
+                            </h3>
+                            {issuancesSummaryComponent}
+                        </div>
+                    )}
 
                     {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
                         <BoostDisplayStyleSelector
