@@ -15,6 +15,8 @@ const mockCalculateAge = vi.fn();
 const mockIsFutureDate = vi.fn();
 const mockIsOnboardingOpen = vi.fn();
 const mockInstallIntent = vi.fn((_value?: unknown) => null);
+const mockUpdatePreferences = vi.fn();
+const mockSetAnalyticsEnabled = vi.fn();
 let mockAuthState: { status: 'needs_setup' | 'ready' } = { status: 'needs_setup' };
 let mockCurrentLCNUser: {
     displayName: string;
@@ -53,11 +55,18 @@ vi.mock('learn-card-base', () => ({
         data: mockCurrentLCNUser,
         isLoading: mockCurrentLCNUserLoading,
     }),
+    useUpdatePreferences: () => ({
+        mutateAsync: (...args: unknown[]) => mockUpdatePreferences(...args),
+    }),
 }));
 
 vi.mock('learn-card-base/helpers/dateHelpers', () => ({
     calculateAge: (...args: unknown[]) => mockCalculateAge(...args),
     isFutureDate: (...args: unknown[]) => mockIsFutureDate(...args),
+}));
+
+vi.mock('learn-card-base/constants/gdprAgeLimits', () => ({
+    getMinorAgeThreshold: () => 18,
 }));
 
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
@@ -85,6 +94,9 @@ vi.mock('learn-card-base/stores/redirectStore', () => ({
 
 vi.mock('@analytics', () => ({
     ONBOARDING_STARTED_AT_KEY: 'onboarding-started-at-test-key',
+    useAnalytics: () => ({
+        setEnabled: (...args: unknown[]) => mockSetAnalyticsEnabled(...args),
+    }),
 }));
 
 vi.mock('@learncard/sss-key-manager', () => ({
@@ -115,6 +127,18 @@ vi.mock('./OnboardingAgeGate', () => ({
             </button>
             <button type="button" onClick={() => void onContinue()}>
                 continue
+            </button>
+        </div>
+    ),
+}));
+
+vi.mock('./OnboardingPrivacyDataStep', () => ({
+    __esModule: true,
+    default: ({ onContinue, preferences }: any) => (
+        <div data-testid="privacy-step">
+            <div data-testid="privacy-step-state">{JSON.stringify(preferences)}</div>
+            <button type="button" onClick={() => void onContinue()}>
+                continue privacy
             </button>
         </div>
     ),
@@ -185,6 +209,8 @@ describe('OnboardingContainer school-code bypass', () => {
         mockCalculateAge.mockReturnValue(12);
         mockIsFutureDate.mockReturnValue(false);
         mockSetupNewKey.mockReturnValue(setupNewKeyDeferred.promise);
+        mockUpdatePreferences.mockResolvedValue(true);
+        mockSetAnalyticsEnabled.mockImplementation(() => undefined);
         mockIsOnboardingOpen.mockImplementation(() => undefined);
         mockInstallIntent.mockImplementation(() => null);
     });
@@ -226,7 +252,7 @@ describe('OnboardingContainer school-code bypass', () => {
         });
 
         await waitFor(() => {
-            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
         });
     });
 
@@ -248,7 +274,7 @@ describe('OnboardingContainer school-code bypass', () => {
         expect(screen.queryByTestId('age-gate')).toBeNull();
     });
 
-    it('keeps a freshly keyed user on selectRole when no LCN profile exists yet', async () => {
+    it('routes a freshly keyed user to the privacy step before role selection', async () => {
         mockCalculateAge.mockReturnValue(18);
 
         render(<OnboardingContainer />);
@@ -268,10 +294,77 @@ describe('OnboardingContainer school-code bypass', () => {
         });
 
         await waitFor(() => {
-            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
         });
 
         expect(screen.queryByTestId('age-gate')).toBeNull();
+    });
+
+    it('saves privacy preferences before advancing to role selection', async () => {
+        mockCalculateAge.mockReturnValue(18);
+
+        render(<OnboardingContainer />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'set dob' }));
+        fireEvent.click(screen.getByRole('button', { name: 'set country' }));
+        fireEvent.click(screen.getByRole('button', { name: 'continue' }));
+
+        await waitFor(() => {
+            expect(mockGenerateEd25519PrivateKey).toHaveBeenCalledTimes(1);
+            expect(mockSetupNewKey).toHaveBeenCalledTimes(1);
+        });
+
+        await act(async () => {
+            mockAuthState = { status: 'ready' };
+            setupNewKeyDeferred.resolve(true);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'continue privacy' }));
+
+        await waitFor(() => {
+            expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
+            expect(mockSetAnalyticsEnabled).toHaveBeenCalledWith(true);
+            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+        });
+    });
+
+    it('passes minor-default privacy preferences into the privacy step', async () => {
+        render(<OnboardingContainer />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'set dob' }));
+        fireEvent.click(screen.getByRole('button', { name: 'set country' }));
+        fireEvent.click(screen.getByRole('button', { name: 'continue' }));
+
+        await waitFor(() => {
+            expect(mockNewModal).toHaveBeenCalled();
+        });
+
+        const onBypass = lastModalElement?.props?.onBypass as
+            | ((code: string) => Promise<void>)
+            | undefined;
+        expect(onBypass).toBeDefined();
+
+        await act(async () => {
+            const bypassPromise = onBypass!('SCHOOL-123');
+            setupNewKeyDeferred.resolve(true);
+            await bypassPromise;
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
+            expect(screen.getByTestId('privacy-step-state')).toHaveTextContent('"aiEnabled":false');
+            expect(screen.getByTestId('privacy-step-state')).toHaveTextContent(
+                '"analyticsEnabled":false'
+            );
+            expect(screen.getByTestId('privacy-step-state')).toHaveTextContent(
+                '"bugReportsEnabled":false'
+            );
+            expect(screen.getByTestId('privacy-step-state')).toHaveTextContent('"isMinor":true');
+        });
     });
 
     it('does not bounce a freshly keyed user back to age gate when the profile is sparse', async () => {
@@ -298,7 +391,7 @@ describe('OnboardingContainer school-code bypass', () => {
         });
 
         await waitFor(() => {
-            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
         });
 
         expect(screen.queryByTestId('age-gate')).toBeNull();

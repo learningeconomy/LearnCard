@@ -52,8 +52,9 @@ import countries from '../../../constants/countries.json';
 import EUParentalConsentModalContent from './components/EUParentalConsentModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
-import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import GuardianLinkedModal from '../GuardianLinkedModal';
+import { getDefaultPrivacyPreferences } from '../privacyPreferences';
+import type { OnboardingPrivacyPreferences } from '../privacyPreferences';
 import { StateValidator, ProfileIDStateValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -90,6 +91,8 @@ type OnboardingNetworkFormProps = {
         euParentalConsentRequested: boolean;
         guardianEmail?: string;
         profileId: string | null | undefined;
+        privacyPreferences?: OnboardingPrivacyPreferences;
+        privacyPreferencesSaved?: boolean;
     };
     updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
 };
@@ -140,6 +143,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         euParentalConsentRequested,
         guardianEmail,
         profileId,
+        privacyPreferences,
+        privacyPreferencesSaved,
     } = formData;
 
     const handleNameChange = (value: string) => {
@@ -353,28 +358,30 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             console.error('Failed to send guardian approval email:', err);
                         }
                     }
-                    // Initialize privacy preferences based on age at signup
-                    const age = dob ? calculateAge(dob) : null;
-                    const limit = getMinorAgeThreshold(country);
-                    const isMinorUser = age !== null && !isNaN(age) && age < limit;
+                    const selectedPrivacyPreferences =
+                        privacyPreferences ?? getDefaultPrivacyPreferences(dob, country);
+                    const aiEnabled = selectedPrivacyPreferences.isMinor
+                        ? false
+                        : selectedPrivacyPreferences.aiEnabled;
+                    let preferencesInitialized = Boolean(privacyPreferencesSaved);
 
-                    const aiEnabled = !isMinorUser;
-                    let preferencesInitialized = false;
-
-                    await updatePreferences({
-                        aiEnabled,
-                        aiAutoDisabled: isMinorUser,
-                        analyticsEnabled: aiEnabled,
-                        analyticsAutoDisabled: isMinorUser,
-                        bugReportsEnabled: aiEnabled,
-                        isMinor: isMinorUser,
-                    })
-                        .then(() => {
-                            preferencesInitialized = true;
+                    if (!preferencesInitialized) {
+                        await updatePreferences({
+                            ...selectedPrivacyPreferences,
+                            aiEnabled,
+                            aiAutoDisabled: selectedPrivacyPreferences.isMinor,
+                            analyticsAutoDisabled: false,
                         })
-                        .catch(err => {
-                            log.error('Failed to initialize preferences (non-blocking):', err);
-                        });
+                            .then(() => {
+                                preferencesInitialized = true;
+                            })
+                            .catch(err => {
+                                log.error(
+                                    'Failed to initialize onboarding privacy preferences (non-blocking):',
+                                    err
+                                );
+                            });
+                    }
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                         role: role ?? undefined,
