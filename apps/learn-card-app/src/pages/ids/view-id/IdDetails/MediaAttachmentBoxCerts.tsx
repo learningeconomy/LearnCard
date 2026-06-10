@@ -6,7 +6,7 @@ import { CertificateDisplayIcon } from 'learn-card-base';
 import Graduation from 'learn-card-base/svgs/Graduation';
 import { StudiesIcon } from 'learn-card-base/svgs/wallet/StudiesIcon';
 import DocumentIcon from 'learn-card-base/svgs/DocumentIcon';
-import LinkIcon from 'apps/learn-card-app/src/components/svgs/LinkIcon';
+import LinkIcon from '../../../../components/svgs/LinkIcon';
 import { Image as ImageIcon } from 'lucide-react';
 import { Lightbox, LightboxItem } from '@learncard/react';
 
@@ -24,6 +24,7 @@ import {
     ResolvedDocumentResource,
     resolvePdfDocumentResource,
 } from './helpers/pdfDocumentResource.helpers';
+import { openAttachmentUrl } from '../../../../components/clr-transcript/clr.helpers';
 
 type Attachment = {
     title: string;
@@ -80,6 +81,17 @@ const normalizeAttachmentType = (value: string | undefined): Attachment['type'] 
         return normalized;
     }
     return undefined;
+};
+
+const getAttachmentDownloadName = (
+    documentResource: ResolvedDocumentResource | undefined,
+    title: string | undefined,
+    metadata: MediaMetadata | undefined
+): string => {
+    if (documentResource?.downloadName) return documentResource.downloadName;
+
+    const safeTitle = (title || 'attachment').replace(/[^\w.\-]/g, '_');
+    return `${safeTitle}${metadata?.fileExtension ? `.${metadata.fileExtension}` : ''}`;
 };
 
 type MediaAttachmentsBoxProps = {
@@ -403,17 +415,26 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                 }
 
                 if (canOpen) {
+                    const downloadName = getAttachmentDownloadName(
+                        documentResource,
+                        title,
+                        metadata
+                    );
+
                     return wrapWithSourceHeader(
-                        <a
+                        <button
                             key={`${attachment.url}-${index}`}
-                            href={previewUrl}
-                            target="_blank"
-                            rel="noreferrer"
+                            type="button"
                             className={className}
-                            onClick={e => e.stopPropagation()}
+                            onClick={async e => {
+                                e.stopPropagation();
+                                // Pass the original source (data URI or remote URL), not the
+                                // blob previewUrl — blob URLs can't open in the native browser.
+                                await openAttachmentUrl(attachment.url, downloadName);
+                            }}
                         >
                             {content}
-                        </a>
+                        </button>
                     );
                 }
 

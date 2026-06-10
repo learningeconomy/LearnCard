@@ -14,6 +14,12 @@ export type SkillEmbeddingTarget = {
     code?: string | null;
 };
 
+export type UpdateSkillEmbeddingFn = (
+    skillId: string,
+    embedding: number[],
+    frameworkId?: string
+) => Promise<boolean>;
+
 const googleApiKey = process.env.SKILL_EMBEDDING_GOOGLE_API_KEY;
 const googleModel = process.env.SKILL_EMBEDDING_GOOGLE_MODEL ?? 'gemini-embedding-001';
 const googleClient = googleApiKey ? new GoogleGenAI({ apiKey: googleApiKey }) : null;
@@ -119,15 +125,21 @@ export const generateEmbeddingForText = async (text: string): Promise<number[]> 
     return embedding;
 };
 
-export const upsertSkillEmbedding = async (skill: SkillEmbeddingTarget): Promise<void> => {
+export const upsertSkillEmbedding = async (
+    skill: SkillEmbeddingTarget,
+    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = updateSkillEmbedding
+): Promise<void> => {
     const text = buildSkillEmbeddingText(skill);
     if (!text) return;
 
     const embedding = await generateEmbeddingForText(text);
-    await updateSkillEmbedding(skill.id, embedding, skill.frameworkId);
+    await updateSkillEmbeddingFn(skill.id, embedding, skill.frameworkId);
 };
 
-export const upsertSkillEmbeddings = async (skills: SkillEmbeddingTarget[]): Promise<void> => {
+export const upsertSkillEmbeddings = async (
+    skills: SkillEmbeddingTarget[],
+    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = updateSkillEmbedding
+): Promise<void> => {
     const candidates = skills
         .map(skill => ({ skill, text: buildSkillEmbeddingText(skill) }))
         .filter(item => Boolean(item.text));
@@ -145,7 +157,7 @@ export const upsertSkillEmbeddings = async (skills: SkillEmbeddingTarget[]): Pro
             const embedding = embeddings[j];
             if (!item || !embedding) continue;
 
-            await updateSkillEmbedding(item.skill.id, embedding, item.skill.frameworkId);
+            await updateSkillEmbeddingFn(item.skill.id, embedding, item.skill.frameworkId);
         }
     }
 };

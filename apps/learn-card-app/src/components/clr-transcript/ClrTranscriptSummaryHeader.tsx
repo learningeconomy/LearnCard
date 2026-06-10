@@ -100,7 +100,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
                     )}
                 </div>
 
-                <div className="absolute right-0 top-0 md:static md:ml-auto">
+                <div className="absolute right-[-10px] top-[-15px] md:static md:ml-auto">
                     <ShareBoostLink
                         boost={boost}
                         boostUri={boostUri ?? model.header.id.value}

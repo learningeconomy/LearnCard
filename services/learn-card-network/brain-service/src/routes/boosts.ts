@@ -241,6 +241,54 @@ const buildInboxConfig = (
     return config;
 };
 
+/**
+ * Resolve the credential instance to act on for a boost-recipient lifecycle action
+ * (revoke / suspend / unsuspend).
+ *
+ * If `credentialUri` is provided, resolves that specific instance and verifies it is an
+ * INSTANCE_OF the boost (throws NOT_FOUND otherwise). When omitted, falls back to the
+ * most-recent (non-revoked) instance for the boost + recipient, which may be null.
+ */
+const resolveBoostCredentialInstance = async ({
+    boostId,
+    recipientProfileId,
+    credentialUri,
+}: {
+    boostId: string;
+    recipientProfileId: string;
+    credentialUri?: string;
+}) => {
+    const {
+        getCredentialByUri,
+        getCredentialInstanceForBoostAndProfile,
+        isCredentialInstanceOfBoost,
+    } = await import('@accesslayer/credential/read');
+
+    if (credentialUri) {
+        const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+
+        if (!resolvedCredential) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No credential found for the provided credentialUri',
+            });
+        }
+
+        const isInstance = await isCredentialInstanceOfBoost(resolvedCredential.id, boostId);
+
+        if (!isInstance) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Credential is not an instance of the specified boost',
+            });
+        }
+
+        return resolvedCredential;
+    }
+
+    return getCredentialInstanceForBoostAndProfile(boostId, recipientProfileId);
+};
+
 export const boostsRouter = t.router({
     getBoostAlignments: profileRoute
         .meta({
@@ -1871,12 +1919,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -1912,14 +1961,12 @@ export const boostsRouter = t.router({
                 });
             }
 
-            // Get the credential instance for this boost + recipient
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -1968,12 +2015,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -2005,13 +2053,12 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -2054,12 +2101,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -2083,13 +2131,12 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({

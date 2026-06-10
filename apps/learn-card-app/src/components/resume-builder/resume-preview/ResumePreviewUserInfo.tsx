@@ -27,14 +27,11 @@ const CONTACT_CHIP_KEYS: (keyof PersonalDetails)[] = [
 ];
 
 const ResumePreviewUserInfo: React.FC<{
+    isMobile?: boolean;
     readOnly?: boolean;
     qrCodeValue?: string;
     profileDid?: string;
-}> = ({
-    readOnly = false,
-    qrCodeValue,
-    profileDid,
-}) => {
+}> = ({ isMobile = false, readOnly = false, qrCodeValue, profileDid }) => {
     const isLoggedIn = useIsLoggedIn();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
     const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
@@ -100,9 +97,9 @@ const ResumePreviewUserInfo: React.FC<{
             : undefined;
 
     return (
-        <div className="border-b border-solid border-2 border-grayscale-100 bg-grayscale-50 p-4 mb-6 rounded-[20px]">
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 min-w-0">
+        <div className="relative mb-6 overflow-x-hidden rounded-[20px] border-2 border-solid border-grayscale-100 bg-grayscale-50 p-4">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+                <div className="flex w-full min-w-0 flex-col items-start gap-3 sm:flex-row">
                     {showThumbnail && (
                         <div className="relative shrink-0">
                             {isLoggedIn ? (
@@ -120,11 +117,11 @@ const ResumePreviewUserInfo: React.FC<{
                         </div>
                     )}
 
-                    <div className="min-w-0">
+                    <div className="w-full min-w-0 max-w-full sm:flex-1">
                         {isFieldEnabled(UserInfoEnum.Name) &&
                             (readOnly ? (
                                 personalDetails.name.trim() ? (
-                                    <h1 className="w-full text-3xl font-bold text-grayscale-900 tracking-tight">
+                                    <h1 className="w-full max-w-full break-words whitespace-normal text-3xl font-bold text-grayscale-900 tracking-tight">
                                         {personalDetails.name}
                                     </h1>
                                 ) : null
@@ -136,12 +133,15 @@ const ResumePreviewUserInfo: React.FC<{
                                     }
                                     placeholder={placeholderByKey[UserInfoEnum.Name]}
                                     aria-label={placeholderByKey[UserInfoEnum.Name]}
-                                    className="w-full bg-transparent border-none outline-none text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
+                                    className="w-full max-w-full bg-transparent border-none outline-none text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
                                 />
                             ))}
 
                         {showPrimaryChips && (
-                            <div data-pdf-screen-only className="flex flex-wrap gap-2 mt-2">
+                            <div
+                                data-pdf-screen-only
+                                className="mt-2 flex w-full max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap"
+                            >
                                 {(readOnly
                                     ? PRIMARY_CHIP_KEYS.filter(isFieldVisible)
                                     : PRIMARY_CHIP_KEYS.filter(isFieldEnabled)
@@ -170,7 +170,13 @@ const ResumePreviewUserInfo: React.FC<{
                 </div>
 
                 {documentSetup?.showQRCode && (
-                    <div className="relative shrink-0 rounded-lg border border-grayscale-200 bg-white p-2">
+                    <div
+                        className={`shrink-0 rounded-lg border border-grayscale-200 bg-white p-2 ${
+                            isMobile
+                                ? 'absolute right-4 top-4 z-10'
+                                : 'relative sm:static sm:z-auto'
+                        }`}
+                    >
                         <div className="absolute top-[-7px] right-[-7px]">
                             <TrustedIcon className="w-4 h-4" />
                         </div>
@@ -181,11 +187,14 @@ const ResumePreviewUserInfo: React.FC<{
             </div>
 
             {showSummary && (
-                <div data-pdf-screen-only className="mt-4 flex items-start gap-3">
-                    <div className="flex-1 rounded-xl bg-indigo-50 px-3 py-3 min-h-[96px] flex flex-col justify-between">
+                <div
+                    data-pdf-screen-only
+                    className="mt-4 flex w-full flex-col items-start gap-3 sm:flex-row"
+                >
+                    <div className="w-full max-w-full rounded-xl bg-indigo-50 px-3 py-3 min-h-[96px] flex flex-col justify-between sm:flex-1">
                         {readOnly ? (
                             personalDetails.summary.trim() ? (
-                                <p className="w-full text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
+                                <p className="w-full max-w-full break-words text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
                                     {personalDetails.summary}
                                 </p>
                             ) : null
@@ -198,14 +207,14 @@ const ResumePreviewUserInfo: React.FC<{
                                 placeholder={placeholderByKey[UserInfoEnum.Summary]}
                                 aria-label={placeholderByKey[UserInfoEnum.Summary]}
                                 rows={4}
-                                className="w-full resize-none bg-transparent border-none outline-none text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
+                                className="w-full max-w-full resize-none bg-transparent border-none outline-none text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
                             />
                         )}
                     </div>
                     {!readOnly && (
                         <div
                             data-pdf-hide
-                            className="shrink-0 flex flex-col items-center gap-2 pt-0.5"
+                            className="shrink-0 flex flex-col items-center gap-2 pt-0.5 self-end sm:self-auto"
                         >
                             <ResumeBuilderToggle
                                 checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
@@ -231,7 +240,7 @@ const ResumePreviewUserInfo: React.FC<{
             {showContactChips && (
                 <div
                     data-pdf-screen-only
-                    className="mt-4 pt-4 border-t border-grayscale-200 flex flex-wrap gap-2"
+                    className="mt-4 flex w-full max-w-full flex-col gap-2 border-t border-grayscale-200 pt-4 sm:flex-row sm:flex-wrap"
                 >
                     {(readOnly
                         ? CONTACT_CHIP_KEYS.filter(isFieldVisible)

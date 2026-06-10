@@ -99,9 +99,13 @@ export const getActivitiesForProfile = async (
                 CASE WHEN e.activity.timestamp > latest.activity.timestamp THEN e ELSE latest END) as latestEvent
             ${postGroupFilter}
             WITH latestEvent.activity as a, latestEvent.boost as b, latestEvent.recipient as r
+            OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { activityId: a.activityId }]->(cred:Credential)
+                WHERE sender:Profile OR sender:AppStoreListing
+            OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
+            WITH a, b, r, coalesce(sent.status, received.status) AS credStatus
             ORDER BY a.timestamp DESC
             LIMIT $limit
-            RETURN a, b, r
+            RETURN a, b, r, credStatus
         `;
     } else {
         // Recent Activity mode: Show all individual events
@@ -137,9 +141,13 @@ export const getActivitiesForProfile = async (
             ${boostMatch}
             OPTIONAL MATCH (a)-[:TO_RECIPIENT]->(r:Profile)
             WITH a, b, r
+            OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { activityId: a.activityId }]->(cred:Credential)
+                WHERE sender:Profile OR sender:AppStoreListing
+            OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
+            WITH a, b, r, coalesce(sent.status, received.status) AS credStatus
             ORDER BY a.timestamp DESC
             LIMIT $limit
-            RETURN a, b, r
+            RETURN a, b, r, credStatus
         `;
     }
 
@@ -159,6 +167,7 @@ export const getActivitiesForProfile = async (
         const activity = record.get('a').properties;
         const boost = record.get('b')?.properties;
         const recipient = record.get('r')?.properties;
+        const credStatus = record.get('credStatus') ?? undefined;
 
         let parsedMetadata: Record<string, unknown> | undefined;
 
@@ -186,6 +195,7 @@ export const getActivitiesForProfile = async (
                       displayName: recipient.displayName,
                   }
                 : undefined,
+            status: credStatus ?? undefined,
         };
     });
 };
