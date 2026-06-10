@@ -15,7 +15,10 @@ import {
 } from 'learn-card-base';
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { SetState } from 'packages/shared-types/dist';
-import { isVerifiableDataContractCategory } from '../../helpers/contract.helpers';
+import {
+    CONTRACT_CATEGORIES,
+    isVerifiableDataContractCategory,
+} from '../../helpers/contract.helpers';
 
 type ContractCategoryMultiSelectProps = {
     values: Record<CredentialCategoryEnum, { required?: boolean; defaultEnabled?: boolean }>;
@@ -78,7 +81,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 selectedCategories={values}
                 setContract={setContract}
                 mode={mode}
-                allowedCategories={visibleCategories as CredentialCategoryEnum[]}
+                allowedCategories={CONTRACT_CATEGORIES as CredentialCategoryEnum[]}
                 titleOverrides={categoryTitleOverrides}
             />,
             {
