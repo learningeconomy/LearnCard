@@ -49,7 +49,7 @@ export const openAttachmentUrl = async (
     try {
         if (isInlineDataUri(url)) {
             if (Capacitor.isNativePlatform()) {
-                const base64 = url.split(',')[1];
+                const base64 = url.split(',')[1] ?? '';
 
                 await Filesystem.writeFile({
                     path: fileName,
