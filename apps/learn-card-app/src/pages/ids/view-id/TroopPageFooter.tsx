@@ -8,6 +8,7 @@ import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import X from 'learn-card-base/svgs/X';
 import { getScoutsRole } from '../../helpers/troop.helpers';
+import { m } from '../../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 
 type TroopPageFooterProps = {
@@ -54,7 +55,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({ credential, uri, hand
                                 {role === ScoutsRoleEnum.leader && 'Edit Troop'}
                                 {(role === ScoutsRoleEnum.national ||
                                     role === ScoutsRoleEnum.global) &&
-                                    'Edit Network'}
+                                    m['membership.editNetwork']()}
                             </button>
                         )}
                         <button className="bg-white rounded-full text-grayscale-80 py-[10px] px-[12px] shadow-button-bottom">
