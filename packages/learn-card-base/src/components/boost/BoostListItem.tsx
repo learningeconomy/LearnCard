@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import moment from 'moment';
 import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
@@ -75,10 +74,10 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     );
 
     const issuanceDateDisplay = useMemo(() => {
-        const { createdAt } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
+        const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
             uppercaseDate: false,
         });
-        return moment(createdAt).format('MMMM DD YYYY');
+        return createdAt;
     }, [credential]);
 
     const { subColor } = categoryMetadata[categoryType];
