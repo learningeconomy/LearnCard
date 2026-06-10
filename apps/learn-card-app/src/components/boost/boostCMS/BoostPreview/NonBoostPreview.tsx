@@ -286,8 +286,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                     >
                         <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
+                            className={`w-full overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                                Capacitor.isNativePlatform() && !isClrCredential
+                                    ? 'pt-0 safe-area-top-margin'
+                                    : 'pt-[30px]'
                             } ${isMobile && isClrCredential ? '!p-0' : 'px-6'}`}
                         >
                             {credentialContent}
@@ -297,10 +299,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
                     <BoostFooter
                         handleClose={handleCloseModal}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
+                        handleDetails={
+                            isMobile && !isClrCredential ? () => openDetailsSideModal() : undefined
+                        }
                         handleShare={handleShareBoost}
                         handleDotMenu={onDotsClick}
-                        useFullCloseButton={!isMobile}
+                        useFullCloseButton={!isMobile || isClrCredential}
                     />
                 </footer>
                 {!isMobile && !isClrCredential && (
