@@ -4,6 +4,7 @@ import { useConfirmation, useModal, ModalTypes } from 'learn-card-base';
 
 import { IonInput } from '@ionic/react';
 import AddUser from '../../svgs/AddUser';
+import { m } from '../../../paraglide/messages.js';
 import FamilyCMSInviteModal from '../FamilyCMSInviteModal/FamilyCMSInviteModal';
 import FamilyCMSMemberListItem from './FamilyCMSMemberListItem';
 
@@ -173,7 +174,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                     <button
                         onClick={() => showFamilyInviteModal()}
                         className="bg-pink-600 flex items-center justify-center p-[6px] rounded-full w-[35px] h-[35px] min-w-[35px] min-h-[35px]"
-                        aria-label="Add Family Member"
+                        aria-label={m['family.addFamilyMember']()}
                     >
                         <AddUser className="text-white w-[25px] h-auto" />
                     </button>
