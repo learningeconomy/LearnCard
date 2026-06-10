@@ -196,14 +196,10 @@ describe('Per-instance revoke/suspend/unsuspend (LC-1862)', () => {
             const active = delivered.filter((r: any) => isActiveStatus(r.status));
 
             // Exactly one instance revoked, the sibling stays active — the regression this PR fixes.
+            // (DELIVERED activity rows are logged before the credential URI exists, so they carry no
+            // credentialUri; the next test pins exact-instance targeting via the bitstring status list.)
             expect(revoked.length).toBe(1);
             expect(active.length).toBe(1);
-
-            // If the activity record carries the credentialUri, prove it's the RIGHT one.
-            const revokedWithUri = revoked.find((r: any) => r.credentialUri);
-            if (revokedWithUri?.credentialUri) {
-                expect(revokedWithUri.credentialUri).toBe(firstUri);
-            }
         });
 
         it('flips only the targeted instance bit on the bitstring status list', async () => {
@@ -382,6 +378,28 @@ describe('Per-instance revoke/suspend/unsuspend (LC-1862)', () => {
             // Fallback revokes a single (most-recent) instance, leaving the other active.
             expect(revoked.length).toBe(1);
             expect(active.length).toBe(1);
+        });
+
+        it('targets the most-recently-issued instance when credentialUri is omitted', async () => {
+            const statusBoostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: statusBoostTemplate,
+            });
+
+            const first = await issueStatusInstanceToUserB(statusBoostUri);
+            const second = await issueStatusInstanceToUserB(statusBoostUri);
+
+            const firstEntry = getEntryForPurpose(first.credential, 'revocation');
+            const secondEntry = getEntryForPurpose(second.credential, 'revocation');
+            expect(firstEntry.statusListIndex).not.toEqual(secondEntry.statusListIndex);
+
+            await userA.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri: statusBoostUri,
+                recipientProfileId: 'userb',
+            });
+
+            // Fallback resolves the latest instance (ORDER BY received/sent date DESC LIMIT 1).
+            expect(await isStatusBitSet(secondEntry)).toBe(true);
+            expect(await isStatusBitSet(firstEntry)).toBe(false);
         });
 
         it('returns NOT_FOUND when the recipient has no instance of the boost', async () => {
