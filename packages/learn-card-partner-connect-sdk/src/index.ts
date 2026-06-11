@@ -59,6 +59,9 @@ import type {
 export { PartnerConnectError } from './types';
 export type * from './types';
 
+/** Maximum time to poll for sync completion before giving up (10 minutes) */
+const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
+
 /**
  * LearnCard Partner Connect SDK class
  */
@@ -811,23 +814,48 @@ export class PartnerConnect {
     }
 
     /**
-     * Register a callback that fires when LearnCard reports background sync is ready.
+     * Register a callback that fires when LearnCard reports background sync has reached a
+     * terminal state ('ready' or 'error'). Check `status.status` to distinguish the two.
+     * Polling stops once a terminal state is reached, all callbacks unsubscribe, or the
+     * poll exceeds its maximum duration (reported to callbacks as an 'error' status).
      * Returns an unsubscribe function.
      */
     public onSyncComplete(callback: (status: SyncStatus) => void): () => void {
         this.syncCompleteCallbacks.add(callback);
 
         if (!this.syncStatusPollId) {
+            const pollStartedAt = Date.now();
+
+            const stopPolling = () => {
+                if (this.syncStatusPollId) {
+                    clearInterval(this.syncStatusPollId);
+                    this.syncStatusPollId = null;
+                }
+            };
+
             this.syncStatusPollId = setInterval(() => {
+                if (Date.now() - pollStartedAt > SYNC_STATUS_POLL_MAX_DURATION_MS) {
+                    stopPolling();
+                    const timeoutStatus: SyncStatus = {
+                        status: 'error',
+                        progress: {
+                            totalCredentials: 0,
+                            completedCredentials: 0,
+                            failedCredentials: 0,
+                            retryCount: 0,
+                        },
+                        lastError: 'Timed out waiting for sync to complete',
+                    };
+                    this.syncCompleteCallbacks.forEach(cb => cb(timeoutStatus));
+                    return;
+                }
+
                 this.getSyncStatus()
                     .then(status => {
-                        if (status.status !== 'ready') return;
+                        if (status.status !== 'ready' && status.status !== 'error') return;
 
+                        stopPolling();
                         this.syncCompleteCallbacks.forEach(cb => cb(status));
-                        if (this.syncStatusPollId) {
-                            clearInterval(this.syncStatusPollId);
-                            this.syncStatusPollId = null;
-                        }
                     })
                     .catch(() => undefined);
             }, 1000);
@@ -951,6 +979,13 @@ export class PartnerConnect {
         }
 
         this.pendingRequests.clear();
+
+        if (this.syncStatusPollId) {
+            clearInterval(this.syncStatusPollId);
+            this.syncStatusPollId = null;
+        }
+        this.syncCompleteCallbacks.clear();
+
         this.isInitialized = false;
     }
 }
