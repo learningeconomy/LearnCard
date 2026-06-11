@@ -1,5 +1,6 @@
 ---
 'learn-card-app': patch
+'learn-card-base': patch
 ---
 
-Fix skill frameworks for local frontend with prod backend
+Drive seeded skill frameworks via a `features.useSeededSkillFrameworks` tenant config flag instead of a hardcoded production brain-service host allowlist
