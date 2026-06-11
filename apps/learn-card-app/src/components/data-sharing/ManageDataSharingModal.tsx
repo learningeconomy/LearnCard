@@ -127,8 +127,8 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     const handleOpenDetails = () => {
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
-            { sectionClassName: '!bg-transparent !shadow-none' },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+            { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
 

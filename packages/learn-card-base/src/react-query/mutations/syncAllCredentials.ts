@@ -26,7 +26,6 @@ export const useSyncAllCredentialsToContractsMutation = () => {
 
             try {
                 const wallet = await initWallet();
-
                 // 1) Page defensively through ALL credentials in LearnCloud index
                 const recordsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
 
@@ -48,7 +47,12 @@ export const useSyncAllCredentialsToContractsMutation = () => {
                         pageRecords.map(async record => {
                             try {
                                 const vc = (await wallet.read.get(record.uri)) as VC | undefined;
-                                const category: CredentialCategory = vc
+                                const isVerifiableDataCredential = Array.isArray(vc?.type)
+                                    ? vc.type.includes('VerifiableData')
+                                    : false;
+                                const category: CredentialCategory = isVerifiableDataCredential
+                                    ? (record.category as CredentialCategory) || 'Achievement'
+                                    : vc
                                     ? await getCategoryForCredential(vc, wallet)
                                     : (record.category as CredentialCategory) || 'Achievement';
 
