@@ -4,8 +4,10 @@ import { type OccupationDetailsResponse, useVerifiableData } from 'learn-card-ba
 
 import AiPathwayCareerGauge from '../ai-pathways/ai-pathway-careers/AiPathwayCareerGauge';
 import {
-    SKILL_PROFILE_JOB_SATISFACTION_KEY,
-    type SkillProfileJobSatisfactionData,
+    SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
+    type SkillProfileWorkLifeBalanceData,
+    SKILL_PROFILE_JOB_STABILITY_KEY,
+    type SkillProfileJobStabilityData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep4';
 
 type AiInsightsQualitativeFactorsBoxProps = {
@@ -119,7 +121,7 @@ const getJobStabilityBenchmark = (occupation?: OccupationDetailsResponse): numbe
 };
 
 const getWorkLifeBalanceUserScore = (
-    value?: SkillProfileJobSatisfactionData['workLifeBalance']
+    value?: SkillProfileWorkLifeBalanceData['workLifeBalance']
 ): number | undefined => {
     if (!value) {
         return undefined;
@@ -129,7 +131,7 @@ const getWorkLifeBalanceUserScore = (
 };
 
 const getJobStabilityUserScore = (
-    value?: SkillProfileJobSatisfactionData['jobStability']
+    value?: SkillProfileJobStabilityData['jobStability']
 ): number | undefined => {
     if (!value) {
         return undefined;
@@ -270,10 +272,15 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
     occupation,
     isLoading = false,
 }) => {
-    const { data: jobSatisfactionData, isLoading: jobSatisfactionLoading } =
-        useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY, {
-            name: 'Job Satisfaction',
-            description: 'Work-life balance and job stability preferences',
+    const { data: workLifeBalanceData, isLoading: workLifeBalanceLoading } =
+        useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY, {
+            name: 'Work Life Balance',
+            description: 'Your preferred work-life balance',
+        });
+    const { data: jobStabilityData, isLoading: jobStabilityLoading } =
+        useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY, {
+            name: 'Job Stability',
+            description: 'How stable you want your work to feel',
         });
 
     const workLifeBalanceBenchmarkScore = useMemo(
@@ -285,15 +292,15 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
         [occupation]
     );
     const workLifeBalanceUserScore = useMemo(
-        () => getWorkLifeBalanceUserScore(jobSatisfactionData?.workLifeBalance),
-        [jobSatisfactionData?.workLifeBalance]
+        () => getWorkLifeBalanceUserScore(workLifeBalanceData?.workLifeBalance),
+        [workLifeBalanceData?.workLifeBalance]
     );
     const jobStabilityUserScore = useMemo(
-        () => getJobStabilityUserScore(jobSatisfactionData?.jobStability),
-        [jobSatisfactionData?.jobStability]
+        () => getJobStabilityUserScore(jobStabilityData?.jobStability),
+        [jobStabilityData?.jobStability]
     );
 
-    const isBusy = isLoading || jobSatisfactionLoading;
+    const isBusy = isLoading || workLifeBalanceLoading || jobStabilityLoading;
 
     const workLifeBalanceCopy = useMemo(() => {
         return getWorkLifeBalanceCopy(workLifeBalanceUserScore, workLifeBalanceBenchmarkScore);

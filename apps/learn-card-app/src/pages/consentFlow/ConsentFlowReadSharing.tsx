@@ -27,6 +27,8 @@ type ConsentFlowReadSharingProps = {
     contractOwnerDid: string;
     showCategories?: boolean;
     showPersonal?: boolean;
+    categoryFilter?: (category: string) => boolean;
+    extraPersonalItems?: React.ReactNode[];
 
     contractDetails: ConsentFlowContractDetails;
     app?: LaunchPadAppListItem;
@@ -39,6 +41,8 @@ const ConsentFlowReadSharing: React.FC<ConsentFlowReadSharingProps> = ({
     contractOwnerDid,
     showCategories = true,
     showPersonal = true,
+    categoryFilter,
+    extraPersonalItems = [],
     contractDetails,
     app,
 }) => {
@@ -55,6 +59,7 @@ const ConsentFlowReadSharing: React.FC<ConsentFlowReadSharingProps> = ({
     });
 
     const orderedCategories = Object.entries(contract.credentials.categories)
+        .filter(([category]) => (categoryFilter ? categoryFilter(category) : true))
         .map(([category, { required }]) => {
             const info = getInfoFromContractKey(category);
             return { category, required, order: sidemenuOrder[info.title] ?? -1 };
@@ -135,10 +140,12 @@ const ConsentFlowReadSharing: React.FC<ConsentFlowReadSharingProps> = ({
         );
     });
 
+    const combinedPersonalItems = showPersonal ? [...personalItems, ...extraPersonalItems] : [];
+
     return (
         <ul className="bg-white rounded-[8px] w-full flex flex-col overflow-hidden">
             {showCategories && credentialCategories}
-            {showPersonal && personalItems}
+            {combinedPersonalItems}
         </ul>
     );
 };
