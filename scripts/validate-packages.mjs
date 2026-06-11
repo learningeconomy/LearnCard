@@ -168,9 +168,9 @@ const ATTW_IGNORE_RULES = [
 // A package can pass one surface and fail the other. Keep both lists scoped to
 // the failures their own tool actually reports; don't try to unify them.
 const ADVISORY_ONLY = new Set([
-    '@learncard/cli',                // CLI binary, no published types module
-    '@learncard/init',               // FalseESM (bundler + node16-ESM green)
-    '@learncard/didkit-plugin-node', // Native N-API package, separate build
+    '@learncard/cli', // CLI binary, invoked via `bin` — has no library API, so
+    // ships no published types module. attw's UntypedResolution is expected
+    // and harmless here; nobody imports `@learncard/cli` as a module.
 ]);
 
 // No --strict: tolerate "suggestions" (engines.node, repository.url shape).
