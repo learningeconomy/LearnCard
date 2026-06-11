@@ -1,11 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalyticsEvents, useAnalytics } from '@analytics';
-import {
-    clearPendingContractSyncJob,
-    usePendingContractSyncJobs,
-    type PendingContractSyncJob,
-} from 'learn-card-base';
+import { usePendingContractSyncJobs, type PendingContractSyncJob } from 'learn-card-base';
 
 import ContractSyncStatusBanner from '../common/ContractSyncStatusBanner';
 
@@ -51,9 +47,7 @@ const CredentialSyncListener: React.FC = () => {
         }
 
         completedContractSyncJobTimeoutRef.current = window.setTimeout(() => {
-            clearPendingContractSyncJob(completedContractSyncJob.id);
             setCompletedContractSyncJob(null);
-            completedContractSyncJobIdRef.current = null;
             completedContractSyncJobTimeoutRef.current = null;
         }, COMPLETED_BANNER_DURATION_MS);
 
@@ -113,9 +107,7 @@ const CredentialSyncListener: React.FC = () => {
                             window.clearTimeout(completedContractSyncJobTimeoutRef.current);
                             completedContractSyncJobTimeoutRef.current = null;
                         }
-                        clearPendingContractSyncJob(completedContractSyncJob.id);
                         setCompletedContractSyncJob(null);
-                        completedContractSyncJobIdRef.current = null;
                     }}
                 />
             )}
