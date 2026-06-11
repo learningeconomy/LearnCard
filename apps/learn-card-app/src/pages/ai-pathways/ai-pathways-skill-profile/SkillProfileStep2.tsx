@@ -91,8 +91,9 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
         saveIfChanged: saveWorkHistory,
         isSaving: workHistorySaving,
     } = useVerifiableData<SkillProfileWorkHistoryData>(SKILL_PROFILE_WORK_HISTORY_KEY, {
-        name: 'Work History Selections',
+        name: 'Work Experience Selections',
         description: 'Selected work experience credentials',
+        category: 'Work Experience',
     });
 
     // Pre-populate selected URIs from existing verifiable data
