@@ -45,22 +45,29 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
 }) => {
     const { newModal } = useModal();
 
-    const visibleCategories = Object.keys(values).filter(category => {
-        if (
-            mode === 'write' &&
-            hideVerifiableDataOnWrite &&
-            isVerifiableDataContractCategory(category)
-        ) {
+    const shouldHideVerifiableDataCategories = mode === 'write' && hideVerifiableDataOnWrite;
+    const selectedCategories = Object.keys(values) as CredentialCategoryEnum[];
+
+    const visibleCategories = selectedCategories.filter(category => {
+        if (shouldHideVerifiableDataCategories && isVerifiableDataContractCategory(category)) {
             return false;
         }
 
         return true;
     });
 
-    React.useEffect(() => {
-        if (mode !== 'write' || !hideVerifiableDataOnWrite) return;
+    const allowedCategories = CONTRACT_CATEGORIES.filter(category => {
+        if (shouldHideVerifiableDataCategories && isVerifiableDataContractCategory(category)) {
+            return false;
+        }
 
-        const hiddenCategories = Object.keys(values).filter(category =>
+        return true;
+    }) as CredentialCategoryEnum[];
+
+    React.useEffect(() => {
+        if (!shouldHideVerifiableDataCategories) return;
+
+        const hiddenCategories = selectedCategories.filter(category =>
             isVerifiableDataContractCategory(category)
         );
 
@@ -73,7 +80,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 });
             })
         );
-    }, [hideVerifiableDataOnWrite, mode, onChange, values]);
+    }, [onChange, selectedCategories, shouldHideVerifiableDataCategories, values]);
 
     const handleOpenCategoryPickerModal = () => {
         newModal(
@@ -81,7 +88,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 selectedCategories={values}
                 setContract={setContract}
                 mode={mode}
-                allowedCategories={CONTRACT_CATEGORIES as CredentialCategoryEnum[]}
+                allowedCategories={allowedCategories}
                 titleOverrides={categoryTitleOverrides}
             />,
             {
