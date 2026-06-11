@@ -10,7 +10,7 @@
     ],
     "sideEffects": false,
     "scripts": {
-        "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",
+        "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all && prettier --write \"./src/components/**/index.ts\"",
         "build": "pnpm generate-barrels && rollup -c",
         "build:watch": "rollup -c -w",
         "test": "vitest",
