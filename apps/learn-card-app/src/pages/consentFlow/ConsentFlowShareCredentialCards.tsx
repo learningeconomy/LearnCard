@@ -4,7 +4,7 @@ import { Updater } from 'use-immer';
 import GenericCardWrapper from 'learn-card-base/components/GenericCardWrapper/GenericCardWrapper';
 import { IonToggle } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
 import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory } from 'learn-card-base';
 
@@ -48,8 +48,9 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
     const updateSlice = curriedStateSlice(setCategories);
 
     const getTitle = (type: CredentialCategory, count: number) => {
-        return `${count} ${vcDisplayWord[type]}${count !== 1 && !['Learning History', 'Work History'].includes(type) ? 's' : ''
-            }`;
+        return `${count} ${vcDisplayWord[type]}${
+            count !== 1 && !['Learning History', 'Work History'].includes(type) ? 's' : ''
+        }`;
     };
 
     return (
@@ -114,8 +115,9 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
                                             <GenericCardWrapper
                                                 vc={credential.vc!}
                                                 uri={credential.uri}
-                                                customHeaderClass={`bg-${vcColor[vcType as CredentialCategory]
-                                                    }`}
+                                                customHeaderClass={`bg-${
+                                                    vcColor[vcType as CredentialCategory]
+                                                }`}
                                                 onClick={() => {
                                                     if (isSelected) {
                                                         updateCategory('shareAll', false);
@@ -126,12 +128,12 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
                                                         'shared',
                                                         isSelected
                                                             ? category?.shared?.filter(
-                                                                uri => uri !== credential.uri
-                                                            )
+                                                                  uri => uri !== credential.uri
+                                                              )
                                                             : [
-                                                                ...(category.shared ?? []),
-                                                                credential.uri,
-                                                            ]
+                                                                  ...(category.shared ?? []),
+                                                                  credential.uri,
+                                                              ]
                                                     );
                                                 }}
                                                 initialCheckmarkState={isSelected}

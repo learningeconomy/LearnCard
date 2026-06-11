@@ -1,6 +1,6 @@
 import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper';
+import { Autoplay } from 'swiper/modules';
 
 import { IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base';
@@ -76,7 +76,10 @@ const fileTypeQuotes: Record<UploadTypesEnum, string[]> = {
     ],
 };
 
-export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: () => void }> = ({ fileType, onDismiss }) => {
+export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: () => void }> = ({
+    fileType,
+    onDismiss,
+}) => {
     const { closeModal } = useModal();
     const activeQuotes = fileTypeQuotes?.[fileType ?? UploadTypesEnum.Resume];
 
