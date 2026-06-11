@@ -5,8 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useWallet, useIsLoggedIn, useTenantConfig } from 'learn-card-base';
 
-import { isProductionBrainService } from './globalSkillFrameworks.utils';
-
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
     name: string;
@@ -190,15 +188,10 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const tenantConfig = useTenantConfig();
-    const useSeededFrameworks = !isProductionBrainService(tenantConfig?.apis?.brainService);
+    const useSeededFrameworks = tenantConfig?.features?.useSeededSkillFrameworks ?? false;
 
     const { data: seededFrameworks = [] } = useQuery({
-        queryKey: [
-            'seededGlobalSkillFrameworks',
-            isLoggedIn,
-            tenantConfig?.apis?.brainService,
-            useSeededFrameworks,
-        ],
+        queryKey: ['seededGlobalSkillFrameworks', isLoggedIn, useSeededFrameworks],
         queryFn: async () => {
             try {
                 const wallet = await initWallet();
