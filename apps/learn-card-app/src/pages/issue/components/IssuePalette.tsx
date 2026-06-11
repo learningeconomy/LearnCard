@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react';
 import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown } from 'lucide-react';
 
 import { useFilestack } from 'learn-card-base';
-import { isEmailRecipient } from '../../../components/simple-send/simpleSend.helpers';
 import { isPlausibleRecipient } from './recipientValidation';
 import { RecipientPicker } from './RecipientPicker';
 import { RecipientMode, Recipient, LinkOptions } from './recipientTypes';

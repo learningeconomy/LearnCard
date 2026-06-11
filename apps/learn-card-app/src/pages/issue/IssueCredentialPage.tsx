@@ -5,9 +5,7 @@ import { ArrowLeft, Code } from 'lucide-react';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import {
-    SimpleSendRecipient,
     buildSimpleTemplate,
-    issueAndSendCredential,
     issueViaBoost,
 } from '../../components/simple-send/simpleSend.helpers';
 import type { CredentialTypeEntry } from './components/credentialTypeCatalog';

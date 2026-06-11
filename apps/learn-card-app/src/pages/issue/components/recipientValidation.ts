@@ -2,7 +2,7 @@ import { isEmailRecipient } from '../../../components/simple-send/simpleSend.hel
 
 /**
  * UI-only gating for the "Someone else" flow. Governs the Issue button and the
- * inline hint; it never alters the value passed to `issueAndSendCredential`.
+ * inline hint; it never alters the value passed to `issueViaBoost`.
  */
 export const isPlausibleRecipient = (raw: string): boolean => {
     const value = raw.trim();

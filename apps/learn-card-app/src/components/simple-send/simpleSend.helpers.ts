@@ -1,4 +1,3 @@
-import { getLogger } from 'learn-card-base';
 import base64url from 'base64url';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -8,7 +7,6 @@ import {
     OBv3CredentialTemplate,
     staticField,
     systemField,
-    dynamicField,
     DEFAULT_CONTEXTS,
     DEFAULT_TYPES,
 } from '../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
@@ -16,8 +14,6 @@ import {
     templateToJson,
     validateTemplate,
 } from '../../pages/appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
-
-const log = getLogger('simple-send');
 
 /**
  * SimpleSend builds standards-pure OBv3 credentials and deliberately bypasses
@@ -55,7 +51,8 @@ export interface SimpleSendInput {
     imageUrl?: string;
 }
 
-export type SimpleSendRecipient = { kind: 'self' } | { kind: 'identifier'; value: string };
+export const isEmailRecipient = (value: string): boolean =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 export const buildSimpleTemplate = (input: SimpleSendInput): OBv3CredentialTemplate => {
     const achievementType = ACHIEVEMENT_TYPE_BY_SIMPLE_TYPE[input.credentialType];
@@ -87,19 +84,6 @@ export const buildSimpleTemplate = (input: SimpleSendInput): OBv3CredentialTempl
         customFields: [],
     };
 };
-
-export const buildUnsignedCredential = (
-    input: SimpleSendInput,
-    issuerDid: string,
-    recipientDid?: string
-): Record<string, unknown> =>
-    fillTemplateSystemVars(buildSimpleTemplate(input), issuerDid, recipientDid);
-
-export interface IssueAndSendResult {
-    credentialUri: string;
-    signedCredential: Record<string, unknown>;
-    inbox?: unknown;
-}
 
 export const fillTemplateSystemVars = (
     template: OBv3CredentialTemplate,
@@ -136,59 +120,6 @@ export const fillTemplateSystemVars = (
     }
     return filled;
 };
-
-export const issueAndSendCredential = async (
-    wallet: BespokeLearnCard,
-    template: OBv3CredentialTemplate,
-    recipient: SimpleSendRecipient
-): Promise<IssueAndSendResult> => {
-    const issuerDid = wallet.id.did();
-    if (!issuerDid) throw new Error('No issuer DID available — is the wallet initialized?');
-
-    const structuralErrors = validateTemplate(template);
-    if (structuralErrors.length > 0) {
-        throw new Error(structuralErrors.map(e => `${e.field}: ${e.message}`).join('; '));
-    }
-
-    const isSelf = recipient.kind === 'self';
-    const recipientIdentifier = isSelf ? issuerDid : recipient.value;
-    const recipientDid =
-        isSelf || recipientIdentifier.startsWith('did:') ? recipientIdentifier : undefined;
-
-    const unsigned = fillTemplateSystemVars(template, issuerDid, recipientDid);
-
-    const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
-        string,
-        unknown
-    >;
-
-    // Omitting templateUri/template is what keeps this off the boost-template path.
-    const response = await wallet.invoke.send({
-        type: 'boost',
-        recipient: recipientIdentifier,
-        signedCredential: signedCredential as any,
-    });
-
-    log.info('simple-send.issued', {
-        schemaType: template.schemaType,
-        recipientKind: recipient.kind,
-        delivered: Boolean(response?.credentialUri),
-        viaInbox: Boolean(response?.inbox),
-    });
-
-    return {
-        credentialUri: response.credentialUri,
-        signedCredential,
-        inbox: response.inbox,
-    };
-};
-
-export const issueAndSendSimpleCredential = async (
-    wallet: BespokeLearnCard,
-    input: SimpleSendInput,
-    recipient: SimpleSendRecipient
-): Promise<IssueAndSendResult> =>
-    issueAndSendCredential(wallet, buildSimpleTemplate(input), recipient);
 
 export interface IssueViaBoostOptions {
     mode: RecipientMode;
