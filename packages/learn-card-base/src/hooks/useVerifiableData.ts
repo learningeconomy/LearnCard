@@ -107,6 +107,7 @@ const storeVerifiableData = async <T>(
             title: `VerifiableData: ${key}`,
             verifiableData: data as any,
             issuanceDate,
+            sharedUris: {},
         });
     } else {
         // First write for this key — create a new index record
@@ -244,11 +245,19 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         onError: (_error, _data, context) => {
             queryClient.setQueryData(queryKey, context?.previousData);
         },
-        onSuccess: (_, data) => {
+        onSuccess: async (_, data) => {
             // Update the cache with the new data
             queryClient.setQueryData(queryKey, {
                 data,
                 issuanceDate: new Date().toISOString(),
+            });
+
+            await queryClient.removeQueries({
+                queryKey: ['useGetCredentialList'],
+            });
+
+            queryClient.invalidateQueries({
+                queryKey: ['useSyncConsentFlow'],
             });
         },
     });
