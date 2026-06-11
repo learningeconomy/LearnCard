@@ -94,7 +94,8 @@ const PrivacySettingsPage: React.FC = () => {
                                     AI Features
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    AI tutoring sessions, insights, and personalization
+                                    AI tutoring sessions, insights, and personalization. This may
+                                    share relevant messages and records with AI providers.
                                 </p>
                             </div>
                             <IonToggle
@@ -113,16 +114,17 @@ const PrivacySettingsPage: React.FC = () => {
                         <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Analytics & Insights
+                                    Usage Analytics
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Help improve {brandingConfig?.name} with anonymous usage data
+                                    Help improve {brandingConfig?.name} by sharing anonymous app
+                                    usage data
                                 </p>
                             </div>
                             <IonToggle
                                 checked={analyticsEnabled}
                                 onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
-                                aria-label="Analytics & Insights"
+                                aria-label="Usage Analytics"
                             />
                         </div>
                     </div>
@@ -135,7 +137,8 @@ const PrivacySettingsPage: React.FC = () => {
                                     Crash Reports
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Automatically send crash reports to help fix issues
+                                    Share technical details if the app crashes so we can fix issues
+                                    faster
                                 </p>
                             </div>
                             <IonToggle

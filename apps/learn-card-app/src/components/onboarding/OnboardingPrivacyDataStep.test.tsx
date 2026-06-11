@@ -69,15 +69,19 @@ describe('OnboardingPrivacyDataStep', () => {
             isMinor: true,
         });
 
-        expect(screen.getByText("Choose what you'd like to share.")).toBeInTheDocument();
-        expect(screen.getByText('You can change this anytime in Settings.')).toBeInTheDocument();
+        expect(screen.getByText("Choose what you'd like to enable.")).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                "You're in control. Turn on only what feels right for you, and change it anytime in Settings."
+            )
+        ).toBeInTheDocument();
         expect(
             screen.getByText('Some features are restricted for users under 18.')
         ).toBeInTheDocument();
         expect(screen.getByText('A guardian can turn this on later.')).toBeInTheDocument();
 
         const aiToggle = screen.getByLabelText('AI Features') as HTMLInputElement;
-        const analyticsToggle = screen.getByLabelText('Analytics & Insights') as HTMLInputElement;
+        const analyticsToggle = screen.getByLabelText('Usage Analytics') as HTMLInputElement;
         const crashReportsToggle = screen.getByLabelText('Crash Reports') as HTMLInputElement;
 
         expect(aiToggle).not.toBeChecked();
@@ -105,7 +109,7 @@ describe('OnboardingPrivacyDataStep', () => {
         });
 
         const aiToggle = screen.getByLabelText('AI Features') as HTMLInputElement;
-        const analyticsToggle = screen.getByLabelText('Analytics & Insights') as HTMLInputElement;
+        const analyticsToggle = screen.getByLabelText('Usage Analytics') as HTMLInputElement;
         const crashReportsToggle = screen.getByLabelText('Crash Reports') as HTMLInputElement;
 
         expect(screen.queryByText('Some features are restricted for users under 18.')).toBeNull();

@@ -41,8 +41,8 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                 )}
 
                 <OnboardingHeader
-                    text="Choose what you'd like to share."
-                    secondaryText="You can change this anytime in Settings."
+                    text="Choose what you'd like to enable."
+                    secondaryText="You're in control. Turn on only what feels right for you, and change it anytime in Settings."
                 />
 
                 {error && (
@@ -67,7 +67,8 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                                     AI Features
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5 leading-relaxed">
-                                    AI tutoring sessions, insights, and personalization
+                                    AI tutoring sessions, insights, and personalization. This may
+                                    share relevant messages and records with AI providers.
                                 </p>
                                 {isMinor && (
                                     <p className="text-xs text-sky-700 mt-2 leading-relaxed">
@@ -88,17 +89,18 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                         <div className="flex items-center justify-between gap-4 px-5 py-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Analytics & Insights
+                                    Usage Analytics
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5 leading-relaxed">
-                                    Help improve {brandingConfig?.name} with anonymous usage data
+                                    Help improve {brandingConfig?.name} by sharing anonymous app
+                                    usage data
                                 </p>
                             </div>
                             <IonToggle
                                 checked={preferences.analyticsEnabled}
                                 disabled={isLoading}
                                 onIonChange={e => onChange({ analyticsEnabled: e.detail.checked })}
-                                aria-label="Analytics & Insights"
+                                aria-label="Usage Analytics"
                             />
                         </div>
                     </div>
@@ -110,7 +112,8 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                                     Crash Reports
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5 leading-relaxed">
-                                    Automatically send crash reports to help fix issues
+                                    Share technical details if the app crashes so we can fix issues
+                                    faster
                                 </p>
                             </div>
                             <IonToggle
