@@ -168,9 +168,9 @@ const ATTW_IGNORE_RULES = [
 // A package can pass one surface and fail the other. Keep both lists scoped to
 // the failures their own tool actually reports; don't try to unify them.
 const ADVISORY_ONLY = new Set([
-    '@learncard/cli',                // CLI binary, no published types module
-    '@learncard/init',               // FalseESM (bundler + node16-ESM green)
-    '@learncard/didkit-plugin-node', // Native N-API package, separate build
+    '@learncard/cli', // CLI binary, invoked via `bin` — has no library API, so
+    // ships no published types module. attw's UntypedResolution is expected
+    // and harmless here; nobody imports `@learncard/cli` as a module.
 ]);
 
 // No --strict: tolerate "suggestions" (engines.node, repository.url shape).
@@ -198,6 +198,92 @@ function runAttw({ abs }) {
     ]);
 }
 
+// ---------------------------------------------------------------------------
+// Mode-3 guard: ESM-resolved entry must not statically import a CJS file.
+// ---------------------------------------------------------------------------
+//
+// publint + attw validate the *published tarball's* type/manifest contract and
+// static module-resolution. Neither catches the failure mode where a
+// workspace-symlinked package is *transformed by a bundler* (Vite/Astro/Next
+// SSR): when an ESM entry statically `import ... from './x.cjs'`, the bundler
+// follows the edge and tries to transform the CommonJS file as ESM, throwing
+// `module is not defined` at runtime. attw even reports such packages as
+// "bundler 🟢" because it never performs a real transform of symlinked source.
+//
+// This is precisely the `@learncard/init` regression (node-esm.mjs ->
+// index.cjs). The structural invariant that prevents the whole class:
+//
+//   No file reachable through an ESM export condition may statically
+//   import / re-export a CommonJS (.cjs/.cts) file.
+//
+// Runtime CJS loading from ESM is still allowed via `createRequire`, which is
+// opaque to bundler transforms and handled by Node's native CJS loader.
+//
+// This check is deterministic, dependency-free, and ALWAYS gates (it is not
+// subject to ADVISORY_ONLY — it guards runtime loadability, not types).
+
+// Static `import`/`export ... from '...cjs'` and bare `import '...cjs'`.
+// Excludes `createRequire(...)('...cjs')` and `require('...cjs')`, which are
+// runtime calls, not static ESM edges.
+const STATIC_CJS_IMPORT = /(?:^|[\s;])(?:import|export)\b[^;]*?\bfrom\s*['"][^'"]*\.c(?:j|t)s['"]|(?:^|[\s;])import\s*['"][^'"]*\.c(?:j|t)s['"]/m;
+
+// Collect dist files reachable through any ESM-side export condition
+// (`import`, a nested `node.import`, `default`, or the top-level `module`
+// field). The `require` condition is intentionally skipped — CJS files are
+// expected there.
+function collectEsmEntryFiles(pkg, absDir) {
+    const files = new Set();
+    const add = rel => {
+        if (typeof rel === 'string' && rel.startsWith('.')) files.add(rel);
+    };
+    // Top-level `module` field is read by bundlers as the ESM entry.
+    add(pkg.module);
+
+    const walk = (node, inRequire) => {
+        if (typeof node === 'string') {
+            if (!inRequire) add(node);
+            return;
+        }
+        if (!node || typeof node !== 'object') return;
+        for (const [condition, value] of Object.entries(node)) {
+            if (condition === 'types') continue;
+            if (condition === 'require') {
+                walk(value, true); // CJS expected here — skip collecting
+            } else {
+                // `import`, `node`, `default`, `browser`, subpaths, etc.
+                walk(value, inRequire);
+            }
+        }
+    };
+    if (pkg.exports) walk(pkg.exports, false);
+
+    return [...files]
+        .map(rel => path.join(absDir, rel))
+        .filter(fp => fs.existsSync(fp) && /\.(mjs|js)$/.test(fp));
+}
+
+function checkNoEsmToCjsImport({ pkg, abs }) {
+    const entries = collectEsmEntryFiles(pkg, abs);
+    const offenders = [];
+    for (const fp of entries) {
+        let src;
+        try {
+            src = fs.readFileSync(fp, 'utf8');
+        } catch {
+            continue;
+        }
+        if (STATIC_CJS_IMPORT.test(src)) offenders.push(path.relative(ROOT, fp));
+    }
+    if (offenders.length === 0) return { ok: true, out: '' };
+    return {
+        ok: false,
+        out:
+            'ESM entry statically imports a CommonJS file (breaks bundler-transformed ' +
+            'symlinked consumers — use createRequire instead):\n' +
+            offenders.map(f => `  - ${f}`).join('\n'),
+    };
+}
+
 const concurrencyArg = args.find(a => a.startsWith('--concurrency='))?.slice('--concurrency='.length);
 const CONCURRENCY = Math.max(1, Number(concurrencyArg) || 6);
 
@@ -208,15 +294,29 @@ async function validateOne(t) {
     if (!skipPublint) publintResult = await runPublint(t);
     if (!skipAttw) attwResult = await runAttw(t);
 
-    const ok = publintResult.ok && attwResult.ok;
+    // Always-gating, regardless of ADVISORY_ONLY: this guards runtime
+    // loadability under bundler-transformed symlinked consumers (mode 3),
+    // which the publint/attw advisories never excuse.
+    const esmCjsResult = checkNoEsmToCjsImport(t);
+
+    const contractOk = publintResult.ok && attwResult.ok;
     const advisory = ADVISORY_ONLY.has(t.pkg.name);
-    const status = ok ? '✓' : advisory ? '⚠ (advisory)' : '✗';
+
+    // The mode-3 guard failing is never advisory.
+    const ok = contractOk && esmCjsResult.ok;
+    const gatingFail = !esmCjsResult.ok || (!contractOk && !advisory);
+    const status = ok ? '✓' : gatingFail ? '✗' : '⚠ (advisory)';
 
     console.log(`• ${t.pkg.name.padEnd(42)}  ${status}`);
 
     if (ok) return;
-    const entry = { name: t.pkg.name, publint: publintResult, attw: attwResult };
-    (advisory ? advisories : failures).push(entry);
+    const entry = {
+        name: t.pkg.name,
+        publint: publintResult,
+        attw: attwResult,
+        esmCjs: esmCjsResult,
+    };
+    (gatingFail ? failures : advisories).push(entry);
 }
 
 async function runPool(items, limit, worker) {
@@ -240,6 +340,7 @@ function printDiagnostics(label, list) {
         console.error(`──── ${f.name} ────`);
         if (!f.publint.ok) console.error(`[publint]\n${f.publint.out.trim()}\n`);
         if (!f.attw.ok) console.error(`[attw]\n${f.attw.out.trim()}\n`);
+        if (f.esmCjs && !f.esmCjs.ok) console.error(`[esm->cjs guard]\n${f.esmCjs.out.trim()}\n`);
     }
 }
 
