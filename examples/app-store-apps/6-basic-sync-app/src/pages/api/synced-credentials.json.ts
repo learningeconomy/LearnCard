@@ -165,8 +165,7 @@ export const GET: APIRoute = async ({ url }) => {
 
         return new Response(
             JSON.stringify({
-                error: error instanceof Error ? error.message : 'Failed to query synced data.',
-                ...(import.meta.env.DEV ? { details } : {}),
+                error: 'Failed to query synced data.',
             }),
             {
                 status: 500,
