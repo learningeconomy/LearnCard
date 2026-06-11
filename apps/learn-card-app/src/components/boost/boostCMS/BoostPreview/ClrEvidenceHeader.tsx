@@ -14,7 +14,10 @@ const ClrEvidenceHeader: React.FC<ClrEvidenceHeaderProps> = ({ evidence }) => {
     const handleDownload = async (item: EvidenceDisplayModel) => {
         const ok = await downloadEvidence(item);
         if (!ok) {
-            presentToast('Could not open evidence file', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            presentToast('Could not open evidence file', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 

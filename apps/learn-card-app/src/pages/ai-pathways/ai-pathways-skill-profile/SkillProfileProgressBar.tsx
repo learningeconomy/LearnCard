@@ -9,15 +9,19 @@ import {
 
 import {
     SkillProfileGoalsData,
-    SkillProfileProfileData,
     SKILL_PROFILE_GOALS_KEY,
-    SKILL_PROFILE_PROFILE_KEY,
+    SkillProfileProfessionalTitleData,
+    SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
+    SkillProfileRoleExperienceData,
+    SKILL_PROFILE_ROLE_EXPERIENCE_KEY,
 } from './SkillProfileStep1';
 import { SkillProfileWorkHistoryData, SKILL_PROFILE_WORK_HISTORY_KEY } from './SkillProfileStep2';
 import { SkillProfileSalaryData, SKILL_PROFILE_SALARY_KEY } from './SkillProfileStep3';
 import {
-    SkillProfileJobSatisfactionData,
-    SKILL_PROFILE_JOB_SATISFACTION_KEY,
+    SkillProfileWorkLifeBalanceData,
+    SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
+    SkillProfileJobStabilityData,
+    SKILL_PROFILE_JOB_STABILITY_KEY,
 } from './SkillProfileStep4';
 
 const TOTAL_METRICS = 8;
@@ -29,11 +33,13 @@ type SkillProfileProgressBarProps = {
 };
 
 export const useSkillProfileCompletion = () => {
-    // Step 1: Goals + Profile
+    // Step 1: Goals + Professional Title + Role Experience
     const { data: goalsData, issuanceDate: goalsIssuanceDate } =
         useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
-    const { data: profileData, issuanceDate: profileIssuanceDate } =
-        useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
+    const { data: professionalTitleData, issuanceDate: professionalTitleIssuanceDate } =
+        useVerifiableData<SkillProfileProfessionalTitleData>(SKILL_PROFILE_PROFESSIONAL_TITLE_KEY);
+    const { data: roleExperienceData, issuanceDate: roleExperienceIssuanceDate } =
+        useVerifiableData<SkillProfileRoleExperienceData>(SKILL_PROFILE_ROLE_EXPERIENCE_KEY);
 
     // Step 2: Work History
     const { data: workHistoryData, issuanceDate: workHistoryIssuanceDate } =
@@ -43,9 +49,11 @@ export const useSkillProfileCompletion = () => {
     const { data: salaryData, issuanceDate: salaryIssuanceDate } =
         useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY);
 
-    // Step 4: Job Satisfaction
-    const { data: jobSatisfactionData, issuanceDate: jobSatisfactionIssuanceDate } =
-        useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY);
+    // Step 4: Work Life Balance + Job Stability
+    const { data: workLifeBalanceData, issuanceDate: workLifeBalanceIssuanceDate } =
+        useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY);
+    const { data: jobStabilityData, issuanceDate: jobStabilityIssuanceDate } =
+        useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY);
 
     // Step 5: Self-assigned skills
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
@@ -53,14 +61,15 @@ export const useSkillProfileCompletion = () => {
 
     // Individual metric completions (8 total)
     const hasGoals = Boolean(goalsData?.goals?.length);
-    const hasTitle = Boolean(profileData?.professionalTitle);
+    const hasTitle = Boolean(professionalTitleData?.professionalTitle);
     const hasExperience = Boolean(
-        profileData?.lifetimeExperience?.years || profileData?.lifetimeExperience?.months
+        roleExperienceData?.lifetimeExperience?.years ||
+            roleExperienceData?.lifetimeExperience?.months
     );
     const hasWorkHistory = Boolean(workHistoryData?.selectedCredentialUris?.length);
     const hasSalary = Boolean(salaryData?.salary);
-    const hasWorkLifeBalance = Boolean(jobSatisfactionData?.workLifeBalance);
-    const hasJobStability = Boolean(jobSatisfactionData?.jobStability);
+    const hasWorkLifeBalance = Boolean(workLifeBalanceData?.workLifeBalance);
+    const hasJobStability = Boolean(jobStabilityData?.jobStability);
     const hasSelfAssignedSkills = Boolean(sasBoostSkills?.length);
 
     // Count completed metrics
@@ -87,10 +96,12 @@ export const useSkillProfileCompletion = () => {
     // Find the most recent issuance date
     const issuanceDates = [
         goalsIssuanceDate,
-        profileIssuanceDate,
+        professionalTitleIssuanceDate,
+        roleExperienceIssuanceDate,
         workHistoryIssuanceDate,
         salaryIssuanceDate,
-        jobSatisfactionIssuanceDate,
+        workLifeBalanceIssuanceDate,
+        jobStabilityIssuanceDate,
     ].filter((d): d is string => Boolean(d));
 
     const lastEditedDate =

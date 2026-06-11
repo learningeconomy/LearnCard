@@ -63,7 +63,7 @@ export const NewAiSessionIcon: React.FC<{ className?: string; version?: string }
                 <path
                     d="M28.6667 4.66605L16 17.3327L15.3334 24.6663H22L35.3334 11.333C35.5556 10.6662 35.4667 8.79938 33.3334 6.66605C31.2 4.53271 29.3334 4.44382 28.6667 4.66605Z"
                     fill="white"
-                    fill-opacity="0.2"
+                    fillOpacity="0.2"
                 />
                 <path
                     fillRule="evenodd"

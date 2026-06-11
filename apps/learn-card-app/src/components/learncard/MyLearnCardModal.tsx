@@ -343,8 +343,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     if (prompted) return;
                     newModal(
                         <ManageDataSharingModal />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
                 },
             },

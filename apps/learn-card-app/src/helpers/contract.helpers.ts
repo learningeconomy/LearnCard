@@ -11,6 +11,7 @@ import {
     LaunchPadAppListItem,
     boostCategoryMetadata,
     categoryMetadata,
+    contractCategoryNameToCategoryMetadata,
     getBaseUrl,
 } from 'learn-card-base';
 import { walletPageData } from '../pages/wallet/constants';
@@ -38,10 +39,33 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
     CredentialCategoryEnum.id,
 
     ...AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
 ];
+
+export const VERIFIABLE_DATA_CONTRACT_CATEGORIES = [
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
+    CredentialCategoryEnum.verifiableData,
+];
+
+export const isVerifiableDataContractCategory = (category: string) =>
+    VERIFIABLE_DATA_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum);
 
 export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
 
@@ -160,7 +184,9 @@ export const getFullTermsForContract = (
 };
 
 export const getInfoFromContractKey = (key: string) => {
-    const options = boostCategoryMetadata[key as BoostCategoryOptionsEnum];
+    const metadata = contractCategoryNameToCategoryMetadata(key);
+    const options = metadata ?? boostCategoryMetadata[key as BoostCategoryOptionsEnum];
+    const isVerifiableDataCategory = isVerifiableDataContractCategory(key);
 
     // prefer the wallet title + icon
     const walletOptions = walletPageData.find(data => {
@@ -187,11 +213,13 @@ export const getInfoFromContractKey = (key: string) => {
     if (options) {
         return {
             IconComponent: options.IconComponent,
-            iconSrc: walletOptions?.iconSrc,
+            iconSrc: isVerifiableDataCategory ? options.CategoryImage : undefined,
             title: walletOptions?.title ?? options.title,
-            plural: `${key}s`,
-            iconClassName: 'text-white',
-            iconCircleClass: `bg-${options.color}`,
+            plural: options.plural ?? `${key}s`,
+            iconClassName: `text-white ${isVerifiableDataCategory ? '' : 'p-[3px]'}`,
+            iconCircleClass: isVerifiableDataCategory
+                ? 'bg-transparent'
+                : `bg-${options.color ?? 'cyan-700'}`,
         };
     } else {
         return {

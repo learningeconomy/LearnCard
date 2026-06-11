@@ -121,7 +121,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                         ) : iconSrc ? (
                             <img src={iconSrc} className="h-[30px] w-[30px] text-white" />
                         ) : (
-                            <IconComponent className={`h-[30px] ${iconClassName}`} />
+                            <IconComponent className={`h-[30px] w-[30px] ${iconClassName}`} />
                         )}
                     </div>
                 )}

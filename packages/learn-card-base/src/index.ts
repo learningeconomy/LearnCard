@@ -19,6 +19,7 @@ export * from './components/id/IdCardDetailsModal';
 export * from './components/delete-user-success-confirmation/DeleteUserSuccessConfirmation';
 export * from './components/ClickableCardWrapper/ClickableCardWrapper';
 export * from './components/GenericCardWrapper/GenericCardWrapper';
+export { default as GenericCardWrapper } from './components/GenericCardWrapper/GenericCardWrapper';
 export * from './components/QRCodeScannerOverlay/QRCodeScannerOverlay';
 export * from './components/QRCodeScannerOverlay/QRCodeScannerFooter';
 export * from './components/ErrorBoundary';

@@ -86,13 +86,13 @@ local `.env` file. It does not print full secret values.
 
 ## Service Targets
 
-| Key       | Service                | Infisical Path(s)                    | Dev file                                                  | Staging file                                                     |
-| --------- | ---------------------- | ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| `brain`   | Brain Service          | `/LearnCard/brain-service`           | `services/learn-card-network/brain-service/.env`          | `services/learn-card-network/brain-service/.env.staging`         |
-| `cloud`   | LearnCloud Service     | `/LearnCard/cloud-service`           | `services/learn-card-network/learn-cloud-service/.env`    | `services/learn-card-network/learn-cloud-service/.env.staging`    |
-| `app`     | LearnCard App          | `/learn-card-app`                    | `apps/learn-card-app/.env`                                | `apps/learn-card-app/.env.staging`                               |
-| `lca-api` | LCA API                | `/LearnCard/lca-api`                 | `services/learn-card-network/lca-api/.env`                | `services/learn-card-network/lca-api/.env.staging`               |
-| `signing` | Simple Signing Service | `/LearnCard/simple-signing-service`  | `services/learn-card-network/simple-signing-service/.env` | `services/learn-card-network/simple-signing-service/.env.staging` |
+| Key       | Service                | Infisical Path(s)                   | Dev file                                                  | Staging file                                                      |
+| --------- | ---------------------- | ----------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| `brain`   | Brain Service          | `/LearnCard/brain-service`          | `services/learn-card-network/brain-service/.env`          | `services/learn-card-network/brain-service/.env.staging`          |
+| `cloud`   | LearnCloud Service     | `/LearnCard/cloud-service`          | `services/learn-card-network/learn-cloud-service/.env`    | `services/learn-card-network/learn-cloud-service/.env.staging`    |
+| `app`     | LearnCard App          | `/learn-card-app`                   | `apps/learn-card-app/.env`                                | `apps/learn-card-app/.env.staging`                                |
+| `lca-api` | LCA API                | `/LearnCard/lca-api`                | `services/learn-card-network/lca-api/.env`                | `services/learn-card-network/lca-api/.env.staging`                |
+| `signing` | Simple Signing Service | `/LearnCard/simple-signing-service` | `services/learn-card-network/simple-signing-service/.env` | `services/learn-card-network/simple-signing-service/.env.staging` |
 
 Each target pulls secrets from its specific Infisical folder path. To enable root-level (`/`) variable merging, add pipe-separated paths (e.g., `/|/LearnCard/brain-service`) to the INFISICAL_PATHS array in `scripts/pull-env.sh`.
 

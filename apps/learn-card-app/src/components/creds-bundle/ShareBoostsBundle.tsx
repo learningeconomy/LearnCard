@@ -13,7 +13,7 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 
 import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
 import { VC } from '@learncard/types';
 
