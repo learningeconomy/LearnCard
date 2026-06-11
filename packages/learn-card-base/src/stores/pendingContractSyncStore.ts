@@ -61,24 +61,23 @@ export const pendingContractSyncStore = createStore(
 
         const timestamp = now(); // set current timestamp
 
-        // Re-enqueueing an already-finished job is a no-op so we never
-        // rewrite a completed sync back into a queued state.
-        if (existing?.status === 'done') return existing;
-
         const job: PendingContractSyncJob = {
             id,
             ...input,
             status: existing?.status === 'running' ? 'running' : 'queued',
-            retryCount: existing?.retryCount ?? 0,
-            totalCredentials: existing?.totalCredentials ?? 0,
-            processedCredentials: existing?.processedCredentials ?? 0,
-            completedCredentials: existing?.completedCredentials ?? 0,
-            failedCredentials: existing?.failedCredentials ?? 0,
-            syncedSharedUrisByCategory: existing?.syncedSharedUrisByCategory ?? {},
-            lastError: undefined,
+            retryCount: existing?.status === 'running' ? existing.retryCount : 0,
+            totalCredentials: existing?.status === 'running' ? existing.totalCredentials : 0,
+            processedCredentials:
+                existing?.status === 'running' ? existing.processedCredentials : 0,
+            completedCredentials:
+                existing?.status === 'running' ? existing.completedCredentials : 0,
+            failedCredentials: existing?.status === 'running' ? existing.failedCredentials : 0,
+            syncedSharedUrisByCategory:
+                existing?.status === 'running' ? existing.syncedSharedUrisByCategory : {},
+            lastError: existing?.status === 'running' ? existing.lastError : undefined,
             createdAt: existing?.createdAt ?? timestamp,
             updatedAt: timestamp,
-            startedAt: existing?.startedAt,
+            startedAt: existing?.status === 'running' ? existing.startedAt : undefined,
             finishedAt: undefined,
         };
 
