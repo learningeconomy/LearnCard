@@ -5,6 +5,23 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { cloneDeep } from 'lodash';
 
+const getRecipientsForContractOwner = (contractOwnerDid: string): [string, ...string[]] => {
+    const recipients: [string, ...string[]] = [contractOwnerDid];
+
+    const isSmartResume =
+        contractOwnerDid === 'did:web:network.learncard.com:users:smart-resume-integration' ||
+        contractOwnerDid === 'did:web:localhost%3A4000:users:in-service' ||
+        contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume' ||
+        contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume-test';
+
+    if (isSmartResume) {
+        recipients.push('did:web:network.learncard.com');
+        recipients.push('did:web:localhost%3A4000');
+    }
+
+    return recipients;
+};
+
 export const getOrCreateSharedUriForWallet = async (
     wallet: BespokeLearnCard,
     contractOwnerDid: string,
@@ -20,38 +37,17 @@ export const getOrCreateSharedUriForWallet = async (
         >(queryKey);
 
     for (const record of cache?.pages.flatMap(page => page.records) ?? []) {
-        const alreadyShared =
-            record.sharedUris && Object.keys(record.sharedUris).includes(contractOwnerDid);
-
-        // Something with this logic is causing a bunch of duplicate shared uris
-        //   So sacrificing perfomance for now in order to avoid this bug
-        // in cache and already shared
-        if (alreadyShared) {
-            return record.sharedUris?.[contractOwnerDid].at(-1)!;
-        }
-
-        // it was already in react query cache, but not shared
         if (record.uri === credUri) {
+            const existingSharedUris = record.sharedUris?.[contractOwnerDid];
+            if (existingSharedUris?.length) {
+                return existingSharedUris.at(-1)!;
+            }
+
             const vc = await wallet.read.get(credUri);
             if (!vc) return false;
 
-            // For SmartResume we want to add the generic brain-service wallet's did so that the brain service
-            // can decrypt the credentials and send them to SmartResume via their API
-            const isSmartResume =
-                contractOwnerDid ===
-                    'did:web:network.learncard.com:users:smart-resume-integration' ||
-                contractOwnerDid === 'did:web:localhost%3A4000:users:in-service' ||
-                contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume' ||
-                contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume-test';
-
-            const recipients = [contractOwnerDid];
-            if (isSmartResume) {
-                recipients.push('did:web:network.learncard.com');
-                recipients.push('did:web:localhost%3A4000');
-            }
-
             const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
-                recipients,
+                recipients: getRecipientsForContractOwner(contractOwnerDid),
             });
 
             if (!newUri) return false;
@@ -122,7 +118,7 @@ export const getOrCreateSharedUriForWallet = async (
             if (!vc) return false;
 
             const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
-                recipients: [contractOwnerDid],
+                recipients: getRecipientsForContractOwner(contractOwnerDid),
             });
             if (!newUri) return false;
 
