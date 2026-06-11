@@ -287,6 +287,22 @@ export const getCredentialInstanceForBoostAndProfile = async (
 };
 
 /**
+ * Check whether a credential is an instance of a given boost (via the INSTANCE_OF relationship).
+ */
+export const isCredentialInstanceOfBoost = async (
+    credentialId: string,
+    boostId: string
+): Promise<boolean> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (cred:Credential { id: $credId })-[:INSTANCE_OF]->(boost:Boost { id: $boostId })
+         RETURN cred LIMIT 1`,
+        { credId: credentialId, boostId }
+    );
+
+    return result.records.length > 0;
+};
+
+/**
  * Get all credential URIs that have been revoked for a specific profile.
  * This is used by the frontend to sync and remove revoked credentials from the learn-cloud index.
  */
