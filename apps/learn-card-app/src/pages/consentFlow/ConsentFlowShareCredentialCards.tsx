@@ -2,6 +2,7 @@ import React from 'react';
 import { Updater } from 'use-immer';
 
 import { IonToggle } from '@ionic/react';
+
 import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory, GenericCardWrapper, useVerifiableData } from 'learn-card-base';
 
