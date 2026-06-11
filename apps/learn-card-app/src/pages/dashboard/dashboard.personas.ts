@@ -268,7 +268,7 @@ export const brandNewUser: DashboardViewModel = {
         collect: makeAction(
             'collect',
             'find-credential-apps',
-            'Find credential apps',
+            'Browse apps',
             'Discover places that issue credentials'
         ),
         understand: makeAction(
