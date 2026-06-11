@@ -30,6 +30,7 @@ import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 import { getContactMethodById } from '@accesslayer/contact-method/read';
 import { VC } from '@learncard/types';
 import { CONTACT_METHOD_SESSION_PREFIX } from '@helpers/contact-method.helpers';
+import { trace } from '@tracing';
 
 export type DidAuthVP = {
     iss: string;
@@ -170,6 +171,7 @@ export const createContext = async (
 };
 
 export const openRoute = t.procedure
+    .use(t.middleware(({ path, type, next }) => trace('route', `${type}:${path}`, () => next())))
     .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true }) as any))
     .use(({ ctx, next, path }) => {
         Sentry.configureScope(scope => {

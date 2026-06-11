@@ -6,7 +6,7 @@ export class ConsoleTracingProvider implements TracingProvider {
     private depthMap = new Map<string, number>();
 
     isEnabled(): boolean {
-        return process.env.TRACE_CONSOLE !== 'false';
+        return process.env.TRACE_CONSOLE === 'true';
     }
 
     onSpanStart(ctx: SpanContext): void {
