@@ -65,4 +65,32 @@ describe('pendingContractSyncStore', () => {
 
         expect(pendingContractSyncStore.get.jobs()[job.id]).toBeUndefined();
     });
+
+    it('retains completed jobs until they are explicitly removed', () => {
+        const job = enqueuePendingContractSync(JOB_INPUT);
+
+        pendingContractSyncStore.set.markDone(job.id);
+
+        expect(pendingContractSyncStore.get.jobs()[job.id]?.status).toBe('done');
+    });
+
+    it('re-enqueues a completed job as a fresh queued job', () => {
+        const job = enqueuePendingContractSync(JOB_INPUT);
+
+        pendingContractSyncStore.set.markRunning(job.id);
+        pendingContractSyncStore.set.setTotals(job.id, 4);
+        pendingContractSyncStore.set.recordCredentialProcessed(job.id);
+        pendingContractSyncStore.set.recordCredentialSynced(job.id, 'Achievement', 'uri:shared:1');
+        pendingContractSyncStore.set.markDone(job.id);
+
+        const retriedJob = enqueuePendingContractSync(JOB_INPUT);
+
+        expect(retriedJob.id).toBe(job.id);
+        expect(retriedJob.status).toBe('queued');
+        expect(retriedJob.totalCredentials).toBe(0);
+        expect(retriedJob.processedCredentials).toBe(0);
+        expect(retriedJob.completedCredentials).toBe(0);
+        expect(retriedJob.failedCredentials).toBe(0);
+        expect(retriedJob.syncedSharedUrisByCategory).toEqual({});
+    });
 });
