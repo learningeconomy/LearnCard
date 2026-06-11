@@ -39,9 +39,12 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
 
     const enableCategoryCount =
         categoryType !== CredentialCategoryEnum.aiInsight &&
-        categoryType !== CredentialCategoryEnum.skill;
+        categoryType !== CredentialCategoryEnum.skill &&
+        categoryType !== CredentialCategoryEnum.selfAssignedSkills;
     const enableAiCount = categoryType === CredentialCategoryEnum.aiTopic;
-    const enableSkillsCount = categoryType === CredentialCategoryEnum.skill;
+    const enableSkillsCount =
+        categoryType === CredentialCategoryEnum.skill ||
+        categoryType === CredentialCategoryEnum.selfAssignedSkills;
     const enableAiInsightCount = categoryType === CredentialCategoryEnum.aiInsight;
 
     // normal credential count

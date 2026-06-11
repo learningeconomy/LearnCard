@@ -36,6 +36,7 @@ import {
     isValidISOString,
     currentUserStore,
     ToastTypeEnum,
+    CredentialCategoryEnum,
 } from 'learn-card-base';
 
 import { ConsentFlowContract, LCNProfile } from '@learncard/types';
@@ -143,6 +144,9 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
     const updateReadCredentials = curriedStateSlice(updateRead('credentials'));
     const updateWrite = curriedStateSlice(updateContract('write'));
     const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
+    const categoryTitleOverrides: Partial<Record<CredentialCategoryEnum, string>> = {
+        [CredentialCategoryEnum.roleExperience]: 'Experience in Role',
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLElement>) => {
         e.preventDefault();
@@ -614,6 +618,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                                     onChange={updateReadCredentials('categories') as any}
                                     setContract={setContract}
                                     mode="read"
+                                    categoryTitleOverrides={categoryTitleOverrides}
                                 />
                             </div>
 
@@ -644,6 +649,8 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                                     setContract={setContract}
                                     onChange={updateWriteCredentials('categories') as any}
                                     mode="write"
+                                    hideVerifiableDataOnWrite
+                                    categoryTitleOverrides={categoryTitleOverrides}
                                 />
                             </div>
 

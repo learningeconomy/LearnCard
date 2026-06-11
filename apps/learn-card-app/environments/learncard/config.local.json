@@ -13,7 +13,7 @@
     },
     "observability": {
         "sentryEnv": "development",
-        "launchDarklyClientId": "63dabf3082caed12cac3e55b",
+        "launchDarklyClientId": "63dabf3982caed12cac3e55b",
         "analyticsProvider": "noop"
     },
     "auth": {

@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.95.16",
+    "version": "1.96.0",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "9.1.0",
@@ -146,6 +146,7 @@
         "validate-configs": "npx tsx scripts/validate-tenant-configs.ts",
         "validate-themes": "npx tsx scripts/validate-theme-schemas.ts",
         "create-tenant": "npx tsx scripts/create-tenant.ts",
+        "skill-frameworks": "pnpm --dir ../../services/learn-card-network/brain-service skill-frameworks",
         "lc": "npx tsx scripts/lc.ts",
         "config-editor": "npx tsx scripts/config-editor.ts",
         "docker-start": "npx tsx scripts/prepare-native-config.ts learncard --stage local && vite --host",

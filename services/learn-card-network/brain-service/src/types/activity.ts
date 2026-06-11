@@ -41,6 +41,7 @@ export const CredentialActivityValidator = z.object({
     integrationId: z.string().optional(),
     source: CredentialActivitySourceTypeValidator,
     metadata: z.record(z.string(), z.unknown()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
 

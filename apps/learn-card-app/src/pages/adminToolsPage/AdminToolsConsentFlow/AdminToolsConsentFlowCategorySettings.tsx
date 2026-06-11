@@ -64,7 +64,8 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
     category: string;
     setContract: React.Dispatch<React.SetStateAction<ConsentFlowContractDetails>>;
     mode: 'read' | 'write';
-}> = ({ values, category, setContract, mode }) => {
+    titleOverride?: string;
+}> = ({ values, category, setContract, mode, titleOverride }) => {
     const { plural, IconWithShape } = contractCategoryNameToCategoryMetadata(category) || {};
 
     const value = values[category];
@@ -107,7 +108,7 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
             <div className="w-full flex items-center justify-start pl-4 pt-2">
                 {IconWithShape && <IconWithShape className="w-6 h-6 mr-2" />}
                 <h6 className="text-grayscale-900 text-lg font-poppins capitalize">
-                    {plural ?? 'All'}
+                    {titleOverride ?? plural ?? 'All'}
                 </h6>
             </div>
 

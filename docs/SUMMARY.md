@@ -138,6 +138,7 @@
     -   [Consent Transactions](core-concepts/consent-and-permissions/consent-transactions.md)
     -   [Auto-Boosts](core-concepts/consent-and-permissions/auto-boosts.md)
     -   [Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
+    -   [Verifiable Data in ConsentFlow](core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md)
     -   [Accessing Consented Data](core-concepts/consent-and-permissions/accessing-consented-data.md)
     -   [GameFlow Overview](core-concepts/consent-and-permissions/gameflow-overview.md)
 -   [Network & Interactions](core-concepts/network-and-interactions/README.md)

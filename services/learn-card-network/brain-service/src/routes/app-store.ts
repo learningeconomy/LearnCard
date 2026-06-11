@@ -1153,7 +1153,14 @@ const handleGetTemplateRecipientsEvent = async (
             sentDate: record.sent,
             claimedDate: record.received,
             credentialUri: record.uri,
-            status: record.received ? ('claimed' as const) : ('pending' as const),
+            status:
+                record.status === 'revoked'
+                    ? ('revoked' as const)
+                    : record.status === 'suspended'
+                    ? ('suspended' as const)
+                    : record.received
+                    ? ('claimed' as const)
+                    : ('pending' as const),
         })),
     ]
         .filter(record => Boolean(record.credentialUri))
