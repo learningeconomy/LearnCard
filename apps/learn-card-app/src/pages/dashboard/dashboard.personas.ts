@@ -1,15 +1,20 @@
-import React from 'react';
-
 import type { AppStoreListing, InstalledApp, VC } from '@learncard/types';
 import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
-import type { ResolvedAction, SlotName } from './quickActions/types';
+import type { QuickActionIcon, ResolvedAction, SlotName } from './quickActions/types';
 import type {
     DashboardActivityRecord,
     DashboardEmptyTip,
     DashboardSlots,
     DashboardViewModel,
 } from './DashboardView.types';
+
+import PassportIcon from 'learn-card-base/svgs/PassportIcon';
+import AiInsightsTwoTonedIcon from 'learn-card-base/svgs/SideNav/AiInsightsTwoTonedIcon';
+import CompassTwoTonedIcon from 'learn-card-base/svgs/SideNav/CompassTwoTonedIcon';
+import ScanIcon from 'learn-card-base/svgs/ScanIcon';
+import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
+import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 
 const noop = () => undefined;
 
@@ -71,15 +76,11 @@ const makeCredentialVC = (opts: {
         },
     } as unknown as VC);
 
-const DotIcon: React.FC<{ className?: string }> = ({ className }) =>
-    React.createElement(
-        'span',
-        {
-            className: `inline-block rounded-full bg-grayscale-400 ${className ?? ''}`,
-            style: { width: '1em', height: '1em' },
-        },
-        null
-    );
+const SLOT_ICON: Record<SlotName, QuickActionIcon> = {
+    collect: PassportIcon,
+    understand: AiInsightsTwoTonedIcon,
+    navigate: CompassTwoTonedIcon,
+};
 
 const makeAction = (
     slot: SlotName,
@@ -89,7 +90,7 @@ const makeAction = (
 ): ResolvedAction => ({
     id,
     slot,
-    Icon: DotIcon,
+    Icon: SLOT_ICON[slot],
     label,
     caption,
     onClick: noop,
@@ -189,21 +190,21 @@ const meanwhileTips: DashboardEmptyTip[] = [
         key: 'scan-qr',
         title: 'Scan a QR code',
         subtitle: 'Claim a credential from a poster or screen',
-        Icon: DotIcon,
+        Icon: ScanIcon,
         onClick: noop,
     },
     {
         key: 'claim-link',
         title: 'Use a claim link',
         subtitle: 'Paste or upload a credential link',
-        Icon: DotIcon,
+        Icon: LinkOutlinedIcon,
         onClick: noop,
     },
     {
         key: 'issue-credential',
         title: 'Issue a credential',
         subtitle: 'Send a credential to someone',
-        Icon: DotIcon,
+        Icon: AddCredentialIcon,
         onClick: noop,
     },
 ];

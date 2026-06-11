@@ -1,9 +1,24 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import DashboardView from './DashboardView';
-import { DASHBOARD_PERSONAS } from './dashboard.personas';
+import { DASHBOARD_PERSONAS, personaCredentials } from './dashboard.personas';
+
+// Primes the cache with persona VCs so the wallet-less Storybook env resolves
+// credential rows. Key must match useGetResolvedCredential's ['useGetResolvedCredential', uri].
+const SeedCredentials: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const queryClient = useQueryClient();
+    const seeded = React.useRef(false);
+    if (!seeded.current) {
+        Object.entries(personaCredentials).forEach(([uri, vc]) => {
+            queryClient.setQueryData(['useGetResolvedCredential', uri], vc);
+        });
+        seeded.current = true;
+    }
+    return <>{children}</>;
+};
 
 const meta: Meta<typeof DashboardView> = {
     title: 'Pages/Dashboard/DashboardView',
@@ -11,9 +26,11 @@ const meta: Meta<typeof DashboardView> = {
     decorators: [
         Story => (
             <MemoryRouter>
-                <div className="bg-grayscale-100 min-h-screen w-full">
-                    <Story />
-                </div>
+                <SeedCredentials>
+                    <div className="bg-grayscale-100 min-h-screen w-full">
+                        <Story />
+                    </div>
+                </SeedCredentials>
             </MemoryRouter>
         ),
     ],
