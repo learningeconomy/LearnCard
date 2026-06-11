@@ -639,6 +639,11 @@ jobs:
         permissions:
             contents: write
         environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
+        # The pre-push hook blocks pushes to protected branches and needs a TTY
+        # to confirm; CI has none, so it aborted the push to production. HUSKY=0
+        # disables local git hooks, which should never run in CI anyway.
+        env:
+            HUSKY: 0
         steps:
             - name: Set Deployment Variables
               id: vars
