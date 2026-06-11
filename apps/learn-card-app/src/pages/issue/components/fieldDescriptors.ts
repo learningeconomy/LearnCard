@@ -4,7 +4,7 @@ import {
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { ActivityField } from './credentialTypeCatalog';
 
-export type FieldInputType = 'text' | 'date' | 'select' | 'result';
+export type FieldInputType = 'text' | 'number' | 'date' | 'select' | 'result';
 
 export interface FieldSelectOption {
     value: string;
@@ -88,13 +88,16 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
         'activityStartDate',
         'AchievementSubject.activityStartDate'
     ),
-    creditsEarned: subjectTextDescriptor(
-        'creditsEarned',
-        'Credits earned',
-        'e.g. 3',
-        'creditsEarned',
-        'AchievementSubject.creditsEarned'
-    ),
+    creditsEarned: {
+        ...subjectTextDescriptor(
+            'creditsEarned',
+            'Credits earned',
+            'e.g. 3',
+            'creditsEarned',
+            'AchievementSubject.creditsEarned'
+        ),
+        input: 'number',
+    },
     term: subjectTextDescriptor(
         'term',
         'Term',
@@ -121,9 +124,9 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
     // recipient earned. Distinct OBv3 paths that must not be conflated.
     creditHours: {
         key: 'creditHours',
-        label: 'Duration / hours',
-        placeholder: 'e.g. 10 hours',
-        input: 'text',
+        label: 'Credit hours',
+        placeholder: 'e.g. 10',
+        input: 'number',
         specRef: 'Achievement.creditsAvailable',
         get: t => t.credentialSubject.achievement.creditsAvailable?.value ?? '',
         set: (t, v) => patchAchievement(t, { creditsAvailable: staticField(v) }),

@@ -57,7 +57,14 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
                             </select>
                         ) : (
                             <input
-                                type={descriptor.input === 'date' ? 'date' : 'text'}
+                                type={
+                                    descriptor.input === 'date'
+                                        ? 'date'
+                                        : descriptor.input === 'number'
+                                        ? 'number'
+                                        : 'text'
+                                }
+                                inputMode={descriptor.input === 'number' ? 'decimal' : undefined}
                                 value={value}
                                 onChange={e => onChange(e.target.value)}
                                 placeholder={descriptor.placeholder}

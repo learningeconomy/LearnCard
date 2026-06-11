@@ -77,6 +77,21 @@ export const fieldToJson = (field: TemplateFieldValue | undefined): string | und
     return trimmed || undefined;
 };
 
+// OBv3 types creditsEarned / creditsAvailable as numbers, so a string value makes
+// the whole credential fail schema validation. Emit a JSON number for static
+// numeric input, keep {{mustache}} placeholders for dynamic templates, and omit
+// anything non-numeric rather than poison the credential.
+export const numericFieldToJson = (
+    field: TemplateFieldValue | undefined
+): number | string | undefined => {
+    if (!field) return undefined;
+    if (field.isDynamic && field.variableName) return `{{${field.variableName}}}`;
+    const trimmed = field.value?.trim();
+    if (!trimmed) return undefined;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 /**
  * Parse a JSON value back to a TemplateFieldValue
  * Detects Mustache syntax and extracts variable name
@@ -153,7 +168,8 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
         achievement.specialization = fieldToJson(ach.specialization);
     }
     if (ach.creditsAvailable?.value || ach.creditsAvailable?.isDynamic) {
-        achievement.creditsAvailable = fieldToJson(ach.creditsAvailable);
+        const creditsAvailable = numericFieldToJson(ach.creditsAvailable);
+        if (creditsAvailable !== undefined) achievement.creditsAvailable = creditsAvailable;
     }
     if (ach.tag && ach.tag.length > 0) {
         achievement.tag = ach.tag;
@@ -622,7 +638,8 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
     const subj = template.credentialSubject;
 
     if (subj.creditsEarned?.value || subj.creditsEarned?.isDynamic) {
-        credentialSubject.creditsEarned = fieldToJson(subj.creditsEarned);
+        const creditsEarned = numericFieldToJson(subj.creditsEarned);
+        if (creditsEarned !== undefined) credentialSubject.creditsEarned = creditsEarned;
     }
 
     if (subj.activityStartDate?.value || subj.activityStartDate?.isDynamic) {
