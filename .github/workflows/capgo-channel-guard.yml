@@ -113,13 +113,13 @@ jobs:
                       sections.push('Run the bumper from the repo root:');
                       sections.push('');
                       sections.push('```bash');
-                      sections.push('bun --filter learn-card-app run lc bump-default-capgo-channel');
+                      sections.push('bun run --filter learn-card-app lc bump-default-capgo-channel');
                       sections.push('```');
                       sections.push('');
                       sections.push('Or pass an explicit channel:');
                       sections.push('');
                       sections.push('```bash');
-                      sections.push('bun --filter learn-card-app run lc bump-default-capgo-channel 1.0.7');
+                      sections.push('bun run --filter learn-card-app lc bump-default-capgo-channel 1.0.7');
                       sections.push('```');
                       sections.push('');
                       sections.push('Then commit and push the updated `capacitor.config.ts`. The next push to this PR will re-run this check.');
@@ -196,5 +196,5 @@ jobs:
             - name: Fail the check if guard tripped
               if: steps.detect.outputs.guard_failed == 'true' && steps.escape.outputs.skip != 'true'
               run: |
-                  echo "::error::Capgo channel guard failed — bump defaultChannel via 'bun --filter learn-card-app run lc bump-default-capgo-channel' or use an exemption (see PR comment)."
+                  echo "::error::Capgo channel guard failed — bump defaultChannel via 'bun run --filter learn-card-app lc bump-default-capgo-channel' or use an exemption (see PR comment)."
                   exit 1
