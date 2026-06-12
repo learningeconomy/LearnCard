@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 import { IonPopover } from '@ionic/react';
 
@@ -18,6 +20,9 @@ type CredentialIssuerPopoverState = {
     event?: Event;
     verifierState: VerifierState;
 };
+
+const TRUST_REGISTRIES_DOCS_URL =
+    'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries';
 
 export const normalizeCredentialIssuerVerifierState = (
     verifierState: string | undefined
@@ -148,19 +153,29 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                     <div className="space-y-2">
                         <p className="text-xs text-grayscale-600 leading-relaxed">
                             {popoverDescription}
-                            {isTrustedIssuer && (
-                                <>
-                                    {' '}
-                                    <a
-                                        href="https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="font-semibold text-emerald-600 underline underline-offset-2"
-                                    >
-                                        Learn More
-                                    </a>
-                                </>
-                            )}
+
+                            <span>
+                                {' '}
+                                <button
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        if (Capacitor?.isNativePlatform()) {
+                                            Browser?.open({
+                                                url: TRUST_REGISTRIES_DOCS_URL,
+                                            });
+                                        } else {
+                                            window?.open(
+                                                TRUST_REGISTRIES_DOCS_URL,
+                                                '_blank',
+                                                'noopener,noreferrer'
+                                            );
+                                        }
+                                    }}
+                                    className="font-semibold text-indigo-600 underline underline-offset-2"
+                                >
+                                    Learn More
+                                </button>
+                            </span>
                         </p>
                     </div>
                 </div>
