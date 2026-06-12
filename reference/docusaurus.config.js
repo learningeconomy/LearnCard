@@ -4,6 +4,62 @@
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
+const canLoadTypedocPlugin = Number(process.versions.node.split('.')[0]) >= 20;
+
+const typedocPlugins = canLoadTypedocPlugin
+    ? [
+          [
+              'docusaurus-plugin-typedoc',
+              {
+                  id: 'core',
+                  entryPoints: ['../packages/learn-card-core/src/index.ts'],
+                  tsconfig: '../packages/learn-card-core/tsconfig.build.json',
+                  out: 'docs/core',
+                  watch: true,
+                  skipErrorChecking: true,
+                  useHTMLEncodedBrackets: true,
+              },
+          ],
+          [
+              'docusaurus-plugin-typedoc',
+              {
+                  id: 'types',
+                  entryPoints: ['../packages/learn-card-types/src/index.ts'],
+                  tsconfig: '../packages/learn-card-types/tsconfig.json',
+                  out: 'docs/types',
+                  watch: true,
+                  skipErrorChecking: true,
+                  useHTMLEncodedBrackets: true,
+              },
+          ],
+          [
+              'docusaurus-plugin-typedoc',
+              {
+                  id: 'react',
+                  entryPoints: ['../packages/react-learn-card/src/index.ts'],
+                  tsconfig: '../packages/react-learn-card/tsconfig.json',
+                  out: 'docs/react',
+                  compilerOptions: { declaration: true },
+                  watch: true,
+                  skipErrorChecking: true,
+                  useHTMLEncodedBrackets: true,
+              },
+          ],
+          [
+              'docusaurus-plugin-typedoc',
+              {
+                  id: 'helpers',
+                  entryPoints: ['../packages/learn-card-helpers/src/index.ts'],
+                  tsconfig: '../packages/learn-card-helpers/tsconfig.json',
+                  out: 'docs/helpers',
+                  watch: true,
+                  skipErrorChecking: true,
+                  useHTMLEncodedBrackets: true,
+              },
+          ],
+      ]
+    : [];
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: 'LearnCard',
@@ -24,57 +80,7 @@ const config = {
     // to replace "en" with "zh-Hans".
     i18n: { defaultLocale: 'en', locales: ['en'] },
 
-    plugins: [
-        [
-            'docusaurus-plugin-typedoc',
-            {
-                id: 'core',
-                entryPoints: ['../packages/learn-card-core/src/index.ts'],
-                tsconfig: '../packages/learn-card-core/tsconfig.build.json',
-                out: 'docs/core',
-                watch: true,
-                skipErrorChecking: true,
-                useHTMLEncodedBrackets: true,
-            },
-        ],
-        [
-            'docusaurus-plugin-typedoc',
-            {
-                id: 'types',
-                entryPoints: ['../packages/learn-card-types/src/index.ts'],
-                tsconfig: '../packages/learn-card-types/tsconfig.json',
-                out: 'docs/types',
-                watch: true,
-                skipErrorChecking: true,
-                useHTMLEncodedBrackets: true,
-            },
-        ],
-        [
-            'docusaurus-plugin-typedoc',
-            {
-                id: 'react',
-                entryPoints: ['../packages/react-learn-card/src/index.ts'],
-                tsconfig: '../packages/react-learn-card/tsconfig.json',
-                out: 'docs/react',
-                compilerOptions: { declaration: true },
-                watch: true,
-                skipErrorChecking: true,
-                useHTMLEncodedBrackets: true,
-            },
-        ],
-        [
-            'docusaurus-plugin-typedoc',
-            {
-                id: 'helpers',
-                entryPoints: ['../packages/learn-card-helpers/src/index.ts'],
-                tsconfig: '../packages/learn-card-helpers/tsconfig.json',
-                out: 'docs/helpers',
-                watch: true,
-                skipErrorChecking: true,
-                useHTMLEncodedBrackets: true,
-            },
-        ],
-    ],
+    plugins: typedocPlugins,
 
     presets: [
         [

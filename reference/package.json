@@ -6,7 +6,7 @@
         "docusaurus": "docusaurus",
         "start": "docusaurus start",
         "prebuild": "bunx nx run-many -t build -p types helpers core --skip-nx-cache",
-        "build": "docusaurus build",
+        "build": "node scripts/build-docs.cjs build",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",
