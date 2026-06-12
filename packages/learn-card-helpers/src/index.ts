@@ -56,7 +56,9 @@ export const isVC2Format = (credential: UnsignedVC | VC): boolean => {
         return false;
     }
 
-    return credential['@context'].includes('https://www.w3.org/ns/credentials/v2');
+    return credential['@context'].some(
+        context => context === 'https://www.w3.org/ns/credentials/v2'
+    );
 };
 
 /** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
