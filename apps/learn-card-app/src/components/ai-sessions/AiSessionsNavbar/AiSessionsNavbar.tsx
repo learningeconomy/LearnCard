@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import { IonFooter, IonMenuToggle } from '@ionic/react';
 import BurgerIcon from '../../../components/svgs/Burger';

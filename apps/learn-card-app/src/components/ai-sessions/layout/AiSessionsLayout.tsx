@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import { IonFooter } from '@ionic/react';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';

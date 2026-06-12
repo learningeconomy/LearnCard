@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
 

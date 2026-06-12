@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';

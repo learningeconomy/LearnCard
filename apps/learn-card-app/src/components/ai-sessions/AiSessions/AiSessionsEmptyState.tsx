@@ -1,7 +1,7 @@
 import React from 'react';
 import SadCloud from '../../svgs/SadCloud';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import { useHistory } from 'react-router-dom';
 import { useGetCurrentLCNUser } from 'learn-card-base';

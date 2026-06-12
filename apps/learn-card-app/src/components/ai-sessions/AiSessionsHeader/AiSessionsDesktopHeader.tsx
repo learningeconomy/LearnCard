@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import X from '../../svgs/X';
 import BurgerIcon from '../../svgs/Burger';

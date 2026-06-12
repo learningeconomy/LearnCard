@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import AiSessionTopicItem from './AiSessionTopicItem';
 import AiSessionTopicItemSkeleton from './AiSessionTopicItemSkeleton';

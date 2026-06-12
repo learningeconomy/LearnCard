@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import SlimCaretLeft from '../../svgs/SlimCaretLeft';

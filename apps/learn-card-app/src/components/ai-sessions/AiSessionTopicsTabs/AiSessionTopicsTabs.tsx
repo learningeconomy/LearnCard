@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import AiSessionsSearch from '../AiSessionsSearch/AiSessionsSearch';
 

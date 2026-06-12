@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import { m } from '../../../paraglide/messages.js';
 
 import NewAiSessionContainer from '../NewAiSessionContainer';
 import NewAiSessionSideMenuButton from './NewAiSessionSideMenuButton';
