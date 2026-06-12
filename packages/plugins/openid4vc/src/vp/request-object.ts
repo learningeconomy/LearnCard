@@ -483,7 +483,16 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
         );
     }
 
-    const x509 = await loadX509();
+    let x509: X509Module;
+    try {
+        x509 = await loadX509();
+    } catch (e) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `Failed to load X.509 parser: ${describe(e)}`,
+            { cause: e }
+        );
+    }
 
     // Defensive DER → X509Certificate construction (cross-platform via @peculiar/x509).
     let chain: X509.X509Certificate[];
