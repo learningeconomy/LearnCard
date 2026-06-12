@@ -12,6 +12,8 @@ import {
     getCategoryForCredential,
     getOrCreateSharedUriForWallet,
     contractCategoryNameToCategoryMetadata,
+    isJobTerminal,
+    MAX_JOB_RETRIES,
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -55,9 +57,17 @@ const log = getLogger('use-learn-card-message-handlers');
 
 const getPendingSyncStatus = () => {
     const jobs = Object.values(pendingContractSyncStore.get.jobs());
-    const activeJobs = jobs.filter(job => job.status === 'queued' || job.status === 'running');
+    // A job that just errored but still has retries left is not terminal — it
+    // will be retried by the worker — so treat it as active. Otherwise a
+    // waitForSync caller could see a premature "ready" during the retry window.
+    const activeJobs = jobs.filter(
+        job =>
+            job.status === 'queued' ||
+            job.status === 'running' ||
+            (job.status === 'error' && job.retryCount < MAX_JOB_RETRIES)
+    );
     const latestTerminalJob = jobs
-        .filter(job => job.status === 'done' || (job.status === 'error' && job.retryCount >= 3))
+        .filter(isJobTerminal)
         .sort((a, b) => b.updatedAt - a.updatedAt)[0];
 
     const relevantJobs =

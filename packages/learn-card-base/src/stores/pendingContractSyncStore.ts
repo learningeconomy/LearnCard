@@ -26,7 +26,40 @@ export type PendingContractSyncState = {
     jobs: Record<string, PendingContractSyncJob>;
 };
 
+/** Maximum number of times the worker will retry a failing job before giving up. */
+export const MAX_JOB_RETRIES = 3;
+
+/** Base delay between retry attempts; multiplied exponentially per retry. */
+export const RETRY_BACKOFF_BASE_MS = 5_000;
+
+/** Upper bound on the exponential retry backoff. */
+export const RETRY_BACKOFF_MAX_MS = 60_000;
+
+/** Done jobs older than this are pruned so the persisted store doesn't grow forever. */
+export const DONE_JOB_TTL_MS = 24 * 60 * 60 * 1000;
+
 const now = (): number => Date.now();
+
+/**
+ * Earliest timestamp at which a failed job is eligible to be retried, based on an
+ * exponential backoff of its retryCount. A job that has never failed (retryCount 0)
+ * is eligible immediately. Capped at RETRY_BACKOFF_MAX_MS.
+ */
+export const getNextRetryAt = (job: PendingContractSyncJob): number => {
+    if (job.retryCount <= 0) return 0;
+
+    const delay = Math.min(RETRY_BACKOFF_BASE_MS * 2 ** (job.retryCount - 1), RETRY_BACKOFF_MAX_MS);
+
+    return (job.finishedAt ?? job.updatedAt) + delay;
+};
+
+/** True when a non-done job is eligible to be (re)processed by the worker right now. */
+export const isJobReadyToProcess = (job: PendingContractSyncJob, at: number = now()): boolean =>
+    job.status !== 'done' && job.retryCount < MAX_JOB_RETRIES && getNextRetryAt(job) <= at;
+
+/** True when a job has reached a terminal state (succeeded or exhausted its retries). */
+export const isJobTerminal = (job: PendingContractSyncJob): boolean =>
+    job.status === 'done' || (job.status === 'error' && job.retryCount >= MAX_JOB_RETRIES);
 
 // Example output:
 // did:web:network.learncard.com:users:learner::lc:network:network.learncard.com/trpc:contract:abc::lc:network:network.learncard.com/trpc:terms:def::did:web:network.learncard.com:users:owner
@@ -81,8 +114,20 @@ export const pendingContractSyncStore = createStore(
             finishedAt: undefined,
         };
 
-        // Persist the latest job snapshot so the worker can resume after reload.
-        set.jobs({ ...jobs, [id]: job });
+        // Drop stale done jobs so the persisted store doesn't grow forever, then
+        // persist the latest job snapshot so the worker can resume after reload.
+        const timestampForPrune = timestamp;
+        const prunedJobs = Object.fromEntries(
+            Object.entries(jobs).filter(
+                ([jobId, existingJob]) =>
+                    jobId === id ||
+                    existingJob.status !== 'done' ||
+                    timestampForPrune - (existingJob.finishedAt ?? existingJob.updatedAt) <
+                        DONE_JOB_TTL_MS
+            )
+        );
+
+        set.jobs({ ...prunedJobs, [id]: job });
         return job;
     },
     markRunning: (id: string) => {
@@ -200,6 +245,18 @@ export const pendingContractSyncStore = createStore(
         const nextJobs = { ...jobs };
         delete nextJobs[id];
         set.jobs(nextJobs);
+    },
+    pruneDoneJobs: (ttlMs: number = DONE_JOB_TTL_MS) => {
+        const jobs = get.jobs();
+        const cutoff = now() - ttlMs;
+
+        const nextJobs = Object.fromEntries(
+            Object.entries(jobs).filter(
+                ([, job]) => job.status !== 'done' || (job.finishedAt ?? job.updatedAt) >= cutoff
+            )
+        );
+
+        if (Object.keys(nextJobs).length !== Object.keys(jobs).length) set.jobs(nextJobs);
     },
     markError: (id: string, error: string) => {
         const jobs = get.jobs();
