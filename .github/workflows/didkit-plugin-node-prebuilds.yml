@@ -259,9 +259,6 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: bunx napi prepublish -t npm --skip-gh-release
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
             # Use npm for npm-registry tarball creation/publication; Bun handles the workspace install/build.
             - name: Pack package
@@ -286,5 +283,3 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: npm publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
