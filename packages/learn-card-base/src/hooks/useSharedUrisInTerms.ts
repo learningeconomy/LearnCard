@@ -143,8 +143,8 @@ const createSharedUriForWallet = async (
         if (mainRecord) {
             // re-use existing shared uris if they exist
             const existingSharedUris = mainRecord.sharedUris?.[contractOwnerDid];
-            if (existingSharedUris?.length > 0) {
-                return existingSharedUris?.at(-1);
+            if (existingSharedUris?.length) {
+                return existingSharedUris.at(-1) ?? false;
             }
 
             const vc = await wallet.read.get(credUri);
