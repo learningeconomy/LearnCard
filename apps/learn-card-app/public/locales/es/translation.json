@@ -1,4 +1,46 @@
 {
+    "common": {
+        "share": "Compartir",
+        "open": "Abrir",
+        "accept": "Aceptar",
+        "search": "Buscar",
+        "delete": "Eliminar",
+        "done": "Listo",
+        "next": "Siguiente",
+        "verify": "Verificar",
+        "verifying": "Verificando...",
+        "preview": "Vista previa",
+        "details": "Detalles",
+        "about": "Acerca de",
+        "unknown": "Desconocido",
+        "status": "Estado",
+        "claim": "Reclamar",
+        "update": "Actualizar",
+        "skipForNow": "Omitir por ahora",
+        "upload": "Subir",
+        "publish": "Publicar",
+        "yes": "Sí",
+        "no": "No",
+        "connect": "Conectar",
+        "login": "Iniciar sesión",
+        "password": "Contraseña",
+        "createAccount": "Crear cuenta",
+        "staySignedIn": "Permanecer conectado",
+        "resendCode": "Reenviar código",
+        "resendIn": "Reenviar en {{seconds}}s",
+        "invalidCode": "Código inválido",
+        "enterVerificationCode": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
+        "agreeToTerms": "Acepto los <0>Términos</0>",
+        "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+        "differentEmail": "Usar otro correo",
+        "sendingCode": "Enviando código...",
+        "back": "Volver",
+        "close": "Cerrar",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "continue": "Continuar",
+        "loading": "Cargando..."
+    },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
         "newAiSession": "Nueva sesión de IA",
@@ -8,8 +50,7 @@
             "connectionsEncrypted": "Todas las conexiones están <0>encriptadas.</0>",
             "privacyPolicy": "Política de privacidad",
             "termsOfService": "Términos de servicio",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "Cerrar"
+            "copyright": "© {{year}} Learning Economy"
         },
         "links": {
             "launchPad": "Aplicaciones",
@@ -130,16 +171,13 @@
         "passport": "Pasaporte",
         "launchpad": "Launchpad",
         "appCard": {
-            "open": "Abrir",
             "get": "Obtener",
             "launch": "Iniciar",
             "soon": "Próximamente",
-            "connect": "Conectar",
             "loading": "Cargando...",
             "age": "Edad {{rating}}"
         },
         "carousel": {
-            "open": "Abrir",
             "getApp": "Obtener app",
             "goToSlide": "Ir a la diapositiva {{number}}"
         },
@@ -152,8 +190,6 @@
             "shareApp": "Compartir app",
             "editPermissions": "Editar permisos",
             "uninstall": "Desinstalar",
-            "about": "Acerca de",
-            "preview": "Vista previa",
             "watch": "Ver",
             "links": "Enlaces",
             "promoVideo": "Video promocional",
@@ -164,7 +200,6 @@
             "linkCopied": "¡Enlace copiado al portapapeles!",
             "installFailed": "Error al instalar la app: {{error}}",
             "dateOfBirth": "Fecha de nacimiento",
-            "back": "Volver",
             "whyUseThisApp": "¿Por qué usar esta app?",
             "privacyPolicy": "Política de privacidad",
             "termsOfService": "Términos de servicio",
@@ -211,11 +246,8 @@
         "evidence": "Evidencia",
         "issuance": "Emisión",
         "issued": "Emitida",
-        "details": "Detalles",
         "filter": "Filtrar",
         "credentialDetail": "Detalle de credencial",
-        "shareCredential": "Compartir",
-        "deleteCredential": "Eliminar",
         "confirmDelete": "¿Estás seguro de que deseas eliminar esta credencial?",
         "addToWallet": "Agregar a la billetera",
         "viewCredential": "Ver credencial",
@@ -223,7 +255,6 @@
         "subject": "Asunto",
         "issueDate": "Fecha de emisión",
         "expirationDate": "Fecha de expiración",
-        "status": "Estado",
         "actions": "Acciones",
         "openSyllabus": "Abrir programa",
         "certificate": "Certificado",
@@ -287,55 +318,19 @@
         "email": {
             "placeholder": "Dirección de correo",
             "button": "Iniciar sesión con correo",
-            "sendingCode": "Enviando código...",
             "verification": {
-                "title": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
-                "verify": "Verificar",
-                "verifying": "Verificando...",
                 "error": "No se pudo verificar el código. Intenta de nuevo."
             },
-            "password": {
-                "placeholder": "Contraseña",
-                "login": "Iniciar sesión",
-                "create": "Crear cuenta",
-                "existingAccount": "¿Ya tienes una cuenta?",
-                "differentEmail": "Usar otro correo",
-                "staySignedIn": "Permanecer conectado",
-                "agreeToTerms": "Acepto los <0>Términos</0>"
-            },
-            "resend": "Reenviar código",
-            "resending": "Enviando código...",
-            "resendIn": "Reenviar en {{seconds}}s",
             "error": {
-                "invalidEmail": "Correo faltante o inválido",
-                "invalidCode": "Código inválido"
+                "invalidEmail": "Correo faltante o inválido"
             }
         },
         "phone": {
             "placeholder": "Número de teléfono",
             "button": "Iniciar sesión con SMS",
-            "loading": "Cargando...",
-            "verification": {
-                "title": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
-                "verify": "Verificar",
-                "verifying": "Verificando..."
-            },
-            "password": {
-                "placeholder": "Contraseña",
-                "login": "Iniciar sesión",
-                "create": "Crear cuenta",
-                "existingAccount": "¿Ya tienes una cuenta?",
-                "differentEmail": "Usar otro correo",
-                "staySignedIn": "Permanecer conectado",
-                "agreeToTerms": "Acepto los <0>Términos</0>"
-            },
-            "resend": "Reenviar código",
-            "resending": "Enviando código...",
-            "resendIn": "Reenviar en {{seconds}}s",
             "smsSent": "Se ha enviado un código de verificación",
             "error": {
-                "invalidPhone": "¡Se requiere teléfono!",
-                "invalidCode": "Código inválido"
+                "invalidPhone": "¡Se requiere teléfono!"
             }
         },
         "social": {
@@ -405,11 +400,8 @@
             }
         },
         "welcome": "Bienvenido a",
-        "continue": "Continuar",
         "back": "Atrás",
         "skipForNow": "Omitir por ahora",
-        "close": "Cerrar",
-        "save": "Guardar",
         "role": {
             "learner": {
                 "title": "Estudiante",
@@ -445,7 +437,6 @@
                     "description": "Para unirte sin una cuenta de padre, ingresa el código especial proporcionado por tu escuela.",
                     "cta": "¿Tienes un código escolar?",
                     "placeholder": "Ingresar código",
-                    "verify": "Verificar",
                     "error": "Código escolar inválido. Intenta de nuevo."
                 },
                 "adultButton": "Soy adulto",
@@ -469,7 +460,6 @@
                     "heading": "Solicitud enviada",
                     "description": "Enviamos una solicitud de consentimiento a <0>{{email}}</0>. Te avisaremos cuando sea aprobada."
                 },
-                "done": "Listo",
                 "error": {
                     "invalidEmail": "Ingresa un correo válido.",
                     "sendFailed": "No se pudo enviar la solicitud. Intenta de nuevo."
@@ -494,7 +484,6 @@
             "gotIt": "Entendido"
         },
         "slides": {
-            "next": "Siguiente",
             "getStarted": "Comenzar",
             "learner": {
                 "slide1": {
@@ -655,15 +644,11 @@
             "sending": "Envío...",
             "setPrimaryConfirm": {
                 "title": "Establecer método de contacto principal",
-                "text": "¿Está seguro de que desea configurar este correo electrónico como principal?",
-                "yes": "Sí",
-                "no": "No"
+                "text": "¿Está seguro de que desea configurar este correo electrónico como principal?"
             },
             "removeConfirm": {
                 "title": "Eliminar método de contacto",
-                "text": "¿Estás seguro de que deseas eliminar este correo electrónico?",
-                "yes": "Sí",
-                "no": "No"
+                "text": "¿Estás seguro de que deseas eliminar este correo electrónico?"
             }
         },
         "phone": {
@@ -758,12 +743,7 @@
         "scanCode": "Escanear código",
         "showCode": "Mostrar código",
         "shareCode": "Compartir código",
-        "search": "Buscar",
-        "back": "Volver",
-        "cancel": "Cancelar",
         "confirm": "Confirmar",
-        "connect": "Conectar",
-        "accept": "Aceptar",
         "acceptRequest": "Aceptar solicitud",
         "requestConnection": "Solicitar conexión",
         "sendRequest": "Enviar solicitud",
@@ -794,7 +774,6 @@
         "joined": "Unido",
         "saving": "Guardando...",
         "joining": "Uniéndose...",
-        "acceptBoost": "Aceptar",
         "joinBoost": "Unirse",
         "notification": "Notificación",
         "okay": "Aceptar",
@@ -809,14 +788,9 @@
     },
     "consentFlow": {
         "title": "Consentimiento",
-        "accept": "Aceptar",
         "acceptAndSync": "Aceptar y sincronizar",
         "accepted": "Aceptado",
         "acceptingContract": "Aceptando contrato...",
-        "back": "Volver",
-        "cancel": "Cancelar",
-        "close": "Cerrar",
-        "continue": "Continuar",
         "continuePlaying": "Seguir jugando",
         "continueToGame": "Continuar al juego",
         "launchGame": "Iniciar juego",
@@ -828,11 +802,9 @@
         "disconnecting": "Desconectando...",
         "disconnect": "Desconectar",
         "saving": "Guardando...",
-        "save": "Guardar",
         "syncing": "Sincronizando...",
         "synced": "Sincronizado",
         "withdraw": "Retirar",
-        "update": "Actualizar",
         "write": "Escribir",
         "hidden": "Oculto",
         "anonymized": "Anonimizado",
@@ -841,7 +813,6 @@
         "networkError": "Error de red",
         "tryAgain": "Intentar de nuevo",
         "nothingFound": "No se encontró nada",
-        "unknown": "Desconocido",
         "errorLoading": "Hubo un problema al cargar este flujo de consentimiento.",
         "notExists": "Este flujo de consentimiento no existe o ya no está disponible.",
         "receivedCredential": "Has recibido una credencial.",
@@ -862,7 +833,6 @@
         "status.active": "Activo",
         "status.off": "Desactivado",
         "status.on": "Activado",
-        "shareCredential": "Compartir",
         "privacyAndData": "Privacidad y datos",
         "gameAccess.title": "Acceso al juego",
         "gameAccess.success": "¡Ya tienes acceso!",
@@ -898,7 +868,6 @@
         "editAccess": "Editar acceso",
         "syncNewData": "Sincronizar datos nuevos",
         "syncMyData": "Sincronizar mis datos",
-        "next": "Siguiente",
         "shareOneTimeOnly": "Compartir solo una vez",
         "customDuration": "Duración personalizada",
         "noCredentials": "Sin credenciales",
@@ -923,11 +892,8 @@
         "temporarySession": "Esta es una sesión temporal. Cerrar la pestaña cerrará tu sesión permanentemente a menos que configures un método de recuperación.",
         "recommendTwo": "Recomendamos configurar al menos dos métodos de recuperación.",
         "addingMethod": "Agregar otro método mejora tu seguridad.",
-        "done": "Listo",
-        "skipForNow": "Omitir por ahora",
         "generating": "Generando...",
         "sending": "Enviando...",
-        "verifying": "Verificando...",
         "verifyIdentity": "Verifica tu identidad",
         "verifyCode": "Verificar código",
         "verifyPasskey": "Verificar con clave de acceso",
@@ -1004,9 +970,7 @@
             "tapToChoose": "Toca para elegir el archivo de respaldo",
             "fileSelected": "Archivo seleccionado",
             "enter": "Ingresar",
-            "change": "Cambiar",
-            "cancel": "Cancelar",
-            "back": "Volver"
+            "change": "Cambiar"
         },
         "tab": {
             "email": "Correo electrónico",
@@ -1092,7 +1056,6 @@
         "noAlerts": "Aún no hay alertas",
         "active": "Activas",
         "archived": "Archivadas",
-        "loading": "Cargando...",
         "reviewRequired": "Revisión requerida",
         "newSubmission": "Nuevo envío",
         "appApproved": "Aplicación aprobada",
@@ -1104,8 +1067,6 @@
         "rejecting": "Rechazando...",
         "approved": "Aprobada",
         "notApproved": "No aprobada",
-        "claim": "Reclamar",
-        "accept": "Aceptar",
         "alreadyConnected": "Ya están conectados.",
         "alreadyConnectedShort": "Los perfiles ya están conectados",
         "emptyActive": "¡Estás al día!",
@@ -1113,17 +1074,14 @@
         "connectionRequest": "Solicitud de conexión",
         "newBoost": "Nuevo Boost",
         "archive": "Archivar",
-        "delete": "Eliminar",
         "confirmDelete": "¿Eliminar esta notificación?",
         "rejected": "Rechazado",
         "okay": "De acuerdo",
-        "open": "Abrir",
         "viewCredential": "Ver credencial",
         "loadingNotifications": "Cargando notificaciones...",
         "refresh": "Actualizar"
     },
     "share": {
-        "title": "Compartir",
         "addContact": "Agregar contacto",
         "generateLinkFailed": "Error al generar enlace de invitación",
         "inviteLinkCopied": "Enlace de invitación copiado al portapapeles",
@@ -1143,9 +1101,7 @@
         "cameraPermission": "Se requiere permiso de cámara",
         "invalidCode": "Código QR inválido",
         "scanAnother": "Escanear otro",
-        "done": "Listo",
         "openCamera": "Abrir cámara",
-        "close": "Cerrar",
         "scanQR": "Escanear código QR",
         "importFromLink": "Importar desde enlace",
         "pasteLink": "Pega el enlace aquí...",
@@ -1153,7 +1109,6 @@
         "processing": "Procesando...",
         "success": "¡Credencial importada exitosamente!",
         "failed": "Error al importar la credencial",
-        "share": "Compartir",
         "download": "Descargar",
         "scanLabel": "Escanear",
         "saveToPhotos": "Guardar en Fotos",
@@ -1199,10 +1154,8 @@
         "totalIssued": "Total emitidas",
         "totalRevoked": "Total revocadas",
         "totalPending": "Total pendientes",
-        "details": "Detalles",
         "recipient": "Destinatario",
         "issuedDate": "Emitida",
-        "status": "Estado",
         "actions": "Acciones"
     },
     "ai": {
@@ -1210,10 +1163,8 @@
         "newSession": "Nuevo tema",
         "browseTopics": "Explorar sesiones...",
         "searchSkills": "Elige una habilidad, objetivo o trabajo...",
-        "clearSearch": "Buscar",
         "noResults": "Sin resultados",
         "noSharedInsights": "Sin Insights compartidos",
-        "loading": "Cargando...",
         "loadingRoles": "Cargando roles...",
         "generating": "Generando...",
         "error": "Ocurrió un error",
@@ -1233,13 +1184,9 @@
         "newSessionTitle": "Iniciar una nueva sesión",
         "sessionHistory": "Historial de sesiones",
         "noSessions": "Aún no hay sesiones",
-        "continueSession": "Continuar",
-        "deleteSession": "Eliminar",
         "renameSession": "Renombrar",
-        "shareSession": "Compartir",
         "allTopics": "Todos los temas",
         "aiSessions": "Sesiones de IA",
-        "close": "Cerrar",
         "closeToEndSession": "Cerrar para finalizar la sesión",
         "dismiss": "Descartar",
         "get": "Obtener",
@@ -1250,7 +1197,6 @@
         "noSessionsForTopic": "Sin sesiones para este tema",
         "noSessionsFound": "No se encontraron sesiones",
         "noTopics": "Aún no hay temas",
-        "open": "Abrir",
         "personalize": "Personalizar",
         "revisitTopic": "Revisitar tema",
         "set": "Establecer",
@@ -1291,9 +1237,6 @@
         "salary": "Salario",
         "goals": "Objetivos",
         "saveProfile": "Guardar perfil",
-        "next": "Siguiente",
-        "back": "Volver",
-        "skipForNow": "Omitir por ahora",
         "addSkill": "Agregar habilidad",
         "removeSkill": "Eliminar",
         "noSkills": "Aún no hay habilidades agregadas"
@@ -1303,7 +1246,6 @@
         "createBoost": "Crear Boost",
         "editBoost": "Editar Boost",
         "deleteBoost": "Eliminar Boost",
-        "claimBoost": "Reclamar",
         "sendBoost": "Enviar",
         "manageBoost": "Gestionar",
         "boostDetails": "Detalles del Boost",
@@ -1318,11 +1260,8 @@
         "category": "Categoría",
         "requirements": "Requisitos",
         "evidence": "Evidencia",
-        "preview": "Vista previa",
-        "save": "Guardar",
         "saving": "Guardando...",
         "saved": "¡Guardado!",
-        "publish": "Publicar",
         "publishing": "Publicando...",
         "unpublish": "Despublicar",
         "draft": "Borrador",
@@ -1350,7 +1289,6 @@
         "changeImage": "Cambiar imagen",
         "cms": {
             "basicInfo": {
-                "about": "Acerca de",
                 "issuerNamePlaceholder": "Nombre del emisor",
                 "descriptionPlaceholder": "¿Para qué es este boost?",
                 "narrativePlaceholder": "¿Cómo se gana este boost?",
@@ -1381,8 +1319,6 @@
                 "uploading": "Subiendo...",
                 "changePhoto": "Cambiar foto",
                 "changeDoc": "Cambiar documento",
-                "upload": "Subir",
-                "close": "Cerrar",
                 "videoCover": "Portada del video",
                 "uploadedImagePreview": "Vista previa de la imagen cargada",
                 "mediaAttachment": "Adjunto de medios",
@@ -1401,8 +1337,6 @@
                 "boostType": "Tipo de boost",
                 "selectStylePack": "Seleccionar paquete de estilos",
                 "selectImage": "Seleccionar imagen",
-                "save": "Guardar",
-                "cancel": "Cancelar",
                 "badgeThumbnail": "Miniatura de la insignia",
                 "default": "Predeterminado",
                 "backgroundImage": "Imagen de fondo",
@@ -1415,8 +1349,6 @@
                 "displayType": "Visualización {{type}}",
                 "stylePack": "Paquete de estilos",
                 "all": "Todos",
-                "upload": "Subir",
-                "loading": "Cargando...",
                 "selectType": "Seleccionar tipo",
                 "customType": "Tipo personalizado",
                 "search": "Buscar...",
@@ -1442,7 +1374,6 @@
                 "claimLinksUnavailableDescription": "los permisos están deshabilitados.",
                 "claimLinksDisabledViewing": "Los enlaces de reclamación están deshabilitados porque la visualización no está habilitada para esta plantilla.",
                 "addContact": "Agregar contacto",
-                "update": "Actualizar",
                 "generateClaimLink": "¿Generar enlace de reclamación?",
                 "cannotGenerateClaimLinks": "Esta plantilla no puede generar enlaces de reclamación porque el permiso de visualización está deshabilitado.",
                 "enableViewing": "Habilita la visualización para continuar con la generación del enlace de reclamación.",
@@ -1491,7 +1422,6 @@
             "publish": {
                 "readyToPublish": "¿Estás listo para publicar?",
                 "lockWarning": "Este boost se bloqueará en un sello verificable para siempre y no se puede cambiar después de publicarlo.",
-                "preview": "Vista previa",
                 "saveAsDraft": "Guardar como borrador",
                 "publishAndIssue": "Publicar y emitir"
             },
@@ -1508,13 +1438,10 @@
                 "returnToWallet": "Volver a la cartera"
             },
             "header": {
-                "publish": "Publicar",
                 "issue": "Emitir",
                 "confirmation": "Confirmación"
             },
             "preview": {
-                "details": "Detalles",
-                "about": "Acerca de",
                 "criteria": "Criterios",
                 "certificate": "Certificado",
                 "id": "ID"
@@ -1760,7 +1687,6 @@
         "noSharedInsights": "Sin Insights compartidos",
         "accepted": "Aceptado",
         "denied": "Denegado",
-        "unknown": "Desconocido",
         "requestInsights": "Solicitar Insights",
         "requestInsightsDescription": "Solicita ver Habilidades principales, Instantáneas de aprendizaje y Rutas sugeridas. También podrás enviar sugerencias de rutas de aprendizaje.",
         "searchByName": "Buscar por nombre...",
@@ -1782,7 +1708,6 @@
         "confirmCancelRequest": "¿Estás seguro de que deseas cancelar esta solicitud de Insights?",
         "shareInsights": "Compartir Insights",
         "shareInsightsDescription": "Comparte tus Habilidades principales, Instantáneas de aprendizaje y Rutas sugeridas. También podrás recibir sugerencias de rutas de aprendizaje.",
-        "share": "Compartir",
         "insights": "Insights",
         "shareInsightsWith": "Compartir Insights con <br /> {{name}}",
         "wantsToShare": "<0>{{childName}}</0> quiere compartir sus insights con <1>{{targetName}}</1>",
@@ -1798,8 +1723,6 @@
         "expired": "Expirado",
         "viewRequest": "Ver solicitud",
         "approved": "Aprobado",
-        "search": "Buscar",
-        "back": "Volver",
         "sort.az": "A-Z",
         "sort.recentlyAdded": "Agregados recientemente",
         "filter.all": "Todos",
@@ -1847,10 +1770,8 @@
     },
     "aiSession": {
         "loadingTitle": "Cargando título",
-        "close": "Cerrar",
         "newTopic": "Nuevo tema",
         "browse": "Explorar...",
-        "somethingElse": "Algo más...",
-        "search": "Buscar"
+        "somethingElse": "Algo más..."
     }
 }

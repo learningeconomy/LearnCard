@@ -197,7 +197,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                 onClick={isFromGame ? handleBackToGame : closeAllModals}
                 className="w-full py-[10px] px-[20px] text-[20px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom"
             >
-                {isFromGame ? m['consentFlow.back']() : m['consentFlow.cancel']()}
+                {isFromGame ? m['common.back']() : m['common.cancel']()}
             </button>
         </div>
     );

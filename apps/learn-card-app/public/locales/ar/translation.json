@@ -1,4 +1,46 @@
 {
+    "common": {
+        "share": "مشاركة",
+        "open": "فتح",
+        "accept": "قبول",
+        "search": "بحث",
+        "delete": "حذف",
+        "done": "تم",
+        "next": "التالي",
+        "verify": "تحقق",
+        "verifying": "جاري التحقق...",
+        "preview": "معاينة",
+        "details": "التفاصيل",
+        "about": "حول",
+        "unknown": "غير معروف",
+        "status": "الحالة",
+        "claim": "مطالبة",
+        "update": "تحديث",
+        "skipForNow": "تخطٍّ مؤقت",
+        "upload": "تحميل",
+        "publish": "نشر",
+        "yes": "نعم",
+        "no": "لا",
+        "connect": "اتصال",
+        "login": "تسجيل الدخول",
+        "password": "كلمة المرور",
+        "createAccount": "إنشاء حساب",
+        "staySignedIn": "البقاء مسجلاً",
+        "resendCode": "إعادة إرسال الرمز",
+        "resendIn": "إعادة الإرسال خلال {{seconds}} ثانية",
+        "invalidCode": "رمز غير صالح",
+        "enterVerificationCode": "أدخل رمز التحقق أو <0>ابدأ من جديد</0>",
+        "agreeToTerms": "أوافق على <0>الشروط</0>",
+        "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+        "differentEmail": "استخدام بريد إلكتروني آخر",
+        "sendingCode": "جاري إرسال الرمز...",
+        "back": "رجوع",
+        "close": "إغلاق",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "continue": "متابعة",
+        "loading": "جاري التحميل..."
+    },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
         "newAiSession": "جلسة ذكاء اصطناعي جديدة",
@@ -8,8 +50,7 @@
             "connectionsEncrypted": "جميع الاتصالات <0>مشفرة.</0>",
             "privacyPolicy": "سياسة الخصوصية",
             "termsOfService": "شروط الخدمة",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "إغلاق"
+            "copyright": "© {{year}} Learning Economy"
         },
         "links": {
             "launchPad": "التطبيقات",
@@ -130,16 +171,13 @@
         "passport": "جواز السفر",
         "launchpad": "منصة الإطلاق",
         "appCard": {
-            "open": "فتح",
             "get": "الحصول",
             "launch": "تشغيل",
             "soon": "قريباً",
-            "connect": "اتصال",
             "loading": "جارٍ التحميل...",
             "age": "العمر {{rating}}"
         },
         "carousel": {
-            "open": "فتح",
             "getApp": "الحصول على التطبيق",
             "goToSlide": "الانتقال إلى الشريحة {{number}}"
         },
@@ -152,8 +190,6 @@
             "shareApp": "مشاركة التطبيق",
             "editPermissions": "تعديل الأذونات",
             "uninstall": "إلغاء التثبيت",
-            "about": "حول",
-            "preview": "معاينة",
             "watch": "مشاهدة",
             "links": "روابط",
             "promoVideo": "فيديو ترويجي",
@@ -164,7 +200,6 @@
             "linkCopied": "تم نسخ الرابط إلى الحافظة!",
             "installFailed": "فشل تثبيت التطبيق: {{error}}",
             "dateOfBirth": "تاريخ الميلاد",
-            "back": "رجوع",
             "whyUseThisApp": "لماذا استخدام هذا التطبيق؟",
             "privacyPolicy": "سياسة الخصوصية",
             "termsOfService": "شروط الخدمة",
@@ -211,11 +246,8 @@
         "evidence": "الدليل",
         "issuance": "الإصدار",
         "issued": "صدرت",
-        "details": "التفاصيل",
         "filter": "تصفية",
         "credentialDetail": "تفاصيل الشهادة",
-        "shareCredential": "مشاركة",
-        "deleteCredential": "حذف",
         "confirmDelete": "هل أنت متأكد أنك تريد حذف هذه الشهادة؟",
         "addToWallet": "إضافة إلى المحفظة",
         "viewCredential": "عرض الشهادة",
@@ -223,7 +255,6 @@
         "subject": "الموضوع",
         "issueDate": "تاريخ الإصدار",
         "expirationDate": "تاريخ الانتهاء",
-        "status": "الحالة",
         "actions": "الإجراءات",
         "openSyllabus": "فتح المنهج",
         "certificate": "شهادة",
@@ -287,55 +318,19 @@
         "email": {
             "placeholder": "عنوان البريد الإلكتروني",
             "button": "تسجيل الدخول بالبريد الإلكتروني",
-            "sendingCode": "جاري إرسال الرمز...",
             "verification": {
-                "title": "أدخل رمز التحقق أو <0>ابدأ من جديد</0>",
-                "verify": "تحقق",
-                "verifying": "جاري التحقق...",
                 "error": "تعذر التحقق من الرمز. يرجى المحاولة مرة أخرى."
             },
-            "password": {
-                "placeholder": "كلمة المرور",
-                "login": "تسجيل الدخول",
-                "create": "إنشاء حساب",
-                "existingAccount": "هل لديك حساب بالفعل؟",
-                "differentEmail": "استخدام بريد إلكتروني آخر",
-                "staySignedIn": "البقاء مسجلاً",
-                "agreeToTerms": "أوافق على <0>الشروط</0>"
-            },
-            "resend": "إعادة إرسال الرمز",
-            "resending": "جاري إرسال الرمز...",
-            "resendIn": "إعادة الإرسال خلال {{seconds}} ثانية",
             "error": {
-                "invalidEmail": "بريد إلكتروني مفقود أو غير صالح",
-                "invalidCode": "رمز غير صالح"
+                "invalidEmail": "بريد إلكتروني مفقود أو غير صالح"
             }
         },
         "phone": {
             "placeholder": "رقم الهاتف",
             "button": "تسجيل الدخول برسالة نصية",
-            "loading": "جاري التحميل...",
-            "verification": {
-                "title": "أدخل رمز التحقق أو <0>ابدأ من جديد</0>",
-                "verify": "تحقق",
-                "verifying": "جاري التحقق..."
-            },
-            "password": {
-                "placeholder": "كلمة المرور",
-                "login": "تسجيل الدخول",
-                "create": "إنشاء حساب",
-                "existingAccount": "هل لديك حساب بالفعل؟",
-                "differentEmail": "استخدام بريد إلكتروني آخر",
-                "staySignedIn": "البقاء مسجلاً",
-                "agreeToTerms": "أوافق على <0>الشروط</0>"
-            },
-            "resend": "إعادة إرسال الرمز",
-            "resending": "جاري إرسال الرمز...",
-            "resendIn": "إعادة الإرسال خلال {{seconds}} ثانية",
             "smsSent": "تم إرسال رمز التحقق",
             "error": {
-                "invalidPhone": "رقم الهاتف مطلوب!",
-                "invalidCode": "رمز غير صالح"
+                "invalidPhone": "رقم الهاتف مطلوب!"
             }
         },
         "social": {
@@ -405,11 +400,8 @@
             }
         },
         "welcome": "مرحباً بك في",
-        "continue": "متابعة",
         "back": "رجوع",
         "skipForNow": "تخطي في الوقت الحالي",
-        "close": "إغلاق",
-        "save": "حفظ",
         "role": {
             "learner": {
                 "title": "متعلم",
@@ -445,7 +437,6 @@
                     "description": "للانضمام بدون حساب والد، يرجى إدخال الرمز الخاص المقدم من مدرستك.",
                     "cta": "هل لديك رمز مدرسة؟",
                     "placeholder": "أدخل الرمز",
-                    "verify": "تحقق",
                     "error": "رمز المدرسة غير صالح. يرجى المحاولة مرة أخرى."
                 },
                 "adultButton": "أنا بالغ",
@@ -469,7 +460,6 @@
                     "heading": "تم إرسال الطلب",
                     "description": "أرسلنا طلب موافقة إلى <0>{{email}}</0>. سنعلمك بمجرد الموافقة عليه."
                 },
-                "done": "تم",
                 "error": {
                     "invalidEmail": "يرجى إدخال بريد إلكتروني صالح.",
                     "sendFailed": "فشل إرسال طلب الموافقة. يرجى المحاولة مرة أخرى."
@@ -494,7 +484,6 @@
             "gotIt": "فهمت"
         },
         "slides": {
-            "next": "التالي",
             "getStarted": "ابدأ",
             "learner": {
                 "slide1": {
@@ -655,15 +644,11 @@
             "sending": "إرسال...",
             "setPrimaryConfirm": {
                 "title": "قم بتعيين طريقة الاتصال الأساسية",
-                "text": "هل أنت متأكد أنك تريد تعيين هذا البريد الإلكتروني كبريد أساسي؟",
-                "yes": "نعم",
-                "no": "لا"
+                "text": "هل أنت متأكد أنك تريد تعيين هذا البريد الإلكتروني كبريد أساسي؟"
             },
             "removeConfirm": {
                 "title": "إزالة طريقة الاتصال",
-                "text": "هل أنت متأكد أنك تريد إزالة هذا البريد الإلكتروني؟",
-                "yes": "نعم",
-                "no": "لا"
+                "text": "هل أنت متأكد أنك تريد إزالة هذا البريد الإلكتروني؟"
             }
         },
         "phone": {
@@ -758,12 +743,7 @@
         "scanCode": "مسح الكود",
         "showCode": "إظهار الكود",
         "shareCode": "مشاركة الكود",
-        "search": "بحث",
-        "back": "رجوع",
-        "cancel": "إلغاء",
         "confirm": "تأكيد",
-        "connect": "اتصال",
-        "accept": "قبول",
         "acceptRequest": "قبول الطلب",
         "requestConnection": "طلب اتصال",
         "sendRequest": "إرسال طلب",
@@ -794,7 +774,6 @@
         "joined": "منضم",
         "saving": "...حفظ",
         "joining": "...انضمام",
-        "acceptBoost": "قبول",
         "joinBoost": "انضمام",
         "notification": "إشعار",
         "okay": "حسناً",
@@ -809,14 +788,9 @@
     },
     "consentFlow": {
         "title": "الموافقة",
-        "accept": "قبول",
         "acceptAndSync": "قبول ومزامنة",
         "accepted": "مقبول",
         "acceptingContract": "...جاري قبول العقد",
-        "back": "رجوع",
-        "cancel": "إلغاء",
-        "close": "إغلاق",
-        "continue": "متابعة",
         "continuePlaying": "متابعة اللعب",
         "continueToGame": "متابعة إلى اللعبة",
         "launchGame": "بدء اللعبة",
@@ -828,11 +802,9 @@
         "disconnecting": "...جاري قطع الاتصال",
         "disconnect": "قطع الاتصال",
         "saving": "...حفظ",
-        "save": "حفظ",
         "syncing": "...مزامنة",
         "synced": "تمت المزامنة",
         "withdraw": "سحب",
-        "update": "تحديث",
         "write": "كتابة",
         "hidden": "مخفي",
         "anonymized": "مجهول",
@@ -841,7 +813,6 @@
         "networkError": "خطأ في الشبكة",
         "tryAgain": "حاول مرة أخرى",
         "nothingFound": "لم يتم العثور على شيء",
-        "unknown": "غير معروف",
         "errorLoading": "حدثت مشكلة في تحميل تدفق الموافقة هذا.",
         "notExists": "تدفق الموافقة هذا غير موجود أو لم يعد متاحاً.",
         "receivedCredential": "لقد تلقيت بيانات اعتماد.",
@@ -862,7 +833,6 @@
         "status.active": "نشط",
         "status.off": "إيقاف",
         "status.on": "تشغيل",
-        "shareCredential": "مشاركة",
         "privacyAndData": "الخصوصية والبيانات",
         "gameAccess.title": "الوصول إلى اللعبة",
         "gameAccess.success": "لديك الآن حق الوصول!",
@@ -898,7 +868,6 @@
         "editAccess": "تعديل الوصول",
         "syncNewData": "مزامنة بيانات جديدة",
         "syncMyData": "مزامنة بياناتي",
-        "next": "التالي",
         "shareOneTimeOnly": "مشاركة مرة واحدة فقط",
         "customDuration": "مدة مخصصة",
         "noCredentials": "لا توجد بيانات اعتماد",
@@ -923,11 +892,8 @@
         "temporarySession": "هذه جلسة مؤقتة. إغلاق علامة التبويب سيؤدي إلى تسجيل خروجك نهائياً ما لم تقم بإعداد طريقة استعادة.",
         "recommendTwo": "نوصي بإعداد طريقتين للاستعادة على الأقل.",
         "addingMethod": "إضافة طريقة أخرى يعزز أمانك.",
-        "done": "تم",
-        "skipForNow": "تخطٍّ مؤقت",
         "generating": "جاري التوليد...",
         "sending": "جاري الإرسال...",
-        "verifying": "جاري التحقق...",
         "verifyIdentity": "تحقق من هويتك",
         "verifyCode": "تحقق من الرمز",
         "verifyPasskey": "تحقق بمفتاح المرور",
@@ -1004,9 +970,7 @@
             "tapToChoose": "اضغط لاختيار ملف النسخ الاحتياطي",
             "fileSelected": "تم اختيار الملف",
             "enter": "إدخال",
-            "change": "تغيير",
-            "cancel": "إلغاء",
-            "back": "رجوع"
+            "change": "تغيير"
         },
         "tab": {
             "email": "البريد الإلكتروني",
@@ -1092,7 +1056,6 @@
         "noAlerts": "لا توجد تنبيهات بعد",
         "active": "نشطة",
         "archived": "مؤرشفة",
-        "loading": "جاري التحميل...",
         "reviewRequired": "مراجعة مطلوبة",
         "newSubmission": "إرسال جديد",
         "appApproved": "تمت الموافقة على التطبيق",
@@ -1104,8 +1067,6 @@
         "rejecting": "جاري الرفض...",
         "approved": "تمت الموافقة",
         "notApproved": "غير موافق عليه",
-        "claim": "مطالبة",
-        "accept": "قبول",
         "alreadyConnected": "أنتما متصلان بالفعل.",
         "alreadyConnectedShort": "الملفات الشخصية متصلة بالفعل",
         "emptyActive": "أنت على اطلاع!",
@@ -1113,17 +1074,14 @@
         "connectionRequest": "طلب اتصال",
         "newBoost": "ترقية جديدة",
         "archive": "أرشفة",
-        "delete": "حذف",
         "confirmDelete": "حذف هذا الإشعار؟",
         "rejected": "مرفوض",
         "okay": "حسناً",
-        "open": "فتح",
         "viewCredential": "عرض الشهادة",
         "loadingNotifications": "جاري تحميل الإشعارات...",
         "refresh": "تحديث"
     },
     "share": {
-        "title": "مشاركة",
         "addContact": "إضافة جهة اتصال",
         "generateLinkFailed": "فشل إنشاء رابط الدعوة",
         "inviteLinkCopied": "تم نسخ رابط الدعوة إلى الحافظة",
@@ -1143,9 +1101,7 @@
         "cameraPermission": "يلزم إذن الكاميرا",
         "invalidCode": "رمز QR غير صالح",
         "scanAnother": "مسح آخر",
-        "done": "تم",
         "openCamera": "فتح الكاميرا",
-        "close": "إغلاق",
         "scanQR": "مسح رمز QR",
         "importFromLink": "استيراد من رابط",
         "pasteLink": "الصق الرابط هنا...",
@@ -1153,7 +1109,6 @@
         "processing": "جاري المعالجة...",
         "success": "تم استيراد الشهادة بنجاح!",
         "failed": "فشل استيراد الشهادة",
-        "share": "مشاركة",
         "download": "تنزيل",
         "scanLabel": "مسح",
         "saveToPhotos": "حفظ في الصور",
@@ -1199,10 +1154,8 @@
         "totalIssued": "إجمالي الصادرة",
         "totalRevoked": "إجمالي الملغاة",
         "totalPending": "إجمالي قيد الانتظار",
-        "details": "التفاصيل",
         "recipient": "المستلم",
         "issuedDate": "صدرت",
-        "status": "الحالة",
         "actions": "الإجراءات"
     },
     "ai": {
@@ -1210,10 +1163,8 @@
         "newSession": "موضوع جديد",
         "browseTopics": "تصفح الجلسات...",
         "searchSkills": "اختر مهارة أو هدفاً أو وظيفة...",
-        "clearSearch": "بحث",
         "noResults": "لا توجد نتائج",
         "noSharedInsights": "لا توجد رؤى مشتركة",
-        "loading": "جاري التحميل...",
         "loadingRoles": "جاري تحميل الأدوار...",
         "generating": "جاري التوليد...",
         "error": "حدث خطأ",
@@ -1233,13 +1184,9 @@
         "newSessionTitle": "بدء جلسة جديدة",
         "sessionHistory": "سجل الجلسات",
         "noSessions": "لا توجد جلسات بعد",
-        "continueSession": "متابعة",
-        "deleteSession": "حذف",
         "renameSession": "إعادة تسمية",
-        "shareSession": "مشاركة",
         "allTopics": "جميع المواضيع",
         "aiSessions": "جلسات الذكاء الاصطناعي",
-        "close": "إغلاق",
         "closeToEndSession": "إغلاق لإنهاء الجلسة",
         "dismiss": "رفض",
         "get": "الحصول على",
@@ -1250,7 +1197,6 @@
         "noSessionsForTopic": "لا توجد جلسات لهذا الموضوع",
         "noSessionsFound": "لم يتم العثور على جلسات",
         "noTopics": "لا توجد مواضيع بعد",
-        "open": "فتح",
         "personalize": "تخصيص",
         "revisitTopic": "إعادة زيارة الموضوع",
         "set": "تعيين",
@@ -1291,9 +1237,6 @@
         "salary": "الراتب",
         "goals": "الأهداف",
         "saveProfile": "حفظ الملف الشخصي",
-        "next": "التالي",
-        "back": "رجوع",
-        "skipForNow": "تخطٍّ مؤقت",
         "addSkill": "إضافة مهارة",
         "removeSkill": "إزالة",
         "noSkills": "لم تتم إضافة مهارات بعد"
@@ -1303,7 +1246,6 @@
         "createBoost": "إنشاء ترقية",
         "editBoost": "تعديل الترقية",
         "deleteBoost": "حذف الترقية",
-        "claimBoost": "مطالبة",
         "sendBoost": "إرسال",
         "manageBoost": "إدارة",
         "boostDetails": "تفاصيل الترقية",
@@ -1318,11 +1260,8 @@
         "category": "الفئة",
         "requirements": "المتطلبات",
         "evidence": "الدليل",
-        "preview": "معاينة",
-        "save": "حفظ",
         "saving": "جاري الحفظ...",
         "saved": "تم الحفظ!",
-        "publish": "نشر",
         "publishing": "جاري النشر...",
         "unpublish": "إلغاء النشر",
         "draft": "مسودة",
@@ -1350,7 +1289,6 @@
         "changeImage": "تغيير الصورة",
         "cms": {
             "basicInfo": {
-                "about": "حول",
                 "issuerNamePlaceholder": "اسم المُصدر",
                 "descriptionPlaceholder": "ما الغرض من هذا البوست؟",
                 "narrativePlaceholder": "كيف تكسب هذا البوست؟",
@@ -1381,8 +1319,6 @@
                 "uploading": "جاري التحميل...",
                 "changePhoto": "تغيير الصورة",
                 "changeDoc": "تغيير المستند",
-                "upload": "تحميل",
-                "close": "إغلاق",
                 "videoCover": "غلاف الفيديو",
                 "uploadedImagePreview": "معاينة الصورة المرفوعة",
                 "mediaAttachment": "مرفق وسائط",
@@ -1401,8 +1337,6 @@
                 "boostType": "نوع البوست",
                 "selectStylePack": "اختيار حزمة الأنماط",
                 "selectImage": "اختيار صورة",
-                "save": "حفظ",
-                "cancel": "إلغاء",
                 "badgeThumbnail": "صورة الشارة المصغرة",
                 "default": "افتراضي",
                 "backgroundImage": "صورة الخلفية",
@@ -1415,8 +1349,6 @@
                 "displayType": "عرض {{type}}",
                 "stylePack": "حزمة الأنماط",
                 "all": "الكل",
-                "upload": "تحميل",
-                "loading": "جاري التحميل...",
                 "selectType": "تحديد النوع",
                 "customType": "نوع مخصص",
                 "search": "بحث...",
@@ -1442,7 +1374,6 @@
                 "claimLinksUnavailableDescription": "الأذونات معطلة.",
                 "claimLinksDisabledViewing": "روابط المطالبة معطلة لأن العرض غير مفعل لهذا القالب.",
                 "addContact": "إضافة جهة اتصال",
-                "update": "تحديث",
                 "generateClaimLink": "توليد رابط مطالبة؟",
                 "cannotGenerateClaimLinks": "لا يمكن لهذا القالب إنشاء روابط مطالبة لأن إذن العرض معطل.",
                 "enableViewing": "قم بتمكين العرض للمتابعة مع إنشاء رابط المطالبة.",
@@ -1491,7 +1422,6 @@
             "publish": {
                 "readyToPublish": "هل أنت مستعد للنشر؟",
                 "lockWarning": "سيتم قفل هذا البوست في ختم قابل للتحقق إلى الأبد ولا يمكن تغييره بعد النشر.",
-                "preview": "معاينة",
                 "saveAsDraft": "حفظ كمسودة",
                 "publishAndIssue": "نشر وإصدار"
             },
@@ -1508,13 +1438,10 @@
                 "returnToWallet": "العودة إلى المحفظة"
             },
             "header": {
-                "publish": "نشر",
                 "issue": "إصدار",
                 "confirmation": "تأكيد"
             },
             "preview": {
-                "details": "التفاصيل",
-                "about": "حول",
                 "criteria": "المعايير",
                 "certificate": "شهادة",
                 "id": "معرف"
@@ -1760,7 +1687,6 @@
         "noSharedInsights": "لا توجد رؤى مشتركة",
         "accepted": "مقبول",
         "denied": "مرفوض",
-        "unknown": "غير معروف",
         "requestInsights": "طلب رؤى",
         "requestInsightsDescription": "اطلب الاطلاع على أهم المهارات ولقطات التعلم والمسارات المقترحة. ستتمكن أيضًا من إرسال اقتراحات مسارات التعلم.",
         "searchByName": "...البحث بالاسم",
@@ -1782,7 +1708,6 @@
         "confirmCancelRequest": "هل أنت متأكد أنك تريد إلغاء طلب الرؤى هذا؟",
         "shareInsights": "مشاركة الرؤى",
         "shareInsightsDescription": "شارك أهم مهاراتك ولقطات التعلم والمسارات المقترحة. ستتمكن أيضًا من تلقي اقتراحات مسارات التعلم.",
-        "share": "مشاركة",
         "insights": "الرؤى",
         "shareInsightsWith": "مشاركة الرؤى مع <br /> {{name}}",
         "wantsToShare": "<0>{{childName}}</0> يريد مشاركة رؤاه مع <1>{{targetName}}</1>",
@@ -1798,8 +1723,6 @@
         "expired": "منتهي الصلاحية",
         "viewRequest": "عرض الطلب",
         "approved": "تمت الموافقة",
-        "search": "بحث",
-        "back": "رجوع",
         "sort.az": "أ-ي",
         "sort.recentlyAdded": "أُضيف مؤخرًا",
         "filter.all": "الكل",
@@ -1847,10 +1770,8 @@
     },
     "aiSession": {
         "loadingTitle": "تحميل العنوان",
-        "close": "إغلاق",
         "newTopic": "موضوع جديد",
         "browse": "...تصفح",
-        "somethingElse": "...شيء آخر",
-        "search": "بحث"
+        "somethingElse": "...شيء آخر"
     }
 }

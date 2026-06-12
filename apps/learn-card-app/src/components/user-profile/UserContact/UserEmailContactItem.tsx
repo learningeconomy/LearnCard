@@ -53,8 +53,8 @@ export const UserEmailContactItem: React.FC<{
             const confirmResponse = await confirm({
                 title: m['profile.email.setPrimaryConfirm.title'](),
                 text: m['profile.email.setPrimaryConfirm.text'](),
-                confirmText: m['profile.email.setPrimaryConfirm.yes'](),
-                cancelText: m['profile.email.setPrimaryConfirm.no'](),
+                confirmText: m['common.yes'](),
+                cancelText: m['common.no'](),
                 cancelButtonClassName:
                     'bg-grayscale-100 text-grayscale-900 font-semibold rounded-full px-4 py-3',
                 confirmButtonClassName:
@@ -74,8 +74,8 @@ export const UserEmailContactItem: React.FC<{
             const confirmResponse = await confirm({
                 title: m['profile.email.removeConfirm.title'](),
                 text: m['profile.email.removeConfirm.text'](),
-                confirmText: m['profile.email.removeConfirm.yes'](),
-                cancelText: m['profile.email.removeConfirm.no'](),
+                confirmText: m['common.yes'](),
+                cancelText: m['common.no'](),
                 cancelButtonClassName:
                     'bg-grayscale-100 text-grayscale-900 font-semibold rounded-full px-4 py-3',
                 confirmButtonClassName:

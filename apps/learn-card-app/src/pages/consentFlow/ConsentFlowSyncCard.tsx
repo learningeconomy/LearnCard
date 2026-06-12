@@ -273,7 +273,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         type="button"
                         className="text-grayscale-900 text-center text-base w-full font-medium mt-4"
                     >
-                        {m['consentFlow.cancel']()}
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </div>

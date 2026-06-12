@@ -20,7 +20,7 @@ const ACTION_COLOR: Record<ConsentFlowTransactionAction, string> = {
 const ACTION_TEXT: Record<ConsentFlowTransactionAction, string> = {
     consent: 'Consent',
     sync: 'Sync',
-    update: m['consentFlow.update'](),
+    update: m['common.update'](),
     withdraw: m['consentFlow.withdraw'](),
     write: m['consentFlow.write'](),
 };

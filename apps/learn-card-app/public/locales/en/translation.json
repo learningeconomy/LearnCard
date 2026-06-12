@@ -1,4 +1,46 @@
 {
+    "common": {
+        "share": "Share",
+        "open": "Open",
+        "accept": "Accept",
+        "search": "Search",
+        "delete": "Delete",
+        "done": "Done",
+        "next": "Next",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "preview": "Preview",
+        "details": "Details",
+        "about": "About",
+        "unknown": "Unknown",
+        "status": "Status",
+        "claim": "Claim",
+        "update": "Update",
+        "skipForNow": "Skip for Now",
+        "upload": "Upload",
+        "publish": "Publish",
+        "yes": "Yes",
+        "no": "No",
+        "connect": "Connect",
+        "login": "Login",
+        "password": "Password",
+        "createAccount": "Create Account",
+        "staySignedIn": "Stay Signed In",
+        "resendCode": "Resend Code",
+        "resendIn": "Resend in {{seconds}}s",
+        "invalidCode": "Invalid code",
+        "enterVerificationCode": "Enter verification code or <0>start over</0>",
+        "agreeToTerms": "Agree to <0>Terms</0>",
+        "alreadyHaveAccount": "Already have an account?",
+        "differentEmail": "Use a different email address",
+        "sendingCode": "Sending Code...",
+        "back": "Back",
+        "close": "Close",
+        "cancel": "Cancel",
+        "save": "Save",
+        "continue": "Continue",
+        "loading": "Loading..."
+    },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
         "footer": {
@@ -7,8 +49,7 @@
             "connectionsEncrypted": "All connections are <0>encrypted.</0>",
             "privacyPolicy": "Privacy Policy",
             "termsOfService": "Terms of Service",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "Close"
+            "copyright": "© {{year}} Learning Economy"
         },
         "links": {
             "launchPad": "Apps",
@@ -97,11 +138,9 @@
         "aiDisabledMinor": "AI features are not available for users under 18.",
         "aiDisabledPrivacy": "AI features are currently disabled. You can enable them in Privacy & Data from your profile.",
         "appCard": {
-            "open": "Open",
             "get": "Get",
             "launch": "Launch",
             "soon": "Soon",
-            "connect": "Connect",
             "loading": "Loading...",
             "age": "Age {{rating}}"
         },
@@ -111,7 +150,6 @@
             "joinDeveloperCommunity": "Join our developer community today"
         },
         "carousel": {
-            "open": "Open",
             "getApp": "Get App",
             "goToSlide": "Go to slide {{number}}"
         },
@@ -119,8 +157,6 @@
             "shareApp": "Share App",
             "editPermissions": "Edit Permissions",
             "uninstall": "Uninstall",
-            "about": "About",
-            "preview": "Preview",
             "watch": "Watch",
             "links": "Links",
             "promoVideo": "Promo Video",
@@ -131,7 +167,6 @@
             "linkCopied": "Link copied to clipboard!",
             "installFailed": "Failed to install app: {{error}}",
             "dateOfBirth": "Date of Birth",
-            "back": "Back",
             "whyUseThisApp": "Why Use This App?",
             "privacyPolicy": "Privacy Policy",
             "termsOfService": "Terms of Service",
@@ -201,8 +236,6 @@
         "courseSyllabus": "Course Syllabus",
         "credentialCount": "{{count}} credential(s)",
         "credentialDetail": "Credential Detail",
-        "deleteCredential": "Delete",
-        "details": "Details",
         "earned": "Earned",
         "emptyState": "No credentials yet",
         "evidence": "Evidence",
@@ -226,8 +259,6 @@
         "noTitle": "No title",
         "openSyllabus": "Open Syllabus",
         "search": "Search credentials...",
-        "shareCredential": "Share",
-        "status": "Status",
         "subject": "Subject",
         "viewCredential": "View Credential",
         "viewMode": "View"
@@ -255,28 +286,11 @@
         "email": {
             "placeholder": "Email address",
             "button": "Sign in with Email",
-            "sendingCode": "Sending Code...",
             "verification": {
-                "title": "Enter verification code or <0>start over</0>",
-                "verify": "Verify",
-                "verifying": "Verifying...",
                 "error": "Unable to verify code. Please try again."
             },
-            "password": {
-                "placeholder": "Password",
-                "login": "Login",
-                "create": "Create Account",
-                "existingAccount": "Already have an account?",
-                "differentEmail": "Use a different email address",
-                "staySignedIn": "Stay Signed In",
-                "agreeToTerms": "Agree to <0>Terms</0>"
-            },
-            "resend": "Resend Code",
-            "resending": "Sending Code...",
-            "resendIn": "Resend in {{seconds}}s",
             "error": {
-                "invalidEmail": "Missing or Invalid Email",
-                "invalidCode": "Invalid code"
+                "invalidEmail": "Missing or Invalid Email"
             }
         },
         "footer": {
@@ -312,28 +326,9 @@
         "phone": {
             "placeholder": "Phone Number",
             "button": "Sign in with SMS",
-            "loading": "Loading...",
-            "verification": {
-                "title": "Enter verification code or <0>start over</0>",
-                "verify": "Verify",
-                "verifying": "Verifying..."
-            },
-            "password": {
-                "placeholder": "Password",
-                "login": "Login",
-                "create": "Create Account",
-                "existingAccount": "Already have an account?",
-                "differentEmail": "Use a different email address",
-                "staySignedIn": "Stay Signed In",
-                "agreeToTerms": "Agree to <0>Terms</0>"
-            },
-            "resend": "Resend Code",
-            "resending": "Sending Code...",
-            "resendIn": "Resend in {{seconds}}s",
             "smsSent": "A verification code has been sent",
             "error": {
-                "invalidPhone": "Phone is required!",
-                "invalidCode": "Invalid code"
+                "invalidPhone": "Phone is required!"
             }
         },
         "qrApproved": {
@@ -378,7 +373,6 @@
     },
     "onboarding": {
         "back": "Back",
-        "close": "Close",
         "consent": {
             "underage": {
                 "heading": "Get an Adult",
@@ -388,7 +382,6 @@
                     "description": "To join without a parent account, please enter the special code provided by your school.",
                     "cta": "Have a school code?",
                     "placeholder": "Enter Code",
-                    "verify": "Verify",
                     "error": "Invalid school code. Please try again."
                 },
                 "adultButton": "I'm an Adult",
@@ -412,7 +405,6 @@
                     "heading": "Request Sent",
                     "description": "We sent a consent request to <0>{{email}}</0>. We'll notify you once it's approved."
                 },
-                "done": "Done",
                 "error": {
                     "invalidEmail": "Please enter a valid email.",
                     "sendFailed": "Failed to send consent request. Please try again."
@@ -431,7 +423,6 @@
                 "or": "or"
             }
         },
-        "continue": "Continue",
         "country": {
             "search": "Search countries",
             "title": "Select Country"
@@ -491,13 +482,11 @@
                 "description": "I manage systems, data, and technology for my organization."
             }
         },
-        "save": "Save",
         "selectRole": {
             "header": "Select what best describes you!"
         },
         "skipForNow": "Skip For Now",
         "slides": {
-            "next": "Next",
             "getStarted": "Get Started",
             "learner": {
                 "slide1": {
@@ -630,15 +619,11 @@
             "sending": "Sending...",
             "setPrimaryConfirm": {
                 "title": "Set Primary Contact Method",
-                "text": "Are you sure you want to set this email as primary?",
-                "yes": "Yes",
-                "no": "No"
+                "text": "Are you sure you want to set this email as primary?"
             },
             "removeConfirm": {
                 "title": "Remove Contact Method",
-                "text": "Are you sure you want to remove this email?",
-                "yes": "Yes",
-                "no": "No"
+                "text": "Are you sure you want to remove this email?"
             }
         },
         "emailAddress": "Email Address",
@@ -752,16 +737,12 @@
         "privacyTitle": "Privacy & Data"
     },
     "contacts": {
-        "accept": "Accept",
-        "acceptBoost": "Accept",
         "acceptRequest": "Accept Request",
         "addContact": "Add Contact",
         "addContactDesc": "Add contact",
         "allContacts": "All",
-        "back": "Back",
         "blockedContacts": "Blocked",
         "boost": "Boost",
-        "cancel": "Cancel",
         "cancelRequest": "Cancel Request",
         "claimed": "Claimed",
         "confirm": "Confirm",
@@ -771,7 +752,6 @@
         "confirmRemoveConnection": "Are you sure you want to remove this connection?",
         "confirmSendRequest": "Are you sure you want to send a connection request?",
         "confirmUnblock": "Are you sure you want to unblock this user?",
-        "connect": "Connect",
         "connectedSuccessfully": "Connected Successfully",
         "connectionAlreadyRequested": "Connection already requested",
         "connectionPending": "Request Pending",
@@ -799,7 +779,6 @@
         "returnHome": "Return home",
         "saving": "Saving...",
         "scanCode": "Scan Code",
-        "search": "Search",
         "sendRequest": "Send Request",
         "shareCode": "Share Code",
         "showCode": "Show Code",
@@ -808,7 +787,6 @@
         "unblockContact": "Unblock Contact"
     },
     "consentFlow": {
-        "accept": "Accept",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
         "acceptingContract": "Accepting Contract...",
@@ -818,10 +796,6 @@
         "allowAccess": "Allow Access",
         "allowing": "Allowing...",
         "anonymized": "Anonymized",
-        "back": "Back",
-        "cancel": "Cancel",
-        "close": "Close",
-        "continue": "Continue",
         "continuePlaying": "Continue Playing",
         "continueToGame": "Continue to Game",
         "credentialType.achievement": "Achievement",
@@ -849,10 +823,8 @@
         "nothingFound": "Nothing Found",
         "privacyAndData": "Privacy & Data",
         "receivedCredential": "You have received a credential.",
-        "save": "Save",
         "saving": "Saving...",
         "selectPlayer": "Select Player",
-        "shareCredential": "Share",
         "shareInsights": "Share Insights",
         "status.active": "Active",
         "status.off": "Off",
@@ -867,8 +839,6 @@
         "title": "Consent",
         "transactionHistory.title": "Transaction History",
         "tryAgain": "Try Again",
-        "unknown": "Unknown",
-        "update": "Update",
         "updatedTerms": "You have updated your terms.",
         "withdraw": "Withdraw",
         "write": "Write",
@@ -898,7 +868,6 @@
         "editAccess": "Edit Access",
         "syncNewData": "Sync New Data",
         "syncMyData": "Sync My Data",
-        "next": "Next",
         "shareOneTimeOnly": "Share One Time Only",
         "customDuration": "Custom Duration",
         "noCredentials": "No Credentials",
@@ -931,7 +900,6 @@
         "connectionIssue": "Connection issue. Please check your internet and try again.",
         "copyToClipboard": "Copy to Clipboard",
         "couldNotSave": "Could not save the file. Please try again.",
-        "done": "Done",
         "enterPassword": "Please enter the password for your backup file.",
         "generateNewBackup": "This will generate a new backup file. Your previous backup file will no longer work.",
         "generateNewPhrase": "This will generate a new phrase. Your previous phrase will no longer work.",
@@ -967,14 +935,12 @@
         "setupBefore": "Set up recovery before you leave",
         "setupRecovery": "Set up a recovery method so you can get back in if you lose access to this device.",
         "setupRecoveryDevice": "Set up recovery so you can get back in if you lose this device.",
-        "skipForNow": "Skip for Now",
         "somethingWrong": "Something went wrong. Please try again.",
         "temporarySession": "This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.",
         "validEmail": "Please enter a valid email address.",
         "verifyCode": "Verify Code",
         "verifyIdentity": "Verify Your Identity",
         "verifyPasskey": "Verify with Passkey",
-        "verifying": "Verifying...",
         "tab": {
             "email": "Email",
             "phrase": "Phrase",
@@ -988,8 +954,18 @@
         },
         "action": {
             "change": "Change",
-            "cancel": "Cancel",
-            "back": "Back"
+            "downloadAgain": "Download Again",
+            "downloadBackup": "Download Backup File",
+            "enter": "Enter",
+            "fileSelected": "File selected",
+            "generateBackup": "Generate Backup File",
+            "generateNewBackup": "Generate New Backup",
+            "generateNewPhrase": "Generate New Phrase",
+            "generatePhrase": "Generate Recovery Phrase",
+            "replacePasskey": "Replace Passkey",
+            "setUpPasskey": "Set Up Passkey",
+            "settingUp": "Setting up...",
+            "tapToChoose": "Tap to choose backup file"
         },
         "passkeyNotSupported": "Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.",
         "passkeyBiometric": "Uses your device's secure biometric authentication",
@@ -1029,7 +1005,18 @@
         "method": {
             "activeCount": "{{count}} recovery {{state}} active",
             "singular": "method",
-            "plural": "methods"
+            "plural": "methods",
+            "backup": "Backup File",
+            "backupDesc": "Upload your backup file",
+            "emailDesc": "Paste the key sent to your email",
+            "emailSetup": "Email recovery is set up",
+            "passkey": "Passkey",
+            "passkeyDesc": "Use Face ID, Touch ID, or similar",
+            "passkeyNotSetup": "Not set up",
+            "passkeySetup": "Passkey is set up",
+            "phrase": "Recovery Phrase",
+            "phraseSaved": "Phrase is saved",
+            "setEmail": "Email Recovery Key"
         },
         "accountUpgradeNeeded": "Account Upgrade Needed",
         "accountUpgradeDesc": "We're upgrading your account security but couldn't finish automatically. Please try again.",
@@ -1063,7 +1050,6 @@
         "wordsCount": "{{count}} / 25 words"
     },
     "alerts": {
-        "accept": "Accept",
         "accepted": "Accepted",
         "active": "Active",
         "alreadyConnected": "You are already connected.",
@@ -1074,14 +1060,11 @@
         "approving": "Approving...",
         "archive": "Archive",
         "archived": "Archived",
-        "claim": "Claim",
         "claimed": "Claimed",
         "confirmDelete": "Delete this notification?",
         "connectionRequest": "Connection Request",
-        "delete": "Delete",
         "emptyActive": "You're all caught up!",
         "emptyArchived": "No archived alerts",
-        "loading": "Loading...",
         "markAllRead": "Mark all as read",
         "newBoost": "New Boost",
         "newSubmission": "New Submission",
@@ -1094,7 +1077,6 @@
         "title": "Alerts",
         "rejected": "Rejected",
         "okay": "Okay",
-        "open": "Open",
         "viewCredential": "View Credential",
         "loadingNotifications": "Loading Notifications...",
         "refresh": "Refresh"
@@ -1109,14 +1091,11 @@
         "neverExpires": "Never expires",
         "profileLinkCopied": "Profile link copied to clipboard",
         "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
-        "title": "Share",
         "shareProfile": "Share Profile",
         "generateInviteLink": "Generate Invite Link"
     },
     "scanner": {
         "cameraPermission": "Camera permission required",
-        "close": "Close",
-        "done": "Done",
         "failed": "Failed to import credential",
         "importCredential": "Import Credential",
         "importFromLink": "Import from Link",
@@ -1130,7 +1109,6 @@
         "scanning": "Scanning...",
         "success": "Credential imported successfully!",
         "title": "Scan QR Code",
-        "share": "Share",
         "download": "Download",
         "scanLabel": "Scan",
         "saveToPhotos": "Save to Photos",
@@ -1161,7 +1139,6 @@
         "confirmSuspend": "Are you sure you want to suspend this credential?",
         "confirmUnsuspend": "Are you sure you want to reactivate this credential?",
         "dashboardTab": "Dashboard",
-        "details": "Details",
         "issued": "Issued",
         "issuedDate": "Issued",
         "managedTab": "Managed",
@@ -1172,7 +1149,6 @@
         "revoked": "Revoked",
         "revoking": "Revoking...",
         "searchPlaceholder": "Search by name or recipient...",
-        "status": "Status",
         "suspend": "Suspend",
         "suspended": "Suspended",
         "suspending": "Suspending...",
@@ -1187,9 +1163,6 @@
         "adding": "Adding...",
         "browseTopics": "Browse sessions...",
         "chooseSkills": "Choose your current skills",
-        "clearSearch": "Search",
-        "continueSession": "Continue",
-        "deleteSession": "Delete",
         "error": "An error occurred",
         "expired": "Expired",
         "failedToAddExperience": "Failed to add experience",
@@ -1198,7 +1171,6 @@
         "getPermission": "Get Permission",
         "insightsAccepted": "Insights request already accepted.",
         "insightsPending": "Insights request already pending.",
-        "loading": "Loading...",
         "loadingRoles": "Loading roles...",
         "loginToRequest": "Login to Request",
         "manageSkills": "Manage your current skills",
@@ -1212,11 +1184,9 @@
         "renameSession": "Rename",
         "searchSkills": "Choose a skill, goal, or job...",
         "sessionHistory": "Session History",
-        "shareSession": "Share",
         "title": "AI",
         "allTopics": "All Topics",
         "aiSessions": "AI Sessions",
-        "close": "Close",
         "closeToEndSession": "Close to End Session",
         "dismiss": "Dismiss",
         "get": "Get",
@@ -1227,7 +1197,6 @@
         "noSessionsForTopic": "No sessions for this topic",
         "noSessionsFound": "No sessions found",
         "noTopics": "No topics yet",
-        "open": "Open",
         "personalize": "Personalize",
         "revisitTopic": "Revisit Topic",
         "set": "Set",
@@ -1243,7 +1212,6 @@
         "addTitle": "Add a professional title to see career data here.",
         "alignment": "Alignment",
         "average": "Average",
-        "back": "Back",
         "belowAverage": "Below Average",
         "career": "Career",
         "careerGoals": "Career Goals",
@@ -1263,7 +1231,6 @@
         "jobSatisfaction": "Job Satisfaction",
         "media": "Media",
         "missingFields": "Missing required fields",
-        "next": "Next",
         "noEducationRequired": "No formal education required",
         "noExperienceRequired": "No prior experience required",
         "noSkills": "No skills added yet",
@@ -1271,7 +1238,6 @@
         "salary": "Salary",
         "saveProfile": "Save Profile",
         "skillProfile": "Skills Profile",
-        "skipForNow": "Skip for Now",
         "title": "Pathways",
         "workHistory": "Work History"
     },
@@ -1311,10 +1277,8 @@
         "boostTemplates": "Boost Templates",
         "category": "Category",
         "changeImage": "Change Image",
-        "claimBoost": "Claim",
         "cms": {
             "basicInfo": {
-                "about": "About",
                 "issuerNamePlaceholder": "Issuer Name",
                 "descriptionPlaceholder": "What is this boost for?",
                 "narrativePlaceholder": "How do you earn this boost?",
@@ -1345,8 +1309,6 @@
                 "uploading": "Uploading...",
                 "changePhoto": "Change Photo",
                 "changeDoc": "Change Doc",
-                "upload": "Upload",
-                "close": "Close",
                 "videoCover": "Video Cover",
                 "uploadedImagePreview": "Uploaded Image Preview",
                 "mediaAttachment": "Media Attachment",
@@ -1365,8 +1327,6 @@
                 "boostType": "Boost Type",
                 "selectStylePack": "Select Style Pack",
                 "selectImage": "Select Image",
-                "save": "Save",
-                "cancel": "Cancel",
                 "badgeThumbnail": "Badge Thumbnail",
                 "default": "Default",
                 "backgroundImage": "Background Image",
@@ -1379,8 +1339,6 @@
                 "displayType": "{{type}} Display",
                 "stylePack": "Style Pack",
                 "all": "All",
-                "upload": "Upload",
-                "loading": "Loading...",
                 "selectType": "Select Type",
                 "customType": "Custom Type",
                 "search": "Search...",
@@ -1406,7 +1364,6 @@
                 "claimLinksUnavailableDescription": "permission are disabled.",
                 "claimLinksDisabledViewing": "Claim links are disabled because viewing is not enabled for this template.",
                 "addContact": "Add contact",
-                "update": "Update",
                 "generateClaimLink": "Generate Claim Link?",
                 "cannotGenerateClaimLinks": "This template cannot generate claim links because view permission are disabled.",
                 "enableViewing": "Enable viewing to continue with claim link generation.",
@@ -1455,7 +1412,6 @@
             "publish": {
                 "readyToPublish": "Are you ready to publish?",
                 "lockWarning": "This boost will be locked in a verifiable seal forever and can't be changed after you publish.",
-                "preview": "Preview",
                 "saveAsDraft": "Save As Draft",
                 "publishAndIssue": "Publish & Issue"
             },
@@ -1472,13 +1428,10 @@
                 "returnToWallet": "Return to Wallet"
             },
             "header": {
-                "publish": "Publish",
                 "issue": "Issue",
                 "confirmation": "Confirmation"
             },
             "preview": {
-                "details": "Details",
-                "about": "About",
                 "criteria": "Criteria",
                 "certificate": "Certificate",
                 "id": "ID"
@@ -1505,15 +1458,12 @@
         "noImage": "No image set",
         "noRecipients": "No recipients yet",
         "pending": "Pending",
-        "preview": "Preview",
-        "publish": "Publish",
         "published": "Published",
         "publishing": "Publishing...",
         "recipientCount": "{{count}} recipient(s)",
         "recipients": "Recipients",
         "requirements": "Requirements",
         "revoked": "Revoked",
-        "save": "Save",
         "saved": "Saved!",
         "saving": "Saving...",
         "searchBoosts": "Search boosts...",
@@ -1674,7 +1624,6 @@
         "askAboutSkills": "Ask about your skills...",
         "average": "average",
         "averageSalaries": "Average Salaries",
-        "back": "Back",
         "basedOnAnswersAndData": "Based on your answers and occupation data.",
         "buildYourProfile": "Build your {{brand}} to unlock personalized learning insights and track your skill development journey.",
         "cancelInsightsRequest": "Cancel Insights Request",
@@ -1747,7 +1696,6 @@
         "salaryComparisonAria": "Salary comparison for {{title}}. Your salary is {{salary}}. Market range is {{low}} to {{high}}, with an average of {{avg}}. You are above {{percent}}% of other {{titlePlural}} in the market.",
         "salaryDataNotFound": "We could not find salary data for this title yet.",
         "salaryNotAvailable": "Salary not available",
-        "search": "Search",
         "searchByName": "Search by name...",
         "searchResults": "Search Results",
         "searchRoles": "Search roles...",
@@ -1755,7 +1703,6 @@
         "sendRequest": "Send Request",
         "sendToMyAdult": "Send to My Adult",
         "sending": "Sending...",
-        "share": "Share",
         "shareInsights": "Share Insights",
         "shareInsightsDescription": "Share your Top Skills, Learning Snapshots, and Suggested Pathways. You will also be able to receive learning pathway suggestions.",
         "shareInsightsWith": "Share Insights with <br /> {{name}}",
@@ -1773,7 +1720,6 @@
         "topSkills": "Top Skills",
         "typeToSearch": "Type at least 2 letters to search.",
         "unableToLoad": "Unable to load notification",
-        "unknown": "Unknown",
         "viewInsights": "View Insights",
         "viewRequest": "View Request",
         "wantsToShare": "<0>{{childName}}</0> wants to share their insights with <1>{{targetName}}</1>",
@@ -1824,10 +1770,8 @@
     },
     "aiSession": {
         "loadingTitle": "Loading title",
-        "close": "Close",
         "newTopic": "New Topic",
         "browse": "Browse...",
-        "somethingElse": "Something else...",
-        "search": "Search"
+        "somethingElse": "Something else..."
     }
 }

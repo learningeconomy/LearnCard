@@ -226,7 +226,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                     onClick={closeModal}
                     className={`text-${primaryColor} font-[600]`}
                 >
-                    {m['consentFlow.close']()}
+                    {m['common.close']()}
                 </button>
             </div>
         </section>

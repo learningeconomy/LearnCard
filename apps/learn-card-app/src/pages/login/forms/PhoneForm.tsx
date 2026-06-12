@@ -263,8 +263,8 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     let formTitle: React.ReactNode | null = null;
     let buttonTitle: string | null = null;
     const resendCodeButtonText: string = isResendCodeLoading
-        ? m['login.phone.resending']()
-        : m['login.phone.resend']();
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === PhoneFormStepsEnum.phone) {
@@ -292,12 +292,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? m['login.phone.loading']() : m['login.phone.button']();
+        buttonTitle = isLoading ? m['common.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
         formTitle = (
             <TransP
-                m={m['login.phone.verification.title']}
+                m={m['common.enterVerificationCode']}
                 components={[
                     <span
                         key="0"
@@ -332,9 +332,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading
-            ? m['login.phone.verification.verifying']()
-            : m['login.phone.verification.verify']();
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
     }
 
     return (
@@ -388,7 +386,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                         'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
-                                    {m['login.phone.resendIn']({ seconds })}
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }

@@ -157,7 +157,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 className="w-full py-[12px] px-[20px] text-[16px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom flex items-center justify-center gap-[10px]"
             >
                 <ArrowLeft className="w-[18px] h-[18px]" />
-                {m['consentFlow.back']()}
+                {m['common.back']()}
             </button>
         </div>
     );

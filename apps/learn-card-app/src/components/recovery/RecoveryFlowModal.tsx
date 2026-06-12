@@ -279,7 +279,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     onClick={onCancel}
                     className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
-                    {m['recovery.action.cancel']()}
+                    {m['common.cancel']()}
                 </button>
             </div>
         );
@@ -297,7 +297,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
             >
                 <IonIcon icon={chevronBackOutline} className="text-xs" />
-                {m['recovery.action.back']()}
+                {m['common.back']()}
             </button>
 
             {error && (
@@ -339,7 +339,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                {m['recovery.verifying']()}
+                                {m['common.verifying']()}
                             </span>
                         ) : (
                             m['recovery.verifyPasskey']()

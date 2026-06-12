@@ -149,7 +149,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             }}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            {m['onboarding.consent.eu.done']()}
+                            {m['common.done']()}
                         </button>
                     )}
                 </div>

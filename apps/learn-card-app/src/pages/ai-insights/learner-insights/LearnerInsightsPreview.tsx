@@ -85,7 +85,7 @@ export const LearnerInsightsPreview: React.FC<{
                         className={`bg-white p-3 h-[45px] rounded-full  flex items-center justify-center shadow-button-bottom text-grayscale-900 w-full`}
                         onClick={closeModal}
                     >
-                        {m['aiInsights.back']()}
+                        {m['common.back']()}
                     </button>
                 </div>
             </footer>

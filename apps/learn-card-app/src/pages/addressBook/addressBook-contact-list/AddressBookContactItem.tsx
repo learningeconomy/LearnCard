@@ -375,7 +375,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         if (LCNProfileConnectionStatusEnum.enum.CONNECTED === (contact as any)?.connectionStatus) {
             actionButton = (
                 <button className="text-emerald-600 font-bold text-sm">
-                    {m['contacts.connect']()}
+                    {m['common.connect']()}
                 </button>
             );
         } else if (
@@ -398,7 +398,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     },
                                 },
                                 {
-                                    text: m['contacts.cancel'](),
+                                    text: m['common.cancel'](),
                                     role: 'cancel',
                                     handler: () => {
                                         dismissAlert();
@@ -433,7 +433,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     },
                                 },
                                 {
-                                    text: m['contacts.cancel'](),
+                                    text: m['common.cancel'](),
                                     role: 'cancel',
                                     handler: () => {
                                         dismissAlert();
@@ -445,7 +445,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     className={`text-${primaryColor} font-semibold text-sm text-[14px] font-notoSans`}
                 >
                     <span className="text-grayscale-900 font-notoSans">Request Pending</span> •{' '}
-                    {cancelRequestLoading ? m['contacts.loading']() : m['contacts.cancel']()}
+                    {cancelRequestLoading ? m['contacts.loading']() : m['common.cancel']()}
                 </button>
             );
         } else if (
@@ -469,7 +469,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     },
                                 },
                                 {
-                                    text: m['contacts.cancel'](),
+                                    text: m['common.cancel'](),
                                     role: 'cancel',
                                     handler: () => {
                                         dismissAlert();
@@ -523,7 +523,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                         },
                                     },
                                     {
-                                        text: m['contacts.cancel'](),
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => {
                                             dismissAlert();
@@ -556,7 +556,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                         },
                                     },
                                     {
-                                        text: m['contacts.cancel'](),
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => {
                                             dismissAlert();
@@ -595,7 +595,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                         },
                                     },
                                     {
-                                        text: m['contacts.cancel'](),
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => {
                                             dismissAlert();

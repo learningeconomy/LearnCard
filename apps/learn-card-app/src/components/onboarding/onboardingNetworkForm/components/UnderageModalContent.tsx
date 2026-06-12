@@ -161,7 +161,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                             isValidating ? (
                                 <IonSpinner name="crescent" className="h-5 w-5" />
                             ) : (
-                                m['onboarding.consent.underage.schoolCode.verify']()
+                                m['common.verify']()
                             )
                         ) : (
                             m['onboarding.consent.underage.adultButton']()

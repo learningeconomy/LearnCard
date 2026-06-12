@@ -75,7 +75,7 @@ const AiSessionAppSelectorItem = ({
                         : `bg-${primaryColor} text-white`
                 }`}
             >
-                {hasConsented ? m['ai.open']() : m['ai.get']()}
+                {hasConsented ? m['common.open']() : m['ai.get']()}
             </button>
         </div>
     );

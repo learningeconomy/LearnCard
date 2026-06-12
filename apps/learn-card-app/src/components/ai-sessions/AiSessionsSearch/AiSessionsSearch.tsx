@@ -45,7 +45,7 @@ export const AiSessionsSearch: React.FC<{
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder={m['aiSession.search']()}
+                        placeholder={m['common.search']()}
                         onIonInput={e => setSearchInput(e.detail.value)}
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[48px] ${className}`}
                     />

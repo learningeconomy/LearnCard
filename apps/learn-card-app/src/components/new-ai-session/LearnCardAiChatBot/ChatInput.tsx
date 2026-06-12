@@ -211,7 +211,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
                                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                                    aria-label={m['aiSession.close']()}
+                                    aria-label={m['common.close']()}
                                 >
                                     ×
                                 </button>

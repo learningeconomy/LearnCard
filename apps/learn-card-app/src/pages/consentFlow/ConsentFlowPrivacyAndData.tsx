@@ -310,7 +310,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const { name, image, appStyles } = getPrivacyAndDataInfo(contractDetails, app);
 
-    const saveWord = updatingTerms ? m['consentFlow.saving']() : m['consentFlow.save']();
+    const saveWord = updatingTerms ? m['consentFlow.saving']() : m['common.save']();
 
     return (
         <div className="h-full">
@@ -527,9 +527,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                         }
                     }
                 }}
-                secondaryButtonText={
-                    isPostConsent ? m['consentFlow.cancel']() : m['consentFlow.back']()
-                }
+                secondaryButtonText={isPostConsent ? m['common.cancel']() : m['common.back']()}
                 onSecondaryButtonClick={async () => {
                     saveTerms?.(terms);
                     closeModal();

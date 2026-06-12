@@ -222,7 +222,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
                     type="button"
                     onClick={handleFinishSession}
                     className="flex-shrink-0 p-1 -mr-1 text-grayscale-600"
-                    aria-label={m['aiSession.close']()}
+                    aria-label={m['common.close']()}
                 >
                     <X className="text-grayscale-800 w-[24px] h-[24px]" strokeWidth="3" />
                 </button>

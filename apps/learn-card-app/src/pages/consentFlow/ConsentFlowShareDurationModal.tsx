@@ -89,7 +89,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
-                                            {m['consentFlow.shareCredential']()}
+                                            {m['common.share']()}
                                         </h3>
                                     </IonCol>
                                 </IonRow>

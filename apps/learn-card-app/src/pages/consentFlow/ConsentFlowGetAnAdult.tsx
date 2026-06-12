@@ -76,9 +76,9 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
             </div>
 
             <ConsentFlowFooter
-                actionButtonText={m['consentFlow.continue']()}
+                actionButtonText={m['common.continue']()}
                 onActionButtonClick={handleNextStep}
-                secondaryButtonText={m['consentFlow.cancel']()}
+                secondaryButtonText={m['common.cancel']()}
                 onSecondaryButtonClick={closeModal}
             />
         </>

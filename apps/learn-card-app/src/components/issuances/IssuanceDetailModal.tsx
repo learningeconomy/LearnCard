@@ -249,7 +249,9 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
     return (
         <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
             <div className="p-6 overflow-x-hidden">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">{m['issue.details']()}</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                    {m['common.details']()}
+                </h2>
 
                 <div className="space-y-5">
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">

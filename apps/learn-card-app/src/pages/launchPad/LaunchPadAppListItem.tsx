@@ -118,13 +118,17 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
 
                     {!app?.embedUrl && !app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
-                            {isLoading && <button className={buttonClass}>{m['launchpad.appCard.loading']()}</button>}
+                            {isLoading && (
+                                <button className={buttonClass}>
+                                    {m['launchpad.appCard.loading']()}
+                                </button>
+                            )}
                             {!isLoading && (
                                 <button
                                     onClick={handleButtonClick}
                                     className={isConnected ? connectedButtonClass : buttonClass}
                                 >
-                                    {isConnected ? m['launchpad.appCard.open']() : m['launchpad.appCard.connect']()}
+                                    {isConnected ? m['common.open']() : m['common.connect']()}
                                 </button>
                             )}
                         </div>

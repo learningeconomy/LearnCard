@@ -116,7 +116,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
         <section className="text-grayscale-900 pt-[25px] pb-[16px]">
             <div className="flex flex-col w-full items-start justify-start text-left mb-4 px-4">
                 <p className="text-grayscale-900 m-0 text-xl font-notoSans normal tracking-wide">
-                    {m['share.title']()}
+                    {m['common.share']()}
                 </p>
                 <p className="font-poppins text-[14px] text-grayscale-700 mt-[10px]">
                     Copy your profile url so you can share it with others.

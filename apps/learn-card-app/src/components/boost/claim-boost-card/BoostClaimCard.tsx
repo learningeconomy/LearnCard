@@ -298,7 +298,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
-        claimStatusText = m['contacts.acceptBoost']();
+        claimStatusText = m['common.accept']();
         if (isFamily) claimStatusText = m['contacts.joinBoost']();
     }
 

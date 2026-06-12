@@ -77,13 +77,21 @@ const SharedInsightsRow: React.FC<{ request: SharedRequest; refetch: () => void 
                             </span>
                         )}
                         {request.status === 'accepted' ? (
-                            <span className="font-semibold text-emerald-700">{m['aiInsights.accepted']()}</span>
+                            <span className="font-semibold text-emerald-700">
+                                {m['aiInsights.accepted']()}
+                            </span>
                         ) : request.status === 'pending' ? (
-                            <span className="font-semibold text-indigo-600">{m['aiInsights.pending']()}</span>
+                            <span className="font-semibold text-indigo-600">
+                                {m['aiInsights.pending']()}
+                            </span>
                         ) : request.status === 'denied' ? (
-                            <span className="font-semibold text-rose-600">{m['aiInsights.denied']()}</span>
+                            <span className="font-semibold text-rose-600">
+                                {m['aiInsights.denied']()}
+                            </span>
                         ) : (
-                            <span className="font-semibold text-grayscale-600">{m['aiInsights.unknown']()}</span>
+                            <span className="font-semibold text-grayscale-600">
+                                {m['common.unknown']()}
+                            </span>
                         )}
                     </p>
                 </div>
@@ -166,7 +174,9 @@ const SharedInsights: React.FC = () => {
                     <section className="flex flex-col items-center justify-center my-[30px]">
                         <FloatingBottleIcon />
                         <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                            {showNoSearchResults ? m['aiInsights.noSearchResults']() : m['aiInsights.noSharedInsights']()}
+                            {showNoSearchResults
+                                ? m['aiInsights.noSearchResults']()
+                                : m['aiInsights.noSharedInsights']()}
                         </p>
                     </section>
                 )}

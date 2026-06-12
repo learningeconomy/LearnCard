@@ -119,7 +119,7 @@ const ConsentFlowAiSessionsDetailsModal: React.FC<ConsentFlowAiSessionsDetailsMo
                 </div>
             </div>
             <ConsentFlowFooter
-                secondaryButtonText={m['consentFlow.back']()}
+                secondaryButtonText={m['common.back']()}
                 onSecondaryButtonClick={closeModal}
             />
         </div>

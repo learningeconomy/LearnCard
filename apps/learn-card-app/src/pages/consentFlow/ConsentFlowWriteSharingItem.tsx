@@ -89,7 +89,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
         specialIcon = <Mail className="h-full w-full text-white p-[5px]" />;
     }
 
-    const allowWord = isPersonal ? m['consentFlow.shareCredential']() : m['consentFlow.allow']();
+    const allowWord = isPersonal ? m['common.share']() : m['consentFlow.allow']();
     const denyWord = isPersonal ? m['consentFlow.hidden']() : m['consentFlow.deny']();
 
     if (isPersonal && !_isSupportedPersonalField) {

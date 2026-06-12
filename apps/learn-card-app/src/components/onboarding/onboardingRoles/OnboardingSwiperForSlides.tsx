@@ -102,9 +102,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
                     className="border-[1px] border-grayscale-800 border-solid bg-white max-w-[335px] w-full py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px] mb-[10px]"
                     onClick={isLastSlide ? handleGetStarted : handleNextSlide}
                 >
-                    {isLastSlide
-                        ? m['onboarding.slides.getStarted']()
-                        : m['onboarding.slides.next']()}
+                    {isLastSlide ? m['onboarding.slides.getStarted']() : m['common.next']()}
                 </button>
                 <div className="swiper-pagination onboarding-swiper-pagination"></div>
             </div>

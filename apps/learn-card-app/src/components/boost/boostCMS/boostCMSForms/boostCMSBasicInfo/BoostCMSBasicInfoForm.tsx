@@ -93,7 +93,7 @@ const BoostCMSBasicInfoForm: React.FC<{
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h1 className="font-poppins font-medium text-grayscale-900 text-lg p-0 m-0">
-                    {m['boost.cms.basicInfo.about']()}
+                    {m['common.about']()}
                 </h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
@@ -181,7 +181,9 @@ const BoostCMSBasicInfoForm: React.FC<{
                     )}
 
                     <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                        <p className="text-grayscale-900 font-medium w-10/12">{m['boost.cms.basicInfo.credentialExpires']()}</p>
+                        <p className="text-grayscale-900 font-medium w-10/12">
+                            {m['boost.cms.basicInfo.credentialExpires']()}
+                        </p>
                         <IonToggle
                             mode="ios"
                             color="emerald-700"

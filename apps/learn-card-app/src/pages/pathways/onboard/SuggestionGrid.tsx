@@ -89,7 +89,7 @@ const SuggestionGrid: React.FC<SuggestionGridProps> = ({
             onClick={onBack}
             className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
         >
-            {m['pathways.back']()}
+            {m['common.back']()}
         </button>
     </div>
 );

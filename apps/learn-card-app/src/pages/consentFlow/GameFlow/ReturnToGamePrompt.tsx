@@ -104,7 +104,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                {m['consentFlow.back']()}
+                {m['common.back']()}
             </button>
         </div>
     );

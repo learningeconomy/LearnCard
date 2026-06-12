@@ -90,7 +90,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                             className={hasConsented ? connectedButtonClass : buttonClass}
                             disabled={isPending}
                         >
-                            {hasConsented ? m['launchpad.appCard.open']() : m['launchpad.appCard.connect']()}
+                            {hasConsented ? m['common.open']() : m['common.connect']()}
                         </button>
                     </div>
                 </div>

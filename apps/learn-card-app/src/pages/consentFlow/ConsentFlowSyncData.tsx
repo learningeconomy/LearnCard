@@ -133,7 +133,7 @@ const ConsentFlowSyncData: React.FC = () => {
                             type="button"
                             disabled={!contractDetails || !allSynced}
                         >
-                            {m['consentFlow.next']()}
+                            {m['common.next']()}
                         </button>
                     </footer>
                 </section>
@@ -179,7 +179,7 @@ const ConsentFlowSyncData: React.FC = () => {
                         } else history.push('/home');
                     }}
                 >
-                    {m['consentFlow.close']()}
+                    {m['common.close']()}
                 </button>
             </section>
         </IonContent>

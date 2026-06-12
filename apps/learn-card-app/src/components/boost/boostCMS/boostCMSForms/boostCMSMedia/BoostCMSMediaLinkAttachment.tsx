@@ -135,7 +135,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                    {m['boost.cms.appearance.save']()}
+                                {m['common.save']()}
                             </button>
                         </div>
 
@@ -153,7 +153,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                {m['boost.cms.media.close']()}
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,

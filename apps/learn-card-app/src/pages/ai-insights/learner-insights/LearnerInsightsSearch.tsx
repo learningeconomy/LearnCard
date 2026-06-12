@@ -38,7 +38,7 @@ export const LearnerInsightsSearch: React.FC<RequestInsightsSearchProps> = ({
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder={m['aiInsights.search']()}
+                        placeholder={m['common.search']()}
                         onIonInput={e => setSearchInput(e.detail.value)}
                         className="text-left bg-grayscale-200 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[44px]"
                     />

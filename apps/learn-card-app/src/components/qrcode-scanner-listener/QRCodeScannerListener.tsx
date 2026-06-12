@@ -90,13 +90,10 @@ export const QRCodeScannerListener: React.FC = () => {
             await handleCancelScanning();
             setLoading(false);
 
-            presentToast(
-                m['scanner.failed'](),
-                {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                }
-            );
+            presentToast(m['scanner.failed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -139,7 +136,9 @@ export const QRCodeScannerListener: React.FC = () => {
                         {loading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <IonSpinner color="black" />
-                                <p className="mt-2 font-bold text-lg">{m['scanner.processing']()}</p>
+                                <p className="mt-2 font-bold text-lg">
+                                    {m['scanner.processing']()}
+                                </p>
                             </section>
                         )}
                         {!loading && contact && (
@@ -159,7 +158,7 @@ export const QRCodeScannerListener: React.FC = () => {
                                         onClick={() => setIsOpen(false)}
                                         className="text-grayscale-900 text-center text-sm"
                                     >
-                                        {m['scanner.close']()}
+                                        {m['common.close']()}
                                     </button>
                                 </div>
                             </section>

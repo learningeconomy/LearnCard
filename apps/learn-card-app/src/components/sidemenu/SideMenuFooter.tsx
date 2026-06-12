@@ -20,7 +20,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
 
         newModal(<VersionInfoModal fallbackVersion={version} />, {
             sectionClassName: '!max-w-[420px]',
-            cancelButtonTextOverride: m['sidemenu.footer.close'](),
+            cancelButtonTextOverride: m['common.close'](),
         });
     };
 

@@ -455,7 +455,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                         <>
                                             {isLoading ? (
                                                 <p className="text-grayscale-500 font-poppins text-sm mt-8">
-                                                    {m['ai.loading']()}
+                                                    {m['common.loading']()}
                                                 </p>
                                             ) : filteredTopics.length ? (
                                                 filteredTopics.map((t, i) => (
@@ -516,7 +516,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                         <>
                                             {selectedTopicLoading && view === 'topicDetail' ? (
                                                 <p className="text-grayscale-500 font-poppins text-sm mt-8">
-                                                    {m['ai.loading']()}
+                                                    {m['common.loading']()}
                                                 </p>
                                             ) : filteredSessions.length ? (
                                                 filteredSessions.map((session, index) => (

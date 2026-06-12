@@ -162,7 +162,7 @@ const AddressBookContactOptions: React.FC<{
 
     addressBookMenuOptions.push({
         id: 4,
-        title: m['contacts.search'](),
+        title: m['common.search'](),
         icon: <Search className="ml-[5px] h-[24px] w-[25px] mr-2" />,
         onClick: () => {
             onSearchClick();

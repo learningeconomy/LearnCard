@@ -24,7 +24,7 @@ const AddToLearnCardMenuWrapper = () => {
                         type="button"
                         onClick={closeModal}
                         className="flex items-center justify-center h-[32px] w-[32px] rounded-full"
-                        aria-label={m['sidemenu.footer.close']()}
+                        aria-label={m['common.close']()}
                     >
                         <CaretLeft className="h-[18px] w-[18px] text-grayscale-900" />
                     </button>
@@ -35,7 +35,7 @@ const AddToLearnCardMenuWrapper = () => {
                         type="button"
                         onClick={closeModal}
                         className="flex items-center justify-center absolute right-2 h-[32px] w-[32px] rounded-full"
-                        aria-label={m['sidemenu.footer.close']()}
+                        aria-label={m['common.close']()}
                     >
                         <X className="h-[32px] w-[32px] text-grayscale-600" />
                     </button>

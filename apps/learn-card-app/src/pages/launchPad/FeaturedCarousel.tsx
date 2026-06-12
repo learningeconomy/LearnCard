@@ -28,7 +28,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     apps,
     installedAppIds,
     onInstallSuccess,
-    hideScrollDots = false
+    hideScrollDots = false,
 }) => {
     const { newModal } = useModal();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -134,7 +134,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                                     <div className="mt-2">
                                         {appIsInstalled ? (
                                             <span className="inline-flex items-center px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
-                                                {m['launchpad.carousel.open']()}
+                                                {m['common.open']()}
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/25 rounded-full text-white text-xs font-medium">
@@ -171,9 +171,10 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                             onClick={() => scrollToIndex(index)}
                             className={`
                                 w-2 h-2 rounded-full transition-all duration-200
-                                ${index === activeIndex
-                                    ? 'bg-indigo-600 w-6'
-                                    : 'bg-grayscale-300 hover:bg-grayscale-400'
+                                ${
+                                    index === activeIndex
+                                        ? 'bg-indigo-600 w-6'
+                                        : 'bg-grayscale-300 hover:bg-grayscale-400'
                                 }
                             `}
                             aria-label={m['launchpad.carousel.goToSlide']({ number: index + 1 })}

@@ -212,7 +212,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             onClick={() => setShowStylePackCategoryList(false)}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            {m['boost.cms.appearance.cancel']()}
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonRow>
@@ -252,12 +252,14 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         activeStep = (
             <>
                 <div className="w-full flex items-center justify-between bg-white ion-padding max-w-[90%]">
-                    <p className="text-grayscale-900 font-semibold text-base">{m['boost.cms.appearance.stylePack']()}</p>
+                    <p className="text-grayscale-900 font-semibold text-base">
+                        {m['boost.cms.appearance.stylePack']()}
+                    </p>
                     {categoryButton}
                 </div>
                 <button onClick={handleImageSelect} className="boost-cms-badge">
                     <Camera className="boost-cms-camera-icon text-white" />
-                    <span className="upload-text">{m['boost.cms.appearance.upload']()}</span>
+                    <span className="upload-text">{m['common.upload']()}</span>
                 </button>
                 {photo && !isDefaultImage && (
                     <div className="boost-cms-badge">
@@ -336,7 +338,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                                 style={{ width: '100%', height: '100%' }}
                             />
                         </div>
-                        <p className="mt-2 font-poppins text-xl">{m['boost.cms.appearance.loading']()}</p>
+                        <p className="mt-2 font-poppins text-xl">{m['common.loading']()}</p>
                     </div>
                 ) : (
                     activeStep

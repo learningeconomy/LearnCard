@@ -75,7 +75,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     showStylePackCategoryList,
     setShowStylePackCategoryList,
 
-    handleSaveAppearance = () => { },
+    handleSaveAppearance = () => {},
 }) => {
     const { closeModal } = useModal();
     let formTitle: string = '';
@@ -190,13 +190,13 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                     <div className={`w-full flex  ${headerContainerStyles}`}>
                         {(activeForm === BoostCMSActiveAppearanceForm.badgeForm ||
                             activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm) && (
-                                <button
-                                    className={`ion-no-padding p-0 text-grayscale-800 ${headerBackButtonStyles}`}
-                                    onClick={handleGoBack}
-                                >
-                                    <CaretLeft className="h-auto w-3 text-black" />
-                                </button>
-                            )}
+                            <button
+                                className={`ion-no-padding p-0 text-grayscale-800 ${headerBackButtonStyles}`}
+                                onClick={handleGoBack}
+                            >
+                                <CaretLeft className="h-auto w-3 text-black" />
+                            </button>
+                        )}
                         <p
                             className={`text-grayscale-800 font-poppins font-medium text-xl text-center relative ${titleStyles}`}
                         >
@@ -211,7 +211,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                 className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-white w-[86px] h-[44px] bg-emerald-700`}
                                 disabled={disabled}
                             >
-                                {m['boost.cms.appearance.save']()}
+                                {m['common.save']()}
                             </button>
                         )}
                         {activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm && (
@@ -220,11 +220,12 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                     handleCategoryAndTypeChange(activeCategoryType, activeType);
                                     closeModal();
                                 }}
-                                className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-grayscale-800 w-[86px] h-[44px] ${saveDisabled ? 'bg-grayscale-100' : 'bg-white'
-                                    }`}
+                                className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-grayscale-800 w-[86px] h-[44px] ${
+                                    saveDisabled ? 'bg-grayscale-100' : 'bg-white'
+                                }`}
                                 disabled={saveDisabled}
                             >
-                                {m['boost.cms.appearance.save']()}
+                                {m['common.save']()}
                             </button>
                         )}
                     </div>

@@ -179,7 +179,7 @@ const AiSessionLoader: React.FC<{
                             onClick={() => closeButtonHandler()}
                             className="bg-grayscale-100 text-xl text-grayscale-900 flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[325px] mr-2"
                         >
-                            {m['ai.close']()}
+                            {m['common.close']()}
                         </button>
                     )}
                 </div>

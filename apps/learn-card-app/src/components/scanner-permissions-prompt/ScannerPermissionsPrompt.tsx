@@ -87,7 +87,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                             type="button"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal max-w-[320px]"
                         >
-                            {m['onboarding.continue']()}
+                            {m['common.continue']()}
                         </button>
 
                         <div className="w-full flex items-center justify-center m-4">
@@ -97,7 +97,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                                 }}
                                 className="text-grayscale-900 text-center text-base w-full font-medium"
                             >
-                                {m['scanner.close']()}
+                                {m['common.close']()}
                             </button>
                         </div>
                     </IonCol>

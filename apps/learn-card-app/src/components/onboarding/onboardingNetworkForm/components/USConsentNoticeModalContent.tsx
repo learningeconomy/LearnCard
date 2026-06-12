@@ -59,7 +59,7 @@ const USConsentNoticeModalContent: React.FC<USConsentNoticeModalContentProps> = 
                         onClick={onContinue}
                         className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                     >
-                        {m['onboarding.continue']()}
+                        {m['common.continue']()}
                     </button>
                 </div>
             </div>

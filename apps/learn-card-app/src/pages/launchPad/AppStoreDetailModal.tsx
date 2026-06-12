@@ -827,7 +827,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {screenshots.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-4">
-                                {m['launchpad.detail.preview']()}
+                                {m['common.preview']()}
                             </h3>
 
                             <AppScreenshotsSlider appScreenshots={screenshots} />
@@ -837,7 +837,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                         <h3 className="text-xl text-gray-900 font-notoSans">
-                            {m['launchpad.detail.about']()}
+                            {m['common.about']()}
                         </h3>
 
                         <p
@@ -978,7 +978,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             onClick={closeModal}
                             className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 shadow-button-bottom flex gap-[5px] justify-center flex-1"
                         >
-                            {m['launchpad.detail.back']()}
+                            {m['common.back']()}
                         </button>
 
                         {isCheckingInstalled ? (
@@ -995,7 +995,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                         onClick={handleLaunch}
                                         className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom flex items-center justify-center flex-1`}
                                     >
-                                        {m['launchpad.appCard.open']()}
+                                        {m['common.open']()}
                                     </button>
                                 )}
 

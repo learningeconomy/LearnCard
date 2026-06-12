@@ -31,14 +31,14 @@ const ConsentFlowErrorFooter: React.FC<ConsentFlowErrorFooterProps> = ({
                         onClick={closeModal}
                         className={`py-[9px] pl-[20px] pr-[15px] bg-${primaryColor} text-white rounded-[35px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] w-[450px] m-auto shadow-button-bottom flex gap-[5px] justify-center`}
                     >
-                        {m['consentFlow.back']()}
+                        {m['common.back']()}
                     </button>
                 ) : (
                     <button
                         onClick={closeModal}
                         className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                     >
-                        {m['consentFlow.cancel']()}
+                        {m['common.cancel']()}
                     </button>
                 )}
 

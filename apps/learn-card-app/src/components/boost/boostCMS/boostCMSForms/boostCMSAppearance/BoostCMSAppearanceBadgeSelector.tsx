@@ -1,14 +1,6 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-} from '@ionic/react';
+import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonPage } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import { BoostCMSState } from '../../../boost';
 
@@ -49,7 +41,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
                         onClick={() => handleCloseModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        {m['boost.cms.appearance.cancel']()}
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonContent>

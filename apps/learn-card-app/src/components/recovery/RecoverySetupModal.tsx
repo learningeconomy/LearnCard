@@ -343,7 +343,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             }}
             className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
         >
-            {m['recovery.action.cancel']()}
+            {m['common.cancel']()}
         </button>
     );
 
@@ -809,7 +809,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                         m['recovery.verifyCode'](),
                                         handleVerifyEmailCode,
                                         loading || emailCode.length !== 6,
-                                        m['recovery.verifying']()
+                                        m['common.verifying']()
                                     )}
 
                                     <button
@@ -896,7 +896,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     onClick={onClose}
                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
-                    {anyConfigured ? m['recovery.done']() : m['recovery.skipForNow']()}
+                    {anyConfigured ? m['common.done']() : m['common.skipForNow']()}
                 </button>
             </div>
         </div>

@@ -92,7 +92,7 @@ const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
                                 onClick={closeModal}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                {m['boost.cms.media.close']()}
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,

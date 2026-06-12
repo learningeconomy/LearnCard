@@ -67,7 +67,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                         }`}
                     >
                         {showFullBackButton ? (
-                            m['consentFlow.back']()
+                            m['common.back']()
                         ) : (
                             <SkinnyCaretRight className="text-grayscale-900 h-[45px] w-[45px] rotate-180" />
                         )}

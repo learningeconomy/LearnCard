@@ -215,7 +215,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                     </div>
                 ),
                 confirmText: m['contacts.confirm'](),
-                cancelText: m['contacts.cancel'](),
+                cancelText: m['common.cancel'](),
                 onConfirm: () => handleWithdrawConsent({ deleteContractCredentials: true }),
                 onCancel: () => handleWithdrawConsent({ deleteContractCredentials: false }),
             });
@@ -226,7 +226,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
         await confirm({
             text: `Are you sure you want to disconnect from "${contractDetails.name}"?`,
             confirmText: m['contacts.confirm'](),
-            cancelText: m['contacts.cancel'](),
+            cancelText: m['common.cancel'](),
             onConfirm: handleWithdrawConsentWithBoostCheck,
         });
     };
@@ -237,11 +237,11 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     let showFullBackButton = false;
     let showCloseButtonAlt = false;
     let secondaryButtonText: string | undefined = isPostConsent
-        ? m['consentFlow.close']()
-        : m['consentFlow.cancel']();
+        ? m['common.close']()
+        : m['common.cancel']();
 
     if (!isPostConsent) {
-        mainFooterButtonText = m['consentFlow.accept']();
+        mainFooterButtonText = m['common.accept']();
         mainFooterButtonAction = () => handleAccept(terms, shareDuration);
     } else if (
         isPostConsent &&

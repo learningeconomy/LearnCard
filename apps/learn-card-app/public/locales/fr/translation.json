@@ -1,4 +1,46 @@
 {
+    "common": {
+        "share": "Partager",
+        "open": "Ouvrir",
+        "accept": "Accepter",
+        "search": "Rechercher",
+        "delete": "Supprimer",
+        "done": "Terminé",
+        "next": "Suivant",
+        "verify": "Vérifier",
+        "verifying": "Vérification...",
+        "preview": "Aperçu",
+        "details": "Détails",
+        "about": "À propos",
+        "unknown": "Inconnu",
+        "status": "Statut",
+        "claim": "Réclamer",
+        "update": "Mettre à jour",
+        "skipForNow": "Passer pour le moment",
+        "upload": "Télécharger",
+        "publish": "Publier",
+        "yes": "Oui",
+        "no": "Non",
+        "connect": "Connecter",
+        "login": "Connexion",
+        "password": "Mot de passe",
+        "createAccount": "Créer un compte",
+        "staySignedIn": "Rester connecté",
+        "resendCode": "Renvoyer le code",
+        "resendIn": "Renvoyer dans {{seconds}}s",
+        "invalidCode": "Code invalide",
+        "enterVerificationCode": "Saisissez le code de vérification ou <0>recommencez</0>",
+        "agreeToTerms": "J'accepte les <0>Conditions</0>",
+        "alreadyHaveAccount": "Vous avez déjà un compte ?",
+        "differentEmail": "Utiliser une autre adresse e-mail",
+        "sendingCode": "Envoi du code...",
+        "back": "Retour",
+        "close": "Fermer",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "continue": "Continuer",
+        "loading": "Chargement..."
+    },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
         "newAiSession": "Nouvelle session IA",
@@ -8,8 +50,7 @@
             "connectionsEncrypted": "Toutes les connexions sont <0>chiffrées.</0>",
             "privacyPolicy": "Politique de confidentialité",
             "termsOfService": "Conditions d'utilisation",
-            "copyright": "© {{year}} Learning Economy",
-            "close": "Fermer"
+            "copyright": "© {{year}} Learning Economy"
         },
         "links": {
             "launchPad": "Applications",
@@ -130,16 +171,13 @@
         "passport": "Passeport",
         "launchpad": "Launchpad",
         "appCard": {
-            "open": "Ouvrir",
             "get": "Obtenir",
             "launch": "Lancer",
             "soon": "Bientôt",
-            "connect": "Connecter",
             "loading": "Chargement...",
             "age": "Âge {{rating}}"
         },
         "carousel": {
-            "open": "Ouvrir",
             "getApp": "Obtenir l'app",
             "goToSlide": "Aller à la diapositive {{number}}"
         },
@@ -152,8 +190,6 @@
             "shareApp": "Partager l'app",
             "editPermissions": "Modifier les autorisations",
             "uninstall": "Désinstaller",
-            "about": "À propos",
-            "preview": "Aperçu",
             "watch": "Regarder",
             "links": "Liens",
             "promoVideo": "Vidéo promotionnelle",
@@ -164,7 +200,6 @@
             "linkCopied": "Lien copié dans le presse-papiers !",
             "installFailed": "Échec de l'installation de l'app : {{error}}",
             "dateOfBirth": "Date de naissance",
-            "back": "Retour",
             "whyUseThisApp": "Pourquoi utiliser cette application ?",
             "privacyPolicy": "Politique de confidentialité",
             "termsOfService": "Conditions d'utilisation",
@@ -211,11 +246,8 @@
         "evidence": "Preuve",
         "issuance": "Émission",
         "issued": "Émis",
-        "details": "Détails",
         "filter": "Filtrer",
         "credentialDetail": "Détail du titre",
-        "shareCredential": "Partager",
-        "deleteCredential": "Supprimer",
         "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce titre ?",
         "addToWallet": "Ajouter au portefeuille",
         "viewCredential": "Voir le titre",
@@ -223,7 +255,6 @@
         "subject": "Sujet",
         "issueDate": "Date d'émission",
         "expirationDate": "Date d'expiration",
-        "status": "Statut",
         "actions": "Actions",
         "openSyllabus": "Ouvrir le programme",
         "certificate": "Certificat",
@@ -287,55 +318,19 @@
         "email": {
             "placeholder": "Adresse e-mail",
             "button": "Se connecter par e-mail",
-            "sendingCode": "Envoi du code...",
             "verification": {
-                "title": "Saisissez le code de vérification ou <0>recommencez</0>",
-                "verify": "Vérifier",
-                "verifying": "Vérification...",
                 "error": "Impossible de vérifier le code. Veuillez réessayer."
             },
-            "password": {
-                "placeholder": "Mot de passe",
-                "login": "Connexion",
-                "create": "Créer un compte",
-                "existingAccount": "Vous avez déjà un compte ?",
-                "differentEmail": "Utiliser une autre adresse e-mail",
-                "staySignedIn": "Rester connecté",
-                "agreeToTerms": "J'accepte les <0>Conditions</0>"
-            },
-            "resend": "Renvoyer le code",
-            "resending": "Envoi du code...",
-            "resendIn": "Renvoyer dans {{seconds}}s",
             "error": {
-                "invalidEmail": "E-mail manquant ou invalide",
-                "invalidCode": "Code invalide"
+                "invalidEmail": "E-mail manquant ou invalide"
             }
         },
         "phone": {
             "placeholder": "Numéro de téléphone",
             "button": "Se connecter par SMS",
-            "loading": "Chargement...",
-            "verification": {
-                "title": "Saisissez le code de vérification ou <0>recommencez</0>",
-                "verify": "Vérifier",
-                "verifying": "Vérification..."
-            },
-            "password": {
-                "placeholder": "Mot de passe",
-                "login": "Connexion",
-                "create": "Créer un compte",
-                "existingAccount": "Vous avez déjà un compte ?",
-                "differentEmail": "Utiliser une autre adresse e-mail",
-                "staySignedIn": "Rester connecté",
-                "agreeToTerms": "J'accepte les <0>Conditions</0>"
-            },
-            "resend": "Renvoyer le code",
-            "resending": "Envoi du code...",
-            "resendIn": "Renvoyer dans {{seconds}}s",
             "smsSent": "Un code de vérification a été envoyé",
             "error": {
-                "invalidPhone": "Le numéro de téléphone est requis !",
-                "invalidCode": "Code invalide"
+                "invalidPhone": "Le numéro de téléphone est requis !"
             }
         },
         "social": {
@@ -405,11 +400,8 @@
             }
         },
         "welcome": "Bienvenue sur",
-        "continue": "Continuer",
         "back": "Retour",
         "skipForNow": "Passer pour l'instant",
-        "close": "Fermer",
-        "save": "Enregistrer",
         "role": {
             "learner": {
                 "title": "Apprenant",
@@ -445,7 +437,6 @@
                     "description": "Pour rejoindre sans compte parent, veuillez saisir le code spécial fourni par votre école.",
                     "cta": "Vous avez un code école ?",
                     "placeholder": "Saisir le code",
-                    "verify": "Vérifier",
                     "error": "Code école invalide. Veuillez réessayer."
                 },
                 "adultButton": "Je suis adulte",
@@ -469,7 +460,6 @@
                     "heading": "Demande envoyée",
                     "description": "Nous avons envoyé une demande de consentement à <0>{{email}}</0>. Nous vous informerons dès qu'elle sera approuvée."
                 },
-                "done": "Terminé",
                 "error": {
                     "invalidEmail": "Veuillez saisir un e-mail valide.",
                     "sendFailed": "Échec de l'envoi de la demande. Veuillez réessayer."
@@ -494,7 +484,6 @@
             "gotIt": "Compris"
         },
         "slides": {
-            "next": "Suivant",
             "getStarted": "Commencer",
             "learner": {
                 "slide1": {
@@ -655,15 +644,11 @@
             "sending": "Envoi...",
             "setPrimaryConfirm": {
                 "title": "Définir la méthode de contact principal",
-                "text": "Êtes-vous sûr de vouloir définir cette adresse e-mail comme adresse principale ?",
-                "yes": "Oui",
-                "no": "Non"
+                "text": "Êtes-vous sûr de vouloir définir cette adresse e-mail comme adresse principale ?"
             },
             "removeConfirm": {
                 "title": "Supprimer la méthode de contact",
-                "text": "Êtes-vous sûr de vouloir supprimer cet e-mail ?",
-                "yes": "Oui",
-                "no": "Non"
+                "text": "Êtes-vous sûr de vouloir supprimer cet e-mail ?"
             }
         },
         "phone": {
@@ -758,12 +743,7 @@
         "scanCode": "Scanner le code",
         "showCode": "Afficher le code",
         "shareCode": "Partager le code",
-        "search": "Rechercher",
-        "back": "Retour",
-        "cancel": "Annuler",
         "confirm": "Confirmer",
-        "connect": "Connecter",
-        "accept": "Accepter",
         "acceptRequest": "Accepter la demande",
         "requestConnection": "Demander une connexion",
         "sendRequest": "Envoyer la demande",
@@ -794,7 +774,6 @@
         "joined": "Rejoint",
         "saving": "Enregistrement...",
         "joining": "En cours de rejoindre...",
-        "acceptBoost": "Accepter",
         "joinBoost": "Rejoindre",
         "notification": "Notification",
         "okay": "D'accord",
@@ -809,14 +788,9 @@
     },
     "consentFlow": {
         "title": "Consentement",
-        "accept": "Accepter",
         "acceptAndSync": "Accepter et synchroniser",
         "accepted": "Accepté",
         "acceptingContract": "Acceptation du contrat...",
-        "back": "Retour",
-        "cancel": "Annuler",
-        "close": "Fermer",
-        "continue": "Continuer",
         "continuePlaying": "Continuer à jouer",
         "continueToGame": "Continuer vers le jeu",
         "launchGame": "Lancer le jeu",
@@ -828,11 +802,9 @@
         "disconnecting": "Déconnexion...",
         "disconnect": "Déconnecter",
         "saving": "Enregistrement...",
-        "save": "Enregistrer",
         "syncing": "Synchronisation...",
         "synced": "Synchronisé",
         "withdraw": "Retirer",
-        "update": "Mettre à jour",
         "write": "Écrire",
         "hidden": "Masqué",
         "anonymized": "Anonymisé",
@@ -841,7 +813,6 @@
         "networkError": "Erreur réseau",
         "tryAgain": "Réessayer",
         "nothingFound": "Rien trouvé",
-        "unknown": "Inconnu",
         "errorLoading": "Un problème est survenu lors du chargement de ce flux de consentement.",
         "notExists": "Ce flux de consentement n'existe pas ou n'est plus disponible.",
         "receivedCredential": "Vous avez reçu un titre.",
@@ -862,7 +833,6 @@
         "status.active": "Actif",
         "status.off": "Désactivé",
         "status.on": "Activé",
-        "shareCredential": "Partager",
         "privacyAndData": "Confidentialité et données",
         "gameAccess.title": "Accès au jeu",
         "gameAccess.success": "Vous avez maintenant accès !",
@@ -898,7 +868,6 @@
         "editAccess": "Modifier l'accès",
         "syncNewData": "Synchroniser les nouvelles données",
         "syncMyData": "Synchroniser mes données",
-        "next": "Suivant",
         "shareOneTimeOnly": "Partager une seule fois",
         "customDuration": "Durée personnalisée",
         "noCredentials": "Aucune certification",
@@ -923,11 +892,8 @@
         "temporarySession": "Ceci est une session temporaire. Fermer l'onglet vous déconnectera définitivement sauf si vous configurez une méthode de récupération.",
         "recommendTwo": "Nous recommandons de configurer au moins deux méthodes de récupération.",
         "addingMethod": "Ajouter une autre méthode améliore votre sécurité.",
-        "done": "Terminé",
-        "skipForNow": "Passer pour le moment",
         "generating": "Génération...",
         "sending": "Envoi...",
-        "verifying": "Vérification...",
         "verifyIdentity": "Vérifiez votre identité",
         "verifyCode": "Vérifier le code",
         "verifyPasskey": "Vérifier avec une clé d'accès",
@@ -1004,9 +970,7 @@
             "tapToChoose": "Appuyez pour choisir le fichier de sauvegarde",
             "fileSelected": "Fichier sélectionné",
             "enter": "Saisir",
-            "change": "Modifier",
-            "cancel": "Annuler",
-            "back": "Retour"
+            "change": "Modifier"
         },
         "tab": {
             "email": "E-mail",
@@ -1092,7 +1056,6 @@
         "noAlerts": "Aucune alerte pour le moment",
         "active": "Actives",
         "archived": "Archivées",
-        "loading": "Chargement...",
         "reviewRequired": "Vérification requise",
         "newSubmission": "Nouvelle soumission",
         "appApproved": "Application approuvée",
@@ -1104,8 +1067,6 @@
         "rejecting": "Refus...",
         "approved": "Approuvé",
         "notApproved": "Non approuvé",
-        "claim": "Réclamer",
-        "accept": "Accepter",
         "alreadyConnected": "Vous êtes déjà connectés.",
         "alreadyConnectedShort": "Les profils sont déjà connectés",
         "emptyActive": "Vous êtes à jour !",
@@ -1113,17 +1074,14 @@
         "connectionRequest": "Demande de connexion",
         "newBoost": "Nouveau Boost",
         "archive": "Archiver",
-        "delete": "Supprimer",
         "confirmDelete": "Supprimer cette notification ?",
         "rejected": "Rejeté",
         "okay": "OK",
-        "open": "Ouvrir",
         "viewCredential": "Voir la crédention",
         "loadingNotifications": "Chargement des notifications...",
         "refresh": "Actualiser"
     },
     "share": {
-        "title": "Partager",
         "addContact": "Ajouter un contact",
         "generateLinkFailed": "Échec de la génération du lien d'invitation",
         "inviteLinkCopied": "Lien d'invitation copié dans le presse-papiers",
@@ -1143,9 +1101,7 @@
         "cameraPermission": "Autorisation de caméra requise",
         "invalidCode": "Code QR invalide",
         "scanAnother": "Scanner un autre",
-        "done": "Terminé",
         "openCamera": "Ouvrir la caméra",
-        "close": "Fermer",
         "scanQR": "Scanner le code QR",
         "importFromLink": "Importer depuis un lien",
         "pasteLink": "Collez le lien ici...",
@@ -1153,7 +1109,6 @@
         "processing": "Traitement...",
         "success": "Titre importé avec succès !",
         "failed": "Échec de l'importation du titre",
-        "share": "Partager",
         "download": "Télécharger",
         "scanLabel": "Scanner",
         "saveToPhotos": "Enregistrer dans Photos",
@@ -1199,10 +1154,8 @@
         "totalIssued": "Total émis",
         "totalRevoked": "Total révoqués",
         "totalPending": "Total en attente",
-        "details": "Détails",
         "recipient": "Destinataire",
         "issuedDate": "Émis",
-        "status": "Statut",
         "actions": "Actions"
     },
     "ai": {
@@ -1210,10 +1163,8 @@
         "newSession": "Nouveau sujet",
         "browseTopics": "Parcourir les sessions...",
         "searchSkills": "Choisissez une compétence, un objectif ou un métier...",
-        "clearSearch": "Rechercher",
         "noResults": "Aucun résultat",
         "noSharedInsights": "Aucun Insight partagé",
-        "loading": "Chargement...",
         "loadingRoles": "Chargement des rôles...",
         "generating": "Génération...",
         "error": "Une erreur est survenue",
@@ -1233,13 +1184,9 @@
         "newSessionTitle": "Démarrer une nouvelle session",
         "sessionHistory": "Historique des sessions",
         "noSessions": "Aucune session pour le moment",
-        "continueSession": "Continuer",
-        "deleteSession": "Supprimer",
         "renameSession": "Renommer",
-        "shareSession": "Partager",
         "allTopics": "Tous les sujets",
         "aiSessions": "Sessions IA",
-        "close": "Fermer",
         "closeToEndSession": "Fermer pour terminer la session",
         "dismiss": "Ignorer",
         "get": "Obtenir",
@@ -1250,7 +1197,6 @@
         "noSessionsForTopic": "Aucune session pour ce sujet",
         "noSessionsFound": "Aucune session trouvée",
         "noTopics": "Aucun sujet pour le moment",
-        "open": "Ouvrir",
         "personalize": "Personnaliser",
         "revisitTopic": "Revoir le sujet",
         "set": "Définir",
@@ -1291,9 +1237,6 @@
         "salary": "Salaire",
         "goals": "Objectifs",
         "saveProfile": "Enregistrer le profil",
-        "next": "Suivant",
-        "back": "Retour",
-        "skipForNow": "Passer pour le moment",
         "addSkill": "Ajouter une compétence",
         "removeSkill": "Supprimer",
         "noSkills": "Aucune compétence ajoutée pour le moment"
@@ -1303,7 +1246,6 @@
         "createBoost": "Créer un Boost",
         "editBoost": "Modifier le Boost",
         "deleteBoost": "Supprimer le Boost",
-        "claimBoost": "Réclamer",
         "sendBoost": "Envoyer",
         "manageBoost": "Gérer",
         "boostDetails": "Détails du Boost",
@@ -1318,11 +1260,8 @@
         "category": "Catégorie",
         "requirements": "Exigences",
         "evidence": "Preuve",
-        "preview": "Aperçu",
-        "save": "Enregistrer",
         "saving": "Enregistrement...",
         "saved": "Enregistré !",
-        "publish": "Publier",
         "publishing": "Publication...",
         "unpublish": "Dépublier",
         "draft": "Brouillon",
@@ -1350,7 +1289,6 @@
         "changeImage": "Changer l'image",
         "cms": {
             "basicInfo": {
-                "about": "À propos",
                 "issuerNamePlaceholder": "Nom de l'émetteur",
                 "descriptionPlaceholder": "À quoi sert ce boost ?",
                 "narrativePlaceholder": "Comment gagner ce boost ?",
@@ -1381,8 +1319,6 @@
                 "uploading": "Téléchargement...",
                 "changePhoto": "Changer la photo",
                 "changeDoc": "Changer le document",
-                "upload": "Télécharger",
-                "close": "Fermer",
                 "videoCover": "Couverture vidéo",
                 "uploadedImagePreview": "Aperçu de l'image téléchargée",
                 "mediaAttachment": "Pièce jointe média",
@@ -1401,8 +1337,6 @@
                 "boostType": "Type de boost",
                 "selectStylePack": "Sélectionner le pack de styles",
                 "selectImage": "Sélectionner une image",
-                "save": "Enregistrer",
-                "cancel": "Annuler",
                 "badgeThumbnail": "Vignette du badge",
                 "default": "Par défaut",
                 "backgroundImage": "Image de fond",
@@ -1415,8 +1349,6 @@
                 "displayType": "Affichage {{type}}",
                 "stylePack": "Pack de styles",
                 "all": "Tous",
-                "upload": "Télécharger",
-                "loading": "Chargement...",
                 "selectType": "Sélectionner le type",
                 "customType": "Type personnalisé",
                 "search": "Rechercher...",
@@ -1442,7 +1374,6 @@
                 "claimLinksUnavailableDescription": "les permissions sont désactivées.",
                 "claimLinksDisabledViewing": "Les liens de réclamation sont désactivés car l'affichage n'est pas activé pour ce modèle.",
                 "addContact": "Ajouter un contact",
-                "update": "Mettre à jour",
                 "generateClaimLink": "Générer un lien de réclamation ?",
                 "cannotGenerateClaimLinks": "Ce modèle ne peut pas générer de liens de réclamation car la permission d'affichage est désactivée.",
                 "enableViewing": "Activez l'affichage pour continuer la génération de liens.",
@@ -1491,7 +1422,6 @@
             "publish": {
                 "readyToPublish": "Êtes-vous prêt à publier ?",
                 "lockWarning": "Ce boost sera scellé de manière vérifiable pour toujours et ne pourra pas être modifié après publication.",
-                "preview": "Aperçu",
                 "saveAsDraft": "Enregistrer comme brouillon",
                 "publishAndIssue": "Publier et émettre"
             },
@@ -1508,13 +1438,10 @@
                 "returnToWallet": "Retour au portefeuille"
             },
             "header": {
-                "publish": "Publier",
                 "issue": "Émettre",
                 "confirmation": "Confirmation"
             },
             "preview": {
-                "details": "Détails",
-                "about": "À propos",
                 "criteria": "Critères",
                 "certificate": "Certificat",
                 "id": "ID"
@@ -1760,7 +1687,6 @@
         "noSharedInsights": "Aucun Insight partagé",
         "accepted": "Accepté",
         "denied": "Refusé",
-        "unknown": "Inconnu",
         "requestInsights": "Demander des Insights",
         "requestInsightsDescription": "Demandez à voir les Compétences principales, les Instantanés d'apprentissage et les Parcours suggérés. Vous pourrez également envoyer des suggestions de parcours d'apprentissage.",
         "searchByName": "Rechercher par nom...",
@@ -1782,7 +1708,6 @@
         "confirmCancelRequest": "Êtes-vous sûr de vouloir annuler cette demande d'Insights ?",
         "shareInsights": "Partager les Insights",
         "shareInsightsDescription": "Partagez vos Compétences principales, Instantanés d'apprentissage et Parcours suggérés. Vous pourrez également recevoir des suggestions de parcours d'apprentissage.",
-        "share": "Partager",
         "insights": "Insights",
         "shareInsightsWith": "Partager les Insights avec <br /> {{name}}",
         "wantsToShare": "<0>{{childName}}</0> souhaite partager ses insights avec <1>{{targetName}}</1>",
@@ -1798,8 +1723,6 @@
         "expired": "Expiré",
         "viewRequest": "Voir la demande",
         "approved": "Approuvé",
-        "search": "Rechercher",
-        "back": "Retour",
         "sort.az": "A-Z",
         "sort.recentlyAdded": "Ajoutés récemment",
         "filter.all": "Tous",
@@ -1847,10 +1770,8 @@
     },
     "aiSession": {
         "loadingTitle": "Chargement du titre",
-        "close": "Fermer",
         "newTopic": "Nouveau sujet",
         "browse": "Parcourir...",
-        "somethingElse": "Autre chose...",
-        "search": "Rechercher"
+        "somethingElse": "Autre chose..."
     }
 }

@@ -198,7 +198,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                         }}
                         className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/80 hover:bg-white text-gray-700 font-semibold text-[13px] border border-gray-200 transition-colors"
                     >
-                        {m['alerts.open']()}
+                        {m['common.open']()}
                         <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                 )}

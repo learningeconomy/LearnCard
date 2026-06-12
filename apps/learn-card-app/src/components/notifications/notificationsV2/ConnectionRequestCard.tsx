@@ -64,7 +64,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     if (isAccepted) {
         buttonText = m['alerts.accepted']();
     } else if (!isAccepted) {
-        buttonText = m['alerts.accept']();
+        buttonText = m['common.accept']();
     }
 
     const handleAcceptConnection = async () => {
@@ -137,7 +137,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
-                            {isLoading ? m['alerts.loading']() : buttonText}
+                            {isLoading ? m['common.loading']() : buttonText}
                             {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 

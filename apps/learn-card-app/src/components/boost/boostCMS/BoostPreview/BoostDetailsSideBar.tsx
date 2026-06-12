@@ -118,8 +118,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
             activeTabDetails = (
                 <>
                     <TruncateTextBox
-                        headerText={m['boost.cms.preview.details']()}
-                        subHeaderText={`${isMediaDisplay ? title : m['boost.cms.preview.about']()}`}
+                        headerText={m['common.details']()}
+                        subHeaderText={`${isMediaDisplay ? title : m['common.about']()}`}
                         text={description}
                         displayTextBelowChildren={isMediaDisplay}
                         subHeaderTextClassName="text-[17px] text-grayscale-900 font-semibold"

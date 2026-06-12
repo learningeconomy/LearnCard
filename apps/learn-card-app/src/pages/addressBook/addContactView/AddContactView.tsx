@@ -339,7 +339,7 @@ export const AddContactView: React.FC<{
                     >
                         {loading || acceptConnectionLoading
                             ? m['contacts.loading']()
-                            : m['contacts.connect']()}
+                            : m['common.connect']()}
                     </button>
                 )}
             </IonCol>
@@ -366,9 +366,7 @@ export const AddContactView: React.FC<{
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {acceptConnectionLoading
-                            ? m['contacts.loading']()
-                            : m['contacts.connect']()}
+                        {acceptConnectionLoading ? m['contacts.loading']() : m['common.connect']()}
                     </button>
                 ) : (
                     <button
@@ -450,7 +448,7 @@ export const AddContactView: React.FC<{
                 </IonRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
-                        {isLoggedIn ? m['contacts.cancel']() : m['contacts.returnHome']()}
+                        {isLoggedIn ? m['common.cancel']() : m['contacts.returnHome']()}
                     </button>
                 </div>
             </IonRow>

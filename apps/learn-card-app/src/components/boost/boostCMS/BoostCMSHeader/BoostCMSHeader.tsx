@@ -49,7 +49,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
             </span>
         );
     } else if (currentStep === BoostCMSStepsEnum.publish) {
-        headerTitle = m['boost.cms.header.publish']();
+        headerTitle = m['common.publish']();
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
         headerTitle = m['boost.cms.header.issue']();
     } else if (currentStep === BoostCMSStepsEnum.confirmation) {

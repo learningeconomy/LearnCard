@@ -34,7 +34,7 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
                     closeModal();
                 }}
             >
-                {m['consentFlow.continue']()}
+                {m['common.continue']()}
             </button>
 
             <button
@@ -42,7 +42,7 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
                 type="button"
                 onClick={closeModal}
             >
-                {m['consentFlow.cancel']()}
+                {m['common.cancel']()}
             </button>
         </section>
     );

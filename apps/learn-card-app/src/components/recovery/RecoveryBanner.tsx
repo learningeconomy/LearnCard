@@ -76,7 +76,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({ recoveryMethodCo
                     }
                 }}
                 className="p-1 rounded-full hover:bg-amber-200 transition-colors shrink-0"
-                aria-label={m['recovery.action.cancel']()}
+                aria-label={m['common.cancel']()}
             >
                 <IonIcon icon={closeOutline} className="text-grayscale-500 text-lg" />
             </div>

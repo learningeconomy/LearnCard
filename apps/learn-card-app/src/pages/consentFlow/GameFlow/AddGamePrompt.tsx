@@ -108,7 +108,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                {isFromGame ? m['consentFlow.back']() : m['consentFlow.cancel']()}
+                {isFromGame ? m['common.back']() : m['common.cancel']()}
             </button>
         </div>
     );

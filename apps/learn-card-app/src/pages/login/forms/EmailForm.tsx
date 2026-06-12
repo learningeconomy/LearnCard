@@ -300,8 +300,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
     };
 
     const resendCodeButtonText: string = isResendCodeLoading
-        ? m['login.email.sendingCode']()
-        : m['login.email.resend']();
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
@@ -351,12 +351,12 @@ const EmailForm: React.FC<EmailFormProps> = ({
         );
         // buttonTitle = 'Continue';
         buttonTitle = buttonTitleOverride ?? m['login.email.button']();
-        if (isLoading) buttonTitle = m['login.email.sendingCode']();
+        if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
         formTitle = (
             <TransP
-                m={m['login.email.verification.title']}
+                m={m['common.enterVerificationCode']}
                 components={[
                     <span
                         key="0"
@@ -388,9 +388,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading
-            ? m['login.email.verification.verifying']()
-            : m['login.email.verification.verify']();
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading;
     }
 
@@ -452,7 +450,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                         'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
-                                    {m['login.email.resendIn']({ seconds })}
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }

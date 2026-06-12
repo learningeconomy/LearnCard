@@ -153,9 +153,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
             */}
             {SHOWCASES.length > 0 && (
                 <section aria-labelledby="discover-showcases" className="space-y-3">
-                    <SectionLabel id="discover-showcases">
-                        Try a curated journey
-                    </SectionLabel>
+                    <SectionLabel id="discover-showcases">Try a curated journey</SectionLabel>
 
                     <div className="space-y-2.5">
                         {SHOWCASES.map(showcase => (
@@ -182,9 +180,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                 unchanged.
             */}
             <section aria-labelledby="discover-goal" className="space-y-3">
-                <SectionLabel id="discover-goal">
-                    Or describe your own goal
-                </SectionLabel>
+                <SectionLabel id="discover-goal">Or describe your own goal</SectionLabel>
 
                 <div className="space-y-1.5">
                     <label
@@ -209,9 +205,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                                    disabled:opacity-60 disabled:cursor-not-allowed"
                     />
 
-                    <p className="text-xs text-grayscale-400 text-right">
-                        {text.length} / 280
-                    </p>
+                    <p className="text-xs text-grayscale-400 text-right">{text.length} / 280</p>
                 </div>
 
                 <div className="space-y-3">
@@ -232,7 +226,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                         className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors
                                    disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {m['pathways.skipForNow']()}
+                        {m['common.skipForNow']()}
                     </button>
                 </div>
             </section>
@@ -268,15 +262,9 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
  * What-if comparison columns) so the cold-start visually rhymes
  * with the post-onboarding shell.
  */
-const SectionLabel: React.FC<{ id?: string; children: React.ReactNode }> = ({
-    id,
-    children,
-}) => (
+const SectionLabel: React.FC<{ id?: string; children: React.ReactNode }> = ({ id, children }) => (
     <div className="flex items-center gap-3">
-        <h2
-            id={id}
-            className="text-xs font-semibold uppercase tracking-wide text-grayscale-500"
-        >
+        <h2 id={id} className="text-xs font-semibold uppercase tracking-wide text-grayscale-500">
             {children}
         </h2>
         <span className="flex-1 h-px bg-grayscale-200" />

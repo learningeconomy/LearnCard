@@ -206,7 +206,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     if (isClaimed) {
         buttonText = m['alerts.claimed']();
     } else if (!isClaimed) {
-        buttonText = m['alerts.claim']();
+        buttonText = m['common.claim']();
     }
 
     const handleCardClick = () => {
@@ -387,7 +387,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                     onClick={handleButtonClick}
                                     name="notification-claim-button"
                                 >
-                                    {isLoading ? m['alerts.loading']() : buttonText}
+                                    {isLoading ? m['common.loading']() : buttonText}
                                     {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                                 </button>
 

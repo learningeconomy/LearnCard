@@ -409,7 +409,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                 className={`font-poppins text-white text-[17px] font-normal bg-${primaryColor} rounded-[30px] px-[24px] py-[10px] disabled:opacity-[50%]`}
                                 disabled={!isManuallyChangingParameters}
                             >
-                                {m['boost.cms.issueTo.update']()}
+                                {m['common.update']()}
                             </button>
                         </>
                     )}

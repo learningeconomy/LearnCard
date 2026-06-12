@@ -116,7 +116,9 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             </p>
 
                             <p className="text-sm text-grayscale-600">
-                                {m['launchpad.ageRestriction.requiresAgeBefore']()}<strong>{minAge}+</strong>{m['launchpad.ageRestriction.requiresAgeAfter']()}
+                                {m['launchpad.ageRestriction.requiresAgeBefore']()}
+                                <strong>{minAge}+</strong>
+                                {m['launchpad.ageRestriction.requiresAgeAfter']()}
                             </p>
                         </div>
 
@@ -317,7 +319,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
                                 <button onClick={handleLaunch} className={connectedButtonClass}>
-                                    {m['launchpad.appCard.open']()}
+                                    {m['common.open']()}
                                 </button>
 
                                 <button

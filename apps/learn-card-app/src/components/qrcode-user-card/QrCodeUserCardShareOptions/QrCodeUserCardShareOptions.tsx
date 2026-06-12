@@ -133,9 +133,10 @@ const QrCodeUserCardShareOptions: React.FC<{
                             >
                                 <option.icon className="w-[30px] text-white" />
                             </button>
-                                <p className="text-grayscale-700 text-center text-[17px]">
-                                {option.type === ShareOptionsEnum.share && m['scanner.share']()}
-                                {option.type === ShareOptionsEnum.download && m['scanner.download']()}
+                            <p className="text-grayscale-700 text-center text-[17px]">
+                                {option.type === ShareOptionsEnum.share && m['common.share']()}
+                                {option.type === ShareOptionsEnum.download &&
+                                    m['scanner.download']()}
                                 {option.type === ShareOptionsEnum.scan && m['scanner.scanLabel']()}
                             </p>
                         </div>

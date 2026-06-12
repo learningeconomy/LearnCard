@@ -124,7 +124,9 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
 
                     {uploadProgress !== false && (
                         <p className="font-medium text-[#FF3636]">
-                            {m['boost.cms.media.uploadedPercent']({ percent: uploadProgress?.toString?.() })}
+                            {m['boost.cms.media.uploadedPercent']({
+                                percent: uploadProgress?.toString?.(),
+                            })}
                         </p>
                     )}
                 </div>
@@ -140,7 +142,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                    {m['boost.cms.appearance.save']()}
+                                {m['common.save']()}
                             </button>
 
                             {documentSrc && (
@@ -167,7 +169,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                {m['boost.cms.media.close']()}
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,
