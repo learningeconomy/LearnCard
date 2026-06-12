@@ -41,6 +41,22 @@ vi.mock('./onboardingHeader/OnboardingHeader', () => ({
     ),
 }));
 
+vi.mock('./onboardingFooter/OnboardingFooter', () => ({
+    __esModule: true,
+    default: ({ text, onClick, onBack, showBackButton, disabled }: any) => (
+        <div data-testid="onboarding-footer">
+            {showBackButton && (
+                <button type="button" onClick={onBack} disabled={disabled}>
+                    Back
+                </button>
+            )}
+            <button type="button" onClick={onClick} disabled={disabled}>
+                {text}
+            </button>
+        </div>
+    ),
+}));
+
 const renderStep = (preferences: OnboardingPrivacyPreferences) => {
     const onChange = vi.fn();
     const onContinue = vi.fn();
@@ -118,5 +134,23 @@ describe('OnboardingPrivacyDataStep', () => {
         fireEvent.click(aiToggle);
 
         expect(onChange).toHaveBeenCalledWith({ aiEnabled: false });
+    });
+
+    it('uses the shared footer for back and continue actions', () => {
+        const { onBack, onContinue } = renderStep({
+            aiEnabled: true,
+            aiAutoDisabled: false,
+            analyticsEnabled: true,
+            analyticsAutoDisabled: false,
+            bugReportsEnabled: true,
+            isMinor: false,
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+        expect(onBack).toHaveBeenCalledTimes(1);
+        expect(onContinue).toHaveBeenCalledTimes(1);
+        expect(screen.getByTestId('onboarding-footer')).toBeInTheDocument();
     });
 });

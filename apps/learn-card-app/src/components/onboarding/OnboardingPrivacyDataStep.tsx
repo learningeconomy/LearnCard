@@ -5,6 +5,8 @@ import { IonToggle } from '@ionic/react';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import OnboardingHeader from './onboardingHeader/OnboardingHeader';
+import OnboardingFooter from './onboardingFooter/OnboardingFooter';
+import { OnboardingStepsEnum } from './onboarding.helpers';
 import type { OnboardingPrivacyPreferences } from './privacyPreferences';
 
 type OnboardingPrivacyDataStepProps = {
@@ -30,16 +32,6 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
     return (
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 pb-[120px] relative w-full">
-                {onBack && (
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
-                    >
-                        Back
-                    </button>
-                )}
-
                 <OnboardingHeader
                     text="Choose what you'd like to enable."
                     secondaryText="You're in control. Turn on only what feels right for you, and change it anytime in Settings."
@@ -122,25 +114,15 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                 </div>
             </div>
 
-            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
-                <div className="w-full max-w-[700px] flex gap-[10px]">
-                    <button
-                        type="button"
-                        onClick={onContinue}
-                        disabled={isLoading}
-                        className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white flex items-center justify-center min-h-[46px] disabled:opacity-60 disabled:bg-grayscale-200 disabled:text-grayscale-500 disabled:shadow-none disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Saving...
-                            </span>
-                        ) : (
-                            'Continue'
-                        )}
-                    </button>
-                </div>
-            </div>
+            <OnboardingFooter
+                step={OnboardingStepsEnum.privacyData}
+                text={isLoading ? 'Saving...' : 'Continue'}
+                onClick={onContinue}
+                onBack={onBack}
+                isLoading={isLoading}
+                showBackButton={Boolean(onBack)}
+                showSkipButton={false}
+            />
         </div>
     );
 };

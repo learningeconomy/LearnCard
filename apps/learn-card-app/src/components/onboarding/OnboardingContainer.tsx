@@ -502,7 +502,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
 
     return (
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
-            <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
+            <div className="max-w-[600px] mx-auto pt-[50px] px-4 pb-[16px] relative w-full">
                 {pendingInstall && (
                     <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3">
                         {pendingInstall.appIcon && (
@@ -520,18 +520,19 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                 )}
                 <OnboardingHeader text="Select what best describes you!" />
                 <OnboardingRoles role={role} setRole={setRole} />
-                <OnboardingFooter
-                    overrideSkip={
-                        step === OnboardingStepsEnum.selectRole
-                            ? () => setStep(OnboardingStepsEnum.joinNetwork)
-                            : undefined
-                    }
-                    step={step}
-                    role={role}
-                    setStep={setStep}
-                    showBackButton
-                />
             </div>
+
+            <OnboardingFooter
+                overrideSkip={
+                    step === OnboardingStepsEnum.selectRole
+                        ? () => setStep(OnboardingStepsEnum.joinNetwork)
+                        : undefined
+                }
+                step={step}
+                role={role}
+                setStep={setStep}
+                showBackButton
+            />
         </div>
     );
 };
