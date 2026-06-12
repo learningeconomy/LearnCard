@@ -39,24 +39,22 @@ const PrivacySettingsPage: React.FC = () => {
         : ageGate.isChildProfile
         ? preferences?.aiEnabled ?? false
         : preferences?.aiEnabled ?? true;
-    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
-    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
+    const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
+    const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
-            if (isMinor) return;
             updatePreferences({ analyticsEnabled: enabled });
             setAnalyticsEnabled(enabled);
         },
-        [isMinor, updatePreferences, setAnalyticsEnabled]
+        [updatePreferences, setAnalyticsEnabled]
     );
 
     const handleBugReportsToggle = useCallback(
         (enabled: boolean) => {
-            if (isMinor) return;
             updatePreferences({ bugReportsEnabled: enabled });
         },
-        [isMinor, updatePreferences]
+        [updatePreferences]
     );
 
     return (
@@ -83,7 +81,7 @@ const PrivacySettingsPage: React.FC = () => {
                     {isMinor && (
                         <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
                             <p className="text-sm text-sky-800">
-                                These features are restricted for users under 18.
+                                Some features are restricted for users under 18.
                             </p>
                         </div>
                     )}
@@ -125,7 +123,6 @@ const PrivacySettingsPage: React.FC = () => {
                             </div>
                             <IonToggle
                                 checked={analyticsEnabled}
-                                disabled={isMinor}
                                 onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
                                 aria-label="Usage Analytics"
                             />
@@ -146,7 +143,6 @@ const PrivacySettingsPage: React.FC = () => {
                             </div>
                             <IonToggle
                                 checked={bugReportsEnabled}
-                                disabled={isMinor}
                                 onIonChange={e => handleBugReportsToggle(e.detail.checked)}
                                 aria-label="Crash Reports"
                             />

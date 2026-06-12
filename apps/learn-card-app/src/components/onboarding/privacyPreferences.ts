@@ -22,7 +22,7 @@ export const getDefaultPrivacyPreferences = (
         aiEnabled: !isMinor,
         aiAutoDisabled: isMinor,
         analyticsEnabled: !isMinor,
-        analyticsAutoDisabled: isMinor,
+        analyticsAutoDisabled: false,
         bugReportsEnabled: !isMinor,
         isMinor,
     };

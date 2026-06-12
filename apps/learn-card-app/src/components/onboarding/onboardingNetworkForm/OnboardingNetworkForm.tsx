@@ -361,21 +361,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     const aiEnabled = selectedPrivacyPreferences.isMinor
                         ? false
                         : selectedPrivacyPreferences.aiEnabled;
-                    const analyticsEnabled = selectedPrivacyPreferences.isMinor
-                        ? false
-                        : selectedPrivacyPreferences.analyticsEnabled;
-                    const bugReportsEnabled = selectedPrivacyPreferences.isMinor
-                        ? false
-                        : selectedPrivacyPreferences.bugReportsEnabled;
                     let preferencesInitialized = false;
 
                     await updatePreferences({
                         ...selectedPrivacyPreferences,
                         aiEnabled,
                         aiAutoDisabled: selectedPrivacyPreferences.isMinor,
-                        analyticsEnabled,
-                        analyticsAutoDisabled: selectedPrivacyPreferences.isMinor,
-                        bugReportsEnabled,
+                        analyticsAutoDisabled: false,
                     })
                         .then(() => {
                             preferencesInitialized = true;

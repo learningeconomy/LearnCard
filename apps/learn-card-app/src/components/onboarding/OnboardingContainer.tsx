@@ -390,13 +390,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             ...selectedPreferences,
             aiEnabled: selectedPreferences.isMinor ? false : selectedPreferences.aiEnabled,
             aiAutoDisabled: selectedPreferences.isMinor,
-            analyticsEnabled: selectedPreferences.isMinor
-                ? false
-                : selectedPreferences.analyticsEnabled,
-            analyticsAutoDisabled: selectedPreferences.isMinor,
-            bugReportsEnabled: selectedPreferences.isMinor
-                ? false
-                : selectedPreferences.bugReportsEnabled,
+            analyticsAutoDisabled: false,
         };
 
         setPrivacyStepError(null);
