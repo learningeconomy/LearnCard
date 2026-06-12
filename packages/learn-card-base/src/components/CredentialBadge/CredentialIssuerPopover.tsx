@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { IonPopover } from '@ionic/react';
 
@@ -6,14 +6,75 @@ import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
 
 type CredentialIssuerPopoverProps = {
     enabled: boolean;
-    triggerId: string;
+    triggerId?: string;
     verifierState: VerifierState;
+    isOpen?: boolean;
+    event?: Event;
+    onDidDismiss?: () => void;
+};
+
+type CredentialIssuerPopoverState = {
+    isOpen: boolean;
+    event?: Event;
+    verifierState: VerifierState;
+};
+
+export const normalizeCredentialIssuerVerifierState = (
+    verifierState: string | undefined
+): VerifierState => {
+    if (verifierState === VERIFIER_STATES.selfVerified) return VERIFIER_STATES.selfVerified;
+    if (verifierState === VERIFIER_STATES.trustedVerifier) return VERIFIER_STATES.trustedVerifier;
+    if (verifierState === VERIFIER_STATES.appIssuer || verifierState === 'Trusted App') {
+        return VERIFIER_STATES.appIssuer;
+    }
+    if (verifierState === VERIFIER_STATES.untrustedVerifier)
+        return VERIFIER_STATES.untrustedVerifier;
+
+    return VERIFIER_STATES.unknownVerifier;
+};
+
+export const useCredentialIssuerPopover = () => {
+    const [popoverState, setPopoverState] = useState<CredentialIssuerPopoverState>({
+        isOpen: false,
+        verifierState: VERIFIER_STATES.unknownVerifier,
+    });
+
+    const openCredentialIssuerPopover = (
+        event: React.MouseEvent<HTMLElement>,
+        verifierState: string
+    ): void => {
+        event.stopPropagation();
+        setPopoverState({
+            isOpen: true,
+            event: event.nativeEvent,
+            verifierState: normalizeCredentialIssuerVerifierState(verifierState),
+        });
+    };
+
+    const closeCredentialIssuerPopover = (): void => {
+        setPopoverState(previousState => ({ ...previousState, isOpen: false }));
+    };
+
+    return {
+        credentialIssuerPopoverProps: {
+            enabled: true,
+            isOpen: popoverState.isOpen,
+            event: popoverState.event,
+            verifierState: popoverState.verifierState,
+            onDidDismiss: closeCredentialIssuerPopover,
+        },
+        openCredentialIssuerPopover,
+        closeCredentialIssuerPopover,
+    };
 };
 
 const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     enabled,
     triggerId,
     verifierState,
+    isOpen,
+    event,
+    onDidDismiss,
 }) => {
     if (!enabled) return null;
 
@@ -65,11 +126,13 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     };
 
     const popoverDescription = getIssuerPopoverDescription(verifierState);
+    const popoverTriggerProps = triggerId
+        ? { trigger: triggerId, triggerAction: 'click' as const }
+        : { isOpen, event, onDidDismiss };
 
     return (
         <IonPopover
-            trigger={triggerId}
-            triggerAction="click"
+            {...popoverTriggerProps}
             reference="trigger"
             side="bottom"
             alignment="center"
