@@ -6,7 +6,8 @@
     "module": "./dist/sss-key-manager.esm.js",
     "types": "./dist/sss-key-manager.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/sss-key-manager.d.ts --no-check",

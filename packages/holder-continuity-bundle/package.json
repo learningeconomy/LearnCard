@@ -15,6 +15,7 @@
     },
     "files": [
         "dist",
+        "src",
         "BUNDLE_SPEC.md",
         "README.md"
     ],

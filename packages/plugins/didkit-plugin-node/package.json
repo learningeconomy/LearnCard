@@ -7,6 +7,7 @@
     "types": "./dist/index.d.ts",
     "files": [
         "dist",
+        "src",
         "native/Cargo.lock",
         "native/Cargo.toml",
         "native/build.rs",

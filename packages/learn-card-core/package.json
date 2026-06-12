@@ -14,7 +14,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && tsc-alias",

@@ -42,8 +42,45 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Build all publishable packages
-              run: bun run build
+            - name: Build publishable packages
+              run: >
+                  bunx nx run-many -t build -p
+                  core
+                  credential-library
+                  lca-api-client
+                  cli
+                  helpers
+                  init
+                  partner-connect-sdk
+                  types
+                  sss-key-manager
+                  claimable-boosts-plugin
+                  chapi-plugin
+                  ceramic-plugin
+                  crypto-plugin
+                  didkey-plugin
+                  didkit-plugin
+                  didkit-plugin-node
+                  did-web-plugin
+                  dynamic-loader-plugin
+                  encryption-plugin
+                  ethereum-plugin
+                  expiration-plugin
+                  idx-plugin
+                  learn-card-plugin
+                  learn-cloud-plugin
+                  ler-rs-plugin
+                  linked-claims-plugin
+                  network-plugin
+                  open-badge-v2-plugin
+                  openid4vc-plugin
+                  render-method-plugin
+                  sd-jwt-vc-plugin
+                  simple-signing-plugin
+                  vc-api-plugin
+                  vc-plugin
+                  vc-templates-plugin
+                  vpqr-plugin
 
             - name: Validate package contracts
               run: bun run validate-packages

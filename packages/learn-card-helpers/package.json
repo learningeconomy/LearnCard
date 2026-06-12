@@ -19,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && dts-bundle-generator src/index.ts -o dist/helpers.d.ts --no-check && shx cp ./dist/helpers.d.ts ./dist/helpers.d.cts",

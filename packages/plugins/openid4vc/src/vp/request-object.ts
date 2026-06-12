@@ -75,7 +75,13 @@ export class RequestObjectError extends Error {
 
 type X509Module = typeof import('@peculiar/x509');
 
-const loadX509 = async (): Promise<X509Module> => import('@peculiar/x509');
+declare const require: ((id: string) => X509Module) | undefined;
+
+const loadX509 = async (): Promise<X509Module> => {
+    if (typeof require === 'function') return require('@peculiar/x509');
+
+    return import('@peculiar/x509');
+};
 
 /**
  * Minimal DID Document shape the resolver surface consumes. We avoid

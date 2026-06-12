@@ -97,7 +97,7 @@ jobs:
                       ~/.cargo/git/db/
                       .cargo-cache
                       target/
-                  key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+                  key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('packages/plugins/didkit-plugin-node/native/Cargo.lock') }}
 
             - name: Install cross-compilation tools (aarch64-linux-gnu)
               if: matrix.settings.target == 'aarch64-unknown-linux-gnu'

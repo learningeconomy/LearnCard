@@ -6,7 +6,8 @@
     "module": "dist/esm",
     "types": "dist/index.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "sideEffects": false,
     "scripts": {

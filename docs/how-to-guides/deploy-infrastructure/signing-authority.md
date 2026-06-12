@@ -71,22 +71,22 @@ The `simple-signing-service` is designed for serverless deployment. Key configur
 
 3. Modify serverless.yml (example for environment variables): Open serverless.yml and locate the provider.environment section. It might look something like this initially:
 
-    <pre class="language-yaml"><code class="lang-yaml"><strong>provider:
-    </strong>    name: aws
-        runtime: nodejs16.x
-        memorySize: 2048
-        timeout: 29
-        stage: ${opt:stage, "dev"}
-        region: ${opt:region, "us-east-1"}
-        environment:
-            LAMBDA_STAGE: ${opt:stage, "dev"}
-            SEED: ${env:SEED}
-            MONGO_URI: ${env:MONGO_URI}
-            MONGO_DB_NAME: ${env:MONGO_DB_NAME}
-            AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS}
-            PORT: ${opt:httpPort, "3000"}
-    
-    </code></pre>
+ <pre class="language-yaml"><code class="lang-yaml"><strong>provider:
+ </strong>    name: aws
+     runtime: nodejs16.x
+     memorySize: 2048
+     timeout: 29
+     stage: ${opt:stage, "dev"}
+     region: ${opt:region, "us-east-1"}
+     environment:
+         LAMBDA_STAGE: ${opt:stage, "dev"}
+         SEED: ${env:SEED}
+         MONGO_URI: ${env:MONGO_URI}
+         MONGO_DB_NAME: ${env:MONGO_DB_NAME}
+         AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS}
+         PORT: ${opt:httpPort, "3000"}
+ 
+ </code></pre>
 
 4. **Before deploying, you will need to set these environment variables in your terminal, or replace `${env:VAR_NAME}` with actual values if you're not using terminal env vars for deployment.**
     - `SIGNING_SERVICE_SEED`: Your unique, secure 64-character hex seed for this Signing Authority.

@@ -44,10 +44,10 @@ jobs:
               run: bunx nx build openid4vc-plugin
 
             - name: Run in-process OID4VC e2e suite
-              run: bun --filter @workspace/openid4vc-e2e-tests run test
+              run: bun run --filter @workspace/openid4vc-e2e-tests test
 
             - name: Run cross-vendor interop suite (docker compose)
-              run: bun --filter @workspace/openid4vc-interop-e2e-tests run test:interop:e2e
+              run: bun run --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
               env:
                   # Surface real-vendor failures rather than silently skipping.
                   CI: 'true'
