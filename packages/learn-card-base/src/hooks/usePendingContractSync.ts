@@ -10,13 +10,15 @@ import {
     PendingContractSyncJob,
     pendingContractSyncStore,
     usePendingContractSyncJobs,
+    getNextRetryAt,
+    isJobReadyToProcess,
+    MAX_JOB_RETRIES,
 } from '../stores/pendingContractSyncStore';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('pending-contract-sync');
 
 const MAX_CONCURRENT_CREDENTIAL_SYNCS = 8;
-const MAX_JOB_RETRIES = 3;
 
 type SyncCredentialTask = {
     categoryName: string;
@@ -54,6 +56,12 @@ const runWithConcurrency = async <T>(
     await Promise.all(runners);
 };
 
+/**
+ * Drives the background contract-sync worker. The single-flight guard
+ * (`processingJobIdRef`) is per-hook-instance, so this hook MUST be mounted
+ * exactly once in the tree. Mounting it in two trees simultaneously would let
+ * two workers race on the same jobs.
+ */
 export const usePendingContractSync = (enabled = true): void => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -61,16 +69,53 @@ export const usePendingContractSync = (enabled = true): void => {
     const jobs = usePendingContractSyncJobs(); // get all jobs
 
     const processingJobIdRef = useRef<string | null>(null); // track currently processing job
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [workerTick, setWorkerTick] = useState(0);
+
+    // Cancel any pending retry-wake timer on unmount.
+    useEffect(
+        () => () => {
+            if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        },
+        []
+    );
+
+    // Prune long-finished jobs once on mount so the persisted store stays bounded
+    // even for users who never enqueue new jobs.
+    useEffect(() => {
+        if (enabled) pendingContractSyncStore.set.pruneDoneJobs();
+    }, [enabled]);
 
     useEffect(() => {
         if (!enabled || processingJobIdRef.current) return;
 
-        const nextJob = Object.values(jobs)
+        const pendingJobs = Object.values(jobs)
             .filter(job => job.status !== 'done' && job.retryCount < MAX_JOB_RETRIES)
-            .sort((a, b) => a.createdAt - b.createdAt)[0];
+            .sort((a, b) => a.createdAt - b.createdAt);
 
-        if (!nextJob) return;
+        const nextJob = pendingJobs.find(job => isJobReadyToProcess(job));
+
+        // No job is ready right now. If some job is waiting out its retry
+        // backoff, schedule a single wake-up for when the soonest one becomes
+        // eligible instead of busy-looping the effect.
+        if (!nextJob) {
+            const soonestRetryAt = pendingJobs.reduce<number | null>((soonest, job) => {
+                const retryAt = getNextRetryAt(job);
+                if (retryAt <= 0) return soonest;
+                return soonest === null ? retryAt : Math.min(soonest, retryAt);
+            }, null);
+
+            if (soonestRetryAt !== null) {
+                if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+                const delay = Math.max(0, soonestRetryAt - Date.now());
+                retryTimerRef.current = setTimeout(() => {
+                    retryTimerRef.current = null;
+                    setWorkerTick(tick => tick + 1);
+                }, delay);
+            }
+
+            return;
+        }
 
         processingJobIdRef.current = nextJob.id;
         log.info('Selected pending contract sync job', {
