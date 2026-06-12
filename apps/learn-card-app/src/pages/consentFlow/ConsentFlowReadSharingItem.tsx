@@ -7,6 +7,7 @@ import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowReadSharingModal from './ConsentFlowReadSharingModal';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowReadSharingItemProps = {
     term: ConsentFlowTerms['read']['credentials']['categories'][string];
@@ -105,7 +106,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                         <>
                             {term.shareAll && (
                                 <span className="text-emerald-700 font-notoSans text-[14px] font-[600]">
-                                    Live Sync
+                                    {m['consentFlow.sync.liveSyncing']()}
                                 </span>
                             )}
                             {!term.shareAll && (
@@ -117,7 +118,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                     )}
                     {!term.sharing && (
                         <span className="text-grayscale-500 font-notoSans text-[14px] font-[600]">
-                            Deny
+                            {m['consentFlow.deny']()}
                         </span>
                     )}
 

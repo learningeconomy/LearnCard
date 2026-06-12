@@ -5,6 +5,7 @@ import GamePromptHeader from './GamePromptHeader';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import { ConsentFlowContractDetails } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 type CreateFamilyGamePromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -62,14 +63,14 @@ export const CreateFamilyGamePrompt: React.FC<CreateFamilyGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                New Family
+                {m['consentFlow.newFamily']()}
             </button>
             <button
                 onClick={isFromGame ? handleBackToGame : closeAllModals}
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                {isFromGame ? 'Back to Game' : 'Cancel'}
+                {isFromGame ? m['consentFlow.back']() : m['consentFlow.cancel']()}
             </button>
         </div>
     );

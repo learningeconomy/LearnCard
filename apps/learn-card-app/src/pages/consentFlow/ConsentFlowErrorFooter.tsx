@@ -4,6 +4,7 @@ import { useModal } from 'learn-card-base';
 import { IonFooter } from '@ionic/react';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowErrorFooterProps = {
     hideRetry?: boolean;
@@ -30,14 +31,14 @@ const ConsentFlowErrorFooter: React.FC<ConsentFlowErrorFooterProps> = ({
                         onClick={closeModal}
                         className={`py-[9px] pl-[20px] pr-[15px] bg-${primaryColor} text-white rounded-[35px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] w-[450px] m-auto shadow-button-bottom flex gap-[5px] justify-center`}
                     >
-                        Back to LearnCard
+                        {m['consentFlow.back']()}
                     </button>
                 ) : (
                     <button
                         onClick={closeModal}
                         className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                     >
-                        Cancel
+                        {m['consentFlow.cancel']()}
                     </button>
                 )}
 
@@ -46,7 +47,7 @@ const ConsentFlowErrorFooter: React.FC<ConsentFlowErrorFooterProps> = ({
                         onClick={buttonAction}
                         className={`bg-${primaryColor} text-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] font-semibold w-full shadow-button-bottom`}
                     >
-                        Retry
+                        {m['consentFlow.tryAgain']()}
                     </button>
                 )}
             </div>

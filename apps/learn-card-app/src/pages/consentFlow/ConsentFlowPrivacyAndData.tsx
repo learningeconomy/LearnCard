@@ -352,7 +352,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                 : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                            Live Sync All
+                                            {m['consentFlow.liveSyncAll']()}
                                         </p>
                                     </label>
 
@@ -367,10 +367,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
                                     Turning on{' '}
-                                    <span className="font-[600] font-notoSans">Live Sync</span> will
-                                    automatically share all credentials as you get them. If it's
-                                    turned off, you can selectively share specific wallet categories
-                                    and credentials at any time
+                                    <span className="font-[600] font-notoSans">
+                                        {m['consentFlow.sync.liveSyncing']()}
+                                    </span>{' '}
+                                    will automatically share all credentials as you get them. If
+                                    it's turned off, you can selectively share specific wallet
+                                    categories and credentials at any time
                                 </p>
                             </div>
 
@@ -426,8 +428,11 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
                             <p className="text-grayscale-600 text-[14px] font-notoSans">
                                 Turning on{' '}
-                                <span className="font-[600] font-notoSans">Anonymize</span> will
-                                hide your name, profile picture, and email when sharing to this app.
+                                <span className="font-[600] font-notoSans">
+                                    {m['consentFlow.anonymize']()}
+                                </span>{' '}
+                                will hide your name, profile picture, and email when sharing to this
+                                app.
                             </p>
                         </div>
 
@@ -482,8 +487,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
                                     Turning on{' '}
-                                    <span className="font-[600] font-notoSans">Allow All</span> will
-                                    let the app issue credentials and add them to your{' '}
+                                    <span className="font-[600] font-notoSans">
+                                        {m['consentFlow.allowAll']()}
+                                    </span>{' '}
+                                    will let the app issue credentials and add them to your{' '}
                                     {brandingConfig?.name}. If turned off, you can selectively
                                     choose which wallet categories that the app can add to.
                                 </p>

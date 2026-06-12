@@ -8,6 +8,7 @@ import { ConsentFlowContractDetails } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useWallet } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
 
 type ReturnToGamePromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -89,7 +90,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                Return to Game
+                {m['consentFlow.continueToGame']()}
             </button>
             <button
                 onClick={() => history.push('/wallet')}
@@ -103,7 +104,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                Back
+                {m['consentFlow.back']()}
             </button>
         </div>
     );

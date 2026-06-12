@@ -12,6 +12,7 @@ import {
     getInfoFromContractKey,
     isSupportedPersonalField,
 } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowWriteSharingItemProps = {
     term: ConsentFlowTerms['write']['credentials']['categories'][string];
@@ -88,8 +89,8 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
         specialIcon = <Mail className="h-full w-full text-white p-[5px]" />;
     }
 
-    const allowWord = isPersonal ? 'Share' : 'Allow';
-    const denyWord = isPersonal ? 'Hide' : 'Deny';
+    const allowWord = isPersonal ? m['consentFlow.shareCredential']() : m['consentFlow.allow']();
+    const denyWord = isPersonal ? m['consentFlow.hidden']() : m['consentFlow.deny']();
 
     if (isPersonal && !_isSupportedPersonalField) {
         // if we don't actually support the field, just hide it
@@ -161,7 +162,9 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                     )}
                     {(!term || isAnonymous) && (
                         <span className="text-grayscale-600 font-notoSans text-[14px] font-[600]">
-                            {isAnonymous && _isSupportedPersonalField ? 'Anonymized' : denyWord}
+                            {isAnonymous && _isSupportedPersonalField
+                                ? m['consentFlow.anonymized']()
+                                : denyWord}
                         </span>
                     )}
 

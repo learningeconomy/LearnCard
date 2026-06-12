@@ -17,6 +17,7 @@ import Calendar from '../../components/svgs/Calendar';
 import { RadioButton } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 const defaultDate = moment().add(6, 'months').toISOString(); // sets the shareable expiration date 6 months from today
 
@@ -88,7 +89,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
-                                            Sharing
+                                            {m['consentFlow.shareCredential']()}
                                         </h3>
                                     </IonCol>
                                 </IonRow>
@@ -100,7 +101,9 @@ const ConsentFlowShareDurationModal: React.FC<{
                     <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
                         <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
                             <IonCol class="flex items-center justify-between w-full ion-padding">
-                                <p className="text-lg font-medium">Live Syncing</p>
+                                <p className="text-lg font-medium">
+                                    {m['consentFlow.sync.liveSyncing']()}
+                                </p>
                                 <RadioButton
                                     checked={
                                         !shareDuration.oneTimeShare && !shareDuration.customDuration
@@ -114,7 +117,9 @@ const ConsentFlowShareDurationModal: React.FC<{
                         </IonRow>
                         <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
                             <IonCol class="flex items-center justify-between w-full ion-padding">
-                                <p className="text-lg font-medium">Share One Time Only</p>
+                                <p className="text-lg font-medium">
+                                    {m['consentFlow.shareOneTimeOnly']()}
+                                </p>
                                 <RadioButton
                                     checked={shareDuration.oneTimeShare}
                                     onClick={() => {
@@ -126,7 +131,9 @@ const ConsentFlowShareDurationModal: React.FC<{
                         </IonRow>
                         <IonRow className="w-full flex flex-col items-center justify-center mt-2">
                             <IonCol class="flex items-center justify-between w-full ion-padding">
-                                <p className="text-lg font-medium">Custom Duration</p>
+                                <p className="text-lg font-medium">
+                                    {m['consentFlow.customDuration']()}
+                                </p>
                                 <RadioButton
                                     checked={Boolean(shareDuration.customDuration)}
                                     onClick={() => {

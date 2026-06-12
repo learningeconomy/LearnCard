@@ -236,7 +236,9 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     let showBackButton = false;
     let showFullBackButton = false;
     let showCloseButtonAlt = false;
-    let secondaryButtonText: string | undefined = isPostConsent ? 'Close' : 'Cancel';
+    let secondaryButtonText: string | undefined = isPostConsent
+        ? m['consentFlow.close']()
+        : m['consentFlow.cancel']();
 
     if (!isPostConsent) {
         mainFooterButtonText = m['consentFlow.accept']();
@@ -339,7 +341,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t-[1px] border-solid border-grayscale-200"
                     >
                         <LockBroken />
-                        Privacy & Data
+                        {m['consentFlow.privacyAndData']()}
                         <SlimCaretRight className="h-[20px] w-[20px] ml-auto text-grayscale-500" />
                     </button>
 
@@ -351,7 +353,9 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                             disabled={isLoadingContractCreds || isWithdrawingConsent}
                         >
                             <BrokenLink version="2" className="h-[30px] w-[30px]" />
-                            {isWithdrawingConsent ? 'Disconnecting...' : 'Disconnect'}
+                            {isWithdrawingConsent
+                                ? m['consentFlow.disconnecting']()
+                                : m['consentFlow.disconnect']()}
                             <SlimCaretRight className="h-[20px] w-[20px] ml-auto text-grayscale-500" />
                         </button>
                     )}

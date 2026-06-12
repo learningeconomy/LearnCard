@@ -25,6 +25,7 @@ import NewMyData from '../../components/new-my-data/NewMyData';
 import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export type ConsentFlowWriteAccessType = {
     [BoostCategoryOptionsEnum.socialBadge]: boolean;
@@ -165,7 +166,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             className={`text-${primaryColor} font-bold text-base flex mt-2 items-center justify-center disabled:opacity-50`}
                             disabled={!contractDetails?.contract}
                         >
-                            Sync New Data <RightArrow className="w-[20px] h-[20px]" />
+                            {m['consentFlow.syncNewData']()}{' '}
+                            <RightArrow className="w-[20px] h-[20px]" />
                         </button>
                     )}
                     <button
@@ -183,7 +185,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className={`text-${primaryColor} font-bold text-base flex mt-2 items-center justify-center disabled:opacity-50`}
                         disabled={!contractDetails?.contract || isPreview}
                     >
-                        Edit Access <RightArrow className="w-[20px] h-[20px]" />
+                        {m['consentFlow.editAccess']()} <RightArrow className="w-[20px] h-[20px]" />
                     </button>
                 </div>
 
@@ -263,7 +265,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-3xl normal max-w-[320px] disabled:opacity-50"
                         disabled={!contractDetails?.contract || loading || isPreview}
                     >
-                        {loading ? 'Allowing...' : 'Allow'}
+                        {loading ? m['consentFlow.allowing']() : m['consentFlow.allow']()}
                     </button>
                     <IonLoading isOpen={isPending} message="Consenting..." mode="ios" />
                     <button
@@ -271,7 +273,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         type="button"
                         className="text-grayscale-900 text-center text-base w-full font-medium mt-4"
                     >
-                        Cancel
+                        {m['consentFlow.cancel']()}
                     </button>
                 </div>
             </div>

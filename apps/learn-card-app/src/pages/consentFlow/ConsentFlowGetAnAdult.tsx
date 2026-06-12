@@ -13,6 +13,7 @@ import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowHeader from './ConsentFlowHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowGetAnAdultPromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -75,9 +76,9 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
             </div>
 
             <ConsentFlowFooter
-                actionButtonText="That's me!"
+                actionButtonText={m['consentFlow.continue']()}
                 onActionButtonClick={handleNextStep}
-                secondaryButtonText="Cancel"
+                secondaryButtonText={m['consentFlow.cancel']()}
                 onSecondaryButtonClick={closeModal}
             />
         </>

@@ -11,6 +11,7 @@ import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
 
 type GameLoginProps = {
     handleBackToGame: () => void;
@@ -156,7 +157,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 className="w-full py-[12px] px-[20px] text-[16px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom flex items-center justify-center gap-[10px]"
             >
                 <ArrowLeft className="w-[18px] h-[18px]" />
-                Back to Game
+                {m['consentFlow.back']()}
             </button>
         </div>
     );

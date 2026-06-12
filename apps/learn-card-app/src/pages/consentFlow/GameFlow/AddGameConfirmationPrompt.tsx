@@ -21,6 +21,7 @@ import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/cont
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
 
 type AddGamePromptConfirmationPromptProps = {
     user?: LCNProfile;
@@ -149,7 +150,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                         className="text-white rounded-full py-[10px] bg-emerald-700 w-full text-[20px] shadow-box-bottom disabled:opacity-70"
                         disabled={loading || consentedContractLoading}
                     >
-                        {loading ? 'Allowing...' : 'Allow Access'}
+                        {loading ? m['consentFlow.allowing']() : m['consentFlow.allowAccess']()}
                     </button>
                 )}
                 {hasConsented && (
@@ -178,7 +179,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                             );
                         }}
                     >
-                        Edit Access
+                        {m['consentFlow.editAccess']()}
                     </button>
                 )}
             </div>
@@ -188,7 +189,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                 onClick={handleSelectADifferentPlayer}
                 className="w-full py-[10px] px-[20px] text-[20px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom"
             >
-                Select a Different Player
+                {m['consentFlow.selectPlayer']()}
             </button>
 
             <button
@@ -196,7 +197,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                 onClick={isFromGame ? handleBackToGame : closeAllModals}
                 className="w-full py-[10px] px-[20px] text-[20px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom"
             >
-                {isFromGame ? 'Back to Game' : 'Cancel'}
+                {isFromGame ? m['consentFlow.back']() : m['consentFlow.cancel']()}
             </button>
         </div>
     );
