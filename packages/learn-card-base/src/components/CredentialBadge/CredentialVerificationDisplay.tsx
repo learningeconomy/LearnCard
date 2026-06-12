@@ -102,8 +102,8 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     } else {
         verifierState = isAppIssuer ? VERIFIER_STATES.appIssuer : VERIFIER_STATES.unknownVerifier;
     }
-    const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
     const popoverTriggerId = `credential-issuer-trigger-${popoverId}`;
+    const verifierStateLabel = unknownVerifierTitle ?? verifierState;
     const renderBadge = (badgeClassName = className, badgeIconClassName = iconClassName) => {
         if (verifierState === VERIFIER_STATES.selfVerified) {
             return (
@@ -145,10 +145,10 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         if (verifierState === VERIFIER_STATES.appIssuer) {
             return (
                 <div
-                    className={`text-cyan-600 flex items-center font-poppins font-[500] text-base uppercase ${badgeClassName}`}
+                    className={`text-cyan-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
-                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${badgeIconClassName}`} />{' '}
-                    App Issuer
+                    <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
+                    <span className="whitespace-nowrap uppercase tracking-wide">App Issuer</span>
                 </div>
             );
         }
@@ -188,180 +188,37 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
             verifierState={verifierState}
         />
     );
+    const renderInteractiveBadge = (badge: React.ReactNode) => (
+        <>
+            <button
+                id={popoverTriggerId}
+                type="button"
+                onClick={e => e.stopPropagation()}
+                className="appearance-none bg-transparent p-0 inline-flex"
+                aria-haspopup={issuerPopoverEnabled ? 'dialog' : undefined}
+                aria-label={
+                    issuerPopoverEnabled
+                        ? `Open issuer details for ${verifierStateLabel}`
+                        : `Issuer verification: ${verifierStateLabel}`
+                }
+            >
+                {badge}
+            </button>
+            {renderPopover()}
+        </>
+    );
 
-    if (isSelfVerified) {
-        if (showText) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        if (issuerPopoverEnabled) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderIconOnlyBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        return <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
+    if (showText) return renderInteractiveBadge(renderBadge());
+    if (issuerPopoverEnabled) return renderInteractiveBadge(renderIconOnlyBadge());
 
-    if (verifierState === VERIFIER_STATES.trustedVerifier) {
-        if (showText) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        if (issuerPopoverEnabled) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderIconOnlyBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
     if (verifierState === VERIFIER_STATES.unknownVerifier) {
-        if (showText) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        if (issuerPopoverEnabled) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderIconOnlyBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-
         // Icon-only mode intentionally renders nothing for unknown issuers: a bare "?"
         // badge with no context reads as an error. Context is only shown via the labeled
         // showText=true variant above (e.g. when a credential is opened).
         return <></>;
     }
-    if (verifierState === VERIFIER_STATES.appIssuer) {
-        if (showText) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        if (issuerPopoverEnabled) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderIconOnlyBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
 
-        return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
-    if (verifierState === VERIFIER_STATES.untrustedVerifier) {
-        if (showText) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        if (issuerPopoverEnabled) {
-            return (
-                <>
-                    <button
-                        id={popoverTriggerId}
-                        type="button"
-                        onClick={e => e.stopPropagation()}
-                        className="appearance-none bg-transparent p-0 inline-flex"
-                    >
-                        {renderIconOnlyBadge()}
-                    </button>
-                    {renderPopover()}
-                </>
-            );
-        }
-        return <UntrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
-
-    return <></>;
+    return renderIconOnlyBadge();
 };
 
 export default CredentialVerificationDisplay;

@@ -29,6 +29,7 @@ export const normalizeCredentialIssuerVerifierState = (
 ): VerifierState => {
     if (verifierState === VERIFIER_STATES.selfVerified) return VERIFIER_STATES.selfVerified;
     if (verifierState === VERIFIER_STATES.trustedVerifier) return VERIFIER_STATES.trustedVerifier;
+    // Legacy react-learn-card ID cards previously emitted "Trusted App" for app-issued creds.
     if (verifierState === VERIFIER_STATES.appIssuer || verifierState === 'Trusted App') {
         return VERIFIER_STATES.appIssuer;
     }
@@ -130,13 +131,21 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
 
     const popoverDescription = getIssuerPopoverDescription(verifierState);
     const popoverTriggerProps = triggerId
-        ? { trigger: triggerId, triggerAction: 'click' as const }
-        : { isOpen, event, onDidDismiss };
+        ? {
+              trigger: triggerId,
+              triggerAction: 'click' as const,
+              reference: 'trigger' as const,
+          }
+        : {
+              isOpen,
+              event,
+              onDidDismiss,
+              reference: 'event' as const,
+          };
 
     return (
         <IonPopover
             {...popoverTriggerProps}
-            reference="trigger"
             side="bottom"
             alignment="center"
             className="[--background:transparent] [--box-shadow:none] [--width:auto] rounded-[100px]"
@@ -145,38 +154,32 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                 className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins"
                 style={{ width: 'min(320px, calc(100vw - 32px))' }}
             >
-                <div className="space-y-2">
-                    {/* {statusBadge} */}
+                <p className="text-xs text-grayscale-600 leading-relaxed">
+                    {popoverDescription}
 
-                    <div className="space-y-2">
-                        <p className="text-xs text-grayscale-600 leading-relaxed">
-                            {popoverDescription}
-
-                            <span>
-                                {' '}
-                                <button
-                                    onClick={e => {
-                                        e.stopPropagation();
-                                        if (Capacitor?.isNativePlatform()) {
-                                            Browser?.open({
-                                                url: TRUST_REGISTRIES_DOCS_URL,
-                                            });
-                                        } else {
-                                            window?.open(
-                                                TRUST_REGISTRIES_DOCS_URL,
-                                                '_blank',
-                                                'noopener,noreferrer'
-                                            );
-                                        }
-                                    }}
-                                    className="font-semibold text-indigo-600 underline underline-offset-2"
-                                >
-                                    Learn More
-                                </button>
-                            </span>
-                        </p>
-                    </div>
-                </div>
+                    <span>
+                        {' '}
+                        <button
+                            onClick={e => {
+                                e.stopPropagation();
+                                if (Capacitor?.isNativePlatform()) {
+                                    Browser?.open({
+                                        url: TRUST_REGISTRIES_DOCS_URL,
+                                    });
+                                } else {
+                                    window?.open(
+                                        TRUST_REGISTRIES_DOCS_URL,
+                                        '_blank',
+                                        'noopener,noreferrer'
+                                    );
+                                }
+                            }}
+                            className="font-semibold text-indigo-600 underline underline-offset-2"
+                        >
+                            Learn More
+                        </button>
+                    </span>
+                </p>
             </div>
         </IonPopover>
     );

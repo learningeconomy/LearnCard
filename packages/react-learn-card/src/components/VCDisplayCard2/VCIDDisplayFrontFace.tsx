@@ -158,6 +158,10 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                     onVerifierClick?.(event, verifierState);
                                 }}
                                 onMouseDown={event => event.stopPropagation()}
+                                aria-haspopup="dialog"
+                                aria-label={`Open issuer details for ${
+                                    unknownVerifierTitle ?? verifierState
+                                }`}
                             >
                                 {isSelfVerified && (
                                     <span className="uppercase font-poppins text-base font-[500] text-green-dark flex gap-[3px] items-center">
@@ -179,7 +183,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 )}
                                 {verifierState === VERIFIER_STATES.appIssuer && (
                                     <span className="uppercase font-poppins text-base font-[500] text-cyan-600 flex gap-[3px] items-center">
-                                        <UnknownVerifierBadge className="w-[20px] h-[20px]" />
+                                        <VerifiedBadge className="w-[20px] h-[20px]" />
                                         App Issuer
                                     </span>
                                 )}
