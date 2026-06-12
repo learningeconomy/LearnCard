@@ -2,7 +2,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { Profile, ProfileInstance } from './Profile';
+import type { ProfileInstance } from './Profile';
 
 export type ContactMethodType = {
     id: string;
@@ -15,7 +15,7 @@ export type ContactMethodType = {
 };
 
 export type ContactMethodRelationships = {
-    profile: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    profile: ModelRelatedNodesI<any, ProfileInstance>;
 };
 
 export type ContactMethodInstance = NeogmaInstance<ContactMethodType, ContactMethodRelationships>;
@@ -32,9 +32,7 @@ export const ContactMethod: any = ModelFactory<ContactMethodType, ContactMethodR
             isPrimary: { type: 'boolean', required: true },
             createdAt: { type: 'string', required: true },
         },
-        relationships: {
-            profile: { model: Profile, direction: 'in', name: 'HAS_CONTACT_METHOD' },
-        },
+        relationships: {},
     },
     neogma
 );

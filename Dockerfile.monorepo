@@ -2,22 +2,22 @@
 FROM node:20.10.0-slim
 
 ENV SKIP_DIDKIT_NAPI=1
+ENV MONGOMS_DISABLE_POSTINSTALL=1
 
 WORKDIR /app
 
 RUN --mount=type=cache,target=/var/cache/apt \
     --mount=type=cache,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     python3 \
-    build-essential \
-    && npm install -g pnpm@9.12.3 \
-    && pnpm config set store-dir /pnpm/store
+    && npm install -g bun@1.3.14
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc .gitignore .nxignore ./
+COPY package.json bun.lock bunfig.toml nx.json tsconfig.json .gitignore .nxignore ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
-COPY tools/scripts tools/scripts
+COPY reference/package.json reference/
+COPY scripts/siwa-migration/package.json scripts/siwa-migration/
 COPY tools/capgo tools/capgo
-RUN chmod +x /app/tools/scripts/nx-watch-build.sh
 
 COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/
 COPY packages/lca-api-client/package.json packages/lca-api-client/
@@ -66,8 +66,8 @@ COPY apps/learn-card-app/package.json apps/learn-card-app/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 COPY packages/email-templates/package.json packages/email-templates/
 
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install
+RUN --mount=type=cache,id=bun-cache,target=/root/.bun/install/cache \
+    bun install --ignore-scripts
 
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
 COPY packages/lca-api-client packages/lca-api-client
@@ -116,5 +116,3 @@ COPY apps/learn-card-app apps/learn-card-app
 COPY packages/sss-key-manager packages/sss-key-manager
 COPY packages/email-templates packages/email-templates
 
-RUN --mount=type=cache,id=nx-cache,target=/app/.nx \
-    pnpm exec nx run-many --target=build:docker --projects=learn-card-app,network-brain-service,learn-cloud-service,lca-api-service

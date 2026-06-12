@@ -47,7 +47,7 @@ const resolveBuildSha = (): string => {
     }
 };
 
-// Workspace packages that should not be pre-bundled for HMR support
+// Workspace packages resolve to source in dev; keep them out of optimizeDeps for HMR.
 const workspacePackages = [
     '@learncard/helpers',
     '@learncard/types',
@@ -104,7 +104,7 @@ export default defineConfig(({ mode }) => {
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
-            // Exclude workspace packages from pre-bundling to enable HMR when they rebuild
+            // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
             esbuildOptions: {
                 target: 'esnext',
@@ -169,8 +169,6 @@ export default defineConfig(({ mode }) => {
                 // Enable polling for Docker volume mounts
                 usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
                 interval: parseInt(process.env.CHOKIDAR_INTERVAL || '1000', 10),
-                // Watch workspace package dist folders for changes (when watcher rebuilds them)
-                ignored: ['!**/packages/**/dist/**', '!**/packages/plugins/**/dist/**'],
             },
         },
     };

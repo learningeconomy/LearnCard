@@ -3,12 +3,11 @@ import dns from 'node:dns';
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
 
-import repl from 'pretty-repl';
 import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
 import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
-import types from '@learncard/types';
+import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -86,6 +85,54 @@ const getLearnCardBundlePassword = async (prompt = 'Bundle password: '): Promise
         rl.close();
         process.stdout.write('\n');
     }
+};
+
+const evaluateBunReplInput = async (source: string): Promise<unknown> => {
+    try {
+        return await globalThis.eval(`(async () => (${source}))()`);
+    } catch {
+        return await globalThis.eval(`(async () => { ${source} })()`);
+    }
+};
+
+const startCliRepl = async (colorize: (input: string) => string): Promise<void> => {
+    if (!('Bun' in globalThis)) {
+        const repl = await import('pretty-repl');
+
+        repl.default.start({ colorize });
+
+        return;
+    }
+
+    const rl = createInterface({ input: process.stdin, output: process.stdout, prompt: '> ' });
+
+    console.log('Bun dev REPL ready. Type .exit to quit.');
+
+    rl.prompt();
+
+    for await (const line of rl) {
+        const source = line.trim();
+
+        if (source === '.exit') break;
+
+        if (!source) {
+            rl.prompt();
+
+            continue;
+        }
+
+        try {
+            const result = await evaluateBunReplInput(source);
+
+            if (result !== undefined) console.dir(result, { depth: 6 });
+        } catch (error) {
+            console.error(error);
+        }
+
+        rl.prompt();
+    }
+
+    rl.close();
 };
 
 program
@@ -237,23 +284,21 @@ program
 
         console.log('');
 
-        repl.start({
-            colorize: (input: string) => {
-                return input
-                    .replace('emptyLearnCard', g.emptyLearnCard)
-                    .replace('learnCardFromKey', g.learnCardFromKey)
-                    .replace('initLearnCard', g.initLearnCard)
-                    .replace('learnCard', g.learnCard)
-                    .replace('seed', g.seed)
-                    .replace('generateRandomSeed', g.generateRandomSeed)
-                    .replace('copy', g.copy)
-                    .replace('getLearnCardBundlePassword', g.getLearnCardBundlePassword)
-                    .replace('exportLearnCardBundle', g.exportLearnCardBundle)
-                    .replace('importLearnCardBundle', g.importLearnCardBundle)
-                    .replace('createLearnCardBundle', g.createLearnCardBundle)
-                    .replace('readLearnCardBundle', g.readLearnCardBundle)
-                    .replace('restoreLearnCardFromBundle', g.restoreLearnCardFromBundle);
-            },
-        });
+        await startCliRepl((input: string) =>
+            input
+                .replace('emptyLearnCard', g.emptyLearnCard)
+                .replace('learnCardFromKey', g.learnCardFromKey)
+                .replace('initLearnCard', g.initLearnCard)
+                .replace('learnCard', g.learnCard)
+                .replace('seed', g.seed)
+                .replace('generateRandomSeed', g.generateRandomSeed)
+                .replace('copy', g.copy)
+                .replace('getLearnCardBundlePassword', g.getLearnCardBundlePassword)
+                .replace('exportLearnCardBundle', g.exportLearnCardBundle)
+                .replace('importLearnCardBundle', g.importLearnCardBundle)
+                .replace('createLearnCardBundle', g.createLearnCardBundle)
+                .replace('readLearnCardBundle', g.readLearnCardBundle)
+                .replace('restoreLearnCardFromBundle', g.restoreLearnCardFromBundle)
+        );
     })
     .parse(process.argv);

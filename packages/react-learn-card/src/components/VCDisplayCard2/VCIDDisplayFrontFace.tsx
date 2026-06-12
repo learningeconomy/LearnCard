@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipper, Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import IDIcon from '../svgs/IDIcon';
 import IDSleeve from '../../assets/images/id-sleeve.png';
@@ -16,6 +16,14 @@ import { VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
 import TruncateTextBox from './TruncateTextBox';
 import { KnownDIDRegistryType } from '../../types';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 type VCIDDisplayFrontFaceProps = {
     isFront: boolean;
