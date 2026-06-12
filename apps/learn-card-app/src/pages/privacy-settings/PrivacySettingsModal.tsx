@@ -152,7 +152,7 @@ const PrivacySettingsModal: React.FC = () => {
                 {isMinor && (
                     <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
                         <p className="text-sm text-sky-800">
-                            Some features are restricted for users under 18.
+                            AI Features are restricted for users under 18.
                         </p>
                     </div>
                 )}
