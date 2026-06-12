@@ -499,14 +499,23 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
 
     const leaf = chain[0]!;
 
-    // SAN DNS binding: client_id (as URL host) MUST appear in leaf SAN.
     const expectedHost = hostFromClientId(clientId);
-    if (!leafCoversHost(leaf, expectedHost, x509)) {
+    try {
+        if (!leafCoversHost(leaf, expectedHost, x509)) {
+            throw new RequestObjectError(
+                'client_id_mismatch',
+                `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${
+                    listLeafSanDnsNames(leaf, x509).join(',') || 'none'
+                })`
+            );
+        }
+    } catch (e) {
+        if (e instanceof RequestObjectError) throw e;
+
         throw new RequestObjectError(
-            'client_id_mismatch',
-            `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${
-                listLeafSanDnsNames(leaf, x509).join(',') || 'none'
-            })`
+            'invalid_request_object',
+            `Failed to inspect leaf certificate SAN: ${describe(e)}`,
+            { cause: e }
         );
     }
 
