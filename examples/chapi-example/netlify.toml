@@ -5,7 +5,7 @@
 [build.environment]
 # Global Context Default
 [build]
-command = "pnpm exec nx build chapi-example"
+command = "bunx nx build chapi-example"
 publish = "dist/"
 
 [[headers]]

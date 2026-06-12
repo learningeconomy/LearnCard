@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm run build"
+  command = "bun run build"
   publish = "dist"
 
 [context.production.environment]

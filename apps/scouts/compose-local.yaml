@@ -9,7 +9,7 @@ services:
     #         - 3000
     #     ports:
     #         - '3000:3000'
-    #     command: ['sh', '-c', 'pnpm exec nx docker-start scouts']
+    #     command: ['sh', '-c', 'bunx nx docker-start scouts']
     #     depends_on:
     #         - brain
     #         - cloud
@@ -32,7 +32,7 @@ services:
     #         - ./vite.config.ts:/app/apps/scouts/vite.config.ts
     #         - ../../packages:/app/packages
 
-    watcher:
+    app:
         image: learncard-monorepo-local
         build:
             context: ../../
@@ -42,7 +42,7 @@ services:
             - 3000
         ports:
             - '3000:3000'
-        command: ['sh', '-c', 'pnpm exec nx docker-start scouts']
+        command: ['sh', '-c', 'bunx nx docker-start scouts']
         depends_on:
             - brain
             - cloud
@@ -68,31 +68,7 @@ services:
             - ./src:/app/apps/scouts/src
             - ./vite.config.ts:/app/apps/scouts/vite.config.ts
             - ../../packages:/app/packages
-
-    watcher:
-        image: learncard-monorepo-local
-        container_name: 'lcn-watcher'
-        # user: '${UID:-1000}:${GID:-1000}'
-        command:
-            [
-                'pnpm',
-                'exec',
-                'nx',
-                'watch',
-                '--all',
-                '--verbose',
-                '--',
-                'sh',
-                '/app/tools/scripts/nx-watch-build.sh',
-            ]
-        networks:
-            - learn-card
-        environment:
-            SKIP_DIDKIT_NAPI: '1'
-            CHOKIDAR_USEPOLLING: 'true'
-            CHOKIDAR_INTERVAL: '1000'
-        volumes:
-            - ../../packages:/app/packages
+            - ../../node_modules:/app/node_modules
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -135,7 +111,7 @@ services:
             - 4000
         ports:
             - '4000:4000'
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
         depends_on:
             neo4j:
                 condition: service_healthy
@@ -185,7 +161,7 @@ services:
             - 4100
         ports:
             - '4100:4100'
-        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
         depends_on:
             - mongodb
             - redis2
@@ -222,7 +198,7 @@ services:
             - 5100
         ports:
             - '5100:5100'
-        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
         depends_on:
             - mongodb
             - redis3

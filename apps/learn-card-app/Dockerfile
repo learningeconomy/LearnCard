@@ -8,15 +8,15 @@ ENV SKIP_DIDKIT_NAPI=1
 # Set the working directory in the container
 WORKDIR /app
 
-# Install build dependencies and pnpm in one layer
+# Install build dependencies and Bun in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm@9.12.3
+    && npm install -g bun@1.3.14
 
 # Copy root workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
+COPY package.json bun.lock nx.json tsconfig.json ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY tools/capgo tools/capgo
 
@@ -66,7 +66,7 @@ COPY packages/credential-library/package.json packages/credential-library/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 # Install dependencies - done before copying source for caching
-RUN pnpm install --no-frozen-lockfile
+RUN bun install
 
 # Copy sources
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
@@ -115,10 +115,10 @@ COPY apps/learn-card-app apps/learn-card-app
 
 RUN rm -rf node_modules/.cache/nx
 
-RUN pnpm exec nx docker-build learn-card-app
+RUN bunx nx docker-build learn-card-app
 
 # Expose the port the app runs on
 EXPOSE 3000
 
 # Serve the app
-CMD ["sh", "-c", "cd apps/learn-card-app && pnpm preview"]
+CMD ["sh", "-c", "cd apps/learn-card-app && bun run preview"]

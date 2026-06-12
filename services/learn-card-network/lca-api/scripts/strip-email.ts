@@ -2,7 +2,7 @@
  * Strip the email from a Firebase user by UID.
  *
  * Usage:
- *   npx tsx scripts/strip-email.ts <uid>
+ *   bunx tsx scripts/strip-email.ts <uid>
  *
  * Requires GOOGLE_APPLICATION_CREDENTIAL env var (same as the API server).
  *
@@ -19,7 +19,7 @@ dotenv.config();
 const uid = process.argv[2];
 
 if (!uid) {
-    console.error('Usage: npx tsx scripts/strip-email.ts <uid>');
+    console.error('Usage: bunx tsx scripts/strip-email.ts <uid>');
     process.exit(1);
 }
 
@@ -38,7 +38,11 @@ admin.initializeApp({
 
 async function main() {
     const before = await admin.auth().getUser(uid);
-    console.log(`Before — uid: ${before.uid}, email: ${before.email ?? '(none)'}, phone: ${before.phoneNumber ?? '(none)'}`);
+    console.log(
+        `Before — uid: ${before.uid}, email: ${before.email ?? '(none)'}, phone: ${
+            before.phoneNumber ?? '(none)'
+        }`
+    );
 
     // Use the Identity Toolkit REST API to delete the email attribute.
     // The Admin SDK doesn't expose this capability.
@@ -70,7 +74,11 @@ async function main() {
     }
 
     const after = await admin.auth().getUser(uid);
-    console.log(`After  — uid: ${after.uid}, email: ${after.email ?? '(none)'}, phone: ${after.phoneNumber ?? '(none)'}`);
+    console.log(
+        `After  — uid: ${after.uid}, email: ${after.email ?? '(none)'}, phone: ${
+            after.phoneNumber ?? '(none)'
+        }`
+    );
 
     console.log('Done.');
     process.exit(0);

@@ -1,19 +1,14 @@
-FROM --platform=linux/amd64 node:16
-
-RUN npm --global install pnpm
-RUN npm install pm2 -g
-RUN pnpm install --save esbuild
-RUN pnpm install --save rollup-plugin-esbuild
+FROM --platform=linux/amd64 oven/bun:1.3.14
 
 WORKDIR /root/monorepo
 COPY . .
 
 RUN cd services/learn-card-discord-bot
 
-# ↑ Copy the whole repository and let pnpm filter what to run
-RUN pnpm install --filter "learn-card-discord-bot..."
+# ↑ Copy the whole repository and install dependencies with Bun
+RUN bun install
 
 RUN ls -al -R
 
 EXPOSE 8080
-CMD [ "pnpm", "start" ]
+CMD [ "bun", "--filter", "learn-card-discord-bot", "run", "start" ]

@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bunx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -11,7 +11,7 @@ const log = getLogger();
  * The `defaultChannel` value in that file is the SINGLE SOURCE OF TRUTH:
  *   - CI reads it via `tools/capgo/getCapgoChannel.js` to pick the channel
  *     OTA bundles are uploaded to.
- *   - `npx cap sync` propagates it into iOS/Android `capacitor.config.json`,
+ *   - `bunx cap sync` propagates it into iOS/Android `capacitor.config.json`,
  *     so installed binaries listen on the same channel CI uploads to.
  *
  * Bump this ONLY when you make a backwards-INcompatible native change
@@ -21,11 +21,11 @@ const log = getLogger();
  * via the App / Play store, so do NOT bump for routine JS-only releases.
  *
  * Usage:
- *   pnpm lc bump-default-capgo-channel              # interactive prompt with sensible default
- *   pnpm lc bump-default-capgo-channel 1.0.7        # explicit value
+ *   bun run lc bump-default-capgo-channel              # interactive prompt with sensible default
+ *   bun run lc bump-default-capgo-channel 1.0.7        # explicit value
  *
  * Direct invocation:
- *   npx tsx apps/learn-card-app/scripts/bump-default-capgo-channel.ts [newChannel]
+ *   bunx tsx apps/learn-card-app/scripts/bump-default-capgo-channel.ts [newChannel]
  */
 
 import { readFileSync, writeFileSync } from 'fs';

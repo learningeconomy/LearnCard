@@ -41,34 +41,34 @@ Each `describe` block spins up a fresh server on an ephemeral port via `startE2E
 
 ## Prerequisites
 
-Just Node 18+ and pnpm — no docker, no JVM, nothing external.
+Just Node 18+ and Bun — no docker, no JVM, nothing external.
 
 ```bash
 # From the monorepo root:
-pnpm install
+bun install
 ```
 
 ## Running
 
 ```bash
 # From tests/openid4vc-e2e/:
-pnpm test          # single run
-pnpm test:watch    # watch mode
+bun run test          # single run
+bun run test:watch    # watch mode
 ```
 
 Or from the monorepo root:
 
 ```bash
-pnpm --filter @workspace/openid4vc-e2e-tests test
+bun --filter @workspace/openid4vc-e2e-tests run test
 ```
 
 ## Test coverage
 
-| File | Exercises |
-|---|---|
+| File                      | Exercises                                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `tests/roundtrip.spec.ts` | Pre-auth offer → `acceptCredentialOffer` → `presentCredentials` → verifier 200 round trip. Plus `tx_code` validation and verifier rejection surfacing as `VpSubmitError{code: server_error, status: 400}`. |
-| `tests/auth-code.spec.ts` | Slice 4 — Auth-code flow w/ PKCE. Wallet follows the `/authorize` redirect, extracts `code`, POSTs to `/token` with the PKCE verifier. |
-| `tests/siop.spec.ts` | Slice 8 — Combined `vp_token id_token` flow. Verifier asserts both the JWT-VP and the SIOPv2 ID token verify against the holder's `did:jwk`. |
+| `tests/auth-code.spec.ts` | Slice 4 — Auth-code flow w/ PKCE. Wallet follows the `/authorize` redirect, extracts `code`, POSTs to `/token` with the PKCE verifier.                                                                     |
+| `tests/siop.spec.ts`      | Slice 8 — Combined `vp_token id_token` flow. Verifier asserts both the JWT-VP and the SIOPv2 ID token verify against the holder's `did:jwk`.                                                               |
 
 ## Adding a new test
 
@@ -85,4 +85,4 @@ pnpm --filter @workspace/openid4vc-e2e-tests test
 
 ## Interop gap
 
-This suite does **not** prove interop against third-party implementations (walt.id, Sphereon, EUDI, Animo). For that we lean on the CLI harnesses (`pnpm try-offer` / `pnpm try-verify`) — see `packages/plugins/openid4vc/README.md`. Adding a dockerized interop target to this package is a separate follow-up.
+This suite does **not** prove interop against third-party implementations (walt.id, Sphereon, EUDI, Animo). For that we lean on the CLI harnesses (`bun run try-offer` / `bun run try-verify`) — see `packages/plugins/openid4vc/README.md`. Adding a dockerized interop target to this package is a separate follow-up.

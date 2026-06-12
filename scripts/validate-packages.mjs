@@ -177,7 +177,7 @@ const ADVISORY_ONLY = new Set([
 // Errors still fail. This is the level that catches missing/broken `exports`
 // maps, FalseESM, and the original smoketest regression.
 function runPublint({ abs }) {
-    return run('pnpm', ['exec', 'publint', abs]);
+    return run('bunx', ['publint', abs]);
 }
 
 // --pack: runs `npm pack` and checks the actual tarball that would be published
@@ -186,8 +186,7 @@ function runPublint({ abs }) {
 // --profile esm-only: ignores node10 (legacy) and node16-cjs (we ship a proper
 //         CJS shim with .d.cts; node16-from-CJS is green).
 function runAttw({ abs }) {
-    return run('pnpm', [
-        'exec',
+    return run('bunx', [
         'attw',
         '--pack',
         abs,

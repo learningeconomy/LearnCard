@@ -85,24 +85,18 @@ jobs:
               with:
                   node-version: 20.x
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v3
-              id: pnpm-install
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  version: 9
-                  run_install: false
+                  bun-version: 1.3.14
 
-            - name: Get pnpm store directory
-              id: pnpm-cache
-              run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-            - name: Setup pnpm cache
-              uses: actions/cache@v3
+            - name: Setup Bun cache
+              uses: actions/cache@v4
               with:
-                  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-pnpm-store-
+                      ${{ runner.os }}-bun-
 
             # Skip mongodb-memory-server's postinstall Mongo binary download — a
             # backend-only transitive dep, unused by the frontend build. Its cached
@@ -110,7 +104,7 @@ jobs:
             - name: Install dependencies
               env:
                   MONGOMS_DISABLE_POSTINSTALL: '1'
-              run: pnpm install --no-frozen-lockfile
+              run: bun install
 
             # Prepare tenant config for learn-card-app builds. For other projects
             # (e.g. scouts) the tenant input is left empty and this step is skipped.
@@ -123,10 +117,10 @@ jobs:
                     STAGE_FLAG="--stage ${{ inputs.stage }}"
                   fi
                   echo "Preparing tenant config: ${{ inputs.tenant }} $STAGE_FLAG"
-                  npx tsx scripts/prepare-native-config.ts "${{ inputs.tenant }}" $STAGE_FLAG
+                  bunx tsx scripts/prepare-native-config.ts "${{ inputs.tenant }}" $STAGE_FLAG
 
             - name: Build ${{ inputs.project }}
-              run: pnpm exec nx build ${{ inputs.project }}
+              run: bunx nx build ${{ inputs.project }}
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
@@ -155,7 +149,7 @@ jobs:
                   CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
               run: |
                   set -o pipefail
-                  if ! OUTPUT=$(npx @capgo/cli@latest channel add \
+                  if ! OUTPUT=$(bunx @capgo/cli@latest channel add \
                       "${{ inputs.channel }}" \
                       "${{ inputs.app_id }}" 2>&1); then
                       echo "$OUTPUT"
@@ -181,7 +175,7 @@ jobs:
                   PACKAGE_JSON: ${{ inputs.package_json }}
                   NODE_MODULES_PATH: ${{ inputs.node_modules_path }}
               run: >-
-                  npx @capgo/cli@latest bundle upload
+                  bunx @capgo/cli@latest bundle upload
                   "$APP_ID"
                   --delta
                   --path "$BUILD_PATH"
@@ -198,7 +192,7 @@ jobs:
                   CHANNEL: ${{ inputs.channel }}
                   VERSION: ${{ inputs.version }}
               run: >-
-                  npx @capgo/cli@latest channel set "$CHANNEL"
+                  bunx @capgo/cli@latest channel set "$CHANNEL"
                   --bundle "$VERSION"
                   --self-assign
                   "$APP_ID"

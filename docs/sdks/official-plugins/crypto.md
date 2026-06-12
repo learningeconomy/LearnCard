@@ -11,7 +11,7 @@ Due to the nature of VCs/VPs, it can be important for users/plugins to have acce
 ### Install
 
 ```bash
-pnpm i @learncard/crypto-plugin
+bun add @learncard/crypto-plugin
 ```
 
 ### What is Webcrypto?

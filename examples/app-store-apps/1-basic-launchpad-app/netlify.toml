@@ -5,7 +5,7 @@
 [build.environment]
 # Global Context Default
 [build]
-command = "pnpm exec nx build 1-basic-launchpad-app"
+command = "bunx nx build 1-basic-launchpad-app"
 publish = "dist/"
 
 [[headers]]

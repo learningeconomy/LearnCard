@@ -5,7 +5,7 @@ The VC Plugin is responsible for implementing standard Verifiable Credential met
 ### Install
 
 ```bash
-pnpm i @learncard/vc-plugin
+bun add @learncard/vc-plugin
 ```
 
 ## Verification Extension

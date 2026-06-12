@@ -9,7 +9,7 @@ name: Smoketest Published NPM Packages
 # published with literal "workspace:*" strings in its dependencies field,
 # breaking `npx @learncard/cli` for every external user the moment that version
 # hit the registry. None of our internal CI caught it, because internal builds
-# run inside the monorepo where pnpm resolves workspace: protocol fine.
+# run inside the monorepo where Bun resolves workspace: protocol fine.
 #
 # Triggers:
 #   • workflow_call  — invoked by deploy.yml right after publish-npm succeeds.

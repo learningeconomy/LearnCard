@@ -355,7 +355,7 @@ jobs:
                   E2E_CLOUD_URL="${PREVIEW_URL}/cloud" \
                   E2E_LCA_API_URL="${PREVIEW_URL}/lca-api" \
                   E2E_MANAGE_DOCKER=false \
-                  pnpm --filter @workspace/e2e-tests test:run
+                  bun --filter @workspace/e2e-tests run test:run
               env:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}

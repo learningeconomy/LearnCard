@@ -6,7 +6,7 @@ manifest:
 
 config:
   ignore_files:
-    - 'pnpm-lock.yaml'
+    - 'bun.lock'
     - '**/CHANGELOG.md'
     - '**/*.snap'
 

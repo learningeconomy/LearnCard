@@ -2,12 +2,12 @@
 
 This is a demonstration application showing how to build an embeddable web page for the LearnCard app store. It showcases the Partner Connect SDK including:
 
-- **SSO/Identity**: Authenticating users via `requestIdentity()`
-- **Issuing Credentials**: Sending credentials to the user's wallet via `sendCredential()`
-- **Launching Features**: Opening LearnCard features (e.g., AI Tutor) via `launchFeature()`
-- **Requesting Credentials**: Asking users to share credentials via `askCredentialSearch()`
-- **App Notifications**: Sending in-app notifications via `sendNotification()`
-- **App Counters**: Incrementing and reading per-user counters via `incrementCounter()`, `getCounter()`, `getCounters()`
+-   **SSO/Identity**: Authenticating users via `requestIdentity()`
+-   **Issuing Credentials**: Sending credentials to the user's wallet via `sendCredential()`
+-   **Launching Features**: Opening LearnCard features (e.g., AI Tutor) via `launchFeature()`
+-   **Requesting Credentials**: Asking users to share credentials via `askCredentialSearch()`
+-   **App Notifications**: Sending in-app notifications via `sendNotification()`
+-   **App Counters**: Incrementing and reading per-user counters via `incrementCounter()`, `getCounter()`, `getCounters()`
 
 ## Quick Start (Full Local Testing)
 
@@ -21,7 +21,7 @@ docker compose up neo4j redis -d
 ### 2. Build the SDK (if you've changed it)
 
 ```bash
-pnpm nx run partner-connect-sdk:build
+bunx nx run partner-connect-sdk:build
 ```
 
 ### 3. Seed a dev app in the brain-service DB
@@ -31,10 +31,10 @@ cd services/learn-card-network/brain-service
 
 # Create a .env with NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
 # Then seed (idempotent — safe to re-run):
-pnpm seed:dev-app --app-url http://localhost:4321
+bun run seed:dev-app --app-url http://localhost:4321
 
 # Or with custom options:
-pnpm seed:dev-app \
+bun run seed:dev-app \
   --app-url http://localhost:4321 \
   --app-name "My Test App" \
   --profile dev-owner \
@@ -47,7 +47,7 @@ The script prints a `LISTING_ID` you can use in your app's `.env`.
 
 ```bash
 cd services/learn-card-network/brain-service
-pnpm start
+bun run start
 ```
 
 ### 5. Start this example app
@@ -55,31 +55,31 @@ pnpm start
 ```bash
 cd examples/app-store-apps/1-basic-launchpad-app
 cp .env.example .env   # edit with your values
-pnpm dev
+bun run dev
 ```
 
 ## Getting Started (Standalone)
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Start the dev server
-pnpm dev
+bun run dev
 
 # Build for production
-pnpm build
+bun run build
 
 # Preview production build
-pnpm preview
+bun run preview
 ```
 
 ## Integration Notes
 
-- Update `LEARNCARD_HOST_ORIGIN` to match your production LearnCard host domain
-- The demo uses the `LEARNCARD_V1` postMessage protocol
-- All postMessage communication is origin-verified for security
-- SSO tokens should be validated on your backend before creating sessions
+-   Update `LEARNCARD_HOST_ORIGIN` to match your production LearnCard host domain
+-   The demo uses the `LEARNCARD_V1` postMessage protocol
+-   All postMessage communication is origin-verified for security
+-   SSO tokens should be validated on your backend before creating sessions
 
 ## Features Demonstrated
 
@@ -92,7 +92,7 @@ pnpm preview
 
 ## Architecture
 
-- Built with Astro for fast, static site generation
-- Uses Tailwind CSS via CDN for styling
-- Client-side Partner Connect SDK for LearnCard communication
-- Promise-based API for async request/response flows
+-   Built with Astro for fast, static site generation
+-   Uses Tailwind CSS via CDN for styling
+-   Client-side Partner Connect SDK for LearnCard communication
+-   Promise-based API for async request/response flows

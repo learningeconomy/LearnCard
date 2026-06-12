@@ -14,7 +14,7 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
-        packager: pnpm
+        packager: bun
         plugins: esbuildPlugins.cjs
         bundle: true
         # minify: true
@@ -25,10 +25,10 @@ custom:
             pattern: ['src/**/*.ts', 'dids.ts']
 
 package:
-  individually: true
-  patterns: 
-    - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    individually: true
+    patterns:
+        - '!node_modules/**'
+        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
 provider:
     name: aws

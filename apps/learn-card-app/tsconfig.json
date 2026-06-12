@@ -4,14 +4,13 @@
         "baseUrl": ".",
         "paths": {
             "@analytics": ["src/analytics"],
-            "@analytics/*": ["src/analytics/*"]
+            "@analytics/*": ["src/analytics/*"],
+            "learn-card-base": ["../../packages/learn-card-base/src/index.ts"],
+            "learn-card-base/*": ["../../packages/learn-card-base/src/*"],
+            "learn-card-base/src/*": ["../../packages/learn-card-base/src/*"]
         },
         "target": "esnext",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "esnext"
-        ],
+        "lib": ["dom", "dom.iterable", "esnext"],
         "allowJs": true,
         "skipLibCheck": true,
         "esModuleInterop": true,

@@ -27,7 +27,7 @@ module.exports = {
             repo: 'GIT_REPOSITORY',
             path: 'DESTINATION_PATH',
             'pre-deploy-local': '',
-            'post-deploy': 'pnpm install && pm2 reload ecosystem.config.js --env production',
+            'post-deploy': 'bun install && pm2 reload ecosystem.config.js --env production',
             'pre-setup': '',
         },
     },

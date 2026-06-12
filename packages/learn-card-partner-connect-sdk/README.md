@@ -20,7 +20,7 @@ npm install @learncard/partner-connect
 ```
 
 ```bash
-pnpm add @learncard/partner-connect
+bun add @learncard/partner-connect
 ```
 
 ```bash

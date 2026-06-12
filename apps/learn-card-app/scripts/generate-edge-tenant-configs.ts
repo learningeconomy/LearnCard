@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bunx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -30,7 +30,7 @@ const log = getLogger();
  *   }
  *
  * Usage:
- *   npx tsx scripts/generate-edge-tenant-configs.ts
+ *   bunx tsx scripts/generate-edge-tenant-configs.ts
  *
  * Run this before deploying or as part of the build command.
  */

@@ -19,7 +19,7 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:
-        packager: pnpm
+        packager: bun
         plugins: esbuildPlugins.cjs
         bundle: true
         # minify: true
@@ -75,13 +75,13 @@ custom:
         apiType: http
 
 package:
-  individually: true
-  patterns: 
-    - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
-    - 'node_modules/@learncard/didkit-plugin-node/*.node'
-    - 'node_modules/@learncard/didkit-plugin-node/package.json'
-    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
+    individually: true
+    patterns:
+        - '!node_modules/**'
+        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+        - 'node_modules/@learncard/didkit-plugin-node/*.node'
+        - 'node_modules/@learncard/didkit-plugin-node/package.json'
+        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
 
 provider:
     name: aws

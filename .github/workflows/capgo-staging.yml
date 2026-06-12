@@ -49,7 +49,7 @@ jobs:
               id: affected
               if: steps.release_check.outputs.is_release != 'true'
               run: |
-                  AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+                  AFFECTED=$(bunx nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
                   echo "Affected: $AFFECTED"
                   if echo "$AFFECTED" | grep -q "learn-card-app"; then
                     echo "affected=true" >> "$GITHUB_OUTPUT"

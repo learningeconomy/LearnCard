@@ -12,7 +12,7 @@ import { playgroundApiPlugin } from './server/middleware';
  * stack directly \u2014 it goes through this middleware so secrets
  * (issuer signing keys) stay server-side.
  *
- * Run with `pnpm dev`. For phone testing, run `pnpm dev --host`
+ * Run with `bun run dev`. For phone testing, run `bun run dev --host`
  * to bind on the LAN; see README for ngrok/cloudflare-tunnel
  * options when the wallet is on a separate network.
  */

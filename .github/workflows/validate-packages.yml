@@ -21,7 +21,7 @@ name: Validate Published Package Contracts
 #
 # Runs on every PR + push to main. The validation script runs publint + attw
 # (the latter shells out to `npm pack`) across ~36 packages with a bounded
-# concurrency pool; combined with the up-front `pnpm build`, budget ~10-15 min.
+# concurrency pool; combined with the up-front `bun run build`, budget ~10-15 min.
 
 on:
     pull_request:
@@ -43,7 +43,7 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build all publishable packages
-              run: pnpm build
+              run: bun run build
 
             - name: Validate package contracts
-              run: pnpm validate-packages
+              run: bun run validate-packages

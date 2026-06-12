@@ -7,16 +7,16 @@ ENV SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
 
-# Install build dependencies and pnpm in one layer
+# Install build dependencies and Bun in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm@9.12.3
+    && npm install -g bun@1.3.14
 
 # Copy root workspace files
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
+COPY package.json bun.lock nx.json tsconfig.json .npmrc ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 
 # Copy dependency manifests for better Docker caching
@@ -54,7 +54,7 @@ COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 COPY packages/email-templates/package.json packages/email-templates/
 
-RUN pnpm install --no-frozen-lockfile
+RUN bun install
 
 # Copy full sources after installing dependencies to leverage caching
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
@@ -93,7 +93,7 @@ COPY packages/email-templates packages/email-templates
 
 RUN rm -rf node_modules/.cache/nx
 
-RUN pnpm exec nx build:docker lca-api-service
+RUN bunx nx build:docker lca-api-service
 
 # Expose common ports used by server
 EXPOSE 3000

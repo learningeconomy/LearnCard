@@ -5,167 +5,169 @@
 name: Maid-Service
 
 on:
-  push:
-    branches:
-      - main
+    push:
+        branches:
+            - main
 
 env:
-  CI: true
+    CI: true
 
 jobs:
-  build-native-plugin:
-    name: Build Native DIDKit Plugin
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+    build-native-plugin:
+        name: Build Native DIDKit Plugin
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  submodules: true
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.12.0
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24.12.0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: x86_64-unknown-linux-gnu
+            - name: Setup Bun cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            packages/plugins/didkit-plugin-node/native/target/
-          key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  toolchain: stable
+                  targets: x86_64-unknown-linux-gnu
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+            - name: Cache cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      packages/plugins/didkit-plugin-node/native/target/
+                  key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build native plugin
-        working-directory: packages/plugins/didkit-plugin-node
-        env:
-          BUILD_DIDKIT_NAPI: true
-        run: |
-          pnpm exec nx build didkit-plugin-node
-          strip -x *.node
+            - name: Install dependencies
+              run: bun install
 
-      - name: Upload native binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: didkit-native-linux-x64
-          path: packages/plugins/didkit-plugin-node/*.node
-          if-no-files-found: error
-          retention-days: 1
+            - name: Build native plugin
+              working-directory: packages/plugins/didkit-plugin-node
+              env:
+                  BUILD_DIDKIT_NAPI: true
+              run: |
+                  bunx nx build didkit-plugin-node
+                  strip -x *.node
 
-  maid-service:
-    name: Maid-Service
-    needs: [build-native-plugin]
-    runs-on: ubuntu-latest
-    environment: ci-tests
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
+            - name: Upload native binary
+              uses: actions/upload-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: packages/plugins/didkit-plugin-node/*.node
+                  if-no-files-found: error
+                  retention-days: 1
 
-      - name: Fetch main for NX comparison
-        run: |
-          git fetch --no-tags --prune --depth=5 origin main
+    maid-service:
+        name: Maid-Service
+        needs: [build-native-plugin]
+        runs-on: ubuntu-latest
+        environment: ci-tests
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.ref }}
+                  fetch-depth: 0
 
-      - name: Download native plugin binary
-        uses: actions/download-artifact@v4
-        with:
-          name: didkit-native-linux-x64
-          path: packages/plugins/didkit-plugin-node
+            - name: Fetch main for NX comparison
+              run: |
+                  git fetch --no-tags --prune --depth=5 origin main
 
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
+            - name: Download native plugin binary
+              uses: actions/download-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: packages/plugins/didkit-plugin-node
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        id: pnpm-install
-        with:
-          version: 9
-          run_install: false
+            - name: Setup Node.js 20.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            - name: Setup Bun cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
 
-      - name: Restore nx cache
-        id: restore-nx-cache
-        uses: actions/cache/restore@v3
-        with:
-          path: .nx-cache
-          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
+            - name: Restore nx cache
+              id: restore-nx-cache
+              uses: actions/cache/restore@v3
+              with:
+                  path: .nx-cache
+                  key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+            - name: Install dependencies
+              run: bun install
 
-      - name: Run tests
-        uses: nick-fields/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
-        env:
-          SEED: ${{ secrets.SEED }}
-          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+            - name: Run tests
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_minutes: 10
+                  max_attempts: 3
+                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
+              env:
+                  SEED: ${{ secrets.SEED }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-      - name: Commit changes
-        run: |
-          echo "DIRTY_TREE=$(git diff --quiet && echo false || echo true)" >> $GITHUB_ENV
-          git config --global user.name "Auto-Commit"
-          git config --global user.email "beestontaylor@learningeconomy.io"
-          git add .
-          git status -s
-          git commit -m ":green_heart: Housekeeping!" || echo "Nothing to see here!"
+            - name: Commit changes
+              run: |
+                  echo "DIRTY_TREE=$(git diff --quiet && echo false || echo true)" >> $GITHUB_ENV
+                  git config --global user.name "Auto-Commit"
+                  git config --global user.email "beestontaylor@learningeconomy.io"
+                  git add .
+                  git status -s
+                  git commit -m ":green_heart: Housekeeping!" || echo "Nothing to see here!"
 
-      - name: Create Pull Request
-        if: ${{ contains(env.DIRTY_TREE, 'true') }}
-        uses: peter-evans/create-pull-request@v5
-        with:
-          commit-message: ":green_heart: Housekeeping!"
-          branch: maid-service/housekeeping
-          title: '[Auto] Housekeeping'
-          body: |
-            This PR was generated automatically by the [Maid Service][1].
+            - name: Create Pull Request
+              if: ${{ contains(env.DIRTY_TREE, 'true') }}
+              uses: peter-evans/create-pull-request@v5
+              with:
+                  commit-message: ':green_heart: Housekeeping!'
+                  branch: maid-service/housekeeping
+                  title: '[Auto] Housekeeping'
+                  body: |
+                      This PR was generated automatically by the [Maid Service][1].
 
-            It's existence implies that `main` currently has an untree git worktree, and can be 
-            cleaned by the changes in this PR. 
+                      It's existence implies that `main` currently has an untree git worktree, and can be 
+                      cleaned by the changes in this PR. 
 
-            Please merge this to clean up main!
+                      Please merge this to clean up main!
 
-            [1]: ./.github/workflows/maids.yml
+                      [1]: ./.github/workflows/maids.yml
 
-          labels: |
-            automated pr
-          assignees: TaylorBeeston
-          reviewers: TaylorBeeston
+                  labels: |
+                      automated pr
+                  assignees: TaylorBeeston
+                  reviewers: TaylorBeeston
 
-      - name: Save nx cache
-        uses: actions/cache/save@v3
-        with:
-          path: .nx-cache
-          key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}
+            - name: Save nx cache
+              uses: actions/cache/save@v3
+              with:
+                  path: .nx-cache
+                  key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}

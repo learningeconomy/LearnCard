@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bunx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -14,13 +14,13 @@ const log = getLogger();
  *
  *   1. The gitignore entries (added separately) prevent platform output
  *      files from showing up in `git status`.
- *   2. `npx tsx scripts/prepare-native-config.ts learncard` restores
+ *   2. `bunx tsx scripts/prepare-native-config.ts learncard` restores
  *      the default LearnCard assets from environments/learncard/assets/.
  *   3. Switching tenants is just: prepare-native-config.ts <tenant>
  *   4. Switching back is just:    prepare-native-config.ts learncard
  *
  * Usage:
- *   npx tsx scripts/snapshot-learncard-defaults.ts
+ *   bunx tsx scripts/snapshot-learncard-defaults.ts
  */
 
 import { execSync } from 'child_process';

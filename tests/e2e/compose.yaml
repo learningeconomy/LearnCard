@@ -10,7 +10,7 @@ services:
         ports:
             - '4000:4000'
 
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
 
         depends_on:
             neo4j:
@@ -74,7 +74,7 @@ services:
         ports:
             - '4100:4100'
 
-        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
 
         depends_on:
             - mongodb
@@ -119,7 +119,8 @@ services:
         ports:
             - '4200:4200'
 
-        command: ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && pnpm dev']
+        command:
+            ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && bun run dev']
 
         depends_on:
             - mongodb

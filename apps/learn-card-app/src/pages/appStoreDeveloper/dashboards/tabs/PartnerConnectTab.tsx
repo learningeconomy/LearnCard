@@ -1088,7 +1088,7 @@ async function launchWalletFeature(path: string, description?: string) {
         }
     };
 
-    const installCode = `npm install @learncard/partner-connect`;
+    const installCode = `bun add @learncard/partner-connect`;
 
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
@@ -1376,11 +1376,11 @@ log.info('User:', identity.profile.displayName);`;
                                         <p className="text-xs text-gray-500 mt-1">
                                             Also works with{' '}
                                             <code className="bg-gray-100 px-1 rounded">
-                                                yarn add
+                                                npm install
                                             </code>{' '}
                                             or{' '}
                                             <code className="bg-gray-100 px-1 rounded">
-                                                pnpm add
+                                                yarn add
                                             </code>
                                         </p>
                                     </div>

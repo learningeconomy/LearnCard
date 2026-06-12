@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bunx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -14,7 +14,7 @@ const log = getLogger();
  * and inheritance chains only.
  *
  * Usage:
- *   npx tsx scripts/validate-theme-schemas.ts
+ *   bunx tsx scripts/validate-theme-schemas.ts
  *
  * Exit codes:
  *   0 — all themes valid

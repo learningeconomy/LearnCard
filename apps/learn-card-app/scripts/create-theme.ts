@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bunx tsx
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -11,9 +11,9 @@ const log = getLogger();
  *   - assets/ directory with placeholder files
  *
  * Usage:
- *   npx tsx scripts/create-theme.ts
- *   npx tsx scripts/create-theme.ts --id=mytheme     # skip the ID prompt
- *   npx tsx scripts/create-theme.ts --extends=colorful # inherit from colorful
+ *   bunx tsx scripts/create-theme.ts
+ *   bunx tsx scripts/create-theme.ts --id=mytheme     # skip the ID prompt
+ *   bunx tsx scripts/create-theme.ts --extends=colorful # inherit from colorful
  */
 
 import { createInterface } from 'readline';
@@ -379,7 +379,7 @@ const main = async () => {
         )} to customize colors and styles`
     );
     log.info(`    2. Replace assets in ${cyan(`src/theme/schemas/${themeId}/assets/`)}`);
-    log.info(`    3. Run ${cyan('pnpm lc validate')} to check your theme`);
+    log.info(`    3. Run ${cyan('bun run lc validate')} to check your theme`);
     log.info(`    4. Add "${themeId}" to your tenant's ${cyan('allowedThemes')} in config.json`);
     log.info('');
 
