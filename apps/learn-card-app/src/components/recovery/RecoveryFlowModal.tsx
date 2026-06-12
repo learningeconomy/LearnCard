@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
-import { fingerPrint, documentTextOutline, alertCircleOutline, cloudUploadOutline, phonePortraitOutline, chevronBackOutline, mailOutline } from 'ionicons/icons';
+import {
+    fingerPrint,
+    documentTextOutline,
+    alertCircleOutline,
+    cloudUploadOutline,
+    phonePortraitOutline,
+    chevronBackOutline,
+    mailOutline,
+} from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
@@ -26,8 +34,10 @@ interface RecoveryFlowModalProps {
 const friendlyError = (e: unknown): string => {
     if (e instanceof Error) {
         if (e.message.includes('decrypt')) return m['recovery.incorrectPassword']();
-        if (e.message.includes('network') || e.message.includes('fetch')) return m['recovery.connectionIssue']();
-        if (e.message.includes('phrase') || e.message.includes('mnemonic')) return 'The recovery phrase doesn\'t look right. Please check for typos.';
+        if (e.message.includes('network') || e.message.includes('fetch'))
+            return m['recovery.connectionIssue']();
+        if (e.message.includes('phrase') || e.message.includes('mnemonic'))
+            return m['recovery.phraseInvalid']();
         return e.message;
     }
 
@@ -37,21 +47,21 @@ const friendlyError = (e: unknown): string => {
 const RECOVERY_COPY: Record<RecoveryReason, { title: string; description: string }> = {
     new_device: {
         title: m['recovery.verifyIdentity'](),
-        description: 'This device hasn\u2019t been set up for your account yet. Choose a method to sign in.',
+        description: m['recovery.newDeviceDesc'](),
     },
     stale_local_key: {
         title: m['recovery.verifyIdentity'](),
-        description: 'Your account security was recently updated on another device. Please verify to continue.',
+        description: m['recovery.securityUpdated'](),
     },
     missing_server_data: {
         title: m['recovery.restoreAccess'](),
-        description: 'Choose how you\u2019d like to restore access to your account.',
+        description: m['recovery.restoreAccessDesc'](),
     },
 };
 
 const DEFAULT_COPY = {
     title: m['recovery.restoreAccess'](),
-    description: 'Choose how you\u2019d like to restore access.',
+    description: m['recovery.restoreAccessShort'](),
 };
 
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
@@ -100,7 +110,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         const words = phrase.trim().split(/\s+/);
 
         if (words.length < 25) {
-            setError('Please enter all 25 words of your recovery phrase.');
+            setError(m['recovery.phraseTooShort']());
             return;
         }
 
@@ -122,7 +132,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         }
 
         if (!backupPassword) {
-            setError('Please enter the password for your backup file.');
+            setError(m['recovery.enterBackupPassword']());
             return;
         }
 
@@ -143,7 +153,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         if (file) {
             const reader = new FileReader();
 
-            reader.onload = (e) => {
+            reader.onload = e => {
                 setBackupFile(e.target?.result as string);
             };
 
@@ -153,7 +163,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const handleEmailRecovery = async () => {
         if (!emailShare.trim()) {
-            setError('Please paste the recovery key from your email.');
+            setError(m['recovery.pasteRecoveryKey']());
             return;
         }
 
@@ -169,11 +179,41 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     };
 
     const allMethods = [
-        { id: 'email' as const, label: 'Email Recovery Key', desc: 'Paste the key sent to your email', icon: mailOutline, available: hasMethod('email') && !!onRecoverWithEmail },
-        { id: 'phrase' as const, label: 'Recovery Phrase', desc: 'Enter your 25-word phrase', icon: documentTextOutline, available: hasMethod('phrase') },
-        { id: 'backup' as const, label: 'Backup File', desc: 'Upload your backup file', icon: cloudUploadOutline, available: hasMethod('backup') },
-        { id: 'passkey' as const, label: 'Passkey', desc: 'Use Face ID, Touch ID, or similar', icon: fingerPrint, available: hasMethod('passkey') && webAuthnSupported },
-        { id: 'device' as const, label: 'Another Device', desc: 'Scan a code from a signed-in device', icon: phonePortraitOutline, available: !!onRecoverWithDevice },
+        {
+            id: 'email' as const,
+            label: m['recovery.emailRecoveryLabel'](),
+            desc: m['recovery.method.emailDesc'](),
+            icon: mailOutline,
+            available: hasMethod('email') && !!onRecoverWithEmail,
+        },
+        {
+            id: 'phrase' as const,
+            label: m['recovery.method.phrase'](),
+            desc: m['recovery.phraseEnter25'](),
+            icon: documentTextOutline,
+            available: hasMethod('phrase'),
+        },
+        {
+            id: 'backup' as const,
+            label: m['recovery.method.backup'](),
+            desc: m['recovery.method.backupDesc'](),
+            icon: cloudUploadOutline,
+            available: hasMethod('backup'),
+        },
+        {
+            id: 'passkey' as const,
+            label: m['recovery.method.passkey'](),
+            desc: m['recovery.method.passkeyDesc'](),
+            icon: fingerPrint,
+            available: hasMethod('passkey') && webAuthnSupported,
+        },
+        {
+            id: 'device' as const,
+            label: m['recovery.signInFromDevice'](),
+            desc: m['recovery.anotherDeviceDesc'](),
+            icon: phonePortraitOutline,
+            available: !!onRecoverWithDevice,
+        },
     ];
 
     // Hide passkey entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -194,7 +234,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        {recoveryReason ? RECOVERY_COPY[recoveryReason].description : DEFAULT_COPY.description}
+                        {recoveryReason
+                            ? RECOVERY_COPY[recoveryReason].description
+                            : DEFAULT_COPY.description}
                     </p>
                 </div>
 
@@ -210,9 +252,13 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                     : 'bg-grayscale-10 text-grayscale-400 cursor-not-allowed opacity-60'
                             }`}
                         >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                                method.available ? 'bg-emerald-50 text-emerald-700' : 'bg-grayscale-200 text-grayscale-400'
-                            }`}>
+                            <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                    method.available
+                                        ? 'bg-emerald-50 text-emerald-700'
+                                        : 'bg-grayscale-200 text-grayscale-400'
+                                }`}
+                            >
                                 <IonIcon icon={method.icon} className="text-lg" />
                             </div>
 
@@ -220,7 +266,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 <p className="font-medium text-sm">{method.label}</p>
 
                                 <p className="text-xs text-grayscale-500 mt-0.5">
-                                    {method.available ? method.desc : 'Not set up'}
+                                    {method.available
+                                        ? method.desc
+                                        : m['recovery.method.passkeyNotSetup']()}
                                 </p>
                             </div>
                         </button>
@@ -231,7 +279,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     onClick={onCancel}
                     className="w-full mt-6 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
-                    Cancel
+                    {m['recovery.action.cancel']()}
                 </button>
             </div>
         );
@@ -249,12 +297,15 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
             >
                 <IonIcon icon={chevronBackOutline} className="text-xs" />
-                Back
+                {m['recovery.action.back']()}
             </button>
 
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="text-red-400 text-lg mt-0.5 shrink-0"
+                    />
 
                     <span className="text-sm text-red-700 leading-relaxed">{error}</span>
                 </div>
@@ -263,10 +314,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             {activeMethod === 'passkey' && (
                 <div className="space-y-5">
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Passkey</h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                            {m['recovery.method.passkey']()}
+                        </h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Use your device's biometric authentication to recover.
+                            {m['recovery.passkeyRecoverDesc']()}
                         </p>
                     </div>
 
@@ -274,7 +327,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         <IonIcon icon={fingerPrint} className="text-5xl text-emerald-600 mb-3" />
 
                         <p className="text-sm text-emerald-800">
-                            Tap below to verify with Face ID, Touch ID, or your device passkey.
+                            {m['recovery.passkeyVerifyDesc']()}
                         </p>
                     </div>
 
@@ -286,9 +339,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Verifying...
+                                {m['recovery.verifying']()}
                             </span>
-                        ) : 'Verify with Passkey'}
+                        ) : (
+                            m['recovery.verifyPasskey']()
+                        )}
                     </button>
                 </div>
             )}
@@ -296,26 +351,36 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             {activeMethod === 'phrase' && (
                 <div className="space-y-5">
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Recovery Phrase</h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                            {m['recovery.method.phrase']()}
+                        </h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Enter your 25-word recovery phrase, separated by spaces.
+                            {m['recovery.phraseEnterDesc']()}
                         </p>
                     </div>
 
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
-                            <label className="block text-xs font-medium text-grayscale-700">Your phrase</label>
+                            <label className="block text-xs font-medium text-grayscale-700">
+                                {m['recovery.yourPhrase']()}
+                            </label>
 
-                            <span className={`text-xs font-medium ${phraseWordCount >= 25 ? 'text-emerald-600' : 'text-grayscale-400'}`}>
-                                {phraseWordCount} / 25 words
+                            <span
+                                className={`text-xs font-medium ${
+                                    phraseWordCount >= 25
+                                        ? 'text-emerald-600'
+                                        : 'text-grayscale-400'
+                                }`}
+                            >
+                                {m['recovery.wordsCount']({ count: String(phraseWordCount) })}
                             </span>
                         </div>
 
                         <textarea
                             value={phrase}
                             onChange={e => setPhrase(e.target.value)}
-                            placeholder="word1 word2 word3 ..."
+                            placeholder={m['recovery.placeholder.words']()}
                             rows={4}
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
@@ -329,9 +394,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Recovering...
+                                {m['recovery.recovering']()}
                             </span>
-                        ) : 'Recover Account'}
+                        ) : (
+                            m['recovery.recoverAccount']()
+                        )}
                     </button>
                 </div>
             )}
@@ -339,10 +406,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             {activeMethod === 'device' && onRecoverWithDevice && (
                 <div className="space-y-5">
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Sign In from Another Device</h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                            {m['recovery.signInFromDevice']()}
+                        </h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Scan the QR code below with a device that's already signed in to your account.
+                            {m['recovery.scanQrDescription']()}
                         </p>
                     </div>
 
@@ -364,9 +433,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             setActiveMethod(null);
                             setError(null);
                         }}
-                        renderQrCode={(data) => (
-                            <QRCodeSVG value={data} size={192} level="M" />
-                        )}
+                        renderQrCode={data => <QRCodeSVG value={data} size={192} level="M" />}
                     />
                 </div>
             )}
@@ -374,50 +441,63 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             {activeMethod === 'email' && onRecoverWithEmail && (
                 <div className="space-y-5">
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Recover via Email</h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                            {m['recovery.method.setEmail']()}
+                        </h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            {maskedRecoveryEmail
-                                ? <>We previously sent a recovery email to <strong>{maskedRecoveryEmail}</strong>. Open that email and follow the steps below.</>
-                                : 'We previously sent a recovery email to your recovery address. Open that email and follow the steps below.'
-                            }
+                            {maskedRecoveryEmail ? (
+                                <>{m['recovery.recoveryEmailSent']()}</>
+                            ) : (
+                                m['recovery.recoveryEmailSent']()
+                            )}
                         </p>
                     </div>
 
                     <div className="p-4 bg-grayscale-100/60 rounded-2xl space-y-3">
-                        <p className="text-xs font-medium text-grayscale-700">How to find your recovery key</p>
+                        <p className="text-xs font-medium text-grayscale-700">
+                            {m['recovery.howToFindKey']()}
+                        </p>
 
                         <ol className="text-sm text-grayscale-600 leading-relaxed space-y-2 list-none">
                             <li className="flex items-start gap-2.5">
-                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">1</span>
-                                <span>Search your inbox for an email with the subject <strong>"Your LearnCard Recovery Key"</strong></span>
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
+                                    1
+                                </span>
+                                <span>{m['recovery.step.searchInbox']()}</span>
                             </li>
 
                             <li className="flex items-start gap-2.5">
-                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">2</span>
-                                <span>Find the long string of characters between <strong>"RECOVERY KEY"</strong> and <strong>"END RECOVERY KEY"</strong></span>
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
+                                    2
+                                </span>
+                                <span>{m['recovery.step.findKey']()}</span>
                             </li>
 
                             <li className="flex items-start gap-2.5">
-                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">3</span>
-                                <span>Copy that entire string and paste it below</span>
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
+                                    3
+                                </span>
+                                <span>{m['recovery.step.copyKey']()}</span>
                             </li>
                         </ol>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Recovery Key</label>
+                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                            {m['recovery.recoveryKeyLabel']()}
+                        </label>
 
                         <textarea
                             value={emailShare}
                             onChange={e => setEmailShare(e.target.value)}
-                            placeholder="Paste your recovery key here — it looks like a long string of letters and numbers"
+                            placeholder={m['recovery.placeholder.recoveryKey']()}
                             rows={3}
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white font-mono resize-none"
                         />
 
                         <p className="mt-1.5 text-xs text-grayscale-400">
-                            The key is a long string of letters and numbers. Copy and paste it exactly as it appears in the email.
+                            {m['recovery.recoveryKeyHint']()}
                         </p>
                     </div>
 
@@ -429,9 +509,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Recovering...
+                                {m['recovery.recovering']()}
                             </span>
-                        ) : 'Recover Account'}
+                        ) : (
+                            m['recovery.recoverAccount']()
+                        )}
                     </button>
                 </div>
             )}
@@ -439,16 +521,22 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             {activeMethod === 'backup' && (
                 <div className="space-y-5">
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Backup File</h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                            {m['recovery.method.backup']()}
+                        </h3>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Upload your backup file and enter the password you used when creating it.
+                            {m['recovery.backupUploadDesc']()}
                         </p>
                     </div>
 
-                    <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-colors ${
-                        backupFile ? 'border-emerald-300 bg-emerald-50' : 'border-grayscale-300 hover:border-grayscale-400'
-                    }`}>
+                    <div
+                        className={`border-2 border-dashed rounded-2xl p-6 text-center transition-colors ${
+                            backupFile
+                                ? 'border-emerald-300 bg-emerald-50'
+                                : 'border-grayscale-300 hover:border-grayscale-400'
+                        }`}
+                    >
                         <input
                             type="file"
                             accept=".json"
@@ -460,23 +548,35 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         <label htmlFor="backup-file-input" className="cursor-pointer block">
                             <IonIcon
                                 icon={cloudUploadOutline}
-                                className={`text-4xl mb-2 ${backupFile ? 'text-emerald-600' : 'text-grayscale-400'}`}
+                                className={`text-4xl mb-2 ${
+                                    backupFile ? 'text-emerald-600' : 'text-grayscale-400'
+                                }`}
                             />
 
-                            <p className={`text-sm ${backupFile ? 'text-emerald-700 font-medium' : 'text-grayscale-600'}`}>
-                                {backupFile ? 'File selected' : 'Tap to choose backup file'}
+                            <p
+                                className={`text-sm ${
+                                    backupFile
+                                        ? 'text-emerald-700 font-medium'
+                                        : 'text-grayscale-600'
+                                }`}
+                            >
+                                {backupFile
+                                    ? m['recovery.action.fileSelected']()
+                                    : m['recovery.action.tapToChoose']()}
                             </p>
                         </label>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Backup Password</label>
+                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                            {m['recovery.backupPassword']()}
+                        </label>
 
                         <input
                             type="password"
                             value={backupPassword}
                             onChange={e => setBackupPassword(e.target.value)}
-                            placeholder="Password used when creating backup"
+                            placeholder={m['recovery.enterPassword']()}
                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                     </div>
@@ -489,9 +589,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Recovering...
+                                {m['recovery.recovering']()}
                             </span>
-                        ) : 'Recover Account'}
+                        ) : (
+                            m['recovery.recoverAccount']()
+                        )}
                     </button>
                 </div>
             )}

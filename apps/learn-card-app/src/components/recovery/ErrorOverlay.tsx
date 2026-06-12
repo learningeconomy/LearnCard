@@ -15,7 +15,12 @@ interface ErrorOverlayProps {
     onLogout: () => void;
 }
 
-export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({ error, canRetry, onRetry, onLogout }) => (
+export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
+    error,
+    canRetry,
+    onRetry,
+    onLogout,
+}) => (
     <Overlay>
         <div className="p-8 text-center space-y-5">
             <div className="w-14 h-14 mx-auto rounded-full bg-red-50 flex items-center justify-center">
@@ -42,7 +47,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({ error, canRetry, onR
                     onClick={onLogout}
                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium hover:bg-grayscale-10 transition-colors"
                 >
-                    Log Out
+                    {m['recovery.logOut']()}
                 </button>
             </div>
         </div>
