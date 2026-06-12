@@ -83,8 +83,6 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
 }) => {
     if (!enabled) return null;
 
-    const isTrustedIssuer = verifierState === VERIFIER_STATES.trustedVerifier;
-
     const getIssuerPopoverDescription = (verifierState: VerifierState): React.ReactNode => {
         if (verifierState === VERIFIER_STATES.trustedVerifier) {
             return (
@@ -98,8 +96,8 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
         if (verifierState === VERIFIER_STATES.selfVerified) {
             return (
                 <>
-                    <span className="font-semibold text-grayscale-800">Self Issued</span> means this
-                    credential was created by the same account it belongs to.
+                    <span className="font-semibold text-grayscale-800">Self Issued</span>{' '}
+                    credentials are issued by the holder to themselves.
                 </>
             );
         }
