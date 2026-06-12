@@ -6,6 +6,7 @@ import {
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
     getBaseUrl,
+    getCategoryForCredential,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
@@ -29,13 +30,13 @@ import { BoostCMSState } from 'learn-card-base/components/boost/boost';
 import {
     SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
     SELF_ASSIGNED_SKILLS_BOOST_NAME,
-    getDefaultCategoryForCredential,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
+import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('boosts');
 
@@ -524,6 +525,7 @@ export const useCreateChildBoost = () => {
 export const useManageSelfAssignedSkillsBoost = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
 
     const { data: profile } = useGetProfile();
     const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
@@ -570,18 +572,24 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 });
 
                 // Also find by category and title (catches old records without boostUri)
-                const recordsByCategory = await wallet.index.LearnCloud.get<LCR>({
+                const recordsBySkillCategory = await wallet.index.LearnCloud.get<LCR>({
                     category: CredentialCategoryEnum.skill,
+                    title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                });
+                const recordsBySasCategory = await wallet.index.LearnCloud.get<LCR>({
+                    category: CredentialCategoryEnum.selfAssignedSkills,
                     title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 });
 
                 // Combine and deduplicate by id
                 const allRecordsMap = new Map<string, LCR>();
-                [...recordsByBoostUri, ...recordsByCategory].forEach(record => {
-                    if (record?.id) {
-                        allRecordsMap.set(record.id, record);
+                [...recordsByBoostUri, ...recordsBySkillCategory, ...recordsBySasCategory].forEach(
+                    record => {
+                        if (record?.id) {
+                            allRecordsMap.set(record.id, record);
+                        }
                     }
-                });
+                );
 
                 // Delete ALL matching records
                 for (const record of allRecordsMap.values()) {
@@ -638,7 +646,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(freshSasBoost.uri, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
-                    category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
+                    category: CredentialCategoryEnum.selfAssignedSkills, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
                     credential: unsignedCredential,
                     skills,
@@ -653,7 +661,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
-                    category: CredentialCategoryEnum.skill,
+                    category: CredentialCategoryEnum.selfAssignedSkills,
                     status: 'PROVISIONAL',
                     skills,
                 });
@@ -674,7 +682,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
             // addCredentialToWallet
             const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
 
-            const category = getDefaultCategoryForCredential(vc) || 'Skill';
+            const category = await getCategoryForCredential(vc, wallet);
 
             const res = await wallet.index.LearnCloud.add({
                 id: uuidv4(),
@@ -718,6 +726,11 @@ export const useManageSelfAssignedSkillsBoost = () => {
             queryClient.refetchQueries({
                 queryKey: ['useGetBoostSkills', boostUri],
             });
+            queryClient.invalidateQueries({
+                queryKey: ['useSyncConsentFlow'],
+            });
+
+            syncAllCredentialsToContracts.mutate();
         },
     });
 };

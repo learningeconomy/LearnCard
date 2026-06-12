@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { IonicSlides } from '@ionic/react';
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Keyboard, Navigation, Pagination, Scrollbar, Swiper as SwiperInterface } from 'swiper';
+import type { Swiper as SwiperInterface } from 'swiper/types';
+import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
 import OnboardingSlide from './OnboardingSlide';
 import { getSlideContent, roleSlideContent } from './onboardingSlideContent';
 

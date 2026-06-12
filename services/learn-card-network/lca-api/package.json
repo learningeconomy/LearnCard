@@ -74,7 +74,7 @@
         "openai": "^4.55.7",
         "postmark": "^4.0.5",
         "trpc-to-openapi": "^3.1.0",
-        "uuid": "^9.0.0"
+        "uuid": "^14.0.0"
     },
     "repository": {
         "type": "git",

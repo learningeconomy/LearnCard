@@ -7,20 +7,31 @@
     "module": "./dist/init.esm.js",
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
             "node": {
-                "import": "./dist/node-esm.mjs",
-                "require": "./dist/index.cjs"
+                "import": {
+                    "types": "./dist/index.d.ts",
+                    "default": "./dist/node-esm.mjs"
+                },
+                "require": {
+                    "types": "./dist/index.d.cts",
+                    "default": "./dist/index.cjs"
+                }
             },
-            "import": "./dist/init.esm.js",
-            "require": "./dist/index.cjs"
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/init.esm.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
         }
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "start": "aqu watch",
         "lint": "aqu lint",
         "lint:fix": "aqu lint --fix",

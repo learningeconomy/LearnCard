@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
 
 import { BoostCategoryOptionsEnum, useScreenWidth } from 'learn-card-base';
 
