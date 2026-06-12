@@ -55,8 +55,13 @@ interface UseLearnCardMessageHandlersOptions {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-learn-card-message-handlers');
 
-const getPendingSyncStatus = () => {
-    const jobs = Object.values(pendingContractSyncStore.get.jobs());
+const getPendingSyncStatus = (contractUri?: string) => {
+    const allJobs = Object.values(pendingContractSyncStore.get.jobs());
+    // When a contractUri is provided (a partner app asking about its own
+    // contract), only consider that contract's jobs so an unrelated contract's
+    // sync can't make this app appear to be syncing or skew its progress
+    // totals. With no contractUri we fall back to the store-global view.
+    const jobs = contractUri ? allJobs.filter(job => job.contractUri === contractUri) : allJobs;
     // A job that just errored but still has retries left is not terminal — it
     // will be retried by the worker — so treat it as active. Otherwise a
     // waitForSync caller could see a premature "ready" during the retry window.
@@ -109,16 +114,16 @@ const getPendingSyncStatus = () => {
     };
 };
 
-const waitForPendingSync = async (timeoutMs = 25000) => {
+const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
     const startedAt = Date.now();
 
     while (Date.now() - startedAt < timeoutMs) {
-        const status = getPendingSyncStatus();
+        const status = getPendingSyncStatus(contractUri);
         if (status.status !== 'syncing') return status;
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    return getPendingSyncStatus();
+    return getPendingSyncStatus(contractUri);
 };
 
 /**
@@ -1214,8 +1219,10 @@ export function useLearnCardMessageHandlers({
                           detailLevel?: string;
                           waitForSync?: boolean;
                       }) => {
+                          const appContractUri = await getConfiguredContractUri();
+
                           if (options.waitForSync) {
-                              const syncStatus = await waitForPendingSync();
+                              const syncStatus = await waitForPendingSync(appContractUri);
 
                               if (syncStatus.status === 'syncing') {
                                   return {
@@ -1311,7 +1318,7 @@ export function useLearnCardMessageHandlers({
 
                           return {
                               status: 'ready',
-                              progress: getPendingSyncStatus().progress,
+                              progress: getPendingSyncStatus(appContractUri).progress,
                               prompt,
                               raw:
                                   options.format === 'structured'
@@ -1327,7 +1334,7 @@ export function useLearnCardMessageHandlers({
                           };
                       }
                     : undefined,
-                getSyncStatus: async () => getPendingSyncStatus(),
+                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
             }),
         [
             isLoggedIn,
