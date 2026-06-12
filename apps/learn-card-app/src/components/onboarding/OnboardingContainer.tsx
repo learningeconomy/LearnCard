@@ -523,6 +523,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                     step={step}
                     role={role}
                     setStep={setStep}
+                    showBackButton
                 />
             </div>
         </div>

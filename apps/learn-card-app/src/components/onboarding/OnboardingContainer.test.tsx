@@ -151,7 +151,37 @@ vi.mock('./onboardingRoles/OnboardingRoles', () => ({
 
 vi.mock('./onboardingFooter/OnboardingFooter', () => ({
     __esModule: true,
-    default: () => <div data-testid="onboarding-footer" />,
+    default: ({ step, setStep, showBackButton }: any) => (
+        <div data-testid="onboarding-footer">
+            {showBackButton && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (step === OnboardingStepsEnum.selectRole) {
+                            setStep?.(OnboardingStepsEnum.privacyData);
+                            return;
+                        }
+
+                        if (step === OnboardingStepsEnum.joinNetwork) {
+                            setStep?.(OnboardingStepsEnum.selectRole);
+                        }
+                    }}
+                >
+                    footer back
+                </button>
+            )}
+            <button
+                type="button"
+                onClick={() => {
+                    if (step === OnboardingStepsEnum.selectRole) {
+                        setStep?.(OnboardingStepsEnum.joinNetwork);
+                    }
+                }}
+            >
+                footer continue
+            </button>
+        </div>
+    ),
 }));
 
 vi.mock('./onboardingHeader/OnboardingHeader', () => ({
@@ -329,6 +359,43 @@ describe('OnboardingContainer school-code bypass', () => {
             expect(mockUpdatePreferences).toHaveBeenCalledTimes(1);
             expect(mockSetAnalyticsEnabled).toHaveBeenCalledWith(true);
             expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+        });
+    });
+
+    it('lets users go back from role selection to the privacy step', async () => {
+        mockCalculateAge.mockReturnValue(18);
+
+        render(<OnboardingContainer />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'set dob' }));
+        fireEvent.click(screen.getByRole('button', { name: 'set country' }));
+        fireEvent.click(screen.getByRole('button', { name: 'continue' }));
+
+        await waitFor(() => {
+            expect(mockGenerateEd25519PrivateKey).toHaveBeenCalledTimes(1);
+            expect(mockSetupNewKey).toHaveBeenCalledTimes(1);
+        });
+
+        await act(async () => {
+            mockAuthState = { status: 'ready' };
+            setupNewKeyDeferred.resolve(true);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'continue privacy' }));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('onboarding-roles')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: 'footer back' })).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'footer back' }));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
         });
     });
 

@@ -46,6 +46,11 @@ export const OnboardingFooter: React.FC<{
     const handleGoBack = () => {
         if (step === OnboardingStepsEnum.joinNetwork) {
             setStep?.(OnboardingStepsEnum.selectRole);
+            return;
+        }
+
+        if (step === OnboardingStepsEnum.selectRole) {
+            setStep?.(OnboardingStepsEnum.privacyData);
         }
     };
 
