@@ -2,6 +2,8 @@ import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 
+import { m } from '../../paraglide/messages.js';
+
 import { IonSpinner } from '@ionic/react';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -67,7 +69,7 @@ const AiSessionLoader: React.FC<{
         app = getAiPassportAppByContractUri(contractUri || topicRecord?.contractUri || '');
     }
 
-    let text: string | string[] = 'Launching your session...';
+    let text: string | string[] = m['ai.launchingSession']();
     if (overrideText) text = overrideText;
 
     const containerStyles = isInline
@@ -177,7 +179,7 @@ const AiSessionLoader: React.FC<{
                             onClick={() => closeButtonHandler()}
                             className="bg-grayscale-100 text-xl text-grayscale-900 flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[325px] mr-2"
                         >
-                            Close
+                            {m['ai.close']()}
                         </button>
                     )}
                 </div>

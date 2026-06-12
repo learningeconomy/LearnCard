@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
 import { LaunchPadAppListItem, useModal } from 'learn-card-base';
@@ -73,7 +75,7 @@ const AiSessionAppSelectorItem = ({
                         : `bg-${primaryColor} text-white`
                 }`}
             >
-                {hasConsented ? 'Open' : 'Get'}
+                {hasConsented ? m['ai.open']() : m['ai.get']()}
             </button>
         </div>
     );

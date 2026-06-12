@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { IonFooter } from '@ionic/react';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import QRCodeScannerButton from '../../qrcode-scanner-button/QRCodeScannerButton';
@@ -55,7 +57,7 @@ export const AiSessionsLayout: React.FC<{
                                 <NewAiSessionButton
                                     type={NewAiSessionButtonEnum.mobile}
                                     iconType="light"
-                                    text="New Session"
+                                    text={m['ai.newSession']()}
                                     onClick={onNewSessionForTopic}
                                     className="!flex-1 !mt-0 !h-[60px] !px-4 !py-2 !rounded-[20px] !bg-indigo-500 !border-indigo-500 !text-white !text-center !flex !items-center !justify-center !flex-row-reverse"
                                 />

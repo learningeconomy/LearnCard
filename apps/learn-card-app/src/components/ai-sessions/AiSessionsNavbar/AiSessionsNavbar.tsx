@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import { m } from '../../paraglide/messages.js';
+
 import { IonFooter, IonMenuToggle } from '@ionic/react';
 import BurgerIcon from '../../../components/svgs/Burger';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
@@ -92,7 +94,7 @@ const AiSessionsNavbar: React.FC = () => {
                             className="text-grayscale-700 max-h-[40px] max-w-[40px] h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
                         />
                         <span className="text-grayscale-600 font-notoSans font-bold mt-[2px] text-[13px]">
-                            Ai Sessions
+                            {m['ai.aiSessions']()}
                         </span>
                     </button>
                 </div>
@@ -109,7 +111,7 @@ const AiSessionsNavbar: React.FC = () => {
                             customImageClass="w-full h-full object-cover"
                         />
                         <span className="text-grayscale-600 font-notoSans font-bold mt-[2px] text-[13px]">
-                            Personalize
+                            {m['ai.personalize']()}
                         </span>
                     </button>
                 </div>

@@ -214,7 +214,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
                     )}
                     {showEndSessionHint && !isTitleLoading && (
                         <p className="text-[13px] font-poppins text-grayscale-600 mt-[2px] leading-tight">
-                            Close to End Session
+                            {m['ai.closeToEndSession']()}
                         </p>
                     )}
                 </div>
