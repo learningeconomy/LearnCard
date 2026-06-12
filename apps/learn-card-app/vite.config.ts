@@ -1,11 +1,6 @@
 import path from 'path';
 import { execSync } from 'child_process';
-
-// CommonJS interop: readDefaultChannel.cjs is the single source of truth for
-// the Capgo channel SSOT (also used by CI tools). Importing via require keeps
-// us in lockstep without duplicating the regex.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { readDefaultChannel } = require('../../tools/capgo/readDefaultChannel.cjs');
+import { createRequire } from 'module';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
@@ -15,6 +10,14 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
+
+// CommonJS interop: readDefaultChannel.cjs is the shared SSOT for the Capgo
+// channel. It is intentionally reused by Vite config and CI helpers so we do
+// not duplicate the regex or drift from the configured native channel.
+const requireFromHere = createRequire(import.meta.url);
+const { readDefaultChannel } = requireFromHere('../../tools/capgo/readDefaultChannel.cjs') as {
+    readDefaultChannel: (configPath: string) => string | undefined;
+};
 
 /**
  * Resolve a short build commit SHA at config-eval time.
@@ -153,6 +156,10 @@ export default defineConfig(({ mode }) => {
                 'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
                 'apps/learn-card-app': path.resolve(__dirname),
                 '@analytics': path.resolve(__dirname, 'src/analytics'),
+                'swiper/modules': path.resolve(
+                    __dirname,
+                    '../../node_modules/swiper/modules/index.mjs'
+                ),
             },
             dedupe: [
                 'react',

@@ -37,7 +37,7 @@ import '@learncard/react/main.css';
 import './index.scss';
 
 // base styles of swiper js
-import 'swiper/swiper.min.css';
+import 'swiper/css';
 import '@ionic/react/css/ionic-swiper.css';
 const history = createBrowserHistory();
 

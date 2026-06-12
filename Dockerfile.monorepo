@@ -65,6 +65,34 @@ COPY packages/credential-library/package.json packages/credential-library/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 COPY packages/email-templates/package.json packages/email-templates/
+COPY apps/scouts/package.json apps/scouts/
+COPY examples/chapi-example/package.json examples/chapi-example/
+COPY examples/consent-flow-test/package.json examples/consent-flow-test/
+COPY examples/credential-viewer/package.json examples/credential-viewer/
+COPY examples/embed-example/package.json examples/embed-example/
+COPY examples/openid4vc-playground/package.json examples/openid4vc-playground/
+COPY examples/snap-chapi-example/package.json examples/snap-chapi-example/
+COPY examples/snap-example-dapp/package.json examples/snap-example-dapp/
+COPY examples/app-store-apps/1-basic-launchpad-app/package.json examples/app-store-apps/1-basic-launchpad-app/
+COPY examples/app-store-apps/2-lore-card-app/package.json examples/app-store-apps/2-lore-card-app/
+COPY examples/app-store-apps/3-mozilla-social-badges-app/package.json examples/app-store-apps/3-mozilla-social-badges-app/
+COPY examples/app-store-apps/4-request-learner-context-app/package.json examples/app-store-apps/4-request-learner-context-app/
+COPY examples/app-store-apps/5-northstar-learning/package.json examples/app-store-apps/5-northstar-learning/
+COPY packages/holder-continuity-bundle/package.json packages/holder-continuity-bundle/
+COPY packages/learn-card-bridge-http/package.json packages/learn-card-bridge-http/
+COPY packages/learn-card-cli/package.json packages/learn-card-cli/
+COPY packages/learn-card-partner-connect-sdk/package.json packages/learn-card-partner-connect-sdk/
+COPY packages/plugins/claimable-boosts/package.json packages/plugins/claimable-boosts/
+COPY packages/render-method-templates/package.json packages/render-method-templates/
+COPY services/learn-card-discord-bot/package.json services/learn-card-discord-bot/
+COPY services/meta-mask-snap/package.json services/meta-mask-snap/
+COPY services/playwright-delete-service/package.json services/playwright-delete-service/
+COPY tests/benchmarking/package.json tests/benchmarking/
+COPY tests/e2e/package.json tests/e2e/
+COPY tests/federation-e2e/package.json tests/federation-e2e/
+COPY tests/openid4vc-e2e/package.json tests/openid4vc-e2e/
+COPY tests/openid4vc-interop-e2e/package.json tests/openid4vc-interop-e2e/
+COPY tests/smoketests/package.json tests/smoketests/
 
 RUN --mount=type=cache,id=bun-cache,target=/root/.bun/install/cache \
     bun install --ignore-scripts --frozen-lockfile
@@ -116,3 +144,13 @@ COPY apps/learn-card-app apps/learn-card-app
 COPY packages/sss-key-manager packages/sss-key-manager
 COPY packages/email-templates packages/email-templates
 
+RUN mkdir -p /app/.nx-cache /app/node_modules/.cache \
+    /app/apps/learn-card-app/node_modules/.vite \
+    && chmod 1777 /app/.nx-cache /app/node_modules/.cache \
+    /app/apps/learn-card-app/node_modules/.vite \
+    && chmod a+rwx /app/apps/learn-card-app \
+    && chmod -R a+rwX \
+    /app/apps/learn-card-app/public \
+    /app/apps/learn-card-app/ios \
+    /app/apps/learn-card-app/android \
+    && chmod a+rw /app/apps/learn-card-app/index.html

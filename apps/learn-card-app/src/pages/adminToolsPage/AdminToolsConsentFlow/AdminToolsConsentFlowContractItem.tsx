@@ -37,7 +37,7 @@ export const AdminToolsConsentFlowContractItem: React.FC<{
             }}
         >
             <div className="flex items-center justify-start w-full bg-white-100">
-                <div className="bg-white flex items-center justify-center rounded-lg w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px] border-[1px] border-grayscale-200">
+                <div className="bg-white flex items-center justify-center rounded-lg overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px] border-[1px] border-grayscale-200">
                     {contract?.image ? (
                         <img
                             className="w-full h-full object-cover bg-white"

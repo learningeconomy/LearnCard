@@ -27,6 +27,9 @@ node_modules
 .github
 docs
 examples
+!examples/
+!examples/**/
+!examples/**/package.json
 *.md
 .vscode
 .idea

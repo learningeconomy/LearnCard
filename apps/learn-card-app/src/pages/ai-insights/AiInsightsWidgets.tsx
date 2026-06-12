@@ -1,16 +1,18 @@
 import React, { useMemo } from 'react';
 import { useVerifiableData } from 'learn-card-base';
 import {
-    SKILL_PROFILE_PROFILE_KEY,
-    SkillProfileProfileData,
+    SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
+    SkillProfileProfessionalTitleData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 import {
     SKILL_PROFILE_SALARY_KEY,
     SkillProfileSalaryData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
 import {
-    SKILL_PROFILE_JOB_SATISFACTION_KEY,
-    SkillProfileJobSatisfactionData,
+    SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
+    SkillProfileWorkLifeBalanceData,
+    SKILL_PROFILE_JOB_STABILITY_KEY,
+    SkillProfileJobStabilityData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep4';
 import { useOccupationForProfessionalTitle } from './useOccupationForProfessionalTitle';
 import AiInsightsMarketComparisonBox from './AiInsightsMarketComparisonBox';
@@ -22,11 +24,11 @@ import AiInsightsAverageSalaryBox from './AiInsightsAverageSalaryBox';
 type AiInsightsWidgetsProps = {};
 
 const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
-    const { data: profileData } = useVerifiableData<SkillProfileProfileData>(
-        SKILL_PROFILE_PROFILE_KEY,
+    const { data: profileData } = useVerifiableData<SkillProfileProfessionalTitleData>(
+        SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
         {
-            name: 'Professional Profile',
-            description: 'Professional title and experience level',
+            name: 'Professional Title',
+            description: 'Your current professional title',
         }
     );
     const { data: salaryData } = useVerifiableData<SkillProfileSalaryData>(
@@ -36,11 +38,18 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
             description: 'Current salary and compensation type',
         }
     );
-    const { data: jobSatisfactionData } = useVerifiableData<SkillProfileJobSatisfactionData>(
-        SKILL_PROFILE_JOB_SATISFACTION_KEY,
+    const { data: workLifeBalanceData } = useVerifiableData<SkillProfileWorkLifeBalanceData>(
+        SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
         {
-            name: 'Job Satisfaction',
-            description: 'Work-life balance and job stability preferences',
+            name: 'Work Life Balance',
+            description: 'Your preferred work-life balance',
+        }
+    );
+    const { data: jobStabilityData } = useVerifiableData<SkillProfileJobStabilityData>(
+        SKILL_PROFILE_JOB_STABILITY_KEY,
+        {
+            name: 'Job Stability',
+            description: 'How stable you want your work to feel',
         }
     );
 
@@ -73,8 +82,8 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
 
     const hasProfessionalTitle = Boolean(professionalTitle);
     const hasSalary = Boolean(salaryValue);
-    const workLifeBalanceExists = Boolean(jobSatisfactionData?.workLifeBalance);
-    const jobStabilityExists = Boolean(jobSatisfactionData?.jobStability);
+    const workLifeBalanceExists = Boolean(workLifeBalanceData?.workLifeBalance);
+    const jobStabilityExists = Boolean(jobStabilityData?.jobStability);
 
     if (!hasProfessionalTitle) {
         return null;
@@ -130,7 +139,7 @@ const AiInsightsWidgets: React.FC<AiInsightsWidgetsProps> = ({}) => {
 
                         <div className="h-[1px] w-full bg-grayscale-200" />
 
-                        {workLifeBalanceExists && jobStabilityExists && (
+                        {(workLifeBalanceExists || jobStabilityExists) && (
                             <>
                                 <AiInsightsQualitativeFactorsBox
                                     professionalTitle={professionalTitle}
