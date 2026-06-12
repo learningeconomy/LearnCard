@@ -7,6 +7,7 @@
     "module": "./dist/encryption-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/encryption-plugin.esm.js"

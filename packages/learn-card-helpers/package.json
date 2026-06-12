@@ -7,6 +7,7 @@
     "module": "./dist/helpers.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/helpers.d.ts",
                 "default": "./dist/helpers.esm.js"

@@ -2,17 +2,30 @@
     "name": "learncard-monorepo",
     "private": true,
     "version": "1.0.1",
+    "workspaces": [
+        "apps/*",
+        "reference",
+        "examples/*",
+        "examples/app-store-apps/*",
+        "packages/*",
+        "packages/learn-card-network/*",
+        "packages/plugins/*",
+        "scripts/siwa-migration",
+        "services/*",
+        "services/learn-card-network/*",
+        "tests/*",
+        "tools/executors/workspace/*"
+    ],
     "repository": {
         "type": "git",
         "url": "https://github.com/learningeconomy/LearnCard"
     },
     "scripts": {
-        "preinstall": "npx only-allow pnpm",
         "prepare": "husky install",
         "lint:staged": "lint-staged",
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
         "test:e2e": "nx run e2e:test:e2e",
-        "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test",
+        "run-network-tests": "nx run network-brain-service:build && bun run --cwd services/learn-card-network/brain-service test",
         "validate-packages": "node scripts/validate-packages.mjs",
         "env:pull": "bash scripts/pull-env.sh",
         "env:backup": "bash scripts/backup-env.sh",
@@ -47,8 +60,8 @@
         "prettier": "^2.8.4",
         "prettier-plugin-astro": "^0.5.5",
         "publint": "^0.3.21",
+        "shx": "^0.3.4",
         "ts-jest": "^29.0.5",
-        "tslib": "^2.5.0",
         "vite-tsconfig-paths": "^4.3.2",
         "vitest": "^1.4.0"
     },
@@ -76,28 +89,26 @@
         "zod": "4.1.13",
         "zod-openapi": "5.4.5"
     },
-    "pnpm": {
-        "overrides": {
-            "fastify": "5.7.2",
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "typescript": "5.6.2",
-            "uint8arrays": "^3.0.0",
-            "serverless": "3.40.0",
-            "zod": "4.1.13",
-            "astro>zod": "3.25.76",
-            "zod-openapi": "5.4.5",
-            "trpc-to-openapi": "3.1.0",
-            "@ceramicnetwork/streamid": "2.7.0",
-            "@ionic/react": "8.7.2",
-            "@ionic/react-router": "8.7.2",
-            "history": "4.10.1",
-            "react-router": "5.3.3",
-            "react-router-dom": "5.3.3",
-            "@types/minimatch": "5.1.2"
-        }
+    "overrides": {
+        "fastify": "5.7.2",
+        "pvutils": "1.0.17",
+        "did-jwt": "5.9.0",
+        "typescript": "5.6.2",
+        "uint8arrays": "^3.0.0",
+        "serverless": "3.40.0",
+        "zod": "4.1.13",
+        "astro>zod": "3.25.76",
+        "zod-openapi": "5.4.5",
+        "trpc-to-openapi": "3.1.0",
+        "@ceramicnetwork/streamid": "2.7.0",
+        "@ionic/react": "8.7.2",
+        "@ionic/react-router": "8.7.2",
+        "history": "4.10.1",
+        "react-router": "5.3.3",
+        "react-router-dom": "5.3.3",
+        "@types/minimatch": "5.1.2"
     },
-    "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee",
+    "packageManager": "bun@1.3.14",
     "lint-staged": {
         "*.{ts,tsx,js,jsx,json,md,yml,yaml,css,html}": [
             "prettier --write"

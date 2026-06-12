@@ -36,5 +36,14 @@
         "zod": "^3.23.8"
     },
     "types": "./dist/index.d.ts",
-    "sideEffects": false
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/credential-library.esm.js",
+            "require": "./dist/index.js",
+            "default": "./dist/credential-library.esm.js"
+        }
+    }
 }

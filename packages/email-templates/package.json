@@ -36,5 +36,14 @@
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
-    "sideEffects": false
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js",
+            "default": "./dist/index.js"
+        }
+    }
 }

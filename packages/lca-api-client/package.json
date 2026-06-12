@@ -5,6 +5,9 @@
     "main": "dist/index.js",
     "module": "./dist/lca-api-client.esm.js",
     "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json"
     },
@@ -32,5 +35,14 @@
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
-    "sideEffects": false
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/lca-api-client.esm.js",
+            "require": "./dist/index.js",
+            "default": "./dist/lca-api-client.esm.js"
+        }
+    }
 }

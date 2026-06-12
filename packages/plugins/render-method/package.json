@@ -7,6 +7,7 @@
     "module": "./dist/render-method-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/render-method-plugin.esm.js"

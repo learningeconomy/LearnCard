@@ -7,6 +7,7 @@
     "module": "./dist/didkit-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/didkit-plugin.esm.js"
@@ -16,8 +17,14 @@
                 "default": "./dist/index.cjs"
             }
         },
-        "./dist/didkit_wasm_bg.wasm": "./dist/didkit_wasm_bg.wasm",
-        "./dist/didkit/didkit_wasm_bg.wasm": "./dist/didkit/didkit_wasm_bg.wasm"
+        "./dist/didkit_wasm_bg.wasm": {
+            "development": "./src/didkit/pkg/didkit_wasm_bg.wasm",
+            "default": "./dist/didkit_wasm_bg.wasm"
+        },
+        "./dist/didkit/didkit_wasm_bg.wasm": {
+            "development": "./src/didkit/pkg/didkit_wasm_bg.wasm",
+            "default": "./dist/didkit/didkit_wasm_bg.wasm"
+        }
     },
     "files": [
         "dist"
