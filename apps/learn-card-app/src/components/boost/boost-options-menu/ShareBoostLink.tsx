@@ -47,6 +47,7 @@ type ShareBoostLinkProps = {
     onBackButtonClick?: () => void;
     hideLinkedIn?: boolean;
     isEndorsementRequest?: boolean;
+    compact?: boolean;
 };
 
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
@@ -58,6 +59,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     onBackButtonClick,
     hideLinkedIn = false,
     isEndorsementRequest = false,
+    compact = false,
 }) => {
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
@@ -224,6 +226,23 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
         return linkedInUrl;
     };
+
+    if (compact) {
+        return (
+            <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8">
+                <div className="flex h-[50px] w-[50px] items-center justify-center">
+                    {isLinkLoading || !shareLink ? (
+                        <IonSpinner name="crescent" className="h-5 w-5 text-grayscale-600" />
+                    ) : (
+                        <QRCodeSVG value={shareLink} size={50} />
+                    )}
+                </div>
+                <div className="absolute bottom-[5px] left-1/2 -translate-x-1/2">
+                    <CredentialVerificationDisplay credential={cred} iconClassName="w-6 h-6" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

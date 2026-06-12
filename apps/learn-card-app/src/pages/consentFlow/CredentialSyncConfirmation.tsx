@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-sync-confirmation');
 
 import { useModal, useToast, ToastTypeEnum, useCurrentUser, ModalTypes } from 'learn-card-base';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
@@ -69,7 +71,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                 presentToast(`Something went wrong: ${e.message}`, {
                     type: ToastTypeEnum.Error,
                 });
-                console.error(e);
+                log.error(e);
                 setSyncState(SyncStateEnum.error);
             }
         });

@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-insights-learning-pathways');
 
 import { m } from '../../paraglide/messages.js';
 
@@ -52,7 +54,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                         try {
                             return await resolveCredential(uri);
                         } catch (e) {
-                            console.warn('Failed to resolve pathway credential:', uri, e);
+                            log.warn('Failed to resolve pathway credential:', uri, e);
                             return undefined;
                         }
                     })
@@ -86,7 +88,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                     );
                                     topicUri = topic?.uri;
                                 } catch (e) {
-                                    console.warn('Failed to fetch familial boosts for pathway', e);
+                                    log.warn('Failed to fetch familial boosts for pathway', e);
                                 }
                             }
 
@@ -106,7 +108,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
 
                 if (!isCancelled) setLearningPathwaysData(items);
             } catch (e) {
-                console.warn('Error fetching suggested pathways', e);
+                log.warn('Error fetching suggested pathways', e);
                 if (!isCancelled) setLearningPathwaysData([]);
             }
         };
@@ -194,7 +196,9 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px]">
             <div className="w-full flex items-center justify-start">
                 <AiPathwaysIconWithShape className="w-[40px] h-[40px]" />
-                <h2 className="text-xl text-grayscale-800 font-notoSans">{m['aiInsights.learningPathways']()}</h2>
+                <h2 className="text-xl text-grayscale-800 font-notoSans">
+                    {m['aiInsights.learningPathways']()}
+                </h2>
             </div>
             {learningPathwaysData?.map(
                 ({ title, description, skills, topicUri, pathwayUri }, index) => {

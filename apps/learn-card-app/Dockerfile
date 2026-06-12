@@ -54,6 +54,7 @@ COPY packages/plugins/ler-rs/package.json packages/plugins/ler-rs/
 COPY packages/plugins/open-badge-v2/package.json packages/plugins/open-badge-v2/
 COPY packages/plugins/openid4vc/package.json packages/plugins/openid4vc/
 COPY packages/plugins/render-method/package.json packages/plugins/render-method/
+COPY packages/plugins/sd-jwt-vc/package.json packages/plugins/sd-jwt-vc/
 COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
@@ -61,6 +62,7 @@ COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY packages/learn-card-embed-sdk/package.json packages/learn-card-embed-sdk/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 COPY packages/email-templates/package.json packages/email-templates/
+COPY packages/credential-library/package.json packages/credential-library/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 # Install dependencies - done before copying source for caching
@@ -100,6 +102,7 @@ COPY packages/plugins/ler-rs packages/plugins/ler-rs
 COPY packages/plugins/open-badge-v2 packages/plugins/open-badge-v2
 COPY packages/plugins/openid4vc packages/plugins/openid4vc
 COPY packages/plugins/render-method packages/plugins/render-method
+COPY packages/plugins/sd-jwt-vc packages/plugins/sd-jwt-vc
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
@@ -107,6 +110,7 @@ COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 COPY packages/sss-key-manager packages/sss-key-manager
 COPY packages/email-templates packages/email-templates
+COPY packages/credential-library packages/credential-library
 COPY apps/learn-card-app apps/learn-card-app
 
 RUN rm -rf node_modules/.cache/nx

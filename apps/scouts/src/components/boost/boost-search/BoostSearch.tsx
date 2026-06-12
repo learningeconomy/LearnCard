@@ -22,6 +22,8 @@ import HourGlass from '../../../assets/lotties/hourglass.json';
 import boostSearchStore from '../../../stores/boostSearchStore';
 import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../pages/troop/TroopPageMembersBox';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-search');
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -108,7 +110,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             setConnections(connections);
             setLoading(false);
         } catch (e) {
-            console.log('getConnections::error', e);
+            log.debug('getConnections::error', e);
             setLoading(false);
         }
     };

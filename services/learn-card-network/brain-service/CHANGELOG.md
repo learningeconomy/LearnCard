@@ -1,5 +1,87 @@
 # @learncard/network-brain-service
 
+## 3.16.2
+
+### Patch Changes
+
+-   [#1283](https://github.com/learningeconomy/LearnCard/pull/1283) [`4bf986418f6477a7659faa348307ae7af199182a`](https://github.com/learningeconomy/LearnCard/commit/4bf986418f6477a7659faa348307ae7af199182a) Thanks [@smurflo2](https://github.com/smurflo2)! - Add commands for seeding skill-frameworks (locally + staging)
+
+-   [#1271](https://github.com/learningeconomy/LearnCard/pull/1271) [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1862] FE: Revoke/suspend/unsuspend issued credentials followup part 1
+
+-   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    -   @learncard/helpers@1.3.4
+    -   @learncard/types@5.17.2
+    -   @learncard/core@9.4.22
+    -   @learncard/crypto-plugin@1.1.22
+    -   @learncard/did-web-plugin@1.1.22
+    -   @learncard/didkey-plugin@1.1.22
+    -   @learncard/didkit-plugin@1.9.2
+    -   @learncard/didkit-plugin-node@0.2.20
+    -   @learncard/encryption-plugin@1.1.22
+    -   @learncard/learn-card-plugin@1.2.22
+    -   @learncard/vc-plugin@1.5.2
+    -   @learncard/vc-templates-plugin@1.1.22
+    -   @learncard/dynamic-loader-plugin@1.1.22
+    -   @learncard/expiration-plugin@1.2.22
+
+## 3.16.1
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/crypto-plugin@1.1.21
+    -   @learncard/did-web-plugin@1.1.21
+    -   @learncard/didkey-plugin@1.1.21
+    -   @learncard/didkit-plugin@1.9.1
+    -   @learncard/dynamic-loader-plugin@1.1.21
+    -   @learncard/encryption-plugin@1.1.21
+    -   @learncard/expiration-plugin@1.2.21
+    -   @learncard/helpers@1.3.3
+    -   @learncard/learn-card-plugin@1.2.21
+    -   @learncard/types@5.17.1
+    -   @learncard/vc-templates-plugin@1.1.21
+    -   @learncard/vc-plugin@1.5.1
+    -   @learncard/didkit-plugin-node@0.2.19
+    -   @learncard/core@9.4.21
+
+## 3.16.0
+
+### Minor Changes
+
+-   [#1269](https://github.com/learningeconomy/LearnCard/pull/1269) [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - feat: [LC-1798] Holder continuity export, restore, and metadata
+
+    Adds a new `@learncard/holder-continuity` package for creating encrypted holder continuity bundles, reading them back, importing credentials into a fresh wallet, and restoring the original wallet directly from the exported private-key seed.
+
+    Updates `@learncard/cli` to consume the new package and expose REPL helpers for export, import, and restore.
+
+    Adds holder export metadata types, an authenticated brain-service route, and a network plugin method for exporting consent records and transaction history without exposing credential payloads or key material from the service.
+
+    Adds bounded status-list fetching, optional verify-before-import support, bundle size guards, and capped holder metadata pagination.
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3), [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/types@5.17.0
+    -   @learncard/didkit-plugin@1.9.0
+    -   @learncard/vc-plugin@1.5.0
+    -   @learncard/core@9.4.20
+    -   @learncard/did-web-plugin@1.1.20
+    -   @learncard/didkey-plugin@1.1.20
+    -   @learncard/didkit-plugin-node@0.2.18
+    -   @learncard/encryption-plugin@1.1.20
+    -   @learncard/learn-card-plugin@1.2.20
+    -   @learncard/vc-templates-plugin@1.1.20
+    -   @learncard/crypto-plugin@1.1.20
+    -   @learncard/dynamic-loader-plugin@1.1.20
+    -   @learncard/expiration-plugin@1.2.20
+
+## 3.15.2
+
+### Patch Changes
+
+-   [#1260](https://github.com/learningeconomy/LearnCard/pull/1260) [`8014ca6408ac30f9c356f3978cbbf9c3174b8e1d`](https://github.com/learningeconomy/LearnCard/commit/8014ca6408ac30f9c356f3978cbbf9c3174b8e1d) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for multiple global skills frameworks (specifically Pathsmith for now)
+
 ## 3.15.1
 
 ### Patch Changes

@@ -1,12 +1,13 @@
 {
     "name": "@learncard/cli",
-    "version": "3.3.177",
+    "version": "3.4.2",
     "description": "Command Line Interface for LearnCard",
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
         "start": "rollup -c && node --enable-source-maps dist/index.js",
-        "build": "rollup -c"
+        "build": "rollup -c",
+        "test": "vitest run"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
@@ -17,9 +18,10 @@
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/ler-rs-plugin": "workspace:*",
         "@learncard/linked-claims-plugin": "workspace:*",
-        "@learncard/render-method-plugin": "workspace:*",
         "@learncard/open-badge-v2-plugin": "workspace:*",
+        "@learncard/render-method-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
+        "@learncard/holder-continuity": "workspace:*",
         "@learncard/types": "workspace:*",
         "@rollup/plugin-json": "^4.1.0",
         "clipboardy": "^4.0.0",
@@ -35,7 +37,8 @@
         "@types/figlet": "^1.5.4",
         "@types/node": "^18.0.0",
         "nodemon": "^2.0.16",
-        "ts-node": "^10.8.1"
+        "ts-node": "^10.8.1",
+        "vitest": "^1.6.0"
     },
     "repository": {
         "type": "git",

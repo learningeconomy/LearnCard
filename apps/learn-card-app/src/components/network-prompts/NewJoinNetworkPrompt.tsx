@@ -4,6 +4,8 @@ import { auth } from '../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { z } from 'zod';
 import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('new-join-network-prompt');
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import {
@@ -187,7 +189,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             queryClient,
                         });
                     } catch (consentErr) {
-                        console.warn('Network consent error:', consentErr);
+                        log.warn('Network consent error:', consentErr);
                     }
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
@@ -198,7 +200,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     setIsCreateLoading(false);
                 }
             } catch (err) {
-                console.log('createProfile::error', err);
+                log.info('createProfile::error', err);
                 setError(err?.message);
                 setIsLoading(false);
                 setIsCreateLoading(false);
@@ -215,7 +217,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 image: photo,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
-            console.log('updatedProfile::res', updatedProfile);
+            log.info('updatedProfile::res', updatedProfile);
         } else {
             await handleJoinLearnCardNetwork();
         }
@@ -278,7 +280,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.info('updateProfile::error', error);
                 }
             }
         }

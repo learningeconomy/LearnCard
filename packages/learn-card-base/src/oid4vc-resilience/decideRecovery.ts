@@ -43,6 +43,7 @@ const STRUCTURED_SIGNER_FAILURES: readonly StructuredSignerFailurePattern[] = [
     { errorName: 'VciError', code: 'proof_signing_failed' },
     { errorName: 'VpSubmitError', statusRange: [500, 599] },
     { bodyError: 'invalid_proof' },
+    { bodyError: 'invalid_credential_request' },
 ];
 
 const matchesStructuredSignerFailure = (raw: unknown): boolean => {
@@ -152,10 +153,7 @@ export const extractErrorMessage = (raw: unknown): string => {
  * didn't recognize the shape" from "we tried and exhausted the
  * fallback chain."
  */
-export const isSignerResolutionFailure = (
-    friendly: FriendlyErrorInfo,
-    raw: unknown
-): boolean => {
+export const isSignerResolutionFailure = (friendly: FriendlyErrorInfo, raw: unknown): boolean => {
     if (friendly.kind !== 'wallet' && friendly.kind !== 'request_invalid') return false;
     if (matchesStructuredSignerFailure(raw)) return true;
     const message = extractErrorMessage(raw);

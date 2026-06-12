@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.2.10",
+    "version": "1.2.13",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -74,7 +74,7 @@
         "openai": "^4.55.7",
         "postmark": "^4.0.5",
         "trpc-to-openapi": "^3.1.0",
-        "uuid": "^9.0.0"
+        "uuid": "^14.0.0"
     },
     "repository": {
         "type": "git",

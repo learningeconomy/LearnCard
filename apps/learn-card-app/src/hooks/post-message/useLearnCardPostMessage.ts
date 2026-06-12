@@ -1,5 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import type { AppEvent, SendCredentialEvent } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-learn-card-post-message');
 
 import sdkActivityStore from '../../stores/sdkActivityStore';
 
@@ -250,20 +252,20 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             // ================================================================
 
             if (debug) {
-                //console.log('[LearnCard PostMessage] Received message:', event);
+                //log.info('[LearnCard PostMessage] Received message:', event);
             }
 
             // Validate message structure and protocol
             if (!isValidLearnCardMessage(event)) {
                 //if (debug) {
-                //    console.log('[LearnCard PostMessage] Invalid message format, ignoring');
+                //    log.info('[LearnCard PostMessage] Invalid message format, ignoring');
                 //}
                 return;
             }
 
             // CRITICAL SECURITY: Check origin
             if (!isTrustedOrigin(event.origin, trustedOrigins)) {
-                console.warn(
+                log.warn(
                     `[LearnCard PostMessage] Rejected message from untrusted origin: ${event.origin}`
                 );
                 return;
@@ -272,7 +274,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             const { action, requestId, payload } = event.data;
 
             if (debug) {
-                console.log(
+                log.info(
                     `[LearnCard PostMessage] Processing action: ${action}, requestId: ${requestId}`
                 );
             }
@@ -284,7 +286,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             const handler = handlersRef.current[action];
 
             if (!handler) {
-                console.warn(`[LearnCard PostMessage] No handler registered for action: ${action}`);
+                log.warn(`[LearnCard PostMessage] No handler registered for action: ${action}`);
                 sendResponse(event.source!, event.origin, requestId, 'ERROR', undefined, {
                     code: 'UNKNOWN_ERROR',
                     message: `No handler registered for action: ${action}`,
@@ -308,7 +310,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
 
                 if (result.success) {
                     if (debug) {
-                        console.log(
+                        log.info(
                             `[LearnCard PostMessage] Action ${action} succeeded:`,
                             result.data
                         );
@@ -316,10 +318,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     sendResponse(event.source!, event.origin, requestId, 'SUCCESS', result.data);
                 } else {
                     if (debug) {
-                        console.log(
-                            `[LearnCard PostMessage] Action ${action} failed:`,
-                            result.error
-                        );
+                        log.info(`[LearnCard PostMessage] Action ${action} failed:`, result.error);
                     }
                     sendResponse(
                         event.source!,
@@ -331,7 +330,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     );
                 }
             } catch (error) {
-                console.error(`[LearnCard PostMessage] Error handling action ${action}:`, error);
+                log.error(`[LearnCard PostMessage] Error handling action ${action}:`, error);
                 sendResponse(event.source!, event.origin, requestId, 'ERROR', undefined, {
                     code: 'UNKNOWN_ERROR',
                     message: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -352,14 +351,14 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
 
     useEffect(() => {
         if (debug) {
-            console.log('[LearnCard PostMessage] Registering message listener');
+            log.info('[LearnCard PostMessage] Registering message listener');
         }
 
         window.addEventListener('message', handleMessage);
 
         return () => {
             if (debug) {
-                console.log('[LearnCard PostMessage] Unregistering message listener');
+                log.info('[LearnCard PostMessage] Unregistering message listener');
             }
             window.removeEventListener('message', handleMessage);
         };

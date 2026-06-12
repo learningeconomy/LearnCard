@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-flow-code-tab');
 /**
  * ConsentFlowCodeTab - Code snippets & configuration for ConsentFlow integrations
  *
@@ -53,7 +55,12 @@ const Section: React.FC<{
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors"
             >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-opacity-10 ${iconColor.replace('text-', 'bg-')}`}>
+                <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center bg-opacity-10 ${iconColor.replace(
+                        'text-',
+                        'bg-'
+                    )}`}
+                >
                     <Icon className={`w-4 h-4 ${iconColor}`} />
                 </div>
 
@@ -63,12 +70,19 @@ const Section: React.FC<{
                 </div>
 
                 <svg
-                    className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-gray-400 transition-transform ${
+                        isOpen ? 'rotate-180' : ''
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                 >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                    />
                 </svg>
             </button>
 
@@ -90,11 +104,13 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
 
     // Pull saved config from guide state
     const guideState = integration?.guideState as GuideState | undefined;
-    const savedConfig = guideState?.config?.consentFlowConfig as {
-        contractUri?: string;
-        redirectUrl?: string;
-        apiTokenGrantId?: string;
-    } | undefined;
+    const savedConfig = guideState?.config?.consentFlowConfig as
+        | {
+              contractUri?: string;
+              redirectUrl?: string;
+              apiTokenGrantId?: string;
+          }
+        | undefined;
 
     const contractUri = savedConfig?.contractUri || '';
     const redirectUrl = savedConfig?.redirectUrl || '';
@@ -121,15 +137,25 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
         }
     };
 
-    const CopyButton: React.FC<{ text: string; id: string; label?: string }> = ({ text, id, label }) => (
+    const CopyButton: React.FC<{ text: string; id: string; label?: string }> = ({
+        text,
+        id,
+        label,
+    }) => (
         <button
             onClick={() => handleCopy(text, id)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
         >
             {copiedId === id ? (
-                <><Check className="w-3 h-3 text-emerald-500" />{label || 'Copied!'}</>
+                <>
+                    <Check className="w-3 h-3 text-emerald-500" />
+                    {label || 'Copied!'}
+                </>
             ) : (
-                <><Copy className="w-3 h-3" />{label || 'Copy'}</>
+                <>
+                    <Copy className="w-3 h-3" />
+                    {label || 'Copy'}
+                </>
             )}
         </button>
     );
@@ -153,7 +179,9 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-500 font-medium">Live URL from your configuration:</p>
+                            <p className="text-xs text-gray-500 font-medium">
+                                Live URL from your configuration:
+                            </p>
                             <CopyButton text={consentUrl} id="consent-url" />
                         </div>
 
@@ -174,7 +202,8 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Not configured:</strong> Complete the Build guide to set your contract URI and callback URL.
+                            <strong>Not configured:</strong> Complete the Build guide to set your
+                            contract URI and callback URL.
                         </p>
                     </div>
                 )}
@@ -185,12 +214,18 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                         typescript: `// Redirect the user to LearnCard's consent screen
 const consentUrl = new URL('${getAppBaseUrl()}/consent-flow');
 consentUrl.searchParams.set('uri', '${contractUri || 'YOUR_CONTRACT_URI'}');
-consentUrl.searchParams.set('returnTo', '${redirectUrl || 'https://your-app.com/api/learncard/callback'}');
+consentUrl.searchParams.set('returnTo', '${
+                            redirectUrl || 'https://your-app.com/api/learncard/callback'
+                        }');
 
 // Redirect (Express example)
 res.redirect(consentUrl.toString());`,
                         curl: `# Consent URL format:
-${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(contractUri || 'YOUR_CONTRACT_URI')}&returnTo=${encodeURIComponent(redirectUrl || 'https://your-app.com/callback')}`,
+${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
+                            contractUri || 'YOUR_CONTRACT_URI'
+                        )}&returnTo=${encodeURIComponent(
+                            redirectUrl || 'https://your-app.com/callback'
+                        )}`,
                     }}
                 />
             </Section>
@@ -206,8 +241,10 @@ ${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(contractUri || 'YOUR_CO
                     <div className="flex gap-2">
                         <Info className="w-4 h-4 text-violet-600 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-violet-800">
-                            After consent, LearnCard redirects to your <code className="bg-violet-100 px-1 rounded">returnTo</code> URL
-                            with <code className="bg-violet-100 px-1 rounded">did</code> and <code className="bg-violet-100 px-1 rounded">vp</code> query parameters.
+                            After consent, LearnCard redirects to your{' '}
+                            <code className="bg-violet-100 px-1 rounded">returnTo</code> URL with{' '}
+                            <code className="bg-violet-100 px-1 rounded">did</code> and{' '}
+                            <code className="bg-violet-100 px-1 rounded">vp</code> query parameters.
                         </p>
                     </div>
                 </div>
@@ -293,10 +330,12 @@ const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: userDID,
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
-    templateUri: '${templateUri || 'YOUR_TEMPLATE_URI'}',${integration.id ? `\n    integrationId: '${integration.id}',` : ''}
+    templateUri: '${templateUri || 'YOUR_TEMPLATE_URI'}',${
+                            integration.id ? `\n    integrationId: '${integration.id}',` : ''
+                        }
 });
 
-console.log('Credential sent:', result.credentialUri);`,
+log.info('Credential sent:', result.credentialUri);`,
                         curl: `curl -X POST 'https://api.learncard.com/trpc/boost.send' \\
   -H 'Authorization: Bearer YOUR_API_TOKEN' \\
   -H 'Content-Type: application/json' \\
@@ -304,7 +343,9 @@ console.log('Credential sent:', result.credentialUri);`,
     "type": "boost",
     "recipient": "did:web:...",
     "contractUri": "${contractUri || 'YOUR_CONTRACT_URI'}",
-    "templateUri": "${templateUri || 'YOUR_TEMPLATE_URI'}"${integration.id ? `,\n    "integrationId": "${integration.id}"` : ''}
+    "templateUri": "${templateUri || 'YOUR_TEMPLATE_URI'}"${
+                            integration.id ? `,\n    "integrationId": "${integration.id}"` : ''
+                        }
   }'`,
                     }}
                 />
@@ -312,15 +353,28 @@ console.log('Credential sent:', result.credentialUri);`,
                 {templates.length > 0 && (
                     <div className="space-y-2">
                         <p className="text-xs text-gray-500 font-medium">Your Template URIs:</p>
-                        {templates.filter(t => t.boostUri).map(t => (
-                            <div key={t.id} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg">
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-gray-700 truncate">{t.name}</p>
-                                    <code className="text-xs text-gray-500 truncate block">{t.boostUri}</code>
+                        {templates
+                            .filter(t => t.boostUri)
+                            .map(t => (
+                                <div
+                                    key={t.id}
+                                    className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-medium text-gray-700 truncate">
+                                            {t.name}
+                                        </p>
+                                        <code className="text-xs text-gray-500 truncate block">
+                                            {t.boostUri}
+                                        </code>
+                                    </div>
+                                    <CopyButton
+                                        text={t.boostUri!}
+                                        id={`uri-${t.id}`}
+                                        label="Copy URI"
+                                    />
                                 </div>
-                                <CopyButton text={t.boostUri!} id={`uri-${t.id}`} label="Copy URI" />
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 )}
             </Section>
@@ -342,10 +396,10 @@ const consentData = await learnCard.invoke.getConsentFlowData(
     { limit: 50 }
 );
 
-console.log('Consented users:', consentData.records.length);
+log.info('Consented users:', consentData.records.length);
 consentData.records.forEach(record => {
-    console.log('  DID:', record.did);
-    console.log('  Consented at:', record.date);
+    log.info('  DID:', record.did);
+    log.info('  Consented at:', record.date);
 });`,
                     }}
                 />
@@ -359,7 +413,7 @@ const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
     { limit: 10 }
 );
 
-console.log('User consent records:', userConsentData.records);`,
+log.info('User consent records:', userConsentData.records);`,
                     }}
                 />
             </Section>
@@ -376,7 +430,9 @@ console.log('User consent records:', userConsentData.records);`,
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
                             <p className="text-xs text-gray-500">Integration ID</p>
-                            <code className="text-xs text-gray-700 break-all">{integration.id}</code>
+                            <code className="text-xs text-gray-700 break-all">
+                                {integration.id}
+                            </code>
                         </div>
                         <CopyButton text={integration.id} id="config-integration-id" />
                     </div>
@@ -385,7 +441,9 @@ console.log('User consent records:', userConsentData.records);`,
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
                             <p className="text-xs text-gray-500">Contract URI</p>
-                            <code className="text-xs text-gray-700 break-all">{contractUri || '(not set)'}</code>
+                            <code className="text-xs text-gray-700 break-all">
+                                {contractUri || '(not set)'}
+                            </code>
                         </div>
                         {contractUri && <CopyButton text={contractUri} id="config-contract-uri" />}
                     </div>
@@ -412,7 +470,7 @@ console.log('User consent records:', userConsentData.records);`,
                                 <input
                                     type="url"
                                     value={callbackUrlDraft}
-                                    onChange={(e) => setCallbackUrlDraft(e.target.value)}
+                                    onChange={e => setCallbackUrlDraft(e.target.value)}
                                     placeholder="https://your-app.com/api/learncard/callback"
                                     className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                                     autoFocus
@@ -421,9 +479,12 @@ console.log('User consent records:', userConsentData.records);`,
                                     <button
                                         onClick={async () => {
                                             try {
-                                                const currentGuideState = (integration.guideState || {}) as Record<string, any>;
-                                                const currentConfig = currentGuideState.config || {};
-                                                const currentCfConfig = currentConfig.consentFlowConfig || {};
+                                                const currentGuideState = (integration.guideState ||
+                                                    {}) as Record<string, any>;
+                                                const currentConfig =
+                                                    currentGuideState.config || {};
+                                                const currentCfConfig =
+                                                    currentConfig.consentFlowConfig || {};
 
                                                 await updateIntegration.mutateAsync({
                                                     id: integration.id,
@@ -441,9 +502,13 @@ console.log('User consent records:', userConsentData.records);`,
                                                     },
                                                 });
                                                 setEditingCallbackUrl(false);
-                                                presentToast('Callback URL updated', { type: ToastTypeEnum.Success });
+                                                presentToast('Callback URL updated', {
+                                                    type: ToastTypeEnum.Success,
+                                                });
                                             } catch (err) {
-                                                presentToast('Failed to update callback URL', { type: ToastTypeEnum.Error });
+                                                presentToast('Failed to update callback URL', {
+                                                    type: ToastTypeEnum.Error,
+                                                });
                                             }
                                         }}
                                         disabled={updateIntegration.isPending}
@@ -470,7 +535,9 @@ console.log('User consent records:', userConsentData.records);`,
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
                             <p className="text-xs text-gray-500">Templates</p>
-                            <code className="text-xs text-gray-700">{templates.filter(t => t.boostUri).length} saved</code>
+                            <code className="text-xs text-gray-700">
+                                {templates.filter(t => t.boostUri).length} saved
+                            </code>
                         </div>
                     </div>
                 </div>

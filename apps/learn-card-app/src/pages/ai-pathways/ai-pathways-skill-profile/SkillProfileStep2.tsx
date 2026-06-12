@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-profile-step2');
 
 import {
     TextInput,
@@ -91,8 +93,9 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
         saveIfChanged: saveWorkHistory,
         isSaving: workHistorySaving,
     } = useVerifiableData<SkillProfileWorkHistoryData>(SKILL_PROFILE_WORK_HISTORY_KEY, {
-        name: 'Work History Selections',
+        name: 'Work Experience Selections',
         description: 'Selected work experience credentials',
+        category: 'Work Experience',
     });
 
     // Pre-populate selected URIs from existing verifiable data
@@ -242,7 +245,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
             setExperiences([{ ...emptyExperience }]);
             setSelectedSkills([]);
         } catch (error) {
-            console.error('Failed to issue work history credential:', error);
+            log.error('Failed to issue work history credential:', error);
             presentToast(error instanceof Error ? error.message : 'An error occurred', {
                 type: ToastTypeEnum.Error,
                 title: 'Failed to add experience',

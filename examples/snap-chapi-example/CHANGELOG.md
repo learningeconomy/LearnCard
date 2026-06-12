@@ -1,5 +1,35 @@
 # @learncard/snap-chapi-example
 
+## 1.1.30
+
+### Patch Changes
+
+-   Updated dependencies [[`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`fd0cac0b78add9150cc5256a984188c32b6f4b2f`](https://github.com/learningeconomy/LearnCard/commit/fd0cac0b78add9150cc5256a984188c32b6f4b2f), [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    -   @learncard/react@2.10.0
+    -   @learncard/helpers@1.3.4
+    -   @learncard/core@9.4.22
+    -   @learncard/meta-mask-snap@1.0.118
+
+## 1.1.29
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/react@2.9.29
+    -   @learncard/core@9.4.21
+    -   @learncard/meta-mask-snap@1.0.117
+
+## 1.1.28
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/core@9.4.20
+    -   @learncard/react@2.9.28
+    -   @learncard/meta-mask-snap@1.0.116
+
 ## 1.1.27
 
 ### Patch Changes

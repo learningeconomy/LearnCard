@@ -75,14 +75,16 @@ const AppRouter: React.FC = () => {
     // Stable states where it's safe to render <Routes>:
     //   - walletReady                              → fully booted (show app)
     //   - state.status === 'idle'                  → genuinely logged out (show /login)
+    //   - state.status === 'needs_setup'           → login page can open onboarding
     //   - state.status === 'needs_recovery'        → coordinator overlays recovery modal
     //   - state.status === 'error'                 → coordinator overlays error UI
     // Everything else (`authenticating`, `authenticated`, `checking_key_status`,
-    // `needs_setup`, `needs_migration`, `deriving_key`, and the brief
+    // `needs_migration`, `deriving_key`, and the brief
     // `ready`-without-wallet window) is a transition we bridge with the loader.
     const initLoading = !(
         walletReady ||
         coordinatorState.status === 'idle' ||
+        coordinatorState.status === 'needs_setup' ||
         coordinatorState.status === 'needs_recovery' ||
         coordinatorState.status === 'error'
     );
@@ -97,6 +99,7 @@ const AppRouter: React.FC = () => {
         const ready =
             walletReady ||
             coordinatorState.status === 'idle' ||
+            coordinatorState.status === 'needs_setup' ||
             coordinatorState.status === 'needs_recovery' ||
             coordinatorState.status === 'error';
         if (ready) {
@@ -377,32 +380,42 @@ const AppRouter: React.FC = () => {
         handleBackfillConsent();
     }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled]);
 
-    if (initLoading) return <LoginLoadingPage />;
-
+    // NOTE: <Modals /> must stay mounted across the `initLoading` splash. During
+    // new-user key setup the coordinator transitions needs_setup → deriving_key →
+    // ready, flipping `initLoading` true for a moment. If <Modals /> were torn down
+    // (e.g. behind an early `return <LoginLoadingPage />`), any open modal — like the
+    // onboarding flow — would have its component instance destroyed and recreated,
+    // resetting its internal step state (bouncing the user back to the age gate).
+    // Keeping it as a persistent sibling of the loader/app content preserves the
+    // live modal instance across the transition.
     return (
         <LocaleProvider>
-        <GenericErrorBoundary>
-            <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                <IonSplitPane
-                    contentId="main"
-                    className={
-                        collapsed
-                            ? 'side-menu-split-pane-container-collapsed'
-                            : 'side-menu-split-pane-container-visible'
-                    }
-                >
-                    <GenericErrorBoundary>
-                        {isLoggedIn && !hideSideMenu && (
-                            <SideMenu branding={BrandingEnum.learncard} />
-                        )}
-                        <div id="main" className="w-full">
-                            <MobileNavBar />
-                        </div>
-                    </GenericErrorBoundary>
-                </IonSplitPane>
-            </div>
-            <Modals />
-        </GenericErrorBoundary>
+            <GenericErrorBoundary>
+                {initLoading ? (
+                    <LoginLoadingPage />
+                ) : (
+                    <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
+                        <IonSplitPane
+                            contentId="main"
+                            className={
+                                collapsed
+                                    ? 'side-menu-split-pane-container-collapsed'
+                                    : 'side-menu-split-pane-container-visible'
+                            }
+                        >
+                            <GenericErrorBoundary>
+                                {isLoggedIn && !hideSideMenu && (
+                                    <SideMenu branding={BrandingEnum.learncard} />
+                                )}
+                                <div id="main" className="w-full">
+                                    <MobileNavBar />
+                                </div>
+                            </GenericErrorBoundary>
+                        </IonSplitPane>
+                    </div>
+                )}
+                <Modals />
+            </GenericErrorBoundary>
         </LocaleProvider>
     );
 };

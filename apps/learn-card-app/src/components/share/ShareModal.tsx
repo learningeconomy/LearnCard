@@ -4,6 +4,8 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('share-modal');
 
 import { IonSpinner } from '@ionic/react';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -38,12 +40,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                 profileId: string;
                 expiresIn: number | null;
             } = await wallet?.invoke?.generateInvite(challenge, expiration);
-            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${generatedInvite?.challenge}&profileId=${generatedInvite?.profileId}`;
+            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${
+                generatedInvite?.challenge
+            }&profileId=${generatedInvite?.profileId}`;
             setInviteLink(_inviteLink);
             // Treat null as 0 for "never expire"
             setExpiresIn(generatedInvite?.expiresIn === null ? 0 : generatedInvite?.expiresIn);
         } catch (e) {
-            console.log('generateInvite::error', e);
+            log.info('generateInvite::error', e);
             presentToast(m['share.generateLinkFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -124,7 +128,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                     onClick={handleShare}
                     className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                 >
-                    {m['share.shareProfile']()} <CopyStack className="h-[30px] w-[30px] ms-2" version="2" />
+                    {m['share.shareProfile']()}{' '}
+                    <CopyStack className="h-[30px] w-[30px] ms-2" version="2" />
                 </button>
             </div>
 
@@ -145,7 +150,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
 
                     <div className="w-full flex items-center justify-start px-4 mt-4">
                         <p className="mr-1 font-poppins text-grayscale-700">
-                            {expiration === 0 ? m['share.link']() : m['share.linkExpires']({ time: '' })}
+                            {expiration === 0
+                                ? m['share.link']()
+                                : m['share.linkExpires']({ time: '' })}
                         </p>
                         <Select
                             value={expiration}

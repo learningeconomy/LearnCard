@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-integration-activity');
 
 import { useWallet } from 'learn-card-base';
 
@@ -31,6 +33,7 @@ export interface CredentialActivityRecord {
         profileId: string;
         displayName?: string;
     };
+    status?: 'active' | 'revoked' | 'suspended';
 }
 
 interface CredentialActivityStats {
@@ -194,9 +197,10 @@ export function useIntegrationActivity(
         integrationId?: string;
         listingId?: string;
         eventType?: CredentialEventType;
+        boostUri?: string;
     } = {}
 ): IntegrationActivityResult {
-    const { limit = 25, integrationId, listingId, eventType } = options;
+    const { limit = 25, integrationId, listingId, eventType, boostUri } = options;
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
@@ -238,18 +242,21 @@ export function useIntegrationActivity(
                     integrationId,
                     listingId,
                     eventType,
+                    boostUri,
                 });
 
                 // Fetch stats using unified API with integrationId/listingId for accurate per-integration/app stats
                 // When integrationId or listingId is provided, don't also filter by boostUris — it's redundant
                 // and excludes activities without a FOR_BOOST relationship (e.g. embed claims)
                 const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris:
-                        !integrationId && !listingId && boostUris.length > 0
-                            ? boostUris
-                            : undefined,
+                    boostUris: boostUri
+                        ? [boostUri]
+                        : !integrationId && !listingId && boostUris.length > 0
+                        ? boostUris
+                        : undefined,
                     integrationId,
                     listingId,
+                    boostUri,
                 });
 
                 if (cancelled) return;
@@ -283,7 +290,7 @@ export function useIntegrationActivity(
                 setError(null);
             } catch (err) {
                 if (cancelled) return;
-                console.error('[useIntegrationActivity] Failed to fetch activity:', err);
+                log.error('Failed to fetch activity', err);
                 setError(err instanceof Error ? err : new Error('Failed to fetch activity'));
                 setActivity([]);
             } finally {
@@ -298,7 +305,7 @@ export function useIntegrationActivity(
         return () => {
             cancelled = true;
         };
-    }, [boostUris.join(','), limit, integrationId, listingId, eventType, fetchKey]);
+    }, [boostUris.join(','), limit, integrationId, listingId, eventType, boostUri, fetchKey]);
 
     const refetch = useCallback(() => {
         setCursor(undefined);
@@ -320,6 +327,7 @@ export function useIntegrationActivity(
                 integrationId,
                 listingId,
                 eventType,
+                boostUri,
             });
 
             const records: CredentialActivityRecord[] = activityResult?.records || [];
@@ -330,12 +338,12 @@ export function useIntegrationActivity(
             setHasMore(apiHasMore);
             setCursor(nextCursor);
         } catch (err) {
-            console.error('[useIntegrationActivity] Failed to load more activity:', err);
+            log.error('Failed to load more activity', err);
             setError(err instanceof Error ? err : new Error('Failed to load more activity'));
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, hasMore, cursor, limit, integrationId, listingId, eventType]);
+    }, [isLoadingMore, hasMore, cursor, limit, integrationId, listingId, eventType, boostUri]);
 
     return { activity, isLoading, isLoadingMore, hasMore, error, refetch, loadMore, stats };
 }

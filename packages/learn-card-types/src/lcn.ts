@@ -343,6 +343,7 @@ export const BoostRecipientValidator = z.object({
     from: z.string(),
     received: z.string().optional(),
     uri: z.string().optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
@@ -357,6 +358,7 @@ export const BoostRecipientWithChildrenValidator = z.object({
     received: z.string().optional(),
     boostUris: z.array(z.string()),
     credentialUris: z.array(z.string()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type BoostRecipientWithChildrenInfo = z.infer<typeof BoostRecipientWithChildrenValidator>;
 
@@ -828,6 +830,28 @@ export const ConsentFlowTransactionValidator = z.object({
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
+export const HolderExportConsentRecordValidator = z.object({
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    contract: ConsentFlowContractDetailsValidator,
+    terms: ConsentFlowTermsValidator,
+    transactions: ConsentFlowTransactionValidator.array(),
+});
+export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
+
+export const HolderExportMetadataValidator = z.object({
+    consentRecords: HolderExportConsentRecordValidator.array(),
+    truncated: z.boolean().optional(),
+    warnings: z.string().array().optional(),
+    limits: z
+        .object({
+            maxConsentRecords: z.number(),
+            maxTransactionsPerConsentRecord: z.number(),
+        })
+        .optional(),
+});
+export type HolderExportMetadata = z.infer<typeof HolderExportMetadataValidator>;
+
 export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowTransactionValidator.array(),
 });
@@ -946,10 +970,7 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
     to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    from: z.union([
-        z.string(),
-        LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    ]),
+    from: z.union([z.string(), LCNProfileValidator.partial().and(z.object({ did: z.string() }))]),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.iso.datetime().optional(),
@@ -2121,6 +2142,7 @@ export const CredentialActivityValidator = z.object({
     integrationId: z.string().optional(),
     source: CredentialActivitySourceTypeValidator,
     metadata: z.record(z.string(), z.unknown()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
 

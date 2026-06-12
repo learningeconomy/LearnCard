@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('push-notifications-prompt');
 
 import { Capacitor } from '@capacitor/core';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
@@ -58,7 +60,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             const permissionState =
                                 await pushUtilities.getPushNotificationPermissionState();
 
-                            console.log({ permissionState });
+                            log.info({ permissionState });
 
                             if (permissionState === 'PENDING') {
                                 await pushUtilities.registerNotifications(async () => {
@@ -82,13 +84,13 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                                                 option: AndroidSettings.ApplicationDetails,
                                             });
                                         } else {
-                                            console.warn(
+                                            log.warn(
                                                 `Unable to open settings for platform: '${platform}`
                                             );
                                         }
                                     }
                                 } catch (err) {
-                                    console.error('Issue directing user to settings', err);
+                                    log.error('Issue directing user to settings', err);
                                 } finally {
                                     handleCloseModal();
                                     await pushUtilities.syncPushToken();

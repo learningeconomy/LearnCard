@@ -10,7 +10,10 @@ import {
 import { IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
-import { SKILL_PROFILE_PROFILE_KEY, SkillProfileProfileData } from './SkillProfileStep1';
+import {
+    SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
+    SkillProfileProfessionalTitleData,
+} from './SkillProfileStep1';
 import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
 import {
     useAnalytics,
@@ -27,6 +30,9 @@ type SkillProfileStep5Props = {
     handleNext: () => void;
     handleBack: () => void;
 };
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-profile-step5');
 
 const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handleBack }) => {
     const { presentToast } = useToast();
@@ -51,11 +57,11 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
-    const { data: profileData } = useVerifiableData<SkillProfileProfileData>(
-        SKILL_PROFILE_PROFILE_KEY,
+    const { data: profileData } = useVerifiableData<SkillProfileProfessionalTitleData>(
+        SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
         {
-            name: 'Professional Profile',
-            description: 'Professional title and experience level',
+            name: 'Professional Title',
+            description: 'Your current professional title',
         }
     );
 
@@ -67,7 +73,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 sasBoostSkills.map(
                     (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
                         id: s.id,
-                        frameworkId: s.frameworkId ?? globalSkillFrameworks[0]?.frameworkId ?? "",
+                        frameworkId: s.frameworkId ?? globalSkillFrameworks[0]?.frameworkId ?? '',
                         proficiency: s.proficiencyLevel,
                     })
                 )
@@ -122,7 +128,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
             handleNext();
         } catch (error: any) {
-            console.error('Error creating or updating skills:', error);
+            log.error('Error creating or updating skills:', error);
             presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
             });

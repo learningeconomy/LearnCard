@@ -1,14 +1,16 @@
 import React, { useMemo } from 'react';
-import moment from 'moment';
 import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
-import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
+import CredentialVerificationDisplay, {
+    getInfoFromCredential,
+} from '../CredentialBadge/CredentialVerificationDisplay';
+import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
+import { isDid, formatDidDisplayName } from '@learncard/react';
 import {
     getAchievementType,
     getAchievementTypeDisplayText,
-    getIssuanceDate,
+    getIssuer,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { VC } from '@learncard/types';
@@ -43,8 +45,6 @@ type BoostListItemProps = {
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
-const MAX_ISSUER_DATE_LENGTH = 26;
-const ELLIPSIS_CONFIG = { start: 15, end: 11 };
 
 const BoostListItem: React.FC<BoostListItemProps> = ({
     title,
@@ -73,11 +73,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         [achievementType, categoryType]
     );
 
-    const issuanceDate = useMemo(() => getIssuanceDate(credential), [credential]);
-    const issuanceDateDisplay = useMemo(
-        () => moment(issuanceDate).format('MM/DD/YY'),
-        [issuanceDate]
-    );
+    const issuanceDateDisplay = useMemo(() => {
+        const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
+            uppercaseDate: false,
+        });
+        return createdAt;
+    }, [credential]);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -105,14 +106,20 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         return baseColors;
     }, [branding]);
 
-    const issuerAndDateText = useMemo(() => {
-        const baseText = issuerName
-            ? `${issuerName} • ${issuanceDateDisplay}`
-            : issuanceDateDisplay;
-        return baseText.length > MAX_ISSUER_DATE_LENGTH
-            ? ellipsisMiddle(baseText, ELLIPSIS_CONFIG.start, ELLIPSIS_CONFIG.end)
-            : baseText;
-    }, [issuerName, issuanceDateDisplay]);
+    const issuerDid = useMemo(() => {
+        const issuer = getIssuer(credential);
+        const did = typeof issuer === 'string' ? issuer : issuer?.id;
+        return did && isDid(did) ? did : undefined;
+    }, [credential]);
+
+    const issuerNode: React.ReactNode = issuerName ? (
+        issuerName
+    ) : issuerDid ? (
+        <>
+            <span className="font-semibold text-grayscale-900">Digital ID:</span>{' '}
+            <span className="text-grayscale-500 underline">{formatDidDisplayName(issuerDid)}</span>
+        </>
+    ) : null;
 
     const backgroundColor = useMemo(
         () => (loading ? 'bg-white' : DEFAULT_BG_COLOR),
@@ -191,12 +198,13 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 </div>
             ) : (
                 <div className={`relative h-[40px] w-[40px] rounded-full bg-${subColor}`}>
-                    <img
+                    <BadgeThumbnailImg
                         src={
                             thumbImgSrc ||
                             (typeof credential?.image === 'string' && credential.image) ||
                             credential?.credentialSubject?.image ||
-                            credential?.boostCredential?.image
+                            credential?.boostCredential?.image ||
+                            ''
                         }
                         className="rounded-full object-cover h-full w-full"
                     />
@@ -232,22 +240,24 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         <h3 className="text-grayscale-900 font-semibold truncate w-full">
                             {title}
                         </h3>
-                        <span className="text-grayscale-800 font-normal">
+                        <span className="text-grayscale-500 font-normal">
                             {newItemIndicator} {boostTypeDisplayName}
                         </span>
                     </>
                 )}
 
-                <span className="text-grayscale-800 font-normal flex items-center truncate w-full">
+                <span className="text-grayscale-800 font-normal flex items-center w-full min-w-0">
                     {(isMediaDisplay || displayType !== DisplayTypeEnum.Media) && !managedBoost && (
                         <CredentialVerificationDisplay
                             managedBoost={managedBoost}
                             credential={credential}
-                            iconClassName="w-[20px] h-[20px] min-w-[20px] min-h-[20px] mr-1 z-50"
+                            iconClassName="w-[16px] h-[16px] min-w-[16px] min-h-[16px] mr-1 z-50"
                             unknownVerifierTitle={unknownVerifierTitle}
                         />
                     )}
-                    {issuerAndDateText}
+                    {issuerNode && <span className="truncate min-w-0">{issuerNode}</span>}
+                    {issuerNode && <span className="shrink-0 px-1.5 text-grayscale-400">•</span>}
+                    <span className="shrink-0 whitespace-nowrap">{issuanceDateDisplay}</span>
                 </span>
             </div>
 

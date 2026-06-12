@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger('share-boost.spec');
 
 test.describe('Share boost link', () => {
     test('Sharing boost link with someone', async ({ page }) => {
@@ -16,7 +18,7 @@ test.describe('Share boost link', () => {
         try {
             await page.waitForURL('/wallet');
         } catch (error) {
-            console.error('The page often crashes here when trying to issue the VC =(', error);
+            log.error('The page often crashes here when trying to issue the VC =(', error);
             return;
         }
         await page.getByRole('button', { name: /social badges/i }).click();

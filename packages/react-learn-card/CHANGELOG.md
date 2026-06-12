@@ -1,5 +1,36 @@
 # @welibraryos/react-learn-card
 
+## 2.10.0
+
+### Minor Changes
+
+-   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add useCredentialFormat + useParsedSdJwtVc hooks and credentialFormat.helpers (humanizeClaimLabel, formatClaimValue) for use by format-aware widgets in consumer apps. The W3C projection continues to drive existing display card routing; consumers can layer format-aware widgets where SD-JWT-VC-specific UX is needed (e.g., line-item disclosed claims).
+
+### Patch Changes
+
+-   [#1276](https://github.com/learningeconomy/LearnCard/pull/1276) [`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1869] - Implement CLR badge card
+
+-   [#1272](https://github.com/learningeconomy/LearnCard/pull/1272) [`fd0cac0b78add9150cc5256a984188c32b6f4b2f`](https://github.com/learningeconomy/LearnCard/commit/fd0cac0b78add9150cc5256a984188c32b6f4b2f) Thanks [@goblincore](https://github.com/goblincore)! - LC-1877: Polish VC broken states — clamp long issuer names to 2 lines, show graceful placeholders when badge/issuer/recipient images fail to load, and add a neutral backing behind transparent logos so badge backgrounds no longer bleed through.
+
+-   [#1292](https://github.com/learningeconomy/LearnCard/pull/1292) [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74) Thanks [@Custard7](https://github.com/Custard7)! - Hide unknown issuer
+
+-   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
+    -   @learncard/init@2.4.0
+
+## 2.9.29
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/init@2.3.21
+
+## 2.9.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.3.20
+
 ## 2.9.27
 
 ### Patch Changes

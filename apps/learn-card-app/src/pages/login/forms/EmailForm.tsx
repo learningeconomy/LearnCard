@@ -6,6 +6,8 @@ import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('email-form');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { useTheme } from '../../../theme/hooks/useTheme';
@@ -19,7 +21,7 @@ import {
 } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
-import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
+import { IonCol } from '@ionic/react';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
 
@@ -96,7 +98,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const [email, setEmail] = useState<string>('');
     const [code, setCode] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
     const [currentStep, setCurrentStep] = useState<EmailFormStepsEnum>(EmailFormStepsEnum.email);
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -230,7 +231,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 // window.location.href = '/wallet';
             }
         } catch (e) {
-            console.log('///login error');
+            log.info('///login error');
         } finally {
             setIsLoading(false);
         }
@@ -241,15 +242,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
         e.stopPropagation();
 
         if (currentStep === EmailFormStepsEnum.email) {
-            // const existingUser = false;
-            // // todo: check response
-            // // if email exists in system redirect user to logging in
-            // // if email does not exist in system redirect user to creating a new account
-            // if (existingUser) {
-            //     setCurrentStep(EmailFormStepsEnum.passwordExistingUser);
-            // } else {
-            //     setCurrentStep(EmailFormStepsEnum.passwordNewUser);
-            // }
             if (validate()) {
                 if (email?.toLowerCase() === 'demo@learningeconomy.io') {
                     handleDemoLogin();
@@ -264,7 +256,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendSignInLink error', e);
+                            log.info('///sendSignInLink error', e);
                         }
                     } else {
                         try {
@@ -275,7 +267,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendLoginVerificationCode error', e);
+                            log.info('///sendLoginVerificationCode error', e);
                         }
                     }
 
@@ -284,10 +276,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
             await handleVerifyCode();
-        } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
-            // todo: trigger login to existing account
-        } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
-            // todo: trigger creating new account
         }
     };
 
@@ -298,7 +286,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
-            console.log('///sendLoginVerificationCode error', e);
+            log.info('///sendLoginVerificationCode error', e);
         }
     };
 
@@ -309,10 +297,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
         }
         redirectStore.set.email(null);
         setEmail('');
-        setPassword('');
     };
 
-    const resendCodeButtonText: string = isResendCodeLoading ? m['login.email.sendingCode']() : m['login.email.resend']();
+    const resendCodeButtonText: string = isResendCodeLoading
+        ? m['login.email.sendingCode']()
+        : m['login.email.resend']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
@@ -399,53 +388,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? m['login.email.verification.verifying']() : m['login.email.verification.verify']();
+        buttonTitle = isLoading
+            ? m['login.email.verification.verifying']()
+            : m['login.email.verification.verify']();
         disabled = code?.length < 6 || isLoading;
-    } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
-        formTitle = 'Password';
-        activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder={m['login.email.password.placeholder']()}
-                    // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value ?? '')}
-                    value={password}
-                    type="password"
-                />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">{m['login.email.password.staySignedIn']()}</p>{' '}
-                    <IonToggle />
-                </IonCol>
-            </IonCol>
-        );
-        buttonTitle = m['login.email.password.login']();
-    } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
-        formTitle = 'Password';
-        activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
-                    // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value ?? '')}
-                    value={password}
-                    type="password"
-                />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">
-                        <TransP
-                            m={m['login.email.password.agreeToTerms']}
-                            components={[<IonRouterLink key="t" href="#" className="font-semibold login-terms-span" />]}
-                        />
-                    </p>{' '}
-                    <IonCheckbox />
-                </IonCol>
-            </IonCol>
-        );
-        buttonTitle = m['login.email.password.create']();
     }
 
     return (
@@ -465,7 +411,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${!loginButtonBgColor ? 'bg-grayscale-900' : ''} ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
+                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
+                        !loginButtonBgColor ? 'bg-grayscale-900' : ''
+                    } ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
                     style={{
                         ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
                         ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
@@ -510,20 +458,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         }
                     />
                 </div>
-            )}
-            {currentStep === EmailFormStepsEnum.passwordNewUser && (
-                <IonCol
-                    size="12"
-                    className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
-                >
-                    <p>{m['login.email.password.existingAccount']()}</p>
-                    <button
-                        onClick={resetForm}
-                        className="w-full text-center font-bold text-lg login-reset-btn"
-                    >
-                        {m['login.email.password.differentEmail']()}
-                    </button>
-                </IonCol>
             )}
         </form>
     );

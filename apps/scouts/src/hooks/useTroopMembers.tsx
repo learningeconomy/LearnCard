@@ -12,6 +12,8 @@ import {
 
 import { MemberTabsEnum } from '../pages/troop/TroopPageMembersBox';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-troop-members');
 
 type MemberRow = {
     name: string;
@@ -123,7 +125,7 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
                             });
                         }
                     } catch (error) {
-                        console.error(
+                        log.error(
                             `Failed to get permissions for ${recipient.to.profileId}:`,
                             error
                         );

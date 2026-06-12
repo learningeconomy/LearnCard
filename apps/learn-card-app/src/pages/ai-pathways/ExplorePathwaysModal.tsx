@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('explore-pathways-modal');
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -149,7 +151,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 })),
             });
         } catch (error: any) {
-            console.error('Error creating or updating skills:', error);
+            log.error('Error creating or updating skills:', error);
             setSelectedSkills(previousSkills);
             presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
@@ -223,7 +225,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         try {
             await saveGoals({ goals: nextGoals });
         } catch (error: any) {
-            console.error('Error creating or updating goals:', error);
+            log.error('Error creating or updating goals:', error);
             presentToast(`Error saving goals!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
             });

@@ -1,5 +1,7 @@
 import { getBespokeLearnCard, BespokeLearnCard } from './wallet.helpers';
 import { Page } from '@playwright/test';
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger('connect-apps.helpers');
 
 export const MOCK_APP_REGISTRY = {
     SMART_RESUME: {
@@ -128,15 +130,15 @@ export const mockRoutes = async (page: Page) => {
     await page.route(
         'https://ceramic-node.welibrary.io:7007/api/v0/multiqueries',
         async (route, request) => {
-            /* console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 multiqueries intercepted');
-            console.log('request.url():', request.url());
-            console.log('request.postDataJSON():', request.postDataJSON()); */
+            /* log.info('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 multiqueries intercepted');
+            log.info('request.url():', request.url());
+            log.info('request.postDataJSON():', request.postDataJSON()); */
 
             const postData = request.postDataJSON();
 
             const isIndexAllGet = postData.queries[0].streamId.startsWith('ceramic'); // wallet.index.all.get()
             if (isIndexAllGet) {
-                // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 THIS IS THE ONE');
+                // log.info('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 THIS IS THE ONE');
                 const indexAllGetResponse = {
                     k2t6wyfsu4pfxk4vz5ffs0rbg31fz3lz64c86h35dppvk77le4097ivo1kqv02: {
                         type: 0,
@@ -190,7 +192,7 @@ export const mockRoutes = async (page: Page) => {
                 postData.queries[0].streamId ===
                 'kjzl6cwe1jw146sll2uxf72bb9btqvyu8emqrbr2bwvdiyrl6bde8tanf64raxu'
             ) {
-                // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 Read call');
+                // log.info('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 Read call');
                 const thisTestCredentialResponse = {
                     kjzl6cwe1jw146sll2uxf72bb9btqvyu8emqrbr2bwvdiyrl6bde8tanf64raxu: {
                         type: 0,
@@ -254,8 +256,8 @@ export const mockRoutes = async (page: Page) => {
         }
     );
     await page.route('https://network.learncard.com/**', async (route, request) => {
-        /* console.log('✨✨✨✨✨✨✨✨✨✨✨✨✨ network learncard intercepted');
-        console.log('request.url():', request.url()); */
+        /* log.info('✨✨✨✨✨✨✨✨✨✨✨✨✨ network learncard intercepted');
+        log.info('request.url():', request.url()); */
         route.continue();
     });
 };
@@ -296,7 +298,7 @@ const generateChallengeForApp = async (
     const _profileId = (await appLearnCard.invoke.getProfile())?.profileId ?? '';
     const inviteChallenge = await appLearnCard.invoke.generateInvite();
 
-    console.log({ inviteChallenge });
+    log.info({ inviteChallenge });
 
     return { profileId: _profileId, inviteChallenge };
 };

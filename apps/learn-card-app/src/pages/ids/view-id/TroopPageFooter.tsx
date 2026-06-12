@@ -1,5 +1,7 @@
 import React from 'react';
 import { useModal } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troop-page-footer');
 
 import useEditTroopId from '../../hooks/useEditTroopId';
 import troopPageStore, { ScoutsRoleEnum } from '../../stores/troopPageStore';
@@ -22,7 +24,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({ credential, uri, hand
     const showIdDetails = troopPageStore.use.showIdDetails();
     const role = getScoutsRole(credential);
 
-    console.log('//troop page footer uri', uri);
+    log.info('//troop page footer uri', uri);
 
     const { openEditTroopOrNetworkModal } = useEditTroopId(credential, uri);
 

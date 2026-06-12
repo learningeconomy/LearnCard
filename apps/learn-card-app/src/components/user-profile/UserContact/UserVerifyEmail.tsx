@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-verify-email');
 
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
@@ -26,7 +28,7 @@ const UserVerifyEmail: React.FC = () => {
             await verifyEmail({ token: token! });
             setIsVerified(true);
         } catch (error) {
-            console.error('Verification failed:', error);
+            log.error('Verification failed:', error);
             setIsVerified(false);
         }
     }, [verifyEmail]);

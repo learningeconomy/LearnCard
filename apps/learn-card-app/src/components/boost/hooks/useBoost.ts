@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-boost');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 
@@ -19,11 +21,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
     const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
 
-    const boostSomeoneElse = async (
-        issueTo: BoostCMSIssueTo[],
-        wallet: any,
-        boostUri: string
-    ) => {
+    const boostSomeoneElse = async (issueTo: BoostCMSIssueTo[], wallet: any, boostUri: string) => {
         try {
             setIsLoading(true);
 
@@ -46,7 +44,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 });
             }
         } catch (e) {
-            console.log('error', e);
+            log.info('error', e);
             setIsLoading(false);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
@@ -78,7 +76,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 await boostSomeoneElse(issueTo, wallet, boostUri);
             }
         } catch (e) {
-            console.log('error', e);
+            log.info('error', e);
             setIsLoading(false);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
@@ -99,7 +97,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 type: ToastTypeEnum.Success,
             });
         } catch (e) {
-            console.log('error', e);
+            log.info('error', e);
             setIsLoading(false);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
@@ -130,7 +128,7 @@ const useBoost = (history: RouteComponentProps['history']) => {
                 await boostSelf(wallet, profileId, boostUri);
             }
         } catch (e) {
-            console.log('error', e);
+            log.info('error', e);
             setIsLoading(false);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,

@@ -2,6 +2,8 @@ import { createStore } from '@udecode/zustood';
 
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troop-page-store');
 
 export enum ScoutsRoleEnum {
     scout,
@@ -46,7 +48,7 @@ export const troopPageStore = createStore('troopPageStore')<TroopPageStore>(init
                 case AchievementTypes.ScoutMember:
                     return ScoutsRoleEnum.scout;
                 default:
-                    console.error(
+                    log.error(
                         `Failed to map credential type (${type}) to role. Defaulting to scout`
                     );
                     return ScoutsRoleEnum.scout;

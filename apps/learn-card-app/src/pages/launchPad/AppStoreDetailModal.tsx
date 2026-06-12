@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import numeral from 'numeral';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-store-detail-modal');
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
 import {
@@ -205,7 +207,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             });
             onInstallSuccess?.();
         } catch (error) {
-            console.error('Failed to install app:', error);
+            log.error('Failed to install app:', error);
             if (error?.message) {
                 presentToast(m['launchpad.detail.installFailed']({ error: error?.message ?? '' }), {
                     type: ToastTypeEnum.Error,
@@ -488,7 +490,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                     // Continue with uninstall even if consent withdrawal fails
                 }
             }
@@ -496,7 +498,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             await uninstallMutation.mutateAsync(listing.listing_id);
             closeModal();
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -523,7 +525,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             closeModal();
             setShowCopiedToast(true);
         } catch (err) {
-            console.error('Failed to copy link:', err);
+            log.error('Failed to copy link:', err);
         }
     };
 
@@ -577,7 +579,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             type="button"
                             onClick={handleEditPermissions}
                         >
-                            <p className="text-grayscale-900">{m['launchpad.detail.editPermissions']()}</p>
+                            <p className="text-grayscale-900">
+                                {m['launchpad.detail.editPermissions']()}
+                            </p>
                             <Settings className="w-5 h-5 text-grayscale-600" />
                         </button>
                     </li>
@@ -822,7 +826,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Screenshots Section */}
                     {screenshots.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">{m['launchpad.detail.preview']()}</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">
+                                {m['launchpad.detail.preview']()}
+                            </h3>
 
                             <AppScreenshotsSlider appScreenshots={screenshots} />
                         </div>
@@ -830,7 +836,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                        <h3 className="text-xl text-gray-900 font-notoSans">{m['launchpad.detail.about']()}</h3>
+                        <h3 className="text-xl text-gray-900 font-notoSans">
+                            {m['launchpad.detail.about']()}
+                        </h3>
 
                         <p
                             ref={textRef}
@@ -845,7 +853,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 onClick={() => setIsExpanded(!isExpanded)}
                                 className="underline text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap"
                             >
-                                {isExpanded ? m['launchpad.detail.readLess']() : m['launchpad.detail.readMore']()}
+                                {isExpanded
+                                    ? m['launchpad.detail.readLess']()
+                                    : m['launchpad.detail.readMore']()}
                             </button>
                         )}
                     </div>
@@ -872,7 +882,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Promo Video Section */}
                     {listing.promo_video_url && getEmbedUrl(listing.promo_video_url) && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">{m['launchpad.detail.watch']()}</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">
+                                {m['launchpad.detail.watch']()}
+                            </h3>
 
                             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                                 <iframe
@@ -889,7 +901,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Links Section */}
                     {(listing.privacy_policy_url || listing.terms_url) && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">{m['launchpad.detail.links']()}</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">
+                                {m['launchpad.detail.links']()}
+                            </h3>
 
                             <div className="space-y-3">
                                 {listing.privacy_policy_url && (

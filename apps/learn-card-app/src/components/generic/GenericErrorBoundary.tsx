@@ -1,7 +1,14 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { CredentialCategoryEnum, isLocalhost, isStaleChunkError, guardedChunkReload } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    isLocalhost,
+    isStaleChunkError,
+    guardedChunkReload,
+} from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
 import { m } from '../../paraglide/messages.js';
+const log = getLogger('generic-error-boundary');
 
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 
@@ -60,11 +67,10 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                 )}
                 {isChunkError ? (
                     <>
-                        <p className="font-semibold text-grayscale-900">
-                            Update Available
-                        </p>
+                        <p className="font-semibold text-grayscale-900">Update Available</p>
                         <p className="text-grayscale-600 text-[14px] text-center max-w-[280px]">
-                            A new version of the app is available. Please refresh to get the latest update.
+                            A new version of the app is available. Please refresh to get the latest
+                            update.
                         </p>
                     </>
                 ) : category && categorySpilledCup ? (
@@ -92,7 +98,9 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
             <div className="flex gap-[10px]">
                 {isChunkError ? (
                     <button
-                        className={`bg-${primaryColor || 'grayscale-900'} py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
+                        className={`bg-${
+                            primaryColor || 'grayscale-900'
+                        } py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins`}
                         onClick={() => window.location.reload()}
                     >
                         Refresh
@@ -171,7 +179,7 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
             )}
             onReset={onReset}
             onError={(error: Error, info) => {
-                console.error('ErrorBoundary caught an error:', error, info);
+                log.error('ErrorBoundary caught an error:', error, info);
 
                 // If this is a stale-chunk error that got past ChunkBoundary,
                 // try a guarded reload (respects the shared reload budget).

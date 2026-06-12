@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-contact-item');
 
 import { IonItem, useIonAlert } from '@ionic/react';
 
@@ -137,13 +139,13 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             type: ToastTypeEnum.Success,
                             hasDismissButton: true,
                         });
-                        console.log('onSuccess::data', data);
+                        log.info('onSuccess::data', data);
                     },
                     onError(error, variables, context) {
                         presentToast(
                             // @ts-ignore
                             error?.message ||
-                            'An error occurred, unable to send connection request',
+                                'An error occurred, unable to send connection request',
                             {
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -153,7 +155,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 }
             );
         } catch (err) {
-            console.log('connectionReq::error', err);
+            log.info('connectionReq::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to send connection request',
@@ -212,7 +214,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         );
         try {
         } catch (err) {
-            console.log('canceledConnectionReq::error', err);
+            log.info('canceledConnectionReq::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to cancel request',
@@ -355,7 +357,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 }
             );
         } catch (err) {
-            console.log('unBlockProfile::error', err);
+            log.info('unBlockProfile::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to unblock user',
@@ -372,7 +374,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     if (showRequestButton) {
         if (LCNProfileConnectionStatusEnum.enum.CONNECTED === (contact as any)?.connectionStatus) {
             actionButton = (
-                <button className="text-emerald-600 font-bold text-sm">{m['contacts.connect']()}</button>
+                <button className="text-emerald-600 font-bold text-sm">
+                    {m['contacts.connect']()}
+                </button>
             );
         } else if (
             LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED === (contact as any)?.connectionStatus
@@ -476,7 +480,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     }}
                     className="text-emerald-600 font-bold text-sm"
                 >
-                    {acceptConnectionLoading ? m['contacts.loading']() : m['contacts.acceptRequest']()}
+                    {acceptConnectionLoading
+                        ? m['contacts.loading']()
+                        : m['contacts.acceptRequest']()}
                 </button>
             );
         }
@@ -528,7 +534,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-emerald-600 font-bold text-base"
                     >
-                        {acceptConnectionLoading ? m['contacts.loading']() : m['contacts.acceptRequest']()}
+                        {acceptConnectionLoading
+                            ? m['contacts.loading']()
+                            : m['contacts.acceptRequest']()}
                     </button>
                 )}
                 {showUnblockButton && (
@@ -598,7 +606,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-rose-600 font-bold text-base"
                     >
-                        {cancelRequestLoading ? m['contacts.loading']() : m['contacts.cancelRequest']()}
+                        {cancelRequestLoading
+                            ? m['contacts.loading']()
+                            : m['contacts.cancelRequest']()}
                     </button>
                 )}
             </div>

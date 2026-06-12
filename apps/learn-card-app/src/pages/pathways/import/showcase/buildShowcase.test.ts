@@ -18,18 +18,21 @@
  *      (pure function, deterministic under id injection).
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PathwaySchema } from '../../types';
 import { validatePathway } from '../../core/graphOps';
 import { detectCollections } from '../../map/collectionDetection';
 import { computeSuggestedRoute } from '../../map/route';
 
-import {
-    SHOWCASE_PREVIEW,
-    SHOWCASE_TEMPLATE_REF,
-    buildShowcase,
-} from './buildShowcase';
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
+}));
+
+import { SHOWCASE_PREVIEW, SHOWCASE_TEMPLATE_REF, buildShowcase } from './buildShowcase';
 
 const NOW = '2026-04-21T00:00:00.000Z';
 
@@ -77,7 +80,11 @@ describe('buildShowcase', () => {
                 // Surface the Zod issues in-line so CI output is
                 // immediately actionable.
                 throw new Error(
-                    `Pathway "${p.title}" failed schema:\n${JSON.stringify(result.error.issues, null, 2)}`,
+                    `Pathway "${p.title}" failed schema:\n${JSON.stringify(
+                        result.error.issues,
+                        null,
+                        2
+                    )}`
                 );
             }
 
@@ -97,7 +104,7 @@ describe('buildShowcase', () => {
 
             if (issues.length > 0) {
                 throw new Error(
-                    `Pathway "${p.title}" has validation issues: ${JSON.stringify(issues, null, 2)}`,
+                    `Pathway "${p.title}" has validation issues: ${JSON.stringify(issues, null, 2)}`
                 );
             }
 
@@ -131,12 +138,10 @@ describe('buildShowcase', () => {
                 // satisfied by a different pathway than it claims to
                 // embed, which is a bug.
                 if (
-                    node.stage.policy.kind === 'composite'
-                    && node.stage.termination.kind === 'pathway-completed'
+                    node.stage.policy.kind === 'composite' &&
+                    node.stage.termination.kind === 'pathway-completed'
                 ) {
-                    expect(node.stage.policy.pathwayRef).toBe(
-                        node.stage.termination.pathwayRef,
-                    );
+                    expect(node.stage.policy.pathwayRef).toBe(node.stage.termination.pathwayRef);
                 }
             }
         }
@@ -188,9 +193,7 @@ describe('buildShowcase', () => {
         // Route should include the focus + the destination at minimum.
         expect(route!.nodeIds.length).toBeGreaterThanOrEqual(2);
         expect(route!.nodeIds[0]).toBe(firstNodeId);
-        expect(route!.nodeIds[route!.nodeIds.length - 1]).toBe(
-            primary.destinationNodeId,
-        );
+        expect(route!.nodeIds[route!.nodeIds.length - 1]).toBe(primary.destinationNodeId);
     });
 
     it('is pure under a deterministic id factory (two calls are deep-equal)', () => {
@@ -236,8 +239,7 @@ describe('buildShowcase', () => {
         });
 
         const realizedTotal =
-            primary.nodes.length
-            + supporting.reduce((sum, p) => sum + p.nodes.length, 0);
+            primary.nodes.length + supporting.reduce((sum, p) => sum + p.nodes.length, 0);
 
         expect(realizedTotal).toBe(SHOWCASE_PREVIEW.totalStepCount);
         expect(supporting.length).toBe(SHOWCASE_PREVIEW.subPathwayCount);

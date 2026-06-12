@@ -4,6 +4,8 @@ import { TransP } from '../../../../i18n/TransP';
 import { IonInput } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('e-u-parental-consent-modal-content');
 
 // Basic email validation via native input + simple regex handled via UI
 const EMAIL_REGEX = /[^@\s]+@[^@\s]+\.[^@\s]+/;
@@ -13,13 +15,20 @@ export type EUParentalConsentModalContentProps = {
     dob?: string | null | undefined;
     country?: string | undefined;
     onClose: () => void;
+    onComplete?: () => void;
+    /**
+     * Optional override for how the guardian email is submitted. When provided, the modal
+     * calls this instead of sending the approval email directly. The onboarding age-gate flow
+     * uses it to *defer* the send, since the user's network profile (which the approval is
+     * keyed to) doesn't exist yet — the email is sent later, after createProfile.
+     */
+    onSubmit?: (guardianEmail: string) => void | Promise<void>;
 };
 
 const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps> = ({
-    name,
-    dob,
-    country,
     onClose,
+    onComplete,
+    onSubmit,
 }) => {
     const { initWallet } = useWallet();
 
@@ -37,26 +46,18 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
         setError('');
         setLoading(true);
         try {
-            const wallet = await initWallet();
-            if (!wallet) throw new Error('Wallet not initialized');
+            if (onSubmit) {
+                await onSubmit(email.trim());
+            } else {
+                const wallet = await initWallet();
+                if (!wallet) throw new Error('Wallet not initialized');
 
-            const response = await wallet.invoke.sendGuardianApprovalEmail({
-                guardianEmail: email.trim(),
-            });
+                await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail: email.trim() });
+            }
 
-            const payload = {
-                email: email.trim(),
-                name: name ?? '',
-                dob: dob ?? '',
-                country: country ?? '',
-                createdAt: new Date().toISOString(),
-                approvalUrl: response?.approvalUrl,
-            };
-
-            localStorage.setItem('eu_parental_consent_request', JSON.stringify(payload));
             setSent(true);
         } catch (e) {
-            console.error('Failed to send guardian approval email:', e);
+            log.error('Failed to send guardian approval email:', e);
             setError(m['onboarding.consent.eu.error.sendFailed']());
         } finally {
             setLoading(false);
@@ -131,12 +132,21 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             disabled={loading}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            {loading ? m['onboarding.consent.eu.sending']() : m['onboarding.consent.eu.sendRequest']()}
+                            {loading
+                                ? m['onboarding.consent.eu.sending']()
+                                : m['onboarding.consent.eu.sendRequest']()}
                         </button>
                     ) : (
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={() => {
+                                // onComplete (age-gate flow) closes the modal itself and then
+                                // advances onboarding. Only fall back to onClose when there's no
+                                // onComplete (re-prompt callers) — calling both closes one modal
+                                // too many and tears down the underlying onboarding modal.
+                                if (onComplete) onComplete();
+                                else onClose();
+                            }}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
                             {m['onboarding.consent.eu.done']()}

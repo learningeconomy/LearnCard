@@ -7,9 +7,9 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
-import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
+import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -43,7 +43,7 @@ import * as Sentry from '@sentry/browser';
             // non-blocking
         }
     }
-    
+
     // Disable LaunchDarkly logging
     const ldOptions = {
         options: {
@@ -62,7 +62,10 @@ import * as Sentry from '@sentry/browser';
         }, 10_000);
     }
 
-    const LDProvider = await asyncWithLDProvider({ ...LAUNCH_DARKLY_CONFIG, ...ldOptions });
+    const LDProvider = await asyncWithLDProvider({
+        ...getLaunchDarklyConfig(),
+        ...ldOptions,
+    });
 
     const container = document.getElementById('root');
     if (container) {

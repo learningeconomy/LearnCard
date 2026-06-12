@@ -1,6 +1,7 @@
 import React from 'react';
 import * as m from '../../../../paraglide/messages.js';
 import { IonInput, IonSpinner } from '@ionic/react';
+import { ToastTypeEnum, useToast } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import WarningCircle from '../../../svgs/WarningCircle';
@@ -12,6 +13,7 @@ export type UnderageModalContentProps = {
     isLoggingOut: boolean;
     schoolCodes?: string[];
     onBypass: (code: string) => void;
+    familyInviteUrl?: string;
 };
 
 const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
@@ -20,11 +22,14 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
     isLoggingOut,
     schoolCodes = [],
     onBypass,
+    familyInviteUrl,
 }) => {
+    const { presentToast } = useToast();
     const [view, setView] = React.useState<'adult' | 'school'>('adult');
     const [code, setCode] = React.useState('');
     const [error, setError] = React.useState('');
     const [isValidating, setIsValidating] = React.useState(false);
+    const [copied, setCopied] = React.useState(false);
 
     const handleVerifyCode = () => {
         if (!code) return;
@@ -33,7 +38,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
 
         setTimeout(() => {
             if (schoolCodes.includes(code.trim().toUpperCase())) {
-                onBypass(code.trim().toUpperCase());
+                void onBypass(code.trim().toUpperCase());
             } else {
                 setError(m['onboarding.consent.underage.schoolCode.error']());
             }
@@ -56,13 +61,43 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                     </div>
                 </div>
                 <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                    {isSchoolView ? m['onboarding.consent.underage.schoolCode.heading']() : m['onboarding.consent.underage.heading']()}
+                    {isSchoolView
+                        ? m['onboarding.consent.underage.schoolCode.heading']()
+                        : m['onboarding.consent.underage.heading']()}
                 </h2>
                 <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                     {isSchoolView
                         ? m['onboarding.consent.underage.schoolCode.description']()
                         : m['onboarding.consent.underage.description']()}
                 </p>
+
+                {!isSchoolView && familyInviteUrl && (
+                    <div className="mt-5 p-4 rounded-[20px] bg-grayscale-10 border border-grayscale-200 flex flex-col items-center gap-3">
+                        <p className="text-sm text-grayscale-700 leading-relaxed">
+                            Share this link with your parent so they can finish setting up the
+                            family.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                try {
+                                    await navigator.clipboard.writeText(familyInviteUrl);
+                                    setCopied(true);
+                                    window.setTimeout(() => setCopied(false), 2000);
+                                } catch {
+                                    setCopied(false);
+                                    presentToast('Failed to copy to clipboard.', {
+                                        type: ToastTypeEnum.Error,
+                                        hasDismissButton: true,
+                                    });
+                                }
+                            }}
+                            className="w-full max-w-[320px] py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            {copied ? 'Link copied' : 'Copy family link'}
+                        </button>
+                    </div>
+                )}
 
                 {!isSchoolView ? (
                     schoolCodes.length > 0 && (
@@ -75,7 +110,8 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                 onClick={() => setView('school')}
                                 className="text-emerald-700 font-semibold text-[15px] flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
                             >
-                                <span className="text-[18px]">🎓</span> {m['onboarding.consent.underage.schoolCode.cta']()}
+                                <span className="text-[18px]">🎓</span>{' '}
+                                {m['onboarding.consent.underage.schoolCode.cta']()}
                             </button>
                         </div>
                     )
@@ -88,7 +124,9 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                     setCode(e.detail.value ?? '');
                                     setError('');
                                 }}
-                                placeholder={m['onboarding.consent.underage.schoolCode.placeholder']()}
+                                placeholder={m[
+                                    'onboarding.consent.underage.schoolCode.placeholder'
+                                ]()}
                                 className={`bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 font-medium tracking-widest text-center ${
                                     error ? 'border-red-500 border' : ''
                                 }`}

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 import VerificationRow from './VerificationRow';
 import InfoBox from './InfoBox';
 import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 
 import { VerificationItem } from '@learncard/types';
+import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 
@@ -17,6 +18,11 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+
+    const prettifiedItems = useMemo(
+        () => prettifyVerificationItems(verificationItems),
+        [verificationItems]
+    );
 
     return (
         <div className="verifications-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom-2-4 px-[15px] py-[20px] w-full relative">
@@ -41,7 +47,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
                 />
             )}
 
-            {verificationItems.map((verification, index) => (
+            {prettifiedItems.map((verification, index) => (
                 <VerificationRow key={index} verification={verification} />
             ))}
         </div>

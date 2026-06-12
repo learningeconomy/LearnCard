@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('learner-insights.helpers');
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -94,7 +96,7 @@ export const createAiInsightsService = async (
         try {
             await wallet.invoke.addDidMetadata({ service: [serviceData] });
         } catch (error) {
-            console.error('Error adding service endpoint:', error);
+            log.error('Error adding service endpoint:', error);
         }
         return serviceData;
     }

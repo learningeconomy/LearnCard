@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useHistory, useRouteMatch } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('add-contact-view');
 
 import {
     useWallet,
@@ -103,7 +105,7 @@ export const AddContactView: React.FC<{
                     hasDismissButton: true,
                 });
             }
-            console.log('connectionReq', connectionReq);
+            log.info('connectionReq', connectionReq);
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
@@ -116,7 +118,7 @@ export const AddContactView: React.FC<{
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
             // @ts-ignore
-            console.log('connectionReq::error', err?.message);
+            log.info('connectionReq::error', err?.message);
             setLoading(false);
         }
     };
@@ -141,7 +143,7 @@ export const AddContactView: React.FC<{
                     hasDismissButton: true,
                 });
             }
-            console.log('expiredInviteConnectionReq', connectionReq);
+            log.info('expiredInviteConnectionReq', connectionReq);
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
@@ -154,7 +156,7 @@ export const AddContactView: React.FC<{
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
             // @ts-ignore
-            console.log('expiredInviteConnectionReq::error', err?.message);
+            log.info('expiredInviteConnectionReq::error', err?.message);
             setLoading(false);
         }
     };
@@ -177,7 +179,7 @@ export const AddContactView: React.FC<{
                     hasDismissButton: true,
                 });
             }
-            console.log('connection', connectionReq);
+            log.info('connection', connectionReq);
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
@@ -204,7 +206,7 @@ export const AddContactView: React.FC<{
                 });
             }
             // @ts-ignore
-            console.log('connection::error', err?.message);
+            log.info('connection::error', err?.message);
             setLoading(false);
         }
     };
@@ -296,7 +298,9 @@ export const AddContactView: React.FC<{
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                {loading ? m['contacts.loading']() : m['contacts.requestConnection']()}
+                                {loading
+                                    ? m['contacts.loading']()
+                                    : m['contacts.requestConnection']()}
                             </button>
                         ) : (
                             <button
@@ -333,7 +337,9 @@ export const AddContactView: React.FC<{
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {(loading || acceptConnectionLoading) ? m['contacts.loading']() : m['contacts.connect']()}
+                        {loading || acceptConnectionLoading
+                            ? m['contacts.loading']()
+                            : m['contacts.connect']()}
                     </button>
                 )}
             </IonCol>
@@ -360,7 +366,9 @@ export const AddContactView: React.FC<{
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {acceptConnectionLoading ? m['contacts.loading']() : m['contacts.connect']()}
+                        {acceptConnectionLoading
+                            ? m['contacts.loading']()
+                            : m['contacts.connect']()}
                     </button>
                 ) : (
                     <button

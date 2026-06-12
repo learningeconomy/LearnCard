@@ -34,6 +34,8 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
 import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('queries');
 
 type QueriedProfile = LCNProfile | LCNVisibleProfile;
 
@@ -372,15 +374,15 @@ export const useResolveBoosts = (uris?: (string | undefined)[], enabled = true) 
         queries:
             enabled && validUris
                 ? validUris.map(uri => ({
-                    queryKey: ['useResolveBoost', uri],
-                    queryFn: async (): Promise<VC> => {
-                        if (!uri) throw new Error('Boost URI is required.');
-                        const wallet = await initWallet();
-                        const vc = await wallet.invoke.resolveFromLCN(uri);
-                        if (!vc) throw new Error('Unresolveable boost.');
-                        return vc as VC;
-                    },
-                }))
+                      queryKey: ['useResolveBoost', uri],
+                      queryFn: async (): Promise<VC> => {
+                          if (!uri) throw new Error('Boost URI is required.');
+                          const wallet = await initWallet();
+                          const vc = await wallet.invoke.resolveFromLCN(uri);
+                          if (!vc) throw new Error('Unresolveable boost.');
+                          return vc as VC;
+                      },
+                  }))
                 : [],
     });
     return queries.map((result, index) => ({ ...result, uri: validUris?.[index] }));
@@ -800,7 +802,7 @@ export const useGetProfile = (
                         }
                     }
                 } catch (error) {
-                    console.warn('Failed to initialize wallet, falling back to public API', error);
+                    log.warn('Failed to initialize wallet, falling back to public API', error);
                 }
             }
 
@@ -815,7 +817,7 @@ export const useGetProfile = (
                         return data ?? null;
                     }
                 } catch (error) {
-                    console.warn(
+                    log.warn(
                         'Failed to initialize dummy wallet, falling back to public API',
                         error
                     );
@@ -832,7 +834,7 @@ export const useGetProfile = (
                     const data = await response.json();
                     return data ?? null;
                 } catch (error) {
-                    console.error('Failed to fetch profile from public API', error);
+                    log.error('Failed to fetch profile from public API', error);
                     return null;
                 }
             }
@@ -860,7 +862,7 @@ export const useGetAppStoreListingBySlug = (
                 try {
                     return await wallet.invoke.getPublicAppStoreListingBySlug(slug);
                 } catch (error) {
-                    console.warn('Failed to load app listing by slug', error);
+                    log.warn('Failed to load app listing by slug', error);
                 }
             }
 
@@ -873,7 +875,7 @@ export const useGetAppStoreListingBySlug = (
 
                 return (await response.json()) as AppStoreListing;
             } catch (error) {
-                console.warn('Failed to load app listing by slug', error);
+                log.warn('Failed to load app listing by slug', error);
                 return undefined;
             }
         },
@@ -1037,7 +1039,7 @@ export const useGetMyGuardians = () => {
         queryFn: async () => {
             const wallet = await initWallet();
             if (!wallet.invoke.getMyGuardians) {
-                console.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
+                log.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
                 return [];
             }
             return (await wallet.invoke.getMyGuardians()) ?? [];

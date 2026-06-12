@@ -4,7 +4,13 @@ import { m } from '../../../paraglide/messages.js';
 
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
-import { TextInput, SelectInput, useVerifiableData } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    TextInput,
+    SelectInput,
+    useSyncAllCredentialsToContractsMutation,
+    useVerifiableData,
+} from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
@@ -12,16 +18,23 @@ export type SkillProfileGoalsData = {
     goals: string[];
 };
 
-export type SkillProfileProfileData = {
+export type SkillProfileProfessionalTitleData = {
     professionalTitle: string;
+};
+
+export type SkillProfileRoleExperienceData = {
     lifetimeExperience: {
         years: number | null;
         months: number | null;
     };
 };
 
+export type SkillProfileProfileData = SkillProfileProfessionalTitleData;
+
 export const SKILL_PROFILE_GOALS_KEY = 'skill-profile-goals';
-export const SKILL_PROFILE_PROFILE_KEY = 'skill-profile-profile';
+export const SKILL_PROFILE_PROFESSIONAL_TITLE_KEY = 'skill-profile-professional-title';
+export const SKILL_PROFILE_ROLE_EXPERIENCE_KEY = 'skill-profile-role-experience';
+export const SKILL_PROFILE_PROFILE_KEY = SKILL_PROFILE_PROFESSIONAL_TITLE_KEY;
 
 type SkillProfileStep1Props = {
     handleNext: () => void;
@@ -58,6 +71,7 @@ const MONTHS_OPTIONS = [
 
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
     const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
     const { markStepCompleted } = useSkillProfileStepFunnel(1, () => {
         const fields: string[] = [];
         if (goals.length > 0) fields.push('goals');
@@ -79,20 +93,33 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY, {
         name: 'Career Goals',
         description: 'Self-reported career goals and aspirations',
+        category: CredentialCategoryEnum.goals,
     });
 
     const {
-        data: profileData,
-        isLoading: profileLoading,
-        saveIfChanged: saveProfile,
-        isSaving: profileSaving,
-    } = useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY, {
-        name: 'Professional Profile',
-        description: 'Professional title and experience level',
+        data: professionalTitleData,
+        isLoading: professionalTitleLoading,
+        saveIfChanged: saveProfessionalTitle,
+        isSaving: professionalTitleSaving,
+    } = useVerifiableData<SkillProfileProfessionalTitleData>(SKILL_PROFILE_PROFESSIONAL_TITLE_KEY, {
+        name: 'Professional Title',
+        description: 'Your current professional title',
+        category: CredentialCategoryEnum.professionalTitle,
     });
 
-    const isLoading = goalsLoading || profileLoading;
-    const isSaving = goalsSaving || profileSaving;
+    const {
+        data: roleExperienceData,
+        isLoading: roleExperienceLoading,
+        saveIfChanged: saveRoleExperience,
+        isSaving: roleExperienceSaving,
+    } = useVerifiableData<SkillProfileRoleExperienceData>(SKILL_PROFILE_ROLE_EXPERIENCE_KEY, {
+        name: 'Role Experience',
+        description: 'Years and months of experience in your current role',
+        category: CredentialCategoryEnum.roleExperience,
+    });
+
+    const isLoading = goalsLoading || professionalTitleLoading || roleExperienceLoading;
+    const isSaving = goalsSaving || professionalTitleSaving || roleExperienceSaving;
 
     // Pre-populate form from existing verifiable data
     useEffect(() => {
@@ -102,12 +129,17 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     }, [goalsData]);
 
     useEffect(() => {
-        if (profileData) {
-            setProfessionalTitle(profileData.professionalTitle ?? '');
-            setYears(profileData.lifetimeExperience?.years ?? null);
-            setMonths(profileData.lifetimeExperience?.months ?? null);
+        if (professionalTitleData) {
+            setProfessionalTitle(professionalTitleData.professionalTitle ?? '');
         }
-    }, [profileData]);
+    }, [professionalTitleData]);
+
+    useEffect(() => {
+        if (roleExperienceData) {
+            setYears(roleExperienceData.lifetimeExperience?.years ?? null);
+            setMonths(roleExperienceData.lifetimeExperience?.months ?? null);
+        }
+    }, [roleExperienceData]);
 
     const handleAddGoal = () => {
         if (goalInput.trim()) {
@@ -121,13 +153,17 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     };
 
     const handleSaveAndNext = async () => {
-        await Promise.all([
+        const saveResults = await Promise.all([
             saveGoals({ goals }),
-            saveProfile({
-                professionalTitle,
-                lifetimeExperience: { years, months },
-            }),
+            saveProfessionalTitle({ professionalTitle }),
+            saveRoleExperience({ lifetimeExperience: { years, months } }),
         ]);
+
+        if (saveResults.some(Boolean)) {
+            console.log('[ConsentSync] My Skills Profile saved, triggering full wallet resync');
+            await syncAllCredentialsToContracts.mutateAsync();
+        }
+
         trackProfileDataAdded();
         markStepCompleted();
         handleNext();

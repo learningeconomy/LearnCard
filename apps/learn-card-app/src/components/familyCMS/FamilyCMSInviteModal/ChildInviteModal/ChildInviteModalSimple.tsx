@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('child-invite-modal-simple');
 
 import AdminToolsFamilySelectorButton from '../../../../pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsFamilySelectorButton';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
@@ -130,7 +132,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-                console.error(e);
+                log.error(e);
             } finally {
                 setIsLoading(false);
             }

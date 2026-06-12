@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Countdown from 'react-countdown';
 import { ContactMethodType } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-email-contact-item');
 
 import TrashBin from '../../svgs/TrashBin';
 import UnverifiedIcon from 'learn-card-base/svgs/UnverifiedIcon';
@@ -63,7 +65,7 @@ export const UserEmailContactItem: React.FC<{
             }
             await setPrimaryContactMethod({ contactMethodId });
         } catch (error) {
-            console.error('Failed to set primary contact method:', error);
+            log.error('Failed to set primary contact method:', error);
         }
     };
 
@@ -84,7 +86,7 @@ export const UserEmailContactItem: React.FC<{
             }
             await removeContactMethod({ id: contactMethodId });
         } catch (error) {
-            console.error('Failed to remove contact method:', error);
+            log.error('Failed to remove contact method:', error);
         }
     };
 
@@ -104,7 +106,8 @@ export const UserEmailContactItem: React.FC<{
             {!email.isVerified && (
                 <div className="w-full flex items-center justify-start mt-2 mb-2">
                     <p className="text-amber-500 rounded-[15px] text-sm font-semibold">
-                        {m['profile.email.unverified']()} <span className="text-grayscale-900">•&nbsp;</span>
+                        {m['profile.email.unverified']()}{' '}
+                        <span className="text-grayscale-900">•&nbsp;</span>
                     </p>
                     <button
                         onClick={e => {
@@ -114,7 +117,9 @@ export const UserEmailContactItem: React.FC<{
                         }}
                         className={`text-${primaryColor} font-semibold text-sm cursor-pointer`}
                     >
-                        {isResendCodeLoading ? m['profile.email.sending']() : m['profile.email.resendVerification']()}
+                        {isResendCodeLoading
+                            ? m['profile.email.sending']()
+                            : m['profile.email.resendVerification']()}
                     </button>
                 </div>
             )}

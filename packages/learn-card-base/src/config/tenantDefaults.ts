@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('tenant-defaults');
 /**
  * Default TenantConfig for the LearnCard production deployment.
  *
@@ -88,16 +90,14 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         themeSwitching: true,
         introSlides: true,
         launchPadQuickActions: true,
+        useSeededSkillFrameworks: false,
     },
 
     observability: {
-        sentryDsn: 'https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704',
+        sentryDsn:
+            'https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704',
         sentryEnv: 'production',
-        sentryTraceDomains: [
-            'network.learncard.com',
-            'api.learncard.app',
-            'cloud.learncard.com',
-        ],
+        sentryTraceDomains: ['network.learncard.com', 'api.learncard.app', 'cloud.learncard.com'],
         launchDarklyClientId: '63dabf3982caed12cac3e55c',
         userflowToken: 'ct_qq6z63mixbhyzbzsgmivgrftda',
         googleMapsApiKey: undefined,
@@ -123,7 +123,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'learncard.app',
             'learncardapp.netlify.app',
             'learncardapp.netlify.com',
-            'lcw.app'
+            'lcw.app',
         ],
         // Two consumers — keep this list complete for BOTH:
         //   (a) `prepare-native-config.ts` writes these to iOS Info.plist
@@ -141,7 +141,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'asuprequest',
             'openid-credential-offer',
             'openid4vp',
-        ]
+        ],
     },
 
     i18n: {
@@ -159,7 +159,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 const _defaultsValidation = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
 if (!_defaultsValidation.success) {
-    console.error(
+    log.error(
         '[TenantConfig] DEFAULT_LEARNCARD_TENANT_CONFIG failed schema validation:',
         _defaultsValidation.error.issues
     );

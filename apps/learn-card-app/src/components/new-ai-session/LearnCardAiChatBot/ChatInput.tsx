@@ -6,7 +6,14 @@ import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ProfilePicture, useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
+import {
+    ProfilePicture,
+    useGetCredentialList,
+    useModal,
+    useSyncConsentFlow,
+} from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-input');
 
 import { ArrowUp } from 'lucide-react';
 
@@ -88,7 +95,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                 setPathways(pathwaysList);
                 setShowPathwaySelection(true);
             } catch (error) {
-                console.error('Error loading pathways:', error);
+                log.error('Error loading pathways:', error);
                 setPathways([]);
             } finally {
                 setLoadingPathways(false);

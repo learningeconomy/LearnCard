@@ -34,7 +34,11 @@ import {
 } from 'learn-card-base';
 
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
-import { isTroopCredential, getRoleFromCred, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import {
+    isTroopCredential,
+    getRoleFromCred,
+    getScoutsNounForRole,
+} from '../../helpers/troop.helpers';
 
 import { VC } from '@learncard/types';
 import {
@@ -42,6 +46,8 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../hooks/useHighlightedCredentials';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-boost');
 
 const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {
     const isLoggedIn = useIsLoggedIn();
@@ -190,7 +196,7 @@ export const ClaimBoostModal: React.FC<{
 
             setBoost(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -270,7 +276,7 @@ export const ClaimBoostModal: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 

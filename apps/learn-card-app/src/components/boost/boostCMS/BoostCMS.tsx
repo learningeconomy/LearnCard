@@ -139,6 +139,9 @@ interface BoostCMSProps {
     profileId?: string;
 }
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-cms');
+
 const BoostCMS: React.FC<BoostCMSProps> = ({
     boostDetails,
     // oxlint-disable-next-line no-unused-vars
@@ -778,7 +781,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.info('error::savingBoost', e);
             presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -845,7 +848,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsPublishLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -951,7 +954,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,

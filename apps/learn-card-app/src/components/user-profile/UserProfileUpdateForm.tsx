@@ -8,6 +8,9 @@ import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
 import DatePickerInput from '../date-picker/DatePickerInput';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-update-form');
+
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
@@ -23,7 +26,6 @@ import {
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
-    getLogger,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
@@ -86,8 +88,6 @@ type UserProfileUpdateFormProps = {
     handleChapiInfo: () => void;
     children?: any;
 };
-
-const log = getLogger('UserProfileUpdateForm');
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     title,
@@ -246,11 +246,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 role: role ?? '',
                 country: country ?? '',
             });
-            console.log('updatedProfile::res', updatedProfile);
+            log.info('updatedProfile::res', updatedProfile);
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
-                    console.log('getAiInsightsContractUri::error', err);
+                    log.info('getAiInsightsContractUri::error', err);
                 });
             }
         }
@@ -390,7 +390,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.info('updateProfile::error', error);
                 }
             }
         }

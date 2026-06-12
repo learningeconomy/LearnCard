@@ -13,6 +13,8 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 
 import { LCR } from 'learn-card-base/types/credential-records';
 import { VCValidator, VC } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
 interface PathwayStep {
@@ -41,9 +43,9 @@ const logAiInsightCredential = (message: string, data?: Record<string, unknown>)
 
     try {
         if (data) {
-            console.log(`[AiInsightCredential] ${message}`, data);
+            log.debug(`[AiInsightCredential] ${message}`, data);
         } else {
-            console.log(`[AiInsightCredential] ${message}`);
+            log.debug(`[AiInsightCredential] ${message}`);
         }
     } catch {
         // logging should never break credential creation
@@ -58,7 +60,7 @@ const logAiInsightCredentialError = (
     if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
 
     try {
-        console.error(`[AiInsightCredential] ${message}`, data ?? {}, err);
+        log.error(`[AiInsightCredential] ${message}`, data ?? {}, err);
     } catch {
         // logging should never break credential creation
     }
@@ -332,7 +334,7 @@ export const useAiPathways = () => {
                     try {
                         return await resolveCredential(uri);
                     } catch (e) {
-                        console.warn('Failed to resolve pathway credential:', uri, e);
+                        log.warn('Failed to resolve pathway credential:', uri, e);
                         return undefined;
                     }
                 })
@@ -360,7 +362,7 @@ export const useAiPathways = () => {
                             );
                             topicUri = topic?.uri;
                         } catch (e) {
-                            console.warn('Failed to fetch familial boosts for pathway', e);
+                            log.warn('Failed to fetch familial boosts for pathway', e);
                         }
                     }
 

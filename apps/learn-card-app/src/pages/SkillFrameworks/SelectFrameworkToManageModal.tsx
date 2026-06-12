@@ -1,6 +1,8 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('select-framework-to-manage-modal');
 
 import {
     useModal,
@@ -166,7 +168,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             try {
                 await annotateBackendSkillsWithIcons(framework.id, wallet);
             } catch (iconError) {
-                console.error('Failed to generate icons for skills:', iconError);
+                log.error('Failed to generate icons for skills:', iconError);
             }
 
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
@@ -205,7 +207,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             try {
                 await annotateBackendSkillsWithIcons(framework.id, wallet);
             } catch (iconError) {
-                console.error('Failed to generate icons for skills:', iconError);
+                log.error('Failed to generate icons for skills:', iconError);
             }
 
             await queryClient.invalidateQueries({ queryKey: ['listMySkillFrameworks'] });

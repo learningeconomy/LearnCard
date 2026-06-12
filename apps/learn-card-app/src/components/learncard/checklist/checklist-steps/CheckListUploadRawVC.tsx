@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-upload-raw-v-c');
 
 import { IonHeader, IonTextarea, IonToolbar } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
@@ -142,7 +144,7 @@ export const CheckListUploadRawVC: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetRawVCs::error', error);
+            log.error('handleSetRawVCs::error', error);
         }
     };
 

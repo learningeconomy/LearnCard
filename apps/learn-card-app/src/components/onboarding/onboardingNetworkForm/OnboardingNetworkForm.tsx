@@ -7,10 +7,10 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import moment from 'moment';
-import DatePickerInput from '../../date-picker/DatePickerInput';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('onboarding-network-form');
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
@@ -19,12 +19,9 @@ import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSli
 import ErrorLogout from '../../network-prompts/ErrorLogout';
 import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import { Checkmark } from '@learncard/react';
-import Calendar from '../../svgs/Calendar';
 import Pencil from '../../svgs/Pencil';
-import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
 
-import LocationIcon from '../../svgs/LocationIcon';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -42,9 +39,7 @@ import {
     getNotificationsEndpoint,
     SocialLoginTypes,
     ModalTypes,
-    BrandingEnum,
     useToast,
-    ToastTypeEnum,
     useDeviceTypeByWidth,
     useUpdatePreferences,
 } from 'learn-card-base';
@@ -56,14 +51,12 @@ import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { LearnCardRoles, LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
 
 import countries from '../../../constants/countries.json';
-import CountrySelectorModal from './components/CountrySelectorModal';
 import EUParentalConsentModalContent from './components/EUParentalConsentModalContent';
-import UnderageModalContent from './components/UnderageModalContent';
 import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 import GuardianLinkedModal from '../GuardianLinkedModal';
-import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
+import { StateValidator, ProfileIDStateValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
 import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
@@ -91,6 +84,8 @@ type OnboardingNetworkFormProps = {
         country: string | undefined;
         photo: string | null | undefined;
         usMinorConsent: boolean;
+        euParentalConsentRequested: boolean;
+        guardianEmail?: string;
         profileId: string | null | undefined;
     };
     updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
@@ -127,7 +122,16 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
-    const { name, dob, country, photo, usMinorConsent, profileId } = formData;
+    const {
+        name,
+        dob,
+        country,
+        photo,
+        usMinorConsent,
+        euParentalConsentRequested,
+        guardianEmail,
+        profileId,
+    } = formData;
 
     const handleNameChange = (value: string) => {
         updateFormData({ name: value ?? '' });
@@ -220,9 +224,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const validate = () => {
+    const validate = (nameRequired: boolean) => {
         const parsedData = StateValidator.safeParse({
-            name: name,
+            name: nameRequired ? name : name || 'Apple User',
             dob: dob,
             country: country ?? '',
         });
@@ -310,7 +314,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         authToken = user ? await user.getIdToken(false) : undefined;
                     }
                 } catch (e) {
-                    console.warn('Could not get Firebase ID token (non-fatal):', e);
+                    log.warn('Could not get Firebase ID token (non-fatal):', e);
                 }
 
                 const didWeb = await wallet.invoke.createProfile({
@@ -323,10 +327,23 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     role: role ?? '',
                     dob: dob ?? '',
                     country: country ?? '',
+                    // EU minors stay unapproved until a guardian approves via email; the
+                    // existing `profile.approved === false` re-prompt keeps gating them.
+                    ...(euParentalConsentRequested ? { approved: false } : {}),
                     authToken,
                 });
 
                 if (didWeb) {
+                    // Now that the profile exists, send the guardian approval email. This is
+                    // deferred to here because sendGuardianApprovalEmail is keyed to the
+                    // requester's profileId, which doesn't exist at the age-gate step.
+                    if (euParentalConsentRequested && guardianEmail) {
+                        try {
+                            await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail });
+                        } catch (err) {
+                            console.error('Failed to send guardian approval email:', err);
+                        }
+                    }
                     // Initialize privacy preferences based on age at signup
                     const age = dob ? calculateAge(dob) : null;
                     const limit = getMinorAgeThreshold(country);
@@ -347,10 +364,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             preferencesInitialized = true;
                         })
                         .catch(err => {
-                            console.error(
-                                'Failed to initialize preferences (non-blocking):',
-                                err
-                            );
+                            log.error('Failed to initialize preferences (non-blocking):', err);
                         });
 
                     track(AnalyticsEvents.ONBOARDING_COMPLETED, {
@@ -359,11 +373,15 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     });
 
                     // Check for pending guardian approvals linked to this email (non-blocking)
-                    let claimedChildren: Array<{ childProfileId: string; childDisplayName: string; managerId: string | null }> = [];
+                    let claimedChildren: Array<{
+                        childProfileId: string;
+                        childDisplayName: string;
+                        managerId: string | null;
+                    }> = [];
                     try {
-                        claimedChildren = await wallet.invoke.claimPendingGuardianLinks?.() ?? [];
+                        claimedChildren = (await wallet.invoke.claimPendingGuardianLinks?.()) ?? [];
                     } catch (err) {
-                        console.error('claimPendingGuardianLinks failed (non-blocking):', err);
+                        log.error('claimPendingGuardianLinks failed (non-blocking):', err);
                     }
 
                     await refetchIsCurrentUserLCNUser();
@@ -384,10 +402,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 },
                             });
                         } catch (err) {
-                            console.error(
-                                'Failed to auto-consent LearnCard AI after onboarding:',
-                                err
-                            );
+                            log.error('Failed to auto-consent LearnCard AI after onboarding:', err);
                         }
                     }, 0);
 
@@ -427,11 +442,11 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
                 if (role === LearnCardRolesEnum.teacher) {
                     getAiInsightsContractUri().catch(err => {
-                        console.log('getAiInsightsContractUri::error', err);
+                        log.info('getAiInsightsContractUri::error', err);
                     });
                 }
             } catch (err) {
-                console.log('createProfile::error', err);
+                log.info('createProfile::error', err);
                 const message =
                     (err as any)?.message ??
                     (typeof err === 'string' ? err : 'There was an error creating your profile');
@@ -457,7 +472,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
-                    console.log('getAiInsightsContractUri::error', err);
+                    log.info('getAiInsightsContractUri::error', err);
                 });
             }
         } else {
@@ -508,113 +523,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         return false;
     };
 
-    const presentUnderageModal = () => {
-        const onBypass = (_code: string) => {
-            closeModal();
-            handleUpdateUser({ bypassAgeCheck: true });
-        };
-        const onAdult = () => {
-            // Present intermediate confirmation modal before logging out
-            newModal(
-                <div className="flex flex-col gap-[10px] items-center w-full h-full justify-center px-[20px]">
-                    <div className="w-full bg-white rounded-[24px] px-[20px] py-[28px] shadow-3xl text-center max-w-[500px]">
-                        <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
-                            <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
-                                <img
-                                    src={appIcon}
-                                    alt="App logo"
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            <div className="h-[50px] w-[50px] rounded-full bg-grayscale-100 flex items-center justify-center border border-grayscale-200">
-                                <AddUser
-                                    version="3"
-                                    className="h-[28px] w-[28px] text-grayscale-800"
-                                />
-                            </div>
-                        </div>
-                        <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Add Your Child to {brandingConfig?.name}!
-                        </h2>
-                        <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            Log in or sign up to create your profile inside a family account.
-                        </p>
-                    </div>
-
-                    <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
-                        <div className="w-full max-w-[700px] flex">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className=" mx-[10px] shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
-                            >
-                                Back
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    newModal(
-                                        <div className="w-full h-full transparent flex items-center justify-center">
-                                            <div className="bg-white text-grayscale-800 w-full rounded-[16px] shadow-3xl z-50 font-notoSans max-w-[400px] p-4 text-center">
-                                                <div className="flex items-center justify-center mb-2">
-                                                    <IonSpinner
-                                                        name="crescent"
-                                                        className="w-[28px] h-[28px] text-grayscale-700"
-                                                    />
-                                                </div>
-                                                <p className="text-grayscale-900 text-[16px] font-semibold">
-                                                    Logging out...
-                                                </p>
-                                                <p className="text-grayscale-700 text-[14px] mt-1">
-                                                    Please get a parent or guardian to login and
-                                                    create a family account.
-                                                </p>
-                                            </div>
-                                        </div>,
-                                        {
-                                            disableCloseHandlers: true,
-                                            sectionClassName:
-                                                '!bg-transparent !border-none !shadow-none !rounded-none',
-                                        },
-                                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                                    );
-                                    handleLogout({
-                                        overrideRedirectUrl: `/login?redirectTo=${encodeURIComponent(
-                                            '/families?createFamily=true'
-                                        )}`,
-                                    });
-                                }}
-                                className="mx-[10px] shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
-                            >
-                                Continue
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                {
-                    sectionClassName:
-                        '!bg-transparent !border-none !shadow-none !rounded-none p-[20px] !mx-auto',
-                },
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
-        };
-
-        newModal(
-            <UnderageModalContent
-                onBack={closeModal}
-                onAdult={onAdult}
-                isLoggingOut={isLoggingOut}
-                schoolCodes={schoolCodes}
-                onBypass={onBypass}
-            />,
-            {
-                sectionClassName:
-                    '!bg-transparent !border-none !shadow-none !rounded-none p-[20px] !mx-auto',
-            },
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
-    };
-
     const presentUSConsentNoticeModal = () => {
         newModal(
             <USConsentNoticeModalContent
@@ -623,7 +531,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleUsMinorConsentToggle(true);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
-                    console.log('///onContinue');
                 }}
             />,
             {
@@ -653,164 +560,64 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         );
     };
 
-    const handleUpdateUser = async (options?: {
-        skipUsConsentCheck?: boolean;
-        bypassAgeCheck?: boolean;
-    }) => {
+    const handleUpdateUser = async (options?: { skipUsConsentCheck?: boolean }) => {
         const typeOfLogin = authStore.get.typeOfLogin();
-        console.log('//handleUpdateUser');
+        const nameRequired = typeOfLogin !== SocialLoginTypes.apple;
 
-        // ! APPLE HOT FIX
-        if (typeOfLogin === SocialLoginTypes.apple) {
-            // Show modal if under 13 before running Zod, to ensure UX triggers
-            const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13 && !options?.bypassAgeCheck) {
-                presentUnderageModal();
+        if (!validate(nameRequired)) {
+            return;
+        }
+
+        const age = dob ? calculateAge(dob) : Number.NaN;
+        const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
+
+        // The age gate should intercept under-13 users before they reach this form.
+        // Keep teen-consent fallbacks here for existing users and older flows.
+        if (isTeen && country) {
+            if (requiresEUParentalConsent(country, age) && !euParentalConsentRequested) {
+                presentEUParentalConsentModal();
                 return;
             }
 
-            // Validate DOB even if name is not required per Apple guidelines
-            const dobCheck = DobValidator.safeParse({ dob });
-            if (!dobCheck.success) {
-                setErrors(dobCheck.error.flatten().fieldErrors);
+            if (!isEUCountry(country) && !usMinorConsent && !options?.skipUsConsentCheck) {
+                presentUSConsentNoticeModal();
                 return;
             }
+        }
 
-            // Require country selection for compliance
-            if (!country) {
-                setErrors(prev => ({ ...prev, country: [' Country is required.'] }));
-                return;
-            }
+        setIsLoading(true);
 
-            // Teen consent flows (age 13-17)
-            const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
-            if (isTeen && country) {
-                if (requiresEUParentalConsent(country, age)) {
-                    try {
-                        setIsLoading(true);
-                        const success = await ensureProfileApprovedFalse();
-                        if (success) closeModal();
-                        else
-                            presentToast(
-                                'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
-                                {
-                                    type: ToastTypeEnum.Error,
-                                    hasDismissButton: true,
-                                }
-                            );
-                    } catch (e) {
-                        console.log('ensureProfileApprovedFalse::error', e);
-                    } finally {
-                        setIsLoading(false);
-                    }
-                    presentEUParentalConsentModal();
-                    return;
-                }
+        try {
+            const resolvedName = nameRequired ? name ?? '' : name ?? currentUser?.name ?? '';
+            const resolvedPhoto = photo ?? currentUser?.profileImage ?? '';
 
-                // For all non-EU countries, require consent notice
-                if (!isEUCountry(country)) {
-                    if (!usMinorConsent && !options?.skipUsConsentCheck) {
-                        presentUSConsentNoticeModal();
-                        return;
-                    }
+            if (authToken === 'dummy') {
+                currentUserStore.set.currentUser({
+                    ...currentUser,
+                    name: resolvedName,
+                    profileImage: resolvedPhoto,
+                });
+            } else {
+                try {
+                    await updateProfile(auth()?.currentUser, {
+                        displayName: resolvedName,
+                        photoURL: resolvedPhoto,
+                    });
+                } catch (e) {
+                    presentLogoutErrorModal();
+                    setProfileIdError(`There was a firebase error: ${e?.toString?.()}`);
                 }
             }
 
-            // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
-                displayName: name ?? '',
-                photoURL: photo ?? '',
-            });
+            await handleLCNetworkProfileUpdate();
 
             handleStorageUpdate();
 
-            // update LC network profile
-            await handleLCNetworkProfileUpdate();
-
             setIsLoading(false);
             handleCloseModal();
-            // ! APPLE HOT FIX
-        } else {
-            const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13 && !options?.bypassAgeCheck) {
-                presentUnderageModal();
-                return;
-            }
-
-            if (validate()) {
-                // Teen consent flows (age 13-17)
-                const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
-                if (isTeen && country) {
-                    if (requiresEUParentalConsent(country, age)) {
-                        try {
-                            setIsLoading(true);
-                            const success = await ensureProfileApprovedFalse();
-                            if (success) closeModal();
-                            else
-                                presentToast(
-                                    'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
-                                    {
-                                        type: ToastTypeEnum.Error,
-                                        hasDismissButton: true,
-                                    }
-                                );
-                        } catch (e) {
-                            console.log('ensureProfileApprovedFalse::error', e);
-                        } finally {
-                            setIsLoading(false);
-                        }
-                        presentEUParentalConsentModal();
-                        return;
-                    }
-
-                    // For all non-EU countries, require consent notice
-                    if (!isEUCountry(country)) {
-                        if (!usMinorConsent && !options?.skipUsConsentCheck) {
-                            presentUSConsentNoticeModal();
-                            return;
-                        }
-                    }
-                }
-
-                setIsLoading(true);
-                try {
-                    if (authToken === 'dummy') {
-                        currentUserStore.set.currentUser({
-                            ...currentUser,
-                            name: name ?? currentUser?.name ?? '',
-                            profileImage: photo ?? currentUser?.profileImage ?? '',
-                        });
-
-                        // update LC network profile
-                        await handleLCNetworkProfileUpdate();
-
-                        setIsLoading(false);
-                        // handleCloseModal();
-                    } else {
-                        // update firebase profile
-                        try {
-                            await updateProfile(auth()?.currentUser, {
-                                displayName: name,
-                                photoURL: photo,
-                            });
-                        } catch (e) {
-                            presentLogoutErrorModal();
-                            setProfileIdError(`There was a firebase error: ${e?.toString?.()}`);
-                        }
-                        // update LC network profile
-                        await handleLCNetworkProfileUpdate();
-
-                        // update sqlite + context store
-                        handleStorageUpdate();
-
-                        setIsLoading(false);
-                        // handleCloseModal();
-                    }
-                } catch (error) {
-                    setIsLoading(false);
-                    console.log('updateProfile::error', error);
-                }
-            }
+        } catch (error) {
+            setIsLoading(false);
+            log.error('updateProfile::error', error);
         }
     };
 
@@ -951,71 +758,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         {errors.name}
                                     </p>
                                 )}
-                            </div>
-
-                            <div className="flex flex-col items-center justify-center w-full mt-2">
-                                <DatePickerInput
-                                    value={dob || ''}
-                                    onChange={handleDobChange}
-                                    error={errors?.dob?.[0]}
-                                    isMobile={!isDesktop}
-                                    label={m['onboarding.profile.dateOfBirth']()}
-                                />
-
-                                {dob && !Number.isNaN(calculateAge(dob)) && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
-                                        {m['onboarding.profile.age']({ age: calculateAge(dob) })}
-                                    </p>
-                                )}
-
-                                {errors?.dob && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
-                                        {errors.dob[0]}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex flex-col items-center justify-center w-full mt-2">
-                                <button
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] pr-[10px] py-[5px] tracking-wider text-base ${
-                                        errors?.country ? 'login-input-email-error' : ''
-                                    }`}
-                                    onClick={() => {
-                                        newModal(
-                                            <CountrySelectorModal
-                                                selected={country}
-                                                onSelect={code => {
-                                                    setErrors(prev => {
-                                                        const next = { ...prev };
-                                                        delete next.country;
-                                                        return next;
-                                                    });
-                                                    handleCountrySelect(code);
-                                                    closeModal();
-                                                }}
-                                            />,
-                                            {
-                                                sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
-                                            },
-                                            {
-                                                desktop: ModalTypes.Cancel,
-                                                mobile: ModalTypes.Cancel,
-                                            }
-                                        );
-                                    }}
-                                >
-                                    {country ? COUNTRIES[country] : 'Country of Residence'}
-                                    <LocationIcon className="w-[44px] text-grayscale-700" />
-                                </button>
-                                {errors?.country && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
-                                        {errors?.country}
-                                    </p>
-                                )}
-                                <p className="text-grayscale-700 text-xs px-[0px] mt-[5px]">
-                                    We ask for your age and country to make sure we comply with
-                                    privacy laws and keep you safe.
-                                </p>
                             </div>
                         </IonRow>
 

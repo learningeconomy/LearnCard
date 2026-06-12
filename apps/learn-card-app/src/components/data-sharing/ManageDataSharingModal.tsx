@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-data-sharing-modal');
 
 import { IonSpinner } from '@ionic/react';
 import {
@@ -120,8 +122,8 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     const handleOpenDetails = () => {
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
-            { sectionClassName: '!bg-transparent !shadow-none' },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+            { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
 
@@ -272,7 +274,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
 
             window.open(urlObj.toString(), '_blank');
         } catch (error) {
-            console.error('Failed to open app:', error);
+            log.error('Failed to open app:', error);
         } finally {
             setIsOpening(false);
         }
@@ -284,7 +286,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
             onUpdate?.();
             closeAllModals();
         } catch (error) {
-            console.error('Failed to revoke access:', error);
+            log.error('Failed to revoke access:', error);
         }
     };
 

@@ -1,6 +1,8 @@
 import { Page } from '@playwright/test';
 import neo4j from 'neo4j-driver';
 import { randomUUID } from 'crypto';
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger('app-store.helpers');
 
 const NEO4J_URI = 'bolt://localhost:7687';
 const NEO4J_USER = 'neo4j';
@@ -34,7 +36,7 @@ export const seedAppListing = async (): Promise<SeededListing> => {
     const displayName = `Test Embed App ${Date.now()}`;
     const slug = `test-embed-app-${Date.now()}`;
 
-    console.log(`[seedAppListing] Connecting to Neo4j at ${NEO4J_URI}...`);
+    log.info(`[seedAppListing] Connecting to Neo4j at ${NEO4J_URI}...`);
     const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
     const session = driver.session();
 
@@ -68,7 +70,7 @@ export const seedAppListing = async (): Promise<SeededListing> => {
                 highlightsJson: JSON.stringify(['Easy to use', 'Fast']),
             }
         );
-        console.log(`[seedAppListing] Created listing: ${displayName} (${listingId})`);
+        log.info(`[seedAppListing] Created listing: ${displayName} (${listingId})`);
     } finally {
         await session.close();
         await driver.close();

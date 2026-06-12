@@ -24,6 +24,9 @@ import {
     getSSSConfig,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('login-page');
+
 import { Capacitor } from '@capacitor/core';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -45,6 +48,7 @@ import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
 import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
 import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
+import { OnboardingStepsEnum } from '../../components/onboarding/onboarding.helpers';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
@@ -57,10 +61,12 @@ import EndorsementSuccessfullRequestModal from '../../components/boost-endorseme
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { newModal, closeModal } = useModal();
+    const { state: coordinatorState } = useAppAuth();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
     const { appleLogin, googleLogin } = useFirebase();
@@ -95,23 +101,44 @@ export const LoginContent: React.FC = () => {
                 authStore.set.pinTokenExpire(result.tokenExpire);
             }
         } catch (e) {
-            console.error('///error handleGeneratePinUpdateToken', e);
+            log.error('///error handleGeneratePinUpdateToken', e);
         }
     }, [generatePinUpdateToken]);
+
+    const openOnboardingModal = useCallback(
+        (initialStep?: OnboardingStepsEnum) => {
+            // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
+            redirectStore.set.isOnboardingOpen(true);
+
+            newModal(
+                <OnboardingContainer initialStep={initialStep} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        },
+        [coordinatorState.status, currentUser, isLoggedIn, newModal]
+    );
 
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
     const handlePromptOnboarding = useCallback(async () => {
+        if (redirectStore.get.isOnboardingOpen()) {
+            return;
+        }
+
+        if (coordinatorState.status === 'needs_setup') {
+            openOnboardingModal(OnboardingStepsEnum.ageGate);
+            return;
+        }
+
         if (!(currentUser && isLoggedIn && currentUser?.privateKey)) return;
+
         try {
             const wallet = await initWallet(currentUser.privateKey);
             const profile = await wallet?.invoke?.getProfile();
+
             if (!profile) {
-                newModal(
-                    <OnboardingContainer />,
-                    {},
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                );
+                openOnboardingModal(OnboardingStepsEnum.ageGate);
             } else if (profile?.approved === false) {
                 // Re-prompt EU Parental Consent if user was previously marked unapproved
                 newModal(
@@ -129,15 +156,31 @@ export const LoginContent: React.FC = () => {
                 );
             }
         } catch (e) {
-            console.error('///error handlePromptOnboarding', e);
+            log.error('///error handlePromptOnboarding', e);
         }
-    }, [currentUser, isLoggedIn, initWallet, newModal]);
+    }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, openOnboardingModal]);
 
     const didRedirectRef = useRef(false);
+    const didOpenOnboardingRef = useRef(false);
+
+    useEffect(() => {
+        if (coordinatorState.status !== 'needs_setup') {
+            didOpenOnboardingRef.current = false;
+        }
+    }, [coordinatorState.status]);
 
     useEffect(() => {
         if (didRedirectRef.current) return;
-        if (!currentUser && !isLoggedIn) return;
+        if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
+
+        if (coordinatorState.status === 'needs_setup') {
+            if (didOpenOnboardingRef.current) return;
+
+            didOpenOnboardingRef.current = true;
+            didRedirectRef.current = false;
+            void handlePromptOnboarding();
+            return;
+        }
 
         didRedirectRef.current = true;
 
@@ -178,11 +221,12 @@ export const LoginContent: React.FC = () => {
                 void handlePromptOnboarding();
             }
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
     }, [
         currentUser,
         isLoggedIn,
+        coordinatorState.status,
         history,
         query,
         handleGeneratePinUpdateToken,
@@ -198,6 +242,10 @@ export const LoginContent: React.FC = () => {
             return () => clearTimeout(timer); // Add cleanup
         }
     }, [showConfirmation]);
+
+    const isNewUserSetup = coordinatorState.status === 'needs_setup';
+    const isReturningUser =
+        coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
     // custom logins associated with the app
     const extraSocialLogins = useMemo(
@@ -252,7 +300,7 @@ export const LoginContent: React.FC = () => {
                         <QrLoginRequester
                             serverUrl={getSSSConfig().serverUrl}
                             onApproved={(deviceShare, _approverDid, hint, version) => {
-                                console.debug(
+                                log.debug(
                                     '[QR Login] approved — share:',
                                     deviceShare.substring(0, 8) + '...',
                                     '| hint:',
@@ -308,7 +356,9 @@ export const LoginContent: React.FC = () => {
                                 <TransP
                                     m={m['login.qrApproved.withHint']}
                                     values={{ hint: accountHint }}
-                                    components={[<span className="font-medium text-grayscale-900" key="h" />]}
+                                    components={[
+                                        <span className="font-medium text-grayscale-900" key="h" />,
+                                    ]}
                                 />
                             ) : (
                                 m['login.qrApproved.noHint']()
@@ -329,6 +379,28 @@ export const LoginContent: React.FC = () => {
                 </IonRow>
             ) : (
                 <>
+                    <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <div
+                            className={`w-full p-3 rounded-[20px] border ${
+                                isNewUserSetup
+                                    ? 'bg-emerald-50 border-emerald-100'
+                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
+                            }`}
+                        >
+                            <p
+                                className={`text-sm font-medium ${
+                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
+                                }`}
+                            >
+                                {isNewUserSetup
+                                    ? 'Create your account in a few quick steps.'
+                                    : isReturningUser
+                                    ? 'Welcome back — sign in to continue.'
+                                    : 'Sign in or create your account.'}
+                            </p>
+                        </div>
+                    </IonRow>
+
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
@@ -351,7 +423,9 @@ export const LoginContent: React.FC = () => {
                                         <TransP
                                             m={m['login.linkedBanner.withHint']}
                                             values={{ hint: accountHint }}
-                                            components={[<span className="font-semibold" key="h" />]}
+                                            components={[
+                                                <span className="font-semibold" key="h" />,
+                                            ]}
                                         />
                                     ) : (
                                         m['login.linkedBanner.noHint']()
@@ -374,7 +448,11 @@ export const LoginContent: React.FC = () => {
                                 <span className="text-sm text-white font-medium">
                                     <TransP
                                         m={m['login.installIntent.banner']}
-                                        values={{ appName: installIntent.appName ?? m['login.installIntent.defaultAppName']() }}
+                                        values={{
+                                            appName:
+                                                installIntent.appName ??
+                                                m['login.installIntent.defaultAppName'](),
+                                        }}
                                         components={[<span className="font-semibold" key="a" />]}
                                     />
                                 </span>
@@ -431,7 +509,7 @@ export const LoginContent: React.FC = () => {
                                                 : indexedDBLocalPersistence
                                         );
                                     } catch (e) {
-                                        console.warn('Failed to set Firebase persistence', e);
+                                        log.warn('Failed to set Firebase persistence', e);
                                     }
                                 }}
                                 className={`

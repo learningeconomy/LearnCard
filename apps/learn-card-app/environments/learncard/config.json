@@ -113,6 +113,12 @@
             "learncardapp.netlify.com",
             "lcw.app"
         ],
-        "customSchemes": ["dccrequest", "msprequest", "asuprequest"]
+        "customSchemes": [
+            "dccrequest",
+            "msprequest",
+            "asuprequest",
+            "openid4vp",
+            "openid-credential-offer"
+        ]
     }
 }

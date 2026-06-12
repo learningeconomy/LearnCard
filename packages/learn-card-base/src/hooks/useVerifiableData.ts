@@ -3,6 +3,8 @@ import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
 import type { UnsignedVC } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-verifiable-data');
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
 
@@ -105,6 +107,7 @@ const storeVerifiableData = async <T>(
             title: `VerifiableData: ${key}`,
             verifiableData: data as any,
             issuanceDate,
+            sharedUris: {},
         });
     } else {
         // First write for this key — create a new index record
@@ -161,7 +164,7 @@ const getVerifiableData = async <T>(
                 };
             }
         } catch (e) {
-            console.warn('Failed to read verifiable data credential:', e);
+            log.warn('Failed to read verifiable data credential:', e);
         }
     }
 
@@ -242,11 +245,19 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         onError: (_error, _data, context) => {
             queryClient.setQueryData(queryKey, context?.previousData);
         },
-        onSuccess: (_, data) => {
+        onSuccess: async (_, data) => {
             // Update the cache with the new data
             queryClient.setQueryData(queryKey, {
                 data,
                 issuanceDate: new Date().toISOString(),
+            });
+
+            await queryClient.removeQueries({
+                queryKey: ['useGetCredentialList'],
+            });
+
+            queryClient.invalidateQueries({
+                queryKey: ['useSyncConsentFlow'],
             });
         },
     });

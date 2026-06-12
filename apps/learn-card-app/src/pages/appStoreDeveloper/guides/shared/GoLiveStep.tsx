@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Rocket, ArrowLeft, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('go-live-step');
 
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
@@ -22,7 +24,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
     onBack,
     completedItems = [],
     title = 'Ready to Go Live!',
-    description = 'You\'ve completed all the setup steps. Activate your integration to start using it in production.',
+    description = "You've completed all the setup steps. Activate your integration to start using it in production.",
 }) => {
     const history = useHistory();
     const { presentToast } = useToast();
@@ -34,7 +36,10 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
     const handleGoLive = async () => {
         if (!integration) {
-            presentToast('No integration selected', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            presentToast('No integration selected', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
             return;
         }
 
@@ -60,7 +65,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                 history.push(`/app-store/developer/integrations/${integration.id}`);
             }, 1500);
         } catch (error) {
-            console.error('Failed to activate integration:', error);
+            log.error('Failed to activate integration:', error);
             presentToast('Failed to activate integration. Please try again.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

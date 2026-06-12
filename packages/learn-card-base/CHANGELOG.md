@@ -1,5 +1,68 @@
 # learn-card-base
 
+## 0.2.0
+
+### Minor Changes
+
+-   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add prettifyVerificationItems helper to humanize raw SD-JWT-VC verification check codes (parse, disclosure_hash_integrity, issuer_resolved, issuer_signature, vct, expiration) and W3C VC check codes (proof, credentialStatus, credentialSchema) into user-friendly labels in the Credential Verifications display. Idempotent — already-prettified items pass through unchanged. Applied in useVerifyCredential and BoostPreview.useVerification.
+
+### Patch Changes
+
+-   [#1276](https://github.com/learningeconomy/LearnCard/pull/1276) [`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1869] - Implement CLR badge card
+
+-   [#1289](https://github.com/learningeconomy/LearnCard/pull/1289) [`77ddf3dda990b958e913a479f260bde0ea72447c`](https://github.com/learningeconomy/LearnCard/commit/77ddf3dda990b958e913a479f260bde0ea72447c) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: CLR preview native fixes
+
+-   [#1267](https://github.com/learningeconomy/LearnCard/pull/1267) [`8fdf6fa9ffdd13426ffea6762ee1a8f5f6196e0f`](https://github.com/learningeconomy/LearnCard/commit/8fdf6fa9ffdd13426ffea6762ee1a8f5f6196e0f) Thanks [@smurflo2](https://github.com/smurflo2)! - Check Age Gate first during sign up
+
+-   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add OID4VCI 1.0 Final `invalid_credential_request` body error code to the OID4VC resilience orchestrator's structured signer-failure dispatch table. Issuers like EUDI that return this generic OAuth2-style error code on proof JWT verification failures (e.g., when the holder DID can't be resolved from public infrastructure) now trigger the did:web → did:key signer fallback retry, instead of surfacing the error to the user immediately.
+
+-   [#1271](https://github.com/learningeconomy/LearnCard/pull/1271) [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1862] FE: Revoke/suspend/unsuspend issued credentials followup part 1
+
+-   [#1292](https://github.com/learningeconomy/LearnCard/pull/1292) [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74) Thanks [@Custard7](https://github.com/Custard7)! - Hide unknown issuer
+
+-   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    -   @learncard/helpers@1.3.4
+    -   @learncard/types@5.17.2
+    -   @learncard/render-method-plugin@3.0.2
+    -   @learncard/lca-api-plugin@1.2.13
+    -   @learncard/learn-card-plugin@1.2.22
+    -   @learncard/ler-rs-plugin@0.1.13
+    -   @learncard/sss-key-manager@0.1.12
+
+## 0.1.37
+
+### Patch Changes
+
+-   [#1280](https://github.com/learningeconomy/LearnCard/pull/1280) [`2f11639b463aedd57a783f9b57df50d67762b16d`](https://github.com/learningeconomy/LearnCard/commit/2f11639b463aedd57a783f9b57df50d67762b16d) Thanks [@Custard7](https://github.com/Custard7)! - Fix use logged in reactivity
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/lca-api-plugin@1.2.12
+    -   @learncard/ler-rs-plugin@0.1.12
+    -   @learncard/types@5.17.1
+    -   @learncard/render-method-plugin@3.0.1
+    -   @learncard/sss-key-manager@0.1.11
+
+## 0.1.36
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/types@5.17.0
+    -   @learncard/render-method-plugin@3.0.0
+    -   @learncard/lca-api-plugin@1.2.11
+    -   @learncard/ler-rs-plugin@0.1.11
+    -   @learncard/sss-key-manager@0.1.10
+
+## 0.1.35
+
+### Patch Changes
+
+-   [#1261](https://github.com/learningeconomy/LearnCard/pull/1261) [`57d7724515a064256037827dffc3e79b72b9186f`](https://github.com/learningeconomy/LearnCard/commit/57d7724515a064256037827dffc3e79b72b9186f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1844 - Central Logging System (LCA/ScoutPass)
+
+-   [#1243](https://github.com/learningeconomy/LearnCard/pull/1243) [`dd5872914236a7f0a089a76292c792bb949dd4ca`](https://github.com/learningeconomy/LearnCard/commit/dd5872914236a7f0a089a76292c792bb949dd4ca) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1843] Replace horizontal role scroller
+
 ## 0.1.34
 
 ### Patch Changes

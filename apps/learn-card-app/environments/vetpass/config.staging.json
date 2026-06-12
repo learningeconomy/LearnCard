@@ -7,14 +7,14 @@
         "lcaApi": "https://staging.api.learncard.app/trpc",
         "xapi": "https://staging.network.learncard.com/xapi"
     },
+    "features": {
+        "useSeededSkillFrameworks": true
+    },
     "observability": {
         "sentryEnv": "staging-vetpass",
         "launchDarklyClientId": "69d016bd5bb5390aaec9af07"
     },
     "native": {
-        "deepLinkDomains": [
-            "staging.vetpass.app",
-            "staging.learncard.app"
-        ]
+        "deepLinkDomains": ["staging.vetpass.app", "staging.learncard.app"]
     }
 }

@@ -81,6 +81,9 @@ import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSk
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
 import * as m from '../../../paraglide/messages.js';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('update-boost-cms');
+
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
@@ -499,7 +502,7 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.info('error::savingBoost', e);
             presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -535,7 +538,7 @@ const UpdateBoostCMS: React.FC = () => {
                 }
             } catch (e) {
                 setIsPublishLoading(false);
-                console.log('error::boosting::someone', e);
+                log.info('error::boosting::someone', e);
                 presentToast(m['toasts.boost.boostIssuedError'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Error,
@@ -607,7 +610,7 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,

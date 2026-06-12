@@ -8,6 +8,16 @@
 -   Start on port 4000: `pnpm start-p-4000`
 -   Deploy: `pnpm serverless-deploy`
 
+### Skill Framework Seeding
+
+-   Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
+-   Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
+-   Re-seed manually with `pnpm skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
+-   Grant framework admin access to an existing profile with `pnpm skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
+-   If no stage is provided, the CLI defaults to `local` and prints a note.
+-   Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
+-   The seed command is idempotent and will not duplicate framework or skill nodes.
+
 ## Test Commands
 
 -   Run all tests: `pnpm test`
@@ -418,13 +428,14 @@ import { trace, traceDb, traceHttp, traceCrypto, traceInternal } from '@tracing'
 
 Providers are registered automatically on startup based on environment variables:
 
-| Provider  | Env Variable      | Default   | Output Format                                |
-| --------- | ----------------- | --------- | -------------------------------------------- |
-| Console   | `TRACE_CONSOLE`   | `true`    | Indented tree with timing: `✓ db:query 45ms` |
-| JSON      | `TRACE_JSON`      | `false`   | Structured JSON per span (for log ingestion) |
-| Sentry    | `SENTRY_DSN`      | disabled  | Sentry performance transactions              |
+| Provider | Env Variable    | Default  | Output Format                                |
+| -------- | --------------- | -------- | -------------------------------------------- |
+| Console  | `TRACE_CONSOLE` | `true`   | Indented tree with timing: `✓ db:query 45ms` |
+| JSON     | `TRACE_JSON`    | `false`  | Structured JSON per span (for log ingestion) |
+| Sentry   | `SENTRY_DSN`    | disabled | Sentry performance transactions              |
 
 **Console output example:**
+
 ```
 [TRACE:a1b2c3]✓ route:send 234ms
 [TRACE:a1b2c3]  ✓ db:getBoostByUri 12ms
@@ -433,8 +444,18 @@ Providers are registered automatically on startup based on environment variables
 ```
 
 **JSON output example:**
+
 ```json
-{"type":"TRACE_SPAN","traceId":"a1b2c3","spanId":"d4e5f6","op":"db","name":"getBoostByUri","durationMs":12,"status":"ok","timestamp":"2024-01-15T10:30:00.000Z"}
+{
+    "type": "TRACE_SPAN",
+    "traceId": "a1b2c3",
+    "spanId": "d4e5f6",
+    "op": "db",
+    "name": "getBoostByUri",
+    "durationMs": 12,
+    "status": "ok",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+}
 ```
 
 ### Configuration
@@ -493,6 +514,7 @@ manager.register(new MyProvider());
 ### Purpose
 
 Allows issuers to revoke credentials from recipients. When revoked:
+
 1. Recipient removed from member/recipient lists
 2. Permissions granted via claim hooks reversed
 3. Connections created via auto-connect cleaned up
@@ -506,11 +528,11 @@ Allows issuers to revoke credentials from recipients. When revoked:
 (Credential)-[:CREDENTIAL_RECEIVED]->(Profile)
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `status` | string | `null` (claimed), `'pending'` (not yet accepted), `'revoked'` |
-| `date` | datetime | When received/claimed |
-| `revokedAt` | datetime | When revoked (if revoked) |
+| Property    | Type     | Description                                                   |
+| ----------- | -------- | ------------------------------------------------------------- |
+| `status`    | string   | `null` (claimed), `'pending'` (not yet accepted), `'revoked'` |
+| `date`      | datetime | When received/claimed                                         |
+| `revokedAt` | datetime | When revoked (if revoked)                                     |
 
 #### CONNECTED_WITH relationship
 
@@ -518,8 +540,8 @@ Allows issuers to revoke credentials from recipients. When revoked:
 (Profile)-[:CONNECTED_WITH]->(Profile)
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
+| Property  | Type     | Description                                       |
+| --------- | -------- | ------------------------------------------------- |
 | `sources` | string[] | Source keys like `['boost:uuid1', 'boost:uuid2']` |
 
 ### Key Queries
@@ -542,23 +564,24 @@ ON MATCH SET received.status = "revoked", received.revokedAt = $revokedAt
 
 ### Revoke Hooks (`src/helpers/revoke-hooks.helpers.ts`)
 
-| Hook | Purpose |
-|------|---------|
+| Hook                            | Purpose                                                           |
+| ------------------------------- | ----------------------------------------------------------------- |
 | `processPermissionsRevokeHooks` | Removes HAS_ROLE relationships from GRANT_PERMISSIONS claim hooks |
-| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships |
-| `processAdminRevokeHooks` | Removes admin roles from ADD_ADMIN claim hooks |
-| `processConnectionRevoke` | Removes CONNECTED_WITH relationships sourced from the boost |
+| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships                      |
+| `processAdminRevokeHooks`       | Removes admin roles from ADD_ADMIN claim hooks                    |
+| `processConnectionRevoke`       | Removes CONNECTED_WITH relationships sourced from the boost       |
 
 ### Connection Source Keys
 
-- Pattern: `boost:${boostId}`
-- Connections can have multiple sources (from multiple boosts)
-- On revoke, only the source key from the revoked boost is removed
-- Connection deleted only when all source keys are removed
+-   Pattern: `boost:${boostId}`
+-   Connections can have multiple sources (from multiple boosts)
+-   On revoke, only the source key from the revoked boost is removed
+-   Connection deleted only when all source keys are removed
 
 ### Parent Boost Handling
 
 `processConnectionRevoke` checks:
+
 1. Direct boost (if `autoConnectRecipients=true`)
 2. All parent boosts with `autoConnectRecipients=true`
 3. All boosts targeted by AUTO_CONNECT claim hooks
@@ -577,13 +600,13 @@ getRevokedCredentials: profileRoute
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/accesslayer/credential/read.ts` | `getReceivedCredentialsForProfile` (filters revoked), `getRevokedCredentialUrisForProfile` |
-| `src/routes/credentials.ts` | `getRevokedCredentials` endpoint |
-| `src/helpers/revoke-hooks.helpers.ts` | All revoke hook processors |
-| `test/revoke-credential.spec.ts` | Revocation tests |
-| `test/claim-hooks.spec.ts` | Claim hook tests |
+| File                                  | Purpose                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/accesslayer/credential/read.ts`  | `getReceivedCredentialsForProfile` (filters revoked), `getRevokedCredentialUrisForProfile` |
+| `src/routes/credentials.ts`           | `getRevokedCredentials` endpoint                                                           |
+| `src/helpers/revoke-hooks.helpers.ts` | All revoke hook processors                                                                 |
+| `test/revoke-credential.spec.ts`      | Revocation tests                                                                           |
+| `test/claim-hooks.spec.ts`            | Claim hook tests                                                                           |
 
 ## App Notifications
 
@@ -655,11 +678,11 @@ Notifications can be filtered by app using the `data.metadata.listingId` field i
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/routes/app-store.ts` | `sendAppNotification` route + `handleSendNotificationEvent` handler |
-| `src/helpers/notifications.helpers.ts` | `addNotificationToQueue` — SQS / webhook delivery |
-| `@learncard/types` `lcn.ts` | `LCNNotificationTypeEnumValidator` (`APP_NOTIFICATION`), `SendNotificationEventValidator` |
+| File                                   | Purpose                                                                                   |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/routes/app-store.ts`              | `sendAppNotification` route + `handleSendNotificationEvent` handler                       |
+| `src/helpers/notifications.helpers.ts` | `addNotificationToQueue` — SQS / webhook delivery                                         |
+| `@learncard/types` `lcn.ts`            | `LCNNotificationTypeEnumValidator` (`APP_NOTIFICATION`), `SendNotificationEventValidator` |
 
 ## App Counters
 
@@ -677,29 +700,29 @@ Multiple parallel `APP_COUNTER` relationships (one per key) can exist between th
 
 ### Event Types
 
-| Event | Validator | Purpose |
-|---|---|---|
+| Event               | Validator                        | Purpose                                                   |
+| ------------------- | -------------------------------- | --------------------------------------------------------- |
 | `increment-counter` | `IncrementCounterEventValidator` | Atomic increment/decrement via `MERGE ON CREATE/ON MATCH` |
-| `get-counter` | `GetCounterEventValidator` | Read single counter (returns `{ value: 0 }` if missing) |
-| `get-counters` | `GetCountersEventValidator` | Read multiple or all counters for a (user, app) pair |
+| `get-counter`       | `GetCounterEventValidator`       | Read single counter (returns `{ value: 0 }` if missing)   |
+| `get-counters`      | `GetCountersEventValidator`      | Read multiple or all counters for a (user, app) pair      |
 
 ### Limits
 
-- Max **50 counter keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`)
-- Max **100 writes** per user per app per minute (Redis rate limit key: `app-counter-rate:{listingId}:{profileId}`)
-- Counter keys: alphanumeric + `_` / `-`, max 64 chars
-- Amount: any finite integer
+-   Max **50 counter keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`)
+-   Max **100 writes** per user per app per minute (Redis rate limit key: `app-counter-rate:{listingId}:{profileId}`)
+-   Counter keys: alphanumeric + `_` / `-`, max 64 chars
+-   Amount: any finite integer
 
 ### Key Files
 
-| File | Purpose |
-|---|---|
-| `src/accesslayer/app-counter/create.ts` | `incrementAppCounter` — atomic `MERGE`-based upsert |
-| `src/accesslayer/app-counter/read.ts` | `getAppCounter`, `getAppCounters`, `countAppCounterKeys` |
-| `src/helpers/app-counter.helpers.ts` | Event handlers with validation + rate limiting |
-| `src/types/app-counter.ts` | TypeScript types for counter I/O |
-| `@learncard/types` `lcn.ts` | `IncrementCounterEventValidator`, `GetCounterEventValidator`, `GetCountersEventValidator` |
-| `test/app-counters.spec.ts` | Counter tests |
+| File                                    | Purpose                                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/accesslayer/app-counter/create.ts` | `incrementAppCounter` — atomic `MERGE`-based upsert                                       |
+| `src/accesslayer/app-counter/read.ts`   | `getAppCounter`, `getAppCounters`, `countAppCounterKeys`                                  |
+| `src/helpers/app-counter.helpers.ts`    | Event handlers with validation + rate limiting                                            |
+| `src/types/app-counter.ts`              | TypeScript types for counter I/O                                                          |
+| `@learncard/types` `lcn.ts`             | `IncrementCounterEventValidator`, `GetCounterEventValidator`, `GetCountersEventValidator` |
+| `test/app-counters.spec.ts`             | Counter tests                                                                             |
 
 ### Useful Cypher Queries
 
@@ -758,28 +781,28 @@ pnpm seed:dev-app -- --promotion FEATURED_CAROUSEL
 
 ### All Flags
 
-| Flag | Default | Description |
-|---|---|---|
-| `--app-url` | `http://localhost:4321` | Embed URL for the partner app |
-| `--app-name` | `Dev Partner App` | Display name |
-| `--slug` | derived from app-name | URL slug |
-| `--profile` | `dev-owner` | Owner profile ID |
-| `--install-for` | _(none)_ | Profile ID to install the app for |
-| `--domain` | hostname from app-url | Domain for DID construction |
-| `--app-image` | _(none)_ | Custom app icon URL |
-| `--template-alias` | `default` | Alias for the boost template |
-| `--sa-endpoint` | `http://localhost:5100/api` | Signing authority endpoint |
-| `--sa-seed` | `'d'.repeat(64)` | Seed for signing authority key |
-| `--permissions` | all permissions | Comma-separated permission list |
-| `--promotion` | `FEATURED_CAROUSEL` | Promotion level for app store visibility |
-| `--reset-rate-limits` | _(flag)_ | Clear Redis rate limit keys for this app |
+| Flag                  | Default                     | Description                              |
+| --------------------- | --------------------------- | ---------------------------------------- |
+| `--app-url`           | `http://localhost:4321`     | Embed URL for the partner app            |
+| `--app-name`          | `Dev Partner App`           | Display name                             |
+| `--slug`              | derived from app-name       | URL slug                                 |
+| `--profile`           | `dev-owner`                 | Owner profile ID                         |
+| `--install-for`       | _(none)_                    | Profile ID to install the app for        |
+| `--domain`            | hostname from app-url       | Domain for DID construction              |
+| `--app-image`         | _(none)_                    | Custom app icon URL                      |
+| `--template-alias`    | `default`                   | Alias for the boost template             |
+| `--sa-endpoint`       | `http://localhost:5100/api` | Signing authority endpoint               |
+| `--sa-seed`           | `'d'.repeat(64)`            | Seed for signing authority key           |
+| `--permissions`       | all permissions             | Comma-separated permission list          |
+| `--promotion`         | `FEATURED_CAROUSEL`         | Promotion level for app store visibility |
+| `--reset-rate-limits` | _(flag)_                    | Clear Redis rate limit keys for this app |
 
 ### Prerequisites
 
-- Neo4j running (`pnpm dev:services` from `apps/learn-card-app` or local Docker)
-- Redis running (same)
-- MongoDB running (same)
-- Falls back to local docker-compose defaults if no `.env` is present
+-   Neo4j running (`pnpm dev:services` from `apps/learn-card-app` or local Docker)
+-   Redis running (same)
+-   MongoDB running (same)
+-   Falls back to local docker-compose defaults if no `.env` is present
 
 ### Re-running
 
@@ -834,10 +857,10 @@ Tenant is resolved once per request in `createContext` via `resolveTenantFromReq
 
 ### Rules for Route Authors
 
-- **Always pass `branding: ctx.tenant?.emailBranding`** to `deliveryService.send()`. Emails sent without it render with LearnCard defaults regardless of the caller's tenant.
-- **Use `getFrom({ mailbox, branding })`** for the from-address so the domain matches the tenant (e.g. `recovery@vetpass.app` for VetPass).
-- **Use the local template ID as the `templateAlias`** (e.g. `'inbox-claim'`, `'guardian-approval'`). These are pre-registered as sentinels in `LOCAL_TEMPLATE_MAP` — env-var overrides are optional, never required.
-- **Do not write plain-text fallbacks.** If local rendering fails for a sentinel alias, the adapter re-throws so the error surfaces — don't silently send unbranded text.
+-   **Always pass `branding: ctx.tenant?.emailBranding`** to `deliveryService.send()`. Emails sent without it render with LearnCard defaults regardless of the caller's tenant.
+-   **Use `getFrom({ mailbox, branding })`** for the from-address so the domain matches the tenant (e.g. `recovery@vetpass.app` for VetPass).
+-   **Use the local template ID as the `templateAlias`** (e.g. `'inbox-claim'`, `'guardian-approval'`). These are pre-registered as sentinels in `LOCAL_TEMPLATE_MAP` — env-var overrides are optional, never required.
+-   **Do not write plain-text fallbacks.** If local rendering fails for a sentinel alias, the adapter re-throws so the error surfaces — don't silently send unbranded text.
 
 ### Adding a New Template
 

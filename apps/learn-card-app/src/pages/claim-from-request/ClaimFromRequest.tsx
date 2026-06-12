@@ -23,6 +23,9 @@ import {
     IonSpinner,
 } from '@ionic/react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-from-request');
+
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import FatArrow from 'learn-card-base/svgs/FatArrow';
@@ -240,15 +243,19 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
 };
 
 // Map technical error messages to user-friendly explanations
-const getFriendlyErrorInfo = (errorMessage: string): { title: string; description: string; suggestion: string } => {
+const getFriendlyErrorInfo = (
+    errorMessage: string
+): { title: string; description: string; suggestion: string } => {
     const lowerMessage = errorMessage.toLowerCase();
 
     // Credential/Boost not found errors
     if (lowerMessage.includes('not found') || lowerMessage.includes('could not find boost')) {
         return {
             title: 'Credential Not Found',
-            description: 'The credential you\'re trying to claim doesn\'t exist or is no longer available.',
-            suggestion: 'The link may have expired or the credential may have been removed. Contact the issuer for a new link.',
+            description:
+                "The credential you're trying to claim doesn't exist or is no longer available.",
+            suggestion:
+                'The link may have expired or the credential may have been removed. Contact the issuer for a new link.',
         };
     }
 
@@ -265,7 +272,7 @@ const getFriendlyErrorInfo = (errorMessage: string): { title: string; descriptio
     if (lowerMessage.includes('draft')) {
         return {
             title: 'Credential Not Ready',
-            description: 'This credential is still being prepared and isn\'t ready to claim yet.',
+            description: "This credential is still being prepared and isn't ready to claim yet.",
             suggestion: 'Check back later or contact the issuer.',
         };
     }
@@ -274,8 +281,9 @@ const getFriendlyErrorInfo = (errorMessage: string): { title: string; descriptio
     if (lowerMessage.includes('challenge') || lowerMessage.includes('verification failed')) {
         return {
             title: 'Verification Failed',
-            description: 'We couldn\'t verify your identity for this claim.',
-            suggestion: 'Try again. If the problem persists, you may need to request a new claim link.',
+            description: "We couldn't verify your identity for this claim.",
+            suggestion:
+                'Try again. If the problem persists, you may need to request a new claim link.',
         };
     }
 
@@ -284,7 +292,8 @@ const getFriendlyErrorInfo = (errorMessage: string): { title: string; descriptio
         return {
             title: 'Nothing to Claim',
             description: 'There are no pending credentials waiting for you with this link.',
-            suggestion: 'You may have already claimed this credential, or it was sent to a different account.',
+            suggestion:
+                'You may have already claimed this credential, or it was sent to a different account.',
         };
     }
 
@@ -293,7 +302,8 @@ const getFriendlyErrorInfo = (errorMessage: string): { title: string; descriptio
         return {
             title: 'Invalid Link',
             description: 'This claim link appears to be malformed or corrupted.',
-            suggestion: 'Check that you copied the full link, or request a new one from the issuer.',
+            suggestion:
+                'Check that you copied the full link, or request a new one from the issuer.',
         };
     }
 
@@ -310,7 +320,8 @@ const getFriendlyErrorInfo = (errorMessage: string): { title: string; descriptio
     if (lowerMessage.includes('signing authority')) {
         return {
             title: 'Issuer Configuration Error',
-            description: 'The issuer\'s signing setup isn\'t configured correctly for this credential.',
+            description:
+                "The issuer's signing setup isn't configured correctly for this credential.",
             suggestion: 'Contact the issuer to resolve this issue.',
         };
     }
@@ -344,13 +355,9 @@ const ExchangeErrorDisplay: React.FC<{
                         <AlertCircle className="w-10 h-10 text-white" />
                     </div>
 
-                    <h1 className="text-2xl font-bold text-white mb-2">
-                        {friendlyError.title}
-                    </h1>
+                    <h1 className="text-2xl font-bold text-white mb-2">{friendlyError.title}</h1>
 
-                    <p className="text-rose-100 text-sm">
-                        We couldn't complete your request
-                    </p>
+                    <p className="text-rose-100 text-sm">We couldn't complete your request</p>
                 </div>
 
                 {/* Content */}
@@ -366,9 +373,7 @@ const ExchangeErrorDisplay: React.FC<{
                                 What to do
                             </p>
 
-                            <p className="text-sm text-amber-800">
-                                {friendlyError.suggestion}
-                            </p>
+                            <p className="text-sm text-amber-800">{friendlyError.suggestion}</p>
                         </div>
 
                         {/* Technical details (collapsed by default feeling) */}
@@ -453,7 +458,7 @@ const ClaimFromRequest: React.FC = () => {
         setExchangeState({ state: ExchangeState.Loading });
         try {
             if (!vc_request_url) {
-                console.error('Missing required parameters: vc_request_url');
+                log.error('Missing required parameters: vc_request_url');
                 setExchangeState({ state: ExchangeState.Error, data: 'Missing vc_request_url' });
                 return;
             }
@@ -513,7 +518,7 @@ const ClaimFromRequest: React.FC = () => {
                 });
             }
         } catch (error) {
-            console.error('Error in VC-API exchange flow:', error);
+            log.error('Error in VC-API exchange flow:', error);
             setExchangeState({ state: ExchangeState.Error, data: error });
         }
     };
@@ -572,10 +577,7 @@ const ClaimFromRequest: React.FC = () => {
                         source: 'vc-api-request',
                     });
                 } catch (err) {
-                    console.error(
-                        '[ClaimFromRequest] failed to publish ingest event:',
-                        err,
-                    );
+                    log.error('failed to publish ingest event', err);
                 }
             }
 
@@ -588,7 +590,7 @@ const ClaimFromRequest: React.FC = () => {
             });
         } catch (e) {
             setClaimingCredential(false);
-            console.error('Error claiming credential', e);
+            log.error('Error claiming credential', e);
 
             if (e instanceof Error && e?.message?.includes('exists')) {
                 presentToast(m['toasts.alreadyClaimed'](), {

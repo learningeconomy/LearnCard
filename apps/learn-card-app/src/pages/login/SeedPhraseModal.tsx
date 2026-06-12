@@ -17,6 +17,9 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import useTheme from '../../theme/hooks/useTheme';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('seed-phrase-modal');
+
 const SeedPhraseModal: React.FC = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -74,7 +77,7 @@ const SeedPhraseModal: React.FC = () => {
             history.push('/wallet');
         } catch (e) {
             setErrorMessage(m['login.seedPhrase.error.generic']());
-            console.log('login error:', e);
+            log.info('login error:', e);
         }
     };
 

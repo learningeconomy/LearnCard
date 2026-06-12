@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('json-preview-modal');
 
 import X from '../../svgs/X';
 import CopyStack from '../../svgs/CopyStack';
@@ -32,7 +34,7 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
+            log.error('Failed to copy to clipboard:', err);
             presentToast(m['toasts.jsonCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

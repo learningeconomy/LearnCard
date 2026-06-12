@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('my-learn-card-modal');
 
 import * as m from '../../paraglide/messages.js';
 
@@ -346,8 +348,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     if (prompted) return;
                     newModal(
                         <ManageDataSharingModal />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
                 },
             },
@@ -386,7 +388,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 caretText: '',
                 onClick: async () => {
                     if (!currentUser?.privateKey) {
-                        console.error('No private key available');
+                        log.error('No private key available');
                         return;
                     }
 
@@ -759,7 +761,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         </span>
                         {!isNetworkUser && !isNetworkUserLoading && (
                             <button
-                                onClick={handlePresentJoinNetworkModal}
+                                onClick={() => {
+                                    void handlePresentJoinNetworkModal();
+                                }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
                                 Complete Profile
@@ -772,7 +776,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                 if (hide) return undefined;
 
-                                const version = title === m['profile.menu.emailAddresses']() ? '2' : '1';
+                                const version =
+                                    title === m['profile.menu.emailAddresses']() ? '2' : '1';
 
                                 let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
 
@@ -800,9 +805,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         {!hideLogout && (
                             <button
-                                onClick={() =>
-                                    handleLogout({ overrideRedirectUrl: '/login' })
-                                }
+                                onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}
                             >

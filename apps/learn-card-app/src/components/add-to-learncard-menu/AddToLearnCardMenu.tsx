@@ -1,6 +1,8 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('add-to-learn-card-menu');
 
 import * as m from '../../paraglide/messages.js';
 
@@ -76,7 +78,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
 
     useEffect(() => {
         void importPasteOrUploadClaimModal().catch(err => {
-            console.error('[ClaimLink] Failed to preload PasteOrUploadClaimModal chunk:', err);
+            log.error('[ClaimLink] Failed to preload PasteOrUploadClaimModal chunk:', err);
         });
     }, []);
 

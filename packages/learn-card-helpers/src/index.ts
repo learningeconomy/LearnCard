@@ -82,6 +82,10 @@ export * from './Utilities';
 
 // Export app install helpers
 export * from './app-install';
+export * from './credential-format';
+
+// ADR-0001 Phase 1: format-tagged credential storage projector
+export * from './credential-format';
 
 /**
  * Checks if a DID is an app-specific did:web
