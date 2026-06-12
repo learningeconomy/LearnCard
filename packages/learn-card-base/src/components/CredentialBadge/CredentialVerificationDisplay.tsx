@@ -162,9 +162,28 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
             </div>
         );
     };
+    const renderIconOnlyBadge = (badgeIconClassName = iconClassName) => {
+        if (verifierState === VERIFIER_STATES.selfVerified) {
+            return <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        if (verifierState === VERIFIER_STATES.trustedVerifier) {
+            return <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        if (verifierState === VERIFIER_STATES.unknownVerifier) {
+            return <UnknownCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        if (verifierState === VERIFIER_STATES.appIssuer) {
+            return <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        return <UntrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+    };
     const renderPopover = () => (
         <CredentialIssuerPopover
-            enabled={issuerPopoverEnabled && showText}
+            enabled={issuerPopoverEnabled}
             triggerId={popoverTriggerId}
             verifierState={verifierState}
         />
@@ -177,9 +196,25 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     <button
                         id={popoverTriggerId}
                         type="button"
-                        className="appearance-none bg-transparent p-0"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
                     >
                         {renderBadge()}
+                    </button>
+                    {renderPopover()}
+                </>
+            );
+        }
+        if (issuerPopoverEnabled) {
+            return (
+                <>
+                    <button
+                        id={popoverTriggerId}
+                        type="button"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
+                    >
+                        {renderIconOnlyBadge()}
                     </button>
                     {renderPopover()}
                 </>
@@ -195,9 +230,25 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     <button
                         id={popoverTriggerId}
                         type="button"
-                        className="appearance-none bg-transparent p-0"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
                     >
                         {renderBadge()}
+                    </button>
+                    {renderPopover()}
+                </>
+            );
+        }
+        if (issuerPopoverEnabled) {
+            return (
+                <>
+                    <button
+                        id={popoverTriggerId}
+                        type="button"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
+                    >
+                        {renderIconOnlyBadge()}
                     </button>
                     {renderPopover()}
                 </>
@@ -212,9 +263,25 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     <button
                         id={popoverTriggerId}
                         type="button"
-                        className="appearance-none bg-transparent p-0"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
                     >
                         {renderBadge()}
+                    </button>
+                    {renderPopover()}
+                </>
+            );
+        }
+        if (issuerPopoverEnabled) {
+            return (
+                <>
+                    <button
+                        id={popoverTriggerId}
+                        type="button"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
+                    >
+                        {renderIconOnlyBadge()}
                     </button>
                     {renderPopover()}
                 </>
@@ -233,9 +300,25 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     <button
                         id={popoverTriggerId}
                         type="button"
-                        className="appearance-none bg-transparent p-0"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
                     >
                         {renderBadge()}
+                    </button>
+                    {renderPopover()}
+                </>
+            );
+        }
+        if (issuerPopoverEnabled) {
+            return (
+                <>
+                    <button
+                        id={popoverTriggerId}
+                        type="button"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
+                    >
+                        {renderIconOnlyBadge()}
                     </button>
                     {renderPopover()}
                 </>
@@ -251,9 +334,25 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     <button
                         id={popoverTriggerId}
                         type="button"
-                        className="appearance-none bg-transparent p-0"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
                     >
                         {renderBadge()}
+                    </button>
+                    {renderPopover()}
+                </>
+            );
+        }
+        if (issuerPopoverEnabled) {
+            return (
+                <>
+                    <button
+                        id={popoverTriggerId}
+                        type="button"
+                        onClick={e => e.stopPropagation()}
+                        className="appearance-none bg-transparent p-0 inline-flex"
+                    >
+                        {renderIconOnlyBadge()}
                     </button>
                     {renderPopover()}
                 </>
