@@ -141,27 +141,39 @@ export const GET: APIRoute = async ({ url }) => {
             }
         );
     } catch (error) {
-        const details =
-            error instanceof Error
-                ? {
-                      name: error.name,
-                      message: error.message,
-                      stack: error.stack,
-                      cause:
-                          error.cause instanceof Error
-                              ? {
-                                    name: error.cause.name,
-                                    message: error.cause.message,
-                                    stack: error.cause.stack,
-                                }
-                              : error.cause,
-                  }
-                : {
-                      message: 'Failed to query synced data.',
-                      raw: error,
-                  };
+        // Verbose error details (stack, cause) are only ever logged server-side
+        // and gated behind DEBUG so they don't fill production logs. The client
+        // response below never includes them.
+        const debug = import.meta.env?.DEBUG === 'true';
 
-        console.error('Synced credential query failed', details);
+        if (debug) {
+            const details =
+                error instanceof Error
+                    ? {
+                          name: error.name,
+                          message: error.message,
+                          stack: error.stack,
+                          cause:
+                              error.cause instanceof Error
+                                  ? {
+                                        name: error.cause.name,
+                                        message: error.cause.message,
+                                        stack: error.cause.stack,
+                                    }
+                                  : error.cause,
+                      }
+                    : {
+                          message: 'Failed to query synced data.',
+                          raw: error,
+                      };
+
+            console.error('Synced credential query failed', details);
+        } else {
+            console.error(
+                'Synced credential query failed',
+                error instanceof Error ? error.message : error
+            );
+        }
 
         return new Response(
             JSON.stringify({
