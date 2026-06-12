@@ -4,7 +4,6 @@ import { useQueries } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 
 import { useWallet, useIsLoggedIn, useTenantConfig } from 'learn-card-base';
-import type { TenantConfig } from 'learn-card-base';
 
 export type GlobalSkillFrameworkConfig = {
     frameworkId: string;
@@ -76,12 +75,6 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> 
         'skill-1772824804950-w96zstc5o',
     ],
 };
-
-const isProductionEnvironment = (): boolean =>
-    typeof IS_PRODUCTION !== 'undefined' ? IS_PRODUCTION : process.env.NODE_ENV === 'production';
-
-const isStagingEnvironment = (tenantConfig?: TenantConfig): boolean =>
-    tenantConfig?.observability?.sentryEnv?.startsWith('staging') ?? false;
 
 const fetchAllAvailableFrameworks = async (
     wallet: Awaited<ReturnType<typeof useWallet>>['initWallet'] extends (
@@ -195,14 +188,14 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const tenantConfig = useTenantConfig();
-    const useSeededFrameworks = !isProductionEnvironment() || isStagingEnvironment(tenantConfig);
+    const useSeededFrameworks = tenantConfig?.features?.useSeededSkillFrameworks ?? false;
 
     const { data: seededFrameworks = [] } = useQuery({
-        queryKey: ['seededGlobalSkillFrameworks', isLoggedIn],
+        queryKey: ['seededGlobalSkillFrameworks', isLoggedIn, useSeededFrameworks],
         queryFn: async () => {
             try {
                 const wallet = await initWallet();
-                return fetchSeededGlobalSkillFrameworks(wallet);
+                return await fetchSeededGlobalSkillFrameworks(wallet);
             } catch {
                 return [];
             }
