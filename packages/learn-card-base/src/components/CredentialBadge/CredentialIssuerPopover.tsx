@@ -8,14 +8,12 @@ type CredentialIssuerPopoverProps = {
     enabled: boolean;
     triggerId: string;
     verifierState: VerifierState;
-    statusBadge: React.ReactNode;
 };
 
 const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     enabled,
     triggerId,
     verifierState,
-    statusBadge,
 }) => {
     if (!enabled) return null;
 
@@ -82,7 +80,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                 style={{ width: 'min(320px, calc(100vw - 32px))' }}
             >
                 <div className="space-y-2">
-                    {statusBadge}
+                    {/* {statusBadge} */}
 
                     <div className="space-y-2">
                         <p className="text-xs text-grayscale-600 leading-relaxed">

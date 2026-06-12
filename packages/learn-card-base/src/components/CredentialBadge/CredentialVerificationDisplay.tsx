@@ -167,11 +167,6 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
             enabled={issuerPopoverEnabled && showText}
             triggerId={popoverTriggerId}
             verifierState={verifierState}
-            issuerName={resolvedIssuerName}
-            statusBadge={renderBadge(
-                'inline-flex rounded-full bg-grayscale-100 px-2 py-1',
-                '!w-4 !h-4'
-            )}
         />
     );
 
