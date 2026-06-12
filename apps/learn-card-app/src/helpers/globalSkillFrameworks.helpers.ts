@@ -195,7 +195,8 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const tenantConfig = useTenantConfig();
-    const useSeededFrameworks = !isProductionEnvironment() || isStagingEnvironment(tenantConfig);
+    const useSeededFrameworks = false;
+    //!isProductionEnvironment() || isStagingEnvironment(tenantConfig);
 
     const { data: seededFrameworks = [] } = useQuery({
         queryKey: ['seededGlobalSkillFrameworks', isLoggedIn],

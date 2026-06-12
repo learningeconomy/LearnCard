@@ -13,9 +13,11 @@ import {
 import { mediaToEvidenceTemplates } from './mediaEvidence';
 import { SkillsSection } from './SkillsSection';
 import { TypePicker } from './TypePicker';
+import { StartFromExisting } from './StartFromExisting';
 import { ActivityFields } from './ActivityFields';
 import type { CredentialTypeEntry } from './credentialTypeCatalog';
 import type { ResolvedSkill } from './skillAlignment';
+import type { NormalizedImport } from '../import/normalizeToObv3';
 import type { SelectedSkill } from '../../skills/skillTypes';
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
@@ -30,6 +32,7 @@ interface IssuePaletteProps {
     template: OBv3CredentialTemplate | null;
     onSelectType: (entry: CredentialTypeEntry) => void;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
+    onImport: (result: NormalizedImport) => void;
     recipientMode: RecipientMode;
     recipients: Recipient[];
     linkOptions: LinkOptions;
@@ -47,6 +50,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     template,
     onSelectType,
     onChangeTemplate,
+    onImport,
     recipientMode,
     recipients,
     linkOptions,
@@ -140,6 +144,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                     selectedObv3Type={selectedType?.obv3Type ?? null}
                     onSelectType={onSelectType}
                 />
+                <StartFromExisting onImport={onImport} />
             </section>
 
             {template && (

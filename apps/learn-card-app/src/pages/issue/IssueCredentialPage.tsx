@@ -1,14 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
-import { ArrowLeft, Code } from 'lucide-react';
+import { ArrowLeft, Code, Database, RotateCcw, X } from 'lucide-react';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import {
     buildSimpleTemplate,
     issueViaBoost,
 } from '../../components/simple-send/simpleSend.helpers';
-import type { CredentialTypeEntry } from './components/credentialTypeCatalog';
+import { getTypeByObv3, type CredentialTypeEntry } from './components/credentialTypeCatalog';
+import { prepareImportedTemplate } from './import/prepareImport';
+import type { NormalizedImport, ImportProvenance } from './import/normalizeToObv3';
 import { RecipientMode, Recipient, LinkOptions } from './components/recipientTypes';
 import {
     useWallet,
@@ -44,6 +46,7 @@ const IssueCredentialPage: React.FC = () => {
 
     const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(null);
     const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(null);
+    const [provenance, setProvenance] = useState<ImportProvenance | null>(null);
     const [showJson, setShowJson] = useState(false);
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>('self');
@@ -69,6 +72,14 @@ const IssueCredentialPage: React.FC = () => {
 
     const issuerName = currentLCNUser?.displayName?.trim() || 'You';
     const issuerImage = currentLCNUser?.image || undefined;
+
+    const provenanceLabel = !provenance
+        ? null
+        : provenance.source === 'credential-engine'
+        ? 'Credential Engine'
+        : provenance.source === 'reuse'
+        ? 'your library'
+        : provenance.label || 'an external source';
 
     const missingHint = !template
         ? 'Pick a type to begin'
@@ -99,6 +110,26 @@ const IssueCredentialPage: React.FC = () => {
             };
         });
     }, []);
+
+    const handleImport = useCallback(
+        (result: NormalizedImport) => {
+            log.info('issue.imported', { source: result.provenance.source });
+            const { template: next, note } = prepareImportedTemplate(result);
+            setTemplate(next);
+            const achievementType = next.credentialSubject.achievement.achievementType?.value;
+            setSelectedType(
+                (achievementType ? getTypeByObv3(achievementType) : undefined) ??
+                    getTypeByObv3('Badge') ??
+                    null
+            );
+            setProvenance(result.provenance);
+            setError(null);
+            if (note) {
+                presentToast(note, { type: ToastTypeEnum.Success, hasDismissButton: true });
+            }
+        },
+        [presentToast]
+    );
 
     const handleResolvedSkillsChange = useCallback((resolved: ResolvedSkill[]) => {
         setResolvedSkills(resolved);
@@ -264,6 +295,7 @@ const IssueCredentialPage: React.FC = () => {
         setClaimLink(null);
         setSelectedType(null);
         setTemplate(null);
+        setProvenance(null);
         setRecipientMode('self');
         setRecipients([]);
         setLinkOptions({});
@@ -342,6 +374,26 @@ const IssueCredentialPage: React.FC = () => {
 
                         <div className="max-w-[1100px] mx-auto px-6 py-8 flex flex-col-reverse desktop:flex-row desktop:items-start gap-8">
                             <div className="flex-1 desktop:min-w-0">
+                                {provenance && !showJson && (
+                                    <div className="mb-4 inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 animate-fade-in-up">
+                                        {provenance.source === 'reuse' ? (
+                                            <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+                                        ) : (
+                                            <Database className="w-3.5 h-3.5 text-emerald-600" />
+                                        )}
+                                        <span className="text-xs font-medium text-emerald-700">
+                                            Imported from {provenanceLabel}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setProvenance(null)}
+                                            className="text-emerald-500 hover:text-emerald-700 transition-colors"
+                                            aria-label="Dismiss"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
                                 {error && (
                                     <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl">
                                         <span className="text-sm text-red-700 leading-relaxed">
@@ -358,6 +410,7 @@ const IssueCredentialPage: React.FC = () => {
                                         template={template}
                                         onSelectType={handleSelectType}
                                         onChangeTemplate={setTemplate}
+                                        onImport={handleImport}
                                         recipientMode={recipientMode}
                                         recipients={recipients}
                                         linkOptions={linkOptions}
