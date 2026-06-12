@@ -11,7 +11,7 @@
         "prepare": "husky install",
         "lint:staged": "lint-staged",
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
-        "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin",
+        "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test",
         "validate-packages": "node scripts/validate-packages.mjs",
