@@ -10,9 +10,7 @@ const log = getLogger('private-key-helpers');
  * 2) In-memory store: `currentUserStore.currentUserPK` or `currentUser.privateKey`
  * 3) Platform-aware secure storage (web: AES-GCM + IndexedDB; native: encrypted SQLite)
  */
-export const getCurrentUserPrivateKey = async (
-    override?: string
-): Promise<string | null> => {
+export const getCurrentUserPrivateKey = async (override?: string): Promise<string | null> => {
     // 1) Direct override
     if (override && typeof override === 'string' && override.length > 0) return override;
 

@@ -12,7 +12,14 @@ import {
     IonInput,
 } from '@ionic/react';
 
-import { useWallet, walletStore, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useWallet,
+    walletStore,
+    useToast,
+    ToastTypeEnum,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 
 import CopyStack from '../../../../svgs/CopyStack';

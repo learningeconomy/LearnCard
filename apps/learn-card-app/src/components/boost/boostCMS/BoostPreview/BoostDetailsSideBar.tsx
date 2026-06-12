@@ -7,6 +7,7 @@ import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import CredentialResultsBox from './CredentialResultsBox';
+import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -46,6 +47,7 @@ type BoostDetailsSideBarProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
+    issuancesSummaryComponent?: React.ReactNode;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -59,6 +61,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     renderMethodCredential,
+    issuancesSummaryComponent,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
 
@@ -144,6 +147,15 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         )}
                     </TruncateTextBox>
 
+                    {issuancesSummaryComponent && (
+                        <div className="p-[15px] bg-white flex flex-col items-start gap-[10px] rounded-[20px] w-full shadow-bottom-2-4">
+                            <h3 className="text-[22px] leading-[130%] tracking-[-0.25px] text-grayscale-900 font-notoSans">
+                                Issuances
+                            </h3>
+                            {issuancesSummaryComponent}
+                        </div>
+                    )}
+
                     {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
                         <BoostDisplayStyleSelector
                             credential={renderMethodCredential}
@@ -152,6 +164,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
+
+                    <SdJwtVcClaimsBox credential={credential} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 

@@ -18,13 +18,13 @@ Your data is yours. LearnCard is built so that you can always export everything 
 
 An export ("bundle") is a single password-protected ZIP file containing:
 
-- Your **key material** (private-key seed, recovery phrase, and JWKs) — encrypted
-- Your **DID** and DID document
-- All of your **Verifiable Credentials and Presentations** — exactly as issued, with signatures preserved
-- Your **wallet index** records (so credentials keep their titles and categories)
-- Your **consent records** and transaction history
-- **Status-list snapshots** for credential revocation state at export time
-- A readable `manifest.json` listing every file and its SHA-256 hash
+-   Your **key material** (private-key seed, recovery phrase, and JWKs) — encrypted
+-   Your **DID** and DID document
+-   All of your **Verifiable Credentials and Presentations** — exactly as issued, with signatures preserved
+-   Your **wallet index** records (so credentials keep their titles and categories)
+-   Your **consent records** and transaction history
+-   **Status-list snapshots** for credential revocation state at export time
+-   A readable `manifest.json` listing every file and its SHA-256 hash
 
 Everything sensitive is encrypted per-file using **Argon2id + AES-256-GCM**. The `manifest.json` itself stays readable so you can inspect the contents without the password.
 
@@ -34,8 +34,8 @@ Everything sensitive is encrypted per-file using **Argon2id + AES-256-GCM**. The
 
 ### Prerequisites
 
-- An initialized LearnCard wallet (`@learncard/init`)
-- The `@learncard/holder-continuity` package installed:
+-   An initialized LearnCard wallet (`@learncard/init`)
+-   The `@learncard/holder-continuity` package installed:
 
 ```bash
 pnpm add @learncard/holder-continuity
@@ -49,6 +49,7 @@ This is the most common task: save everything to an encrypted file.
 
 {% tabs %}
 {% tab title="SDK" %}
+
 ```typescript
 import { exportLearnCardBundle } from '@learncard/holder-continuity';
 
@@ -57,9 +58,11 @@ await exportLearnCardBundle(learnCard, {
     password: 'use-a-strong-password',
 });
 ```
+
 {% endtab %}
 
 {% tab title="CLI" %}
+
 ```js
 // The LearnCard CLI prompts for the password without echoing it,
 // so it never lands in your shell history.
@@ -92,9 +95,9 @@ const bundle = await readLearnCardBundle('./learncard-export.zip', {
     password: 'use-a-strong-password',
 });
 
-console.log(bundle.manifest.primaryDid);       // your DID
-console.log(bundle.entries.length);            // number of items exported
-console.log(bundle.warnings);                  // anything skipped during export
+console.log(bundle.manifest.primaryDid); // your DID
+console.log(bundle.entries.length); // number of items exported
+console.log(bundle.warnings); // anything skipped during export
 ```
 
 ---
@@ -136,9 +139,9 @@ const report = await importLearnCardBundle('./learncard-export.zip', {
     verifyBeforeImport: true,
 });
 
-console.log(report.importedCredentials);   // how many credentials were copied
+console.log(report.importedCredentials); // how many credentials were copied
 console.log(report.importedPresentations); // how many presentations were copied
-console.log(report.errors);                // any entries that failed
+console.log(report.errors); // any entries that failed
 ```
 
 {% hint style="warning" %}
@@ -149,12 +152,12 @@ console.log(report.errors);                // any entries that failed
 
 ## When to use which
 
-| Your goal | Use |
-|-----------|-----|
-| Save a backup of everything | `exportLearnCardBundle` |
-| See what's inside a backup | `readLearnCardBundle` |
-| Get my **original account** back | `restoreLearnCardFromBundle` |
-| Copy my credentials into a **new account** | `importLearnCardBundle` |
+| Your goal                                  | Use                          |
+| ------------------------------------------ | ---------------------------- |
+| Save a backup of everything                | `exportLearnCardBundle`      |
+| See what's inside a backup                 | `readLearnCardBundle`        |
+| Get my **original account** back           | `restoreLearnCardFromBundle` |
+| Copy my credentials into a **new account** | `importLearnCardBundle`      |
 
 ---
 

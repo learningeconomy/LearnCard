@@ -1,5 +1,9 @@
 export { createLearnCardBundle, exportLearnCardBundle } from './exportBundle';
-export { importLearnCardBundle, readLearnCardBundle, readLearnCardBundleData } from './importBundle';
+export {
+    importLearnCardBundle,
+    readLearnCardBundle,
+    readLearnCardBundleData,
+} from './importBundle';
 export { assertValidManifest, computePayloadSha256, finalizeManifest } from './manifest';
 export {
     readLearnCardBundleSeed,

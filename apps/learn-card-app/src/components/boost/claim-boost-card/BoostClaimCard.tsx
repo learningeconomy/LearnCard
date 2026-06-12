@@ -163,8 +163,24 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
+    // A credential that fails verification because it's revoked can't be claimed
+    // (the backend rejects acceptCredential with "Credential has been revoked").
+    const isRevoked = vcVerifications.some(
+        (v: any) =>
+            v?.status !== 'Success' &&
+            /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
+    );
+
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
+
+        if (isRevoked) {
+            presentToast('This credential has been revoked and can no longer be claimed.', {
+                duration: 4000,
+                type: ToastTypeEnum.Error,
+            });
+            return;
+        }
 
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
             setIsClaimLoading(true);
@@ -195,8 +211,12 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 });
 
                                 const now = Date.now();
-                                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                                const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
                                 track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
                                     method: ProfileBuildMethod.Notification,
                                     itemType: 'credential',
@@ -223,6 +243,15 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }
 
                             closeModal();
+                        },
+                        onError(err: any) {
+                            setIsClaimLoading(false);
+                            presentToast(
+                                `Failed to claim credential: ${
+                                    err?.message ?? 'Please try again.'
+                                }`,
+                                { duration: 4000, type: ToastTypeEnum.Error }
+                            );
                         },
                     }
                 );
@@ -256,7 +285,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
+    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
         claimStatusText = 'Claimed';
@@ -270,6 +299,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
         claimStatusText = 'Accept';
         if (isFamily) claimStatusText = 'Join';
+    }
+
+    if (isRevoked) {
+        claimStatusText = 'Revoked';
     }
 
     useEffect(() => {

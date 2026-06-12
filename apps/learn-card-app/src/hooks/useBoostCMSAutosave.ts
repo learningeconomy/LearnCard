@@ -241,10 +241,7 @@ export function useBoostCMSAutosave({
                 try {
                     localStorage.removeItem(recoveredStorageKey);
                 } catch (err) {
-                    log.warn(
-                        '[useBoostCMSAutosave] Failed to clear recovered storage key:',
-                        err
-                    );
+                    log.warn('[useBoostCMSAutosave] Failed to clear recovered storage key:', err);
                 }
             }
 
@@ -262,10 +259,7 @@ export function useBoostCMSAutosave({
                             localStorage.removeItem(`${STORAGE_KEY}_${category}`);
                         }
                     } catch (err) {
-                        log.warn(
-                            '[useBoostCMSAutosave] Failed to clear all saved states:',
-                            err
-                        );
+                        log.warn('[useBoostCMSAutosave] Failed to clear all saved states:', err);
                     }
                 }
                 currentStateRef.current = null;

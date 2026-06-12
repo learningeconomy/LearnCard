@@ -12,9 +12,9 @@ This section explains how LearnCard protects user private keys using **Shamir Se
 
 Private keys are the foundation of a user's digital identity. Whoever controls the key controls the identity, its credentials, and all associated data. SSS ensures that:
 
-- **No single point of compromise** — neither the device, the server, nor any recovery method alone can reconstruct the key.
-- **No third-party dependency** — key management is fully self-hosted, unlike the previous Web3Auth system.
-- **Flexible recovery** — users can recover their key even if they lose their device, using any of several recovery methods.
+-   **No single point of compromise** — neither the device, the server, nor any recovery method alone can reconstruct the key.
+-   **No third-party dependency** — key management is fully self-hosted, unlike the previous Web3Auth system.
+-   **Flexible recovery** — users can recover their key even if they lose their device, using any of several recovery methods.
 
 ## How It Works
 
@@ -40,33 +40,33 @@ Any 2 shares → reconstruct private key ◄────────────
 
 #### 1. Device Share
 
-- Stored locally on the user's device in **IndexedDB**.
-- Versioned and keyed to the user's contact method (email or phone).
-- Available immediately on the device where the key was created.
-- **Lost when the user clears browser storage or switches devices.**
+-   Stored locally on the user's device in **IndexedDB**.
+-   Versioned and keyed to the user's contact method (email or phone).
+-   Available immediately on the device where the key was created.
+-   **Lost when the user clears browser storage or switches devices.**
 
 #### 2. Auth Share (Server Share)
 
-- Stored on the LearnCard API server (`lca-api`).
-- **Encrypted at rest** using AES-256-GCM with a key derived from a server-side seed via HKDF. The server never stores the share in plaintext.
-- Retrieved by authenticating with the user's auth provider (e.g., Firebase).
-- Supports **share versioning** — when shares are rotated, previous versions are kept so that recovery methods created against older shares remain valid.
+-   Stored on the LearnCard API server (`lca-api`).
+-   **Encrypted at rest** using AES-256-GCM with a key derived from a server-side seed via HKDF. The server never stores the share in plaintext.
+-   Retrieved by authenticating with the user's auth provider (e.g., Firebase).
+-   Supports **share versioning** — when shares are rotated, previous versions are kept so that recovery methods created against older shares remain valid.
 
 #### 3. Recovery Share
 
 The recovery share can be protected by the user in multiple ways:
 
-| Method | How the share is protected | Storage |
-|---|---|---|
-| **Passkey (WebAuthn PRF)** | Encrypted using a key derived from the passkey's PRF output — hardware-bound, phishing-resistant | Server (encrypted) |
-| **Recovery Phrase** | Encoded as a BIP39-style mnemonic that the user writes down | User (offline) |
-| **Backup File** | Encrypted with a user-chosen password using Argon2id + AES-GCM, stored as a downloadable JSON file | User (file) |
+| Method                     | How the share is protected                                                                         | Storage            |
+| -------------------------- | -------------------------------------------------------------------------------------------------- | ------------------ |
+| **Passkey (WebAuthn PRF)** | Encrypted using a key derived from the passkey's PRF output — hardware-bound, phishing-resistant   | Server (encrypted) |
+| **Recovery Phrase**        | Encoded as a BIP39-style mnemonic that the user writes down                                        | User (offline)     |
+| **Backup File**            | Encrypted with a user-chosen password using Argon2id + AES-GCM, stored as a downloadable JSON file | User (file)        |
 
 #### 4. Email Share
 
-- Encrypted before being sent to the user's verified recovery email.
-- Provides an additional independent recovery path.
-- Optional; deployments can disable email backup.
+-   Encrypted before being sent to the user's verified recovery email.
+-   Provides an additional independent recovery path.
+-   Optional; deployments can disable email backup.
 
 ### Normal Login (Same Device)
 
@@ -92,11 +92,11 @@ When a user logs in on a new device (no device share available):
 
 LearnCard defines three security levels based on how many recovery methods a user has configured:
 
-| Level | Requirements | Risk Profile |
-|---|---|---|
-| **Basic** | Device share + server share only | If the user loses their device and clears storage, the key is **unrecoverable**. |
-| **Enhanced** | + at least one recovery method (passkey or phrase) | The user can recover on a new device using the recovery method + server share. |
-| **Advanced** | + multiple recovery methods | Maximum resilience — multiple independent paths to recovery. |
+| Level        | Requirements                                       | Risk Profile                                                                     |
+| ------------ | -------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Basic**    | Device share + server share only                   | If the user loses their device and clears storage, the key is **unrecoverable**. |
+| **Enhanced** | + at least one recovery method (passkey or phrase) | The user can recover on a new device using the recovery method + server share.   |
+| **Advanced** | + multiple recovery methods                        | Maximum resilience — multiple independent paths to recovery.                     |
 
 Users are prompted to set up recovery methods after their initial key setup. A persistent banner appears until at least one recovery method is configured.
 
@@ -140,9 +140,9 @@ Migration is automatic — the AuthCoordinator detects legacy accounts and enter
 
 ## Key Takeaways
 
-- Private keys are **never stored whole** — they are always split into shares.
-- **2-of-4 threshold** — any two shares can reconstruct the key, but one share alone reveals nothing.
-- **Server shares are encrypted at rest** with AES-256-GCM using HKDF-derived keys.
-- **Multiple recovery methods** provide resilience against device loss.
-- **Share versioning** ensures backward compatibility when shares are rotated.
-- The entire system is **self-hosted** — no third-party key custody service is involved.
+-   Private keys are **never stored whole** — they are always split into shares.
+-   **2-of-4 threshold** — any two shares can reconstruct the key, but one share alone reveals nothing.
+-   **Server shares are encrypted at rest** with AES-256-GCM using HKDF-derived keys.
+-   **Multiple recovery methods** provide resilience against device loss.
+-   **Share versioning** ensures backward compatibility when shares are rotated.
+-   The entire system is **self-hosted** — no third-party key custody service is involved.

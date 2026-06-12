@@ -25,12 +25,7 @@ import {
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 
-import {
-    authStore,
-    SocialLoginTypes,
-    firebaseAuthStore,
-    currentUserStore,
-} from 'learn-card-base';
+import { authStore, SocialLoginTypes, firebaseAuthStore, currentUserStore } from 'learn-card-base';
 
 import { auth } from '../../firebase/firebase';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -47,7 +42,8 @@ interface ReAuthOverlayProps {
     onCancel: () => void;
 }
 
-const UID_MISMATCH_ERROR = 'You signed in with a different account. Please try again with the correct account.';
+const UID_MISMATCH_ERROR =
+    'You signed in with a different account. Please try again with the correct account.';
 
 const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
     const { refreshAuthSession } = useAppAuth();
@@ -61,9 +57,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
 
     // Capture the expected UID from the persisted store (auth()?.currentUser is null
     // when the session is expired, but currentUserStore retains the UID)
-    const expectedUidRef = useRef<string | null>(
-        currentUserStore.get.currentUser()?.uid ?? null
-    );
+    const expectedUidRef = useRef<string | null>(currentUserStore.get.currentUser()?.uid ?? null);
 
     // Step 1: Try silent refresh on mount
     useEffect(() => {
@@ -148,10 +142,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
             const code = (e as { code?: string })?.code;
 
             // User cancelled — don't show error
-            if (
-                code === 'auth/popup-closed-by-user' ||
-                code === 'auth/cancelled-popup-request'
-            ) {
+            if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
                 setState('needs_reauth');
                 return;
             }
@@ -219,10 +210,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
             const msg = e instanceof Error ? e.message : 'Sign-in failed';
             const code = (e as { code?: string })?.code;
 
-            if (
-                code === 'auth/popup-closed-by-user' ||
-                code === 'auth/cancelled-popup-request'
-            ) {
+            if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
                 setState('needs_reauth');
                 return;
             }
@@ -281,7 +269,10 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
 
             {error && (
                 <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="text-red-400 text-lg mt-0.5 shrink-0"
+                    />
                     <span className="text-sm text-red-700 leading-relaxed text-left">{error}</span>
                 </div>
             )}
@@ -320,7 +311,11 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                             </span>
                         ) : (
                             <>
-                                <img src={AppleIcon} alt="" className="w-5 h-5 brightness-0 invert" />
+                                <img
+                                    src={AppleIcon}
+                                    alt=""
+                                    className="w-5 h-5 brightness-0 invert"
+                                />
                                 Continue with Apple
                             </>
                         )}

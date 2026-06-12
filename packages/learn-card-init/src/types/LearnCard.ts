@@ -18,6 +18,7 @@ import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-pl
 import { DidWebPlugin } from '@learncard/did-web-plugin';
 import { EncryptionPluginType } from '@learncard/encryption-plugin';
 import { OpenID4VCPlugin, OpenID4VCPluginConfig } from '@learncard/openid4vc-plugin';
+import { SdJwtVcPlugin } from '@learncard/sd-jwt-vc-plugin';
 
 import { InitFunction, GenericInitFunction } from './helpers';
 
@@ -81,6 +82,7 @@ export type LearnCardFromSeed = InitFunction<
             EthereumPlugin,
             VpqrPlugin,
             CHAPIPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             OpenID4VCPlugin
         ]
@@ -112,6 +114,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
             VpqrPlugin,
             CHAPIPlugin,
             VerifyBoostPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             LearnCardNetworkPlugin,
             OpenID4VCPlugin
@@ -164,6 +167,7 @@ export type DidWebLearnCardFromSeed = InitFunction<
             EthereumPlugin,
             VpqrPlugin,
             CHAPIPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             DidWebPlugin,
             OpenID4VCPlugin
@@ -197,6 +201,7 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             VpqrPlugin,
             CHAPIPlugin,
             VerifyBoostPlugin,
+            SdJwtVcPlugin,
             LearnCardPlugin,
             DidWebPlugin,
             LearnCardNetworkPlugin,

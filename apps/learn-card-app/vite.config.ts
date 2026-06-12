@@ -1,5 +1,6 @@
 import path from 'path';
 import { execSync } from 'child_process';
+import { createRequire } from 'module';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
@@ -9,6 +10,14 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
+
+// CommonJS interop: readDefaultChannel.cjs is the shared SSOT for the Capgo
+// channel. It is intentionally reused by Vite config and CI helpers so we do
+// not duplicate the regex or drift from the configured native channel.
+const requireFromHere = createRequire(import.meta.url);
+const { readDefaultChannel } = requireFromHere('../../tools/capgo/readDefaultChannel.cjs') as {
+    readDefaultChannel: (configPath: string) => string | undefined;
+};
 
 /**
  * Resolve a short build commit SHA at config-eval time.
@@ -53,6 +62,8 @@ const workspacePackages = [
     '@learncard/open-badge-v2-plugin',
     '@learncard/network-brain-client',
     '@learncard/network-plugin',
+    '@learncard/openid4vc-plugin',
+    '@learncard/sd-jwt-vc-plugin',
 ];
 
 export default defineConfig(({ mode }) => {
@@ -108,10 +119,14 @@ export default defineConfig(({ mode }) => {
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+            __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
+                readDefaultChannel(path.join(__dirname, 'capacitor.config.ts')) ?? ''
+            ),
             IS_PRODUCTION: process.env.NODE_ENV === 'production',
             // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
             // Kept as fallbacks for backward compat; will be removed in a future PR.
-            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env.REACT_APP_KEY_DERIVATION_PROVIDER
+            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env
+                .REACT_APP_KEY_DERIVATION_PROVIDER
                 ? JSON.stringify(process.env.REACT_APP_KEY_DERIVATION_PROVIDER)
                 : 'undefined',
             'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL
@@ -123,8 +138,9 @@ export default defineConfig(({ mode }) => {
                 ? `"${process.env.SENTRY_DSN}"`
                 : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
             // Not yet in TenantConfig — keep as-is
-            GOOGLE_MAPS_API_KEY:
-                process.env.GOOGLE_MAPS_API_KEY && `"${process.env.GOOGLE_MAPS_API_KEY}"`,
+            GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY
+                ? `"${process.env.GOOGLE_MAPS_API_KEY}"`
+                : 'undefined',
             // DEPRECATED — now in config.json → branding.defaultTheme
             APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
             // Not yet in TenantConfig — keep as-is

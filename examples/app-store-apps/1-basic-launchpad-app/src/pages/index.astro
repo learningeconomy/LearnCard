@@ -1,8 +1,8 @@
 ---
 // Server-side data (if needed for backend integration in the future)
-const hostOriginEnv = import.meta.env.HOST_ORIGIN || 'https://learncard.app';
+//const hostOriginEnv = import.meta.env.HOST_ORIGIN || 'https://learncard.app';
 // Split by spaces to support multiple origins (e.g., "https://learncard.app https://staging.learncard.app")
-const hostOrigin = hostOriginEnv.includes(' ') ? hostOriginEnv.split(/\s+/) : hostOriginEnv;
+const hostOrigin = 'http://*.learncard.app:3000';
 
 const config = {
     contractUri:
@@ -335,7 +335,7 @@ const config = {
 
             // --- CONFIGURATION ---
             // Initialize the LearnCard Partner Connect SDK
-            const learnCard = createPartnerConnect({ hostOrigin: window.__LC_CONFIG.hostOrigin });
+            const learnCard = createPartnerConnect({ hostOrigin: window.__LC_CONFIG.hostOrigin, disableDefaultTenants: true, allowNativeAppOrigins: false });
 
             // --- STATE & UTILITIES ---
             const statusBox = document.getElementById('status-box');

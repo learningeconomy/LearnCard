@@ -1,6 +1,6 @@
 {
     "name": "@learncard/open-badge-v2-plugin",
-    "version": "1.1.21",
+    "version": "1.1.23",
     "description": "OpenBadge v2 wrapper plugin for LearnCard. Wraps OBv2 assertions into self-issued VCs.",
     "type": "module",
     "main": "./dist/index.cjs",

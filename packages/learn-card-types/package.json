@@ -1,6 +1,6 @@
 {
     "name": "@learncard/types",
-    "version": "5.17.0",
+    "version": "5.17.2",
     "description": "Shared types for learn card",
     "type": "module",
     "main": "./dist/index.cjs",

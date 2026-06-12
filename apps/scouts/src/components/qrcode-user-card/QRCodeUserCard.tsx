@@ -53,8 +53,7 @@ const QrCodeUserCard: React.FC<{
     const { clearDB } = useSQLiteStorage();
     const { presentToast } = useToast();
     const queryClient = useQueryClient();
-    const { data: isCurrentUserLCNUser } =
-        useIsCurrentUserLCNUser();
+    const { data: isCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const { data: currentLCNUser } = useGetProfile();
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
     const { handleLogout: logoutHook } = useLogout();

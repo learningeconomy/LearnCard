@@ -144,7 +144,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         presentToast(
                             // @ts-ignore
                             error?.message ||
-                            'An error occurred, unable to send connection request',
+                                'An error occurred, unable to send connection request',
                             {
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,

@@ -21,9 +21,7 @@ import {
     getCredentialSubjectName,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import {
-    fetchCredentialIssuerMetadata,
-} from '@learncard/openid4vc-plugin';
+import { fetchCredentialIssuerMetadata } from '@learncard/openid4vc-plugin';
 import type { VC } from '@learncard/types';
 import type {
     AcceptedCredentialResult,
@@ -41,11 +39,7 @@ import OfferConsent from './components/OfferConsent';
 import OfferAuthRedirect from './components/OfferAuthRedirect';
 import OfferStoring from './components/OfferStoring';
 import OfferFinished from './components/OfferFinished';
-import {
-    clearAuthCodeState,
-    loadAuthCodeState,
-    saveAuthCodeState,
-} from './authCodeStorage';
+import { clearAuthCodeState, loadAuthCodeState, saveAuthCodeState } from './authCodeStorage';
 
 import {
     resilientAcceptAndStoreCredentialOffer,
@@ -177,9 +171,7 @@ const Oid4vciExchange: React.FC = () => {
                 };
 
                 if (!code) {
-                    throw new Error(
-                        'Authorization-code callback fired without a `code` parameter'
-                    );
+                    throw new Error('Authorization-code callback fired without a `code` parameter');
                 }
 
                 const accepted: AcceptedCredentialResult =
@@ -210,9 +202,7 @@ const Oid4vciExchange: React.FC = () => {
                 // handles unbranded issuers gracefully.
                 let metadata: CredentialIssuerMetadata | undefined;
                 try {
-                    metadata = await fetchCredentialIssuerMetadata(
-                        persisted.flowHandle.issuer
-                    );
+                    metadata = await fetchCredentialIssuerMetadata(persisted.flowHandle.issuer);
                 } catch (metadataError) {
                     log.warn(
                         'OID4VCI auth-code return: failed to refetch metadata for success-screen branding',
@@ -220,10 +210,7 @@ const Oid4vciExchange: React.FC = () => {
                     );
                 }
 
-                const issuerInfo = pickIssuerInfo(
-                    persisted.flowHandle.issuer,
-                    metadata
-                );
+                const issuerInfo = pickIssuerInfo(persisted.flowHandle.issuer, metadata);
 
                 clearAuthCodeState();
                 setPhase({
@@ -360,13 +347,10 @@ const Oid4vciExchange: React.FC = () => {
                 const redirectUri = `${window.location.origin}/oid4vci`;
                 const clientId = `${window.location.origin}`;
 
-                const authResult = await wallet.invoke.beginCredentialOfferAuthCode(
-                    currentOffer,
-                    {
-                        redirectUri,
-                        clientId,
-                    }
-                );
+                const authResult = await wallet.invoke.beginCredentialOfferAuthCode(currentOffer, {
+                    redirectUri,
+                    clientId,
+                });
 
                 const persisted = saveAuthCodeState(authResult.flowHandle, offer);
                 if (!persisted) {
@@ -459,9 +443,7 @@ const Oid4vciExchange: React.FC = () => {
             <IonContent>
                 {phase.kind === 'loading' && <OfferLoading />}
 
-                {phase.kind === 'authReturn' && (
-                    <OfferStoring message="Finishing sign-in..." />
-                )}
+                {phase.kind === 'authReturn' && <OfferStoring message="Finishing sign-in..." />}
 
                 {phase.kind === 'consent' && (
                     <OfferConsent
@@ -480,9 +462,7 @@ const Oid4vciExchange: React.FC = () => {
                     />
                 )}
 
-                {phase.kind === 'storing' && (
-                    <OfferStoring message={phase.message} />
-                )}
+                {phase.kind === 'storing' && <OfferStoring message={phase.message} />}
 
                 {phase.kind === 'finished' && (
                     <OfferFinished
@@ -526,14 +506,10 @@ const Oid4vciExchange: React.FC = () => {
                                 : undefined
                         }
                         onReport={userNote =>
-                            reportError(
-                                phase.error,
-                                getFriendlyOpenID4VCError(phase.error).kind,
-                                {
-                                    counterparty: sanitizeCounterparty(phase.issuerUrl),
-                                    userNote,
-                                }
-                            )
+                            reportError(phase.error, getFriendlyOpenID4VCError(phase.error).kind, {
+                                counterparty: sanitizeCounterparty(phase.issuerUrl),
+                                userNote,
+                            })
                         }
                         onRetry={phase.retryOffer ? handleRetry : undefined}
                         onCancel={() => history.push('/')}
@@ -558,9 +534,7 @@ export default Oid4vciExchange;
  * Narrow query-string params (which can be `string | (string | null)[] | null`)
  * down to a single string when present.
  */
-const singleParam = (
-    raw: string | (string | null)[] | null | undefined
-): string | undefined => {
+const singleParam = (raw: string | (string | null)[] | null | undefined): string | undefined => {
     if (typeof raw === 'string' && raw.length > 0) return raw;
     return undefined;
 };
@@ -652,8 +626,7 @@ const persistAcceptedCredentials = async (
  */
 const buildStoreOptions = () => ({
     category: (vc: any) => getDefaultCategoryForCredential(vc),
-    title: (vc: any) =>
-        getCredentialName(vc) || getCredentialSubjectName(vc) || undefined,
+    title: (vc: any) => getCredentialName(vc) || getCredentialSubjectName(vc) || undefined,
 });
 
 /**
@@ -724,10 +697,7 @@ const pickIssuerInfo = (
     if (!first || typeof first !== 'object') return {};
 
     const f = first as Record<string, unknown>;
-    const name =
-        typeof f.name === 'string' && f.name.trim().length > 0
-            ? f.name.trim()
-            : undefined;
+    const name = typeof f.name === 'string' && f.name.trim().length > 0 ? f.name.trim() : undefined;
 
     let logoUri: string | undefined;
     const logo = f.logo;

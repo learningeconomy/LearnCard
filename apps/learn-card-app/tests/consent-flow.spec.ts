@@ -2,10 +2,13 @@ import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import { loginTestAccount, logoutTestAccount } from './test.helpers';
 import { gameFlowContract, testContract, BoostCategoryOptionsEnum } from './consent-flow.helpers';
+import { getBespokeLearnCard } from './wallet.helpers';
+import { TEST_USER_SEED } from './constants';
 import { FAMILY, FamilyCMSPage, FamilyHandler } from './family.page';
 import { LaunchPadPage } from './launchpad.page';
 import { GameFlowPage, gameRedirectUrl } from './game-flow.page';
 import { ConsentFlowPage } from './consent-flow.page';
+import { saveVerifiableData } from 'learn-card-base';
 
 test.describe('ConsentFlow', () => {
     test('External Door - Logged In - Full Flow', async ({ page }) => {
@@ -210,6 +213,58 @@ test.describe('ConsentFlow', () => {
         // Re-open in post-consent state
         await launchPadPage.clickOpen(testContract.name);
         await consentFlowPage.validateFullScreenConfirmation({ isPostConsent: true }); */
+    });
+
+    test('LaunchPad - Privacy and Data - Verifiable Data Category', async ({ page }) => {
+        const launchPadPage = new LaunchPadPage(page);
+        const consentFlowPage = new ConsentFlowPage(page);
+
+        const wallet = await getBespokeLearnCard(TEST_USER_SEED);
+        const existingProfile = await wallet.invoke.getProfile().catch(() => null);
+        if (!existingProfile) {
+            await wallet.invoke.createProfile({
+                profileId: 'test-user',
+                displayName: 'Test User',
+            });
+        }
+
+        await saveVerifiableData(
+            wallet as never,
+            'consent-flow-verifiable-data',
+            {
+                headline: 'Read me',
+                summary: 'This card comes from useVerifiableData.',
+            },
+            {
+                name: 'Consent Flow Notes',
+                description: 'Used to verify verifiable-data rendering in consent flow',
+            }
+        );
+
+        const customContractOptions = {
+            name: 'Verifiable Data Contract',
+            anonymize: true,
+            readCategories: [
+                {
+                    category: BoostCategoryOptionsEnum.verifiableData,
+                    required: false,
+                },
+            ],
+            readPersonal: [],
+            writeCategories: [],
+        };
+
+        await launchPadPage.createContractAndGoto(customContractOptions);
+        consentFlowPage.customContractOptions = customContractOptions;
+
+        await consentFlowPage.validateFullScreenConfirmation();
+
+        await consentFlowPage.clickPrivacyAndData();
+        await consentFlowPage.validatePrivacyAndData();
+
+        await expect(page.getByRole('button', { name: 'Verifiable Data' })).toBeVisible();
+        await expect(page.getByText('headline: Read me')).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByText('view and access credentials')).toBeVisible();
     });
 
     test('LaunchPad - Privacy and Data - No Permissions Requested', async ({ page }) => {

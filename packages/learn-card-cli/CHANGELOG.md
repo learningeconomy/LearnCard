@@ -1,5 +1,39 @@
 # @learncard/cli
 
+## 3.4.2
+
+### Patch Changes
+
+-   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
+    -   @learncard/types@5.17.2
+    -   @learncard/init@2.4.0
+    -   @learncard/core@9.4.22
+    -   @learncard/learn-cloud-plugin@2.3.27
+    -   @learncard/render-method-plugin@3.0.2
+    -   @learncard/holder-continuity@0.2.2
+    -   @learncard/didkit-plugin@1.9.2
+    -   @learncard/ler-rs-plugin@0.1.13
+    -   @learncard/linked-claims-plugin@0.2.22
+    -   @learncard/open-badge-v2-plugin@1.1.23
+    -   @learncard/simple-signing-plugin@1.1.26
+
+## 3.4.1
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2), [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/init@2.3.21
+    -   @learncard/didkit-plugin@1.9.1
+    -   @learncard/learn-cloud-plugin@2.3.26
+    -   @learncard/ler-rs-plugin@0.1.12
+    -   @learncard/linked-claims-plugin@0.2.21
+    -   @learncard/open-badge-v2-plugin@1.1.22
+    -   @learncard/types@5.17.1
+    -   @learncard/holder-continuity@0.2.1
+    -   @learncard/core@9.4.21
+    -   @learncard/render-method-plugin@3.0.1
+    -   @learncard/simple-signing-plugin@1.1.25
+
 ## 3.4.0
 
 ### Minor Changes

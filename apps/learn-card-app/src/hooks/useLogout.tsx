@@ -26,9 +26,10 @@ const useLogout = () => {
 
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
-    const handleLogout = async (
-        options?: { appendQuery?: Record<string, string>; overrideRedirectUrl?: string }
-    ) => {
+    const handleLogout = async (options?: {
+        appendQuery?: Record<string, string>;
+        overrideRedirectUrl?: string;
+    }) => {
         setIsLoggingOut(true);
 
         const typeOfLogin = authStore?.get?.typeOfLogin();
@@ -86,7 +87,7 @@ const useLogout = () => {
                 // Hard redirect — localStorage.clear() in the logout callback wipes
                 // Ionic's internal router state, so client-side history.push would
                 // land on a white screen. A full page reload reinitializes cleanly.
-                window.location.href = '/login';
+                window.location.href = redirectUrl;
             } catch (e) {
                 log.error('There was an issue logging out', e);
                 setIsLoggingOut(false);

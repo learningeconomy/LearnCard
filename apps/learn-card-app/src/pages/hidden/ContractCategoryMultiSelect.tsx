@@ -15,6 +15,10 @@ import {
 } from 'learn-card-base';
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { SetState } from 'packages/shared-types/dist';
+import {
+    CONTRACT_CATEGORIES,
+    isVerifiableDataContractCategory,
+} from '../../helpers/contract.helpers';
 
 type ContractCategoryMultiSelectProps = {
     values: Record<CredentialCategoryEnum, { required?: boolean; defaultEnabled?: boolean }>;
@@ -25,6 +29,8 @@ type ContractCategoryMultiSelectProps = {
     className?: string;
     setContract?: SetState<ConsentFlowContractDetails>;
     mode?: 'read' | 'write';
+    hideVerifiableDataOnWrite?: boolean;
+    categoryTitleOverrides?: Partial<Record<CredentialCategoryEnum, string>>;
 };
 
 const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = ({
@@ -34,8 +40,47 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
     className = '',
     setContract = () => {},
     mode = 'read',
+    hideVerifiableDataOnWrite = false,
+    categoryTitleOverrides = {},
 }) => {
     const { newModal } = useModal();
+
+    const shouldHideVerifiableDataCategories = mode === 'write' && hideVerifiableDataOnWrite;
+    const selectedCategories = Object.keys(values) as CredentialCategoryEnum[];
+
+    const visibleCategories = selectedCategories.filter(category => {
+        if (shouldHideVerifiableDataCategories && isVerifiableDataContractCategory(category)) {
+            return false;
+        }
+
+        return true;
+    });
+
+    const allowedCategories = CONTRACT_CATEGORIES.filter(category => {
+        if (shouldHideVerifiableDataCategories && isVerifiableDataContractCategory(category)) {
+            return false;
+        }
+
+        return true;
+    }) as CredentialCategoryEnum[];
+
+    React.useEffect(() => {
+        if (!shouldHideVerifiableDataCategories) return;
+
+        const hiddenCategories = selectedCategories.filter(category =>
+            isVerifiableDataContractCategory(category)
+        );
+
+        if (hiddenCategories.length === 0) return;
+
+        onChange(
+            produce(values, draft => {
+                hiddenCategories.forEach(category => {
+                    delete draft[category as CredentialCategoryEnum];
+                });
+            })
+        );
+    }, [onChange, selectedCategories, shouldHideVerifiableDataCategories, values]);
 
     const handleOpenCategoryPickerModal = () => {
         newModal(
@@ -43,6 +88,8 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 selectedCategories={values}
                 setContract={setContract}
                 mode={mode}
+                allowedCategories={allowedCategories}
+                titleOverrides={categoryTitleOverrides}
             />,
             {
                 sectionClassName: '!max-w-[500px]',
@@ -58,6 +105,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 setContract={setContract}
                 values={values}
                 mode={mode}
+                titleOverride={categoryTitleOverrides[category as CredentialCategoryEnum]}
             />,
             {
                 sectionClassName: '!max-w-[500px]',
@@ -66,9 +114,10 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         );
     };
 
-    const inputs = Object.entries(values).map(([category, value], index) => {
+    const inputs = visibleCategories.map((category, index) => {
         const metadata = contractCategoryNameToCategoryMetadata(category);
         const { title, IconWithShape } = metadata || {};
+        const displayTitle = categoryTitleOverrides[category as CredentialCategoryEnum] ?? title;
 
         const settings = values[category];
 
@@ -97,7 +146,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                     {IconWithShape && (
                         <IconWithShape className="w-[24px] h-[24px] min-w-[24px] min-h-[24px] mr-2" />
                     )}
-                    {title}
+                    {displayTitle}
                     <span className="ml-2 text-xs bg-emerald-700 text-white px-2 py-1 rounded-full">
                         {settingsDisplayText}
                     </span>

@@ -72,7 +72,9 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
 
     const isHighPriority = priority === 'high';
     const bgColor = isHighPriority ? 'bg-orange-50' : 'bg-sky-50';
-    const iconBgColor = isHighPriority ? 'bg-orange-100 text-orange-600' : 'bg-sky-100 text-sky-600';
+    const iconBgColor = isHighPriority
+        ? 'bg-orange-100 text-orange-600'
+        : 'bg-sky-100 text-sky-600';
     const hasAction = !!actionPath;
 
     const handleClick = () => {
@@ -95,12 +97,12 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
                 hasAction ? 'cursor-pointer hover:opacity-90' : ''
             } transition-opacity relative`}
         >
-            {isUnread && (
-                <div className="notification-count-mobile unread-indicator-dot" />
-            )}
+            {isUnread && <div className="notification-count-mobile unread-indicator-dot" />}
 
             {/* Bell icon */}
-            <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${iconBgColor}`}>
+            <div
+                className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${iconBgColor}`}
+            >
                 <Bell className="w-7 h-7" />
             </div>
 
@@ -112,19 +114,20 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
                     </h4>
                 )}
 
-                {body && (
-                    <p className="text-gray-600 text-[13px] line-clamp-2">{body}</p>
-                )}
+                {body && <p className="text-gray-600 text-[13px] line-clamp-2">{body}</p>}
 
                 <div className="flex items-center gap-2 mt-1">
                     <p className="font-semibold p-0 leading-none tracking-wide line-clamp-1 text-[12px] text-gray-500">
-                        {category && (
-                            <span className="capitalize">{category}</span>
-                        )}
+                        {category && <span className="capitalize">{category}</span>}
 
                         {priority && (
-                            <span className={`ml-1 ${isHighPriority ? 'text-red-500' : 'text-gray-400'} font-normal capitalize`}>
-                                {category ? '\u00b7 ' : ''}{priority}
+                            <span
+                                className={`ml-1 ${
+                                    isHighPriority ? 'text-red-500' : 'text-gray-400'
+                                } font-normal capitalize`}
+                            >
+                                {category ? '\u00b7 ' : ''}
+                                {priority}
                             </span>
                         )}
 
@@ -141,7 +144,7 @@ const NotificationPanelCard: React.FC<NotificationPanelCardProps> = ({
             <div className="flex items-center gap-2 flex-shrink-0">
                 {hasAction && (
                     <button
-                        onClick={(e) => {
+                        onClick={e => {
                             e.stopPropagation();
                             handleClick();
                         }}
@@ -289,40 +292,46 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
 
-    const handleClearNotification = useCallback(async (notificationId: string) => {
-        try {
-            const wallet = await initWallet();
-            if (!wallet) return;
+    const handleClearNotification = useCallback(
+        async (notificationId: string) => {
+            try {
+                const wallet = await initWallet();
+                if (!wallet) return;
 
-            await wallet.invoke.updateNotificationMeta(notificationId, { archived: true });
+                await wallet.invoke.updateNotificationMeta(notificationId, { archived: true });
 
-            setNotifications(prev => prev.filter(n => n._id !== notificationId));
-        } catch (error) {
-            log.error('Error archiving notification', error);
-        }
-    }, [initWallet]);
-
-    const handleOpenNotification = useCallback(async (notificationId: string, actionPath?: string) => {
-        try {
-            const wallet = await initWallet();
-
-            if (wallet) {
-                await wallet.invoke.updateNotificationMeta(notificationId, { read: true });
-
-                setNotifications(prev =>
-                    prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
-                );
+                setNotifications(prev => prev.filter(n => n._id !== notificationId));
+            } catch (error) {
+                log.error('Error archiving notification', error);
             }
-        } catch (error) {
-            log.error('Error marking notification read', error);
-        }
+        },
+        [initWallet]
+    );
 
-        if (actionPath && onNavigateAction) {
-            onNavigateAction(actionPath);
-        }
+    const handleOpenNotification = useCallback(
+        async (notificationId: string, actionPath?: string) => {
+            try {
+                const wallet = await initWallet();
 
-        onClose();
-    }, [onClose, onNavigateAction, initWallet]);
+                if (wallet) {
+                    await wallet.invoke.updateNotificationMeta(notificationId, { read: true });
+
+                    setNotifications(prev =>
+                        prev.map(n => (n._id === notificationId ? { ...n, read: true } : n))
+                    );
+                }
+            } catch (error) {
+                log.error('Error marking notification read', error);
+            }
+
+            if (actionPath && onNavigateAction) {
+                onNavigateAction(actionPath);
+            }
+
+            onClose();
+        },
+        [onClose, onNavigateAction, initWallet]
+    );
 
     const unreadNotificationCount = notifications.filter(n => !n.read).length;
 
@@ -337,7 +346,11 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                     <p className="text-sm text-white/80">
                         {badgeCount} credential{badgeCount !== 1 ? 's' : ''}
                         {unreadNotificationCount > 0 && (
-                            <> &middot; {unreadNotificationCount} unread notification{unreadNotificationCount !== 1 ? 's' : ''}</>
+                            <>
+                                {' '}
+                                &middot; {unreadNotificationCount} unread notification
+                                {unreadNotificationCount !== 1 ? 's' : ''}
+                            </>
                         )}
                     </p>
                 </div>

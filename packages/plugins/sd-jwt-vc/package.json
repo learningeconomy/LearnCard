@@ -1,6 +1,6 @@
 {
     "name": "@learncard/sd-jwt-vc-plugin",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "SD-JWT-VC holder + verifier support for LearnCard. Implements RFC 9901 (SD-JWT) and draft-ietf-oauth-sd-jwt-vc.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -52,6 +52,8 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/vc-plugin": "workspace:^",
+        "@sd-jwt/core": "^0.19.0",
         "@sd-jwt/decode": "^0.19.0",
         "@sd-jwt/sd-jwt-vc": "^0.19.0",
         "jose": "^5.9.6"

@@ -42,12 +42,7 @@ interface ChatHeaderProps {
     onClose?: () => void;
 }
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({
-    mode,
-    aiApp,
-    initialTopic,
-    onClose,
-}) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopic, onClose }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
     const $currentThreadId = useStore(currentThreadId);
@@ -99,9 +94,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         const durationSec = startedAt
             ? Math.max(
                   0,
-                  Math.round(
-                      (new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000,
-                  ),
+                  Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000)
               )
             : undefined;
 
@@ -111,19 +104,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 eventId: uuidv4(),
                 threadId,
                 topicUri,
-                ...(currentAiPathwayUri.get()
-                    ? { aiPathwayUri: currentAiPathwayUri.get()! }
-                    : {}),
+                ...(currentAiPathwayUri.get() ? { aiPathwayUri: currentAiPathwayUri.get()! } : {}),
                 endedAt,
                 ...(durationSec !== undefined ? { durationSec } : {}),
                 source,
             });
         } catch (err) {
             // eslint-disable-next-line no-console
-            log.error(
-                '[ChatHeader] failed to publish ai-session-completed:',
-                err,
-            );
+            log.error('[ChatHeader] failed to publish ai-session-completed:', err);
         }
     };
 
@@ -146,8 +134,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         // exit cleanly to topics. Without this, X retriggers finishSession
         // which just rebuilds the same end state.
         const hasEndedAlready =
-            $sessionEnded ||
-            (currentThread?.summaries && currentThread.summaries.length > 0);
+            $sessionEnded || (currentThread?.summaries && currentThread.summaries.length > 0);
         if (hasEndedAlready) {
             disconnectWebSocket();
             resetChatStores();

@@ -17,6 +17,8 @@ export interface CredentialIssuerMetadata {
     credential_issuer: string;
     /** Endpoint to POST credential requests to. Required. */
     credential_endpoint: string;
+    /** Optional OID4VCI 1.0 Final endpoint for fetching a fresh c_nonce. */
+    nonce_endpoint?: string;
     /** Optional endpoint for notification of credential acceptance. */
     notification_endpoint?: string;
     /**

@@ -441,6 +441,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     accommodations,
                     ids,
                     skills,
+                    selfAssignedSkills,
                 ] = await Promise.all([
                     await wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.learningHistory,
@@ -466,6 +467,9 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     await wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.skill,
                     }),
+                    await wallet.index.LearnCloud.get({
+                        category: CredentialCategoryEnum.selfAssignedSkills,
+                    }),
                 ]);
 
                 // combine all creds
@@ -478,6 +482,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ...accommodations,
                     ...ids,
                     ...skills,
+                    ...selfAssignedSkills,
                 ];
 
                 // resolve all creds
@@ -1088,7 +1093,10 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                         if (records && records.length > 0) {
                             // Remove the record from the index
                             await wallet.index.LearnCloud.remove?.(records[0]!.id);
-                            log.debug('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
+                            log.debug(
+                                '[useSyncRevokedCredentials] Removed revoked credential from index:',
+                                uri
+                            );
                         }
                     } catch (e) {
                         log.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);

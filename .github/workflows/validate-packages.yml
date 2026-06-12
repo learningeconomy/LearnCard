@@ -19,7 +19,9 @@ name: Validate Published Package Contracts
 #   - Advisory packages (see ADVISORY_ONLY in scripts/validate-packages.mjs)
 #     → diagnostics printed, exit zero
 #
-# Runs on every PR + push to main. Cheap (~1-2 min total).
+# Runs on every PR + push to main. The validation script runs publint + attw
+# (the latter shells out to `npm pack`) across ~36 packages with a bounded
+# concurrency pool; combined with the up-front `pnpm build`, budget ~10-15 min.
 
 on:
     pull_request:
@@ -32,7 +34,7 @@ jobs:
     validate-packages:
         name: publint + attw
         runs-on: ubuntu-latest
-        timeout-minutes: 15
+        timeout-minutes: 25
         steps:
             - name: Checkout
               uses: actions/checkout@v4

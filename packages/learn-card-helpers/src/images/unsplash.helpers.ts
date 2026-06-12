@@ -1,6 +1,5 @@
-import qs from 'query-string';
-
 import { getUrlsFromSrcSet } from './images.helpers';
+import { parseUrl, stringifyUrl } from './url.helpers';
 
 /**
  * Fixes image rotation based on EXIF data and uses auto_image on a given srcset string
@@ -31,11 +30,11 @@ export const fixSrcSetString = (
 export const fixUrl = (url: string, _mimetype?: string, _webp = false): string => {
     if (url.split(' ').length > 1) return fixSrcSetString(url);
 
-    const parsedUrl = qs.parseUrl(url);
+    const parsedUrl = parseUrl(url);
 
     parsedUrl.query.auto = 'format';
 
-    return qs.stringifyUrl(parsedUrl);
+    return stringifyUrl(parsedUrl);
 };
 
 /**
@@ -47,11 +46,11 @@ export const fixUrl = (url: string, _mimetype?: string, _webp = false): string =
  * @return Unsplash URL
  */
 export const resizeUrl = (url: string, size: number): string => {
-    const parsedUrl = qs.parseUrl(url);
+    const parsedUrl = parseUrl(url);
 
     parsedUrl.query.w = size.toString();
 
-    return qs.stringifyUrl(parsedUrl);
+    return stringifyUrl(parsedUrl);
 };
 
 /**
@@ -63,11 +62,11 @@ export const resizeUrl = (url: string, size: number): string => {
  * @return Unsplash URL
  */
 export const changeQuality = (url: string, quality: number): string => {
-    const parsedUrl = qs.parseUrl(url);
+    const parsedUrl = parseUrl(url);
 
     parsedUrl.query.q = quality.toString();
 
-    return qs.stringifyUrl(parsedUrl);
+    return stringifyUrl(parsedUrl);
 };
 
 /**

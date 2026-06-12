@@ -170,7 +170,7 @@ const ViewSharedBoost: React.FC = () => {
                 credential={boost as any}
                 verificationItems={verificationItems}
                 boostUri={(boost as any)?.boostId}
-            //profileId={current user profile id?}
+                //profileId={current user profile id?}
             />
         </div>
     );
@@ -232,8 +232,9 @@ const ViewSharedBoost: React.FC = () => {
                 )}
                 {boost && wallet && !loading && (
                     <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                            } ]`}
+                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
+                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
+                        } ]`}
                         style={isTroopId ? troopBackgroundStyles : undefined}
                     >
                         {/* 

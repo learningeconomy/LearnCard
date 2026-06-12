@@ -724,11 +724,11 @@ if (nativeConfig) {
                 plist = plist.replace(TENANT_SCHEMES_MARKER, customSchemeEntries);
 
                 console.log(
-                    `   ✓ Patched Info.plist (custom schemes → [${customSchemes.join(', ')}])`,
+                    `   ✓ Patched Info.plist (custom schemes → [${customSchemes.join(', ')}])`
                 );
             } else if (customSchemes.length > 0) {
                 console.warn(
-                    '   ⚠️  TENANT_CUSTOM_SCHEMES marker not found in Info.plist.template — custom schemes not added',
+                    '   ⚠️  TENANT_CUSTOM_SCHEMES marker not found in Info.plist.template — custom schemes not added'
                 );
             }
 

@@ -1,6 +1,10 @@
 import type { Plugin, LearnCard } from '@learncard/core';
-import type { VerificationCheck } from '@learncard/types';
-import type { DidkitPluginMethods } from '@learncard/didkit-plugin';
+import type { VC, VerificationCheck } from '@learncard/types';
+import type { DidkitPluginMethods, ProofOptions } from '@learncard/didkit-plugin';
+import type { VerifyExtension } from '@learncard/vc-plugin';
+
+import type { SdJwtDisplayViewModel } from './display';
+import type { PresentSdJwtVcOptions, SdJwtPresentation } from './present';
 
 export const SD_JWT_VC_FORMAT = 'dc+sd-jwt' as const;
 export const SD_JWT_VC_FORMAT_LEGACY = 'vc+sd-jwt' as const;
@@ -64,6 +68,7 @@ export type SdJwtVcErrorCode =
     | 'missing_vct'
     | 'missing_alg'
     | 'unsupported_alg'
+    | 'unsupported_sd_alg'
     | 'invalid_disclosure'
     | 'disclosure_hash_mismatch'
     | 'issuer_resolution_failed'
@@ -77,6 +82,9 @@ export type SdJwtVcErrorCode =
     | 'vct_mismatch'
     | 'status_check_failed'
     | 'kb_jwt_invalid'
+    | 'presentation_verification_failed'
+    | 'key_binding_mismatch'
+    | 'unsupported_cnf_confirmation_type'
     | 'internal_error';
 
 export class SdJwtVcError extends Error {
@@ -89,27 +97,35 @@ export class SdJwtVcError extends Error {
     }
 }
 
-export type SdJwtVcPluginDependentMethods = Pick<DidkitPluginMethods, 'resolveDid'>;
+export type SdJwtVcPluginDependentMethods = Pick<DidkitPluginMethods, 'resolveDid'> &
+    VerifyExtension;
 
-// TODO(LC-1796 Slice 3+): tighten the host LearnCard's plane constraint once we
-// start touching the `id` plane for KB-JWT signing. Slice 1's read path doesn't
-// need it, so `any` here is intentional but should not be permanent.
+// Host LearnCard must expose the `id` plane (used for KB-JWT signing in
+// `presentSdJwtVc`). The first generic is `any` — the planes-provided shape
+// of the host is intentionally wide so this plugin composes with any LearnCard
+// stack that includes `id`.
 export type SdJwtVcDependentLearnCard = LearnCard<any, 'id', SdJwtVcPluginDependentMethods>;
 
-export type SdJwtVcPluginMethods = {
+export type SdJwtVcPluginMethods = VerifyExtension & {
     parseSdJwtVc: (compact: string) => Promise<ParsedSdJwtVc>;
 
-    verifySdJwtVc: (
-        compact: string,
-        options?: VerifySdJwtVcOptions
-    ) => Promise<VerificationCheck>;
+    verifySdJwtVc: (compact: string, options?: VerifySdJwtVcOptions) => Promise<VerificationCheck>;
 
     decodeSdJwtClaims: (compact: string) => Promise<Record<string, unknown>>;
+
+    categorizeSdJwtVct: (vct: string) => string;
+
+    toSdJwtDisplayViewModel: (parsed: ParsedSdJwtVc) => SdJwtDisplayViewModel;
+
+    presentSdJwtVc: (
+        compact: string,
+        options?: PresentSdJwtVcOptions
+    ) => Promise<SdJwtPresentation>;
 };
 
-// TODO(LC-1796 Slice 3+): replace the second `any` with a concrete control-plane
-// list once we wire the plugin into apps. Tracking parity with the other format
-// plugins (vc, open-badge-v2) which still use `any` for the planes generic.
+// Planes generic is `any` to match the convention used by the other format
+// plugins (vc, open-badge-v2, expiration). Format plugins don't introduce new
+// planes — they extend `verifyCredential` and add format-specific invoke methods.
 export type SdJwtVcPlugin = Plugin<
     'SDJwtVc',
     any,

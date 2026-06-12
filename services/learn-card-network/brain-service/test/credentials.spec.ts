@@ -2,7 +2,13 @@ import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendBoost, sendCredential, testUnsignedBoost } from './helpers/send';
 import { minimalContract, minimalTerms } from './helpers/contract';
-import { Profile, Credential, ConsentFlowContract, ConsentFlowTerms, ConsentFlowTransaction } from '@models';
+import {
+    Profile,
+    Credential,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    ConsentFlowTransaction,
+} from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import {
@@ -27,7 +33,6 @@ describe('Credentials', () => {
             addNotificationToQueueSpy
         );
     });
-
 
     describe('getHolderExportMetadata', () => {
         beforeEach(async () => {

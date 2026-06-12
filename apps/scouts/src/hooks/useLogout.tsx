@@ -62,7 +62,11 @@ const useLogout = () => {
 
                 // Native Firebase sign-out for Capacitor social logins
                 // (web Firebase sign-out is handled by the coordinator via authProvider.signOut)
-                if (typeOfLogin && nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
+                if (
+                    typeOfLogin &&
+                    nativeSocialLogins.includes(typeOfLogin) &&
+                    Capacitor.isNativePlatform()
+                ) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {
