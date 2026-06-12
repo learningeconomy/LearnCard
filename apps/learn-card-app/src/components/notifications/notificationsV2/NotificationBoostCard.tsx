@@ -204,7 +204,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     let buttonText: string = '';
 
     if (isClaimed) {
-        buttonText = 'Claimed';
+        buttonText = m['alerts.claimed']();
     } else if (!isClaimed) {
         buttonText = m['alerts.claim']();
     }

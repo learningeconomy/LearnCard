@@ -993,7 +993,13 @@
         "newBoost": "Nuevo Boost",
         "archive": "Archivar",
         "delete": "Eliminar",
-        "confirmDelete": "¿Eliminar esta notificación?"
+        "confirmDelete": "¿Eliminar esta notificación?",
+        "rejected": "Rechazado",
+        "okay": "De acuerdo",
+        "open": "Abrir",
+        "viewCredential": "Ver credencial",
+        "loadingNotifications": "Cargando notificaciones...",
+        "refresh": "Actualizar"
     },
     "share": {
         "title": "Compartir",

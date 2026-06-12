@@ -993,7 +993,13 @@
         "newBoost": "ترقية جديدة",
         "archive": "أرشفة",
         "delete": "حذف",
-        "confirmDelete": "حذف هذا الإشعار؟"
+        "confirmDelete": "حذف هذا الإشعار؟",
+        "rejected": "مرفوض",
+        "okay": "حسناً",
+        "open": "فتح",
+        "viewCredential": "عرض الشهادة",
+        "loadingNotifications": "جاري تحميل الإشعارات...",
+        "refresh": "تحديث"
     },
     "share": {
         "title": "مشاركة",

@@ -62,7 +62,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     let buttonText: string = '';
 
     if (isAccepted) {
-        buttonText = 'Accepted';
+        buttonText = m['alerts.accepted']();
     } else if (!isAccepted) {
         buttonText = m['alerts.accept']();
     }

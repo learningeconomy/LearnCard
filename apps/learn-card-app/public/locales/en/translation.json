@@ -966,7 +966,13 @@
         "reject": "Reject",
         "rejecting": "Rejecting...",
         "reviewRequired": "Review Required",
-        "title": "Alerts"
+        "title": "Alerts",
+        "rejected": "Rejected",
+        "okay": "Okay",
+        "open": "Open",
+        "viewCredential": "View Credential",
+        "loadingNotifications": "Loading Notifications...",
+        "refresh": "Refresh"
     },
     "share": {
         "addContact": "Add contact",

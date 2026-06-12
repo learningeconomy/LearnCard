@@ -143,7 +143,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     disabled={isProcessing}
                                 >
                                     {actionState === 'approving'
-                                        ? 'Approving...'
+                                        ? m['alerts.approving']()
                                         : m['alerts.approve']()}
                                 </button>
                                 <button
@@ -156,7 +156,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     disabled={isProcessing}
                                 >
                                     {actionState === 'rejecting'
-                                        ? 'Rejecting...'
+                                        ? m['alerts.rejecting']()
                                         : m['alerts.reject']()}
                                 </button>
                             </div>
@@ -165,7 +165,8 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                         {actionState === 'approved' && (
                             <div className="relative flex items-center mt-3 w-full">
                                 <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-emerald-600 text-emerald-600 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
-                                    Approved <Checkmark className="h-[24px] p-0 m-0" />
+                                    {m['alerts.approved']()}{' '}
+                                    <Checkmark className="h-[24px] p-0 m-0" />
                                 </div>
                             </div>
                         )}
@@ -173,7 +174,8 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                         {actionState === 'rejected' && (
                             <div className="relative flex items-center mt-3 w-full">
                                 <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-grayscale-300 text-grayscale-500 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
-                                    Rejected <X className="h-[14px] w-[14px] ml-1" />
+                                    {m['alerts.rejected']()}{' '}
+                                    <X className="h-[14px] w-[14px] ml-1" />
                                 </div>
                             </div>
                         )}
