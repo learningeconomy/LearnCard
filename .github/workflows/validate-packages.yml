@@ -48,6 +48,7 @@ jobs:
                   core
                   credential-library
                   lca-api-client
+                  lca-api-plugin
                   cli
                   helpers
                   init
