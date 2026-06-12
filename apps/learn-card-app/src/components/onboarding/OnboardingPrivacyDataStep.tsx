@@ -46,7 +46,7 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                 {isMinor && (
                     <div className="mt-6 mb-5 p-4 bg-sky-50 border border-sky-200 rounded-[20px]">
                         <p className="text-sm text-sky-800 leading-relaxed">
-                            Some features are restricted for users under 18.
+                            AI Features are restricted for users under 18.
                         </p>
                     </div>
                 )}
