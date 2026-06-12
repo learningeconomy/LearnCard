@@ -32,7 +32,7 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 RUN bunx nx build:docker learn-cloud-service
 

@@ -59,7 +59,7 @@ COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY apps/scouts/package.json apps/scouts/
 
 # Install dependencies - done before copying source for caching
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Copy sources
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api

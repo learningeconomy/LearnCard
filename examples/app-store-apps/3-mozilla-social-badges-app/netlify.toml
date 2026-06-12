@@ -1,5 +1,9 @@
+[build.environment]
+BUN_VERSION = "1.3.14"
+SKIP_DIDKIT_NAPI = "1"
+
 [build]
-  command = "bun run build"
+command = "bunx nx run @learncard/app-store-demo-mozilla-social-badges:build"
   publish = "dist"
 
 [context.production.environment]

@@ -106,7 +106,7 @@ jobs:
                   sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
             - name: Install dependencies
-              run: bun install
+              run: bun install --frozen-lockfile
 
             - name: Build in Docker (x86_64-musl)
               if: matrix.settings.target == 'x86_64-unknown-linux-musl'
@@ -125,7 +125,7 @@ jobs:
                       curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
                       export BUN_INSTALL="$HOME/.bun"
                       export PATH="$BUN_INSTALL/bin:$PATH"
-                      bun install
+                      bun install --frozen-lockfile
                       bunx nx run didkit-plugin-node:build -- --target $TARGET
                       $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
 
@@ -150,7 +150,7 @@ jobs:
                       curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
                       export BUN_INSTALL="$HOME/.bun"
                       export PATH="$BUN_INSTALL/bin:$PATH"
-                      bun install
+                      bun install --frozen-lockfile
                       bunx nx run didkit-plugin-node:build -- --target $TARGET
                       $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
 
@@ -212,7 +212,7 @@ jobs:
                       ${{ runner.os }}-bun-
 
             - name: Install dependencies
-              run: bun install
+              run: bun install --frozen-lockfile
 
             - name: Check if version is already published
               id: published
@@ -259,6 +259,9 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: bunx napi prepublish -t npm --skip-gh-release
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
             # Use npm for npm-registry tarball creation/publication; Bun handles the workspace install/build.
             - name: Pack package
@@ -283,3 +286,5 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
               run: npm publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

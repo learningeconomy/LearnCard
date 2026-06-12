@@ -49,11 +49,11 @@ jobs:
                       ${{ runner.os }}-bun-
 
             - name: Install Workspace dependencies
-              run: bun install && bunx nx build learn-card-app
+              run: bun install --frozen-lockfile && bunx nx build learn-card-app
 
             - name: Install dependencies
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: bun install
+              run: bun install --frozen-lockfile
 
             # Prepare tenant config before building (populates public/ with tenant assets)
             - name: Prepare tenant config
@@ -185,11 +185,11 @@ jobs:
                       ${{ runner.os }}-bun-
 
             - name: Install Workspace dependencies
-              run: bun install && bunx nx build learn-card-app
+              run: bun install --frozen-lockfile && bunx nx build learn-card-app
 
             - name: Install dependencies
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: bun install
+              run: bun install --frozen-lockfile
 
             # Prepare tenant config before building (populates public/ with tenant assets)
             - name: Prepare tenant config

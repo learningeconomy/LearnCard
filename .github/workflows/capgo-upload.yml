@@ -104,7 +104,7 @@ jobs:
             - name: Install dependencies
               env:
                   MONGOMS_DISABLE_POSTINSTALL: '1'
-              run: bun install
+              run: bun install --frozen-lockfile
 
             # Prepare tenant config for learn-card-app builds. For other projects
             # (e.g. scouts) the tenant input is left empty and this step is skipped.

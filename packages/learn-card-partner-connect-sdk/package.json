@@ -11,6 +11,7 @@
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "types": "./dist/index.d.ts",
             "node": {
                 "import": "./dist/partner-connect.mjs",

@@ -34,6 +34,7 @@
 "@learncard/open-badge-v2-plugin": patch
 "@learncard/openid4vc-plugin": patch
 "@learncard/render-method-plugin": patch
+"@learncard/partner-connect": patch
 "@learncard/sd-jwt-vc-plugin": patch
 "@learncard/simple-signing-plugin": patch
 "@learncard/vc-api-plugin": patch

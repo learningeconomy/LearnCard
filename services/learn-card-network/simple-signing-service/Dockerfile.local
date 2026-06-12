@@ -27,7 +27,7 @@ COPY packages/plugins/vc packages/plugins/vc
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY services/learn-card-network/simple-signing-service services/learn-card-network/simple-signing-service
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 RUN bunx nx build:docker simple-signing-service
 

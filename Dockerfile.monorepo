@@ -67,7 +67,7 @@ COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 COPY packages/email-templates/package.json packages/email-templates/
 
 RUN --mount=type=cache,id=bun-cache,target=/root/.bun/install/cache \
-    bun install --ignore-scripts
+    bun install --ignore-scripts --frozen-lockfile
 
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
 COPY packages/lca-api-client packages/lca-api-client

@@ -66,7 +66,7 @@ COPY packages/credential-library/package.json packages/credential-library/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 # Install dependencies - done before copying source for caching
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Copy sources
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api

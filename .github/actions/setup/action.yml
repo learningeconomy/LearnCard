@@ -8,6 +8,8 @@ runs:
           uses: actions/setup-node@v6
           with:
               node-version: 24.12.0
+              registry-url: 'https://registry.npmjs.org'
+              package-manager-cache: false
 
         - name: Setup Bun
           uses: oven-sh/setup-bun@v2
@@ -22,6 +24,10 @@ runs:
               restore-keys: |
                   ${{ runner.os }}-bun-
 
+        - name: Disable optional MongoDB binary download
+          shell: bash
+          run: echo "MONGOMS_DISABLE_POSTINSTALL=1" >> "$GITHUB_ENV"
+
         - name: Install dependencies
           shell: bash
-          run: bun install
+          run: bun install --frozen-lockfile

@@ -27,7 +27,8 @@ module.exports = {
             repo: 'GIT_REPOSITORY',
             path: 'DESTINATION_PATH',
             'pre-deploy-local': '',
-            'post-deploy': 'bun install && pm2 reload ecosystem.config.js --env production',
+            'post-deploy':
+                'bun install --frozen-lockfile && pm2 reload ecosystem.config.js --env production',
             'pre-setup': '',
         },
     },

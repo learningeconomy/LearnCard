@@ -54,7 +54,7 @@ COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY packages/sss-key-manager/package.json packages/sss-key-manager/
 COPY packages/email-templates/package.json packages/email-templates/
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Copy full sources after installing dependencies to leverage caching
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api

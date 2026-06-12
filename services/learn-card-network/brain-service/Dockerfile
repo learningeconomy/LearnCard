@@ -35,7 +35,7 @@ COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY packages/email-templates packages/email-templates
 COPY services/learn-card-network/brain-service services/learn-card-network/brain-service
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Build project - Building inside container ensures parity on all machines
 RUN bunx nx build:docker network-brain-service
