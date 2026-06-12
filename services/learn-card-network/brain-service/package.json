@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.16.1",
+    "version": "3.16.2",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -95,7 +95,7 @@
         "tsc-alias": "^1.8.10",
         "twilio": "^5.7.1",
         "undici": "^6",
-        "uuid": "^9.0.0",
+        "uuid": "^14.0.0",
         "zod-openapi": "^5.0.1"
     },
     "repository": {

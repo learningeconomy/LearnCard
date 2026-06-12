@@ -124,6 +124,7 @@ export const getOrCreateSharedUriForWallet = async (
             const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
                 recipients: [contractOwnerDid],
             });
+
             if (!newUri) return false;
 
             await wallet.index.LearnCloud.update(mainRecord.id, {
