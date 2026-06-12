@@ -50,8 +50,8 @@ const PrivacySettingsModal: React.FC = () => {
         : ageGate.isChildProfile
         ? preferences?.aiEnabled ?? false
         : preferences?.aiEnabled ?? true;
-    const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
-    const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
+    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
+    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
     // Legacy profiles may only have `isPrivate` populated. Mirror the backend
     // fallback so the selected privacy option matches the profile's effective
     // visibility until the user saves the new canonical field.
@@ -102,17 +102,19 @@ const PrivacySettingsModal: React.FC = () => {
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
+            if (isMinor) return;
             updatePreferences({ analyticsEnabled: enabled });
             setAnalyticsEnabled(enabled);
         },
-        [updatePreferences, setAnalyticsEnabled]
+        [isMinor, updatePreferences, setAnalyticsEnabled]
     );
 
     const handleBugReportsToggle = useCallback(
         (enabled: boolean) => {
+            if (isMinor) return;
             updatePreferences({ bugReportsEnabled: enabled });
         },
-        [updatePreferences]
+        [isMinor, updatePreferences]
     );
 
     const handleProfileVisibilityChange = useCallback(
@@ -152,7 +154,7 @@ const PrivacySettingsModal: React.FC = () => {
                 {isMinor && (
                     <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
                         <p className="text-sm text-sky-800">
-                            Some features are restricted for users under 18.
+                            These features are restricted for users under 18.
                         </p>
                     </div>
                 )}
@@ -263,6 +265,7 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={analyticsEnabled}
+                            disabled={isMinor}
                             onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
                             aria-label="Usage Analytics"
                         />
@@ -283,6 +286,7 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={bugReportsEnabled}
+                            disabled={isMinor}
                             onIonChange={e => handleBugReportsToggle(e.detail.checked)}
                             aria-label="Crash Reports"
                         />

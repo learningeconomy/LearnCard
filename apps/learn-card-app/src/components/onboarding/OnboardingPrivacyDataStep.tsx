@@ -54,7 +54,7 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                 {isMinor && (
                     <div className="mt-6 mb-5 p-4 bg-sky-50 border border-sky-200 rounded-[20px]">
                         <p className="text-sm text-sky-800 leading-relaxed">
-                            Some features are restricted for users under 18.
+                            These features are restricted for users under 18.
                         </p>
                     </div>
                 )}
@@ -70,11 +70,6 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                                     AI tutoring sessions, insights, and personalization. This may
                                     share relevant messages and records with AI providers.
                                 </p>
-                                {isMinor && (
-                                    <p className="text-xs text-sky-700 mt-2 leading-relaxed">
-                                        A guardian can turn this on later.
-                                    </p>
-                                )}
                             </div>
                             <IonToggle
                                 checked={preferences.aiEnabled}
@@ -98,7 +93,7 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                             </div>
                             <IonToggle
                                 checked={preferences.analyticsEnabled}
-                                disabled={isLoading}
+                                disabled={isMinor || isLoading}
                                 onIonChange={e => onChange({ analyticsEnabled: e.detail.checked })}
                                 aria-label="Usage Analytics"
                             />
@@ -118,7 +113,7 @@ const OnboardingPrivacyDataStep: React.FC<OnboardingPrivacyDataStepProps> = ({
                             </div>
                             <IonToggle
                                 checked={preferences.bugReportsEnabled}
-                                disabled={isLoading}
+                                disabled={isMinor || isLoading}
                                 onIonChange={e => onChange({ bugReportsEnabled: e.detail.checked })}
                                 aria-label="Crash Reports"
                             />

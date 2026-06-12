@@ -59,12 +59,12 @@ const renderStep = (preferences: OnboardingPrivacyPreferences) => {
 };
 
 describe('OnboardingPrivacyDataStep', () => {
-    it('shows minor defaults with AI locked off and other toggles editable', () => {
+    it('shows minor defaults with all privacy toggles locked off', () => {
         const { onChange } = renderStep({
             aiEnabled: false,
             aiAutoDisabled: true,
             analyticsEnabled: false,
-            analyticsAutoDisabled: false,
+            analyticsAutoDisabled: true,
             bugReportsEnabled: false,
             isMinor: true,
         });
@@ -76,9 +76,8 @@ describe('OnboardingPrivacyDataStep', () => {
             )
         ).toBeInTheDocument();
         expect(
-            screen.getByText('Some features are restricted for users under 18.')
+            screen.getByText('These features are restricted for users under 18.')
         ).toBeInTheDocument();
-        expect(screen.getByText('A guardian can turn this on later.')).toBeInTheDocument();
 
         const aiToggle = screen.getByLabelText('AI Features') as HTMLInputElement;
         const analyticsToggle = screen.getByLabelText('Usage Analytics') as HTMLInputElement;
@@ -87,15 +86,11 @@ describe('OnboardingPrivacyDataStep', () => {
         expect(aiToggle).not.toBeChecked();
         expect(aiToggle).toBeDisabled();
         expect(analyticsToggle).not.toBeChecked();
-        expect(analyticsToggle).toBeEnabled();
+        expect(analyticsToggle).toBeDisabled();
         expect(crashReportsToggle).not.toBeChecked();
-        expect(crashReportsToggle).toBeEnabled();
+        expect(crashReportsToggle).toBeDisabled();
 
-        fireEvent.click(analyticsToggle);
-        fireEvent.click(crashReportsToggle);
-
-        expect(onChange).toHaveBeenNthCalledWith(1, { analyticsEnabled: true });
-        expect(onChange).toHaveBeenNthCalledWith(2, { bugReportsEnabled: true });
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('shows adult defaults with all toggles on and editable', () => {
@@ -112,7 +107,7 @@ describe('OnboardingPrivacyDataStep', () => {
         const analyticsToggle = screen.getByLabelText('Usage Analytics') as HTMLInputElement;
         const crashReportsToggle = screen.getByLabelText('Crash Reports') as HTMLInputElement;
 
-        expect(screen.queryByText('Some features are restricted for users under 18.')).toBeNull();
+        expect(screen.queryByText('These features are restricted for users under 18.')).toBeNull();
         expect(aiToggle).toBeChecked();
         expect(aiToggle).toBeEnabled();
         expect(analyticsToggle).toBeChecked();
