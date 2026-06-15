@@ -118,3 +118,31 @@ COPY packages/email-templates packages/email-templates
 
 RUN --mount=type=cache,id=nx-cache,target=/app/.nx \
     pnpm exec nx run-many --target=build:docker --projects=learn-card-app,network-brain-service,learn-cloud-service,lca-api-service
+
+RUN mkdir -p /app/.nx-cache /app/node_modules/.cache \
+    /app/apps/learn-card-app/node_modules/.vite \
+    /app/tools/executors/workspace/run-command/dist \
+    /app/services/learn-card-network/brain-service/dist \
+    /app/services/learn-card-network/brain-service/build \
+    /app/services/learn-card-network/learn-cloud-service/dist \
+    /app/services/learn-card-network/learn-cloud-service/build \
+    /app/services/learn-card-network/lca-api/dist \
+    /app/services/learn-card-network/lca-api/build \
+    && chmod 1777 /app/.nx-cache /app/node_modules/.cache \
+    /app/apps/learn-card-app/node_modules/.vite \
+    && chmod a+rwx \
+    /app/apps/learn-card-app \
+    /app/services/learn-card-network/brain-service \
+    /app/services/learn-card-network/learn-cloud-service \
+    /app/services/learn-card-network/lca-api \
+    && chmod -R a+rwX /app/tools/executors/workspace/run-command/dist \
+    /app/services/learn-card-network/brain-service/dist \
+    /app/services/learn-card-network/brain-service/build \
+    /app/services/learn-card-network/learn-cloud-service/dist \
+    /app/services/learn-card-network/learn-cloud-service/build \
+    /app/services/learn-card-network/lca-api/dist \
+    /app/services/learn-card-network/lca-api/build \
+    /app/apps/learn-card-app/public \
+    /app/apps/learn-card-app/ios \
+    /app/apps/learn-card-app/android \
+    && chmod a+rw /app/apps/learn-card-app/index.html

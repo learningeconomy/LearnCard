@@ -91,6 +91,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         introSlides: true,
         launchPadQuickActions: true,
         dashboardHome: false,
+        useSeededSkillFrameworks: false,
     },
 
     observability: {

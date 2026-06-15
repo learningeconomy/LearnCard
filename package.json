@@ -11,6 +11,7 @@
         "prepare": "husky install",
         "lint:staged": "lint-staged",
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
+        "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test",
         "validate-packages": "node scripts/validate-packages.mjs",
@@ -116,7 +117,18 @@
             "@storybook/react-vite": "8.6.18",
             "@storybook/test": "8.6.18",
             "@storybook/theming": "8.6.18",
-            "storybook": "8.6.18"
+            "storybook": "8.6.18",
+            "next": "15.5.18",
+            "protobufjs": "7.6.3",
+            "jsonpath-plus": "10.3.0",
+            "simple-git": "3.36.0",
+            "handlebars": "4.7.9",
+            "fast-xml-parser@4": "5.8.0",
+            "fast-xml-parser@5": "5.8.0",
+            "basic-ftp": "5.3.1",
+            "sharp": "0.34.5",
+            "jspdf": "4.2.1",
+            "swiper": "12.1.2"
         }
     },
     "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee",

@@ -6,7 +6,7 @@ import useShareCredentials, { VcType, VC_TYPE } from 'learn-card-base/hooks/useS
 import GenericCardWrapper from 'learn-card-base/components/GenericCardWrapper/GenericCardWrapper';
 import { IonToggle } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
 import { VC } from '@learncard/types';
 
 type ShareCredentialCardsProps = { preSelectedCredentials?: VC[]; viewOnly?: boolean };
