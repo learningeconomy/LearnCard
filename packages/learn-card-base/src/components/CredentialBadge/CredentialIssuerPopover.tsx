@@ -3,7 +3,11 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 import { IonPopover } from '@ionic/react';
+import BecomeTrustedIssuerForm from './BecomeTrustedIssuerForm';
 
+import useModal from '../modals/useModal';
+
+import { ModalTypes } from '../modals/types/Modals';
 import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
 
 type CredentialIssuerPopoverProps = {
@@ -82,7 +86,44 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     event,
     onDidDismiss,
 }) => {
+    const { newModal } = useModal();
+
     if (!enabled) return null;
+
+    const openBecomeTrustedIssuerForm = (e: React.MouseEvent<HTMLButtonElement>): void => {
+        e.stopPropagation();
+
+        // Dismiss the popover before opening the modal. We dismiss the host
+        // ion-popover directly so it closes in both trigger modes (event-based
+        // and triggerId), then open the modal once it has gone away.
+        const popover = e.currentTarget.closest('ion-popover') as
+            | (HTMLElement & { dismiss?: () => Promise<void> })
+            | null;
+
+        const open = () =>
+            newModal(
+                <BecomeTrustedIssuerForm />,
+                { hideButton: true },
+                { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+            );
+
+        onDidDismiss?.();
+
+        if (popover?.dismiss) {
+            popover.dismiss().then(open);
+        } else {
+            open();
+        }
+    };
+
+    const openTrustRegistriesDocs = (e: React.MouseEvent<HTMLButtonElement>): void => {
+        e.stopPropagation();
+        if (Capacitor?.isNativePlatform()) {
+            Browser?.open({ url: TRUST_REGISTRIES_DOCS_URL });
+        } else {
+            window?.open(TRUST_REGISTRIES_DOCS_URL, '_blank', 'noopener,noreferrer');
+        }
+    };
 
     const getIssuerPopoverDescription = (verifierState: VerifierState): React.ReactNode => {
         if (verifierState === VERIFIER_STATES.trustedVerifier) {
@@ -154,32 +195,22 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                 className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins"
                 style={{ width: 'min(320px, calc(100vw - 32px))' }}
             >
-                <p className="text-xs text-grayscale-600 leading-relaxed">
-                    {popoverDescription}
+                <p className="text-xs text-grayscale-600 leading-relaxed">{popoverDescription}</p>
 
-                    <span>
-                        {' '}
-                        <button
-                            onClick={e => {
-                                e.stopPropagation();
-                                if (Capacitor?.isNativePlatform()) {
-                                    Browser?.open({
-                                        url: TRUST_REGISTRIES_DOCS_URL,
-                                    });
-                                } else {
-                                    window?.open(
-                                        TRUST_REGISTRIES_DOCS_URL,
-                                        '_blank',
-                                        'noopener,noreferrer'
-                                    );
-                                }
-                            }}
-                            className="font-semibold text-indigo-600 underline underline-offset-2"
-                        >
-                            Learn More
-                        </button>
-                    </span>
-                </p>
+                <div className="mt-2 flex flex-row items-center gap-2">
+                    <button
+                        onClick={openTrustRegistriesDocs}
+                        className="font-semibold text-indigo-600 underline underline-offset-2 text-xs"
+                    >
+                        Learn More
+                    </button>
+                    <button
+                        onClick={openBecomeTrustedIssuerForm}
+                        className="font-semibold text-indigo-600 underline underline-offset-2 text-xs"
+                    >
+                        Become a Trusted Issuer
+                    </button>
+                </div>
             </div>
         </IonPopover>
     );
