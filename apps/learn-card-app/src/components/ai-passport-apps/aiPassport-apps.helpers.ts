@@ -1,6 +1,6 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
-import { LaunchPadAppListItem } from 'learn-card-base';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI, LaunchPadAppListItem } from 'learn-card-base';
 import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
@@ -33,7 +33,7 @@ export enum AiPassportAppContractUri {
     chatGPT = 'lc:network:network.learncard.com/trpc:contract:469524d4-264c-4fc3-99e4-0c9f06c805e8',
     claude = 'lc:network:network.learncard.com/trpc:contract:5d5447fc-9197-45ac-859a-5f068ff12938',
     gemini = 'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85',
-    learncardapp = 'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891',
+    learncardapp = LEARNCARD_AI_PASSPORT_CONTRACT_URI,
 }
 
 /** @deprecated Use `isProductionNetwork` from `learn-card-base/helpers/networkHelpers` instead. */
