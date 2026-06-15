@@ -305,7 +305,8 @@
             "noHint": "تم ربط الجهاز — سجل الدخول للإنهاء"
         },
         "installIntent": {
-            "banner": "سيتم إعادتك إلى <0>{{appName}}</0> بعد تسجيل الدخول"
+            "banner": "سيتم إعادتك إلى <0>{{appName}}</0> بعد تسجيل الدخول",
+            "defaultAppName": "التطبيق"
         },
         "footer": {
             "terms": "الشروط",
@@ -879,7 +880,8 @@
         "aiSessions": "جلسات الذكاء الاصطناعي",
         "newFamily": "عائلة جديدة",
         "requestingPermissions": "طلب الأذونات",
-        "addingNewCredentials": "إضافة بيانات اعتماد جديدة"
+        "addingNewCredentials": "إضافة بيانات اعتماد جديدة",
+        "aiLearningData": "بيانات التعلّم بالذكاء الاصطناعي"
     },
     "recovery": {
         "protectAccount": "احمِ حسابك",

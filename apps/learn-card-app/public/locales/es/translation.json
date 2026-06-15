@@ -305,7 +305,8 @@
             "noHint": "Dispositivo vinculado — inicia sesión para terminar"
         },
         "installIntent": {
-            "banner": "Volverás a <0>{{appName}}</0> después de iniciar sesión"
+            "banner": "Volverás a <0>{{appName}}</0> después de iniciar sesión",
+            "defaultAppName": "la aplicación"
         },
         "footer": {
             "terms": "Términos",
@@ -879,7 +880,8 @@
         "aiSessions": "Sesiones de IA",
         "newFamily": "Nueva familia",
         "requestingPermissions": "Solicitando permisos",
-        "addingNewCredentials": "Agregando nuevas credenciales"
+        "addingNewCredentials": "Agregando nuevas credenciales",
+        "aiLearningData": "Datos de Aprendizaje de IA"
     },
     "recovery": {
         "protectAccount": "Protege tu cuenta",

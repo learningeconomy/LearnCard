@@ -305,7 +305,8 @@
             "noHint": "Appareil lié — connectez-vous pour terminer"
         },
         "installIntent": {
-            "banner": "Vous serez redirigé vers <0>{{appName}}</0> après la connexion"
+            "banner": "Vous serez redirigé vers <0>{{appName}}</0> après la connexion",
+            "defaultAppName": "l'application"
         },
         "footer": {
             "terms": "Conditions",
@@ -879,7 +880,8 @@
         "aiSessions": "Sessions IA",
         "newFamily": "Nouvelle famille",
         "requestingPermissions": "Demande de permissions",
-        "addingNewCredentials": "Ajout de nouvelles certifications"
+        "addingNewCredentials": "Ajout de nouvelles certifications",
+        "aiLearningData": "Données d'apprentissage IA"
     },
     "recovery": {
         "protectAccount": "Protégez votre compte",

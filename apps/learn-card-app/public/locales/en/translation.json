@@ -302,7 +302,8 @@
             "haveSeedPhrase": "Have your own <0>seed phrase</0>?"
         },
         "installIntent": {
-            "banner": "You'll be taken back to <0>{{appName}}</0> after sign in"
+            "banner": "You'll be taken back to <0>{{appName}}</0> after sign in",
+            "defaultAppName": "the app"
         },
         "linkedBanner": {
             "withHint": "Sign in with <0>{{hint}}</0> to finish",
@@ -879,7 +880,8 @@
         "aiSessions": "AI Sessions",
         "newFamily": "New Family",
         "requestingPermissions": "Requesting Permissions",
-        "addingNewCredentials": "Adding New Credentials"
+        "addingNewCredentials": "Adding New Credentials",
+        "aiLearningData": "AI Learning Data"
     },
     "recovery": {
         "accountRecovery": "Account Recovery",
