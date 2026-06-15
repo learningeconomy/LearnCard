@@ -51,13 +51,17 @@ export const AppStoreListItemSkeleton: React.FC = () => {
 
 /**
  * Renders a small stack of {@link AppStoreListItemSkeleton} rows in place of a
- * category list while it's loading with no data yet.
+ * category list while it's loading with no data yet. `idPrefix` keeps row keys
+ * unique when multiple stacks render as siblings (e.g. Installed + Suggested).
  */
-export const AppStoreListSkeleton: React.FC<{ count?: number }> = ({ count = 5 }) => {
+export const AppStoreListSkeleton: React.FC<{ count?: number; idPrefix?: string }> = ({
+    count = 5,
+    idPrefix = 'app-store-skeleton',
+}) => {
     return (
         <>
             {Array.from({ length: count }).map((_, index) => (
-                <AppStoreListItemSkeleton key={`app-store-skeleton-${index}`} />
+                <AppStoreListItemSkeleton key={`${idPrefix}-${index}`} />
             ))}
         </>
     );

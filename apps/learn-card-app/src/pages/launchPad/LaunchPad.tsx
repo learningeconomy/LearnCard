@@ -385,7 +385,7 @@ const LaunchPad: React.FC = () => {
                                                         Installed Apps
                                                     </p>
                                                 </div>
-                                                <AppStoreListSkeleton />
+                                                <AppStoreListSkeleton idPrefix="installed-skeleton" />
                                             </>
                                         )}
 
@@ -416,7 +416,7 @@ const LaunchPad: React.FC = () => {
                                                     Suggested Apps
                                                 </p>
                                             </div>
-                                            <AppStoreListSkeleton />
+                                            <AppStoreListSkeleton idPrefix="suggested-skeleton" />
                                         </>
                                     )}
 
@@ -451,7 +451,7 @@ const LaunchPad: React.FC = () => {
                                                         {isAll ? 'All Apps' : `All ${tab}`}
                                                     </p>
                                                 </div>
-                                                <AppStoreListSkeleton />
+                                                <AppStoreListSkeleton idPrefix="browse-skeleton" />
                                             </>
                                         )}
 
@@ -515,7 +515,8 @@ const LaunchPad: React.FC = () => {
                                             !hasContract &&
                                             !hasCustomApp &&
                                             !isLoadingBrowseApps &&
-                                            !isLoadingInstalledApps;
+                                            !isLoadingInstalledApps &&
+                                            !isLoadingCuratedApps;
 
                                         if (!isEmpty) return null;
 
