@@ -24,6 +24,10 @@ type CredentialIssuerPopoverState = {
 const TRUST_REGISTRIES_DOCS_URL =
     'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries';
 
+const stopPopoverInteraction = (event: React.SyntheticEvent): void => {
+    event.stopPropagation();
+};
+
 export const normalizeCredentialIssuerVerifierState = (
     verifierState: string | undefined
 ): VerifierState => {
@@ -149,10 +153,16 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
             side="bottom"
             alignment="center"
             className="[--background:transparent] [--box-shadow:none] [--width:auto] rounded-[100px]"
+            onClick={stopPopoverInteraction}
+            onPointerDown={stopPopoverInteraction}
+            onTouchStart={stopPopoverInteraction}
         >
             <div
-                className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins"
+                className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins pointer-events-auto"
                 style={{ width: 'min(320px, calc(100vw - 32px))' }}
+                onClick={stopPopoverInteraction}
+                onPointerDown={stopPopoverInteraction}
+                onTouchStart={stopPopoverInteraction}
             >
                 <p className="text-xs text-grayscale-600 leading-relaxed">
                     {popoverDescription}
@@ -161,7 +171,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                         {' '}
                         <button
                             onClick={e => {
-                                e.stopPropagation();
+                                stopPopoverInteraction(e);
                                 if (Capacitor?.isNativePlatform()) {
                                     Browser?.open({
                                         url: TRUST_REGISTRIES_DOCS_URL,
@@ -174,7 +184,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                                     );
                                 }
                             }}
-                            className="font-semibold text-indigo-600 underline underline-offset-2"
+                            className="font-semibold text-grayscale-800 underline underline-offset-2"
                         >
                             Learn More
                         </button>
