@@ -56,7 +56,11 @@ export const AiInsightsUserRequestsToast: React.FC<{
                 <div className="flex flex-col text-left">
                     <p className="text-grayscale-900 text-sm">
                         <TransP
-                            m={m['aiInsights.hasRequestedToView']({ ownerName: contract?.owner?.displayName ?? '', userName: currentLCNUser?.displayName ?? '' })}
+                            m={m['aiInsights.hasRequestedToView']}
+                            values={{
+                                ownerName: contract?.owner?.displayName ?? '',
+                                userName: currentLCNUser?.displayName ?? '',
+                            }}
                             components={[
                                 <span className="font-semibold" />,
                                 <span className="font-semibold" />,

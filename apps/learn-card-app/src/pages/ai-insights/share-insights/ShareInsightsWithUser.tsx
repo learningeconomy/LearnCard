@@ -87,7 +87,11 @@ export const ShareInsightsWithUser: React.FC<{
         text = (
             <p className="text-grayscale-900 text-[17px] text-center">
                 <TransP
-                    m={m['aiInsights.wantsToShare']({ childName: childName ?? '', targetName: _targetProfile?.displayName ?? '' })}
+                    m={m['aiInsights.wantsToShare']}
+                    values={{
+                        childName: childName ?? '',
+                        targetName: _targetProfile?.displayName ?? '',
+                    }}
                     components={[
                         <span className="font-semibold" />,
                         <span className="font-semibold" />,

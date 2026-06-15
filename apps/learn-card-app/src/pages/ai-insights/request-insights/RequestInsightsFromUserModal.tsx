@@ -118,12 +118,15 @@ export const RequestInsightsFromUserModal: React.FC<{
                     </div>
                     {isAuthenticated ? (
                         <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-                            {m['aiInsights.requestInsightsFrom']({ name: profile?.displayName ?? '' })}
+                            {m['aiInsights.requestInsightsFrom']({
+                                name: profile?.displayName ?? '',
+                            })}
                         </p>
                     ) : (
                         <p className="text-grayscale-900 text-[16px] text-center">
                             <TransP
-                                m={m['aiInsights.loginToRequestFrom']({ name: profile?.displayName ?? '' })}
+                                m={m['aiInsights.loginToRequestFrom']}
+                                values={{ name: profile?.displayName ?? '' }}
                                 components={[
                                     <span className="font-semibold" />,
                                     <span className="font-semibold" />,

@@ -49,8 +49,8 @@ import { renderParts, type MessagePart } from './index';
  * that need to splice React elements into the message.
  */
 export type ParaglideMessage = {
-    (inputs?: Record<string, unknown>): string;
-    parts: (inputs?: Record<string, unknown>) => MessagePart[];
+    (...args: any[]): string;
+    parts: (...args: any[]) => MessagePart[];
 };
 
 type TransPProps = {
@@ -70,7 +70,7 @@ export const TransP: React.FC<TransPProps> = ({ m, values, components = [] }) =>
     const parts = m.parts(values ?? {});
     const componentMap = components.reduce<Record<string, React.ReactElement>>(
         (acc, el, i) => ({ ...acc, [String(i)]: el }),
-        {},
+        {}
     );
     return <>{renderParts(parts, componentMap)}</>;
 };

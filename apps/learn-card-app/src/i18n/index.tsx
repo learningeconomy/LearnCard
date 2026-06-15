@@ -13,20 +13,27 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import {
-    setLocale as paraglideSetLocale,
-    getLocale,
-} from '../paraglide/runtime.js';
+import { setLocale as paraglideSetLocale, getLocale } from '../paraglide/runtime.js';
 
 import { detectInitialLocale, detectInitialLocaleSync } from './detectLocale';
 
-// MessagePart is a JSDoc typedef in runtime.js, not a TS export.
-// Define it here so our renderParts() helper is type-safe.
+// Mirror of Paraglide's runtime `MessagePart` (a JSDoc typedef in
+// ../paraglide/runtime.js, not a TS export). Field types match the generated
+// runtime exactly — `options` is MessageMarkupOptions (Record<string, unknown>)
+// and `attributes` is MessageMarkupAttributes (Record<string, string | true>) —
+// so a message's `.parts()` output is assignable to renderParts() without a cast.
+type MarkupOptions = Record<string, unknown>;
+type MarkupAttributes = Record<string, string | true>;
 export type MessagePart =
     | { type: 'text'; value: string }
-    | { type: 'markup-start'; name: string; options: Record<string, never>; attributes: Record<string, never> }
-    | { type: 'markup-end'; name: string; options: Record<string, never>; attributes: Record<string, never> }
-    | { type: 'markup-standalone'; name: string; options: Record<string, never>; attributes: Record<string, never> };
+    | { type: 'markup-start'; name: string; options: MarkupOptions; attributes: MarkupAttributes }
+    | { type: 'markup-end'; name: string; options: MarkupOptions; attributes: MarkupAttributes }
+    | {
+          type: 'markup-standalone';
+          name: string;
+          options: MarkupOptions;
+          attributes: MarkupAttributes;
+      };
 
 // ── Supported languages (mirrors LC-1831 POC) ──────────────────────────
 
@@ -106,8 +113,7 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // persisted, we never override it from autodetection on later launches.
     useEffect(() => {
         const hasManualChoice =
-            typeof localStorage !== 'undefined' &&
-            !!localStorage.getItem('i18n.language');
+            typeof localStorage !== 'undefined' && !!localStorage.getItem('i18n.language');
         if (hasManualChoice) return;
         void detectInitialLocale(SUPPORTED_LANGUAGES, 'en').then(detected => {
             if (
@@ -133,9 +139,7 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, [locale]);
 
     return (
-        <LocaleContext.Provider value={{ locale, changeLocale }}>
-            {children}
-        </LocaleContext.Provider>
+        <LocaleContext.Provider value={{ locale, changeLocale }}>{children}</LocaleContext.Provider>
     );
 };
 
@@ -173,7 +177,7 @@ export function useChangeLocale(): (lang: SupportedLanguage) => void {
  */
 export function renderParts(
     parts: MessagePart[],
-    components: Record<string, React.ReactElement>,
+    components: Record<string, React.ReactElement>
 ): React.ReactNode {
     const result: React.ReactNode[] = [];
     const stack: { name: string; children: React.ReactNode[] }[] = [];
@@ -197,7 +201,11 @@ export function renderParts(
             }
             const el = components[frame.name];
             const child = el
-                ? React.cloneElement(el, { key: `m-${frame.name}-${keyCounter++}` }, ...frame.children)
+                ? React.cloneElement(
+                      el,
+                      { key: `m-${frame.name}-${keyCounter++}` },
+                      ...frame.children
+                  )
                 : frame.children;
             if (stack.length > 0) {
                 stack[stack.length - 1].children.push(child);
