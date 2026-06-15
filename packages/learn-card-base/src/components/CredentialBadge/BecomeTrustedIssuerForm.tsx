@@ -13,6 +13,7 @@ const TYPEFORM_ID = 'BI7N9t60';
 export type BecomeTrustedIssuerFormProps = {
     onSubmit?: () => void;
     className?: string;
+    issuerDid?: string;
 };
 
 /**
@@ -20,7 +21,10 @@ export type BecomeTrustedIssuerFormProps = {
  * profile id, and display name prefilled into the form's hidden fields
  * (`did`, `profile_id`, `name`).
  */
-export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = ({ onSubmit }) => {
+export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = ({
+    onSubmit,
+    issuerDid,
+}) => {
     const { closeModal } = useModal();
 
     const { data: did } = useGetDid();
@@ -52,6 +56,7 @@ export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = (
                     did,
                     profile_id: currentLCNUser?.profileId ?? '',
                     name: currentLCNUser?.displayName ?? '',
+                    issuer_did: issuerDid ?? '',
                 }}
                 onSubmit={onSubmit}
                 inlineOnMobile

@@ -14,6 +14,7 @@ type CredentialIssuerPopoverProps = {
     enabled: boolean;
     triggerId?: string;
     verifierState: VerifierState;
+    issuerDid?: string;
     isOpen?: boolean;
     event?: Event;
     onDidDismiss?: () => void;
@@ -82,6 +83,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     enabled,
     triggerId,
     verifierState,
+    issuerDid,
     isOpen,
     event,
     onDidDismiss,
@@ -102,7 +104,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
 
         const open = () =>
             newModal(
-                <BecomeTrustedIssuerForm />,
+                <BecomeTrustedIssuerForm issuerDid={issuerDid} />,
                 { hideButton: true },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
