@@ -71,3 +71,9 @@ export const Loading: Story = {
         vm: DASHBOARD_PERSONAS['Loading'],
     },
 };
+
+export const JourneysDisabled: Story = {
+    args: {
+        vm: DASHBOARD_PERSONAS['Journeys disabled'],
+    },
+};

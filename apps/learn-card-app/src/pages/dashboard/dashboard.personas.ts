@@ -499,12 +499,45 @@ export const loadingState: DashboardViewModel = {
     },
 };
 
+export const journeysDisabled: DashboardViewModel = {
+    ...activeLearner,
+    pathwaysEnabled: false,
+    goalSummary: null,
+    heroSlot: 'goal',
+    checklistItems: [
+        {
+            key: 'add-credential',
+            label: 'Add your first credential',
+            done: true,
+            onClick: noop,
+        },
+        { key: 'discover-apps', label: 'Discover apps', done: false, onClick: noop },
+        {
+            key: 'skill-profile',
+            label: 'Fill out your skills profile',
+            done: false,
+            onClick: noop,
+        },
+    ],
+    slots: {
+        collect: makeAction('collect', 'view-passport', 'View passport', '12 credentials'),
+        understand: makeAction(
+            'understand',
+            'see-insights',
+            'See insights',
+            'AI summary of your record'
+        ),
+        navigate: makeAction('navigate', 'ai-pathways', 'Navigate pathways', 'Explore AI pathways'),
+    },
+};
+
 export const DASHBOARD_PERSONAS: Record<string, DashboardViewModel> = {
     'Brand-new user': brandNewUser,
     'Active learner': activeLearner,
     'Returning · empty feed': returningNoActivity,
     'Pending actions only': pendingOnly,
     'Loading': loadingState,
+    'Journeys disabled': journeysDisabled,
 };
 
 export { emptySlots };
