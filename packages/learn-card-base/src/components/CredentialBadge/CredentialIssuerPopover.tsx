@@ -29,6 +29,10 @@ type CredentialIssuerPopoverState = {
 const TRUST_REGISTRIES_DOCS_URL =
     'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries';
 
+const stopPopoverInteraction = (event: React.SyntheticEvent): void => {
+    event.stopPropagation();
+};
+
 export const normalizeCredentialIssuerVerifierState = (
     verifierState: string | undefined
 ): VerifierState => {
@@ -94,6 +98,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
 
     const openBecomeTrustedIssuerForm = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.stopPropagation();
+        stopPopoverInteraction(e);
 
         // Dismiss the popover before opening the modal. We dismiss the host
         // ion-popover directly so it closes in both trigger modes (event-based
@@ -120,6 +125,7 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
 
     const openTrustRegistriesDocs = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.stopPropagation();
+        stopPopoverInteraction(e);
         if (Capacitor?.isNativePlatform()) {
             Browser?.open({ url: TRUST_REGISTRIES_DOCS_URL });
         } else {
@@ -192,10 +198,16 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
             side="bottom"
             alignment="center"
             className="[--background:transparent] [--box-shadow:none] [--width:auto] rounded-[100px]"
+            onClick={stopPopoverInteraction}
+            onPointerDown={stopPopoverInteraction}
+            onTouchStart={stopPopoverInteraction}
         >
             <div
-                className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins"
+                className="bg-white rounded-[10px] border border-grayscale-200 p-4 shadow-2xl font-poppins pointer-events-auto"
                 style={{ width: 'min(320px, calc(100vw - 32px))' }}
+                onClick={stopPopoverInteraction}
+                onPointerDown={stopPopoverInteraction}
+                onTouchStart={stopPopoverInteraction}
             >
                 <p className="text-xs text-grayscale-600 leading-relaxed">{popoverDescription}</p>
 
