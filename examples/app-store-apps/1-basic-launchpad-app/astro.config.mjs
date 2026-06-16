@@ -15,6 +15,10 @@ export default defineConfig({
     adapter: netlify(),
     integrations: [tailwind()],
 
+    image: {
+        remotePatterns: [],
+    },
+
     vite: {
         resolve: {
             alias: {
