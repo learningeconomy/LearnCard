@@ -380,6 +380,7 @@ const DashboardPage: React.FC = () => {
         credentialsCount: totalCredentialCount,
         skillsCount,
         hasGoal,
+        hasSkillProfile,
         nextNodeTitle: goalSummary?.nextNode?.title,
         pathwaysEnabled,
         showAiInsights,
@@ -390,6 +391,7 @@ const DashboardPage: React.FC = () => {
         goToWallet,
         goToSkills,
         goToInsights,
+        openSkillProfile,
         goToSetGoal,
         goToPathway,
         goToBrowsePathways,
@@ -405,13 +407,12 @@ const DashboardPage: React.FC = () => {
     const nextChecklistItem = checklistItems.find(item => !item.done) ?? null;
     const heroActionId: string | null = (() => {
         if (heroSlot === 'getStarted' && nextChecklistItem) {
-            if (nextChecklistItem.key === 'add-credential') return 'add-first-credential';
-            if (nextChecklistItem.key === 'set-goal') return 'set-goal';
-            if (nextChecklistItem.key === 'discover-apps') return 'find-credential-apps';
+            if (nextChecklistItem.key === 'add-credential') return 'connect-new';
+            if (nextChecklistItem.key === 'set-goal') return 'navigate-new';
             return null;
         }
         if (heroSlot === 'goal') {
-            return goalSummary ? 'continue-goal' : 'set-goal';
+            return goalSummary ? 'navigate-active' : 'navigate-new';
         }
         return null;
     })();

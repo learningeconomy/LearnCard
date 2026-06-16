@@ -70,7 +70,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
         <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up font-poppins w-full flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                    Your Learning Profile
+                    Your Insights
                 </h2>
                 {updatedAt && state !== 'empty' && (
                     <span className="text-[11px] text-grayscale-400">

@@ -69,6 +69,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                     />
                 </GenericErrorBoundary>
 
+                <GenericErrorBoundary>
+                    <QuickActionsRow slots={slots} />
+                </GenericErrorBoundary>
+
                 <div className="grid grid-cols-1 desktop:grid-cols-12 gap-5">
                     <div className="flex flex-col gap-5 desktop:col-span-7 min-w-0">
                         {heroSlot === 'getStarted' ? (
@@ -109,14 +113,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                     </div>
                 </div>
 
-                <GenericErrorBoundary>
-                    <QuickActionsRow slots={slots} />
-                </GenericErrorBoundary>
-
-                <GenericErrorBoundary>
-                    <DataTrustCard vm={dataTrust} />
-                </GenericErrorBoundary>
-
                 <div className="w-full">
                     <GenericErrorBoundary>
                         <LearningProfileCard vm={learningProfile} />
@@ -131,6 +127,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         onInstallSuccess={apps.onInstallSuccess}
                         variant="featured"
                     />
+                </GenericErrorBoundary>
+
+                <GenericErrorBoundary>
+                    <DataTrustCard vm={dataTrust} />
                 </GenericErrorBoundary>
             </div>
         </div>

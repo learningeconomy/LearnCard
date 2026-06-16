@@ -10,6 +10,7 @@ export type DashboardState = {
     credentialsCount: number;
     skillsCount: number;
     hasGoal: boolean;
+    hasSkillProfile: boolean;
     nextNodeTitle?: string;
     pathwaysEnabled: boolean;
     showAiInsights: boolean;
@@ -20,6 +21,7 @@ export type ActionHandlers = {
     goToWallet: () => void;
     goToSkills: () => void;
     goToInsights: () => void;
+    openSkillProfile: () => void;
     goToSetGoal: () => void;
     goToPathway: () => void;
     goToBrowsePathways: () => void;
@@ -51,8 +53,5 @@ export type ActionDescriptor = {
     slot: SlotName;
     eligible: (state: DashboardState) => boolean;
     weight: (state: DashboardState) => number;
-    build: (
-        state: DashboardState,
-        deps: ActionDeps,
-    ) => Omit<ResolvedAction, 'id' | 'slot'>;
+    build: (state: DashboardState, deps: ActionDeps) => Omit<ResolvedAction, 'id' | 'slot'>;
 };

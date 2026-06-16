@@ -2,151 +2,87 @@ import type { ActionDescriptor } from './types';
 
 export const DEFAULT_REGISTRY: ActionDescriptor[] = [
     {
-        id: 'add-first-credential',
+        id: 'connect-new',
         slot: 'collect',
         eligible: state => state.credentialsCount === 0,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.collect,
-            label: 'Add your first credential',
-            caption: 'Save what you\u2019ve earned',
+            label: 'Build Your LearnCard',
+            caption: 'Add your first credential',
             onClick: handlers.goToAddCredential,
         }),
     },
     {
-        id: 'view-passport',
+        id: 'connect-active',
         slot: 'collect',
         eligible: state => state.credentialsCount > 0,
-        weight: state => 50 + Math.min(state.credentialsCount, 50),
+        weight: () => 100,
         build: (state, { handlers, icons }) => ({
             Icon: icons.collect,
-            label: 'View passport',
+            label: 'See Passport',
             caption: `${state.credentialsCount} credential${
                 state.credentialsCount === 1 ? '' : 's'
             }`,
             onClick: handlers.goToWallet,
         }),
     },
+
     {
-        id: 'add-credential',
-        slot: 'collect',
-        eligible: state => state.credentialsCount > 0,
-        weight: () => 10,
+        id: 'understand-new',
+        slot: 'understand',
+        eligible: state => !state.hasSkillProfile,
+        weight: () => 100,
         build: (_state, { handlers, icons }) => ({
-            Icon: icons.collect,
-            label: 'Add a credential',
-            caption: 'Save another to your passport',
-            onClick: handlers.goToAddCredential,
+            Icon: icons.understand,
+            label: 'Create Skill Profile',
+            caption: 'Tell us about your skills',
+            onClick: handlers.openSkillProfile,
         }),
     },
     {
-        id: 'find-credential-apps',
-        slot: 'collect',
-        eligible: () => true,
-        weight: () => 5,
-        build: (_state, { handlers, icons }) => ({
-            Icon: icons.collect,
-            label: 'Find credential apps',
-            caption: 'Discover places that issue credentials',
-            onClick: handlers.goToBrowseAppStore,
-        }),
+        id: 'understand-active',
+        slot: 'understand',
+        eligible: state => state.hasSkillProfile,
+        weight: () => 100,
+        build: (state, { handlers, icons }) =>
+            state.showAiInsights
+                ? {
+                      Icon: icons.understand,
+                      label: 'See Insights',
+                      caption: 'AI summary of your record',
+                      onClick: handlers.goToInsights,
+                  }
+                : {
+                      Icon: icons.understand,
+                      label: 'See Skills',
+                      caption: 'Skills you\u2019ve collected',
+                      onClick: handlers.goToSkills,
+                  },
     },
 
     {
-        id: 'see-insights',
-        slot: 'understand',
-        eligible: state => state.showAiInsights && state.credentialsCount > 0,
-        weight: () => 100,
-        build: (_state, { handlers, icons }) => ({
-            Icon: icons.understand,
-            label: 'See insights',
-            caption: 'AI summary of your record',
-            onClick: handlers.goToInsights,
-        }),
-    },
-    {
-        id: 'insights-preview',
-        slot: 'understand',
-        eligible: state => state.showAiInsights && state.credentialsCount === 0,
-        weight: () => 50,
-        build: (_state, { handlers, icons }) => ({
-            Icon: icons.understand,
-            label: 'See what insights can do',
-            caption: 'Preview the AI summary',
-            onClick: handlers.goToInsights,
-        }),
-    },
-    {
-        id: 'view-skills',
-        slot: 'understand',
-        eligible: state => !state.showAiInsights && state.skillsCount > 0,
-        weight: state => 50 + Math.min(state.skillsCount, 50),
-        build: (state, { handlers, icons }) => ({
-            Icon: icons.understand,
-            label: 'View skills',
-            caption: `${state.skillsCount} skill${state.skillsCount === 1 ? '' : 's'} collected`,
-            onClick: handlers.goToSkills,
-        }),
-    },
-    {
-        id: 'see-skills',
-        slot: 'understand',
-        eligible: state => !state.showAiInsights,
-        weight: () => 10,
-        build: (_state, { handlers, icons }) => ({
-            Icon: icons.understand,
-            label: 'See your skills',
-            caption: 'Skills you\u2019ve collected',
-            onClick: handlers.goToSkills,
-        }),
-    },
-
-    {
-        id: 'continue-goal',
+        id: 'navigate-new',
         slot: 'navigate',
-        eligible: state => state.hasGoal && state.pathwaysEnabled,
-        weight: () => 100,
-        build: (state, { handlers, icons }) => ({
-            Icon: icons.navigate,
-            label: 'Continue journey',
-            caption: state.nextNodeTitle || 'Open your journey',
-            onClick: handlers.goToPathway,
-        }),
-    },
-    {
-        id: 'set-goal',
-        slot: 'navigate',
-        eligible: state => !state.hasGoal && state.pathwaysEnabled,
+        eligible: state => !state.hasGoal,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'Set a goal',
+            label: 'Set a Goal',
             caption: 'Get a personal path',
             onClick: handlers.goToSetGoal,
         }),
     },
     {
-        id: 'browse-pathways',
+        id: 'navigate-active',
         slot: 'navigate',
-        eligible: state => state.pathwaysEnabled,
-        weight: () => 10,
-        build: (_state, { handlers, icons }) => ({
-            Icon: icons.navigate,
-            label: 'Explore journeys',
-            caption: 'Browse other pathways',
-            onClick: handlers.goToBrowsePathways,
-        }),
-    },
-    {
-        id: 'ai-pathways',
-        slot: 'navigate',
-        eligible: state => !state.pathwaysEnabled,
+        eligible: state => state.hasGoal,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'Navigate pathways',
-            caption: 'Explore AI pathways',
-            onClick: handlers.goToBrowsePathways,
+            label: 'See Pathways',
+            caption: 'Open your pathways',
+            onClick: handlers.goToPathway,
         }),
     },
 ];

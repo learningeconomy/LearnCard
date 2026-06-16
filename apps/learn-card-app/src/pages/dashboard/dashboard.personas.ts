@@ -268,22 +268,17 @@ export const brandNewUser: DashboardViewModel = {
     slots: {
         collect: makeAction(
             'collect',
-            'find-credential-apps',
-            'Browse apps',
-            'Discover places that issue credentials'
+            'connect-new',
+            'Build Your LearnCard',
+            'Add your first credential'
         ),
         understand: makeAction(
             'understand',
-            'see-skills',
-            'See your skills',
-            'Skills you\u2019ve collected'
+            'understand-new',
+            'Create Skill Profile',
+            'Tell us about your skills'
         ),
-        navigate: makeAction(
-            'navigate',
-            'browse-pathways',
-            'Explore journeys',
-            'Browse other pathways'
-        ),
+        navigate: makeAction('navigate', 'navigate-new', 'Set a Goal', 'Get a personal path'),
     },
     dataTrust: {
         places: 0,
@@ -353,19 +348,14 @@ export const activeLearner: DashboardViewModel = {
     onReviewGoal: baseHandlers.onReviewGoal,
     primaryButtonClass: 'bg-indigo-500 text-white',
     slots: {
-        collect: makeAction('collect', 'view-passport', 'View passport', '12 credentials'),
+        collect: makeAction('collect', 'connect-active', 'See Passport', '12 credentials'),
         understand: makeAction(
             'understand',
-            'see-insights',
-            'See insights',
+            'understand-active',
+            'See Insights',
             'AI summary of your record'
         ),
-        navigate: makeAction(
-            'navigate',
-            'browse-pathways',
-            'Explore journeys',
-            'Browse other pathways'
-        ),
+        navigate: makeAction('navigate', 'navigate-active', 'See Pathways', 'Open your pathways'),
     },
     dataTrust: {
         places: 7,
@@ -448,14 +438,14 @@ export const returningNoActivity: DashboardViewModel = {
     heroSlot: 'goal',
     checklistItems: checklist({ credential: true, goal: false, skills: true }),
     slots: {
-        collect: makeAction('collect', 'view-passport', 'View passport', '12 credentials'),
+        collect: makeAction('collect', 'connect-active', 'See Passport', '12 credentials'),
         understand: makeAction(
             'understand',
-            'see-insights',
-            'See insights',
+            'understand-active',
+            'See Insights',
             'AI summary of your record'
         ),
-        navigate: makeAction('navigate', 'set-goal', 'Set a goal', 'Get a personal path'),
+        navigate: makeAction('navigate', 'navigate-new', 'Set a Goal', 'Get a personal path'),
     },
     activity: {
         notifications: [],
@@ -520,14 +510,14 @@ export const journeysDisabled: DashboardViewModel = {
         },
     ],
     slots: {
-        collect: makeAction('collect', 'view-passport', 'View passport', '12 credentials'),
+        collect: makeAction('collect', 'connect-active', 'See Passport', '12 credentials'),
         understand: makeAction(
             'understand',
-            'see-insights',
-            'See insights',
+            'understand-active',
+            'See Insights',
             'AI summary of your record'
         ),
-        navigate: makeAction('navigate', 'ai-pathways', 'Navigate pathways', 'Explore AI pathways'),
+        navigate: makeAction('navigate', 'navigate-new', 'Set a Goal', 'Get a personal path'),
     },
 };
 
