@@ -270,7 +270,8 @@ const DashboardPage: React.FC = () => {
             categoryLabels[primaryId.category] ||
             'Member';
 
-        const from = primaryId.from?.trim() || resolvedIssuer?.trim() || undefined;
+        const rawFrom = primaryId.from?.trim() || resolvedIssuer?.trim();
+        const from = rawFrom && !/^did:/i.test(rawFrom) ? rawFrom : undefined;
 
         return {
             role,
