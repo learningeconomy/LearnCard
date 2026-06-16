@@ -7,6 +7,7 @@ export const SLOT_ORDER: readonly SlotName[] = ['collect', 'understand', 'naviga
 export type QuickActionIcon = React.FC<{ className?: string; shadeColor?: string }>;
 
 export type DashboardState = {
+    brandName: string;
     credentialsCount: number;
     skillsCount: number;
     hasGoal: boolean;

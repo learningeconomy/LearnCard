@@ -6,9 +6,9 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         slot: 'collect',
         eligible: state => state.credentialsCount === 0,
         weight: () => 100,
-        build: (_state, { handlers, icons }) => ({
+        build: (state, { handlers, icons }) => ({
             Icon: icons.collect,
-            label: 'Build Your LearnCard',
+            label: `Build Your ${state.brandName}`,
             caption: 'Add your first credential',
             onClick: handlers.goToAddCredential,
         }),

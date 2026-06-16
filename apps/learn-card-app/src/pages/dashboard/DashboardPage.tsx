@@ -377,6 +377,7 @@ const DashboardPage: React.FC = () => {
     };
 
     const dashboardState: DashboardState = {
+        brandName: brandingConfig.name,
         credentialsCount: totalCredentialCount,
         skillsCount,
         hasGoal,
