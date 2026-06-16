@@ -30,6 +30,7 @@ import {
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
+import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
 import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
@@ -100,7 +101,7 @@ const LaunchPad: React.FC = () => {
     const { data: featuredCarouselApps } = useFeaturedCarouselApps(appStoreCategory);
 
     // Fetch curated list apps
-    const { data: curatedListApps } = useCuratedListApps();
+    const { data: curatedListApps, isLoading: isLoadingCuratedApps } = useCuratedListApps();
 
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
@@ -388,6 +389,20 @@ const LaunchPad: React.FC = () => {
                                     lines="none"
                                     className="w-full max-w-[600px] bg-grayscale-100"
                                 >
+                                    {/* My Apps tab: Installed Apps loading skeletons (cold load, no data yet) */}
+                                    {isMyApps &&
+                                        isLoadingInstalledApps &&
+                                        filteredInstalledApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        Installed Apps
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="installed-skeleton" />
+                                            </>
+                                        )}
+
                                     {/* My Apps tab: Installed Apps (hidden if none) */}
                                     {isMyApps && filteredInstalledApps.length > 0 && (
                                         <>
@@ -404,6 +419,18 @@ const LaunchPad: React.FC = () => {
                                                     onInstallSuccess={refetchInstalledApps}
                                                 />
                                             ))}
+                                        </>
+                                    )}
+
+                                    {/* Suggested Apps loading skeletons (cold load, no data yet) */}
+                                    {isLoadingCuratedApps && filteredCuratedApps.length === 0 && (
+                                        <>
+                                            <div className="px-2 pt-4 pb-2">
+                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                    Suggested Apps
+                                                </p>
+                                            </div>
+                                            <AppStoreListSkeleton idPrefix="suggested-skeleton" />
                                         </>
                                     )}
 
@@ -427,6 +454,20 @@ const LaunchPad: React.FC = () => {
                                             ))}
                                         </>
                                     )}
+
+                                    {/* Category/All tabs: browse list loading skeletons (cold load, no data yet) */}
+                                    {(isCategory || isAll) &&
+                                        isLoadingBrowseApps &&
+                                        nonPromotedAvailableApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="browse-skeleton" />
+                                            </>
+                                        )}
 
                                     {/* Category/All tabs: browse list (include installed apps with Open CTA) */}
                                     {(isCategory || isAll) &&
@@ -488,7 +529,8 @@ const LaunchPad: React.FC = () => {
                                             !hasContract &&
                                             !hasCustomApp &&
                                             !isLoadingBrowseApps &&
-                                            !isLoadingInstalledApps;
+                                            !isLoadingInstalledApps &&
+                                            !isLoadingCuratedApps;
 
                                         if (!isEmpty) return null;
 
