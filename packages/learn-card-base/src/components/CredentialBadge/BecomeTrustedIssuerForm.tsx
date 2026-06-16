@@ -35,7 +35,7 @@ export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = (
 
     return (
         <div className="flex flex-col h-full">
-            <div className="bg-white overflow-hidden shadow-md px-6 py-5 shrink-0">
+            <div className="bg-white overflow-hidden shadow-md px-6 py-5 shrink-0 safe-area-top-margin">
                 <div className="flex items-center justify-between gap-3">
                     <p className="text-[22px] text-grayscale-900 leading-tight font-semibold">
                         Become a Trusted Issuer
