@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 
 import { playgroundApiPlugin } from './server/middleware';
@@ -17,7 +17,11 @@ import { playgroundApiPlugin } from './server/middleware';
  * options when the wallet is on a separate network.
  */
 export default defineConfig({
-    plugins: [react(), playgroundApiPlugin()],
+    // `@vitejs/plugin-react` bundles its own nested copy of Vite, so the
+    // `Plugin` it returns is nominally a different type from this package's
+    // Vite instance even though the versions match. Cast to this package's
+    // `PluginOption` to reconcile the duplicate-instance type mismatch.
+    plugins: [react(), playgroundApiPlugin()] as PluginOption[],
     server: {
         port: 5173,
     },
