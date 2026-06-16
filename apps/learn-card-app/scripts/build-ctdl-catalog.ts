@@ -40,15 +40,15 @@
  * export CE_API_KEY=...
  *
  * # 1. List every published pathway (tab-separated: CTID<TAB>name<TAB>owner).
- * bunx tsx scripts/build-ctdl-catalog.ts search --take 200 > ctids.tsv
+ * bun scripts/build-ctdl-catalog.ts search --take 200 > ctids.tsv
  *
  * # 2. Edit ctids.tsv, keep only the rows you want.
  *
  * # 3. Pipe CTIDs back in to produce TS entries:
- * cut -f1 ctids.tsv | bunx tsx scripts/build-ctdl-catalog.ts enrich > entries.ts
+ * cut -f1 ctids.tsv | bun scripts/build-ctdl-catalog.ts enrich > entries.ts
  *
  * # Or skip the review step and do it all in one go:
- * bunx tsx scripts/build-ctdl-catalog.ts all --take 200 > entries.ts
+ * bun scripts/build-ctdl-catalog.ts all --take 200 > entries.ts
  *
  * # Then paste the contents of entries.ts into CATALOG[] in catalog.ts.
  * ```

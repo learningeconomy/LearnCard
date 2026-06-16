@@ -1,4 +1,4 @@
-#!/usr/bin/env bunx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -9,8 +9,8 @@ const log = getLogger();
  * Generates `public/tenant-config.json` for native (Capacitor) builds.
  *
  * Usage:
- *   bunx tsx scripts/prepare-native-config.ts [tenant] [--stage <stage>]
- *   bunx tsx scripts/prepare-native-config.ts --reset
+ *   bun scripts/prepare-native-config.ts [tenant] [--stage <stage>]
+ *   bun scripts/prepare-native-config.ts --reset
  *
  * Arguments:
  *   tenant  - The tenant identifier (default: "learncard").
@@ -27,14 +27,14 @@ const log = getLogger();
  *   tenantDefaults → config.json → config.<stage>.json → final
  *
  * Examples:
- *   bunx tsx scripts/prepare-native-config.ts                          # production learncard
- *   bunx tsx scripts/prepare-native-config.ts vetpass                   # production vetpass
- *   bunx tsx scripts/prepare-native-config.ts learncard --stage local   # local dev learncard
- *   bunx tsx scripts/prepare-native-config.ts vetpass --stage staging   # staging vetpass
- *   bunx tsx scripts/prepare-native-config.ts --reset                   # undo everything
+ *   bun scripts/prepare-native-config.ts                          # production learncard
+ *   bun scripts/prepare-native-config.ts vetpass                   # production vetpass
+ *   bun scripts/prepare-native-config.ts learncard --stage local   # local dev learncard
+ *   bun scripts/prepare-native-config.ts vetpass --stage staging   # staging vetpass
+ *   bun scripts/prepare-native-config.ts --reset                   # undo everything
  *
  * Backward compat:
- *   bunx tsx scripts/prepare-native-config.ts local
+ *   bun scripts/prepare-native-config.ts local
  *   → treated as: learncard --stage local
  *
  * The generated file is read by resolveTenantConfig() at runtime via
@@ -204,7 +204,7 @@ if (tenantArg === '--reset') {
     }
 
     log.info(`\n✅ Cleaned ${removed} file(s). To restore defaults, run:`);
-    log.info('   bunx tsx scripts/prepare-native-config.ts learncard\n');
+    log.info('   bun scripts/prepare-native-config.ts learncard\n');
     process.exit(0);
 }
 

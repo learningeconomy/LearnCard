@@ -466,7 +466,7 @@ async function preTransfer(options: CommonOptions): Promise<void> {
     console.log('\n   Next steps:');
     console.log('   1. Initiate the app transfer in App Store Connect');
     console.log("   2. Accept the transfer in the new team's App Store Connect");
-    console.log('   3. Run: bunx tsx migrate.ts post-transfer ...\n');
+    console.log('   3. Run: bun migrate.ts post-transfer ...\n');
 
     await app.delete();
 }

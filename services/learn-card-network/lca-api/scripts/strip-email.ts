@@ -2,7 +2,7 @@
  * Strip the email from a Firebase user by UID.
  *
  * Usage:
- *   bunx tsx scripts/strip-email.ts <uid>
+ *   bun scripts/strip-email.ts <uid>
  *
  * Requires GOOGLE_APPLICATION_CREDENTIAL env var (same as the API server).
  *
@@ -19,7 +19,7 @@ dotenv.config();
 const uid = process.argv[2];
 
 if (!uid) {
-    console.error('Usage: bunx tsx scripts/strip-email.ts <uid>');
+    console.error('Usage: bun scripts/strip-email.ts <uid>');
     process.exit(1);
 }
 

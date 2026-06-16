@@ -1,4 +1,4 @@
-#!/usr/bin/env bunx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -11,9 +11,9 @@ const log = getLogger();
  *   - assets/ directory with placeholder files
  *
  * Usage:
- *   bunx tsx scripts/create-theme.ts
- *   bunx tsx scripts/create-theme.ts --id=mytheme     # skip the ID prompt
- *   bunx tsx scripts/create-theme.ts --extends=colorful # inherit from colorful
+ *   bun scripts/create-theme.ts
+ *   bun scripts/create-theme.ts --id=mytheme     # skip the ID prompt
+ *   bun scripts/create-theme.ts --extends=colorful # inherit from colorful
  */
 
 import { createInterface } from 'readline';

@@ -1,4 +1,4 @@
-#!/usr/bin/env bunx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -11,7 +11,7 @@ const log = getLogger();
  * merge layers are applied.
  *
  * Usage:
- *   bunx tsx scripts/resolve-tenant-config.ts [tenant] [--stage <stage>]
+ *   bun scripts/resolve-tenant-config.ts [tenant] [--stage <stage>]
  *   bun run lc resolve [tenant] [stage]
  *
  * Examples:

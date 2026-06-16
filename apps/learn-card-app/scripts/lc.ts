@@ -1,4 +1,4 @@
-#!/usr/bin/env bunx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -231,7 +231,7 @@ const seedAppStoreListing = async () => {
     }
 
     const flagStr = flagParts.join(' ');
-    const cmd = `bunx tsx scripts/seed-dev-app.ts${flagStr ? ` ${flagStr}` : ''}`;
+    const cmd = `bun scripts/seed-dev-app.ts${flagStr ? ` ${flagStr}` : ''}`;
 
     runCommand(
         cmd,
@@ -277,7 +277,7 @@ const seedPathwayDemoBundle = async () => {
     if (installFor) flagParts.push(`--install-for ${installFor}`);
 
     const flagStr = flagParts.join(' ');
-    const cmd = `bunx tsx scripts/seed-dev-app.ts ${flagStr}`;
+    const cmd = `bun scripts/seed-dev-app.ts ${flagStr}`;
 
     runCommand(
         cmd,
@@ -495,7 +495,7 @@ const startDev = async (
     switch (devMode) {
         case 'app':
             runCommand(
-                `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
+                `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
                 `Starting ${displayName}${stageLabel} — app only`,
                 `bun run lc dev ${tenantId}${stageArg} app`
             );
@@ -555,7 +555,7 @@ const pickTenantAndPrepare = async () => {
     const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
 
     runCommand(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         `Preparing config for ${getTenantDisplayName(tenantId)} (${tenantId}, ${stageId})`,
         `bun run lc switch ${tenantId}${stageArg}`
     );
@@ -563,7 +563,7 @@ const pickTenantAndPrepare = async () => {
 
 const runValidators = () => {
     runCommand(
-        'bunx tsx scripts/validate-tenant-configs.ts && bunx tsx scripts/validate-theme-schemas.ts',
+        'bun scripts/validate-tenant-configs.ts && bun scripts/validate-theme-schemas.ts',
         'Validating all tenant configs + theme schemas',
         'bun run lc validate'
     );
@@ -726,7 +726,7 @@ const generateAssets = async () => {
     );
 
     // Build command
-    let cmd = `bunx tsx scripts/generate-tenant-assets.ts ${tenantId} ${JSON.stringify(logoPath)}`;
+    let cmd = `bun scripts/generate-tenant-assets.ts ${tenantId} ${JSON.stringify(logoPath)}`;
     let shortcut = `bun run lc generate ${tenantId} ${JSON.stringify(logoPath)}`;
 
     cmd += ` --bg "${bgHex}"`;
@@ -1065,7 +1065,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
 
     // 1. Populate public/ with tenant config + assets (so vite build picks them up)
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Preparing tenant config (public/)'
     );
 
@@ -1078,7 +1078,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
 
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
 
@@ -1113,7 +1113,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
 
         // 1. Populate public/ with tenant config + assets
         execBlocking(
-            `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+            `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Preparing tenant config (public/)'
         );
 
@@ -1126,7 +1126,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
 
         // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
         execBlocking(
-            `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+            `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Patching native projects with tenant config'
         );
     }
@@ -1160,7 +1160,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
 
     // 1. Populate public/ with tenant config + assets
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Preparing tenant config (public/)'
     );
 
@@ -1173,7 +1173,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
 
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
 
@@ -1234,7 +1234,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     // which drops the live-reload `server` block and restores Capgo
     // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
+        `bun scripts/prepare-native-config.ts ${tenantId} --stage local`,
         'Step 4/6 — Patching native projects with tenant config'
     );
 
@@ -1369,7 +1369,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
 
     // Step 1: Populate public/ with tenant config + assets
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
+        `bun scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
         `Preparing tenant config (${stage})`
     );
 
@@ -1382,7 +1382,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
 
     // Step 4: Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
-        `bunx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
+        `bun scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
         `Patching native projects with tenant config (${stage})`
     );
 
@@ -1622,7 +1622,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
 
         case 'editor':
-            runCommand('bunx tsx scripts/config-editor.ts', 'Config editor');
+            runCommand('bun scripts/config-editor.ts', 'Config editor');
             return true;
 
         case 'switch': {
@@ -1631,7 +1631,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             const switchStageFlag = switchStage === 'production' ? '' : ` --stage ${switchStage}`;
 
             runCommand(
-                `bunx tsx scripts/prepare-native-config.ts ${switchTenant}${switchStageFlag}`,
+                `bun scripts/prepare-native-config.ts ${switchTenant}${switchStageFlag}`,
                 `Preparing config for ${switchTenant} (${switchStage})`
             );
             return true;
@@ -1713,7 +1713,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             const stageFlag = stage === 'production' ? '' : ` --stage ${stage}`;
 
             runCommand(
-                `bunx tsx scripts/prepare-native-config.ts ${tenant}${stageFlag} && vite --host`,
+                `bun scripts/prepare-native-config.ts ${tenant}${stageFlag} && vite --host`,
                 `Starting ${tenant} (${stage}) — app only`
             );
             return true;
@@ -1730,7 +1730,7 @@ const handleShortcuts = async (): Promise<boolean> => {
                 const passthrough = args.slice(1).join(' ');
 
                 runCommand(
-                    `bunx tsx scripts/generate-tenant-assets.ts ${passthrough}`,
+                    `bun scripts/generate-tenant-assets.ts ${passthrough}`,
                     `Generating assets for ${arg}`
                 );
             } else {
@@ -1762,7 +1762,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             const resolveStageFlag = resolveStage ? ` --stage ${resolveStage}` : '';
 
             runCommand(
-                `bunx tsx scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
+                `bun scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
                 `Resolving final config for ${resolveTenant}${
                     resolveStage ? ` (${resolveStage})` : ''
                 }`
@@ -1771,11 +1771,11 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'create':
-            runCommand('bunx tsx scripts/create-tenant.ts', 'Create a new tenant');
+            runCommand('bun scripts/create-tenant.ts', 'Create a new tenant');
             return true;
 
         case 'create-theme':
-            runCommand('bunx tsx scripts/create-theme.ts', 'Create a new theme');
+            runCommand('bun scripts/create-theme.ts', 'Create a new theme');
             return true;
 
         case 'bump-default-capgo-channel':
@@ -1784,7 +1784,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             const newChannel = arg ? ` ${arg}` : '';
 
             runCommand(
-                `bunx tsx scripts/bump-default-capgo-channel.ts${newChannel}`,
+                `bun scripts/bump-default-capgo-channel.ts${newChannel}`,
                 'Bump Capgo defaultChannel in capacitor.config.ts',
                 arg
                     ? `bun run lc bump-default-capgo-channel ${arg}`
@@ -1803,7 +1803,7 @@ const handleShortcuts = async (): Promise<boolean> => {
                 const passthrough = args.slice(2).join(' ');
 
                 runCommand(
-                    `bunx tsx scripts/seed-dev-app.ts${passthrough ? ` ${passthrough}` : ''}`,
+                    `bun scripts/seed-dev-app.ts${passthrough ? ` ${passthrough}` : ''}`,
                     'Seeding app store listing into local database',
                     undefined,
                     BRAIN_SERVICE_ROOT
@@ -2020,16 +2020,12 @@ const configAndScaffoldingMenu = async () => {
 
     switch (sub) {
         case 'a':
-            runCommand(
-                'bunx tsx scripts/create-tenant.ts',
-                'Create a new tenant',
-                'bun run lc create'
-            );
+            runCommand('bun scripts/create-tenant.ts', 'Create a new tenant', 'bun run lc create');
             break;
 
         case 'b':
             runCommand(
-                'bunx tsx scripts/create-theme.ts',
+                'bun scripts/create-theme.ts',
                 'Create a new theme',
                 'bun run lc create-theme'
             );
@@ -2048,7 +2044,7 @@ const configAndScaffoldingMenu = async () => {
             break;
 
         case 'f':
-            runCommand('bunx tsx scripts/config-editor.ts', 'Config editor', 'bun run lc editor');
+            runCommand('bun scripts/config-editor.ts', 'Config editor', 'bun run lc editor');
             break;
 
         case 'g': {
@@ -2057,7 +2053,7 @@ const configAndScaffoldingMenu = async () => {
             const stageFlag = stage === 'local' ? '' : ` --stage ${stage}`;
 
             runCommand(
-                `bunx tsx scripts/resolve-tenant-config.ts ${tenant}${stageFlag}`,
+                `bun scripts/resolve-tenant-config.ts ${tenant}${stageFlag}`,
                 `Resolving final config for ${tenant}${stage !== 'local' ? ` (${stage})` : ''}`,
                 `bun run lc resolve ${tenant}${stage !== 'local' ? ` ${stage}` : ''}`
             );

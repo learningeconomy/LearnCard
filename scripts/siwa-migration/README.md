@@ -25,7 +25,7 @@ bun install
 Uses the **old team's** (WeLibrary) Apple credentials to generate transfer identifiers.
 
 ```bash
-bunx tsx migrate.ts pre-transfer \
+bun migrate.ts pre-transfer \
   --firebase-credential ./service-account.json \
   --apple-key ./old-team-siwa.p8 \
   --apple-key-id <OLD_KEY_ID> \
@@ -46,7 +46,7 @@ Uses the **new team's** (Learning Economy) Apple credentials to exchange transfe
 
 ```bash
 # Preview first (recommended)
-bunx tsx migrate.ts post-transfer \
+bun migrate.ts post-transfer \
   --firebase-credential ./service-account.json \
   --apple-key ./new-team-siwa.p8 \
   --apple-key-id <NEW_KEY_ID> \
@@ -56,7 +56,7 @@ bunx tsx migrate.ts post-transfer \
   --dry-run
 
 # Execute the migration
-bunx tsx migrate.ts post-transfer \
+bun migrate.ts post-transfer \
   --firebase-credential ./service-account.json \
   --apple-key ./new-team-siwa.p8 \
   --apple-key-id <NEW_KEY_ID> \

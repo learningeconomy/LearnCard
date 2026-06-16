@@ -7,7 +7,7 @@ BUN_VERSION = "1.3.14"
 SKIP_DIDKIT_NAPI = "1"
 # Global Context Default
 [build]
-command = "bunx tsx scripts/generate-edge-tenant-configs.ts && bunx nx build learn-card-app --skip-nx-cache"
+command = "bun scripts/generate-edge-tenant-configs.ts && bunx nx build learn-card-app --skip-nx-cache"
 publish = "build/"
 
 # Netlify Deploy Preview

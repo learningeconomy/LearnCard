@@ -1,4 +1,4 @@
-#!/usr/bin/env bunx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -25,7 +25,7 @@ const log = getLogger();
  *   bun run lc bump-default-capgo-channel 1.0.7        # explicit value
  *
  * Direct invocation:
- *   bunx tsx apps/learn-card-app/scripts/bump-default-capgo-channel.ts [newChannel]
+ *   bun apps/learn-card-app/scripts/bump-default-capgo-channel.ts [newChannel]
  */
 
 import { readFileSync, writeFileSync } from 'fs';

@@ -1083,7 +1083,7 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 2. Set `tenantId` and `domain` (required)
 3. Override only the sections that differ from defaults
 4. Add Firebase credentials, API endpoints, branding, etc.
-5. Run `bunx tsx scripts/prepare-native-config.ts <tenant>` to validate
+5. Run `bun scripts/prepare-native-config.ts <tenant>` to validate
 
 **Minimal example** (`learncard.json`):
 
@@ -1172,13 +1172,13 @@ Generates `public/tenant-config.json` for native (Capacitor) builds and copies t
 
 ```bash
 # Default LearnCard
-bunx tsx scripts/prepare-native-config.ts
+bun scripts/prepare-native-config.ts
 
 # Specific tenant
-bunx tsx scripts/prepare-native-config.ts vetpass
+bun scripts/prepare-native-config.ts vetpass
 
 # Local dev
-bunx tsx scripts/prepare-native-config.ts local
+bun scripts/prepare-native-config.ts local
 ```
 
 **Steps:**
@@ -1200,10 +1200,10 @@ bunx tsx scripts/prepare-native-config.ts local
 Generates all native image assets from a single source logo using `sharp`.
 
 ```bash
-bunx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
+bun scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
 
 # Example
-bunx tsx scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C5E" --splash-bg "#0D1F30"
+bun scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C5E" --splash-bg "#0D1F30"
 ```
 
 **Options:**

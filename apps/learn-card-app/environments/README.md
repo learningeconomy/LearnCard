@@ -47,7 +47,7 @@ a custom theme — all with sensible defaults.
 2. **Generate assets from a logo:**
 
     ```bash
-    bunx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> --bg "#hex" --name "Display Name"
+    bun scripts/generate-tenant-assets.ts <tenant> <logo-path> --bg "#hex" --name "Display Name"
     ```
 
     This creates `environments/<tenant>/assets/` with all iOS, Android, web,
@@ -56,7 +56,7 @@ a custom theme — all with sensible defaults.
 3. **Apply the tenant config:**
 
     ```bash
-    bunx tsx scripts/prepare-native-config.ts <tenant>
+    bun scripts/prepare-native-config.ts <tenant>
     ```
 
     This copies assets into the platform directories, patches Capacitor
@@ -78,7 +78,7 @@ a custom theme — all with sensible defaults.
 5. **Validate all configs (CI):**
 
     ```bash
-    bunx tsx scripts/validate-tenant-configs.ts
+    bun scripts/validate-tenant-configs.ts
     ```
 
 ## Stage overlays
@@ -116,16 +116,16 @@ If no `--stage` is specified, **production** is assumed (no overlay applied).
 
 ```bash
 # Production vetpass
-bunx tsx scripts/prepare-native-config.ts vetpass
+bun scripts/prepare-native-config.ts vetpass
 
 # Local dev vetpass
-bunx tsx scripts/prepare-native-config.ts vetpass --stage local
+bun scripts/prepare-native-config.ts vetpass --stage local
 
 # Staging learncard
-bunx tsx scripts/prepare-native-config.ts learncard --stage staging
+bun scripts/prepare-native-config.ts learncard --stage staging
 
 # Clean all generated files
-bunx tsx scripts/prepare-native-config.ts --reset
+bun scripts/prepare-native-config.ts --reset
 ```
 
 Switching is git-clean — platform output files are gitignored. Only the

@@ -66,7 +66,7 @@ Full ordered timeline for transferring `learn-card-app` from **WeLibrary, LLC** 
     ```bash
     cd scripts/siwa-migration
     bun install
-    bunx tsx migrate.ts pre-transfer \
+    bun migrate.ts pre-transfer \
       --firebase-credential ./service-account.json \
       --apple-key ./welibrary-siwa.p8 \
       --apple-key-id <WELIBRARY_KEY_ID> \
@@ -205,7 +205,7 @@ Android secrets remain unchanged:
 
     ```bash
     cd scripts/siwa-migration
-    bunx tsx migrate.ts post-transfer \
+    bun migrate.ts post-transfer \
       --firebase-credential ./service-account.json \
       --apple-key ./learning-economy-siwa.p8 \
       --apple-key-id <LE_KEY_ID> \
@@ -220,7 +220,7 @@ Android secrets remain unchanged:
 2. **Run SIWA post-transfer migration (for real):**
 
     ```bash
-    bunx tsx migrate.ts post-transfer \
+    bun migrate.ts post-transfer \
       --firebase-credential ./service-account.json \
       --apple-key ./learning-economy-siwa.p8 \
       --apple-key-id <LE_KEY_ID> \
@@ -234,7 +234,7 @@ Android secrets remain unchanged:
 3. **Validate the migration:**
 
     ```bash
-    bunx tsx migrate.ts validate \
+    bun migrate.ts validate \
       --firebase-credential ./service-account.json
     ```
 
