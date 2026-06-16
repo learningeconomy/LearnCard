@@ -68,7 +68,6 @@ services:
             - ./src:/app/apps/scouts/src
             - ./vite.config.ts:/app/apps/scouts/vite.config.ts
             - ../../packages:/app/packages
-            - ../../node_modules:/app/node_modules
 
     delete-service:
         build: ../../services/playwright-delete-service

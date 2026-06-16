@@ -41,7 +41,6 @@ services:
             - ./src:/app/apps/learn-card-app/src
             - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
             - ../../packages:/app/packages
-            - ../../node_modules:/app/node_modules
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -102,7 +101,6 @@ services:
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
             - ../../packages:/app/packages
-            - ../../node_modules:/app/node_modules
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -155,7 +153,6 @@ services:
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
             - ../../packages:/app/packages
-            - ../../node_modules:/app/node_modules
         environment:
             IS_OFFLINE: true
             PORT: 4100
@@ -199,7 +196,6 @@ services:
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
             - ../../packages:/app/packages
-            - ../../node_modules:/app/node_modules
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'
