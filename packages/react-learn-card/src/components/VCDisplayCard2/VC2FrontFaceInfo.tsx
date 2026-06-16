@@ -29,6 +29,10 @@ type VC2FrontFaceInfoProps = {
     knownDIDRegistry?: KnownDIDRegistryType;
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 const BadgeThumbnailPlaceholder: React.FC = () => (
@@ -68,6 +72,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     knownDIDRegistry,
     customBodyContentSlot,
     unknownVerifierTitle,
+    onVerifierClick,
 }) => {
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
@@ -250,6 +255,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                 <VerifierStateBadgeAndText
                                     verifierState={verifierState}
                                     unknownVerifierTitle={unknownVerifierTitle}
+                                    onClick={event => onVerifierClick?.(event, verifierState)}
                                 />
                             </div>
                         </>

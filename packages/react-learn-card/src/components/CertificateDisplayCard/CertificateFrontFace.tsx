@@ -42,6 +42,10 @@ type CertificateFrontFaceProps = {
     unknownVerifierTitle?: string;
     hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -62,6 +66,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     unknownVerifierTitle,
     hideAwardedTo: hideAwardedToProp,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const {
         title = '',
@@ -261,6 +266,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <VerifierStateBadgeAndText
                         verifierState={verifierState}
                         unknownVerifierTitle={unknownVerifierTitle}
+                        onClick={event => onVerifierClick?.(event, verifierState)}
                     />
                 </div>
                 {customBodyContentSlot && customBodyContentSlot}
