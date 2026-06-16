@@ -9,7 +9,8 @@
         "xapi": "http://localhost:4100/xapi"
     },
     "features": {
-        "analytics": false
+        "analytics": false,
+        "useSeededSkillFrameworks": true
     },
     "observability": {
         "sentryEnv": "development",

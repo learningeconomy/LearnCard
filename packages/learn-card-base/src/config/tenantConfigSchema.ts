@@ -160,6 +160,14 @@ export const tenantFeatureConfigSchema = z
          * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.
          */
         pathways: z.boolean().default(false),
+
+        /**
+         * Fetch global skill frameworks from the backend's seeded fixtures instead
+         * of LaunchDarkly flags. Only seeded backends (local + staging) host them,
+         * so this MUST track `apis.brainService`: keep `false` for production configs,
+         * set `true` in the `config.local.json` / `config.staging.json` overlays.
+         */
+        useSeededSkillFrameworks: z.boolean().default(false),
     })
     .passthrough();
 

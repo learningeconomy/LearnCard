@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -24,13 +24,19 @@ import EndorsementRequestModal from '../boost-endorsements/EndorsementRequestMod
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import SharedBoostPageFooter from './SharedBoostPageFooter';
+import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullPage';
 
 import { VC, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
     getEndorsementsFromPresentations,
+    isClrCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    ClrTranscriptSurface,
+    normalizeClrTranscriptDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
@@ -76,6 +82,19 @@ const ViewSharedBoost: React.FC<{
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
     let _boost = credentialWithEdits ?? boost;
+    const sharedCredential = Array.isArray(_boost) ? _boost[0] : _boost;
+    const isSharedClrCredential = sharedCredential
+        ? isClrCredential(sharedCredential as VC)
+        : false;
+    const clrModel = useMemo(
+        () =>
+            isSharedClrCredential && sharedCredential
+                ? normalizeClrTranscriptDisplayModel(
+                      sharedCredential as unknown as Record<string, unknown>
+                  )
+                : null,
+        [sharedCredential, isSharedClrCredential]
+    );
 
     // Get credential from ceramic
     const fetchCredential = async (uri: string) => {
@@ -258,15 +277,27 @@ const ViewSharedBoost: React.FC<{
                             handleOnClick={presentModal}
                         />
 
-                        <VCDisplayCardWrapper2
-                            credential={_boost}
-                            lc={wallet}
-                            hideNavButtons
-                            hideQRCode
-                            hideFrontFaceDetails
-                            isFrontOverride={isFront}
-                            setIsFrontOverride={setIsFront}
-                        />
+                        {isSharedClrCredential && clrModel && sharedCredential ? (
+                            <ClrTranscriptFullPage
+                                model={clrModel}
+                                boost={sharedCredential as VC}
+                                boostUri={typeof uri === 'string' ? uri : undefined}
+                                options={{
+                                    viewer: 'student',
+                                    surface: ClrTranscriptSurface.Full,
+                                }}
+                            />
+                        ) : (
+                            <VCDisplayCardWrapper2
+                                credential={_boost}
+                                lc={wallet}
+                                hideNavButtons
+                                hideQRCode
+                                hideFrontFaceDetails
+                                isFrontOverride={isFront}
+                                setIsFrontOverride={setIsFront}
+                            />
+                        )}
                     </section>
                 )}
 
