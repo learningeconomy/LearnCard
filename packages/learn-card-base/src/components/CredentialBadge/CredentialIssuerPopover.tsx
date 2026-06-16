@@ -114,11 +114,13 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
 
-        onDidDismiss?.();
-
         if (popover?.dismiss) {
-            popover.dismiss().then(open);
+            popover.dismiss().then(() => {
+                onDidDismiss?.();
+                open();
+            });
         } else {
+            onDidDismiss?.();
             open();
         }
     };
