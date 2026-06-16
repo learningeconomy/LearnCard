@@ -27,6 +27,18 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
             onClick: handlers.goToWallet,
         }),
     },
+    {
+        id: 'collect-claim',
+        slot: 'collect',
+        eligible: () => true,
+        weight: () => 10,
+        build: (_state, { handlers, icons }) => ({
+            Icon: icons.collect,
+            label: 'Use a Claim Link',
+            caption: 'Claim a credential you were sent',
+            onClick: handlers.openClaimLink,
+        }),
+    },
 
     {
         id: 'understand-new',
@@ -64,7 +76,7 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
     {
         id: 'navigate-new',
         slot: 'navigate',
-        eligible: state => !state.hasGoal,
+        eligible: state => state.pathwaysEnabled && !state.hasGoal,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
@@ -76,13 +88,37 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
     {
         id: 'navigate-active',
         slot: 'navigate',
-        eligible: state => state.hasGoal,
+        eligible: state => state.pathwaysEnabled && state.hasGoal,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
             label: 'See Pathways',
             caption: 'Open your pathways',
             onClick: handlers.goToPathway,
+        }),
+    },
+    {
+        id: 'navigate-browse',
+        slot: 'navigate',
+        eligible: state => state.pathwaysEnabled,
+        weight: () => 10,
+        build: (_state, { handlers, icons }) => ({
+            Icon: icons.navigate,
+            label: 'Browse Pathways',
+            caption: 'Explore available paths',
+            onClick: handlers.goToBrowsePathways,
+        }),
+    },
+    {
+        id: 'navigate-apps',
+        slot: 'navigate',
+        eligible: state => !state.pathwaysEnabled,
+        weight: () => 10,
+        build: (_state, { handlers, icons }) => ({
+            Icon: icons.navigate,
+            label: 'Discover Apps',
+            caption: 'Find apps to get started',
+            onClick: handlers.goToBrowseAppStore,
         }),
     },
 ];

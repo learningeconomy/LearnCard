@@ -13,7 +13,7 @@ export const resolveSlots = (
     state: DashboardState,
     deps: ActionDeps,
     heroActionId: string | null,
-    registry: ActionDescriptor[],
+    registry: ActionDescriptor[]
 ): ResolvedSlots => {
     const result: ResolvedSlots = {
         collect: null,
@@ -22,14 +22,14 @@ export const resolveSlots = (
     };
 
     for (const slot of SLOT_ORDER) {
-        const candidates = registry
+        const eligibleInSlot = registry
             .map((descriptor, index) => ({ descriptor, index }))
-            .filter(
-                ({ descriptor }) =>
-                    descriptor.slot === slot &&
-                    descriptor.id !== heroActionId &&
-                    descriptor.eligible(state),
-            );
+            .filter(({ descriptor }) => descriptor.slot === slot && descriptor.eligible(state));
+
+        // Drop the hero action to avoid a duplicate CTA, but re-include it if that
+        // empties the slot: a redundant button beats an empty slot.
+        const nonHero = eligibleInSlot.filter(({ descriptor }) => descriptor.id !== heroActionId);
+        const candidates = nonHero.length > 0 ? nonHero : eligibleInSlot;
 
         if (candidates.length === 0) continue;
 

@@ -389,6 +389,7 @@ const DashboardPage: React.FC = () => {
 
     const actionHandlers: ActionHandlers = {
         goToAddCredential: goToCollect,
+        openClaimLink,
         goToWallet,
         goToSkills,
         goToInsights,
