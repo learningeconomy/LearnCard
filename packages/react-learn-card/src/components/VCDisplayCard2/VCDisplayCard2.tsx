@@ -12,6 +12,7 @@ import RoundedX from '../svgs/RoundedX';
 import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
 import VCIDDisplayCard from './VCIDDIsplayCard';
+import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
@@ -88,6 +89,10 @@ export type VCDisplayCard2Props = {
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -136,6 +141,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customBodyContentSlot,
     unknownVerifierTitle,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const {
         title = '',
@@ -230,6 +236,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
                 hideFrontFaceDetails={hideFrontFaceDetails}
+                onVerifierClick={onVerifierClick}
             />
         );
     }
@@ -263,6 +270,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
                 hideFrontFaceDetails={hideFrontFaceDetails}
+                onVerifierClick={onVerifierClick}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -293,6 +301,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     hideGradientBackground={hideGradientBackground}
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     unknownVerifierTitle={unknownVerifierTitle}
+                    onVerifierClick={onVerifierClick}
                 />
             </div>
         );
@@ -402,6 +411,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     knownDIDRegistry={knownDIDRegistry}
                                     customBodyContentSlot={customBodyContentSlot}
                                     unknownVerifierTitle={unknownVerifierTitle}
+                                    onVerifierClick={onVerifierClick}
                                 />
                             )}
                             {!isFront && (

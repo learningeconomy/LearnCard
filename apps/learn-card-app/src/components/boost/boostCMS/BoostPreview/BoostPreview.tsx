@@ -14,6 +14,9 @@ import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -164,6 +167,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }, [credentialWithEdits?.id, renderMethod?.template, enableRenderMethod]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
 
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
@@ -287,6 +292,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             formattedDisplayType={formattedDisplayType}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             customBodyContentSlot={endorsementBadge}
+            onVerifierClick={openCredentialIssuerPopover}
         />
     );
 
@@ -340,6 +346,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         issuancesSummaryComponent={issuancesSummaryComponent}
                     />
                 )}
+                <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
             </div>
         </IonPage>
     );
