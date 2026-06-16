@@ -153,7 +153,8 @@ const DashboardPage: React.FC = () => {
         const map = new Map<string, number>();
         for (const n of unreadNotifications) {
             if (n.read || n.archived) continue;
-            const listingId = (n.data as any)?.metadata?.listingId;
+            const notificationData = n.data as { metadata?: { listingId?: unknown } } | undefined;
+            const listingId = notificationData?.metadata?.listingId;
             if (typeof listingId === 'string' && listingId.length > 0) {
                 map.set(listingId, (map.get(listingId) ?? 0) + 1);
             }
@@ -212,12 +213,12 @@ const DashboardPage: React.FC = () => {
     };
     const openQrScanner = () => {
         openHeaderModal(
-            React.createElement(QrCodeUserCardModal as any, {
-                branding: BrandingEnum.learncard,
-                history,
-                connections: connections ?? [],
-                qrOnly: true,
-            })
+            <QrCodeUserCardModal
+                branding={BrandingEnum.learncard}
+                history={history}
+                connections={connections ?? []}
+                qrOnly
+            />
         );
     };
     const openManageDataSharing = () => {

@@ -27,11 +27,7 @@ const parseLaunchConfig = (raw: string | undefined): Record<string, any> => {
     }
 };
 
-export const useAppLaunch = ({
-    listing,
-    isInstalled,
-    onInstallSuccess,
-}: UseAppLaunchOptions) => {
+export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppLaunchOptions) => {
     const { newModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
@@ -40,7 +36,7 @@ export const useAppLaunch = ({
 
     const launchConfig = useMemo(
         () => parseLaunchConfig(listing.launch_config_json),
-        [listing.launch_config_json],
+        [listing.launch_config_json]
     );
 
     const contractUri: string | undefined = launchConfig?.contractUri;
@@ -52,7 +48,7 @@ export const useAppLaunch = ({
                 listing={listing}
                 isInstalled={isInstalled}
                 onInstallSuccess={onInstallSuccess}
-            />,
+            />
         );
     };
 
@@ -77,14 +73,13 @@ export const useAppLaunch = ({
                             redirectUrl={redirectUrl}
                         />,
                         { sectionClassName: '!bg-transparent !shadow-none' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
                 }
             }
 
-            const redirectUrl =
-                launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+            const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
             if (redirectUrl) {
                 const wallet = await initWallet();
@@ -100,16 +95,17 @@ export const useAppLaunch = ({
                     });
 
                     const delegateCredential = await wallet.invoke.issueCredential(
-                        unsignedDelegateCredential,
+                        unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp =
-                        await wallet.invoke.newPresentation(delegateCredential);
+                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
+                        delegateCredential
+                    );
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    })) as unknown as string;
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -127,7 +123,7 @@ export const useAppLaunch = ({
                         aiTutorUrl: launchConfig.aiTutorUrl,
                         contractUri: launchConfig.contractUri,
                     }}
-                />,
+                />
             );
             return;
         }
@@ -136,11 +132,11 @@ export const useAppLaunch = ({
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={(listing as any).slug || listing.listing_id}
+                    appId={(listing as { slug?: string }).slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled
-                />,
+                />
             );
             return;
         }

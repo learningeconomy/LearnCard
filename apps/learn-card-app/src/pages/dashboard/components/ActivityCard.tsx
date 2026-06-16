@@ -234,7 +234,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         for (const n of actionableNotifications) {
             const sortMs = n.sent ? new Date(n.sent).getTime() : 0;
             const senderImage =
-                typeof n.from === 'object' ? (n.from as any)?.image?.trim() : undefined;
+                typeof n.from === 'object'
+                    ? (n.from as { image?: string } | null)?.image?.trim()
+                    : undefined;
             out.push({
                 key: `notif-${n._id ?? sortMs}-${n.type}`,
                 title: n.message?.title?.trim() || titleForNotificationType(n.type),
@@ -284,9 +286,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                             <path d="M10 21a2 2 0 0 0 4 0" />
                         </svg>
                     </span>
-                    <p className="text-sm font-semibold text-grayscale-900">
-                        No alerts right now
-                    </p>
+                    <p className="text-sm font-semibold text-grayscale-900">No alerts right now</p>
                     <p className="mt-1 text-xs text-grayscale-500 leading-relaxed max-w-[260px]">
                         We&apos;ll let you know here when someone wants to connect or send you a
                         credential.

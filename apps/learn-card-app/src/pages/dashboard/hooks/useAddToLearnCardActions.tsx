@@ -2,13 +2,11 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 
-import {
-    ModalTypes,
-    QRCodeScannerStore,
-    useModal,
-} from 'learn-card-base';
+import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
 import IssueManagedBoostSelector from '../../launchPad/LaunchPadHeader/IssueManagedBoostSelector';
+
+const log = getLogger('dashboard');
 
 const importPasteOrUploadClaimModal = () =>
     import('../../../components/paste-or-upload-claim/PasteOrUploadClaimModal');
@@ -39,7 +37,7 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
 
     useEffect(() => {
         void importPasteOrUploadClaimModal().catch(err => {
-            console.error('[Dashboard] Failed to preload PasteOrUploadClaimModal:', err);
+            log.error('Failed to preload PasteOrUploadClaimModal', err);
         });
     }, []);
 
@@ -48,7 +46,7 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
             <Suspense fallback={<PasteOrUploadClaimModalFallback />}>
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' },
+            { hideButton: true, sectionClassName: '!max-w-[500px]' }
         );
     };
 
@@ -56,7 +54,7 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
         openRightModal(
             <IssueManagedBoostSelector />,
             { hideButton: true, sectionClassName: '!max-w-[500px]' },
-            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel },
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
 
