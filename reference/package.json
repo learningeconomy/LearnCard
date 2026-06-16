@@ -5,8 +5,8 @@
     "scripts": {
         "docusaurus": "docusaurus",
         "start": "docusaurus start",
-        "prebuild": "bunx nx run-many -t build -p types helpers core --skip-nx-cache",
         "build": "node scripts/build-docs.cjs build",
+        "build:api-docs": "bunx nx run-many -t build -p types helpers core --skip-nx-cache && GENERATE_TYPEDOC=true node scripts/build-docs.cjs build",
         "swizzle": "docusaurus swizzle",
         "deploy": "docusaurus deploy",
         "clear": "docusaurus clear",

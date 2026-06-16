@@ -4,9 +4,9 @@
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
-const canLoadTypedocPlugin = Number(process.versions.node.split('.')[0]) >= 20;
+const shouldGenerateTypedoc = process.env.GENERATE_TYPEDOC === 'true';
 
-const typedocPlugins = canLoadTypedocPlugin
+const typedocPlugins = shouldGenerateTypedoc
     ? [
           [
               'docusaurus-plugin-typedoc',
