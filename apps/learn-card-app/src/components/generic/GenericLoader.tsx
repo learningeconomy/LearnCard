@@ -1,6 +1,6 @@
 import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper';
+import { Autoplay } from 'swiper/modules';
 
 import { IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base';

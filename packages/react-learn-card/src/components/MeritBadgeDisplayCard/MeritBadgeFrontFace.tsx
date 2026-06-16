@@ -41,6 +41,10 @@ type MeritBadgeFrontFaceProps = {
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -60,6 +64,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     customBodyContentSlot,
     unknownVerifierTitle,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const {
         title = '',
@@ -274,6 +279,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     verifierState={verifierState}
                     unknownVerifierTitle={unknownVerifierTitle}
                     className="bg-white px-[5px] pb-[5px]"
+                    onClick={event => onVerifierClick?.(event, verifierState)}
                 />
             </div>
 

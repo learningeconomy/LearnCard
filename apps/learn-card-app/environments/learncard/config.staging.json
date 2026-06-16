@@ -9,7 +9,8 @@
         "xapi": "https://staging.network.learncard.com/xapi"
     },
     "features": {
-        "analytics": false
+        "analytics": false,
+        "useSeededSkillFrameworks": true
     },
     "observability": {
         "sentryEnv": "staging",

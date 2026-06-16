@@ -20,6 +20,9 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getLogger } from '../../logging/logger';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from '../CredentialBadge/CredentialIssuerPopover';
 const log = getLogger('vcdisplay-card-wrapper');
 
 const DetailsDisplay: React.FC<VC> = ({ credential }) => {
@@ -74,6 +77,8 @@ export const VCDisplayCardWrapper = ({
     const [VcCategory, setVcCategory] = useState<any | null | undefined>(categoryType ?? '');
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { initWallet } = useWallet();
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
 
     useEffect(() => {
         const getCategory = async () => {
@@ -231,19 +236,23 @@ export const VCDisplayCardWrapper = ({
                             <X className="text-black w-[30px]" />
                         </button>
                     </div>
-                    <VCDisplayCard2
-                        className={className}
-                        credential={credential}
-                        issueeOverride={issueeText}
-                        issuerOverride={issuerText}
-                        issuerImageComponent={issuerImageComp}
-                        subjectImageComponent={subjectImageComp}
-                        overrideCardImageComponent={cardImgOverride}
-                        verificationItems={vcVerifications}
-                        overrideCardTitle={cardTitle}
-                        overrideDetailsComponent={renderDetailsEl}
-                        categoryType={category}
-                    />
+                    <>
+                        <VCDisplayCard2
+                            className={className}
+                            credential={credential}
+                            issueeOverride={issueeText}
+                            issuerOverride={issuerText}
+                            issuerImageComponent={issuerImageComp}
+                            subjectImageComponent={subjectImageComp}
+                            overrideCardImageComponent={cardImgOverride}
+                            verificationItems={vcVerifications}
+                            overrideCardTitle={cardTitle}
+                            overrideDetailsComponent={renderDetailsEl}
+                            categoryType={category}
+                            onVerifierClick={openCredentialIssuerPopover}
+                        />
+                        <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
+                    </>
                 </IonRow>
             </IonContent>
         </IonPage>

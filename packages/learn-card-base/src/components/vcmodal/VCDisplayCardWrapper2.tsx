@@ -22,6 +22,9 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
 import { openAttachmentUrl } from '../../helpers/openAttachmentUrl';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from '../CredentialBadge/CredentialIssuerPopover';
 
 //TODO rewrite this whole thing
 // it was written preboost and once the boost stuff came in
@@ -268,6 +271,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
 
     const isCertificate = displayType === 'certificate';
     const isFamily = category === BoostCategoryOptionsEnum.family;
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
 
     // VCDisplayCard2 overloads `formattedDisplayType` as BOTH the visual face
     // selector and the subtitle text. Pin `display.displayType` so the face
@@ -306,68 +311,72 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     }
 
     return (
-        <VCDisplayCard2
-            categoryType={_category}
-            credential={displayCredential}
-            issueeOverride={overrideIssueName || issueeName}
-            issuerOverride={issuerName}
-            customThumbComponent={
-                isID || isMembership || isTroopID ? (
-                    <IDDisplayCard
-                        idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
-                        idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
-                        name={overrideCardTitle || title}
-                        location={address}
-                        issueeThumbnail={issueeProfile?.image}
-                        issueeName={useCurrentUserName ? currentUser?.name : issueeName}
-                        issuerThumbnail={idIssuerThumbnailSrc}
-                        showIssuerImage={showIdIssuerThumbnail}
-                        backgroundImage={idBackgroundImage}
-                        dimBackgroundImage={idDimBackgroundImage}
-                        fontColor={idFontColor}
-                        accentColor={idAccentColor}
-                        idIssuerName={issuerName}
-                        customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
-                        {...mappedInputs}
-                    />
-                ) : (
-                    <CredentialBadge
-                        achievementType={achievementType}
-                        fallbackCircleText={overrideCardTitle || title}
-                        boostType={category}
-                        badgeThumbnail={overrideCardImageUrl || badgeThumbnail!}
-                        badgeCircleCustomClass="w-[170px] h-[170px]"
-                        branding={brandingEnum}
-                    />
-                )
-            }
-            issuerImageComponent={issuerProfileImageElement}
-            subjectDID={idSubjectDID}
-            subjectImageComponent={subjectProfileImageElement}
-            verificationItems={vcVerification}
-            customBodyCardComponent={customBodyCardComponent}
-            customFooterComponent={customFooterComponent}
-            customRibbonCategoryComponent={customRibbonCategoryComponent}
-            titleOverride={overrideCardTitle || title}
-            customDescription={customDescription}
-            handleXClick={isCertificate ? handleClose : undefined}
-            knownDIDRegistry={knownDIDRegistry}
-            isFrontOverride={isFrontOverride}
-            setIsFrontOverride={setIsFrontOverride}
-            hideNavButtons={hideNavButtons}
-            hideAwardedTo={hideAwardedTo}
-            showDetailsBtn={showDetailsBtn}
-            hideQRCode={hideQRCode}
-            onMediaClick={onMediaClick}
-            onMediaAttachmentClick={handleMediaAttachmentClick}
-            enableLightbox={true}
-            bottomButton={bottomButton}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            customBodyContentSlot={customBodyContentSlot}
-            onDotsClick={onDotsClick}
-            unknownVerifierTitle={unknownVerifierTitle}
-            formattedDisplayType={subtitleDisplayType}
-        />
+        <>
+            <VCDisplayCard2
+                categoryType={_category}
+                credential={displayCredential}
+                issueeOverride={overrideIssueName || issueeName}
+                issuerOverride={issuerName}
+                customThumbComponent={
+                    isID || isMembership || isTroopID ? (
+                        <IDDisplayCard
+                            idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
+                            idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
+                            name={overrideCardTitle || title}
+                            location={address}
+                            issueeThumbnail={issueeProfile?.image}
+                            issueeName={useCurrentUserName ? currentUser?.name : issueeName}
+                            issuerThumbnail={idIssuerThumbnailSrc}
+                            showIssuerImage={showIdIssuerThumbnail}
+                            backgroundImage={idBackgroundImage}
+                            dimBackgroundImage={idDimBackgroundImage}
+                            fontColor={idFontColor}
+                            accentColor={idAccentColor}
+                            idIssuerName={issuerName}
+                            customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
+                            {...mappedInputs}
+                        />
+                    ) : (
+                        <CredentialBadge
+                            achievementType={achievementType}
+                            fallbackCircleText={overrideCardTitle || title}
+                            boostType={category}
+                            badgeThumbnail={overrideCardImageUrl || badgeThumbnail!}
+                            badgeCircleCustomClass="w-[170px] h-[170px]"
+                            branding={brandingEnum}
+                        />
+                    )
+                }
+                issuerImageComponent={issuerProfileImageElement}
+                subjectDID={idSubjectDID}
+                subjectImageComponent={subjectProfileImageElement}
+                verificationItems={vcVerification}
+                customBodyCardComponent={customBodyCardComponent}
+                customFooterComponent={customFooterComponent}
+                customRibbonCategoryComponent={customRibbonCategoryComponent}
+                titleOverride={overrideCardTitle || title}
+                customDescription={customDescription}
+                handleXClick={isCertificate ? handleClose : undefined}
+                knownDIDRegistry={knownDIDRegistry}
+                isFrontOverride={isFrontOverride}
+                setIsFrontOverride={setIsFrontOverride}
+                hideNavButtons={hideNavButtons}
+                hideAwardedTo={hideAwardedTo}
+                showDetailsBtn={showDetailsBtn}
+                hideQRCode={hideQRCode}
+                onMediaClick={onMediaClick}
+                onMediaAttachmentClick={handleMediaAttachmentClick}
+                enableLightbox={true}
+                bottomButton={bottomButton}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={customBodyContentSlot}
+                onDotsClick={onDotsClick}
+                unknownVerifierTitle={unknownVerifierTitle}
+                formattedDisplayType={subtitleDisplayType}
+                onVerifierClick={openCredentialIssuerPopover}
+            />
+            <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
+        </>
     );
 };
 

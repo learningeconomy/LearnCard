@@ -1,6 +1,6 @@
 import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper';
+import { Autoplay } from 'swiper/modules';
 
 import { IonSpinner } from '@ionic/react';
 import Sparkles from '../../assets/images/purple-sparkles.gif';

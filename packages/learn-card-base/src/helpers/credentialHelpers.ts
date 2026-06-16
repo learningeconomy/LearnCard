@@ -1235,6 +1235,7 @@ export const getCategoryPrimaryColor = (category = CredentialCategoryEnum.achiev
         case CredentialCategoryEnum.socialBadge:
             return 'cyan';
         case CredentialCategoryEnum.skill:
+        case CredentialCategoryEnum.selfAssignedSkills:
             return 'indigo';
         case CredentialCategoryEnum.achievement:
             return 'spice';

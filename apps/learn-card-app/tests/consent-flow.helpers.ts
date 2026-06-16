@@ -17,6 +17,7 @@ export enum BoostCategoryOptionsEnum {
     learningHistory = 'Learning History',
     family = 'Family',
     describe = 'Describe',
+    verifiableData = 'VerifiableData',
 }
 
 export const testContract = {
@@ -285,4 +286,5 @@ export const categoryToDisplayNameMap = {
     [BoostCategoryOptionsEnum.accomplishment]: 'Milestones',
     [BoostCategoryOptionsEnum.workHistory]: 'Experiences',
     [BoostCategoryOptionsEnum.learningHistory]: 'Studies',
+    [BoostCategoryOptionsEnum.verifiableData]: 'Verifiable Data',
 };

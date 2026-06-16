@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-service",
-    "version": "1.2.20",
+    "version": "1.2.21",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -71,7 +71,7 @@
         "multiformats": "^11.0.1",
         "trpc-to-openapi": "^3.1.0",
         "zod-openapi": "^5.0.1",
-        "uuid": "^9.0.0"
+        "uuid": "^14.0.0"
     },
     "repository": {
         "type": "git",
