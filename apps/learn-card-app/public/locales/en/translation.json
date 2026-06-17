@@ -1587,6 +1587,15 @@
         "menu": {
             "manageIssuances": "Manage Issuances",
             "viewData": "View Data"
+        },
+        "shortBoost": {
+            "selectRecipient": "Select Recipient",
+            "selectRecipients": "Select Recipients",
+            "myself": "Myself",
+            "others": "Others",
+            "generateLink": "Generate Link",
+            "editDraft": "Edit Draft",
+            "sendingBoost": "Sending Boost"
         }
     },
     "toasts": {
@@ -1878,7 +1887,8 @@
         "monthYear": "Month, Year",
         "previousCredential": "Previous credential",
         "nextCredential": "Next credential",
-        "noSessionsYet": "No sessions yet"
+        "noSessionsYet": "No sessions yet",
+        "aiLearningSessions": "AI Learning Sessions"
     },
     "aiSession": {
         "loadingTitle": "Loading title",
@@ -1988,5 +1998,73 @@
         "myHub": {
             "noResultsFoundFor": "No results found for <0>{{query}}</0>"
         }
+    },
+    "skillProfile": {
+        "header": "My Skill Profile",
+        "personalizeSubtitle": "Personalize your pathways.",
+        "skip": "Skip",
+        "stepOf": "{{current}} of {{total}}",
+        "percentOptimized": "{{percent}}% optimized",
+        "editedOn": "Edited on {{date}}",
+        "step1": {
+            "title": "Grow your skills and explore opportunities",
+            "subtitle": "Your profile is used to create personalized opportunities. <0>All your answers are confidential.</0>",
+            "goals": "Goals",
+            "professionalTitle": "Professional title",
+            "lifetimeExperience": "Lifetime experience in this role",
+            "years": "years",
+            "months": "months"
+        },
+        "step2": {
+            "newWorkExperience": "New Work Experience",
+            "jobTitle": "Job Title",
+            "employer": "Employer",
+            "jobLocation": "Job Location",
+            "startDate": "Start Date",
+            "endDate": "End Date",
+            "present": "Present",
+            "jobSummary": "Job Summary",
+            "nextCredential": "Next credential",
+            "previousCredential": "Previous credential",
+            "toastMissingFields": "Missing required fields",
+            "toastExperienceAdded": "Work experience added",
+            "toastFailed": "Failed to add experience",
+            "errorOccurred": "An error occurred",
+            "recentExperienceQuestion": "What is your most recent work experience?",
+            "selectRecentExperience": "Select your most recent work experience",
+            "loadingCredentials": "Loading credentials…",
+            "jobTitleQuestionPast": "What was your job title?",
+            "jobTitleQuestionPresent": "What is your job title?",
+            "summaryQuestionPast": "What did you do?",
+            "summaryQuestionPresent": "What do you do?",
+            "employerQuestionPast": "Who did you work for?",
+            "employerQuestionPresent": "Who do you work for?",
+            "locationQuestionPast": "Where was this job located?",
+            "locationQuestionPresent": "Where is this job located?",
+            "attachSkills": "Attach Skills",
+            "adding": "Adding...",
+            "addExperience": "Add Experience"
+        },
+        "step3": {
+            "howMuchMoney": "How much money do you make?",
+            "perYear": "Per Year",
+            "perHour": "Per Hour",
+            "hourlyRate": "Per Hour",
+            "annualSalary": "Annual Salary",
+            "description": "This helps us to show you where you stand compared to other people with the same role and experience."
+        },
+        "step5": {
+            "finish": "Finish",
+            "manageSkills": "Manage your current skills",
+            "chooseSkills": "Choose your current skills",
+            "toastErrorSaving": "Error saving skills!"
+        }
+    },
+    "growSkills": {
+        "title": "Grow Skills",
+        "description": "Explore <0>courses</0>, <1>AI learning sessions</1>, and <2>media</2> to strengthen & diversify your skills",
+        "modalTitle": "Grow your skills",
+        "edit": "Edit",
+        "noResults": "No results found. Try a broader search term."
     }
 }

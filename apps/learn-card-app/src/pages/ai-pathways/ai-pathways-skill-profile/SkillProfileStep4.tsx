@@ -107,7 +107,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
     return (
         <div className="flex flex-col gap-[20px]">
             <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                How would you rate your work-life balance?
+                {m['skillProfile.step4.workLifeBalance']()}
             </h3>
 
             <RadioGroup
@@ -121,7 +121,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             />
 
             <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                And how would you rate your job stability?
+                {m['skillProfile.step4.jobStability']()}
             </h3>
 
             <RadioGroup
@@ -139,7 +139,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
                     onClick={handleBack}
                     disabled={isSaving}
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px] disabled:opacity-50"

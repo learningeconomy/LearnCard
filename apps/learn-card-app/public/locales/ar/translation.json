@@ -1558,6 +1558,15 @@
         "menu": {
             "manageIssuances": "إدارة الإصدارات",
             "viewData": "عرض البيانات"
+        },
+        "shortBoost": {
+            "selectRecipient": "اختيار المستلم",
+            "selectRecipients": "اختيار المستلمين",
+            "myself": "أنا",
+            "others": "آخرون",
+            "generateLink": "إنشاء رابط",
+            "editDraft": "تعديل المسودة",
+            "sendingBoost": "جارٍ إرسال Boost"
         }
     },
     "legal": {
@@ -1878,7 +1887,8 @@
         "monthYear": "الشهر، السنة",
         "previousCredential": "الشهادة السابقة",
         "nextCredential": "الشهادة التالية",
-        "noSessionsYet": "لا توجد جلسات بعد"
+        "noSessionsYet": "لا توجد جلسات بعد",
+        "aiLearningSessions": "جلسات التعلّم بالذكاء الاصطناعي"
     },
     "aiSession": {
         "loadingTitle": "تحميل العنوان",
@@ -1988,5 +1998,73 @@
         "myHub": {
             "noResultsFoundFor": "لا توجد نتائج لـ <0>{{query}}</0>"
         }
+    },
+    "skillProfile": {
+        "header": "ملفي للمهارات",
+        "personalizeSubtitle": "خصّص مساراتك.",
+        "skip": "تخطّي",
+        "stepOf": "{{current}} من {{total}}",
+        "percentOptimized": "{{percent}}% مُحسّن",
+        "editedOn": "حُرّر في {{date}}",
+        "step1": {
+            "title": "طوّر مهاراتك واستكشف الفرص",
+            "subtitle": "يُستخدم ملفك لإنشاء فرص مخصّصة. <0>جميع إجاباتك سرّية.</0>",
+            "goals": "الأهداف",
+            "professionalTitle": "المسمى المهني",
+            "lifetimeExperience": "إجمالي الخبرة في هذا الدور",
+            "years": "سنوات",
+            "months": "أشهر"
+        },
+        "step2": {
+            "newWorkExperience": "خبرة عمل جديدة",
+            "jobTitle": "المسمى الوظيفي",
+            "employer": "صاحب العمل",
+            "jobLocation": "موقع العمل",
+            "startDate": "تاريخ البدء",
+            "endDate": "تاريخ الانتهاء",
+            "present": "حتّى الآن",
+            "jobSummary": "ملخص الوظيفة",
+            "nextCredential": "الاعتماد التالي",
+            "previousCredential": "الاعتماد السابق",
+            "toastMissingFields": "حقول مطلوبة مفقودة",
+            "toastExperienceAdded": "تمت إضافة الخبرة المهنية",
+            "toastFailed": "تعذّر إضافة الخبرة",
+            "errorOccurred": "حدث خطأ",
+            "recentExperienceQuestion": "ما هي أحدث خبرة عمل لديك؟",
+            "selectRecentExperience": "اختر أحدث خبرة عمل لديك",
+            "loadingCredentials": "جارٍ تحميل الاعتمادات…",
+            "jobTitleQuestionPast": "ما كان مسماك الوظيفي؟",
+            "jobTitleQuestionPresent": "ما هو مسماك الوظيفي؟",
+            "summaryQuestionPast": "ماذا كنت تفعل؟",
+            "summaryQuestionPresent": "ماذا تفعل؟",
+            "employerQuestionPast": "لمن كنت تعمل؟",
+            "employerQuestionPresent": "لمن تعمل؟",
+            "locationQuestionPast": "أين كان موقع هذه الوظيفة؟",
+            "locationQuestionPresent": "أين موقع هذه الوظيفة؟",
+            "attachSkills": "إرفاق المهارات",
+            "adding": "جارٍ الإضافة...",
+            "addExperience": "إضافة خبرة"
+        },
+        "step3": {
+            "howMuchMoney": "كم تكسب؟",
+            "perYear": "سنوياً",
+            "perHour": "بالساعة",
+            "hourlyRate": "بالساعة",
+            "annualSalary": "الراتب السنوي",
+            "description": "يساعدنا هذا على إظهار موقعك مقارنةً بأشخاص آخرين لهم نفس الدور والخبرة."
+        },
+        "step5": {
+            "finish": "إنهاء",
+            "manageSkills": "إدارة مهاراتك الحالية",
+            "chooseSkills": "اختر مهاراتك الحالية",
+            "toastErrorSaving": "خطأ في حفظ المهارات!"
+        }
+    },
+    "growSkills": {
+        "title": "تنمية المهارات",
+        "description": "استكشف <0>الدورات</0> و<1>جلسات التعلّم بالذكاء الاصطناعي</1> و<2>الوسائط</2> لتعزيز مهاراتك وتنويعها",
+        "modalTitle": "نمّ مهاراتك",
+        "edit": "تعديل",
+        "noResults": "لا توجد نتائج. جرّب مصطلح بحث أوسع."
     }
 }

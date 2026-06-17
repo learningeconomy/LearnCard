@@ -1558,6 +1558,15 @@
         "menu": {
             "manageIssuances": "Gestionar emisiones",
             "viewData": "Ver datos"
+        },
+        "shortBoost": {
+            "selectRecipient": "Seleccionar destinatario",
+            "selectRecipients": "Seleccionar destinatarios",
+            "myself": "Yo mismo",
+            "others": "Otros",
+            "generateLink": "Generar enlace",
+            "editDraft": "Editar borrador",
+            "sendingBoost": "Enviando Boost"
         }
     },
     "legal": {
@@ -1878,7 +1887,8 @@
         "monthYear": "Mes, Año",
         "previousCredential": "Credencial anterior",
         "nextCredential": "Siguiente credencial",
-        "noSessionsYet": "Aún no hay sesiones"
+        "noSessionsYet": "Aún no hay sesiones",
+        "aiLearningSessions": "Sesiones de aprendizaje con IA"
     },
     "aiSession": {
         "loadingTitle": "Cargando título",
@@ -1988,5 +1998,73 @@
         "myHub": {
             "noResultsFoundFor": "No se encontraron resultados para <0>{{query}}</0>"
         }
+    },
+    "skillProfile": {
+        "header": "Mi perfil de habilidades",
+        "personalizeSubtitle": "Personaliza tus trayectorias.",
+        "skip": "Omitir",
+        "stepOf": "{{current}} de {{total}}",
+        "percentOptimized": "{{percent}}% optimizado",
+        "editedOn": "Editado el {{date}}",
+        "step1": {
+            "title": "Desarrolla tus habilidades y explora oportunidades",
+            "subtitle": "Tu perfil se usa para crear oportunidades personalizadas. <0>Todas tus respuestas son confidenciales.</0>",
+            "goals": "Objetivos",
+            "professionalTitle": "Título profesional",
+            "lifetimeExperience": "Experiencia total en este puesto",
+            "years": "años",
+            "months": "meses"
+        },
+        "step2": {
+            "newWorkExperience": "Nueva experiencia laboral",
+            "jobTitle": "Puesto",
+            "employer": "Empleador",
+            "jobLocation": "Ubicación del empleo",
+            "startDate": "Fecha de inicio",
+            "endDate": "Fecha de fin",
+            "present": "Presente",
+            "jobSummary": "Resumen del puesto",
+            "nextCredential": "Siguiente credencial",
+            "previousCredential": "Credencial anterior",
+            "toastMissingFields": "Faltan campos obligatorios",
+            "toastExperienceAdded": "Experiencia laboral añadida",
+            "toastFailed": "No se pudo añadir la experiencia",
+            "errorOccurred": "Ocurrió un error",
+            "recentExperienceQuestion": "¿Cuál es tu experiencia laboral más reciente?",
+            "selectRecentExperience": "Selecciona tu experiencia laboral más reciente",
+            "loadingCredentials": "Cargando credenciales…",
+            "jobTitleQuestionPast": "¿Cuál era tu puesto?",
+            "jobTitleQuestionPresent": "¿Cuál es tu puesto?",
+            "summaryQuestionPast": "¿Qué hacías?",
+            "summaryQuestionPresent": "¿Qué haces?",
+            "employerQuestionPast": "¿Para quién trabajabas?",
+            "employerQuestionPresent": "¿Para quién trabajas?",
+            "locationQuestionPast": "¿Dónde estaba ubicado este empleo?",
+            "locationQuestionPresent": "¿Dónde está ubicado este empleo?",
+            "attachSkills": "Adjuntar habilidades",
+            "adding": "Añadiendo...",
+            "addExperience": "Añadir experiencia"
+        },
+        "step3": {
+            "howMuchMoney": "¿Cuánto dinero ganas?",
+            "perYear": "Por año",
+            "perHour": "Por hora",
+            "hourlyRate": "Por hora",
+            "annualSalary": "Salario anual",
+            "description": "Esto nos ayuda a mostrarte tu posición en comparación con otras personas con el mismo puesto y experiencia."
+        },
+        "step5": {
+            "finish": "Finalizar",
+            "manageSkills": "Gestiona tus habilidades actuales",
+            "chooseSkills": "Elige tus habilidades actuales",
+            "toastErrorSaving": "¡Error al guardar las habilidades!"
+        }
+    },
+    "growSkills": {
+        "title": "Desarrollar habilidades",
+        "description": "Explora <0>cursos</0>, <1>sesiones de aprendizaje con IA</1> y <2>medios</2> para fortalecer y diversificar tus habilidades",
+        "modalTitle": "Desarrolla tus habilidades",
+        "edit": "Editar",
+        "noResults": "No se encontraron resultados. Prueba con un término de búsqueda más amplio."
     }
 }

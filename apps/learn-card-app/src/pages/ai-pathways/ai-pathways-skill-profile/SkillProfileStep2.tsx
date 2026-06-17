@@ -123,7 +123,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
         if (!experience.jobTitle || !experience.employer) {
             presentToast(m['toasts.skills.fillJobTitle'](), {
                 type: ToastTypeEnum.Error,
-                title: 'Missing required fields',
+                title: m['skillProfile.step2.toastMissingFields'](),
             });
             return;
         }
@@ -237,7 +237,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
             presentToast(m['toasts.skills.workHistoryCreated'](), {
                 type: ToastTypeEnum.Success,
-                title: 'Work experience added',
+                title: m['skillProfile.step2.toastExperienceAdded'](),
             });
 
             // Reset form and return to credential slider view
@@ -246,10 +246,13 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
             setSelectedSkills([]);
         } catch (error) {
             log.error('Failed to issue work history credential:', error);
-            presentToast(error instanceof Error ? error.message : 'An error occurred', {
-                type: ToastTypeEnum.Error,
-                title: 'Failed to add experience',
-            });
+            presentToast(
+                error instanceof Error ? error.message : m['skillProfile.step2.errorOccurred'](),
+                {
+                    type: ToastTypeEnum.Error,
+                    title: m['skillProfile.step2.toastFailed'](),
+                }
+            );
         } finally {
             setIsIssuing(false);
         }
@@ -316,17 +319,21 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
             {hasExistingCredentials && shouldShowForm ? (
                 <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px] flex flex-col gap-[10px] items-center">
                     <ExperiencesIconWithShape className="w-[60px] h-[60px]" />
-                    New Work Experience
+                    {m['skillProfile.step2.newWorkExperience']()}
                 </h3>
             ) : (
                 <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
                     {shouldShowForm
-                        ? 'What is your most recent work experience?'
-                        : 'Select your most recent work experience'}
+                        ? m['skillProfile.step2.recentExperienceQuestion']()
+                        : m['skillProfile.step2.selectRecentExperience']()}
                 </h3>
             )}
 
-            {isLoading && <p className="text-xs text-grayscale-400">Loading credentials…</p>}
+            {isLoading && (
+                <p className="text-xs text-grayscale-400">
+                    {m['skillProfile.step2.loadingCredentials']()}
+                </p>
+            )}
 
             {!isLoading && !shouldShowForm && (
                 <>
@@ -385,7 +392,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         {!atBeginning && (
                             <button
                                 onClick={() => swiperRef.current?.slidePrev()}
-                                aria-label="Previous credential"
+                                aria-label={m['skillProfile.step2.previousCredential']()}
                                 className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-[1101] shadow-md hover:bg-gray-200 transition-all duration-200"
                                 style={{ opacity: 0.85 }}
                             >
@@ -396,7 +403,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         {(!atBeginning || records.length > 2) && (
                             <button
                                 onClick={() => swiperRef.current?.slideNext()}
-                                aria-label="Next credential"
+                                aria-label={m['skillProfile.step2.nextCredential']()}
                                 className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-[1101] shadow-md hover:bg-gray-200 transition-all duration-200"
                                 style={{ opacity: atEnd ? 0.35 : 0.85 }}
                             >
@@ -410,7 +417,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         onClick={() => setShowForm(true)}
                         className="bg-cyan-501 text-white rounded-full pl-[30px] pr-[10px] py-[7px] text-[15px] font-bold leading-[24px] tracking-[0.25px] h-[44px] flex items-center justify-center gap-[10px]"
                     >
-                        New Work Experience
+                        {m['skillProfile.step2.newWorkExperience']()}
                         <GearPlusIcon className="w-[30px] h-[30px] text-cyan-601" />
                     </button>
                 </>
@@ -424,7 +431,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         <div className="flex flex-col gap-[10px]">
                             <div className="flex items-center justify-between">
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                    Job Title
+                                    {m['skillProfile.step2.jobTitle']()}
                                 </span>
                                 <Checkbox
                                     checked={experience.isCurrentJob}
@@ -439,15 +446,15 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                 onChange={value => updateExperience(index, 'jobTitle', value ?? '')}
                                 placeholder={
                                     hasExistingCredentials
-                                        ? 'What was your job title?'
-                                        : 'What is your job title?'
+                                        ? m['skillProfile.step2.jobTitleQuestionPast']()
+                                        : m['skillProfile.step2.jobTitleQuestionPresent']()
                                 }
                             />
                         </div>
 
                         <div className="flex flex-col gap-[10px]">
                             <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                Job Summary
+                                {m['skillProfile.step2.jobSummary']()}
                             </span>
                             <TextArea
                                 value={experience.jobSummary}
@@ -455,7 +462,9 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                     updateExperience(index, 'jobSummary', value ?? '')
                                 }
                                 placeholder={
-                                    hasExistingCredentials ? 'What did you do?' : 'What do you do?'
+                                    hasExistingCredentials
+                                        ? m['skillProfile.step2.summaryQuestionPast']()
+                                        : m['skillProfile.step2.summaryQuestionPresent']()
                                 }
                                 rows={2}
                             />
@@ -463,15 +472,15 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
 
                         <div className="flex flex-col gap-[10px]">
                             <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                Employer
+                                {m['skillProfile.step2.employer']()}
                             </span>
                             <TextInput
                                 value={experience.employer}
                                 onChange={value => updateExperience(index, 'employer', value ?? '')}
                                 placeholder={
                                     hasExistingCredentials
-                                        ? 'Who did you work for?'
-                                        : 'Who do you work for?'
+                                        ? m['skillProfile.step2.employerQuestionPast']()
+                                        : m['skillProfile.step2.employerQuestionPresent']()
                                 }
                             />
                         </div>
@@ -479,7 +488,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         <div className="flex flex-col gap-[10px]">
                             <div className="flex items-center justify-between">
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                    Job Location
+                                    {m['skillProfile.step2.jobLocation']()}
                                 </span>
                                 <Checkbox
                                     checked={experience.workFromHome}
@@ -496,8 +505,8 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                                 }
                                 placeholder={
                                     hasExistingCredentials
-                                        ? 'Where was this job located?'
-                                        : 'Where is this job located?'
+                                        ? m['skillProfile.step2.locationQuestionPast']()
+                                        : m['skillProfile.step2.locationQuestionPresent']()
                                 }
                                 disabled={experience.workFromHome}
                                 endIcon={
@@ -513,7 +522,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         <div className="flex gap-[20px]">
                             <div className="flex flex-col gap-[10px] flex-1">
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                    Start Date
+                                    {m['skillProfile.step2.startDate']()}
                                 </span>
                                 <DatePickerInput
                                     value={experience.startDate}
@@ -524,11 +533,11 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                             </div>
                             <div className="flex flex-col gap-[10px] flex-1">
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                    End Date
+                                    {m['skillProfile.step2.endDate']()}
                                 </span>
                                 {experience.isCurrentJob ? (
                                     <div className="py-[10px] text-grayscale-900 font-poppins text-[14px] font-bold h-full flex items-center">
-                                        Present
+                                        {m['skillProfile.step2.present']()}
                                     </div>
                                 ) : (
                                     <DatePickerInput
@@ -545,7 +554,7 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                         <div className="flex flex-col gap-[10px]">
                             <div className="flex items-start justify-between py-[10px] border-t-[1px] border-t-grayscale-200 border-solid">
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                                    Attach Skills
+                                    {m['skillProfile.step2.attachSkills']()}
                                     {selectedSkills.length > 0 && ` • ${selectedSkills.length}`}
                                 </span>
                                 <button
@@ -594,7 +603,9 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                     disabled={isIssuing}
                     className="bg-cyan-501 text-white rounded-full pl-[30px] pr-[10px] py-[7px] text-[15px] font-bold leading-[24px] tracking-[0.25px] h-[44px] flex items-center justify-center gap-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isIssuing ? 'Adding...' : 'Add Experience'}
+                    {isIssuing
+                        ? m['skillProfile.step2.adding']()
+                        : m['skillProfile.step2.addExperience']()}
                     <GearPlusIcon className="w-[30px] h-[30px] text-cyan-601" />
                 </button>
             )}
@@ -605,14 +616,14 @@ const SkillProfileStep2: React.FC<SkillProfileStep2Props> = ({ handleNext, handl
                     onClick={handleBack}
                     disabled={workHistorySaving}
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px] disabled:opacity-50"
                     onClick={handleSaveAndNext}
                     disabled={workHistorySaving || workHistoryLoading}
                 >
-                    {workHistorySaving ? 'Saving...' : 'Next'}
+                    {workHistorySaving ? m['boost.saving']() : m['common.next']()}
                 </button>
             </div>
         </div>

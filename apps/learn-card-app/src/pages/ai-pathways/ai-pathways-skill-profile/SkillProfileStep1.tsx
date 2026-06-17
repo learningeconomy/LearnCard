@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { m } from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -173,17 +174,19 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
         <div className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[10px]">
                 <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                    Grow your skills and explore opportunities
+                    {m['skillProfile.step1.title']()}
                 </h3>
                 <p className="text-[16px] text-grayscale-700 font-poppins leading-[130%]">
-                    Your profile is used to create personalized opportunities.{' '}
-                    <strong className="font-bold">All your answers are confidential.</strong>
+                    <TransP
+                        m={m['skillProfile.step1.subtitle']}
+                        components={[<strong className="font-bold" />]}
+                    />
                 </p>
             </div>
 
             <div className="flex flex-col gap-[10px]">
                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                    Goals
+                    {m['skillProfile.step1.goals']()}
                 </span>
 
                 <TextInput
@@ -227,7 +230,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
 
             <div className="flex flex-col gap-[10px]">
                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                    Professional title
+                    {m['skillProfile.step1.professionalTitle']()}
                 </span>
 
                 <TextInput
@@ -239,7 +242,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
 
             <div className="flex flex-col gap-[10px]">
                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                    Lifetime experience in this role
+                    {m['skillProfile.step1.lifetimeExperience']()}
                 </span>
 
                 <div className="flex gap-[10px]">
@@ -247,7 +250,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                         value={years}
                         onChange={value => setYears(value as number | null)}
                         options={YEARS_OPTIONS}
-                        placeholder="years"
+                        placeholder={m['skillProfile.step1.years']()}
                         allowDeselect
                         className="flex-1"
                     />
@@ -255,7 +258,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                         value={months}
                         onChange={value => setMonths(value as number | null)}
                         options={MONTHS_OPTIONS}
-                        placeholder="months"
+                        placeholder={m['skillProfile.step1.months']()}
                         allowDeselect
                         className="flex-1"
                     />
@@ -267,7 +270,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                 onClick={handleSaveAndNext}
                 disabled={isSaving || isLoading}
             >
-                {isSaving ? 'Saving...' : 'Next'}
+                {isSaving ? m['boost.saving']() : m['common.next']()}
             </button>
         </div>
     );

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { m } from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
@@ -41,16 +42,20 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 <div className="flex flex-col gap-[5px]">
                     <div className="flex items-center gap-[10px] text-grayscale-900">
                         <SkillsIconWithShape className="w-[50px] h-[50px]" />
-                        <h5 className="text-[20px] font-poppins font-[600]">Grow Skills</h5>
+                        <h5 className="text-[20px] font-poppins font-[600]">
+                            {m['growSkills.title']()}
+                        </h5>
                     </div>
                     <p className="text-[14px] font-poppins text-grayscale-700">
-                        Explore <strong>courses</strong>, <strong>AI learning sessions</strong>, and{' '}
-                        <strong>media</strong> to strengthen & diversify your skills
+                        <TransP
+                            m={m['growSkills.description']}
+                            components={[<strong />, <strong />, <strong />]}
+                        />
                     </p>
                 </div>
 
                 <GrowSkillsCarouselSection
-                    title="AI Learning Sessions"
+                    title={m['aiPathways.aiLearningSessions']()}
                     items={learningPathwaysData || []}
                     onViewAll={() => openGrowSkillsModal('AI Sessions')}
                     renderItem={item => <GrowSkillsAiSessionItem data={item} />}

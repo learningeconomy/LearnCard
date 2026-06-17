@@ -114,14 +114,14 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsIconWithShape className="w-[50px] h-[50px]" />
                     <h5 className="text-[21px] font-poppins font-[600] leading-[24px] flex flex-col gap-[5px]">
-                        Grow your skills
+                        {m['growSkills.modalTitle']()}
                         <div className="text-[14px] font-poppins font-[600] text-grayscale-600 flex items-center gap-[5px]">
                             {conditionalPluralize(sasBoostSkills?.length || 0, 'Skill')}
                             <button
                                 onClick={openSelfAssignSkillsModal}
                                 className="text-indigo-500 bg-indigo-50 px-[5px] rounded-[5px]"
                             >
-                                Edit
+                                {m['growSkills.edit']()}
                             </button>
 
                             <span>•</span>
@@ -131,7 +131,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                                 onClick={openEditGoalsModal}
                                 className="text-indigo-500 bg-indigo-50 px-[5px] rounded-[5px]"
                             >
-                                Edit
+                                {m['growSkills.edit']()}
                             </button>
                         </div>
                     </h5>
@@ -184,7 +184,11 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                     })}
                 </div>
 
-                <SearchInput placeholder={m['aiPathways.filterResults']()} value={filter} onChange={setFilter} />
+                <SearchInput
+                    placeholder={m['aiPathways.filterResults']()}
+                    value={filter}
+                    onChange={setFilter}
+                />
 
                 {isLoading && visibleCards.length === 0 ? (
                     <div className="flex items-center justify-center py-[40px]">
@@ -241,7 +245,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
                     </div>
                 ) : (
                     <div className="w-full rounded-[20px] border border-grayscale-200 bg-white p-4 text-sm text-grayscale-600 font-poppins">
-                        No results found. Try a broader search term.
+                        {m['growSkills.noResults']()}
                     </div>
                 )}
             </section>

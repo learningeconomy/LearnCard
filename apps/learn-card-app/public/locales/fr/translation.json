@@ -1558,6 +1558,15 @@
         "menu": {
             "manageIssuances": "Gérer les émissions",
             "viewData": "Voir les données"
+        },
+        "shortBoost": {
+            "selectRecipient": "Sélectionner le destinataire",
+            "selectRecipients": "Sélectionner les destinataires",
+            "myself": "Moi-même",
+            "others": "Autres",
+            "generateLink": "Générer un lien",
+            "editDraft": "Modifier le brouillon",
+            "sendingBoost": "Envoi du Boost"
         }
     },
     "legal": {
@@ -1878,7 +1887,8 @@
         "monthYear": "Mois, Année",
         "previousCredential": "Certificat précédent",
         "nextCredential": "Certificat suivant",
-        "noSessionsYet": "Pas encore de sessions"
+        "noSessionsYet": "Pas encore de sessions",
+        "aiLearningSessions": "Sessions d'apprentissage par IA"
     },
     "aiSession": {
         "loadingTitle": "Chargement du titre",
@@ -1988,5 +1998,73 @@
         "myHub": {
             "noResultsFoundFor": "Aucun résultat trouvé pour <0>{{query}}</0>"
         }
+    },
+    "skillProfile": {
+        "header": "Mon profil de compétences",
+        "personalizeSubtitle": "Personnalisez vos parcours.",
+        "skip": "Passer",
+        "stepOf": "{{current}} sur {{total}}",
+        "percentOptimized": "{{percent}}% optimisé",
+        "editedOn": "Modifié le {{date}}",
+        "step1": {
+            "title": "Développez vos compétences et explorez des opportunités",
+            "subtitle": "Votre profil sert à créer des opportunités personnalisées. <0>Toutes vos réponses sont confidentielles.</0>",
+            "goals": "Objectifs",
+            "professionalTitle": "Titre professionnel",
+            "lifetimeExperience": "Expérience totale dans ce rôle",
+            "years": "ans",
+            "months": "mois"
+        },
+        "step2": {
+            "newWorkExperience": "Nouvelle expérience professionnelle",
+            "jobTitle": "Intitulé du poste",
+            "employer": "Employeur",
+            "jobLocation": "Lieu de travail",
+            "startDate": "Date de début",
+            "endDate": "Date de fin",
+            "present": "Présent",
+            "jobSummary": "Résumé du poste",
+            "nextCredential": "Justificatif suivant",
+            "previousCredential": "Justificatif précédent",
+            "toastMissingFields": "Champs obligatoires manquants",
+            "toastExperienceAdded": "Expérience professionnelle ajoutée",
+            "toastFailed": "Échec de l'ajout de l'expérience",
+            "errorOccurred": "Une erreur s'est produite",
+            "recentExperienceQuestion": "Quelle est votre expérience professionnelle la plus récente ?",
+            "selectRecentExperience": "Sélectionnez votre expérience professionnelle la plus récente",
+            "loadingCredentials": "Chargement des justificatifs…",
+            "jobTitleQuestionPast": "Quel était votre intitulé de poste ?",
+            "jobTitleQuestionPresent": "Quel est votre intitulé de poste ?",
+            "summaryQuestionPast": "Que faisiez-vous ?",
+            "summaryQuestionPresent": "Que faites-vous ?",
+            "employerQuestionPast": "Pour qui travailliez-vous ?",
+            "employerQuestionPresent": "Pour qui travaillez-vous ?",
+            "locationQuestionPast": "Où se situait cet emploi ?",
+            "locationQuestionPresent": "Où se situe cet emploi ?",
+            "attachSkills": "Joindre des compétences",
+            "adding": "Ajout...",
+            "addExperience": "Ajouter une expérience"
+        },
+        "step3": {
+            "howMuchMoney": "Combien gagnez-vous ?",
+            "perYear": "Par an",
+            "perHour": "Par heure",
+            "hourlyRate": "Par heure",
+            "annualSalary": "Salaire annuel",
+            "description": "Cela nous aide à vous situer par rapport à d'autres personnes ayant le même poste et la même expérience."
+        },
+        "step5": {
+            "finish": "Terminer",
+            "manageSkills": "Gérez vos compétences actuelles",
+            "chooseSkills": "Choisissez vos compétences actuelles",
+            "toastErrorSaving": "Erreur lors de l'enregistrement des compétences !"
+        }
+    },
+    "growSkills": {
+        "title": "Développer les compétences",
+        "description": "Explorez des <0>cours</0>, des <1>sessions d'apprentissage par IA</1> et des <2>médias</2> pour renforcer et diversifier vos compétences",
+        "modalTitle": "Développez vos compétences",
+        "edit": "Modifier",
+        "noResults": "Aucun résultat trouvé. Essayez un terme de recherche plus large."
     }
 }
