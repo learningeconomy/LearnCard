@@ -386,7 +386,7 @@ const DashboardPage: React.FC = () => {
         hasSkillProfile,
         nextNodeTitle: goalSummary?.nextNode?.title,
         pathwaysEnabled,
-        showAiInsights,
+        showAiInsights: aiInsightsAllowed,
     };
 
     const actionHandlers: ActionHandlers = {

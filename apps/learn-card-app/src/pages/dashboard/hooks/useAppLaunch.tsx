@@ -1,7 +1,16 @@
 import React, { useMemo } from 'react';
-import { useModal, ModalTypes, useWallet } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useWallet,
+    useToast,
+    ToastTypeEnum,
+    getLogger,
+} from 'learn-card-base';
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
+
+const log = getLogger('dashboard');
 
 import AppStoreDetailModal from '../../launchPad/AppStoreDetailModal';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
@@ -33,6 +42,7 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
         mobile: ModalTypes.Right,
     });
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const launchConfig = useMemo(
         () => parseLaunchConfig(listing.launch_config_json),
@@ -52,7 +62,7 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
         );
     };
 
-    const launch = async () => {
+    const runLaunch = async () => {
         if (!isInstalled) {
             openDetail();
             return;
@@ -152,6 +162,18 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
         }
 
         openDetail();
+    };
+
+    const launch = async () => {
+        try {
+            await runLaunch();
+        } catch (err) {
+            log.error('App launch failed', err);
+            presentToast('Couldn\u2019t open this app. Please try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
     };
 
     return { launch };

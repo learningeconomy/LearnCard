@@ -18,7 +18,7 @@
  * Used by:
  *   - `Routes.tsx` for the `/` post-login redirect target and to mount
  *     the `/dashboard` route.
- *   - `SideMenuSecondaryLinks.tsx` to render the "Dashboard" entry first.
+ *   - `SideMenuRootLinks.tsx` to render the "Dashboard" entry first.
  *
  * Centralizing the gate here means the landing route and the nav link
  * can't drift — flag-off users land on `/wallet` and never see a
