@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wand2, RotateCcw } from 'lucide-react';
+import { Wand2, Send } from 'lucide-react';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
@@ -42,8 +42,8 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
                 }
                 className="flex items-center gap-1.5 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >
-                <RotateCcw className="w-4 h-4" />
-                Reuse one you've made
+                <Send className="w-4 h-4" />
+                Send one you've made
             </button>
         </div>
     );

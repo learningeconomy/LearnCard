@@ -134,31 +134,16 @@ export interface IssueViaBoostResult {
     claimLink?: string;
 }
 
-export const issueViaBoost = async (
+const deliverBoost = async (
     wallet: BespokeLearnCard,
-    template: OBv3CredentialTemplate,
-    options: IssueViaBoostOptions
+    boostUri: string,
+    options: IssueViaBoostOptions,
+    signedCredential?: Record<string, unknown>
 ): Promise<IssueViaBoostResult> => {
-    const issuerDid = wallet.id.did();
-    if (!issuerDid) throw new Error('No issuer DID available — is the wallet initialized?');
-
-    const structuralErrors = validateTemplate(template);
-    if (structuralErrors.length > 0) {
-        throw new Error(structuralErrors.map(e => `${e.field}: ${e.message}`).join('; '));
-    }
-
-    const unsigned = fillTemplateSystemVars(template, issuerDid);
-    const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
-        string,
-        unknown
-    >;
-
-    const boostUri = await wallet.invoke.createBoost(signedCredential);
-
     let claimLink: string | undefined;
 
     if (options.mode === 'self') {
-        const ownProfileIdOrDid = options.currentLCNUser?.profileId || issuerDid;
+        const ownProfileIdOrDid = options.currentLCNUser?.profileId || wallet.id.did();
         const response = await wallet.invoke.send({
             type: 'boost',
             recipient: ownProfileIdOrDid,
@@ -168,7 +153,12 @@ export const issueViaBoost = async (
         if (response.uri) {
             await wallet.invoke.acceptCredential(response.uri);
             if (wallet.store?.LearnCloud?.uploadEncrypted) {
-                await wallet.store.LearnCloud.uploadEncrypted(signedCredential);
+                const credential =
+                    signedCredential ??
+                    ((await wallet.read.get(response.uri).catch(() => undefined)) as
+                        | Record<string, unknown>
+                        | undefined);
+                if (credential) await wallet.store.LearnCloud.uploadEncrypted(credential);
             }
         }
     } else if (options.mode === 'people') {
@@ -190,31 +180,61 @@ export const issueViaBoost = async (
 
         let ttlSeconds: number | undefined;
         if (options.linkOptions.expiresAt) {
-            const expiration = new Date(options.linkOptions.expiresAt).getTime();
-            const now = Date.now();
-            ttlSeconds = Math.floor((expiration - now) / 1000);
+            ttlSeconds = Math.floor(
+                (new Date(options.linkOptions.expiresAt).getTime() - Date.now()) / 1000
+            );
         }
 
         const claimLinkResponse = await wallet.invoke.generateClaimLink(
             boostUri,
             { name: options.claimLinkSA.name, endpoint: options.claimLinkSA.endpoint },
-            {
-                ttlSeconds,
-                totalUses: options.linkOptions.maxClaims,
-            }
+            { ttlSeconds, totalUses: options.linkOptions.maxClaims }
         );
 
-        const data = {
-            boostUri: claimLinkResponse.boostUri,
-            challenge: claimLinkResponse.challenge,
-        };
         claimLink = `${getAppBaseUrl()}/interactions/claim/${base64url.encode(
-            JSON.stringify(data)
+            JSON.stringify({
+                boostUri: claimLinkResponse.boostUri,
+                challenge: claimLinkResponse.challenge,
+            })
         )}?iuv=1`;
     }
 
-    return {
-        credentialUri: boostUri,
-        claimLink,
-    };
+    return { credentialUri: boostUri, claimLink };
+};
+
+export const issueViaBoost = async (
+    wallet: BespokeLearnCard,
+    template: OBv3CredentialTemplate,
+    options: IssueViaBoostOptions
+): Promise<IssueViaBoostResult> => {
+    const issuerDid = wallet.id.did();
+    if (!issuerDid) throw new Error('No issuer DID available — is the wallet initialized?');
+
+    const structuralErrors = validateTemplate(template);
+    if (structuralErrors.length > 0) {
+        throw new Error(structuralErrors.map(e => `${e.field}: ${e.message}`).join('; '));
+    }
+
+    const unsigned = fillTemplateSystemVars(template, issuerDid);
+    const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
+        string,
+        unknown
+    >;
+
+    const boostUri = await wallet.invoke.createBoost(signedCredential);
+
+    return deliverBoost(wallet, boostUri, options, signedCredential);
+};
+
+/**
+ * Send an existing boost (one the user already administers) to recipients
+ * without re-creating it — `send` accepts the existing boost URI as templateUri.
+ */
+export const sendExistingBoost = async (
+    wallet: BespokeLearnCard,
+    boostUri: string,
+    options: IssueViaBoostOptions
+): Promise<IssueViaBoostResult> => {
+    if (!wallet.id.did()) throw new Error('No issuer DID available — is the wallet initialized?');
+    return deliverBoost(wallet, boostUri, options);
 };

@@ -44,6 +44,8 @@ interface RecipientPickerProps {
     onRecipientsChange: (recipients: Recipient[]) => void;
     linkOptions: LinkOptions;
     onLinkOptionsChange: (options: LinkOptions) => void;
+    hideHeader?: boolean;
+    inlineResults?: boolean;
 }
 
 export const RecipientPicker: React.FC<RecipientPickerProps> = ({
@@ -53,6 +55,8 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     onRecipientsChange,
     linkOptions,
     onLinkOptionsChange,
+    hideHeader = false,
+    inlineResults = false,
 }) => {
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -93,6 +97,12 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     const showDropdown =
         isFocused && (query.length > 0 || (connectionsData && connectionsData.length > 0));
 
+    // Inline mode renders results in the modal flow (single scroll, no floating
+    // tooltip), so it isn't gated on focus the way the absolute dropdown is.
+    const showResults = inlineResults
+        ? query.length > 0 || (connectionsData?.length ?? 0) > 0
+        : showDropdown;
+
     const dropdownResults = useMemo(() => {
         if (debouncedQuery.length > 0) {
             return searchResults || [];
@@ -102,12 +112,83 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
 
     const isValidEmail = isEmail(query);
 
+    const resultsContent = isSearching ? (
+        <div className="flex items-center justify-center p-4 text-grayscale-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
+    ) : (
+        <>
+            {dropdownResults.map(profile => (
+                <button
+                    key={profile.profileId}
+                    type="button"
+                    onClick={() =>
+                        handleAddRecipient({
+                            kind: 'profile',
+                            profileId: profile.profileId,
+                            displayName: profile.displayName || profile.profileId,
+                            image: profile.image,
+                            did: profile.did,
+                        })
+                    }
+                    className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
+                >
+                    <Avatar
+                        image={profile.image}
+                        name={profile.displayName || profile.profileId}
+                        sizeClass="w-8 h-8"
+                        fallbackClass="bg-grayscale-200 text-grayscale-600"
+                    />
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium text-grayscale-900 truncate">
+                            {profile.displayName || profile.profileId}
+                        </span>
+                        {profile.profileId && profile.profileId !== profile.displayName && (
+                            <span className="text-xs text-grayscale-500 truncate">
+                                @{profile.profileId}
+                            </span>
+                        )}
+                    </div>
+                </button>
+            ))}
+            {isValidEmail &&
+                !dropdownResults.some(p => p.profileId === query || p.displayName === query) && (
+                    <button
+                        type="button"
+                        onClick={() => handleAddRecipient({ kind: 'email', email: query })}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                            <Mail className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-grayscale-900 truncate">
+                                Send to {query}
+                            </span>
+                            <span className="text-xs text-grayscale-500 truncate">
+                                They'll get an email to claim it
+                            </span>
+                        </div>
+                    </button>
+                )}
+            {dropdownResults.length === 0 && !isValidEmail && debouncedQuery.length > 0 && (
+                <div className="p-4 text-center text-sm text-grayscale-500">
+                    No results found. Enter a valid email to send an invite.
+                </div>
+            )}
+        </>
+    );
+
     return (
         <div className="space-y-4">
-            <h3 className="text-base font-semibold text-grayscale-900">Who is this for?</h3>
-            <p className="text-sm text-grayscale-600 leading-relaxed -mt-2">
-                This shapes the preview and how it’s delivered.
-            </p>
+            {!hideHeader && (
+                <>
+                    <h3 className="text-base font-semibold text-grayscale-900">Who is this for?</h3>
+                    <p className="text-sm text-grayscale-600 leading-relaxed -mt-2">
+                        This shapes the preview and how it’s delivered.
+                    </p>
+                </>
+            )}
             <div className="flex gap-2 bg-grayscale-100 p-1 rounded-full">
                 <button
                     type="button"
@@ -190,6 +271,9 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                             placeholder="Search by name, @username, or email"
+                            spellCheck={false}
+                            autoCapitalize="none"
+                            autoCorrect="off"
                             className={`w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white`}
                         />
                         {query && (
@@ -203,92 +287,18 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             </button>
                         )}
 
-                        {showDropdown && (
+                        {!inlineResults && showResults && (
                             <div className="absolute z-20 w-full mt-1 bg-white border border-grayscale-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                {isSearching ? (
-                                    <div className="flex items-center justify-center p-4 text-grayscale-500">
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    </div>
-                                ) : (
-                                    <>
-                                        {dropdownResults.map(profile => (
-                                            <button
-                                                key={profile.profileId}
-                                                type="button"
-                                                onClick={() =>
-                                                    handleAddRecipient({
-                                                        kind: 'profile',
-                                                        profileId: profile.profileId,
-                                                        displayName:
-                                                            profile.displayName ||
-                                                            profile.profileId,
-                                                        image: profile.image,
-                                                        did: profile.did,
-                                                    })
-                                                }
-                                                className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
-                                            >
-                                                <Avatar
-                                                    image={profile.image}
-                                                    name={profile.displayName || profile.profileId}
-                                                    sizeClass="w-8 h-8"
-                                                    fallbackClass="bg-grayscale-200 text-grayscale-600"
-                                                />
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="text-sm font-medium text-grayscale-900 truncate">
-                                                        {profile.displayName || profile.profileId}
-                                                    </span>
-                                                    {profile.profileId &&
-                                                        profile.profileId !==
-                                                            profile.displayName && (
-                                                            <span className="text-xs text-grayscale-500 truncate">
-                                                                @{profile.profileId}
-                                                            </span>
-                                                        )}
-                                                </div>
-                                            </button>
-                                        ))}
-                                        {isValidEmail &&
-                                            !dropdownResults.some(
-                                                p =>
-                                                    p.profileId === query || p.displayName === query
-                                            ) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        handleAddRecipient({
-                                                            kind: 'email',
-                                                            email: query,
-                                                        })
-                                                    }
-                                                    className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
-                                                >
-                                                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-                                                        <Mail className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-sm font-medium text-grayscale-900 truncate">
-                                                            Send to {query}
-                                                        </span>
-                                                        <span className="text-xs text-grayscale-500 truncate">
-                                                            They'll get an email to claim it
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            )}
-                                        {dropdownResults.length === 0 &&
-                                            !isValidEmail &&
-                                            debouncedQuery.length > 0 && (
-                                                <div className="p-4 text-center text-sm text-grayscale-500">
-                                                    No results found. Enter a valid email to send an
-                                                    invite.
-                                                </div>
-                                            )}
-                                    </>
-                                )}
+                                {resultsContent}
                             </div>
                         )}
                     </div>
+
+                    {inlineResults && showResults && (
+                        <div className="w-full bg-white border border-grayscale-200 rounded-xl overflow-hidden">
+                            {resultsContent}
+                        </div>
+                    )}
                 </div>
             )}
 
