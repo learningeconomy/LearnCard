@@ -2249,5 +2249,137 @@
             "title": "Mis <0>géneros de películas</0> favoritos son",
             "placeholder": "Añadir género de película"
         }
+    },
+    "endorsement": {
+        "optional": "Opcional",
+        "button": {
+            "request": "Solicitar aval"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "Solicitud de aval",
+                "reviewTitle": "Revisar aval",
+                "requestText": "<0>{{name}}</0> te ha solicitado un aval para <1>{{title}}</1>",
+                "endorsingText": "Estás avalando a <0>{{name}}</0> por <1>{{title}}</1>",
+                "reviewText": "<0>{{name}}</0> ha escrito un aval para <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "Rechazar",
+                "sending": "Enviando...",
+                "endorse": "Avalar"
+            },
+            "qualifications": {
+                "title": "Comparte tus cualificaciones que respaldan este aval.",
+                "placeholder": "Mis cualificaciones incluyen..."
+            },
+            "relationship": {
+                "label": "Relación",
+                "prompt": "¿Cómo conoces a {{name}}?",
+                "selectTitle": "Seleccionar relación",
+                "otherPlaceholder": "Otro...",
+                "friend": "Amigo",
+                "professionalColleague": "Compañero profesional",
+                "volunteeredTogether": "Voluntariado juntos",
+                "college": "Compañero de estudios",
+                "other": "Otro"
+            },
+            "text": {
+                "prompt": "Escribe un mensaje breve para respaldar o confirmar <0>{{title}}</0>",
+                "placeholder": "Escribe un aval..."
+            }
+        },
+        "media": {
+            "photo": "Foto",
+            "document": "Documento",
+            "video": "Video",
+            "link": "Enlace",
+            "viewDocument": "Ver documento",
+            "visitLink": "Visitar enlace",
+            "selectType": "Seleccionar tipo de medio",
+            "uploaded": "{{count}}% cargado",
+            "addSupporting": "Añadir material de apoyo",
+            "addAny": "Añade cualquier <0>enlace, imagen, video</0> o <1>documento</1> que respalde tu aval.",
+            "attachmentTitle": "Adjunto de {{type}}",
+            "titlePlaceholder": "Título",
+            "pasteLink": "Pega el enlace...",
+            "uploading": "Subiendo...",
+            "upload": "Subir",
+            "change": "Cambiar {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "Solicitud de aval",
+                "text": "Envía una solicitud a alguien que pueda dar fe de tu {{categoryType}}, <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "¿Cómo quieres enviarlo?",
+                "copyLink": "Copiar enlace",
+                "generating": "Generando...",
+                "getCode": "Obtener código",
+                "whatToSay": "¿Qué te gustaría decir?",
+                "messagePlaceholder": "Mensaje...",
+                "emailPlaceholder": "Correo",
+                "sendEmail": "Enviar solicitud por correo",
+                "sending": "Enviando..."
+            },
+            "success": {
+                "title": "¡Solicitud enviada!",
+                "bodyPre": "Te avisaremos cuando el",
+                "bodyPost": "aval esté listo."
+            },
+            "draft": {
+                "sendingPre": "Enviando",
+                "sendingPost": "aval...",
+                "sentPre": "¡Gracias!",
+                "sentPost": "¡Aval enviado!",
+                "approvedPre": "¡Gracias!",
+                "approvedPost": "¡Aval aprobado!",
+                "waitingReview": "Esperando revisión de {{name}}",
+                "approvedBy": "Aprobado por {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "Ver aval"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "Avalar"
+            },
+            "success": {
+                "thanksPre": "¡Gracias!",
+                "thanksPost": "Tu aval se ha guardado temporalmente.",
+                "signInBodyPre": "Inicia sesión para enviar tu",
+                "signInBodyPost": "aval.",
+                "signInButton": "Inicia sesión para enviar"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> te ha solicitado una recomendación para <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "Avales"
+        },
+        "fullview": {
+            "endorsement": "Aval",
+            "qualifications": "Cualificaciones",
+            "supportingMedia": "Material de apoyo",
+            "showEndorsement": "¿Mostrar aval?",
+            "active": "Activo",
+            "hidden": "Oculto",
+            "notPublicWaiting": "No público • Esperando revisión",
+            "endorsedOn": "Avalado el {{date}}",
+            "deletedOn": "Eliminado el {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "Aprobar",
+            "approving": "Aprobando...",
+            "approved": "Aprobado"
+        },
+        "delete": {
+            "title": "¿Eliminar aval?",
+            "confirm": "Sí, eliminar"
+        },
+        "viewRequest": {
+            "ok": "Aceptar",
+            "errorFetching": "Error al obtener la credencial: {{error}}"
+        }
     }
 }

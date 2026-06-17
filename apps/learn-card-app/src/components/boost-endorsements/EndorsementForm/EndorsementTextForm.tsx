@@ -5,6 +5,8 @@ import { IonTextarea } from '@ionic/react';
 import { VC } from '@learncard/types';
 import { EndorsementState } from './endorsement-state.helpers';
 import { CredentialCategoryEnum, useGetVCInfo } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 export const EndorsementTextForm: React.FC<{
     credential: VC;
@@ -34,14 +36,17 @@ export const EndorsementTextForm: React.FC<{
     return (
         <div className="w-full flex flex-col items-start justify-start py-4 px-4 cursor-pointer bg-white rounded-[20px] mt-4 shadow-bottom-2-4">
             <p className="text-[17px] text-grayscale-900 text-left mb-2">
-                Write a brief message to support or confirm{' '}
-                <span className="font-semibold">{title}</span>
+                <TransP
+                    m={m['endorsement.form.text.prompt']}
+                    values={{ title }}
+                    components={[<span className="font-semibold" />]}
+                />
             </p>
             <IonTextarea
                 autocapitalize="on"
                 value={endorsement?.description}
                 onIonInput={e => handleStateChange('description', e.detail.value)}
-                placeholder="Write endorsement..."
+                placeholder={m['endorsement.form.text.placeholder']()}
                 className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mb-1
                     ${errors?.description ? 'border-red-300 border-2' : ''}
                 `}

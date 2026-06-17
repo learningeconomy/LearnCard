@@ -2249,5 +2249,137 @@
             "title": "Mes <0>genres de films</0> préférés sont",
             "placeholder": "Ajouter un genre de film"
         }
+    },
+    "endorsement": {
+        "optional": "Facultatif",
+        "button": {
+            "request": "Demander une recommandation"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "Demande de recommandation",
+                "reviewTitle": "Examiner la recommandation",
+                "requestText": "<0>{{name}}</0> vous a demandé une recommandation pour <1>{{title}}</1>",
+                "endorsingText": "Vous recommandez <0>{{name}}</0> pour <1>{{title}}</1>",
+                "reviewText": "<0>{{name}}</0> a rédigé une recommandation pour <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "Refuser",
+                "sending": "Envoi...",
+                "endorse": "Recommander"
+            },
+            "qualifications": {
+                "title": "Partagez vos qualifications qui appuient cette recommandation.",
+                "placeholder": "Mes qualifications incluent..."
+            },
+            "relationship": {
+                "label": "Relation",
+                "prompt": "Comment connaissez-vous {{name}} ?",
+                "selectTitle": "Sélectionner une relation",
+                "otherPlaceholder": "Autre...",
+                "friend": "Ami",
+                "professionalColleague": "Collègue professionnel",
+                "volunteeredTogether": "Bénévolat ensemble",
+                "college": "Camarade d'études",
+                "other": "Autre"
+            },
+            "text": {
+                "prompt": "Rédigez un bref message pour appuyer ou confirmer <0>{{title}}</0>",
+                "placeholder": "Rédiger une recommandation..."
+            }
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Vidéo",
+            "link": "Lien",
+            "viewDocument": "Voir le document",
+            "visitLink": "Ouvrir le lien",
+            "selectType": "Sélectionner le type de média",
+            "uploaded": "{{count}}% téléversé",
+            "addSupporting": "Ajouter un média à l'appui",
+            "addAny": "Ajoutez tout <0>lien, image, vidéo</0> ou <1>document</1> qui appuie votre recommandation.",
+            "attachmentTitle": "Pièce jointe : {{type}}",
+            "titlePlaceholder": "Titre",
+            "pasteLink": "Collez le lien...",
+            "uploading": "Téléversement...",
+            "upload": "Téléverser",
+            "change": "Changer le {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "Demande de recommandation",
+                "text": "Envoyez une demande à quelqu'un qui peut se porter garant de votre {{categoryType}}, <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "Comment souhaitez-vous l'envoyer ?",
+                "copyLink": "Copier le lien",
+                "generating": "Génération...",
+                "getCode": "Obtenir le code",
+                "whatToSay": "Que souhaitez-vous dire ?",
+                "messagePlaceholder": "Message...",
+                "emailPlaceholder": "E-mail",
+                "sendEmail": "Envoyer la demande par e-mail",
+                "sending": "Envoi..."
+            },
+            "success": {
+                "title": "Demande envoyée !",
+                "bodyPre": "Vous serez averti lorsque la",
+                "bodyPost": "recommandation sera prête."
+            },
+            "draft": {
+                "sendingPre": "Envoi de la",
+                "sendingPost": "recommandation...",
+                "sentPre": "Merci !",
+                "sentPost": "Recommandation envoyée !",
+                "approvedPre": "Merci !",
+                "approvedPost": "Recommandation approuvée !",
+                "waitingReview": "En attente d'examen par {{name}}",
+                "approvedBy": "Approuvé par {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "Voir la recommandation"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "Recommander"
+            },
+            "success": {
+                "thanksPre": "Merci !",
+                "thanksPost": "Votre recommandation est enregistrée temporairement.",
+                "signInBodyPre": "Connectez-vous pour envoyer votre",
+                "signInBodyPost": "recommandation.",
+                "signInButton": "Se connecter pour envoyer"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> vous a demandé une recommandation pour <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "Recommandations"
+        },
+        "fullview": {
+            "endorsement": "Recommandation",
+            "qualifications": "Qualifications",
+            "supportingMedia": "Médias à l'appui",
+            "showEndorsement": "Afficher la recommandation ?",
+            "active": "Actif",
+            "hidden": "Masqué",
+            "notPublicWaiting": "Non public • En attente d'examen",
+            "endorsedOn": "Recommandé le {{date}}",
+            "deletedOn": "Supprimé le {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "Approuver",
+            "approving": "Approbation...",
+            "approved": "Approuvé"
+        },
+        "delete": {
+            "title": "Supprimer la recommandation ?",
+            "confirm": "Oui, supprimer"
+        },
+        "viewRequest": {
+            "ok": "OK",
+            "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
+        }
     }
 }

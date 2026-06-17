@@ -2249,5 +2249,137 @@
             "title": "<0>أنواع الأفلام</0> المفضلة لدي هي",
             "placeholder": "أضف نوع فيلم"
         }
+    },
+    "endorsement": {
+        "optional": "اختياري",
+        "button": {
+            "request": "طلب توصية"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "طلب توصية",
+                "reviewTitle": "مراجعة التوصية",
+                "requestText": "<0>{{name}}</0> طلب منك توصية لـ <1>{{title}}</1>",
+                "endorsingText": "أنت توصي بـ <0>{{name}}</0> من أجل <1>{{title}}</1>",
+                "reviewText": "كتب <0>{{name}}</0> توصية لـ <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "رفض",
+                "sending": "جارٍ الإرسال...",
+                "endorse": "توصية"
+            },
+            "qualifications": {
+                "title": "شارك مؤهلاتك التي تدعم هذه التوصية.",
+                "placeholder": "تشمل مؤهلاتي..."
+            },
+            "relationship": {
+                "label": "العلاقة",
+                "prompt": "كيف تعرف {{name}}؟",
+                "selectTitle": "اختر العلاقة",
+                "otherPlaceholder": "أخرى...",
+                "friend": "صديق",
+                "professionalColleague": "زميل مهني",
+                "volunteeredTogether": "تطوعنا معًا",
+                "college": "زميل دراسة",
+                "other": "أخرى"
+            },
+            "text": {
+                "prompt": "اكتب رسالة قصيرة لدعم أو تأكيد <0>{{title}}</0>",
+                "placeholder": "اكتب توصية..."
+            }
+        },
+        "media": {
+            "photo": "صورة",
+            "document": "مستند",
+            "video": "فيديو",
+            "link": "رابط",
+            "viewDocument": "عرض المستند",
+            "visitLink": "زيارة الرابط",
+            "selectType": "اختر نوع الوسائط",
+            "uploaded": "تم رفع {{count}}%",
+            "addSupporting": "إضافة وسائط داعمة",
+            "addAny": "أضف أي <0>روابط أو صور أو مقاطع فيديو</0> أو <1>مستندات</1> تدعم توصيتك.",
+            "attachmentTitle": "مرفق {{type}}",
+            "titlePlaceholder": "العنوان",
+            "pasteLink": "الصق الرابط...",
+            "uploading": "جارٍ الرفع...",
+            "upload": "رفع",
+            "change": "تغيير {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "طلب توصية",
+                "text": "أرسل طلبًا إلى شخص يمكنه الإشهاد بـ {{categoryType}} الخاص بك، <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "كيف تريد إرسالها؟",
+                "copyLink": "نسخ الرابط",
+                "generating": "جارٍ الإنشاء...",
+                "getCode": "الحصول على الرمز",
+                "whatToSay": "ماذا تريد أن تقول؟",
+                "messagePlaceholder": "رسالة...",
+                "emailPlaceholder": "البريد الإلكتروني",
+                "sendEmail": "إرسال الطلب عبر البريد",
+                "sending": "جارٍ الإرسال..."
+            },
+            "success": {
+                "title": "تم إرسال الطلب!",
+                "bodyPre": "سيتم إخطارك عندما تصبح",
+                "bodyPost": "التوصية جاهزة."
+            },
+            "draft": {
+                "sendingPre": "جارٍ إرسال",
+                "sendingPost": "التوصية...",
+                "sentPre": "شكرًا!",
+                "sentPost": "تم إرسال التوصية!",
+                "approvedPre": "شكرًا!",
+                "approvedPost": "تمت الموافقة على التوصية!",
+                "waitingReview": "في انتظار المراجعة من {{name}}",
+                "approvedBy": "تمت الموافقة بواسطة {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "عرض التوصية"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "توصية"
+            },
+            "success": {
+                "thanksPre": "شكرًا!",
+                "thanksPost": "تم حفظ توصيتك مؤقتًا.",
+                "signInBodyPre": "سجّل الدخول لإرسال",
+                "signInBodyPost": "توصيتك.",
+                "signInButton": "سجّل الدخول للإرسال"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> طلب منك توصية لـ <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "التوصيات"
+        },
+        "fullview": {
+            "endorsement": "التوصية",
+            "qualifications": "المؤهلات",
+            "supportingMedia": "الوسائط الداعمة",
+            "showEndorsement": "إظهار التوصية؟",
+            "active": "نشط",
+            "hidden": "مخفي",
+            "notPublicWaiting": "غير عام • في انتظار المراجعة",
+            "endorsedOn": "تمت التوصية في {{date}}",
+            "deletedOn": "حُذف في {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "موافقة",
+            "approving": "جارٍ الموافقة...",
+            "approved": "تمت الموافقة"
+        },
+        "delete": {
+            "title": "حذف التوصية؟",
+            "confirm": "نعم، حذف"
+        },
+        "viewRequest": {
+            "ok": "حسنًا",
+            "errorFetching": "خطأ في جلب الاعتماد: {{error}}"
+        }
     }
 }

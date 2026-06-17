@@ -2249,5 +2249,137 @@
             "title": "My favorite <0>movie genres</0> are",
             "placeholder": "Add movie genre"
         }
+    },
+    "endorsement": {
+        "optional": "Optional",
+        "button": {
+            "request": "Request Endorsement"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "Endorsement Request",
+                "reviewTitle": "Review Endorsement",
+                "requestText": "<0>{{name}}</0> has requested an endorsement from you for <1>{{title}}</1>",
+                "endorsingText": "You’re endorsing <0>{{name}}</0> for <1>{{title}}</1>",
+                "reviewText": "<0>{{name}}</0> has written an endorsement for <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "Decline",
+                "sending": "Sending...",
+                "endorse": "Endorse"
+            },
+            "qualifications": {
+                "title": "Share your qualifications that support this endorsement.",
+                "placeholder": "My qualifications include..."
+            },
+            "relationship": {
+                "label": "Relationship",
+                "prompt": "How do you know {{name}}?",
+                "selectTitle": "Select Relationship",
+                "otherPlaceholder": "Other...",
+                "friend": "Friend",
+                "professionalColleague": "Professional Colleague",
+                "volunteeredTogether": "Volunteered Together",
+                "college": "College",
+                "other": "Other"
+            },
+            "text": {
+                "prompt": "Write a brief message to support or confirm <0>{{title}}</0>",
+                "placeholder": "Write endorsement..."
+            }
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Video",
+            "link": "Link",
+            "viewDocument": "View Document",
+            "visitLink": "Visit Link",
+            "selectType": "Select Media Type",
+            "uploaded": "{{count}}% uploaded",
+            "addSupporting": "Add Supporting Media",
+            "addAny": "Add any <0>links, images, videos,</0> or <1>documents</1> that support your endorsement.",
+            "attachmentTitle": "{{type}} Attachment",
+            "titlePlaceholder": "Title",
+            "pasteLink": "Paste link...",
+            "uploading": "Uploading...",
+            "upload": "Upload",
+            "change": "Change {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "Endorsement Request",
+                "text": "Send a request to someone who can vouch for your {{categoryType}}, <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "How do you want to send it?",
+                "copyLink": "Copy Link",
+                "generating": "Generating...",
+                "getCode": "Get Code",
+                "whatToSay": "What would you like to say?",
+                "messagePlaceholder": "Message...",
+                "emailPlaceholder": "Email",
+                "sendEmail": "Send Email Request",
+                "sending": "Sending..."
+            },
+            "success": {
+                "title": "Request Sent!",
+                "bodyPre": "You’ll be notified when the",
+                "bodyPost": "endorsement is ready."
+            },
+            "draft": {
+                "sendingPre": "Sending",
+                "sendingPost": "Endorsement...",
+                "sentPre": "Thanks!",
+                "sentPost": "Endorsement Sent!",
+                "approvedPre": "Thanks!",
+                "approvedPost": "Endorsement Approved!",
+                "waitingReview": "Waiting for review by {{name}}",
+                "approvedBy": "Approved by {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "View Endorsement"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "Endorse"
+            },
+            "success": {
+                "thanksPre": "Thanks!",
+                "thanksPost": "Your endorsement is temporarily saved.",
+                "signInBodyPre": "Sign in to send your",
+                "signInBodyPost": "endorsement.",
+                "signInButton": "Sign in to send"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> has requested your endorsement for <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "Endorsements"
+        },
+        "fullview": {
+            "endorsement": "Endorsement",
+            "qualifications": "Qualifications",
+            "supportingMedia": "Supporting Media",
+            "showEndorsement": "Show Endorsement?",
+            "active": "Active",
+            "hidden": "Hidden",
+            "notPublicWaiting": "Not public • Waiting for review",
+            "endorsedOn": "Endorsed on {{date}}",
+            "deletedOn": "Deleted on {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "Approve",
+            "approving": "Approving...",
+            "approved": "Approved"
+        },
+        "delete": {
+            "title": "Delete Endorsement?",
+            "confirm": "Yes, Delete"
+        },
+        "viewRequest": {
+            "ok": "OK",
+            "errorFetching": "Error fetching credential: {{error}}"
+        }
     }
 }
