@@ -2381,5 +2381,27 @@
             "ok": "OK",
             "errorFetching": "Error fetching credential: {{error}}"
         }
+    },
+    "verification": {
+        "title": "Credential Verifications",
+        "viewJson": "View json",
+        "hideJson": "Hide json",
+        "status": {
+            "success": "Success",
+            "failed": "Failed",
+            "error": "Error"
+        },
+        "checks": {
+            "proof": "Proof",
+            "revocation": "Status",
+            "expiration": "Expiration"
+        },
+        "messages": {
+            "valid": "Valid",
+            "notRevoked": "Not Revoked",
+            "doesNotExpire": "Does Not Expire",
+            "expired": "Invalid • Expired {{date}}",
+            "expires": "Valid • Expires {{date}}"
+        }
     }
 }

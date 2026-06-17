@@ -2381,5 +2381,27 @@
             "ok": "Aceptar",
             "errorFetching": "Error al obtener la credencial: {{error}}"
         }
+    },
+    "verification": {
+        "title": "Verificaciones de credenciales",
+        "viewJson": "Ver json",
+        "hideJson": "Ocultar json",
+        "status": {
+            "success": "Correcto",
+            "failed": "Fallido",
+            "error": "Error"
+        },
+        "checks": {
+            "proof": "Prueba",
+            "revocation": "Estado",
+            "expiration": "Vencimiento"
+        },
+        "messages": {
+            "valid": "Válido",
+            "notRevoked": "No revocado",
+            "doesNotExpire": "No expira",
+            "expired": "Inválido • Vencido {{date}}",
+            "expires": "Válido • Vence {{date}}"
+        }
     }
 }

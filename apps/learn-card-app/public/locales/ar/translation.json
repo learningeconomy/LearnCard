@@ -2381,5 +2381,27 @@
             "ok": "حسنًا",
             "errorFetching": "خطأ في جلب الاعتماد: {{error}}"
         }
+    },
+    "verification": {
+        "title": "التحقق من الاعتمادات",
+        "viewJson": "عرض json",
+        "hideJson": "إخفاء json",
+        "status": {
+            "success": "ناجح",
+            "failed": "فاشل",
+            "error": "خطأ"
+        },
+        "checks": {
+            "proof": "إثبات",
+            "revocation": "الحالة",
+            "expiration": "الانتهاء"
+        },
+        "messages": {
+            "valid": "صالح",
+            "notRevoked": "غير ملغى",
+            "doesNotExpire": "لا ينتهي",
+            "expired": "غير صالح • منتهٍ {{date}}",
+            "expires": "صالح • ينتهي {{date}}"
+        }
     }
 }

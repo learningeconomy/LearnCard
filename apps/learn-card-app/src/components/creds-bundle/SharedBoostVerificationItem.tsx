@@ -4,6 +4,7 @@ import X from '../svgs/X';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import ExclamationPoint from '../svgs/ExclamationPoint';
 import { VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 export const SharedBoostVerificationItem: React.FC<{
     verification: VerificationItem;
@@ -17,6 +18,57 @@ export const SharedBoostVerificationItem: React.FC<{
     if (verification.status === VerificationStatusEnum.Failed) {
         message = '';
     }
+
+    // --- i18n: resolve display strings at render time (never at module load).
+    // `boostHelpers.getBoostVerificationPreview` (editor preview) emits
+    // lowercase `check` values ('proof'/'expiration') and English `message`
+    // strings; the SDK `prettifyVerificationItems` path (runtime verification)
+    // emits humanized checks ('Proof'/'Expiration'/'Status') and messages.
+    // We normalize by lowercasing `check` and matching known message strings /
+    // date-prefixed patterns, falling back to the raw value when unrecognized.
+    const statusLabel =
+        verification.status === VerificationStatusEnum.Success
+            ? m['verification.status.success']()
+            : verification.status === VerificationStatusEnum.Failed
+            ? m['verification.status.failed']()
+            : verification.status === VerificationStatusEnum.Error
+            ? m['verification.status.error']()
+            : verification.status;
+
+    const checkLower = (check ?? '').toLowerCase();
+    const checkLabel =
+        checkLower === 'proof'
+            ? m['verification.checks.proof']()
+            : checkLower === 'revocation' ||
+              checkLower === 'status' ||
+              checkLower === 'credentialstatus'
+            ? m['verification.checks.revocation']()
+            : checkLower === 'expiration'
+            ? m['verification.checks.expiration']()
+            : check;
+
+    const resolveMessage = (raw: string | undefined): string | undefined => {
+        if (!raw) return raw;
+        if (raw === 'Valid') return m['verification.messages.valid']();
+        if (raw === 'Not Revoked') return m['verification.messages.notRevoked']();
+        if (raw === 'Does Not Expire') return m['verification.messages.doesNotExpire']();
+        // Editor-preview date messages: 'Invalid • Expired <date>' / 'Valid • Expires <date>'
+        if (raw.startsWith('Invalid • Expired '))
+            return m['verification.messages.expired']({
+                date: raw.slice('Invalid • Expired '.length),
+            });
+        if (raw.startsWith('Valid • Expires '))
+            return m['verification.messages.expires']({
+                date: raw.slice('Valid • Expires '.length),
+            });
+        // SDK runtime date messages: 'Expired <date>' / 'Expires <date>'
+        if (raw.startsWith('Expired '))
+            return m['verification.messages.expired']({ date: raw.slice('Expired '.length) });
+        if (raw.startsWith('Expires '))
+            return m['verification.messages.expires']({ date: raw.slice('Expires '.length) });
+        return raw;
+    };
+    const messageLabel = resolveMessage(message);
 
     const getIcon = () => {
         switch (verification.status) {
@@ -50,7 +102,7 @@ export const SharedBoostVerificationItem: React.FC<{
                 <p
                     className={`flex items-center justify-between text-sm font-bold mb-1 normal ${getTextColor}`}
                 >
-                    {getIcon()} {verification?.status}
+                    {getIcon()} {statusLabel}
                 </p>
                 <p className="flex items-center justify-between text-sm mb-1 capitalize font-semibold text-grayscale-900">
                     Authentic Boost:
@@ -71,11 +123,15 @@ export const SharedBoostVerificationItem: React.FC<{
             <p
                 className={`flex items-center justify-between text-sm font-bold mb-1 normal ${getTextColor}`}
             >
-                {getIcon()} {verification?.status}
+                {getIcon()} {statusLabel}
             </p>
-            <p className={`flex ${check === 'Boost Authenticity' ? 'flex-col' : 'flex-row'}  items-start justify-between text-sm mb-1 capitalize text-grayscale-900`}>
-                {check}:&nbsp;
-                {message && <span className="font-semibold text-wrap">{message}</span>}
+            <p
+                className={`flex ${
+                    check === 'Boost Authenticity' ? 'flex-col' : 'flex-row'
+                }  items-start justify-between text-sm mb-1 capitalize text-grayscale-900`}
+            >
+                {checkLabel}:&nbsp;
+                {messageLabel && <span className="font-semibold text-wrap">{messageLabel}</span>}
             </p>
         </div>
     );

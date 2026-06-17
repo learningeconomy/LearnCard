@@ -2381,5 +2381,27 @@
             "ok": "OK",
             "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
         }
+    },
+    "verification": {
+        "title": "Vérifications des identifiants",
+        "viewJson": "Voir json",
+        "hideJson": "Masquer json",
+        "status": {
+            "success": "Réussi",
+            "failed": "Échec",
+            "error": "Erreur"
+        },
+        "checks": {
+            "proof": "Preuve",
+            "revocation": "Statut",
+            "expiration": "Expiration"
+        },
+        "messages": {
+            "valid": "Valide",
+            "notRevoked": "Non révoqué",
+            "doesNotExpire": "N'expire pas",
+            "expired": "Invalide • Expiré {{date}}",
+            "expires": "Valide • Expire {{date}}"
+        }
     }
 }
