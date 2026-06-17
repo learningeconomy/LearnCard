@@ -350,6 +350,23 @@
                 "link": "Personnaliser mon tuteur",
                 "optimized": "{{percent}}% optimisé"
             }
+        },
+        "categoryDescriptor": {
+            "about": "À propos de {{name}}",
+            "gotIt": "Compris",
+            "descriptions": {
+                "studies": "Les études sont des programmes d'apprentissage structurés conçus pour transmettre des connaissances ou des compétences dans des matières ou des domaines précis. Elles peuvent aller des disciplines académiques et de la formation professionnelle au développement professionnel et aux centres d'intérêt personnels. Les études sont proposées sous différents formats, notamment en présentiel, sur des plateformes en ligne ou selon des formules hybrides.",
+                "assistance": "Les aménagements sont des ajustements apportés à l'environnement ou aux processus afin de permettre aux étudiants, aux employés ou aux participants en situation de handicap de participer pleinement. Par exemple : accorder du temps supplémentaire lors des examens aux étudiants ayant des troubles de l'apprentissage, proposer des interprètes en langue des signes aux personnes sourdes, adapter les horaires de travail en fonction des besoins médicaux ou modifier un espace de travail pour le rendre accessible.",
+                "socialBadges": "Les badges sociaux sont des icônes ou des étiquettes numériques utilisés sur les plateformes en ligne pour signaler les réussites, les statuts, les rôles ou les étapes importantes des utilisateurs. Ils servent à reconnaître les accomplissements, à indiquer les rôles des membres, à encourager la participation et à favoriser l'engagement de la communauté. Ces badges peuvent représenter aussi bien l'achèvement de tâches et la participation à des événements que l'appartenance à des groupes spécifiques.",
+                "achievements": "Les réussites sont des étapes ou des accomplissements obtenus grâce à l'effort, au talent ou à la persévérance. Elles marquent l'atteinte d'objectifs, le dépassement de défis ou la reconnaissance de l'excellence dans divers aspects de la vie, qu'ils soient personnels, professionnels, éducatifs ou récréatifs. Les réussites peuvent aller des diplômes académiques, des avancées de carrière et des étapes personnelles aux projets créatifs ou aux victoires en compétition.",
+                "portfolio": "Un portfolio est une collection soigneusement sélectionnée des travaux, des projets ou des réalisations d'une personne, qui met en valeur ses compétences, son expérience et son évolution au fil du temps. Il constitue une preuve tangible de capacité et de créativité, couvrant souvent les domaines professionnel, académique ou personnel, et sert à démontrer sa valeur auprès de collaborateurs, d'employeurs ou de publics potentiels.",
+                "skills": "Les compétences sont des aptitudes développées par la formation, la pratique ou l'expérience qui permettent à une personne d'accomplir des tâches efficacement. Elles peuvent se classer en compétences techniques, qui sont des aptitudes précises, enseignables et souvent quantifiables liées à une tâche ou à un métier particulier, comme la programmation, la soudure ou la maîtrise d'une langue étrangère. Les compétences relationnelles, quant à elles, sont des aptitudes interpersonnelles et cognitives qui facilitent les interactions humaines, comme la communication, la résolution de problèmes et le travail en équipe.",
+                "experiences": "Les expériences sont les connaissances et les compétences acquises en participant à divers rôles et activités professionnels au fil du temps. Elles englobent l'ensemble des tâches, des projets et des responsabilités liés au travail qu'une personne a assumés au sein de différentes organisations ou en tant qu'indépendant. Les expériences professionnelles contribuent de manière significative à l'expertise, aux capacités et à la compréhension des normes et des pratiques du secteur.",
+                "ids": "Les pièces d'identité sont des justificatifs numériques ou physiques essentiels servant à vérifier l'identité d'une personne dans divers contextes. Elles offrent un moyen sécurisé de stocker et de consulter les informations d'identification personnelles, permettant l'accès à des services, des installations ou des systèmes nécessitant une authentification de l'utilisateur. Qu'il s'agisse de se connecter à des plateformes, de vérifier l'âge ou d'accéder à des zones sécurisées, les pièces d'identité sont un outil fondamental pour garantir la confidentialité, la sécurité et la commodité dans différents domaines.",
+                "families": "Les familles sont reliées par des parcours d'apprentissage et des réussites partagés. Cette fonctionnalité aide les responsables à organiser les profils, à gérer les autorisations et à suivre les progrès scolaires. Grâce à des outils permettant de changer de compte, de connecter des jeux et de suivre les modes d'engagement, Familles favorise la progression et célèbre les réussites, tout en offrant un aperçu du parcours d'apprentissage de chaque membre.",
+                "aiInsights": "Les analyses d'IA sont des résumés intelligents générés à partir des justificatifs vérifiés, des compétences, des expériences d'apprentissage et des réussites d'une personne. Elles offrent une vision claire et globale de la progression de l'apprenant en analysant des données authentifiées afin d'identifier les points forts, de mettre en évidence les axes de progression et de révéler des tendances significatives au fil du temps. Ces analyses aident les apprenants à comprendre leur évolution, soutiennent les éducateurs dans l'accompagnement de leurs élèves et permettent de prendre des décisions plus éclairées concernant les parcours d'apprentissage et les opportunités futures.",
+                "aiPathways": "Les parcours d'IA sont des cheminements d'apprentissage personnalisés générés en analysant vos compétences vérifiées, vos justificatifs et vos centres d'intérêt professionnels. Ils définissent des cours, des expériences et des étapes recommandés, adaptés à vos objectifs, afin de vous aider à découvrir de nouvelles opportunités et à progresser vers les résultats professionnels ou d'apprentissage qui comptent le plus pour vous."
+            }
         }
     },
     "theme": {
@@ -1537,6 +1554,10 @@
                 "certificate": "Certificat",
                 "id": "ID"
             }
+        },
+        "menu": {
+            "manageIssuances": "Gérer les émissions",
+            "viewData": "Voir les données"
         }
     },
     "legal": {
@@ -1864,5 +1885,8 @@
         "newTopic": "Nouveau sujet",
         "browse": "Parcourir...",
         "somethingElse": "Autre chose..."
+    },
+    "aiFeatureLinks": {
+        "skillsHub": "Pôle de compétences"
     }
 }

@@ -350,6 +350,23 @@
                 "link": "Personalizar mi tutor",
                 "optimized": "{{percent}}% optimizado"
             }
+        },
+        "categoryDescriptor": {
+            "about": "Acerca de {{name}}",
+            "gotIt": "Entendido",
+            "descriptions": {
+                "studies": "Los estudios son programas de aprendizaje estructurados diseñados para impartir conocimientos o habilidades en materias o áreas específicas. Pueden abarcar desde disciplinas académicas y formación profesional hasta el desarrollo profesional y los intereses personales. Los estudios se ofrecen en distintos formatos, incluyendo clases presenciales, plataformas en línea o modalidades híbridas.",
+                "assistance": "Las adaptaciones son ajustes realizados en el entorno o los procesos para que los estudiantes, empleados o participantes con discapacidad puedan participar plenamente. Algunos ejemplos son dar tiempo adicional en los exámenes a estudiantes con dificultades de aprendizaje, ofrecer intérpretes de lengua de señas a personas sordas, ajustar los horarios laborales para quienes tienen necesidades médicas o modificar un espacio de trabajo para mejorar la accesibilidad.",
+                "socialBadges": "Las insignias sociales son íconos o etiquetas digitales que se usan en plataformas en línea para señalar logros, estados, roles o hitos de los usuarios. Sirven para reconocer logros, indicar roles de los miembros, fomentar la participación y promover la implicación de la comunidad. Estas insignias pueden representar desde completar tareas y participar en eventos hasta pertenecer a grupos específicos.",
+                "achievements": "Los logros son hitos o realizaciones que se obtienen con esfuerzo, habilidad o perseverancia. Representan el cumplimiento de objetivos, la superación de retos o el reconocimiento de la excelencia en distintos ámbitos de la vida, ya sean personales, profesionales, educativos o recreativos. Los logros pueden ir desde títulos académicos, avances profesionales e hitos personales hasta proyectos creativos o victorias en competiciones.",
+                "portfolio": "Un portafolio es una colección curada del trabajo, los proyectos o los logros de una persona que muestran sus habilidades, experiencia y crecimiento a lo largo del tiempo. Sirve como prueba tangible de capacidad y creatividad, a menudo abarcando ámbitos profesionales, académicos o personales, y se utiliza para demostrar el valor ante posibles colaboradores, empleadores o audiencias.",
+                "skills": "Las habilidades son capacidades o competencias desarrolladas mediante la formación, la práctica o la experiencia que permiten a una persona realizar tareas de forma eficaz. Pueden clasificarse en habilidades técnicas, que son capacidades específicas, enseñables y a menudo cuantificables relacionadas con una tarea o un trabajo concreto, como programar, soldar o dominar un idioma extranjero. Las habilidades blandas, en cambio, son capacidades interpersonales y cognitivas que facilitan las interacciones humanas, como la comunicación, la resolución de problemas y el trabajo en equipo.",
+                "experiences": "Las experiencias son los conocimientos y las habilidades adquiridos al participar en diversos roles y actividades profesionales a lo largo del tiempo. Abarcan la amplitud de tareas, proyectos y responsabilidades laborales que una persona ha asumido en distintas organizaciones o como trabajador independiente. Las experiencias profesionales contribuyen significativamente a la pericia, las capacidades y la comprensión de los estándares y las prácticas del sector.",
+                "ids": "Las identificaciones son credenciales digitales o físicas esenciales que se utilizan para verificar la identidad de una persona en diversos contextos. Proporcionan una forma segura de almacenar y acceder a la información de identificación personal, permitiendo el acceso a servicios, instalaciones o sistemas que requieren autenticación del usuario. Ya sea para iniciar sesión en plataformas, verificar la edad o acceder a zonas seguras, las identificaciones son una herramienta fundamental para garantizar la privacidad, la seguridad y la comodidad en distintos ámbitos.",
+                "families": "Las familias se conectan a través de recorridos de aprendizaje y logros compartidos. Esta función ayuda a los tutores a organizar perfiles, gestionar permisos y seguir el progreso educativo. Con herramientas para cambiar de cuenta, conectar juegos y supervisar los estilos de participación, Familias impulsa el crecimiento y celebra los logros, a la vez que ofrece información sobre el recorrido de aprendizaje de cada miembro.",
+                "aiInsights": "Las perspectivas de IA son resúmenes inteligentes generados a partir de las credenciales verificadas, las habilidades, las experiencias de aprendizaje y los logros de una persona. Ofrecen una visión clara e integral del progreso del estudiante analizando datos autenticados para identificar fortalezas, destacar áreas de crecimiento y revelar patrones significativos a lo largo del tiempo. Estas perspectivas ayudan a los estudiantes a comprender su desarrollo, apoyan a los educadores en la orientación de sus alumnos y permiten tomar decisiones más informadas sobre las trayectorias de aprendizaje y las oportunidades futuras.",
+                "aiPathways": "Las trayectorias de IA son recorridos de aprendizaje personalizados que se generan analizando tus habilidades verificadas, tus credenciales y tus intereses profesionales. Trazan cursos, experiencias e hitos recomendados adaptados a tus objetivos, ayudándote a descubrir nuevas oportunidades y a avanzar hacia los resultados profesionales o de aprendizaje que más te importan."
+            }
         }
     },
     "theme": {
@@ -1537,6 +1554,10 @@
                 "certificate": "Certificado",
                 "id": "ID"
             }
+        },
+        "menu": {
+            "manageIssuances": "Gestionar emisiones",
+            "viewData": "Ver datos"
         }
     },
     "legal": {
@@ -1864,5 +1885,8 @@
         "newTopic": "Nuevo tema",
         "browse": "Explorar...",
         "somethingElse": "Algo más..."
+    },
+    "aiFeatureLinks": {
+        "skillsHub": "Centro de habilidades"
     }
 }

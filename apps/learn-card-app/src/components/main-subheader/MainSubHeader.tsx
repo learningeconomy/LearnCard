@@ -92,6 +92,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         {
             handleCloseModal: () => dismissCategoryDescriptorModal(),
             title: pluralName,
+            category,
         }
     );
 
