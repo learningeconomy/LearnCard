@@ -1,24 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, Plus, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, X, Loader2, Layers } from 'lucide-react';
 
-import { useSearchFrameworkSkills } from 'learn-card-base';
+import { useModal, ModalTypes } from 'learn-card-base';
 import {
     useGlobalSkillFrameworks,
     useGlobalSemanticSearchSkills,
-    type GlobalSkillFrameworkConfig,
-    type SemanticSearchSkillRecord,
 } from '../../../helpers/globalSkillFrameworks.helpers';
-import {
-    convertApiSkillNodeToSkillTreeNode,
-    type ApiSkillNode,
-} from '../../../helpers/skillFramework.helpers';
 import useDebounce from '../../../hooks/useDebounce';
 import CompetencyIcon from '../../SkillFrameworks/CompetencyIcon';
-import SkillSearchSelector from '../../skills/SkillSearchSelector';
 import { SkillLevel } from '../../skills/skillTypes';
 import type { SelectedSkill } from '../../skills/skillTypes';
 import type { SkillFrameworkNode } from '../../../components/boost/boost';
 import type { ResolvedSkill } from './skillAlignment';
+import {
+    keyFor,
+    normalizeName,
+    dedupeByName,
+    semanticRecordToNode,
+    FrameworkDefaultsLoader,
+    SkillChip,
+} from './skillBrowserShared';
+import { SkillBrowserModal } from './SkillBrowserModal';
 
 interface SkillsSectionProps {
     selectedSkills: SelectedSkill[];
@@ -31,68 +33,6 @@ const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 const SEARCH_DEBOUNCE_MS = 300;
 const MAX_SUGGESTIONS = 8;
 
-const keyFor = (frameworkId: string, id: string) => `${frameworkId}::${id}`;
-const normalizeName = (name?: string) => (name ?? '').trim().toLowerCase();
-
-const dedupeByName = (nodes: SkillFrameworkNode[]): SkillFrameworkNode[] => {
-    const seen = new Set<string>();
-    const result: SkillFrameworkNode[] = [];
-    for (const node of nodes) {
-        const key = normalizeName(node.targetName);
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        result.push(node);
-    }
-    return result;
-};
-
-const semanticRecordToNode = (record: SemanticSearchSkillRecord): SkillFrameworkNode =>
-    ({
-        id: record.id,
-        frameworkId: record.frameworkId,
-        targetFramework: record.targetFramework ?? record.frameworkId,
-        targetName: record.targetName ?? '',
-        icon: record.icon,
-    } as SkillFrameworkNode);
-
-const FrameworkDefaultsLoader: React.FC<{
-    framework: GlobalSkillFrameworkConfig;
-    onLoaded: (frameworkId: string, nodes: SkillFrameworkNode[]) => void;
-}> = ({ framework, onLoaded }) => {
-    const ids = framework.defaultSkillIds ?? [];
-    const { data } = useSearchFrameworkSkills(
-        framework.frameworkId,
-        { id: { $in: ids } },
-        { enabled: ids.length > 0 }
-    );
-
-    useEffect(() => {
-        const records = (data as { records?: ApiSkillNode[] } | undefined)?.records ?? [];
-        onLoaded(
-            framework.frameworkId,
-            records.map(record => convertApiSkillNodeToSkillTreeNode(record))
-        );
-    }, [data, framework.frameworkId, onLoaded]);
-
-    return null;
-};
-
-const SkillChip: React.FC<{ label: string; icon?: string; onClick: () => void }> = ({
-    label,
-    icon,
-    onClick,
-}) => (
-    <button
-        type="button"
-        onClick={onClick}
-        className="flex items-center gap-1.5 py-1.5 pl-2 pr-3 rounded-full border border-grayscale-300 text-sm text-grayscale-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-    >
-        <CompetencyIcon icon={icon} size="x-small" />
-        <Plus className="w-3.5 h-3.5 shrink-0" />
-        <span className="truncate max-w-[200px]">{label}</span>
-    </button>
-);
-
 export const SkillsSection: React.FC<SkillsSectionProps> = ({
     selectedSkills,
     resolvedSkills,
@@ -100,7 +40,15 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
     onResolvedSkillsChange,
 }) => {
     const frameworks = useGlobalSkillFrameworks();
+    const { newModal, closeModal } = useModal();
     const resolvedRef = useRef<Map<string, ResolvedSkill>>(new Map());
+
+    // Always-latest selection, so add/remove handlers captured by the modal
+    // (newModal snapshots props once) never append onto a stale array.
+    const selectedSkillsRef = useRef(selectedSkills);
+    useEffect(() => {
+        selectedSkillsRef.current = selectedSkills;
+    }, [selectedSkills]);
 
     useEffect(() => {
         resolvedSkills.forEach(r => resolvedRef.current.set(keyFor(r.frameworkId, r.id), r));
@@ -114,7 +62,6 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
 
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
-    const [browsing, setBrowsing] = useState(false);
     const [defaultsByFramework, setDefaultsByFramework] = useState<
         Record<string, SkillFrameworkNode[]>
     >({});
@@ -160,8 +107,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
         (skill: SkillFrameworkNode, proficiency: SkillLevel = SkillLevel.Hidden) => {
             const frameworkId = skill.frameworkId ?? skill.targetFramework ?? '';
             if (!frameworkId || !skill.id) return;
-            if (selectedSkills.some(s => s.id === skill.id && s.frameworkId === frameworkId))
-                return;
+            const current = selectedSkillsRef.current;
+            if (current.some(s => s.id === skill.id && s.frameworkId === frameworkId)) return;
 
             resolvedRef.current.set(keyFor(frameworkId, skill.id), {
                 id: skill.id,
@@ -173,21 +120,25 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                 icon: skill.icon,
             });
 
-            commitSkills([
-                ...selectedSkills,
+            const next = [
+                ...current,
                 { id: skill.id, frameworkId, proficiency: proficiency ?? SkillLevel.Hidden },
-            ]);
+            ];
+            selectedSkillsRef.current = next;
+            commitSkills(next);
         },
-        [selectedSkills, frameworkNameById, commitSkills]
+        [frameworkNameById, commitSkills]
     );
 
     const handleRemoveSkill = useCallback(
         (frameworkId: string, skillId: string) => {
-            commitSkills(
-                selectedSkills.filter(s => !(s.id === skillId && s.frameworkId === frameworkId))
+            const next = selectedSkillsRef.current.filter(
+                s => !(s.id === skillId && s.frameworkId === frameworkId)
             );
+            selectedSkillsRef.current = next;
+            commitSkills(next);
         },
-        [selectedSkills, commitSkills]
+        [commitSkills]
     );
 
     const handleDefaultsLoaded = useCallback((frameworkId: string, nodes: SkillFrameworkNode[]) => {
@@ -243,6 +194,20 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             }),
         [selectedSkills, resolvedByKey, frameworkNameById]
     );
+
+    const openBrowser = useCallback(() => {
+        newModal(
+            <SkillBrowserModal
+                frameworks={frameworks}
+                selectedSkills={selectedSkills}
+                onAddSkill={handleAddSkill}
+                onRemoveSkill={handleRemoveSkill}
+                handleCloseModal={closeModal}
+            />,
+            {},
+            { mobile: ModalTypes.BottomSheet, desktop: ModalTypes.FullScreen }
+        );
+    }, [newModal, closeModal, frameworks, selectedSkills, handleAddSkill, handleRemoveSkill]);
 
     return (
         <section className={`${CARD_CLASS} space-y-4`}>
@@ -342,30 +307,12 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
 
             <button
                 type="button"
-                onClick={() => setBrowsing(prev => !prev)}
-                className="flex items-center gap-1.5 text-sm font-medium text-grayscale-700 hover:text-grayscale-900 transition-colors"
+                onClick={openBrowser}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm transition-colors"
             >
+                <Layers className="w-4 h-4" />
                 Browse all frameworks
-                <ChevronDown
-                    className={`w-4 h-4 transition-transform ${browsing ? 'rotate-180' : ''}`}
-                />
             </button>
-
-            {browsing && (
-                <div className="pt-2 border-t border-grayscale-200">
-                    <SkillSearchSelector
-                        selectedSkills={selectedSkills}
-                        onSelectedSkillsChange={commitSkills}
-                        onAddSkill={handleAddSkill}
-                        onRemoveSkill={handleRemoveSkill}
-                        searchQuery={query}
-                        onSearchQueryChange={setQuery}
-                        showSearchInput={false}
-                        showSelectedSkills={false}
-                        showSuggestSkill
-                    />
-                </div>
-            )}
         </section>
     );
 };
