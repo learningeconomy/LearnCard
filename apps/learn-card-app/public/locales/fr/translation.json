@@ -131,7 +131,11 @@
                     "title": "Justificatifs vérifiables",
                     "description": "Téléchargez ou collez des justificatifs JSON bruts pour les ajouter à votre portefeuille.",
                     "placeholder": "Collez votre JSON ici...",
-                    "addButton": "Ajouter des justificatifs"
+                    "addButton": "Ajouter des justificatifs",
+                    "parsing": "Analyse...",
+                    "toastAdded": "Credential JSON ajouté avec succès",
+                    "toastAddedBody": "Votre parcours est désormais reflété dans des credentials portables et fiables.",
+                    "toastParseFailed": "Échec de l'analyse du VC JSON."
                 },
                 "addButton": "Ajouter",
                 "schools": {
@@ -146,6 +150,24 @@
                     "title": "Compétences auto-déclarées",
                     "description": "Choisissez parmi les compétences suggérées selon votre profil ou ajoutez les vôtres.",
                     "addSkill": "Ajouter une compétence"
+                },
+                "upload": "Téléverser",
+                "uploading": "Téléversement...",
+                "addMore": "Ajouter",
+                "update": "Mettre à jour",
+                "connect": "Connecter",
+                "reconnect": "Reconnecter",
+                "toastDeleteFailed": "Échec de la suppression. Veuillez réessayer.",
+                "toastDeleteFailedShort": "Échec de la suppression",
+                "toastExtractFailed": "Impossible d'extraire les credentials",
+                "toastGenericError": "Une erreur s'est produite",
+                "credentialsSaved": "{{count}} credential(s) enregistré(s) dans votre portefeuille.",
+                "confirmRemove": {
+                    "resume": "Êtes-vous sûr de vouloir supprimer votre CV téléversé ?",
+                    "certificate": "Êtes-vous sûr de vouloir supprimer votre certificat téléversé ?",
+                    "diploma": "Êtes-vous sûr de vouloir supprimer votre diplôme téléversé ?",
+                    "transcript": "Êtes-vous sûr de vouloir supprimer votre relevé téléversé ?",
+                    "credential": "Êtes-vous sûr de vouloir supprimer votre credential téléversé ?"
                 }
             },
             "review": {
@@ -174,7 +196,68 @@
                 "noMatches": "Aucun type correspondant trouvé"
             },
             "loader": {
-                "notifyWhenReady": "Prévenez-moi quand c'est prêt"
+                "notifyWhenReady": "Prévenez-moi quand c'est prêt",
+                "quotes": {
+                    "resume": {
+                        "q0": "Analyse de votre CV à la recherche de pépites cachées...",
+                        "q1": "Extraction de votre historique professionnel, une ligne à la fois.",
+                        "q2": "Mise en valeur de vos réalisations...",
+                        "q3": "Polissage de vos réalisations en credentials...",
+                        "q4": "Transformation de votre expérience en compétences vérifiables...",
+                        "q5": "Application du traitement credential à votre CV...",
+                        "q6": "Construction de votre chronologie d'apprentissage et de travail...",
+                        "q7": "Analyse de votre historique d'études et de travail...",
+                        "q8": "Vérification de votre CV pour des enregistrements intelligents...",
+                        "q9": "Création d'une preuve numérique de votre parcours professionnel..."
+                    },
+                    "certificate": {
+                        "q0": "Lecture des détails de votre certificat...",
+                        "q1": "Extraction des compétences et connaissances certifiées...",
+                        "q2": "Identification de votre autorité émettrice...",
+                        "q3": "Vérification de la date de votre certification...",
+                        "q4": "Traduction de votre certificat en credential...",
+                        "q5": "Génération d'un badge intelligent pour votre expertise...",
+                        "q6": "Reconnaissance de vos réalisations certifiées...",
+                        "q7": "Vérification du statut d'expiration ou de renouvellement...",
+                        "q8": "Transformation des credentials papier en enregistrements numériques...",
+                        "q9": "Capture des compétences vérifiées de votre certificat..."
+                    },
+                    "transcript": {
+                        "q0": "Analyse de votre relevé de notes...",
+                        "q1": "Extraction de l'historique des cours et des notes...",
+                        "q2": "Cartographie de votre chronologie éducative...",
+                        "q3": "Lecture des crédits obtenus et du GPA (si disponible)...",
+                        "q4": "Conversion des données de cours en credentials...",
+                        "q5": "Suivi de votre progression d'apprentissage...",
+                        "q6": "Traduction des relevés en enregistrements vérifiables...",
+                        "q7": "Analyse de votre performance académique...",
+                        "q8": "Identification des programmes ou spécialités terminés...",
+                        "q9": "Création d'enregistrements intelligents à partir de vos cours..."
+                    },
+                    "diploma": {
+                        "q0": "Analyse de votre diplôme...",
+                        "q1": "Vérification de l'établissement et du type de diplôme...",
+                        "q2": "Reconnaissance de votre qualification obtenue...",
+                        "q3": "Conversion de votre diplôme en un enregistrement vérifiable...",
+                        "q4": "Enregistrement de votre étape académique...",
+                        "q5": "Extraction de la date d'obtention et du domaine d'études...",
+                        "q6": "Documentation de votre réussite de diplôme...",
+                        "q7": "Préservation de la preuve de votre éducation...",
+                        "q8": "Numérisation de votre distinction académique...",
+                        "q9": "Création d'un credential portable à partir de votre diplôme..."
+                    },
+                    "rawVC": {
+                        "q0": "Analyse de votre credential JSON brut...",
+                        "q1": "Extraction des détails du credential...",
+                        "q2": "Vérification de la signature du credential...",
+                        "q3": "Conversion du JSON en un credential vérifiable...",
+                        "q4": "Génération d'un badge intelligent pour votre expertise...",
+                        "q5": "Reconnaissance de vos réalisations vérifiées...",
+                        "q6": "Vérification du statut d'expiration ou de renouvellement...",
+                        "q7": "Transformation des credentials papier en enregistrements numériques...",
+                        "q8": "Capture des compétences vérifiées de votre credential..."
+                    }
+                }
             },
             "misc": {
                 "noCredentialsExtracted": "Aucun justificatif n'a été extrait de ce fichier.",

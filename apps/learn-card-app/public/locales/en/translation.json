@@ -131,7 +131,11 @@
                     "title": "Verifiable Credentials",
                     "description": "Upload or paste raw JSON credentials to add them to your wallet.",
                     "placeholder": "Paste your JSON here...",
-                    "addButton": "Add Credentials"
+                    "addButton": "Add Credentials",
+                    "parsing": "Parsing...",
+                    "toastAdded": "JSON Credential Successfully Added",
+                    "toastAddedBody": "Your journey is now reflected in portable, trusted credentials.",
+                    "toastParseFailed": "Failed to parse JSON VC."
                 },
                 "addButton": "Add",
                 "schools": {
@@ -146,6 +150,24 @@
                     "title": "Self-Attested Skills",
                     "description": "Select from suggested skills based on your profile or add your own.",
                     "addSkill": "Add a skill"
+                },
+                "upload": "Upload",
+                "uploading": "Uploading...",
+                "addMore": "Add More",
+                "update": "Update",
+                "connect": "Connect",
+                "reconnect": "Reconnect",
+                "toastDeleteFailed": "Failed to delete. Please try again.",
+                "toastDeleteFailedShort": "Delete failed",
+                "toastExtractFailed": "Could not extract credentials",
+                "toastGenericError": "Something went wrong",
+                "credentialsSaved": "{{count}} credential(s) saved to your wallet.",
+                "confirmRemove": {
+                    "resume": "Are you sure you want remove your uploaded resume?",
+                    "certificate": "Are you sure you want remove your uploaded certificate?",
+                    "diploma": "Are you sure you want remove your uploaded diploma?",
+                    "transcript": "Are you sure you want remove your uploaded transcript?",
+                    "credential": "Are you sure you want remove your uploaded credential?"
                 }
             },
             "review": {
@@ -174,7 +196,68 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
-                "notifyWhenReady": "Notify me when it's ready"
+                "notifyWhenReady": "Notify me when it's ready",
+                "quotes": {
+                    "resume": {
+                        "q0": "Scanning your resume for hidden gems...",
+                        "q1": "Extracting your work history — one line at a time.",
+                        "q2": "Highlighting your accomplishments...",
+                        "q3": "Polishing your achievements into credentials...",
+                        "q4": "Turning experience into verifiable skills...",
+                        "q5": "Giving your resume the credential treatment...",
+                        "q6": "Building your learning and work timeline...",
+                        "q7": "Parsing education and work history...",
+                        "q8": "Verifying your resume for smart records...",
+                        "q9": "Creating digital proof of your career journey..."
+                    },
+                    "certificate": {
+                        "q0": "Reading your certificate details...",
+                        "q1": "Extracting certified skills and knowledge...",
+                        "q2": "Identifying your issuing authority...",
+                        "q3": "Verifying your certification date...",
+                        "q4": "Translating your certificate into a credential...",
+                        "q5": "Generating a smart badge for your expertise...",
+                        "q6": "Recognizing your certified accomplishments...",
+                        "q7": "Checking for expiration or renewal status...",
+                        "q8": "Transforming paper credentials into digital records...",
+                        "q9": "Capturing verified skills from your certificate..."
+                    },
+                    "transcript": {
+                        "q0": "Parsing your academic transcript...",
+                        "q1": "Extracting course history and grades...",
+                        "q2": "Mapping your educational timeline...",
+                        "q3": "Reading earned credits and GPA (if available)...",
+                        "q4": "Converting course data into credentials...",
+                        "q5": "Tracking your learning progress...",
+                        "q6": "Translating transcripts into verifiable records...",
+                        "q7": "Analyzing your academic performance...",
+                        "q8": "Identifying completed programs or majors...",
+                        "q9": "Building smart records from your coursework..."
+                    },
+                    "diploma": {
+                        "q0": "Analyzing your diploma...",
+                        "q1": "Verifying institution and degree type...",
+                        "q2": "Recognizing your awarded qualification...",
+                        "q3": "Converting your diploma into a verifiable record...",
+                        "q4": "Recording your academic milestone...",
+                        "q5": "Extracting awarded date and field of study...",
+                        "q6": "Documenting your graduation achievement...",
+                        "q7": "Preserving proof of your education...",
+                        "q8": "Digitizing your academic honor...",
+                        "q9": "Building a portable credential from your diploma..."
+                    },
+                    "rawVC": {
+                        "q0": "Parsing your raw JSON credential...",
+                        "q1": "Extracting credential details...",
+                        "q2": "Verifying credential signature...",
+                        "q3": "Converting JSON into a verifiable credential...",
+                        "q4": "Generating a smart badge for your expertise...",
+                        "q5": "Recognizing your verified accomplishments...",
+                        "q6": "Checking for expiration or renewal status...",
+                        "q7": "Transforming paper credentials into digital records...",
+                        "q8": "Capturing verified skills from your credential..."
+                    }
+                }
             },
             "misc": {
                 "noCredentialsExtracted": "No credentials were extracted from this file.",

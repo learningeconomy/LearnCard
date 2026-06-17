@@ -131,7 +131,11 @@
                     "title": "Credenciales verificables",
                     "description": "Sube o pega credenciales JSON sin procesar para añadirlas a tu billetera.",
                     "placeholder": "Pega tu JSON aquí...",
-                    "addButton": "Añadir credenciales"
+                    "addButton": "Añadir credenciales",
+                    "parsing": "Analizando...",
+                    "toastAdded": "Credencial JSON agregada con éxito",
+                    "toastAddedBody": "Tu trayectoria ahora se refleja en credenciales portátiles y confiables.",
+                    "toastParseFailed": "No se pudo analizar la VC JSON."
                 },
                 "addButton": "Añadir",
                 "schools": {
@@ -146,6 +150,24 @@
                     "title": "Habilidades autodeclaradas",
                     "description": "Selecciona habilidades sugeridas según tu perfil o añade las tuyas.",
                     "addSkill": "Añadir una habilidad"
+                },
+                "upload": "Subir",
+                "uploading": "Subiendo...",
+                "addMore": "Añadir más",
+                "update": "Actualizar",
+                "connect": "Conectar",
+                "reconnect": "Volver a conectar",
+                "toastDeleteFailed": "No se pudo eliminar. Inténtalo de nuevo.",
+                "toastDeleteFailedShort": "Error al eliminar",
+                "toastExtractFailed": "No se pudieron extraer credenciales",
+                "toastGenericError": "Algo salió mal",
+                "credentialsSaved": "{{count}} credencial(es) guardada(s) en tu cartera.",
+                "confirmRemove": {
+                    "resume": "¿Estás seguro de que quieres eliminar tu currículum subido?",
+                    "certificate": "¿Estás seguro de que quieres eliminar tu certificado subido?",
+                    "diploma": "¿Estás seguro de que quieres eliminar tu diploma subido?",
+                    "transcript": "¿Estás seguro de que quieres eliminar tu expediente subido?",
+                    "credential": "¿Estás seguro de que quieres eliminar tu credencial subida?"
                 }
             },
             "review": {
@@ -174,7 +196,68 @@
                 "noMatches": "No se encontraron tipos coincidentes"
             },
             "loader": {
-                "notifyWhenReady": "Avísame cuando esté listo"
+                "notifyWhenReady": "Avísame cuando esté listo",
+                "quotes": {
+                    "resume": {
+                        "q0": "Escaneando tu currículum en busca de joyas ocultas...",
+                        "q1": "Extrayendo tu historial laboral, una línea a la vez.",
+                        "q2": "Resaltando tus logros...",
+                        "q3": "Puliendo tus logros para convertirlos en credenciales...",
+                        "q4": "Convirtiendo tu experiencia en habilidades verificables...",
+                        "q5": "Dándole a tu currículum el tratamiento de credenciales...",
+                        "q6": "Construyendo tu línea de tiempo de aprendizaje y trabajo...",
+                        "q7": "Analizando tu historial de educación y trabajo...",
+                        "q8": "Verificando tu currículum para registros inteligentes...",
+                        "q9": "Creando prueba digital de tu trayectoria profesional..."
+                    },
+                    "certificate": {
+                        "q0": "Leyendo los detalles de tu certificado...",
+                        "q1": "Extrayendo habilidades y conocimientos certificados...",
+                        "q2": "Identificando tu autoridad emisora...",
+                        "q3": "Verificando la fecha de tu certificación...",
+                        "q4": "Traduciendo tu certificado a una credencial...",
+                        "q5": "Generando una insignia inteligente para tu experiencia...",
+                        "q6": "Reconociendo tus logros certificados...",
+                        "q7": "Comprobando el estado de vencimiento o renovación...",
+                        "q8": "Transformando credenciales en papel en registros digitales...",
+                        "q9": "Capturando habilidades verificadas de tu certificado..."
+                    },
+                    "transcript": {
+                        "q0": "Analizando tu expediente académico...",
+                        "q1": "Extrayendo el historial de cursos y calificaciones...",
+                        "q2": "Mapeando tu línea de tiempo educativa...",
+                        "q3": "Leyendo créditos obtenidos y GPA (si está disponible)...",
+                        "q4": "Convirtiendo datos de cursos en credenciales...",
+                        "q5": "Rastreando tu progreso de aprendizaje...",
+                        "q6": "Traduciendo expedientes a registros verificables...",
+                        "q7": "Analizando tu rendimiento académico...",
+                        "q8": "Identificando programas o especialidades completadas...",
+                        "q9": "Construyendo registros inteligentes a partir de tus cursos..."
+                    },
+                    "diploma": {
+                        "q0": "Analizando tu diploma...",
+                        "q1": "Verificando institución y tipo de título...",
+                        "q2": "Reconociendo tu titulación obtenida...",
+                        "q3": "Convirtiendo tu diploma en un registro verificable...",
+                        "q4": "Registrando tu hito académico...",
+                        "q5": "Extrayendo fecha de obtención y campo de estudio...",
+                        "q6": "Documentando tu logro de graduación...",
+                        "q7": "Preservando la prueba de tu educación...",
+                        "q8": "Digitalizando tu honor académico...",
+                        "q9": "Creando una credencial portátil a partir de tu diploma..."
+                    },
+                    "rawVC": {
+                        "q0": "Analizando tu credencial JSON sin procesar...",
+                        "q1": "Extrayendo detalles de la credencial...",
+                        "q2": "Verificando la firma de la credencial...",
+                        "q3": "Convirtiendo JSON en una credencial verificable...",
+                        "q4": "Generando una insignia inteligente para tu experiencia...",
+                        "q5": "Reconociendo tus logros verificados...",
+                        "q6": "Comprobando el estado de vencimiento o renovación...",
+                        "q7": "Transformando credenciales en papel en registros digitales...",
+                        "q8": "Capturando habilidades verificadas de tu credencial..."
+                    }
+                }
             },
             "misc": {
                 "noCredentialsExtracted": "No se extrajeron credenciales de este archivo.",
