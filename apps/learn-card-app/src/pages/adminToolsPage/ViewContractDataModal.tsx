@@ -1,12 +1,21 @@
 import React from 'react';
+import moment from 'moment';
 
 import { IonSpinner } from '@ionic/react';
-import { ConsentFlowContractDetails } from '@learncard/types';
-import { useContract, useGetConsentFlowData, useModal } from 'learn-card-base';
+import { ConsentFlowContractData, ConsentFlowContractDetails } from '@learncard/types';
+import CaretDown from 'learn-card-base/svgs/CaretDown';
+import {
+    contractCategoryNameToCategoryMetadata,
+    useContract,
+    useGetConsentFlowData,
+    useModal,
+} from 'learn-card-base';
 
 import Share from '../../components/svgs/Share';
+import CopyStack from '../../components/svgs/CopyStack';
 import CreateContractModal from './CreateContractModal';
 import ShareContractModal from './ShareContractModal';
+import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 
 type ViewContractDataModalProps = {
     contract: ConsentFlowContractDetails;
@@ -16,6 +25,99 @@ type ViewContractDataModalProps = {
 type EntryConfig = {
     required: boolean;
     defaultEnabled?: boolean;
+};
+
+const formatDateParts = (value?: string) => {
+    if (!value) {
+        return { date: 'none', time: '' };
+    }
+
+    const date = moment(value);
+
+    if (!date.isValid()) {
+        return { date: value, time: '' };
+    }
+
+    return {
+        date: date.format('MMM D, YYYY'),
+        time: date.format('h:mm A'),
+    };
+};
+
+const renderMutedValue = (value?: string) => {
+    if (!value) {
+        return <span className="text-sm text-grayscale-400">none</span>;
+    }
+
+    return <span className="text-sm text-grayscale-700 break-all">{value}</span>;
+};
+
+const getPermissionModeLabel = (config: EntryConfig) => {
+    if (config.required) {
+        return 'Required';
+    }
+
+    return config.defaultEnabled ? 'Opt-out' : 'Opt-in';
+};
+
+const getPermissionModeClassName = (config: EntryConfig) => {
+    if (config.required) {
+        return 'text-grayscale-900 bg-grayscale-100';
+    }
+
+    return config.defaultEnabled
+        ? 'text-amber-800 bg-amber-50'
+        : 'text-grayscale-600 bg-grayscale-100';
+};
+
+const renderCategoryPermissions = (
+    entries: Record<string, EntryConfig> | undefined,
+    emptyLabel: string
+) => {
+    const entryList = Object.entries(entries ?? {});
+
+    if (!entryList.length) {
+        return <p className="text-sm text-grayscale-400">{emptyLabel}</p>;
+    }
+
+    return (
+        <div className="grid gap-2">
+            {entryList.map(([key, config]) => {
+                const { IconComponent, title } = getInfoFromContractKey(key);
+                const metadata = contractCategoryNameToCategoryMetadata(key);
+                const CategoryIcon = metadata?.IconWithShape;
+
+                return (
+                    <div
+                        key={key}
+                        className="grid w-full min-w-0 grid-cols-[40px,minmax(0,1fr)] items-start gap-3 rounded-[16px] border border-grayscale-200 bg-white px-3 py-3"
+                    >
+                        {CategoryIcon ? (
+                            <CategoryIcon className="h-10 w-10 shrink-0" />
+                        ) : (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-grayscale-100">
+                                <IconComponent className="h-6 w-6 text-grayscale-500" />
+                            </div>
+                        )}
+
+                        <div className="min-w-0 space-y-1">
+                            <p className="text-sm font-medium text-grayscale-900 break-words leading-snug">
+                                {title}
+                            </p>
+                            <p className="text-xs text-grayscale-500 break-all">{key}</p>
+                            <span
+                                className={`inline-flex w-fit rounded-full px-2 py-1 text-[11px] font-medium ${getPermissionModeClassName(
+                                    config
+                                )}`}
+                            >
+                                {getPermissionModeLabel(config)}
+                            </span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
 };
 
 const renderEntryChips = (entries: Record<string, EntryConfig> | undefined, emptyLabel: string) => {
@@ -74,7 +176,7 @@ const renderProfileChips = (
 
     return (
         <div className="flex flex-wrap gap-2">
-            {values.map(profile => (
+            {values.map((profile: NonNullable<ConsentFlowContractDetails['writers']>[number]) => (
                 <span
                     key={profile.did}
                     className="rounded-[16px] border border-grayscale-200 bg-white px-3 py-2 text-sm text-grayscale-700"
@@ -91,13 +193,23 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
     onCreateSuccess,
 }) => {
     const { newModal, closeModal } = useModal();
+    const [isConsentRecordsOpen, setIsConsentRecordsOpen] = React.useState(false);
     const { data: contractDetails, isLoading: contractLoading } = useContract(contract.uri);
     const resolvedContract = contractDetails ?? contract;
 
     const { data: paginatedData, isLoading: consentDataLoading } = useGetConsentFlowData(
         resolvedContract.uri
     );
-    const data = paginatedData?.records;
+    const consentRecords = React.useMemo(() => {
+        if (Array.isArray(paginatedData)) {
+            return paginatedData;
+        }
+
+        return (
+            (paginatedData as unknown as { records?: ConsentFlowContractData[] } | undefined)
+                ?.records ?? []
+        );
+    }, [paginatedData]);
 
     const {
         name,
@@ -118,6 +230,9 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
         contract: contractDefinition,
     } = resolvedContract;
 
+    const createdAtParts = formatDateParts(createdAt);
+    const updatedAtParts = formatDateParts(updatedAt);
+
     const openShareContractModal = (contractToShare: ConsentFlowContractDetails) => {
         newModal(<ShareContractModal contract={contractToShare} />, {
             sectionClassName: '!max-w-[500px]',
@@ -134,24 +249,27 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     onSuccess={onCreateSuccess}
                 />,
                 {
-                    sectionClassName: '!max-w-[1000px]',
+                    sectionClassName: '!max-w-[500px] !max-h-[70vh]',
+                    usePortal: true,
+                    hideButton: true,
+                    portalClassName: '!max-w-[500px]',
                 }
             );
         }, 0);
     };
 
     return (
-        <section className="text-grayscale-900 h-full w-full px-[24px] py-[28px] min-h-[300px] space-y-5">
+        <section className="text-grayscale-900 w-full px-[24px] py-[28px] min-h-[300px] space-y-5">
             <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 min-w-0">
+                <div className="flex items-center gap-4 min-w-0">
                     {image ? (
                         <img
                             src={image}
                             alt={`${name} icon`}
-                            className="h-[72px] w-[72px] rounded-full object-cover border border-grayscale-200 bg-white shrink-0"
+                            className="h-[64px] w-[64px] rounded-full object-cover border border-grayscale-200 bg-white shrink-0"
                         />
                     ) : (
-                        <div className="h-[72px] w-[72px] rounded-full border border-grayscale-200 bg-grayscale-100 shrink-0" />
+                        <div className="h-[64px] w-[64px] rounded-full border border-grayscale-200 bg-grayscale-100 shrink-0" />
                     )}
 
                     <div className="min-w-0 space-y-1">
@@ -169,6 +287,13 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
 
                 <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
                     <button
+                        onClick={openCreateFromTemplateModal}
+                        className="py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center gap-2"
+                    >
+                        <CopyStack className="h-[18px] w-[18px] text-grayscale-700" />
+                        Use as template
+                    </button>
+                    <button
                         onClick={e => {
                             e.stopPropagation();
                             openShareContractModal(resolvedContract);
@@ -177,12 +302,6 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                         aria-label="Share contract"
                     >
                         <Share className="h-[22px] w-[22px] text-grayscale-700" />
-                    </button>
-                    <button
-                        onClick={openCreateFromTemplateModal}
-                        className="py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
-                    >
-                        Create from template
                     </button>
                 </div>
             </div>
@@ -197,7 +316,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
             <div className="grid gap-4 md:grid-cols-2">
                 <article className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 space-y-3">
                     <h2 className="text-lg font-semibold text-grayscale-900">Contract Details</h2>
-                    <div className="space-y-2 text-sm text-grayscale-700">
+                    <div className="space-y-3 text-sm text-grayscale-700">
                         <div>
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Owner
@@ -218,13 +337,23 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                                 <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                     Created
                                 </p>
-                                <p className="text-grayscale-900">{createdAt}</p>
+                                <p className="text-grayscale-900">{createdAtParts.date}</p>
+                                {createdAtParts.time && (
+                                    <p className="text-xs text-grayscale-500">
+                                        {createdAtParts.time}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                     Updated
                                 </p>
-                                <p className="text-grayscale-900">{updatedAt}</p>
+                                <p className="text-grayscale-900">{updatedAtParts.date}</p>
+                                {updatedAtParts.time && (
+                                    <p className="text-xs text-grayscale-500">
+                                        {updatedAtParts.time}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -232,7 +361,20 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                                 <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                     Expires
                                 </p>
-                                <p className="text-grayscale-900">{expiresAt ?? 'Never'}</p>
+                                {expiresAt ? (
+                                    <>
+                                        <p className="text-grayscale-900">
+                                            {formatDateParts(expiresAt).date}
+                                        </p>
+                                        {formatDateParts(expiresAt).time && (
+                                            <p className="text-xs text-grayscale-500">
+                                                {formatDateParts(expiresAt).time}
+                                            </p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span className="text-sm text-grayscale-400">none</span>
+                                )}
                             </div>
                             <div>
                                 <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
@@ -247,25 +389,19 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Reason for accessing
                             </p>
-                            <p className="text-grayscale-900">
-                                {reasonForAccessing ?? 'Not specified'}
-                            </p>
+                            {renderMutedValue(reasonForAccessing)}
                         </div>
                         <div>
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Redirect URL
                             </p>
-                            <p className="text-xs text-grayscale-700 break-all">
-                                {redirectUrl ?? 'Not specified'}
-                            </p>
+                            {renderMutedValue(redirectUrl)}
                         </div>
                         <div>
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                                 Front door boost URI
                             </p>
-                            <p className="text-xs text-grayscale-700 break-all">
-                                {frontDoorBoostUri ?? 'Not specified'}
-                            </p>
+                            {renderMutedValue(frontDoorBoostUri)}
                         </div>
                     </div>
                 </article>
@@ -313,7 +449,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                             Credential categories
                         </p>
-                        {renderEntryChips(
+                        {renderCategoryPermissions(
                             contractDefinition.read.credentials.categories,
                             'No credential read categories defined'
                         )}
@@ -322,20 +458,22 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
 
                 <article className="rounded-[20px] border border-grayscale-200 bg-white p-4 space-y-3">
                     <h2 className="text-lg font-semibold text-grayscale-900">Write permissions</h2>
-                    <div className="space-y-2">
-                        <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
-                            Personal fields
-                        </p>
-                        {renderEntryChips(
-                            contractDefinition.write.personal,
-                            'No personal write fields defined'
-                        )}
-                    </div>
+                    {Object.keys(contractDefinition.write.personal).length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
+                                Personal fields
+                            </p>
+                            {renderEntryChips(
+                                contractDefinition.write.personal,
+                                'No personal write fields defined'
+                            )}
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
                             Credential categories
                         </p>
-                        {renderEntryChips(
+                        {renderCategoryPermissions(
                             contractDefinition.write.credentials.categories,
                             'No credential write categories defined'
                         )}
@@ -343,39 +481,61 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                 </article>
             </div>
 
-            <section className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-grayscale-900">Consent records</h2>
-                    {consentDataLoading && <IonSpinner color="dark" />}
-                </div>
-
-                {/* could definitely present this prettier */}
-                {!consentDataLoading && data?.length > 0 && (
-                    <ol className="space-y-3">
-                        {data.map((terms, index) => (
-                            <li
-                                key={terms.personal.Name ?? index}
-                                className="rounded-[20px] border border-grayscale-200 bg-white p-3"
-                            >
-                                <pre className="overflow-x-auto text-xs text-grayscale-700">
-                                    {JSON.stringify(terms, null, 4)}
-                                </pre>
-                            </li>
-                        ))}
-                    </ol>
-                )}
-                {!consentDataLoading && data?.length === 0 && (
-                    <p className="h-[120px] flex items-center justify-center text-sm text-grayscale-600">
-                        No one has consented to this contract yet
-                    </p>
-                )}
-                {contractLoading && !data?.length && (
-                    <div className="w-full h-[120px] flex flex-col gap-[5px] items-center justify-center">
-                        <IonSpinner color="dark" />
-                        <span className="text-sm text-grayscale-600">Loading...</span>
+            <details
+                className="rounded-[20px] border border-grayscale-200 bg-grayscale-10 p-4 pb-5"
+                open={isConsentRecordsOpen}
+                onToggle={e => {
+                    setIsConsentRecordsOpen(e.currentTarget.open);
+                }}
+            >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-lg font-semibold text-grayscale-900">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <span>Consent records</span>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-grayscale-600">
+                            {consentRecords.length}
+                        </span>
                     </div>
-                )}
-            </section>
+
+                    <div className="flex items-center gap-2">
+                        {consentDataLoading && <IonSpinner color="dark" />}
+                        <CaretDown
+                            className={`h-[14px] w-[14px] text-grayscale-500 transition-transform duration-200 ${
+                                isConsentRecordsOpen ? 'rotate-180' : ''
+                            }`}
+                            aria-hidden="true"
+                        />
+                    </div>
+                </summary>
+
+                <div className="mt-4 max-h-[420px] overflow-y-auto space-y-3 pr-1 pb-2">
+                    {/* could definitely present this prettier */}
+                    {!consentDataLoading && consentRecords.length > 0 && (
+                        <ol className="space-y-3">
+                            {consentRecords.map((terms: ConsentFlowContractData, index: number) => (
+                                <li
+                                    key={terms.personal.Name ?? index}
+                                    className="rounded-[20px] border border-grayscale-200 bg-white p-3"
+                                >
+                                    <pre className="overflow-x-auto text-xs text-grayscale-700">
+                                        {JSON.stringify(terms, null, 4)}
+                                    </pre>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
+                    {!consentDataLoading && consentRecords.length === 0 && (
+                        <p className="h-[120px] flex items-center justify-center text-sm text-grayscale-600">
+                            No one has consented to this contract yet
+                        </p>
+                    )}
+                    {contractLoading && !consentRecords.length && (
+                        <div className="w-full h-[120px] flex flex-col gap-[5px] items-center justify-center">
+                            <IonSpinner color="dark" />
+                            <span className="text-sm text-grayscale-600">Loading...</span>
+                        </div>
+                    )}
+                </div>
+            </details>
         </section>
     );
 };
