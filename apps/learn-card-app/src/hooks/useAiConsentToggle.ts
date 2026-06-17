@@ -31,7 +31,7 @@ export const useAiConsentToggle = () => {
     const isChildProfile = profileType === 'child';
 
     const handleAiToggle = useCallback(
-        async (enabled: boolean) => {
+        async (enabled: boolean): Promise<boolean> => {
             // ---- Case 1: Turning OFF ----
             // Update preferences first, then withdraw consent.
             // If withdrawal fails, restore preferences so state stays consistent.
@@ -42,7 +42,7 @@ export const useAiConsentToggle = () => {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
-                    return;
+                    return false;
                 }
 
                 const withdrawn = await withdrawLearnCardAiConsent();
@@ -56,18 +56,19 @@ export const useAiConsentToggle = () => {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
+                    return false;
                 }
-                return;
+                return true;
             }
 
-            const syncConsent = async () => {
+            const syncConsent = async (): Promise<boolean> => {
                 try {
                     await updatePreferencesAsync({ aiEnabled: true });
                 } catch {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
-                    return;
+                    return false;
                 }
 
                 const consented = await autoConsentLearnCardAi({ enabled: true });
@@ -82,17 +83,28 @@ export const useAiConsentToggle = () => {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
+                    return false;
                 }
+
+                return true;
             };
 
             // ---- Case 2: Turning ON ----
             // Update preferences first, then consent. Roll back if consent fails.
             if (isChildProfile) {
-                await guardedAction(syncConsent, { ignorePriorVerification: true });
-                return;
+                let synced = false;
+
+                await guardedAction(
+                    async () => {
+                        synced = await syncConsent();
+                    },
+                    { ignorePriorVerification: true }
+                );
+
+                return synced;
             }
 
-            await syncConsent();
+            return syncConsent();
         },
         [
             autoConsentLearnCardAi,

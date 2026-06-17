@@ -1,7 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { IonToggle } from '@ionic/react';
-import { ChevronLeft } from 'lucide-react';
+import { Check, ChevronLeft } from 'lucide-react';
 import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
 
 import {
@@ -45,6 +45,13 @@ const PrivacySettingsModal: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
     const [retryingAiConsent, setRetryingAiConsent] = useState(false);
+    const [isSyncingAiConsent, setIsSyncingAiConsent] = useState(false);
+    const [aiConnectionStatus, setAiConnectionStatus] = useState<
+        'idle' | 'connecting' | 'connected' | 'disconnecting' | 'disconnected'
+    >('idle');
+    const [isAiConnectionVisible, setIsAiConnectionVisible] = useState(false);
+    const aiConnectionHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const aiConnectionClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const profile = currentLCNUser as PrivacySettingsProfile | null;
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
@@ -54,6 +61,8 @@ const PrivacySettingsModal: React.FC = () => {
     const isMinor = profileType === 'child';
 
     const aiEnabled = aiFeatureEnabled;
+    const [aiToggleOverride, setAiToggleOverride] = useState<boolean | null>(null);
+    const aiToggleChecked = aiToggleOverride ?? aiEnabled;
     const hasAiConsent = useMemo(() => {
         return consentedContracts?.some(
             consent =>
@@ -62,9 +71,23 @@ const PrivacySettingsModal: React.FC = () => {
         );
     }, [consentedContracts]);
     const showAiConsentWarning =
-        !!preferences?.aiEnabled && !hasAiConsent && aiFeatureGateReason !== 'disabled_minor';
+        !!preferences?.aiEnabled &&
+        !hasAiConsent &&
+        aiFeatureGateReason !== 'disabled_minor' &&
+        !isSyncingAiConsent &&
+        !retryingAiConsent;
+    const showAiConnectionStatus = aiConnectionStatus !== 'idle';
     const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
     const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
+
+    useEffect(() => {
+        if (aiToggleOverride === null) return;
+
+        if (aiToggleOverride === aiEnabled) {
+            setAiToggleOverride(null);
+        }
+    }, [aiEnabled, aiToggleOverride]);
+
     // Legacy profiles may only have `isPrivate` populated. Mirror the backend
     // fallback so the selected privacy option matches the profile's effective
     // visibility until the user saves the new canonical field.
@@ -155,11 +178,84 @@ const PrivacySettingsModal: React.FC = () => {
     const handleRetryAiConsent = useCallback(async () => {
         try {
             setRetryingAiConsent(true);
-            await handleAiToggle(true);
+            setAiToggleOverride(true);
+            setAiConnectionStatus('connecting');
+            setIsAiConnectionVisible(true);
+
+            const synced = await handleAiToggle(true);
+
+            if (synced) {
+                setAiConnectionStatus('connected');
+            } else {
+                setAiToggleOverride(null);
+                setAiConnectionStatus('idle');
+                setIsAiConnectionVisible(false);
+            }
         } finally {
             setRetryingAiConsent(false);
         }
     }, [handleAiToggle]);
+
+    const handleAiFeatureToggle = useCallback(
+        (enabled: boolean) => {
+            setAiToggleOverride(enabled);
+            setAiConnectionStatus(enabled ? 'connecting' : 'disconnecting');
+            setIsAiConnectionVisible(true);
+            setIsSyncingAiConsent(true);
+
+            void (async () => {
+                try {
+                    const synced = await handleAiToggle(enabled);
+
+                    if (synced) {
+                        setAiConnectionStatus(enabled ? 'connected' : 'disconnected');
+                        return;
+                    }
+
+                    setAiToggleOverride(null);
+                    setAiConnectionStatus('idle');
+                    setIsAiConnectionVisible(false);
+                } finally {
+                    setIsSyncingAiConsent(false);
+                }
+            })();
+        },
+        [handleAiToggle]
+    );
+
+    useEffect(() => {
+        if (aiConnectionHideTimeoutRef.current) {
+            clearTimeout(aiConnectionHideTimeoutRef.current);
+            aiConnectionHideTimeoutRef.current = null;
+        }
+
+        if (aiConnectionClearTimeoutRef.current) {
+            clearTimeout(aiConnectionClearTimeoutRef.current);
+            aiConnectionClearTimeoutRef.current = null;
+        }
+
+        if (aiConnectionStatus !== 'connected' && aiConnectionStatus !== 'disconnected') return;
+
+        aiConnectionHideTimeoutRef.current = setTimeout(() => {
+            setIsAiConnectionVisible(false);
+            aiConnectionClearTimeoutRef.current = setTimeout(() => {
+                setAiConnectionStatus('idle');
+                aiConnectionClearTimeoutRef.current = null;
+            }, 300);
+        }, 2000);
+
+        return () => {
+            if (aiConnectionHideTimeoutRef.current) {
+                clearTimeout(aiConnectionHideTimeoutRef.current);
+                aiConnectionHideTimeoutRef.current = null;
+            }
+
+            if (aiConnectionClearTimeoutRef.current) {
+                clearTimeout(aiConnectionClearTimeoutRef.current);
+                aiConnectionClearTimeoutRef.current = null;
+            }
+        };
+    }, [aiConnectionStatus]);
 
     return (
         <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] w-full">
@@ -262,15 +358,45 @@ const PrivacySettingsModal: React.FC = () => {
                             </p>
                         </div>
                         <IonToggle
-                            checked={aiEnabled}
-                            disabled={aiFeatureGateReason === 'disabled_minor'}
+                            checked={aiToggleChecked}
+                            disabled={
+                                aiFeatureGateReason === 'disabled_minor' ||
+                                isSyncingAiConsent ||
+                                retryingAiConsent
+                            }
                             onIonChange={e =>
                                 aiFeatureGateReason !== 'disabled_minor' &&
-                                handleAiToggle(e.detail.checked)
+                                handleAiFeatureToggle(e.detail.checked)
                             }
                             aria-label="AI Features"
                         />
                     </div>
+                    {showAiConnectionStatus && (
+                        <div
+                            className={`px-5 pb-4 transition-opacity duration-300 ${
+                                isAiConnectionVisible ? 'opacity-100' : 'opacity-0'
+                            }`}
+                        >
+                            {aiConnectionStatus === 'connecting' ? (
+                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                    Connecting...
+                                </p>
+                            ) : aiConnectionStatus === 'disconnecting' ? (
+                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                    Disconnecting...
+                                </p>
+                            ) : (
+                                <p className="flex items-center gap-1.5 text-xs text-emerald-600 leading-relaxed">
+                                    <Check className="w-3.5 h-3.5 shrink-0" />
+                                    <span>
+                                        {aiConnectionStatus === 'connected'
+                                            ? 'Connected'
+                                            : 'Successfully Disconnected'}
+                                    </span>
+                                </p>
+                            )}
+                        </div>
+                    )}
                     {showAiConsentWarning && (
                         <div className="px-5 pb-4">
                             <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
