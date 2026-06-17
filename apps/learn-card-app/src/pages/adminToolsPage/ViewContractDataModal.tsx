@@ -277,11 +277,6 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                             {name}
                         </h1>
                         {subtitle && <p className="text-sm text-grayscale-600">{subtitle}</p>}
-                        {description && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed">
-                                {description}
-                            </p>
-                        )}
                     </div>
                 </div>
 
@@ -384,6 +379,12 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                                     {needsGuardianConsent ? 'Required' : 'Not required'}
                                 </p>
                             </div>
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
+                                Description
+                            </p>
+                            {renderMutedValue(description)}
                         </div>
                         <div>
                             <p className="text-xs font-medium text-grayscale-500 uppercase tracking-wide">
