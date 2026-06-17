@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import * as m from '../../paraglide/messages.js';
+import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
+
 import { IonRow, IonCol, IonModal, useIonModal, IonSpinner } from '@ionic/react';
 import useBoostModal from '../boost/hooks/useBoostModal';
 
@@ -55,6 +58,22 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
     const { headerTextColor, backgroundPrimaryColor, helperTextColor } = colors;
 
+    // Resolve a Paraglide message by dotted key, returning undefined when the
+    // key has no compiled message so callers can fall back to tenant theme copy.
+    const tr = (key: string, params?: Record<string, unknown>): string | undefined => {
+        const fn = (m as Record<string, unknown>)[key];
+        return typeof fn === 'function'
+            ? (fn as (p: Record<string, unknown>) => string)(params ?? {})
+            : undefined;
+    };
+
+    // Category title: mirror the side menu, which overrides tenant theme labels
+    // with the shared i18n catalog (wallet.categories[Singular]). Falls back to
+    // the theme label for any category without a translation key.
+    const categoryKey = getSideMenuTranslationKey(category);
+    const pluralName = tr(`wallet.categories.${categoryKey}`) ?? labels?.plural;
+    const singularName = tr(`wallet.categoriesSingular.${categoryKey}`) ?? labels?.singular;
+
     const history = useHistory();
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
 
@@ -72,7 +91,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         CategoryDescriptorModal,
         {
             handleCloseModal: () => dismissCategoryDescriptorModal(),
-            title: labels?.plural,
+            title: pluralName,
         }
     );
 
@@ -86,10 +105,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         );
     };
 
-    let titleDisplay = labels?.plural;
+    let titleDisplay = pluralName;
     if (count !== undefined) {
-        titleDisplay = `${formatCount(count)} ${titleDisplay}`;
-        if (count === 1) titleDisplay = labels?.singular;
+        titleDisplay = `${formatCount(count)} ${pluralName}`;
+        if (count === 1) titleDisplay = singularName;
     }
 
     const newCredsCountDisplay =
@@ -101,15 +120,29 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             </span>
         ) : null;
 
+    // Subtitle copy (wallet.subheaders.<type>). `Job` shares the `Experience`
+    // wording. Each piece falls back to the static English from
+    // SubheaderContentType when no translation key exists.
+    const subKey =
+        subheaderType === SubheaderTypeEnum.Job ? SubheaderTypeEnum.Experience : subheaderType;
+    const translatedLead =
+        tr(`wallet.subheaders.${subKey}.lead`) ??
+        tr(`wallet.subheaders.${subKey}.text`) ??
+        helperText;
+    const translatedLink = tr(`wallet.subheaders.${subKey}.link`) ?? helperTextClickable;
+    const translatedOptimized =
+        tr(`wallet.subheaders.${subKey}.optimized`, { percent: completionPercentage }) ??
+        `${completionPercentage}% Optimized`;
+
     let helperTextComponent = (
         <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
-            <span>{helperText}</span>{' '}
-            {helperTextClickable && (
+            <span>{translatedLead}</span>{' '}
+            {translatedLink && (
                 <button
                     className="font-[600] underline"
                     onClick={() => presentCategoryDescriptorModal()}
                 >
-                    {helperTextClickable}.
+                    {translatedLink}.
                 </button>
             )}
         </span>
@@ -122,10 +155,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                     className={`font-semibold !text-${colors?.indicatorColor || ''}`}
                     onClick={() => handlePersonalizeMyAi()}
                 >
-                    {helperTextClickable}
+                    {translatedLink}
                 </button>{' '}
                 <span className={`${helperTextColor || ''} font-medium text-[12px]`}>
-                    • {completionPercentage}% Optimized
+                    • {translatedOptimized}
                 </span>
             </span>
         );

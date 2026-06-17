@@ -81,7 +81,33 @@
             "progress": "{{percent}}% optimisé",
             "processing": "Traitement des documents…",
             "stepsCompleted": "<0>{{completed}}</0> sur <1>{{total}}</1> étapes terminées",
-            "pendingReview": "{{count}} titre(s) prêt(s) pour vérification"
+            "pendingReview": "{{count}} titre(s) prêt(s) pour vérification",
+            "titleMarkup": "Construire mon <0>{{brand}}</0>",
+            "steps": {
+                "addResume": "Ajouter un CV",
+                "addCertificates": "Ajouter des certificats",
+                "addTranscript": "Ajouter un relevé de notes",
+                "addDiploma": "Ajouter un diplôme",
+                "processingResume": "Traitement du CV…",
+                "processingCertificate": "Traitement du certificat…",
+                "processingTranscript": "Traitement du relevé de notes…",
+                "processingDiploma": "Traitement du diplôme…",
+                "processingRawVC": "Traitement de la référence…",
+                "reviewResume": "Vérifier le CV",
+                "reviewTranscripts": "Vérifier les relevés de notes"
+            },
+            "demoSchool": {
+                "title": "École de démonstration",
+                "description": "Connectez-vous à un exemple d’école, synchronisez des badges et des références de démonstration, et découvrez comment {{brand}} fonctionne.",
+                "sync": "Synchroniser l’école de démonstration",
+                "delete": "Supprimer l’école de démonstration",
+                "connectSuccess": "Vous êtes connecté à l’école de démonstration.",
+                "connectError": "Impossible de se connecter à l’école de démonstration. Veuillez réessayer.",
+                "noCredentials": "Aucune référence de démonstration trouvée. Veuillez réessayer.",
+                "deletedCount": "{{count}} références de démonstration supprimées",
+                "confirmSync": "Voulez-vous vraiment vous synchroniser avec l’école de démonstration ? Cela importera plusieurs références d’exemple, mais vous pourrez facilement les supprimer plus tard.",
+                "confirmDelete": "Voulez-vous vraiment supprimer tout le contenu de démonstration ? Cette action est irréversible, mais vous pourrez recharger le contenu de démonstration plus tard si nécessaire."
+            }
         },
         "resumeBuilder": {
             "title": "Créateur de CV",
@@ -261,7 +287,70 @@
         "meritBadge": "Badge de mérite",
         "meritBadges": "Badges de mérite",
         "evidenceFile": "Fichier de preuve",
-        "courseSyllabus": "Programme du cours"
+        "courseSyllabus": "Programme du cours",
+        "categoriesSingular": {
+            "aiSessions": "Session IA",
+            "aiPathways": "IA Pathway",
+            "aiInsights": "IA Insight",
+            "skills": "Compétence",
+            "socialBadges": "Boost",
+            "achievements": "Réalisation",
+            "studies": "Étude",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Expérience",
+            "families": "Famille",
+            "ids": "Identifiant"
+        },
+        "subheaders": {
+            "learning": {
+                "lead": "Votre",
+                "link": "parcours d’apprentissage"
+            },
+            "socialBadge": {
+                "lead": "Vos",
+                "link": "jalons sociaux"
+            },
+            "achievement": {
+                "lead": "Vos",
+                "link": "moments de fierté"
+            },
+            "accomplishment": {
+                "lead": "Vos",
+                "link": "accomplissements"
+            },
+            "skill": {
+                "lead": "Votre",
+                "link": "bibliothèque de compétences"
+            },
+            "aiInsights": {
+                "lead": "Explorez",
+                "link": "votre progression"
+            },
+            "aiPathways": {
+                "text": "Développez vos compétences et trouvez de nouveaux rôles"
+            },
+            "experience": {
+                "lead": "Vos",
+                "link": "expériences professionnelles"
+            },
+            "accommodation": {
+                "lead": "Vos",
+                "link": "soutiens et aménagements"
+            },
+            "family": {
+                "lead": "Les",
+                "link": "progrès d’apprentissage de votre famille"
+            },
+            "id": {
+                "lead": "Votre",
+                "link": "identification"
+            },
+            "aiSessions": {
+                "link": "Personnaliser mon tuteur",
+                "optimized": "{{percent}}% optimisé"
+            }
+        }
     },
     "theme": {
         "title": "Choisissez votre thème",

@@ -81,7 +81,33 @@
             "progress": "{{percent}}% محسّن",
             "processing": "جاري معالجة المستندات…",
             "stepsCompleted": "<0>{{completed}}</0> من <1>{{total}}</1> خطوات مكتملة",
-            "pendingReview": "{{count}} شهادة(شهادات) جاهزة للمراجعة"
+            "pendingReview": "{{count}} شهادة(شهادات) جاهزة للمراجعة",
+            "titleMarkup": "إنشاء <0>{{brand}}</0> الخاص بي",
+            "steps": {
+                "addResume": "إضافة سيرة ذاتية",
+                "addCertificates": "إضافة شهادات",
+                "addTranscript": "إضافة كشف درجات",
+                "addDiploma": "إضافة دبلوم",
+                "processingResume": "جارٍ معالجة السيرة الذاتية…",
+                "processingCertificate": "جارٍ معالجة الشهادة…",
+                "processingTranscript": "جارٍ معالجة كشف الدرجات…",
+                "processingDiploma": "جارٍ معالجة الدبلوم…",
+                "processingRawVC": "جارٍ معالجة الاعتماد…",
+                "reviewResume": "مراجعة السيرة الذاتية",
+                "reviewTranscripts": "مراجعة كشوف الدرجات"
+            },
+            "demoSchool": {
+                "title": "مدرسة تجريبية",
+                "description": "اتصل بمدرسة نموذجية، وقم بمزامنة الشارات والاعتمادات التجريبية، واستكشف كيف يعمل {{brand}}.",
+                "sync": "مزامنة المدرسة التجريبية",
+                "delete": "حذف المدرسة التجريبية",
+                "connectSuccess": "لقد اتصلت بنجاح بالمدرسة التجريبية.",
+                "connectError": "تعذّر الاتصال بالمدرسة التجريبية. يرجى المحاولة مرة أخرى.",
+                "noCredentials": "لم يتم العثور على اعتمادات تجريبية. يرجى المحاولة مرة أخرى.",
+                "deletedCount": "تم حذف {{count}} اعتماد تجريبي",
+                "confirmSync": "هل أنت متأكد أنك تريد المزامنة مع المدرسة التجريبية؟ سيؤدي ذلك إلى استيراد عدة اعتمادات نموذجية، ولكن يمكنك حذفها بسهولة لاحقًا.",
+                "confirmDelete": "هل أنت متأكد أنك تريد حذف كل المحتوى التجريبي؟ لا يمكن التراجع عن هذا الإجراء، ولكن يمكنك إعادة تحميل المحتوى التجريبي لاحقًا إذا لزم الأمر."
+            }
         },
         "resumeBuilder": {
             "title": "منشئ السيرة الذاتية",
@@ -261,7 +287,70 @@
         "meritBadge": "شارة الاستحقاق",
         "meritBadges": "شارات الاستحقاق",
         "evidenceFile": "ملف الدليل",
-        "courseSyllabus": "منهج الدورة"
+        "courseSyllabus": "منهج الدورة",
+        "categoriesSingular": {
+            "aiSessions": "جلسة ذكاء اصطناعي",
+            "aiPathways": "مسار ذكاء اصطناعي",
+            "aiInsights": "رؤية ذكاء اصطناعي",
+            "skills": "مهارة",
+            "socialBadges": "شارة",
+            "achievements": "إنجاز",
+            "studies": "دراسة",
+            "portfolio": "محفظة",
+            "assistance": "مساعدة",
+            "experiences": "خبرة",
+            "families": "عائلة",
+            "ids": "هوية"
+        },
+        "subheaders": {
+            "learning": {
+                "lead": "",
+                "link": "رحلتك التعليمية"
+            },
+            "socialBadge": {
+                "lead": "",
+                "link": "إنجازاتك الاجتماعية"
+            },
+            "achievement": {
+                "lead": "",
+                "link": "أفخر لحظاتك"
+            },
+            "accomplishment": {
+                "lead": "",
+                "link": "إنجازاتك"
+            },
+            "skill": {
+                "lead": "",
+                "link": "مكتبة مهاراتك"
+            },
+            "aiInsights": {
+                "lead": "استكشف",
+                "link": "تقدمك"
+            },
+            "aiPathways": {
+                "text": "طوّر مهاراتك واكتشف أدوارًا جديدة"
+            },
+            "experience": {
+                "lead": "",
+                "link": "خبراتك المهنية"
+            },
+            "accommodation": {
+                "lead": "",
+                "link": "الدعم والتسهيلات الخاصة بك"
+            },
+            "family": {
+                "lead": "",
+                "link": "تقدّم تعلّم عائلتك"
+            },
+            "id": {
+                "lead": "",
+                "link": "هويتك"
+            },
+            "aiSessions": {
+                "link": "تخصيص مُعلّمي",
+                "optimized": "{{percent}}% مُحسّن"
+            }
+        }
     },
     "theme": {
         "title": "اختر مظهرك",

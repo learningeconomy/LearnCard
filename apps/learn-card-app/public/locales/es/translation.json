@@ -81,7 +81,33 @@
             "progress": "{{percent}}% optimizado",
             "processing": "Procesando documentos…",
             "stepsCompleted": "<0>{{completed}}</0> de <1>{{total}}</1> pasos completados",
-            "pendingReview": "{{count}} credencial(es) listas para revisión"
+            "pendingReview": "{{count}} credencial(es) listas para revisión",
+            "titleMarkup": "Construye tu <0>{{brand}}</0>",
+            "steps": {
+                "addResume": "Agregar currículum",
+                "addCertificates": "Agregar certificados",
+                "addTranscript": "Agregar expediente académico",
+                "addDiploma": "Agregar diploma",
+                "processingResume": "Procesando currículum…",
+                "processingCertificate": "Procesando certificado…",
+                "processingTranscript": "Procesando expediente…",
+                "processingDiploma": "Procesando diploma…",
+                "processingRawVC": "Procesando credencial…",
+                "reviewResume": "Revisar currículum",
+                "reviewTranscripts": "Revisar expedientes"
+            },
+            "demoSchool": {
+                "title": "Escuela de demostración",
+                "description": "Conéctate a una escuela de ejemplo, sincroniza insignias y credenciales de demostración, y explora cómo funciona {{brand}}.",
+                "sync": "Sincronizar escuela de demostración",
+                "delete": "Eliminar escuela de demostración",
+                "connectSuccess": "Te has conectado correctamente a la escuela de demostración.",
+                "connectError": "No se pudo conectar a la escuela de demostración. Inténtalo de nuevo.",
+                "noCredentials": "No se encontraron credenciales de demostración. Inténtalo de nuevo.",
+                "deletedCount": "Se eliminaron {{count}} credenciales de demostración",
+                "confirmSync": "¿Seguro que quieres sincronizar con la escuela de demostración? Esto importará varias credenciales de ejemplo, pero podrás eliminarlas fácilmente más tarde.",
+                "confirmDelete": "¿Seguro que quieres eliminar todo el contenido de demostración? Esta acción no se puede deshacer, pero podrás volver a cargar el contenido de demostración más tarde si lo necesitas."
+            }
         },
         "resumeBuilder": {
             "title": "Creador de currículum",
@@ -261,7 +287,70 @@
         "meritBadge": "Insignia al mérito",
         "meritBadges": "Insignias al mérito",
         "evidenceFile": "Archivo de evidencia",
-        "courseSyllabus": "Programa del curso"
+        "courseSyllabus": "Programa del curso",
+        "categoriesSingular": {
+            "aiSessions": "Sesión de IA",
+            "aiPathways": "IA Pathway",
+            "aiInsights": "IA Insight",
+            "skills": "Habilidad",
+            "socialBadges": "Boost",
+            "achievements": "Logro",
+            "studies": "Estudio",
+            "portfolio": "Portafolio",
+            "assistance": "Asistencia",
+            "experiences": "Experiencia",
+            "families": "Familia",
+            "ids": "Identificación"
+        },
+        "subheaders": {
+            "learning": {
+                "lead": "Tu",
+                "link": "trayectoria de aprendizaje"
+            },
+            "socialBadge": {
+                "lead": "Tus",
+                "link": "hitos sociales"
+            },
+            "achievement": {
+                "lead": "Tus",
+                "link": "momentos de orgullo"
+            },
+            "accomplishment": {
+                "lead": "Tus",
+                "link": "logros"
+            },
+            "skill": {
+                "lead": "Tu",
+                "link": "biblioteca de habilidades"
+            },
+            "aiInsights": {
+                "lead": "Explora",
+                "link": "tu progreso"
+            },
+            "aiPathways": {
+                "text": "Desarrolla tus habilidades y encuentra nuevos roles"
+            },
+            "experience": {
+                "lead": "Tus",
+                "link": "experiencias laborales"
+            },
+            "accommodation": {
+                "lead": "Tus",
+                "link": "apoyos y ajustes"
+            },
+            "family": {
+                "lead": "El",
+                "link": "progreso de aprendizaje de tu familia"
+            },
+            "id": {
+                "lead": "Tu",
+                "link": "identificación"
+            },
+            "aiSessions": {
+                "link": "Personalizar mi tutor",
+                "optimized": "{{percent}}% optimizado"
+            }
+        }
     },
     "theme": {
         "title": "Elige tu tema",

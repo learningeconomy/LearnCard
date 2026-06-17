@@ -81,7 +81,33 @@
             "progress": "{{percent}}% optimized",
             "processing": "Processing documents…",
             "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
-            "pendingReview": "{{count}} credential(s) ready for review"
+            "pendingReview": "{{count}} credential(s) ready for review",
+            "titleMarkup": "Build My <0>{{brand}}</0>",
+            "steps": {
+                "addResume": "Add Resume",
+                "addCertificates": "Add Certificates",
+                "addTranscript": "Add Transcript",
+                "addDiploma": "Add Diploma",
+                "processingResume": "Processing Resume…",
+                "processingCertificate": "Processing Certificate…",
+                "processingTranscript": "Processing Transcript…",
+                "processingDiploma": "Processing Diploma…",
+                "processingRawVC": "Processing Raw VC…",
+                "reviewResume": "Review Resume",
+                "reviewTranscripts": "Review Transcripts"
+            },
+            "demoSchool": {
+                "title": "Demo School",
+                "description": "Connect to a sample school, sync demo badges and credentials, and explore how {{brand}} works.",
+                "sync": "Sync Demo School",
+                "delete": "Delete Demo School",
+                "connectSuccess": "You have successfully connected to the demo school.",
+                "connectError": "Unable to connect to the demo school. Please try again.",
+                "noCredentials": "No Demo credentials found. Please try again.",
+                "deletedCount": "Deleted {{count}} Demo credentials",
+                "confirmSync": "Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.",
+                "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed."
+            }
         },
         "explore": "Explore",
         "resumeBuilder": {
@@ -261,7 +287,70 @@
         "search": "Search credentials...",
         "subject": "Subject",
         "viewCredential": "View Credential",
-        "viewMode": "View"
+        "viewMode": "View",
+        "categoriesSingular": {
+            "aiSessions": "AI Session",
+            "aiPathways": "AI Pathway",
+            "aiInsights": "AI Insight",
+            "skills": "Skill",
+            "socialBadges": "Boost",
+            "achievements": "Achievement",
+            "studies": "Study",
+            "portfolio": "Portfolio",
+            "assistance": "Assistance",
+            "experiences": "Experience",
+            "families": "Family",
+            "ids": "ID"
+        },
+        "subheaders": {
+            "learning": {
+                "lead": "Your",
+                "link": "learning journey"
+            },
+            "socialBadge": {
+                "lead": "Your",
+                "link": "social milestones"
+            },
+            "achievement": {
+                "lead": "Your",
+                "link": "proudest moments"
+            },
+            "accomplishment": {
+                "lead": "Your",
+                "link": "accomplishments"
+            },
+            "skill": {
+                "lead": "Your",
+                "link": "skills library"
+            },
+            "aiInsights": {
+                "lead": "Explore",
+                "link": "your progress"
+            },
+            "aiPathways": {
+                "text": "Grow your skills & find new roles"
+            },
+            "experience": {
+                "lead": "Your",
+                "link": "work experiences"
+            },
+            "accommodation": {
+                "lead": "Your",
+                "link": "support and adjustments"
+            },
+            "family": {
+                "lead": "Your",
+                "link": "family’s learning progress"
+            },
+            "id": {
+                "lead": "Your",
+                "link": "identification"
+            },
+            "aiSessions": {
+                "link": "Personalize my tutor",
+                "optimized": "{{percent}}% Optimized"
+            }
+        }
     },
     "theme": {
         "names": {
