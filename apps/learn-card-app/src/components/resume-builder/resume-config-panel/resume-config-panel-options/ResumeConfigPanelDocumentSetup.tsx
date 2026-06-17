@@ -4,6 +4,9 @@ import { IonIcon } from '@ionic/react';
 import { chevronDownOutline, chevronUpOutline } from 'ionicons/icons';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeBuilderToggle from '../../ResumeBuilderToggle';
+import { getOnOffLabel } from '../../resumeBuilderI18n';
+
+import * as m from '../../../../paraglide/messages.js';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -19,7 +22,9 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
                 onClick={() => setOpen(o => !o)}
             >
-                <span className="text-[19px] font-500 text-grayscale-900">Document Setup</span>
+                <span className="text-[19px] font-500 text-grayscale-900">
+                    {m['passport.resumeBuilder.documentSetup.title']()}
+                </span>
                 <IonIcon
                     color="grayscale-800"
                     icon={open ? chevronDownOutline : chevronUpOutline}
@@ -32,8 +37,10 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                         <div className="flex flex-col">
                             <div className="flex items-center justify-between gap-2 w-full">
                                 <p className="text-xs font-semibold text-grayscale-900">
-                                    {brandingConfig?.name} QR code •{' '}
-                                    {documentSetup?.showQRCode ? 'On' : 'Off'}
+                                    {m['passport.resumeBuilder.documentSetup.qrCode']({
+                                        brand: brandingConfig?.name,
+                                        status: getOnOffLabel(Boolean(documentSetup?.showQRCode)),
+                                    })}
                                 </p>
                                 <ResumeBuilderToggle
                                     checked={Boolean(documentSetup?.showQRCode)}
@@ -41,15 +48,14 @@ const ResumeConfigPanelDocumentSetup: React.FC = () => {
                                 />
                             </div>
                             <p className="text-sm text-grayscale-700 mt-1">
-                                This code allows employers to view the credentials attached to this
-                                resume.
+                                {m['passport.resumeBuilder.documentSetup.qrCodeDescription']()}
                             </p>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-xs font-semibold text-grayscale-700">
-                            File Name
+                            {m['passport.resumeBuilder.documentSetup.fileName']()}
                         </label>
                         <input
                             type="text"

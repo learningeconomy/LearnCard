@@ -16,6 +16,7 @@ import {
     getLinkedInHandle,
     resumeUserInfo,
 } from '../resume-builder.helpers';
+import { getUserInfoPlaceholder } from '../resumeBuilderI18n';
 import { formatPhoneForDisplay } from './resume-preview.helpers';
 
 const PRIMARY_CHIP_KEYS: (keyof PersonalDetails)[] = [UserInfoEnum.Career, UserInfoEnum.Location];
@@ -46,7 +47,7 @@ const ResumePreviewUserInfo: React.FC<{
     );
 
     const placeholderByKey = Object.fromEntries(
-        resumeUserInfo.map(field => [field.key, field.placeholder])
+        resumeUserInfo.map(field => [field.key, getUserInfoPlaceholder(field.key)])
     ) as Record<UserInfoEnum, string>;
 
     const isFieldEnabled = (key: keyof PersonalDetails) => !hiddenPersonalDetails?.[key];

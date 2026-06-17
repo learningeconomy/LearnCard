@@ -275,7 +275,158 @@
             "yourResume": "سيرتك الذاتية",
             "buildYourResume": "أنشئ سيرتك الذاتية",
             "updatedToday": "تم التحديث <0>اليوم</0>",
-            "tagline": "تميز بسيرة ذاتية مخصصة"
+            "tagline": "تميز بسيرة ذاتية مخصصة",
+            "on": "مُفعّل",
+            "off": "مُعطّل",
+            "goBack": "رجوع",
+            "download": "تنزيل",
+            "currentJob": "الوظيفة الحالية",
+            "credential": "شهادة",
+            "addDescription": "إضافة وصف...",
+            "addItem": "إضافة عنصر",
+            "remove": "إزالة",
+            "deselectCredential": "إلغاء تحديد الشهادة",
+            "buildingResume": "جارٍ إنشاء سيرتك الذاتية...",
+            "generatingPdf": "جارٍ إنشاء ملف PDF…",
+            "downloadResume": "تنزيل السيرة الذاتية",
+            "status": {
+                "published": "منشورة",
+                "draft": "مسودة",
+                "active": "نشطة"
+            },
+            "history": {
+                "iconAlt": "سجل السير الذاتية",
+                "title": "سجل السير الذاتية",
+                "newResume": "+ سيرة ذاتية جديدة",
+                "creating": "جارٍ الإنشاء...",
+                "empty": "لا توجد سير ذاتية بعد.",
+                "editedOn": "تم التعديل في {{date}}",
+                "noEditDate": "لا يوجد تاريخ تعديل",
+                "credentialCount": "{{count}} شهادات"
+            },
+            "documentSetup": {
+                "title": "إعداد المستند",
+                "qrCode": "رمز QR الخاص بـ {{brand}} • {{status}}",
+                "qrCodeDescription": "يتيح هذا الرمز لأصحاب العمل عرض الشهادات المرفقة بهذه السيرة الذاتية.",
+                "fileName": "اسم الملف"
+            },
+            "personalInfo": {
+                "title": "المعلومات الشخصية",
+                "thumbnail": "الصورة المصغّرة • {{status}}"
+            },
+            "fields": {
+                "name": {
+                    "label": "الاسم الكامل",
+                    "placeholder": "جين دو"
+                },
+                "career": {
+                    "label": "المسمى الوظيفي",
+                    "placeholder": "مهندس برمجيات"
+                },
+                "location": {
+                    "label": "الموقع",
+                    "placeholder": "سان فرانسيسكو، كاليفورنيا"
+                },
+                "summary": {
+                    "label": "الملخص المهني",
+                    "placeholder": "ملخص مهني موجز..."
+                },
+                "email": {
+                    "label": "البريد الإلكتروني",
+                    "placeholder": "jane@example.com"
+                },
+                "phone": {
+                    "label": "الهاتف",
+                    "placeholder": "+1 (555) 000-0000"
+                },
+                "website": {
+                    "label": "الموقع الإلكتروني",
+                    "placeholder": "https://example.com"
+                },
+                "linkedIn": {
+                    "label": "LinkedIn",
+                    "placeholder": "https://linkedin.com/in/janedoe"
+                }
+            },
+            "sections": {
+                "workHistory": "الخبرة العملية",
+                "learningHistory": "التعليم والتعلّم",
+                "achievement": "الإنجازات",
+                "accomplishment": "المنجزات",
+                "socialBadge": "الشارات والشهادات",
+                "accommodation": "الترتيبات التيسيرية"
+            },
+            "selector": {
+                "selectedStatus": "{{count}} محددة • {{status}}",
+                "loading": "جارٍ تحميل الشهادات...",
+                "empty": "لا توجد شهادات في هذه الفئة.",
+                "noMatch": "لا توجد شهادات تطابق \"{{query}}\".",
+                "previous": "الشهادة السابقة",
+                "next": "الشهادة التالية"
+            },
+            "emptySection": {
+                "noCredentials": "لم يتم العثور على شهادات",
+                "descriptionSuffix": "إلى جواز {{brand}} لتعبئة هذا القسم تلقائيًا.",
+                "workHistory": {
+                    "action": "إضافة خبرة",
+                    "emphasis": "أضف خبرات عملية"
+                },
+                "learningHistory": {
+                    "action": "إضافة دراسة",
+                    "emphasis": "أضف دراسات"
+                },
+                "achievement": {
+                    "action": "إضافة إنجاز",
+                    "emphasis": "أضف إنجازات"
+                },
+                "accomplishment": {
+                    "action": "إضافة منجز",
+                    "emphasis": "أضف منجزات"
+                },
+                "accommodation": {
+                    "action": "إضافة ترتيب تيسيري",
+                    "emphasis": "أضف ترتيبات تيسيرية"
+                }
+            },
+            "dates": {
+                "start": "تاريخ البدء",
+                "end": "تاريخ الانتهاء"
+            },
+            "editable": {
+                "edited": "مُعدّل",
+                "restoreDefault": "استعادة الافتراضي",
+                "defaultSummary": "الملخص الافتراضي"
+            },
+            "editBlock": {
+                "edit": "تعديل",
+                "stopEditing": "إيقاف التعديل"
+            },
+            "emptyPreview": {
+                "title": "ستظهر سيرتك الذاتية هنا",
+                "subtitle": "املأ بياناتك وحدد الشهادات من اللوحة"
+            },
+            "pdfPreview": {
+                "defaultName": "معاينة السيرة الذاتية",
+                "page": "صفحة",
+                "pages": "صفحات",
+                "downloadPdf": "تنزيل PDF",
+                "iframeTitle": "معاينة ملف PDF للسيرة الذاتية"
+            },
+            "toastTitle": {
+                "downloaded": "تم التنزيل",
+                "downloadFailed": "فشل التنزيل",
+                "published": "منشورة",
+                "saved": "تم الحفظ",
+                "publishFailed": "فشل النشر"
+            },
+            "selfAttest": {
+                "addTitle": "إضافة {{type}}",
+                "namePlaceholder": "الاسم...",
+                "descriptionPlaceholder": "الوصف..."
+            },
+            "shareLink": {
+                "close": "إغلاق نافذة المشاركة"
+            }
         },
         "explore": "استكشاف"
     },
@@ -1051,7 +1202,17 @@
         "confirmAcceptRequest": "هل أنت متأكد أنك تريد قبول طلب الاتصال؟",
         "confirmUnblock": "هل أنت متأكد أنك تريد إلغاء حظر هذا المستخدم؟",
         "confirmRemoveConnection": "هل أنت متأكد أنك تريد إزالة هذا الاتصال؟",
-        "confirmBlock": "هل أنت متأكد أنك تريد حظر هذا المستخدم؟"
+        "confirmBlock": "هل أنت متأكد أنك تريد حظر هذا المستخدم؟",
+        "myContactCard": "بطاقة الاتصال الخاصة بي",
+        "noConnections": "لا توجد اتصالات بعد.",
+        "new": "جديد",
+        "contactCountOne": "{{count}} جهة اتصال",
+        "contactCountOther": "{{count}} جهات اتصال",
+        "requestCountOne": "{{count}} طلب",
+        "requestCountOther": "{{count}} طلبات",
+        "blockedCountLabel": "{{count}} محظور",
+        "removeContactError": "حدث خطأ، تعذّر إزالة جهة الاتصال",
+        "blockUserError": "حدث خطأ، تعذّر حظر المستخدم"
     },
     "consentFlow": {
         "title": "الموافقة",
@@ -1728,7 +1889,59 @@
             "editDraft": "تعديل المسودة",
             "sendingBoost": "جارٍ إرسال Boost"
         },
-        "issuing": "جارٍ إصدار Boost"
+        "issuing": "جارٍ إصدار Boost",
+        "wizard": {
+            "title": "معالج التعزيز بالذكاء الاصطناعي",
+            "subtextSelf": "يمكنك منح نفسك تعزيزات لتروي قصتك. مهاراتك هي عملة مستقبلك.",
+            "subtextSomeone": "امنح تعزيزات لأشخاص تعرفهم.",
+            "promptDescription": "استخدم كلمات بسيطة لوصف سبب إعجابك بشخص ما، وما الذي أنجزه، ولماذا هو رائع، وما إلى ذلك.",
+            "promptPlaceholder": "اكتب موجّهًا...",
+            "charCount": "{{count}} / 500",
+            "generateMagic": "إنشاء السحر",
+            "charLimitError": "لقد تجاوزت الحد الأقصى البالغ 500 حرف.",
+            "unexpectedError": "حدث خطأ غير متوقع. يُرجى المحاولة مرة أخرى.",
+            "describePlaceholder": "صف التعزيز الذي تريد إنشاءه.",
+            "generating": "جارٍ الإنشاء...",
+            "generateBoost": "إنشاء تعزيز",
+            "goBack": "رجوع",
+            "loaderText": [
+                "جارٍ تحليل مدخلاتك...",
+                "جارٍ تجهيز شهادتك الذكية...",
+                "جارٍ إنشاء شهادتك...",
+                "جارٍ توثيق إنجازك...",
+                "جارٍ بناء سجلك القابل للتحقق...",
+                "جارٍ تجميع كل شيء...",
+                "جارٍ إنشاء شارتك الرقمية...",
+                "جارٍ إنهاء كل شيء الآن...",
+                "الذكاء الاصطناعي يصوغ إثباتك...",
+                "أوشكنا على الانتهاء..."
+            ]
+        },
+        "template": {
+            "custom": "مخصّص",
+            "browseTemplates": "تصفّح القوالب...",
+            "noResults": "لم يتم العثور على نتائج",
+            "noBoosts": "لا توجد تعزيزات بعد!",
+            "newTemplate": "قالب جديد",
+            "brandTemplate": "قالب {{brand}}"
+        },
+        "newBoost": {
+            "study": "دراسة جديدة",
+            "experience": "خبرة جديدة",
+            "assistance": "مساعدة جديدة",
+            "portfolio": "ملف أعمال جديد",
+            "boost": "تعزيز جديد",
+            "achievement": "إنجاز جديد",
+            "skill": "مهارة جديدة",
+            "id": "هوية جديدة",
+            "membership": "عضوية جديدة",
+            "course": "دورة جديدة",
+            "generic": "{{type}} جديد"
+        },
+        "browseEarnedPlaceholder": "تصفّح المكتسبة...",
+        "browseManagedPlaceholder": "تصفّح المُدارة...",
+        "issue": "إصدار",
+        "editDraft": "تعديل المسودة"
     },
     "legal": {
         "termsOfService": "شروط الخدمة",

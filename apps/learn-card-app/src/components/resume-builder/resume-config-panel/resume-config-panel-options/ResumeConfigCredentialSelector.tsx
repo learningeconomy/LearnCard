@@ -11,6 +11,9 @@ import { useGetCredentials } from 'learn-card-base';
 import { ResumeSectionKey } from '../../resume-builder.helpers';
 import { resumeBuilderStore } from '../../../../stores/resumeBuilderStore';
 import ResumeBuilderToggle from '../../ResumeBuilderToggle';
+import { getOnOffLabel } from '../../resumeBuilderI18n';
+
+import * as m from '../../../../paraglide/messages.js';
 
 import 'swiper/css';
 
@@ -62,7 +65,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
         return searchableText.includes(normalizedSearchQuery);
     });
     const selectedCount = selected.length;
-    const statusLabel = isSectionVisible ? 'On' : 'Off';
+    const statusLabel = getOnOffLabel(isSectionVisible);
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);
@@ -87,7 +90,10 @@ export const ResumeConfigCredentialSelector: React.FC<{
                                 {label}
                             </span>
                             <span className="block text-xs font-semibold text-grayscale-600">
-                                {selectedCount} Selected • {statusLabel}
+                                {m['passport.resumeBuilder.selector.selectedStatus']({
+                                    count: selectedCount,
+                                    status: statusLabel,
+                                })}
                             </span>
                         </div>
                     </div>
@@ -117,17 +123,19 @@ export const ResumeConfigCredentialSelector: React.FC<{
                     </div>
                     {isLoading && (
                         <p className="text-xs text-grayscale-400 px-4 mt-4 mb-2">
-                            Loading credentials...
+                            {m['passport.resumeBuilder.selector.loading']()}
                         </p>
                     )}
                     {!isLoading && records.length === 0 && (
                         <p className="text-xs text-grayscale-400 px-4 mt-4 mb-2">
-                            No credentials in this category.
+                            {m['passport.resumeBuilder.selector.empty']()}
                         </p>
                     )}
                     {!isLoading && records.length > 0 && filteredRecords.length === 0 && (
                         <p className="text-xs text-grayscale-400 px-4 mt-4 mb-2">
-                            No credentials match "{searchQuery.trim()}".
+                            {m['passport.resumeBuilder.selector.noMatch']({
+                                query: searchQuery.trim(),
+                            })}
                         </p>
                     )}
                     {!isLoading && filteredRecords.length > 0 && (
@@ -187,7 +195,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                             {!atBeginning && (
                                 <button
                                     onClick={() => swiperRef.current?.slidePrev()}
-                                    aria-label="Previous credential"
+                                    aria-label={m['passport.resumeBuilder.selector.previous']()}
                                     className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-[1101] shadow-md hover:bg-gray-200 transition-all duration-200"
                                     style={{ opacity: 0.85 }}
                                 >
@@ -198,7 +206,7 @@ export const ResumeConfigCredentialSelector: React.FC<{
                             {(!atBeginning || filteredRecords.length > 2) && (
                                 <button
                                     onClick={() => swiperRef.current?.slideNext()}
-                                    aria-label="Next credential"
+                                    aria-label={m['passport.resumeBuilder.selector.next']()}
                                     className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-[1101] shadow-md hover:bg-gray-200 transition-all duration-200"
                                     style={{ opacity: atEnd ? 0.35 : 0.85 }}
                                 >

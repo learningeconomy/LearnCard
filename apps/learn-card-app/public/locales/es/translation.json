@@ -275,7 +275,158 @@
             "yourResume": "Tu currículum",
             "buildYourResume": "Crea tu currículum",
             "updatedToday": "Actualizado <0>hoy</0>",
-            "tagline": "Destaca con un currículum personalizado"
+            "tagline": "Destaca con un currículum personalizado",
+            "on": "Activado",
+            "off": "Desactivado",
+            "goBack": "Volver",
+            "download": "Descargar",
+            "currentJob": "Empleo actual",
+            "credential": "Credencial",
+            "addDescription": "Añadir una descripción...",
+            "addItem": "Añadir elemento",
+            "remove": "Eliminar",
+            "deselectCredential": "Deseleccionar credencial",
+            "buildingResume": "Creando tu currículum...",
+            "generatingPdf": "Generando PDF…",
+            "downloadResume": "Descargar currículum",
+            "status": {
+                "published": "Publicado",
+                "draft": "Borrador",
+                "active": "Activo"
+            },
+            "history": {
+                "iconAlt": "Historial de currículums",
+                "title": "Historial de currículums",
+                "newResume": "+ Nuevo currículum",
+                "creating": "Creando...",
+                "empty": "Aún no hay currículums.",
+                "editedOn": "Editado el {{date}}",
+                "noEditDate": "Sin fecha de edición",
+                "credentialCount": "{{count}} credenciales"
+            },
+            "documentSetup": {
+                "title": "Configuración del documento",
+                "qrCode": "Código QR de {{brand}} • {{status}}",
+                "qrCodeDescription": "Este código permite a los empleadores ver las credenciales adjuntas a este currículum.",
+                "fileName": "Nombre del archivo"
+            },
+            "personalInfo": {
+                "title": "Información personal",
+                "thumbnail": "Miniatura • {{status}}"
+            },
+            "fields": {
+                "name": {
+                    "label": "Nombre completo",
+                    "placeholder": "Juan Pérez"
+                },
+                "career": {
+                    "label": "Título profesional",
+                    "placeholder": "Ingeniero de software"
+                },
+                "location": {
+                    "label": "Ubicación",
+                    "placeholder": "San Francisco, CA"
+                },
+                "summary": {
+                    "label": "Resumen profesional",
+                    "placeholder": "Breve resumen profesional..."
+                },
+                "email": {
+                    "label": "Correo electrónico",
+                    "placeholder": "juan@ejemplo.com"
+                },
+                "phone": {
+                    "label": "Teléfono",
+                    "placeholder": "+1 (555) 000-0000"
+                },
+                "website": {
+                    "label": "Sitio web",
+                    "placeholder": "https://ejemplo.com"
+                },
+                "linkedIn": {
+                    "label": "LinkedIn",
+                    "placeholder": "https://linkedin.com/in/juanperez"
+                }
+            },
+            "sections": {
+                "workHistory": "Experiencia laboral",
+                "learningHistory": "Educación y aprendizaje",
+                "achievement": "Logros",
+                "accomplishment": "Méritos",
+                "socialBadge": "Insignias y certificaciones",
+                "accommodation": "Adaptaciones"
+            },
+            "selector": {
+                "selectedStatus": "{{count}} seleccionadas • {{status}}",
+                "loading": "Cargando credenciales...",
+                "empty": "No hay credenciales en esta categoría.",
+                "noMatch": "Ninguna credencial coincide con \"{{query}}\".",
+                "previous": "Credencial anterior",
+                "next": "Siguiente credencial"
+            },
+            "emptySection": {
+                "noCredentials": "No se encontraron credenciales",
+                "descriptionSuffix": "a tu pasaporte de {{brand}} para completar automáticamente esta sección.",
+                "workHistory": {
+                    "action": "Añadir experiencia",
+                    "emphasis": "Añade experiencias laborales"
+                },
+                "learningHistory": {
+                    "action": "Añadir estudios",
+                    "emphasis": "Añade estudios"
+                },
+                "achievement": {
+                    "action": "Añadir logro",
+                    "emphasis": "Añade logros"
+                },
+                "accomplishment": {
+                    "action": "Añadir mérito",
+                    "emphasis": "Añade méritos"
+                },
+                "accommodation": {
+                    "action": "Añadir adaptación",
+                    "emphasis": "Añade adaptaciones"
+                }
+            },
+            "dates": {
+                "start": "Fecha de inicio",
+                "end": "Fecha de fin"
+            },
+            "editable": {
+                "edited": "Editado",
+                "restoreDefault": "Restaurar predeterminado",
+                "defaultSummary": "Resumen predeterminado"
+            },
+            "editBlock": {
+                "edit": "Editar",
+                "stopEditing": "Dejar de editar"
+            },
+            "emptyPreview": {
+                "title": "Tu currículum aparecerá aquí",
+                "subtitle": "Completa tus datos y selecciona credenciales en el panel"
+            },
+            "pdfPreview": {
+                "defaultName": "Vista previa del currículum",
+                "page": "Página",
+                "pages": "Páginas",
+                "downloadPdf": "Descargar PDF",
+                "iframeTitle": "Vista previa del PDF del currículum"
+            },
+            "toastTitle": {
+                "downloaded": "Descargado",
+                "downloadFailed": "Error al descargar",
+                "published": "Publicado",
+                "saved": "Guardado",
+                "publishFailed": "Error al publicar"
+            },
+            "selfAttest": {
+                "addTitle": "Añadir {{type}}",
+                "namePlaceholder": "Nombre...",
+                "descriptionPlaceholder": "Descripción..."
+            },
+            "shareLink": {
+                "close": "Cerrar ventana de compartir"
+            }
         },
         "explore": "Explorar"
     },
@@ -1051,7 +1202,17 @@
         "confirmAcceptRequest": "¿Estás seguro de que quieres aceptar la solicitud de conexión?",
         "confirmUnblock": "¿Estás seguro de que quieres desbloquear a este usuario?",
         "confirmRemoveConnection": "¿Estás seguro de que quieres eliminar esta conexión?",
-        "confirmBlock": "¿Estás seguro de que quieres bloquear a este usuario?"
+        "confirmBlock": "¿Estás seguro de que quieres bloquear a este usuario?",
+        "myContactCard": "Mi tarjeta de contacto",
+        "noConnections": "Aún no hay conexiones.",
+        "new": "Nuevo",
+        "contactCountOne": "{{count}} contacto",
+        "contactCountOther": "{{count}} contactos",
+        "requestCountOne": "{{count}} solicitud",
+        "requestCountOther": "{{count}} solicitudes",
+        "blockedCountLabel": "{{count}} bloqueados",
+        "removeContactError": "Ocurrió un error, no se pudo eliminar el contacto",
+        "blockUserError": "Ocurrió un error, no se pudo bloquear al usuario"
     },
     "consentFlow": {
         "title": "Consentimiento",
@@ -1728,7 +1889,59 @@
             "editDraft": "Editar borrador",
             "sendingBoost": "Enviando Boost"
         },
-        "issuing": "Emitiendo Boost"
+        "issuing": "Emitiendo Boost",
+        "wizard": {
+            "title": "Asistente de Boost con IA",
+            "subtextSelf": "Puedes emitirte boosts para contar tu historia. Tus habilidades son la moneda de tu futuro.",
+            "subtextSomeone": "Emite boosts a personas que conoces.",
+            "promptDescription": "Usa palabras sencillas para describir por qué admiras a alguien, qué logró, por qué es genial, etc.",
+            "promptPlaceholder": "Escribe un mensaje...",
+            "charCount": "{{count}} / 500",
+            "generateMagic": "Generar magia",
+            "charLimitError": "Has superado el límite de 500 caracteres.",
+            "unexpectedError": "Ocurrió un error inesperado. Inténtalo de nuevo.",
+            "describePlaceholder": "Describe el boost que quieres crear.",
+            "generating": "Generando...",
+            "generateBoost": "Generar boost",
+            "goBack": "Volver",
+            "loaderText": [
+                "Analizando tus datos...",
+                "Preparando tu credencial inteligente...",
+                "Generando tu credencial...",
+                "Sellando tu logro...",
+                "Creando tu registro verificable...",
+                "Empaquetándolo todo...",
+                "Creando tu insignia digital...",
+                "Finalizando todo ahora...",
+                "La IA está creando tu prueba...",
+                "Ya casi está..."
+            ]
+        },
+        "template": {
+            "custom": "Personalizado",
+            "browseTemplates": "Explorar plantillas...",
+            "noResults": "No se encontraron resultados",
+            "noBoosts": "¡Aún no hay boosts!",
+            "newTemplate": "Nueva plantilla",
+            "brandTemplate": "Plantilla de {{brand}}"
+        },
+        "newBoost": {
+            "study": "Nuevo estudio",
+            "experience": "Nueva experiencia",
+            "assistance": "Nueva asistencia",
+            "portfolio": "Nuevo portafolio",
+            "boost": "Nuevo boost",
+            "achievement": "Nuevo logro",
+            "skill": "Nueva habilidad",
+            "id": "Nueva identificación",
+            "membership": "Nueva membresía",
+            "course": "Nuevo curso",
+            "generic": "Nuevo {{type}}"
+        },
+        "browseEarnedPlaceholder": "Explorar obtenidos...",
+        "browseManagedPlaceholder": "Explorar gestionados...",
+        "issue": "Emitir",
+        "editDraft": "Editar borrador"
     },
     "legal": {
         "termsOfService": "Términos de servicio",

@@ -28,6 +28,8 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
+import * as m from '../../../paraglide/messages.js';
+
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
     section: ResumeSectionKey;
@@ -42,7 +44,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     );
     const vc = resolvedCredential ?? queriedCredential;
     const { title, description: vcDescription } = useGetVCInfo(
-        (vc ?? ({ '@context': [], type: [] } as VC)),
+        vc ?? ({ '@context': [], type: [] } as VC),
         section
     );
 
@@ -146,8 +148,9 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     const openCredentialPreview = () => {
         if (!vc || isEditing) return;
 
-        const categoryType =
-            (getDefaultCategoryForCredential(unwrapBoostCredential(vc), { skipValidation: true }) || section) as any;
+        const categoryType = (getDefaultCategoryForCredential(unwrapBoostCredential(vc), {
+            skipValidation: true,
+        }) || section) as any;
         const previewProps = {
             credential: vc,
             categoryType,
@@ -189,11 +192,11 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                     onClick={openCredentialPreview}
                                     className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
                                 >
-                                    {title || 'Credential'}
+                                    {title || m['passport.resumeBuilder.credential']()}
                                 </button>
                             ) : (
                                 <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
-                                    {title || 'Credential'}
+                                    {title || m['passport.resumeBuilder.credential']()}
                                 </span>
                             )}
                             <div className="mt-1 sm:mt-0 min-w-0">
@@ -251,7 +254,9 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                         <div className="flex-1">
                                                             <ResumePreviewEditableTextBlock
                                                                 value={field.value}
-                                                                placeholder="Add a description..."
+                                                                placeholder={m[
+                                                                    'passport.resumeBuilder.addDescription'
+                                                                ]()}
                                                                 isEditing
                                                                 isSelfAttested={
                                                                     field.source === 'selfAttested'
@@ -304,7 +309,9 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                 ) : (
                                                     <ResumePreviewEditableTextBlock
                                                         value={field.value}
-                                                        placeholder="Add item"
+                                                        placeholder={m[
+                                                            'passport.resumeBuilder.addItem'
+                                                        ]()}
                                                         isEditing
                                                         isSelfAttested={
                                                             field.source === 'selfAttested'
@@ -336,7 +343,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                     type="button"
                                                     onClick={() => handleAddDetail(field.value)}
                                                     className="shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700"
-                                                    title="Add item"
+                                                    title={m['passport.resumeBuilder.addItem']()}
                                                 >
                                                     <IonIcon icon={add} className="w-6 h-6" />
                                                 </button>

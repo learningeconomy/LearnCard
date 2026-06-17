@@ -276,7 +276,158 @@
             "yourResume": "Your Resume",
             "buildYourResume": "Build Your Resume",
             "updatedToday": "Updated <0>today</0>",
-            "tagline": "Stand out with a tailored resume"
+            "tagline": "Stand out with a tailored resume",
+            "on": "On",
+            "off": "Off",
+            "goBack": "Go back",
+            "download": "Download",
+            "currentJob": "Current Job",
+            "credential": "Credential",
+            "addDescription": "Add a description...",
+            "addItem": "Add item",
+            "remove": "Remove",
+            "deselectCredential": "Deselect credential",
+            "buildingResume": "Building your resume...",
+            "generatingPdf": "Generating PDF…",
+            "downloadResume": "Download Resume",
+            "status": {
+                "published": "Published",
+                "draft": "Draft",
+                "active": "Active"
+            },
+            "history": {
+                "iconAlt": "Resume history",
+                "title": "Resume History",
+                "newResume": "+ New Resume",
+                "creating": "Creating...",
+                "empty": "No existing resumes yet.",
+                "editedOn": "Edited on {{date}}",
+                "noEditDate": "No edit date",
+                "credentialCount": "{{count}} Credentials"
+            },
+            "documentSetup": {
+                "title": "Document Setup",
+                "qrCode": "{{brand}} QR code • {{status}}",
+                "qrCodeDescription": "This code allows employers to view the credentials attached to this resume.",
+                "fileName": "File Name"
+            },
+            "personalInfo": {
+                "title": "Personal Info",
+                "thumbnail": "Thumbnail • {{status}}"
+            },
+            "fields": {
+                "name": {
+                    "label": "Full Name",
+                    "placeholder": "Jane Doe"
+                },
+                "career": {
+                    "label": "Professional Title",
+                    "placeholder": "Software Engineer"
+                },
+                "location": {
+                    "label": "Location",
+                    "placeholder": "San Francisco, CA"
+                },
+                "summary": {
+                    "label": "Professional Summary",
+                    "placeholder": "Brief professional summary..."
+                },
+                "email": {
+                    "label": "Email",
+                    "placeholder": "jane@example.com"
+                },
+                "phone": {
+                    "label": "Phone",
+                    "placeholder": "+1 (555) 000-0000"
+                },
+                "website": {
+                    "label": "Website",
+                    "placeholder": "https://example.com"
+                },
+                "linkedIn": {
+                    "label": "LinkedIn",
+                    "placeholder": "https://linkedin.com/in/janedoe"
+                }
+            },
+            "sections": {
+                "workHistory": "Work Experience",
+                "learningHistory": "Education & Learning",
+                "achievement": "Achievements",
+                "accomplishment": "Accomplishments",
+                "socialBadge": "Badges & Certifications",
+                "accommodation": "Accommodations"
+            },
+            "selector": {
+                "selectedStatus": "{{count}} Selected • {{status}}",
+                "loading": "Loading credentials...",
+                "empty": "No credentials in this category.",
+                "noMatch": "No credentials match \"{{query}}\".",
+                "previous": "Previous credential",
+                "next": "Next credential"
+            },
+            "emptySection": {
+                "noCredentials": "No credentials found",
+                "descriptionSuffix": "to your {{brand}} passport to automatically populate this section.",
+                "workHistory": {
+                    "action": "Add Experience",
+                    "emphasis": "Add Work Experiences"
+                },
+                "learningHistory": {
+                    "action": "Add Study",
+                    "emphasis": "Add Studies"
+                },
+                "achievement": {
+                    "action": "Add Achievement",
+                    "emphasis": "Add Achievements"
+                },
+                "accomplishment": {
+                    "action": "Add Accomplishment",
+                    "emphasis": "Add Accomplishments"
+                },
+                "accommodation": {
+                    "action": "Add Assistance",
+                    "emphasis": "Add Assistances"
+                }
+            },
+            "dates": {
+                "start": "Start date",
+                "end": "End date"
+            },
+            "editable": {
+                "edited": "Edited",
+                "restoreDefault": "Restore Default",
+                "defaultSummary": "Default Summary"
+            },
+            "editBlock": {
+                "edit": "Edit",
+                "stopEditing": "Stop editing"
+            },
+            "emptyPreview": {
+                "title": "Your resume will appear here",
+                "subtitle": "Fill in your details and select credentials from the panel"
+            },
+            "pdfPreview": {
+                "defaultName": "Resume Preview",
+                "page": "Page",
+                "pages": "Pages",
+                "downloadPdf": "Download PDF",
+                "iframeTitle": "Resume PDF Preview"
+            },
+            "toastTitle": {
+                "downloaded": "Downloaded",
+                "downloadFailed": "Download Failed",
+                "published": "Published",
+                "saved": "Saved",
+                "publishFailed": "Publish Failed"
+            },
+            "selfAttest": {
+                "addTitle": "Add {{type}}",
+                "namePlaceholder": "Name...",
+                "descriptionPlaceholder": "Description..."
+            },
+            "shareLink": {
+                "close": "Close share modal"
+            }
         }
     },
     "launchpad": {
@@ -1051,7 +1202,17 @@
         "showCode": "Show Code",
         "title": "Contacts",
         "unblock": "Unblock",
-        "unblockContact": "Unblock Contact"
+        "unblockContact": "Unblock Contact",
+        "myContactCard": "My Contact Card",
+        "noConnections": "No connections yet.",
+        "new": "New",
+        "contactCountOne": "{{count}} Contact",
+        "contactCountOther": "{{count}} Contacts",
+        "requestCountOne": "{{count}} Request",
+        "requestCountOther": "{{count}} Requests",
+        "blockedCountLabel": "{{count}} Blocked",
+        "removeContactError": "An error occurred, unable to remove contact",
+        "blockUserError": "An error occurred, unable to block user"
     },
     "consentFlow": {
         "acceptAndSync": "Accept & Sync",
@@ -1757,7 +1918,59 @@
             "editDraft": "Edit Draft",
             "sendingBoost": "Sending Boost"
         },
-        "issuing": "Issuing Boost"
+        "issuing": "Issuing Boost",
+        "wizard": {
+            "title": "AI Boost Wizard",
+            "subtextSelf": "You can issue yourself boosts to tell your story. Your skills are currencies for your future.",
+            "subtextSomeone": "Issue boosts to people you know.",
+            "promptDescription": "Use simple words to describe why you admire someone, what they accomplished, why they are great, etc.",
+            "promptPlaceholder": "Write prompt...",
+            "charCount": "{{count}} / 500",
+            "generateMagic": "Generate Magic",
+            "charLimitError": "You have exceeded the 500-character limit.",
+            "unexpectedError": "An unexpected error occurred. Please try again.",
+            "describePlaceholder": "Describe the boost you want to make.",
+            "generating": "Generating...",
+            "generateBoost": "Generate Boost",
+            "goBack": "Go Back",
+            "loaderText": [
+                "Analyzing your inputs...",
+                "Spinning up your smart credential...",
+                "Generating your credential...",
+                "Sealing your achievement...",
+                "Building your verifiable record...",
+                "Packing it all up...",
+                "Creating your digital badge...",
+                "Finalizing everything now...",
+                "AI is crafting your proof...",
+                "Almost there..."
+            ]
+        },
+        "template": {
+            "custom": "Custom",
+            "browseTemplates": "Browse templates...",
+            "noResults": "No results found",
+            "noBoosts": "No Boosts yet!",
+            "newTemplate": "New Template",
+            "brandTemplate": "{{brand}} Template"
+        },
+        "newBoost": {
+            "study": "New Study",
+            "experience": "New Experience",
+            "assistance": "New Assistance",
+            "portfolio": "New Portfolio",
+            "boost": "New Boost",
+            "achievement": "New Achievement",
+            "skill": "New Skill",
+            "id": "New ID",
+            "membership": "New Membership",
+            "course": "New Course",
+            "generic": "New {{type}}"
+        },
+        "browseEarnedPlaceholder": "Browse earned...",
+        "browseManagedPlaceholder": "Browse managed...",
+        "issue": "Issue",
+        "editDraft": "Edit Draft"
     },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",

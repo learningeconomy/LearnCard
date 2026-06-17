@@ -11,6 +11,8 @@ import {
 } from 'learn-card-base';
 import { ResumePdfPreviewData } from './resume-preview/useResumePdf';
 
+import * as m from '../../paraglide/messages.js';
+
 export const ResumeIframePreview: React.FC<{
     preview: ResumePdfPreviewData | null;
     onClose: () => void;
@@ -19,7 +21,10 @@ export const ResumeIframePreview: React.FC<{
     const currentUser = useCurrentUser();
     const { isMobile } = useDeviceTypeByWidth();
 
-    const name = currentLCNUser?.displayName || currentUser?.name || 'Resume Preview';
+    const name =
+        currentLCNUser?.displayName ||
+        currentUser?.name ||
+        m['passport.resumeBuilder.pdfPreview.defaultName']();
 
     if (!preview) return null;
 
@@ -44,8 +49,11 @@ export const ResumeIframePreview: React.FC<{
                                 {name}
                             </p>
                             <p className="text-xs font-medium text-grayscale-700 truncate">
-                                {preview.pageCount} {preview.pageCount === 1 ? 'Page' : 'Pages'} •{' '}
-                                {preview.fileName}
+                                {preview.pageCount}{' '}
+                                {preview.pageCount === 1
+                                    ? m['passport.resumeBuilder.pdfPreview.page']()
+                                    : m['passport.resumeBuilder.pdfPreview.pages']()}{' '}
+                                • {preview.fileName}
                             </p>
                         </div>
                     </div>
@@ -58,7 +66,9 @@ export const ResumeIframePreview: React.FC<{
                             }`}
                         >
                             <DownloadIcon className="w-5 h-5" />
-                            <span className={isMobile ? 'sr-only' : ''}>Download PDF</span>
+                            <span className={isMobile ? 'sr-only' : ''}>
+                                {m['passport.resumeBuilder.pdfPreview.downloadPdf']()}
+                            </span>
                         </button>
                         <button
                             onClick={onClose}
@@ -70,7 +80,7 @@ export const ResumeIframePreview: React.FC<{
                 </div>
                 <iframe
                     src={preview.url}
-                    title="Resume PDF Preview"
+                    title={m['passport.resumeBuilder.pdfPreview.iframeTitle']()}
                     className="w-full flex-1 bg-grayscale-100"
                 />
             </div>

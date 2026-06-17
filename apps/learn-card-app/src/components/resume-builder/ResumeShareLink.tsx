@@ -72,13 +72,13 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
                         customImageClass="flex justify-center items-center h-[44px] w-[44px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[44px] min-h-[44px]"
                         customSize={120}
                     />
-                    <p className="text-[22px] font-medium text-white">Share</p>
+                    <p className="text-[22px] font-medium text-white">{m['common.share']()}</p>
                     <button
                         type="button"
                         onClick={handleClose}
                         className="text-white disabled:opacity-50"
                         disabled={!handleClose}
-                        aria-label="Close share modal"
+                        aria-label={m['passport.resumeBuilder.shareLink.close']()}
                     >
                         <X className="h-8 w-8 text-white" />
                     </button>

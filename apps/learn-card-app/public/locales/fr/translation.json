@@ -275,7 +275,158 @@
             "yourResume": "Votre CV",
             "buildYourResume": "Créer votre CV",
             "updatedToday": "Mis à jour <0>aujourd'hui</0>",
-            "tagline": "Démarquez-vous avec un CV sur mesure"
+            "tagline": "Démarquez-vous avec un CV sur mesure",
+            "on": "Activé",
+            "off": "Désactivé",
+            "goBack": "Retour",
+            "download": "Télécharger",
+            "currentJob": "Emploi actuel",
+            "credential": "Titre",
+            "addDescription": "Ajouter une description...",
+            "addItem": "Ajouter un élément",
+            "remove": "Supprimer",
+            "deselectCredential": "Désélectionner le titre",
+            "buildingResume": "Création de votre CV...",
+            "generatingPdf": "Génération du PDF…",
+            "downloadResume": "Télécharger le CV",
+            "status": {
+                "published": "Publié",
+                "draft": "Brouillon",
+                "active": "Actif"
+            },
+            "history": {
+                "iconAlt": "Historique des CV",
+                "title": "Historique des CV",
+                "newResume": "+ Nouveau CV",
+                "creating": "Création...",
+                "empty": "Aucun CV pour le moment.",
+                "editedOn": "Modifié le {{date}}",
+                "noEditDate": "Aucune date de modification",
+                "credentialCount": "{{count}} titres"
+            },
+            "documentSetup": {
+                "title": "Configuration du document",
+                "qrCode": "Code QR {{brand}} • {{status}}",
+                "qrCodeDescription": "Ce code permet aux employeurs de consulter les titres associés à ce CV.",
+                "fileName": "Nom du fichier"
+            },
+            "personalInfo": {
+                "title": "Informations personnelles",
+                "thumbnail": "Miniature • {{status}}"
+            },
+            "fields": {
+                "name": {
+                    "label": "Nom complet",
+                    "placeholder": "Jean Dupont"
+                },
+                "career": {
+                    "label": "Titre professionnel",
+                    "placeholder": "Ingénieur logiciel"
+                },
+                "location": {
+                    "label": "Lieu",
+                    "placeholder": "San Francisco, CA"
+                },
+                "summary": {
+                    "label": "Résumé professionnel",
+                    "placeholder": "Bref résumé professionnel..."
+                },
+                "email": {
+                    "label": "E-mail",
+                    "placeholder": "jean@exemple.com"
+                },
+                "phone": {
+                    "label": "Téléphone",
+                    "placeholder": "+1 (555) 000-0000"
+                },
+                "website": {
+                    "label": "Site web",
+                    "placeholder": "https://exemple.com"
+                },
+                "linkedIn": {
+                    "label": "LinkedIn",
+                    "placeholder": "https://linkedin.com/in/jeandupont"
+                }
+            },
+            "sections": {
+                "workHistory": "Expérience professionnelle",
+                "learningHistory": "Formation et apprentissage",
+                "achievement": "Réalisations",
+                "accomplishment": "Accomplissements",
+                "socialBadge": "Badges et certifications",
+                "accommodation": "Aménagements"
+            },
+            "selector": {
+                "selectedStatus": "{{count}} sélectionné(s) • {{status}}",
+                "loading": "Chargement des titres...",
+                "empty": "Aucun titre dans cette catégorie.",
+                "noMatch": "Aucun titre ne correspond à « {{query}} ».",
+                "previous": "Titre précédent",
+                "next": "Titre suivant"
+            },
+            "emptySection": {
+                "noCredentials": "Aucun titre trouvé",
+                "descriptionSuffix": "à votre passeport {{brand}} pour remplir automatiquement cette section.",
+                "workHistory": {
+                    "action": "Ajouter une expérience",
+                    "emphasis": "Ajoutez des expériences professionnelles"
+                },
+                "learningHistory": {
+                    "action": "Ajouter une formation",
+                    "emphasis": "Ajoutez des formations"
+                },
+                "achievement": {
+                    "action": "Ajouter une réalisation",
+                    "emphasis": "Ajoutez des réalisations"
+                },
+                "accomplishment": {
+                    "action": "Ajouter un accomplissement",
+                    "emphasis": "Ajoutez des accomplissements"
+                },
+                "accommodation": {
+                    "action": "Ajouter un aménagement",
+                    "emphasis": "Ajoutez des aménagements"
+                }
+            },
+            "dates": {
+                "start": "Date de début",
+                "end": "Date de fin"
+            },
+            "editable": {
+                "edited": "Modifié",
+                "restoreDefault": "Rétablir par défaut",
+                "defaultSummary": "Résumé par défaut"
+            },
+            "editBlock": {
+                "edit": "Modifier",
+                "stopEditing": "Arrêter la modification"
+            },
+            "emptyPreview": {
+                "title": "Votre CV apparaîtra ici",
+                "subtitle": "Renseignez vos informations et sélectionnez des titres dans le panneau"
+            },
+            "pdfPreview": {
+                "defaultName": "Aperçu du CV",
+                "page": "Page",
+                "pages": "Pages",
+                "downloadPdf": "Télécharger le PDF",
+                "iframeTitle": "Aperçu PDF du CV"
+            },
+            "toastTitle": {
+                "downloaded": "Téléchargé",
+                "downloadFailed": "Échec du téléchargement",
+                "published": "Publié",
+                "saved": "Enregistré",
+                "publishFailed": "Échec de la publication"
+            },
+            "selfAttest": {
+                "addTitle": "Ajouter {{type}}",
+                "namePlaceholder": "Nom...",
+                "descriptionPlaceholder": "Description..."
+            },
+            "shareLink": {
+                "close": "Fermer la fenêtre de partage"
+            }
         },
         "explore": "Explorer"
     },
@@ -1051,7 +1202,17 @@
         "confirmAcceptRequest": "Voulez-vous vraiment accepter la demande de connexion ?",
         "confirmUnblock": "Voulez-vous vraiment débloquer cet utilisateur ?",
         "confirmRemoveConnection": "Voulez-vous vraiment supprimer cette connexion ?",
-        "confirmBlock": "Voulez-vous vraiment bloquer cet utilisateur ?"
+        "confirmBlock": "Voulez-vous vraiment bloquer cet utilisateur ?",
+        "myContactCard": "Ma carte de contact",
+        "noConnections": "Aucune connexion pour le moment.",
+        "new": "Nouveau",
+        "contactCountOne": "{{count}} contact",
+        "contactCountOther": "{{count}} contacts",
+        "requestCountOne": "{{count}} demande",
+        "requestCountOther": "{{count}} demandes",
+        "blockedCountLabel": "{{count}} bloqués",
+        "removeContactError": "Une erreur s'est produite, impossible de supprimer le contact",
+        "blockUserError": "Une erreur s'est produite, impossible de bloquer l'utilisateur"
     },
     "consentFlow": {
         "title": "Consentement",
@@ -1728,7 +1889,59 @@
             "editDraft": "Modifier le brouillon",
             "sendingBoost": "Envoi du Boost"
         },
-        "issuing": "Émission du Boost"
+        "issuing": "Émission du Boost",
+        "wizard": {
+            "title": "Assistant Boost IA",
+            "subtextSelf": "Vous pouvez vous délivrer des boosts pour raconter votre histoire. Vos compétences sont la monnaie de votre avenir.",
+            "subtextSomeone": "Délivrez des boosts à des personnes que vous connaissez.",
+            "promptDescription": "Utilisez des mots simples pour décrire pourquoi vous admirez quelqu'un, ce qu'il a accompli, pourquoi il est exceptionnel, etc.",
+            "promptPlaceholder": "Écrire un message...",
+            "charCount": "{{count}} / 500",
+            "generateMagic": "Générer la magie",
+            "charLimitError": "Vous avez dépassé la limite de 500 caractères.",
+            "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+            "describePlaceholder": "Décrivez le boost que vous souhaitez créer.",
+            "generating": "Génération...",
+            "generateBoost": "Générer le boost",
+            "goBack": "Retour",
+            "loaderText": [
+                "Analyse de vos données...",
+                "Préparation de votre justificatif intelligent...",
+                "Génération de votre justificatif...",
+                "Validation de votre réussite...",
+                "Création de votre enregistrement vérifiable...",
+                "On rassemble le tout...",
+                "Création de votre badge numérique...",
+                "Finalisation en cours...",
+                "L'IA élabore votre preuve...",
+                "Presque terminé..."
+            ]
+        },
+        "template": {
+            "custom": "Personnalisé",
+            "browseTemplates": "Parcourir les modèles...",
+            "noResults": "Aucun résultat trouvé",
+            "noBoosts": "Aucun boost pour le moment !",
+            "newTemplate": "Nouveau modèle",
+            "brandTemplate": "Modèle {{brand}}"
+        },
+        "newBoost": {
+            "study": "Nouvelle formation",
+            "experience": "Nouvelle expérience",
+            "assistance": "Nouvel aménagement",
+            "portfolio": "Nouveau portfolio",
+            "boost": "Nouveau boost",
+            "achievement": "Nouvelle réalisation",
+            "skill": "Nouvelle compétence",
+            "id": "Nouvelle pièce d'identité",
+            "membership": "Nouvelle adhésion",
+            "course": "Nouveau cours",
+            "generic": "Nouveau {{type}}"
+        },
+        "browseEarnedPlaceholder": "Parcourir les obtenus...",
+        "browseManagedPlaceholder": "Parcourir les gérés...",
+        "issue": "Délivrer",
+        "editDraft": "Modifier le brouillon"
     },
     "legal": {
         "termsOfService": "Conditions d'utilisation",
