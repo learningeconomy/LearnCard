@@ -96,7 +96,13 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
     const summary = result ? summarizeObv3(result.obv3Json) : null;
 
     return (
-        <div className="font-poppins w-full max-w-[520px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up">
+        <div
+            className="font-poppins w-full max-w-[520px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden animate-fade-in-up"
+            style={{
+                paddingTop: 'env(safe-area-inset-top)',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
+        >
             <div className="px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-grayscale-900">

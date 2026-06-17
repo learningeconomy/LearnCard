@@ -124,7 +124,13 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
     );
 
     return (
-        <div className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden">
+        <div
+            className="font-poppins w-full max-w-[560px] mx-auto bg-white rounded-[20px] flex flex-col max-h-[85vh] overflow-hidden"
+            style={{
+                paddingTop: 'env(safe-area-inset-top)',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
+        >
             {!hasQuery &&
                 frameworks.map(framework => (
                     <FrameworkDefaultsLoader
