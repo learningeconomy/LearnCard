@@ -39,7 +39,9 @@
         "cancel": "Cancel",
         "save": "Save",
         "continue": "Continue",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "add": "Add",
+        "saving": "Saving..."
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -1754,7 +1756,8 @@
             "generateLink": "Generate Link",
             "editDraft": "Edit Draft",
             "sendingBoost": "Sending Boost"
-        }
+        },
+        "issuing": "Issuing Boost"
     },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
@@ -2224,5 +2227,27 @@
         "modalTitle": "Grow your skills",
         "edit": "Edit",
         "noResults": "No results found. Try a broader search term."
+    },
+    "aiPersonalization": {
+        "header": "Personalize my <0>AI Sessions</0>",
+        "loading": "Loading Personalization...",
+        "q1": {
+            "title": "I <0>learn best</0> when I",
+            "options": {
+                "o1": "See examples or visuals",
+                "o2": "Read and analyze concepts",
+                "o3": "Discuss and ask questions",
+                "o4": "Practice hands on",
+                "o5": "Follow instructions"
+            }
+        },
+        "q2": {
+            "title": "My favorite <0>fictional characters</0> are",
+            "placeholder": "Add fictional character"
+        },
+        "q3": {
+            "title": "My favorite <0>movie genres</0> are",
+            "placeholder": "Add movie genre"
+        }
     }
 }

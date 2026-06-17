@@ -66,6 +66,7 @@ import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { getRoleTitle } from '../../../components/onboarding/onboardingRoles/onboardingRolesI18n';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     useWallet,
@@ -532,7 +533,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             log.error('Failed to refresh profile cache after role change', e);
         }
 
-        const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
+        const newRoleTitle = getRoleTitle(newRole);
         presentToast(m['launchpad.modal.nowRole']({ role: newRoleTitle }), {
             title: m['launchpad.modal.roleUpdated'](),
             type: ToastTypeEnum.Success,
@@ -563,7 +564,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
 
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
+    const roleLabel = getRoleTitle(activeRole);
     const roleIconSrc = roleIcons[activeRole];
     const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
@@ -864,12 +865,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                                     >
                                                         <img
                                                             src={roleIcons[roleItem.type]}
-                                                            alt={`${roleItem.title} icon`}
+                                                            alt={`${getRoleTitle(
+                                                                roleItem.type
+                                                            )} icon`}
                                                             className="h-[20px] w-[20px] object-contain"
                                                         />
                                                     </span>
                                                     <span className="flex-1 text-left">
-                                                        {roleItem.title}
+                                                        {getRoleTitle(roleItem.type)}
                                                     </span>
                                                     {isSelected && (
                                                         <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />

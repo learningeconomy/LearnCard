@@ -39,7 +39,9 @@
         "cancel": "Annuler",
         "save": "Enregistrer",
         "continue": "Continuer",
-        "loading": "Chargement..."
+        "loading": "Chargement...",
+        "add": "Ajouter",
+        "saving": "Enregistrement..."
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -1725,7 +1727,8 @@
             "generateLink": "Générer un lien",
             "editDraft": "Modifier le brouillon",
             "sendingBoost": "Envoi du Boost"
-        }
+        },
+        "issuing": "Émission du Boost"
     },
     "legal": {
         "termsOfService": "Conditions d'utilisation",
@@ -2224,5 +2227,27 @@
         "modalTitle": "Développez vos compétences",
         "edit": "Modifier",
         "noResults": "Aucun résultat trouvé. Essayez un terme de recherche plus large."
+    },
+    "aiPersonalization": {
+        "header": "Personnalisez mes <0>Sessions IA</0>",
+        "loading": "Chargement de la personnalisation...",
+        "q1": {
+            "title": "<0>J'apprends le mieux</0> quand je",
+            "options": {
+                "o1": "Voir des exemples ou des supports visuels",
+                "o2": "Lire et analyser des concepts",
+                "o3": "Discuter et poser des questions",
+                "o4": "Pratiquer de manière concrète",
+                "o5": "Suivre des instructions"
+            }
+        },
+        "q2": {
+            "title": "Mes <0>personnages de fiction</0> préférés sont",
+            "placeholder": "Ajouter un personnage de fiction"
+        },
+        "q3": {
+            "title": "Mes <0>genres de films</0> préférés sont",
+            "placeholder": "Ajouter un genre de film"
+        }
     }
 }

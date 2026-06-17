@@ -39,7 +39,9 @@
         "cancel": "Cancelar",
         "save": "Guardar",
         "continue": "Continuar",
-        "loading": "Cargando..."
+        "loading": "Cargando...",
+        "add": "Añadir",
+        "saving": "Guardando..."
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
@@ -1725,7 +1727,8 @@
             "generateLink": "Generar enlace",
             "editDraft": "Editar borrador",
             "sendingBoost": "Enviando Boost"
-        }
+        },
+        "issuing": "Emitiendo Boost"
     },
     "legal": {
         "termsOfService": "Términos de servicio",
@@ -2224,5 +2227,27 @@
         "modalTitle": "Desarrolla tus habilidades",
         "edit": "Editar",
         "noResults": "No se encontraron resultados. Prueba con un término de búsqueda más amplio."
+    },
+    "aiPersonalization": {
+        "header": "Personaliza mis <0>Sesiones de IA</0>",
+        "loading": "Cargando personalización...",
+        "q1": {
+            "title": "<0>Aprendo mejor</0> cuando",
+            "options": {
+                "o1": "Ver ejemplos o recursos visuales",
+                "o2": "Leer y analizar conceptos",
+                "o3": "Conversar y hacer preguntas",
+                "o4": "Practicar directamente",
+                "o5": "Seguir instrucciones"
+            }
+        },
+        "q2": {
+            "title": "Mis <0>personajes ficticios</0> favoritos son",
+            "placeholder": "Añadir personaje ficticio"
+        },
+        "q3": {
+            "title": "Mis <0>géneros de películas</0> favoritos son",
+            "placeholder": "Añadir género de película"
+        }
     }
 }
