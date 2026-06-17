@@ -9,10 +9,10 @@ import {
     CredentialCategoryEnum,
 } from 'learn-card-base/types/boostAndCredentialMetadata';
 import { getLogger } from '../../logging/logger';
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 const log = getLogger('network-consent');
 
-const NETWORK_CONTRACT_URI = LEARNCARD_AI_PASSPORT_CONTRACT_URI;
+const NETWORK_CONTRACT_URI =
+    'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891';
 const CONTRACT_OWNER_DID = 'did:web:network.learncard.com:users:learn-cloud';
 
 // All possible contract categories, preferring the contractCredentialTypeOverride if available
