@@ -14,7 +14,7 @@ export const useBuildMyLearnCardModal = () => {
         newModal(
             <CheckListContainer />,
             { className: '!bg-transparent' },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
 

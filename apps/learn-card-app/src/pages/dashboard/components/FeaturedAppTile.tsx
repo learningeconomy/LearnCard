@@ -42,7 +42,9 @@ const FeaturedAppTile: React.FC<FeaturedAppTileProps> = ({
                     ? `Open ${listing.display_name} — suggested app`
                     : `Open ${listing.display_name}${
                           unreadCount > 0
-                              ? `, ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+                              ? `, ${unreadCount} unread notification${
+                                    unreadCount === 1 ? '' : 's'
+                                }`
                               : ''
                       }`
             }

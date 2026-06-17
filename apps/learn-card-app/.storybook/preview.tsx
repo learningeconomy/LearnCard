@@ -7,7 +7,12 @@ import { Buffer } from 'buffer';
 
 (window as any).Buffer = (window as any).Buffer ?? Buffer;
 (window as any).global = (window as any).global ?? window;
-(window as any).process = (window as any).process ?? { env: {}, browser: true, version: '', nextTick: (cb: () => void) => setTimeout(cb, 0) };
+(window as any).process = (window as any).process ?? {
+    env: {},
+    browser: true,
+    version: '',
+    nextTick: (cb: () => void) => setTimeout(cb, 0),
+};
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -47,10 +52,10 @@ const preview: Preview = {
                         React.createElement(
                             'div',
                             { className: 'font-poppins bg-grayscale-100 min-h-screen' },
-                            React.createElement(Story),
-                        ),
-                    ),
-                ),
+                            React.createElement(Story)
+                        )
+                    )
+                )
             ),
     ],
 };

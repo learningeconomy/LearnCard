@@ -9,7 +9,7 @@ export type DueReviewSummary = {
 export const countReviewsDueToday = (
     pathways: Record<string, Pathway>,
     activePathwayId: string | null,
-    now: Date = new Date(),
+    now: Date = new Date()
 ): DueReviewSummary => {
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);

@@ -73,7 +73,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
             try {
                 const currentBundle = (await CapacitorUpdater.current()).bundle;
 
-                if (currentBundle.version !== 'builtin' && currentBundle?.version?.trim?.() !== '') {
+                if (
+                    currentBundle.version !== 'builtin' &&
+                    currentBundle?.version?.trim?.() !== ''
+                ) {
                     firstStartupStore.set.version(`${currentBundle.version}`);
                     Sentry.setTag('packageVersion', currentBundle.version);
                 }
@@ -126,7 +129,8 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         newModal(
             <LaunchPadActionModal />,
             {
-                className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                className:
+                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
                 sectionClassName: '!max-w-[500px] disable-scrollbars',
             },
             {
@@ -155,9 +159,17 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                         )}
 
                                         {resolvedAssets.textLogoDark ? (
-                                            <img src={resolvedAssets.textLogoDark} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
+                                            <img
+                                                src={resolvedAssets.textLogoDark}
+                                                alt="Logo"
+                                                className="w-[85%] max-w-[150px] object-contain"
+                                            />
                                         ) : (
-                                            <LearnCardTextLogo className={`${colors.logoColor ?? 'text-grayscale-900'} w-[85%] max-w-[150px]`} />
+                                            <LearnCardTextLogo
+                                                className={`${
+                                                    colors.logoColor ?? 'text-grayscale-900'
+                                                } w-[85%] max-w-[150px]`}
+                                            />
                                         )}
                                     </div>
                                 </IonMenuToggle>

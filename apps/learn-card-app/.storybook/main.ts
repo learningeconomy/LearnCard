@@ -68,7 +68,10 @@ const config: StorybookConfig = {
                     // Node stdlib browser shims — mirrors vite.config.ts so transitive
                     // @learncard/* deps that touch Node globals don't crash the browser.
                     ...stdlibbrowser,
-                    'learn-card-base': path.resolve(__dirname, '../../../packages/learn-card-base/src'),
+                    'learn-card-base': path.resolve(
+                        __dirname,
+                        '../../../packages/learn-card-base/src'
+                    ),
                     'apps/learn-card-app': path.resolve(__dirname, '..'),
                     '@analytics': path.resolve(__dirname, '../src/analytics'),
                 },

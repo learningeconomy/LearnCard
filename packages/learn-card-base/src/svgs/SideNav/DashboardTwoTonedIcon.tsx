@@ -18,7 +18,15 @@ export const DashboardTwoTonedIcon: React.FC<{
             <rect x="18" y="5" width="9" height="8" rx="2" stroke="currentColor" strokeWidth="2" />
             <rect x="5" y="22" width="9" height="5" rx="2" stroke="currentColor" strokeWidth="2" />
             <rect x="18" y="17" width="9" height="10" rx="2" fill={shadeColor} />
-            <rect x="18" y="17" width="9" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
+            <rect
+                x="18"
+                y="17"
+                width="9"
+                height="10"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
         </svg>
     );
 };

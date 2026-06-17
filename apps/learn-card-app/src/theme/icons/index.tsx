@@ -69,4 +69,3 @@ export enum IconSetEnum {
     navbar = 'navbar',
     placeholders = 'placeholders',
 }
-
