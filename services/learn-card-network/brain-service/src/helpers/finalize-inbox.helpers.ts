@@ -17,6 +17,7 @@ import { createClaimedRelationship } from '@accesslayer/inbox-credential/relatio
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getAppDidWeb } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 
@@ -145,10 +146,9 @@ export async function finalizeInboxCredentialsForProfile(
                             type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
                             from: { did: lcDid || profile.did },
                             to: { did: inboxCredential.issuerDid },
-                            message: {
-                                title: 'Credential Claimed from Inbox',
-                                body: `${cm.value} claimed a credential from their inbox.`,
-                            },
+                            message: getNotificationMessage('issuanceClaimed', 'en', {
+                                value: cm.value,
+                            }),
                             data: {
                                 inbox: {
                                     issuanceId: inboxCredential.id,
@@ -217,11 +217,13 @@ export async function finalizeInboxCredentialsForProfile(
                             from: { did: lcDid || profile.did },
                             to: { did: inboxCredential.issuerDid },
                             message: {
-                                title: 'Credential Issuance Error from Inbox',
+                                title: getNotificationMessage('issuanceError', 'en').title,
                                 body:
                                     error instanceof Error
                                         ? error.message
-                                        : `${cm.value} failed to claim a credential from their inbox.`,
+                                        : getNotificationMessage('issuanceError', 'en', {
+                                              value: cm.value,
+                                          }).body,
                             },
                             data: {
                                 inbox: {

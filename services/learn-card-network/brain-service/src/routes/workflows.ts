@@ -45,6 +45,7 @@ import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-pro
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import {
     EXHAUSTED,
@@ -725,10 +726,9 @@ async function handleInboxClaimPresentation(
                     type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
                     from: { did: learnCard.id.did() },
                     to: { did: inboxCredential.issuerDid },
-                    message: {
-                        title: 'Credential Claimed from Inbox',
-                        body: `${contactMethod.value} claimed a credential from their inbox.`,
-                    },
+                    message: getNotificationMessage('issuanceClaimed', 'en', {
+                        value: contactMethod.value,
+                    }),
                     data: {
                         inbox: {
                             issuanceId: inboxCredential.id,
@@ -785,11 +785,13 @@ async function handleInboxClaimPresentation(
                         from: { did: learnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: {
-                            title: 'Credential Issuance Error from Inbox',
+                            title: getNotificationMessage('issuanceError', 'en').title,
                             body:
                                 error instanceof Error
                                     ? error.message
-                                    : `${contactMethod.value} failed to claim a credential from their inbox.`,
+                                    : getNotificationMessage('issuanceError', 'en', {
+                                          value: contactMethod.value,
+                                      }).body,
                         },
                         data: {
                             inbox: {
