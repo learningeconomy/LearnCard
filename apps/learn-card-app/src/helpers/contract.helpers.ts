@@ -14,6 +14,7 @@ import {
     contractCategoryNameToCategoryMetadata,
     getBaseUrl,
 } from 'learn-card-base';
+import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { walletPageData } from '../pages/wallet/constants';
 import { getAiAppBackgroundStylesForApp } from '../components/ai-passport-apps/aiPassport-apps.helpers';
 
@@ -71,8 +72,9 @@ export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQV
 
 export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {
     if (key.toLowerCase() === 'name') return anonymize ? 'Anonymous' : user?.name ?? '';
-    if (key.toLowerCase() === 'email')
+    if (key.toLowerCase() === 'email') {
         return anonymize ? 'anonymous@hidden.com' : user?.email ?? '';
+    }
     if (key.toLowerCase() === 'image') {
         return anonymize ? contractAnonImageSrc : user?.profileImage ?? '';
     }
@@ -181,6 +183,52 @@ export const getFullTermsForContract = (
     });
 
     return terms;
+};
+
+type LearnCloudCredentialPage = {
+    records?: { uri?: string }[];
+    hasMore?: boolean;
+    cursor?: string;
+};
+
+export const getAllCredentialUrisForCategory = async (
+    wallet: BespokeLearnCard,
+    category: string
+): Promise<string[]> => {
+    const getPage = wallet.index.LearnCloud.getPage;
+
+    if (!getPage) {
+        return (
+            (await wallet.index.LearnCloud.get({ category }))
+                ?.map((item: { uri?: string }) => item.uri)
+                .filter((uri): uri is string => Boolean(uri)) ?? []
+        );
+    }
+
+    const uris: string[] = [];
+    let cursor: string | undefined = undefined;
+
+    // Load sequentially to avoid giant batched `index.get` requests that can overwhelm tRPC.
+    while (true) {
+        const page: LearnCloudCredentialPage | undefined = await getPage(
+            { category },
+            { cursor, limit: 100 }
+        );
+
+        uris.push(
+            ...((page?.records ?? [])
+                .map((item: { uri?: string }) => item.uri)
+                .filter((uri): uri is string => Boolean(uri)) as string[])
+        );
+
+        if (!page?.hasMore || !page.cursor) {
+            break;
+        }
+
+        cursor = page.cursor;
+    }
+
+    return uris;
 };
 
 export const getInfoFromContractKey = (key: string) => {
