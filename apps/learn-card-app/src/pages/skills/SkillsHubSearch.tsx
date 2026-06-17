@@ -15,6 +15,7 @@ import SkillsHubPopOverButton from './SkillsHubPopoverButton';
 import SkillsHubFilterInfoBubble from './SkillsHubFilterInfoBubble';
 
 import { SetState } from 'packages/shared-types/dist';
+import * as m from '../../paraglide/messages.js';
 
 type SkillsHubSearchProps = {
     searchInput: string;
@@ -46,7 +47,7 @@ const SkillsHubSearch: React.FC<SkillsHubSearchProps> = ({
                         <IonInput
                             type="text"
                             value={searchInput}
-                            placeholder="Search"
+                            placeholder={m['common.search']()}
                             onIonInput={e => setSearchInput(e.detail.value)}
                             className="bg-grayscale-200 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[44px] !text-left !pr-[36px]"
                         />

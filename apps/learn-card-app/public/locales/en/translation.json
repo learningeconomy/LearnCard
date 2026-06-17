@@ -1906,5 +1906,87 @@
             "appIssuer": "Trusted App",
             "untrustedIssuer": "Untrusted Issuer"
         }
+    },
+    "skills": {
+        "skill": "Skill",
+        "closeConfirm": {
+            "title": "Close Without Saving?",
+            "body": "Do you want to discard your selected skills?",
+            "discard": "Yes, Discard",
+            "continueEditing": "Continue Editing"
+        },
+        "framework": {
+            "framework": "Framework",
+            "locationInFramework": "Location in Framework",
+            "browse": "Browse"
+        },
+        "boostsBySkill": {
+            "noBoosts": "No Boosts yet!"
+        },
+        "misc": {
+            "showLess": "Show Less",
+            "showMore": "Show More",
+            "hideOptions": "Hide options",
+            "showOptions": "Show options"
+        },
+        "search": {
+            "suggestSkill": "Suggest Skill",
+            "suggestSkillHelp": "We are always adding new skills and your suggestions help!",
+            "noResultsOrSuggestions": "No results or suggestions",
+            "searchPlaceholder": "Search by skill, goal, or job...",
+            "viewLess": "View Less",
+            "viewAll": "View All",
+            "didntFind": "Didn't find what you're looking for?",
+            "suggestionThankYou": "Thank you for your suggestion!"
+        },
+        "adminPanel": {
+            "createFramework": "Create Framework",
+            "manageSkills": "Manage Skills"
+        },
+        "plusOptions": {
+            "selfAssign": "Self Assign Skills"
+        },
+        "addSkill": {
+            "frameworkTier": "Framework Tier",
+            "details": "Details",
+            "options": "Options"
+        },
+        "proficiency": {
+            "skillLevel": "Skill level",
+            "selfAttested": "Self Attested Skill Level -",
+            "skillLevelPrefix": "Skill Level",
+            "levels": {
+                "hidden": {
+                    "name": "Hidden",
+                    "desc": "Do not display my proficiency status."
+                },
+                "novice": {
+                    "name": "Novice",
+                    "desc": "Just starting and needs guidance."
+                },
+                "beginner": {
+                    "name": "Beginner",
+                    "desc": "Handles simple tasks without support."
+                },
+                "proficient": {
+                    "name": "Proficient",
+                    "desc": "Works independently on routine tasks."
+                },
+                "advanced": {
+                    "name": "Advanced",
+                    "desc": "Solves complex tasks efficiently."
+                },
+                "expert": {
+                    "name": "Expert",
+                    "desc": "Deep mastery; can lead and mentor others."
+                }
+            }
+        },
+        "insightCard": {
+            "blurb": "<0>Your</0> top skills, learning snapshots, suggested lessons & careers, <1>and</1> TEDed content."
+        },
+        "myHub": {
+            "noResultsFoundFor": "No results found for <0>{{query}}</0>"
+        }
     }
 }

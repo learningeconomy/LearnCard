@@ -1906,5 +1906,87 @@
             "appIssuer": "App de confianza",
             "untrustedIssuer": "Emisor no confiable"
         }
+    },
+    "skills": {
+        "skill": "Habilidad",
+        "closeConfirm": {
+            "title": "¿Cerrar sin guardar?",
+            "body": "¿Quieres descartar las habilidades seleccionadas?",
+            "discard": "Sí, descartar",
+            "continueEditing": "Seguir editando"
+        },
+        "framework": {
+            "framework": "Marco",
+            "locationInFramework": "Ubicación en el marco",
+            "browse": "Explorar"
+        },
+        "boostsBySkill": {
+            "noBoosts": "¡Aún no hay Boosts!"
+        },
+        "misc": {
+            "showLess": "Mostrar menos",
+            "showMore": "Mostrar más",
+            "hideOptions": "Ocultar opciones",
+            "showOptions": "Mostrar opciones"
+        },
+        "search": {
+            "suggestSkill": "Sugerir habilidad",
+            "suggestSkillHelp": "¡Siempre estamos añadiendo nuevas habilidades y tus sugerencias ayudan!",
+            "noResultsOrSuggestions": "Sin resultados ni sugerencias",
+            "searchPlaceholder": "Buscar por habilidad, objetivo o empleo...",
+            "viewLess": "Ver menos",
+            "viewAll": "Ver todo",
+            "didntFind": "¿No encontraste lo que buscabas?",
+            "suggestionThankYou": "¡Gracias por tu sugerencia!"
+        },
+        "adminPanel": {
+            "createFramework": "Crear marco",
+            "manageSkills": "Gestionar habilidades"
+        },
+        "plusOptions": {
+            "selfAssign": "Autoasignar habilidades"
+        },
+        "addSkill": {
+            "frameworkTier": "Nivel del marco",
+            "details": "Detalles",
+            "options": "Opciones"
+        },
+        "proficiency": {
+            "skillLevel": "Nivel de habilidad",
+            "selfAttested": "Nivel de habilidad autoevaluado -",
+            "skillLevelPrefix": "Nivel de habilidad",
+            "levels": {
+                "hidden": {
+                    "name": "Oculto",
+                    "desc": "No mostrar mi nivel de competencia."
+                },
+                "novice": {
+                    "name": "Novato",
+                    "desc": "Recién empieza y necesita orientación."
+                },
+                "beginner": {
+                    "name": "Principiante",
+                    "desc": "Realiza tareas simples sin ayuda."
+                },
+                "proficient": {
+                    "name": "Competente",
+                    "desc": "Trabaja de forma independiente en tareas habituales."
+                },
+                "advanced": {
+                    "name": "Avanzado",
+                    "desc": "Resuelve tareas complejas con eficiencia."
+                },
+                "expert": {
+                    "name": "Experto",
+                    "desc": "Dominio profundo; puede liderar y orientar a otros."
+                }
+            }
+        },
+        "insightCard": {
+            "blurb": "<0>Tus</0> mejores habilidades, resúmenes de aprendizaje, lecciones y carreras sugeridas, <1>y</1> contenido tipo TED."
+        },
+        "myHub": {
+            "noResultsFoundFor": "No se encontraron resultados para <0>{{query}}</0>"
+        }
     }
 }

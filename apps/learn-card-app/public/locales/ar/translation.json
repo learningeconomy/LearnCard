@@ -1906,5 +1906,87 @@
             "appIssuer": "تطبيق موثوق",
             "untrustedIssuer": "جهة إصدار غير موثوقة"
         }
+    },
+    "skills": {
+        "skill": "مهارة",
+        "closeConfirm": {
+            "title": "الإغلاق دون حفظ؟",
+            "body": "هل تريد تجاهل المهارات التي حددتها؟",
+            "discard": "نعم، تجاهل",
+            "continueEditing": "متابعة التحرير"
+        },
+        "framework": {
+            "framework": "الإطار",
+            "locationInFramework": "الموقع في الإطار",
+            "browse": "تصفّح"
+        },
+        "boostsBySkill": {
+            "noBoosts": "لا توجد Boosts بعد!"
+        },
+        "misc": {
+            "showLess": "عرض أقل",
+            "showMore": "عرض المزيد",
+            "hideOptions": "إخفاء الخيارات",
+            "showOptions": "إظهار الخيارات"
+        },
+        "search": {
+            "suggestSkill": "اقترح مهارة",
+            "suggestSkillHelp": "نضيف دائماً مهارات جديدة واقتراحاتك تساعدنا!",
+            "noResultsOrSuggestions": "لا توجد نتائج أو اقتراحات",
+            "searchPlaceholder": "ابحث حسب المهارة أو الهدف أو الوظيفة...",
+            "viewLess": "عرض أقل",
+            "viewAll": "عرض الكل",
+            "didntFind": "لم تجد ما تبحث عنه؟",
+            "suggestionThankYou": "شكراً على اقتراحك!"
+        },
+        "adminPanel": {
+            "createFramework": "إنشاء إطار",
+            "manageSkills": "إدارة المهارات"
+        },
+        "plusOptions": {
+            "selfAssign": "إسناد المهارات ذاتياً"
+        },
+        "addSkill": {
+            "frameworkTier": "مستوى الإطار",
+            "details": "التفاصيل",
+            "options": "الخيارات"
+        },
+        "proficiency": {
+            "skillLevel": "مستوى المهارة",
+            "selfAttested": "مستوى المهارة المُقَرّ ذاتياً -",
+            "skillLevelPrefix": "مستوى المهارة",
+            "levels": {
+                "hidden": {
+                    "name": "مخفي",
+                    "desc": "عدم عرض مستوى كفاءتي."
+                },
+                "novice": {
+                    "name": "مستجد",
+                    "desc": "في البداية ويحتاج إلى توجيه."
+                },
+                "beginner": {
+                    "name": "مبتدئ",
+                    "desc": "ينجز المهام البسيطة دون مساعدة."
+                },
+                "proficient": {
+                    "name": "كفؤ",
+                    "desc": "يعمل باستقلالية في المهام الروتينية."
+                },
+                "advanced": {
+                    "name": "متقدّم",
+                    "desc": "يحل المهام المعقدة بكفاءة."
+                },
+                "expert": {
+                    "name": "خبير",
+                    "desc": "إتقان عميق؛ قادر على القيادة وإرشاد الآخرين."
+                }
+            }
+        },
+        "insightCard": {
+            "blurb": "<0>أفضل</0> مهاراتك ولمحات تعلّمك والدروس والمسارات المهنية المقترحة <1>و</1> محتوى بأسلوب TED."
+        },
+        "myHub": {
+            "noResultsFoundFor": "لا توجد نتائج لـ <0>{{query}}</0>"
+        }
     }
 }

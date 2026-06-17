@@ -1906,5 +1906,87 @@
             "appIssuer": "Application de confiance",
             "untrustedIssuer": "Émetteur non fiable"
         }
+    },
+    "skills": {
+        "skill": "Compétence",
+        "closeConfirm": {
+            "title": "Fermer sans enregistrer ?",
+            "body": "Voulez-vous abandonner les compétences sélectionnées ?",
+            "discard": "Oui, abandonner",
+            "continueEditing": "Continuer la modification"
+        },
+        "framework": {
+            "framework": "Référentiel",
+            "locationInFramework": "Emplacement dans le référentiel",
+            "browse": "Parcourir"
+        },
+        "boostsBySkill": {
+            "noBoosts": "Pas encore de Boosts !"
+        },
+        "misc": {
+            "showLess": "Afficher moins",
+            "showMore": "Afficher plus",
+            "hideOptions": "Masquer les options",
+            "showOptions": "Afficher les options"
+        },
+        "search": {
+            "suggestSkill": "Suggérer une compétence",
+            "suggestSkillHelp": "Nous ajoutons constamment de nouvelles compétences et vos suggestions nous aident !",
+            "noResultsOrSuggestions": "Aucun résultat ni suggestion",
+            "searchPlaceholder": "Rechercher par compétence, objectif ou emploi...",
+            "viewLess": "Voir moins",
+            "viewAll": "Tout voir",
+            "didntFind": "Vous n'avez pas trouvé ce que vous cherchiez ?",
+            "suggestionThankYou": "Merci pour votre suggestion !"
+        },
+        "adminPanel": {
+            "createFramework": "Créer un référentiel",
+            "manageSkills": "Gérer les compétences"
+        },
+        "plusOptions": {
+            "selfAssign": "Auto-attribuer des compétences"
+        },
+        "addSkill": {
+            "frameworkTier": "Niveau du référentiel",
+            "details": "Détails",
+            "options": "Options"
+        },
+        "proficiency": {
+            "skillLevel": "Niveau de compétence",
+            "selfAttested": "Niveau de compétence auto-déclaré -",
+            "skillLevelPrefix": "Niveau de compétence",
+            "levels": {
+                "hidden": {
+                    "name": "Masqué",
+                    "desc": "Ne pas afficher mon niveau de compétence."
+                },
+                "novice": {
+                    "name": "Novice",
+                    "desc": "Débute et a besoin d'accompagnement."
+                },
+                "beginner": {
+                    "name": "Débutant",
+                    "desc": "Gère des tâches simples sans aide."
+                },
+                "proficient": {
+                    "name": "Compétent",
+                    "desc": "Travaille de façon autonome sur les tâches courantes."
+                },
+                "advanced": {
+                    "name": "Avancé",
+                    "desc": "Résout efficacement des tâches complexes."
+                },
+                "expert": {
+                    "name": "Expert",
+                    "desc": "Maîtrise approfondie ; peut diriger et accompagner les autres."
+                }
+            }
+        },
+        "insightCard": {
+            "blurb": "<0>Vos</0> meilleures compétences, aperçus d'apprentissage, leçons et carrières suggérées, <1>et</1> du contenu façon TED."
+        },
+        "myHub": {
+            "noResultsFoundFor": "Aucun résultat trouvé pour <0>{{query}}</0>"
+        }
     }
 }
