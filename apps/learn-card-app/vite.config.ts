@@ -164,6 +164,8 @@ export default defineConfig(({ mode }) => {
                 'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
                 'apps/learn-card-app': path.resolve(__dirname),
                 '@analytics': path.resolve(__dirname, 'src/analytics'),
+                // Swiper's package exports resolve differently under Bun's hoisted install in
+                // this Vite app; keep this pinned to the published ESM modules entry.
                 'swiper/modules': path.resolve(
                     __dirname,
                     '../../node_modules/swiper/modules/index.mjs'

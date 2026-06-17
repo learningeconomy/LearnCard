@@ -2,7 +2,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import type { ProfileInstance } from './Profile';
+import type { Profile, ProfileInstance } from './Profile';
 
 export type ContactMethodType = {
     id: string;
@@ -15,12 +15,12 @@ export type ContactMethodType = {
 };
 
 export type ContactMethodRelationships = {
-    profile: ModelRelatedNodesI<any, ProfileInstance>;
+    profile: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
 };
 
 export type ContactMethodInstance = NeogmaInstance<ContactMethodType, ContactMethodRelationships>;
 
-export const ContactMethod: any = ModelFactory<ContactMethodType, ContactMethodRelationships>(
+export const ContactMethod = ModelFactory<ContactMethodType, ContactMethodRelationships>(
     {
         label: 'ContactMethod',
         schema: {

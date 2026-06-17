@@ -18,7 +18,6 @@
 "@learncard/crypto-plugin": patch
 "@learncard/did-web-plugin": patch
 "@learncard/didkey-plugin": patch
-"@learncard/didkit-plugin-node": patch
 "@learncard/didkit-plugin": patch
 "@learncard/dynamic-loader-plugin": patch
 "@learncard/encryption-plugin": patch

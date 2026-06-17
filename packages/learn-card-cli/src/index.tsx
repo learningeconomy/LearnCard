@@ -87,10 +87,28 @@ const getLearnCardBundlePassword = async (prompt = 'Bundle password: '): Promise
     }
 };
 
+const globalAssignmentPattern = /^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([\s\S]*?);?\s*$/;
+
+const getGlobalAssignmentSource = (source: string): string | undefined => {
+    const match = source.match(globalAssignmentPattern);
+
+    if (!match) return;
+
+    const [, name, initializer] = match;
+
+    return `globalThis[${JSON.stringify(name)}] = (${initializer})`;
+};
+
 const evaluateBunReplInput = async (source: string): Promise<unknown> => {
     try {
         return await globalThis.eval(`(async () => (${source}))()`);
     } catch {
+        const globalAssignmentSource = getGlobalAssignmentSource(source);
+
+        if (globalAssignmentSource) {
+            return await globalThis.eval(`(async () => (${globalAssignmentSource}))()`);
+        }
+
         return await globalThis.eval(`(async () => { ${source} })()`);
     }
 };

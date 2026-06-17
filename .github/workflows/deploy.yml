@@ -1118,6 +1118,20 @@ jobs:
             - name: Build packages
               run: bunx nx run-many --target=build --exclude docs --exclude didkit-plugin-node
 
+            # The native DIDKit package is published by didkit-plugin-node-prebuilds.yml
+            # with platform artifacts. Keep it out of the generic changeset publish pass.
+            - name: Keep DIDKit native addon out of changeset publish
+              run: |
+                  node <<'NODE'
+                  const fs = require('fs');
+                  const path = 'packages/plugins/didkit-plugin-node/package.json';
+                  const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+                  pkg.private = true;
+
+                  fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
+                  NODE
+
             - name: Publish to NPM
               run: bunx changeset publish
 
