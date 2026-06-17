@@ -107,6 +107,81 @@
                 "deletedCount": "Deleted {{count}} Demo credentials",
                 "confirmSync": "Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.",
                 "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed."
+            },
+            "managers": {
+                "resume": {
+                    "title": "Resume",
+                    "description": "Upload your most recent resume.",
+                    "processingBg": "Processing your resume in the background..."
+                },
+                "certs": {
+                    "title": "Certificates",
+                    "description": "Upload academic, professional, and extracurricular certificates."
+                },
+                "diplomas": {
+                    "title": "Diplomas",
+                    "description": "Upload academic diploma files."
+                },
+                "transcripts": {
+                    "title": "Transcripts",
+                    "description": "Upload academic transcripts or joint service transcripts.",
+                    "processingBg": "Processing your transcripts in the background..."
+                },
+                "rawVC": {
+                    "title": "Verifiable Credentials",
+                    "description": "Upload or paste raw JSON credentials to add them to your wallet.",
+                    "placeholder": "Paste your JSON here...",
+                    "addButton": "Add Credentials"
+                },
+                "addButton": "Add",
+                "schools": {
+                    "title": "Schools",
+                    "description": "Sync academic history with your LearnCard."
+                },
+                "linkedin": {
+                    "description": "Connect your professional network to autofill work history and skills.",
+                    "connectedTo": "Connected to"
+                },
+                "selfAttested": {
+                    "title": "Self-Attested Skills",
+                    "description": "Select from suggested skills based on your profile or add your own.",
+                    "addSkill": "Add a skill"
+                }
+            },
+            "review": {
+                "title": "Review Extracted Credentials",
+                "selectAll": "Select All",
+                "deselectAll": "Deselect All",
+                "subtitle": "Select the credentials you'd like to add to your LearnCard.",
+                "save": "Save ({{count}})"
+            },
+            "editView": {
+                "credentialName": "Credential Name",
+                "namePlaceholder": "e.g. Software Engineer at Acme Corp",
+                "description": "Description",
+                "descriptionPlaceholder": "Add a description...",
+                "criteria": "Criteria",
+                "criteriaPlaceholder": "Criteria for earning this credential...",
+                "achievementType": "Achievement Type",
+                "walletCategory": "Wallet category:",
+                "startDate": "Start Date",
+                "endDate": "End Date",
+                "saveChanges": "Save Changes"
+            },
+            "achievementModal": {
+                "title": "Select Achievement Type",
+                "searchPlaceholder": "Search achievement types...",
+                "noMatches": "No matching types found"
+            },
+            "loader": {
+                "notifyWhenReady": "Notify me when it's ready"
+            },
+            "misc": {
+                "noCredentialsExtracted": "No credentials were extracted from this file.",
+                "saving": "Saving...",
+                "save": "Save",
+                "editCredential": "Edit Credential",
+                "selectType": "Select type..."
             }
         },
         "explore": "Explore",

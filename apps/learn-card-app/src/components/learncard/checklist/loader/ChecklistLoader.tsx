@@ -13,6 +13,7 @@ import 'swiper/css/autoplay';
 import { UploadTypesEnum, useModal } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 const fileTypeQuotes: Record<UploadTypesEnum, string[]> = {
     [UploadTypesEnum.Resume]: [
@@ -126,7 +127,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
                         onClick={() => (onDismiss ? onDismiss() : closeModal())}
                         className={`px-6 py-2 rounded-full text-white font-semibold bg-${primaryColor}`}
                     >
-                        Notify me when it's ready
+                        {m['passport.buildMyLearnCard.loader.notifyWhenReady']()}
                     </button>
                 </div>
             </div>

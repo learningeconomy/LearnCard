@@ -7,6 +7,7 @@ import LinkChain from '../../../svgs/LinkChain';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 export const CheckListLinkedInConnect: React.FC = () => {
     const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -38,7 +39,7 @@ export const CheckListLinkedInConnect: React.FC = () => {
                         LinkedIn
                     </h4>
                     <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        Connect your professional network to autofill work history and skills.
+                        {m['passport.buildMyLearnCard.managers.linkedin.description']()}
                     </p>
 
                     <button
@@ -61,7 +62,9 @@ export const CheckListLinkedInConnect: React.FC = () => {
                                 <img src={LinkedInLogo} alt="linkedin logo" />
                             </div>
                             <div className="flex items-start justify-center text-left flex-col pr-4">
-                                <p className="w-full text-xs text-grayscale-600">Connected to</p>
+                                <p className="w-full text-xs text-grayscale-600">
+                                    {m['passport.buildMyLearnCard.managers.linkedin.connectedTo']()}
+                                </p>
                                 <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2">
                                     email@example.com
                                 </p>

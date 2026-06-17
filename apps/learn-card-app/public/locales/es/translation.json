@@ -107,6 +107,81 @@
                 "deletedCount": "Se eliminaron {{count}} credenciales de demostración",
                 "confirmSync": "¿Seguro que quieres sincronizar con la escuela de demostración? Esto importará varias credenciales de ejemplo, pero podrás eliminarlas fácilmente más tarde.",
                 "confirmDelete": "¿Seguro que quieres eliminar todo el contenido de demostración? Esta acción no se puede deshacer, pero podrás volver a cargar el contenido de demostración más tarde si lo necesitas."
+            },
+            "managers": {
+                "resume": {
+                    "title": "Currículum",
+                    "description": "Sube tu currículum más reciente.",
+                    "processingBg": "Procesando tu currículum en segundo plano..."
+                },
+                "certs": {
+                    "title": "Certificados",
+                    "description": "Sube certificados académicos, profesionales y extracurriculares."
+                },
+                "diplomas": {
+                    "title": "Diplomas",
+                    "description": "Sube archivos de diplomas académicos."
+                },
+                "transcripts": {
+                    "title": "Expedientes académicos",
+                    "description": "Sube expedientes académicos o expedientes de servicio conjunto.",
+                    "processingBg": "Procesando tus expedientes en segundo plano..."
+                },
+                "rawVC": {
+                    "title": "Credenciales verificables",
+                    "description": "Sube o pega credenciales JSON sin procesar para añadirlas a tu billetera.",
+                    "placeholder": "Pega tu JSON aquí...",
+                    "addButton": "Añadir credenciales"
+                },
+                "addButton": "Añadir",
+                "schools": {
+                    "title": "Escuelas",
+                    "description": "Sincroniza tu historial académico con tu LearnCard."
+                },
+                "linkedin": {
+                    "description": "Conecta tu red profesional para autocompletar tu experiencia laboral y habilidades.",
+                    "connectedTo": "Conectado a"
+                },
+                "selfAttested": {
+                    "title": "Habilidades autodeclaradas",
+                    "description": "Selecciona habilidades sugeridas según tu perfil o añade las tuyas.",
+                    "addSkill": "Añadir una habilidad"
+                }
+            },
+            "review": {
+                "title": "Revisar credenciales extraídas",
+                "selectAll": "Seleccionar todo",
+                "deselectAll": "Deseleccionar todo",
+                "subtitle": "Selecciona las credenciales que quieres añadir a tu LearnCard.",
+                "save": "Guardar ({{count}})"
+            },
+            "editView": {
+                "credentialName": "Nombre de la credencial",
+                "namePlaceholder": "p. ej., Ingeniero de software en Acme Corp",
+                "description": "Descripción",
+                "descriptionPlaceholder": "Añade una descripción...",
+                "criteria": "Criterios",
+                "criteriaPlaceholder": "Criterios para obtener esta credencial...",
+                "achievementType": "Tipo de logro",
+                "walletCategory": "Categoría de la billetera:",
+                "startDate": "Fecha de inicio",
+                "endDate": "Fecha de fin",
+                "saveChanges": "Guardar cambios"
+            },
+            "achievementModal": {
+                "title": "Seleccionar tipo de logro",
+                "searchPlaceholder": "Buscar tipos de logro...",
+                "noMatches": "No se encontraron tipos coincidentes"
+            },
+            "loader": {
+                "notifyWhenReady": "Avísame cuando esté listo"
+            },
+            "misc": {
+                "noCredentialsExtracted": "No se extrajeron credenciales de este archivo.",
+                "saving": "Guardando...",
+                "save": "Guardar",
+                "editCredential": "Editar credencial",
+                "selectType": "Seleccionar tipo..."
             }
         },
         "resumeBuilder": {

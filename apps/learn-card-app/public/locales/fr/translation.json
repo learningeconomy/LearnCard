@@ -107,6 +107,81 @@
                 "deletedCount": "{{count}} références de démonstration supprimées",
                 "confirmSync": "Voulez-vous vraiment vous synchroniser avec l’école de démonstration ? Cela importera plusieurs références d’exemple, mais vous pourrez facilement les supprimer plus tard.",
                 "confirmDelete": "Voulez-vous vraiment supprimer tout le contenu de démonstration ? Cette action est irréversible, mais vous pourrez recharger le contenu de démonstration plus tard si nécessaire."
+            },
+            "managers": {
+                "resume": {
+                    "title": "CV",
+                    "description": "Téléchargez votre CV le plus récent.",
+                    "processingBg": "Traitement de votre CV en arrière-plan..."
+                },
+                "certs": {
+                    "title": "Certificats",
+                    "description": "Téléchargez des certificats scolaires, professionnels et extrascolaires."
+                },
+                "diplomas": {
+                    "title": "Diplômes",
+                    "description": "Téléchargez des fichiers de diplômes scolaires."
+                },
+                "transcripts": {
+                    "title": "Relevés de notes",
+                    "description": "Téléchargez des relevés de notes scolaires ou des relevés de service interarmées.",
+                    "processingBg": "Traitement de vos relevés en arrière-plan..."
+                },
+                "rawVC": {
+                    "title": "Justificatifs vérifiables",
+                    "description": "Téléchargez ou collez des justificatifs JSON bruts pour les ajouter à votre portefeuille.",
+                    "placeholder": "Collez votre JSON ici...",
+                    "addButton": "Ajouter des justificatifs"
+                },
+                "addButton": "Ajouter",
+                "schools": {
+                    "title": "Établissements",
+                    "description": "Synchronisez votre parcours scolaire avec votre LearnCard."
+                },
+                "linkedin": {
+                    "description": "Connectez votre réseau professionnel pour remplir automatiquement votre expérience et vos compétences.",
+                    "connectedTo": "Connecté à"
+                },
+                "selfAttested": {
+                    "title": "Compétences auto-déclarées",
+                    "description": "Choisissez parmi les compétences suggérées selon votre profil ou ajoutez les vôtres.",
+                    "addSkill": "Ajouter une compétence"
+                }
+            },
+            "review": {
+                "title": "Vérifier les justificatifs extraits",
+                "selectAll": "Tout sélectionner",
+                "deselectAll": "Tout désélectionner",
+                "subtitle": "Sélectionnez les justificatifs que vous souhaitez ajouter à votre LearnCard.",
+                "save": "Enregistrer ({{count}})"
+            },
+            "editView": {
+                "credentialName": "Nom du justificatif",
+                "namePlaceholder": "p. ex. Ingénieur logiciel chez Acme Corp",
+                "description": "Description",
+                "descriptionPlaceholder": "Ajoutez une description...",
+                "criteria": "Critères",
+                "criteriaPlaceholder": "Critères d'obtention de ce justificatif...",
+                "achievementType": "Type de réussite",
+                "walletCategory": "Catégorie du portefeuille :",
+                "startDate": "Date de début",
+                "endDate": "Date de fin",
+                "saveChanges": "Enregistrer les modifications"
+            },
+            "achievementModal": {
+                "title": "Sélectionner le type de réussite",
+                "searchPlaceholder": "Rechercher des types de réussite...",
+                "noMatches": "Aucun type correspondant trouvé"
+            },
+            "loader": {
+                "notifyWhenReady": "Prévenez-moi quand c'est prêt"
+            },
+            "misc": {
+                "noCredentialsExtracted": "Aucun justificatif n'a été extrait de ce fichier.",
+                "saving": "Enregistrement...",
+                "save": "Enregistrer",
+                "editCredential": "Modifier le justificatif",
+                "selectType": "Sélectionner un type..."
             }
         },
         "resumeBuilder": {

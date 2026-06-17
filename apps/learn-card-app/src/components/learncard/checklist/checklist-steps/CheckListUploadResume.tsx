@@ -24,6 +24,7 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 export type ResumeType = {
     id: string;
@@ -264,10 +265,10 @@ export const CheckListUploadResume: React.FC = () => {
                     <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
                             <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                                Resume
+                                {m['passport.buildMyLearnCard.managers.resume.title']()}
                             </h4>
                             <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                                Upload your most recent resume.
+                                {m['passport.buildMyLearnCard.managers.resume.description']()}
                             </p>
 
                             {savedCredentialCount > 0 && (
@@ -315,7 +316,9 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
-                                        Processing your resume in the background...
+                                        {m[
+                                            'passport.buildMyLearnCard.managers.resume.processingBg'
+                                        ]()}
                                     </p>
                                 </div>
                             )}

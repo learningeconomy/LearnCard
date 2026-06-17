@@ -23,6 +23,7 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 export type TranscriptType = {
     id: string;
@@ -275,10 +276,10 @@ export const CheckListTranscripts: React.FC = () => {
                     <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
                             <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                                Transcripts
+                                {m['passport.buildMyLearnCard.managers.transcripts.title']()}
                             </h4>
                             <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                                Upload academic transcripts or joint service transcripts.
+                                {m['passport.buildMyLearnCard.managers.transcripts.description']()}
                             </p>
 
                             {savedCredentialCount > 0 && (
@@ -326,7 +327,9 @@ export const CheckListTranscripts: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
-                                        Processing your transcripts in the background...
+                                        {m[
+                                            'passport.buildMyLearnCard.managers.transcripts.processingBg'
+                                        ]()}
                                     </p>
                                 </div>
                             )}
