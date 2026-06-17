@@ -322,7 +322,7 @@ export const CheckListUploadResume: React.FC = () => {
 
                             <input
                                 type="file"
-                                accept=".pdf,.txt,.docx"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
                                 onChange={async e => {
                                     setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);
