@@ -1,17 +1,20 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-auto-consent-learn-card-ai');
 
 import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
-import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { getTermsWithSharedUrisForWallet } from 'learn-card-base/hooks/useSharedUrisInTerms';
+import { getOrFetchConsentedContracts } from 'learn-card-base';
+import { getTermsWithSharedUrisForWallet } from 'learn-card-base';
 
 import {
     AiPassportAppsEnum,
     aiPassportApps,
 } from '../components/ai-passport-apps/aiPassport-apps.helpers';
 import { getFullTermsForContract } from '../helpers/contract.helpers';
+
+let autoConsentInFlight: Promise<boolean> | null = null;
+let withdrawConsentInFlight: Promise<boolean> | null = null;
 
 type AutoConsentOptions = {
     enabled: boolean;
@@ -26,14 +29,12 @@ export const useAutoConsentLearnCardAi = () => {
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { mutateAsync: withdrawConsent } = useWithdrawConsent(getLearnCardAiContractUri() ?? '');
-    const inFlightRef = useRef<Promise<boolean> | null>(null);
-    const withdrawInFlightRef = useRef<Promise<boolean> | null>(null);
     const learnCardAiContractUri = getLearnCardAiContractUri();
 
     const autoConsentLearnCardAi = useCallback(
         async ({ enabled, userOverrides }: AutoConsentOptions) => {
             if (!enabled) return false;
-            if (inFlightRef.current) return inFlightRef.current;
+            if (autoConsentInFlight) return autoConsentInFlight;
 
             const run = (async () => {
                 try {
@@ -59,6 +60,13 @@ export const useAutoConsentLearnCardAi = () => {
                     if (!contractDetails?.contract || !ownerDid) return false;
 
                     const consentUser: CurrentUser = {
+                        uid: '',
+                        email: '',
+                        phoneNumber: '',
+                        name: '',
+                        profileImage: '',
+                        privateKey: null,
+                        baseColor: '',
                         ...(currentUser ?? {}),
                         ...(userOverrides ?? {}),
                     };
@@ -100,18 +108,18 @@ export const useAutoConsentLearnCardAi = () => {
                     log.error('Failed to auto-consent to LearnCard AI contract:', error);
                     return false;
                 } finally {
-                    inFlightRef.current = null;
+                    autoConsentInFlight = null;
                 }
             })();
 
-            inFlightRef.current = run;
+            autoConsentInFlight = run;
             return run;
         },
         [currentUser, initWallet, learnCardAiContractUri, queryClient]
     );
 
     const withdrawLearnCardAiConsent = useCallback(async () => {
-        if (withdrawInFlightRef.current) return withdrawInFlightRef.current;
+        if (withdrawConsentInFlight) return withdrawConsentInFlight;
 
         const run = (async () => {
             try {
@@ -138,11 +146,11 @@ export const useAutoConsentLearnCardAi = () => {
                 log.error('Failed to withdraw LearnCard AI consent:', error);
                 return false;
             } finally {
-                withdrawInFlightRef.current = null;
+                withdrawConsentInFlight = null;
             }
         })();
 
-        withdrawInFlightRef.current = run;
+        withdrawConsentInFlight = run;
         return run;
     }, [initWallet, learnCardAiContractUri, queryClient, withdrawConsent]);
 

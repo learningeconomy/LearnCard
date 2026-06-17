@@ -2,12 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { useWallet } from '../../hooks/useWallet';
 import { getOrCreateSharedUriForWallet } from '../../hooks/useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from '../../hooks/useConsentedContracts';
-import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 import type { QueryClient } from '@tanstack/react-query';
-import {
-    categoryMetadata,
-    CredentialCategoryEnum,
-} from 'learn-card-base/types/boostAndCredentialMetadata';
+import { categoryMetadata, CredentialCategoryEnum } from '../../types/boostAndCredentialMetadata';
+import { isProductionNetwork } from '../../helpers/networkHelpers';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('network-consent');
 
@@ -16,13 +13,13 @@ const NETWORK_CONTRACT_URI =
 const CONTRACT_OWNER_DID = 'did:web:network.learncard.com:users:learn-cloud';
 
 // All possible contract categories, preferring the contractCredentialTypeOverride if available
-const CATEGORIES: string[] = Object.values(categoryMetadata).reduce((categories, category) => {
+const CATEGORIES = Object.values(categoryMetadata).reduce<string[]>((categories, category) => {
     const categoryToAdd = category.contractCredentialTypeOverride || category.credentialType;
     if (!categories.includes(categoryToAdd)) {
         categories.push(categoryToAdd);
     }
     return categories;
-}, [] as string[]);
+}, []);
 
 interface NetworkConsentMutationParams {
     queryClient: QueryClient;

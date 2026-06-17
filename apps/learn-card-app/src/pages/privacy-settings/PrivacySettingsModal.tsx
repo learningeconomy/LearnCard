@@ -8,14 +8,16 @@ import {
     RadioGroup,
     ToastTypeEnum,
     useGetPreferencesForDid,
+    useConsentedContracts,
     useUpdatePreferences,
     useGetCurrentLCNUser,
     useModal,
     useToast,
     useWallet,
     useBrandingConfig,
+    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    useAiFeatureGate,
 } from 'learn-card-base';
-import { getAiFeatureAgeGateState } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
@@ -23,47 +25,58 @@ import { useAnalytics } from '../../analytics';
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
 
+type PrivacySettingsProfile = {
+    profileVisibility?: ProfileVisibilityValue;
+    isPrivate?: boolean;
+    showEmail?: boolean;
+    allowConnectionRequests?: (typeof AllowConnectionRequestsEnum.enum)[keyof typeof AllowConnectionRequestsEnum.enum];
+};
+
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
+    const { data: consentedContracts } = useConsentedContracts();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { name: brandName } = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
+    const [retryingAiConsent, setRetryingAiConsent] = useState(false);
+    const profile = currentLCNUser as PrivacySettingsProfile | null;
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
     // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
-    const ageGate = getAiFeatureAgeGateState({
-        profileType,
-        dob: currentLCNUser?.dob,
-        country: currentLCNUser?.country,
-    });
+    const { isAiEnabled: aiFeatureEnabled, reason: aiFeatureGateReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
-    const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const isMinor = profileType === 'child';
 
-    const aiEnabled = ageGate.isAiAgeRestricted
-        ? false
-        : ageGate.isChildProfile
-        ? preferences?.aiEnabled ?? false
-        : preferences?.aiEnabled ?? true;
+    const aiEnabled = aiFeatureEnabled;
+    const hasAiConsent = useMemo(() => {
+        return consentedContracts?.some(
+            consent =>
+                consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+                consent?.status !== 'withdrawn'
+        );
+    }, [consentedContracts]);
+    const showAiConsentWarning =
+        !!preferences?.aiEnabled && !hasAiConsent && aiFeatureGateReason !== 'disabled_minor';
     const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
     const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
     // Legacy profiles may only have `isPrivate` populated. Mirror the backend
     // fallback so the selected privacy option matches the profile's effective
     // visibility until the user saves the new canonical field.
     let profileVisibility: ProfileVisibilityValue = ProfileVisibilityEnum.enum.public;
-    if (currentLCNUser?.profileVisibility) {
-        profileVisibility = currentLCNUser.profileVisibility;
-    } else if (currentLCNUser?.isPrivate) {
+    if (profile?.profileVisibility) {
+        profileVisibility = profile.profileVisibility;
+    } else if (profile?.isPrivate) {
         profileVisibility = ProfileVisibilityEnum.enum.private;
     }
-    const showEmail = currentLCNUser?.showEmail ?? false;
+    const showEmail = profile?.showEmail ?? false;
     const allowConnectionRequests =
-        currentLCNUser?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
+        profile?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
 
     const visibilityOptions = useMemo(
         () => [
@@ -138,6 +151,15 @@ const PrivacySettingsModal: React.FC = () => {
         },
         [allowConnectionRequests, handleProfileUpdate]
     );
+
+    const handleRetryAiConsent = useCallback(async () => {
+        try {
+            setRetryingAiConsent(true);
+            await handleAiToggle(true);
+        } finally {
+            setRetryingAiConsent(false);
+        }
+    }, [handleAiToggle]);
 
     return (
         <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] w-full">
@@ -241,13 +263,32 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={aiEnabled}
-                            disabled={ageGate.isAiAgeRestricted}
+                            disabled={aiFeatureGateReason === 'disabled_minor'}
                             onIonChange={e =>
-                                !ageGate.isAiAgeRestricted && handleAiToggle(e.detail.checked)
+                                aiFeatureGateReason !== 'disabled_minor' &&
+                                handleAiToggle(e.detail.checked)
                             }
                             aria-label="AI Features"
                         />
                     </div>
+                    {showAiConsentWarning && (
+                        <div className="px-5 pb-4">
+                            <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
+                                <p className="text-sm text-red-700 leading-relaxed">
+                                    AI is on, but consent to the LearnCard AI contract is missing.
+                                    <button
+                                        type="button"
+                                        onClick={handleRetryAiConsent}
+                                        disabled={retryingAiConsent}
+                                        className="ml-1 font-medium underline underline-offset-2 text-red-700 disabled:opacity-60"
+                                    >
+                                        {retryingAiConsent ? 'Retrying…' : 'Try again'}
+                                    </button>
+                                    .
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Analytics */}
