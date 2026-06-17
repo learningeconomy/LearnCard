@@ -8,6 +8,7 @@ import UntrustedCertIcon from 'learn-card-base/svgs/UntrustedCertIcon';
 import { AchievementCredential, VC, CredentialInfo } from '@learncard/types';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import { isAppDidWeb } from '@learncard/helpers';
+import { useT } from 'learn-card-base/i18n';
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
@@ -60,6 +61,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
+    const t = useT();
     const {
         title = '',
         createdAt,
@@ -109,7 +111,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     className={`text-green-dark flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
                 >
                     <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
-                    <span className="whitespace-nowrap">Self Issued</span>
+                    <span className="whitespace-nowrap">{t('verification.selfIssued')}</span>
                 </div>
             );
         }
@@ -118,7 +120,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
 
     if (verifierState === VERIFIER_STATES.trustedVerifier) {
         if (showText) {
-            const displayText = unknownVerifierTitle ?? 'Trusted Issuer';
+            const displayText = unknownVerifierTitle ?? t('verification.trustedIssuer');
             return (
                 <div
                     className={`text-green-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
@@ -138,7 +140,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                 >
                     <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
                     <span className="whitespace-nowrap">
-                        {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
+                        {unknownVerifierTitle ?? t('verification.unknownIssuer')}
                     </span>
                 </div>
             );
@@ -155,8 +157,8 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                 <p
                     className={`text-cyan-600 flex items-center font-poppins font-[500] text-base uppercase ${className}`}
                 >
-                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} /> App
-                    Issuer
+                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} />{' '}
+                    {t('verification.appIssuer')}
                 </p>
             );
         }
@@ -170,7 +172,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     className={`text-red-mastercard flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
                 >
                     <UntrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
-                    <span className="whitespace-nowrap">Untrusted Issuer</span>
+                    <span className="whitespace-nowrap">{t('verification.untrustedIssuer')}</span>
                 </div>
             );
         }

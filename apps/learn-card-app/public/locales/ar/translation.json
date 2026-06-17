@@ -1888,5 +1888,23 @@
     },
     "aiFeatureLinks": {
         "skillsHub": "مركز المهارات"
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "صادر ذاتياً",
+            "trustedIssuer": "جهة إصدار موثوقة",
+            "unknownIssuer": "جهة إصدار غير معروفة",
+            "appIssuer": "جهة إصدار التطبيق",
+            "untrustedIssuer": "جهة إصدار غير موثوقة"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "صادر ذاتياً",
+            "trustedIssuer": "جهة إصدار موثوقة",
+            "unknownIssuer": "جهة إصدار غير معروفة",
+            "appIssuer": "تطبيق موثوق",
+            "untrustedIssuer": "جهة إصدار غير موثوقة"
+        }
     }
 }

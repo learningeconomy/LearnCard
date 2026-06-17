@@ -1888,5 +1888,23 @@
     },
     "aiFeatureLinks": {
         "skillsHub": "Pôle de compétences"
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "Auto-émis",
+            "trustedIssuer": "Émetteur de confiance",
+            "unknownIssuer": "Émetteur inconnu",
+            "appIssuer": "Émetteur de l'application",
+            "untrustedIssuer": "Émetteur non fiable"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "Auto-émis",
+            "trustedIssuer": "Émetteur de confiance",
+            "unknownIssuer": "Émetteur inconnu",
+            "appIssuer": "Application de confiance",
+            "untrustedIssuer": "Émetteur non fiable"
+        }
     }
 }

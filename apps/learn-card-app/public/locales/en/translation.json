@@ -1888,5 +1888,23 @@
     },
     "aiFeatureLinks": {
         "skillsHub": "Skills Hub"
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "Self Issued",
+            "trustedIssuer": "Trusted Issuer",
+            "unknownIssuer": "Unknown Issuer",
+            "appIssuer": "App Issuer",
+            "untrustedIssuer": "Untrusted Issuer"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "Self Issued",
+            "trustedIssuer": "Trusted Issuer",
+            "unknownIssuer": "Unknown Issuer",
+            "appIssuer": "Trusted App",
+            "untrustedIssuer": "Untrusted Issuer"
+        }
     }
 }

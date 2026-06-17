@@ -1888,5 +1888,23 @@
     },
     "aiFeatureLinks": {
         "skillsHub": "Centro de habilidades"
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "Autoemitido",
+            "trustedIssuer": "Emisor de confianza",
+            "unknownIssuer": "Emisor desconocido",
+            "appIssuer": "Emisor de la app",
+            "untrustedIssuer": "Emisor no confiable"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "Autoemitido",
+            "trustedIssuer": "Emisor de confianza",
+            "unknownIssuer": "Emisor desconocido",
+            "appIssuer": "App de confianza",
+            "untrustedIssuer": "Emisor no confiable"
+        }
     }
 }
