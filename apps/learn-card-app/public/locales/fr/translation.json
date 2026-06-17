@@ -39,7 +39,9 @@
         "cancel": "Annuler",
         "save": "Enregistrer",
         "continue": "Continuer",
-        "loading": "Chargement..."
+        "loading": "Chargement...",
+        "add": "Ajouter",
+        "saving": "Enregistrement..."
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -131,7 +133,11 @@
                     "title": "Justificatifs vérifiables",
                     "description": "Téléchargez ou collez des justificatifs JSON bruts pour les ajouter à votre portefeuille.",
                     "placeholder": "Collez votre JSON ici...",
-                    "addButton": "Ajouter des justificatifs"
+                    "addButton": "Ajouter des justificatifs",
+                    "parsing": "Analyse...",
+                    "toastAdded": "Credential JSON ajouté avec succès",
+                    "toastAddedBody": "Votre parcours est désormais reflété dans des credentials portables et fiables.",
+                    "toastParseFailed": "Échec de l'analyse du VC JSON."
                 },
                 "addButton": "Ajouter",
                 "schools": {
@@ -146,6 +152,24 @@
                     "title": "Compétences auto-déclarées",
                     "description": "Choisissez parmi les compétences suggérées selon votre profil ou ajoutez les vôtres.",
                     "addSkill": "Ajouter une compétence"
+                },
+                "upload": "Téléverser",
+                "uploading": "Téléversement...",
+                "addMore": "Ajouter",
+                "update": "Mettre à jour",
+                "connect": "Connecter",
+                "reconnect": "Reconnecter",
+                "toastDeleteFailed": "Échec de la suppression. Veuillez réessayer.",
+                "toastDeleteFailedShort": "Échec de la suppression",
+                "toastExtractFailed": "Impossible d'extraire les credentials",
+                "toastGenericError": "Une erreur s'est produite",
+                "credentialsSaved": "{{count}} credential(s) enregistré(s) dans votre portefeuille.",
+                "confirmRemove": {
+                    "resume": "Êtes-vous sûr de vouloir supprimer votre CV téléversé ?",
+                    "certificate": "Êtes-vous sûr de vouloir supprimer votre certificat téléversé ?",
+                    "diploma": "Êtes-vous sûr de vouloir supprimer votre diplôme téléversé ?",
+                    "transcript": "Êtes-vous sûr de vouloir supprimer votre relevé téléversé ?",
+                    "credential": "Êtes-vous sûr de vouloir supprimer votre credential téléversé ?"
                 }
             },
             "review": {
@@ -174,7 +198,68 @@
                 "noMatches": "Aucun type correspondant trouvé"
             },
             "loader": {
-                "notifyWhenReady": "Prévenez-moi quand c'est prêt"
+                "notifyWhenReady": "Prévenez-moi quand c'est prêt",
+                "quotes": {
+                    "resume": {
+                        "q0": "Analyse de votre CV à la recherche de pépites cachées...",
+                        "q1": "Extraction de votre historique professionnel, une ligne à la fois.",
+                        "q2": "Mise en valeur de vos réalisations...",
+                        "q3": "Polissage de vos réalisations en credentials...",
+                        "q4": "Transformation de votre expérience en compétences vérifiables...",
+                        "q5": "Application du traitement credential à votre CV...",
+                        "q6": "Construction de votre chronologie d'apprentissage et de travail...",
+                        "q7": "Analyse de votre historique d'études et de travail...",
+                        "q8": "Vérification de votre CV pour des enregistrements intelligents...",
+                        "q9": "Création d'une preuve numérique de votre parcours professionnel..."
+                    },
+                    "certificate": {
+                        "q0": "Lecture des détails de votre certificat...",
+                        "q1": "Extraction des compétences et connaissances certifiées...",
+                        "q2": "Identification de votre autorité émettrice...",
+                        "q3": "Vérification de la date de votre certification...",
+                        "q4": "Traduction de votre certificat en credential...",
+                        "q5": "Génération d'un badge intelligent pour votre expertise...",
+                        "q6": "Reconnaissance de vos réalisations certifiées...",
+                        "q7": "Vérification du statut d'expiration ou de renouvellement...",
+                        "q8": "Transformation des credentials papier en enregistrements numériques...",
+                        "q9": "Capture des compétences vérifiées de votre certificat..."
+                    },
+                    "transcript": {
+                        "q0": "Analyse de votre relevé de notes...",
+                        "q1": "Extraction de l'historique des cours et des notes...",
+                        "q2": "Cartographie de votre chronologie éducative...",
+                        "q3": "Lecture des crédits obtenus et du GPA (si disponible)...",
+                        "q4": "Conversion des données de cours en credentials...",
+                        "q5": "Suivi de votre progression d'apprentissage...",
+                        "q6": "Traduction des relevés en enregistrements vérifiables...",
+                        "q7": "Analyse de votre performance académique...",
+                        "q8": "Identification des programmes ou spécialités terminés...",
+                        "q9": "Création d'enregistrements intelligents à partir de vos cours..."
+                    },
+                    "diploma": {
+                        "q0": "Analyse de votre diplôme...",
+                        "q1": "Vérification de l'établissement et du type de diplôme...",
+                        "q2": "Reconnaissance de votre qualification obtenue...",
+                        "q3": "Conversion de votre diplôme en un enregistrement vérifiable...",
+                        "q4": "Enregistrement de votre étape académique...",
+                        "q5": "Extraction de la date d'obtention et du domaine d'études...",
+                        "q6": "Documentation de votre réussite de diplôme...",
+                        "q7": "Préservation de la preuve de votre éducation...",
+                        "q8": "Numérisation de votre distinction académique...",
+                        "q9": "Création d'un credential portable à partir de votre diplôme..."
+                    },
+                    "rawVC": {
+                        "q0": "Analyse de votre credential JSON brut...",
+                        "q1": "Extraction des détails du credential...",
+                        "q2": "Vérification de la signature du credential...",
+                        "q3": "Conversion du JSON en un credential vérifiable...",
+                        "q4": "Génération d'un badge intelligent pour votre expertise...",
+                        "q5": "Reconnaissance de vos réalisations vérifiées...",
+                        "q6": "Vérification du statut d'expiration ou de renouvellement...",
+                        "q7": "Transformation des credentials papier en enregistrements numériques...",
+                        "q8": "Capture des compétences vérifiées de votre credential..."
+                    }
+                }
             },
             "misc": {
                 "noCredentialsExtracted": "Aucun justificatif n'a été extrait de ce fichier.",
@@ -1642,7 +1727,8 @@
             "generateLink": "Générer un lien",
             "editDraft": "Modifier le brouillon",
             "sendingBoost": "Envoi du Boost"
-        }
+        },
+        "issuing": "Émission du Boost"
     },
     "legal": {
         "termsOfService": "Conditions d'utilisation",
@@ -2141,5 +2227,181 @@
         "modalTitle": "Développez vos compétences",
         "edit": "Modifier",
         "noResults": "Aucun résultat trouvé. Essayez un terme de recherche plus large."
+    },
+    "aiPersonalization": {
+        "header": "Personnalisez mes <0>Sessions IA</0>",
+        "loading": "Chargement de la personnalisation...",
+        "q1": {
+            "title": "<0>J'apprends le mieux</0> quand je",
+            "options": {
+                "o1": "Voir des exemples ou des supports visuels",
+                "o2": "Lire et analyser des concepts",
+                "o3": "Discuter et poser des questions",
+                "o4": "Pratiquer de manière concrète",
+                "o5": "Suivre des instructions"
+            }
+        },
+        "q2": {
+            "title": "Mes <0>personnages de fiction</0> préférés sont",
+            "placeholder": "Ajouter un personnage de fiction"
+        },
+        "q3": {
+            "title": "Mes <0>genres de films</0> préférés sont",
+            "placeholder": "Ajouter un genre de film"
+        }
+    },
+    "endorsement": {
+        "optional": "Facultatif",
+        "button": {
+            "request": "Demander une recommandation"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "Demande de recommandation",
+                "reviewTitle": "Examiner la recommandation",
+                "requestText": "<0>{{name}}</0> vous a demandé une recommandation pour <1>{{title}}</1>",
+                "endorsingText": "Vous recommandez <0>{{name}}</0> pour <1>{{title}}</1>",
+                "reviewText": "<0>{{name}}</0> a rédigé une recommandation pour <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "Refuser",
+                "sending": "Envoi...",
+                "endorse": "Recommander"
+            },
+            "qualifications": {
+                "title": "Partagez vos qualifications qui appuient cette recommandation.",
+                "placeholder": "Mes qualifications incluent..."
+            },
+            "relationship": {
+                "label": "Relation",
+                "prompt": "Comment connaissez-vous {{name}} ?",
+                "selectTitle": "Sélectionner une relation",
+                "otherPlaceholder": "Autre...",
+                "friend": "Ami",
+                "professionalColleague": "Collègue professionnel",
+                "volunteeredTogether": "Bénévolat ensemble",
+                "college": "Camarade d'études",
+                "other": "Autre"
+            },
+            "text": {
+                "prompt": "Rédigez un bref message pour appuyer ou confirmer <0>{{title}}</0>",
+                "placeholder": "Rédiger une recommandation..."
+            }
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Vidéo",
+            "link": "Lien",
+            "viewDocument": "Voir le document",
+            "visitLink": "Ouvrir le lien",
+            "selectType": "Sélectionner le type de média",
+            "uploaded": "{{count}}% téléversé",
+            "addSupporting": "Ajouter un média à l'appui",
+            "addAny": "Ajoutez tout <0>lien, image, vidéo</0> ou <1>document</1> qui appuie votre recommandation.",
+            "attachmentTitle": "Pièce jointe : {{type}}",
+            "titlePlaceholder": "Titre",
+            "pasteLink": "Collez le lien...",
+            "uploading": "Téléversement...",
+            "upload": "Téléverser",
+            "change": "Changer le {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "Demande de recommandation",
+                "text": "Envoyez une demande à quelqu'un qui peut se porter garant de votre {{categoryType}}, <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "Comment souhaitez-vous l'envoyer ?",
+                "copyLink": "Copier le lien",
+                "generating": "Génération...",
+                "getCode": "Obtenir le code",
+                "whatToSay": "Que souhaitez-vous dire ?",
+                "messagePlaceholder": "Message...",
+                "emailPlaceholder": "E-mail",
+                "sendEmail": "Envoyer la demande par e-mail",
+                "sending": "Envoi..."
+            },
+            "success": {
+                "title": "Demande envoyée !",
+                "bodyPre": "Vous serez averti lorsque la",
+                "bodyPost": "recommandation sera prête."
+            },
+            "draft": {
+                "sendingPre": "Envoi de la",
+                "sendingPost": "recommandation...",
+                "sentPre": "Merci !",
+                "sentPost": "Recommandation envoyée !",
+                "approvedPre": "Merci !",
+                "approvedPost": "Recommandation approuvée !",
+                "waitingReview": "En attente d'examen par {{name}}",
+                "approvedBy": "Approuvé par {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "Voir la recommandation"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "Recommander"
+            },
+            "success": {
+                "thanksPre": "Merci !",
+                "thanksPost": "Votre recommandation est enregistrée temporairement.",
+                "signInBodyPre": "Connectez-vous pour envoyer votre",
+                "signInBodyPost": "recommandation.",
+                "signInButton": "Se connecter pour envoyer"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> vous a demandé une recommandation pour <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "Recommandations"
+        },
+        "fullview": {
+            "endorsement": "Recommandation",
+            "qualifications": "Qualifications",
+            "supportingMedia": "Médias à l'appui",
+            "showEndorsement": "Afficher la recommandation ?",
+            "active": "Actif",
+            "hidden": "Masqué",
+            "notPublicWaiting": "Non public • En attente d'examen",
+            "endorsedOn": "Recommandé le {{date}}",
+            "deletedOn": "Supprimé le {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "Approuver",
+            "approving": "Approbation...",
+            "approved": "Approuvé"
+        },
+        "delete": {
+            "title": "Supprimer la recommandation ?",
+            "confirm": "Oui, supprimer"
+        },
+        "viewRequest": {
+            "ok": "OK",
+            "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
+        }
+    },
+    "verification": {
+        "title": "Vérifications des identifiants",
+        "viewJson": "Voir json",
+        "hideJson": "Masquer json",
+        "status": {
+            "success": "Réussi",
+            "failed": "Échec",
+            "error": "Erreur"
+        },
+        "checks": {
+            "proof": "Preuve",
+            "revocation": "Statut",
+            "expiration": "Expiration"
+        },
+        "messages": {
+            "valid": "Valide",
+            "notRevoked": "Non révoqué",
+            "doesNotExpire": "N'expire pas",
+            "expired": "Invalide • Expiré {{date}}",
+            "expires": "Valide • Expire {{date}}"
+        }
     }
 }

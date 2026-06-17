@@ -39,7 +39,9 @@
         "cancel": "Cancel",
         "save": "Save",
         "continue": "Continue",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "add": "Add",
+        "saving": "Saving..."
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -131,7 +133,11 @@
                     "title": "Verifiable Credentials",
                     "description": "Upload or paste raw JSON credentials to add them to your wallet.",
                     "placeholder": "Paste your JSON here...",
-                    "addButton": "Add Credentials"
+                    "addButton": "Add Credentials",
+                    "parsing": "Parsing...",
+                    "toastAdded": "JSON Credential Successfully Added",
+                    "toastAddedBody": "Your journey is now reflected in portable, trusted credentials.",
+                    "toastParseFailed": "Failed to parse JSON VC."
                 },
                 "addButton": "Add",
                 "schools": {
@@ -146,6 +152,24 @@
                     "title": "Self-Attested Skills",
                     "description": "Select from suggested skills based on your profile or add your own.",
                     "addSkill": "Add a skill"
+                },
+                "upload": "Upload",
+                "uploading": "Uploading...",
+                "addMore": "Add More",
+                "update": "Update",
+                "connect": "Connect",
+                "reconnect": "Reconnect",
+                "toastDeleteFailed": "Failed to delete. Please try again.",
+                "toastDeleteFailedShort": "Delete failed",
+                "toastExtractFailed": "Could not extract credentials",
+                "toastGenericError": "Something went wrong",
+                "credentialsSaved": "{{count}} credential(s) saved to your wallet.",
+                "confirmRemove": {
+                    "resume": "Are you sure you want remove your uploaded resume?",
+                    "certificate": "Are you sure you want remove your uploaded certificate?",
+                    "diploma": "Are you sure you want remove your uploaded diploma?",
+                    "transcript": "Are you sure you want remove your uploaded transcript?",
+                    "credential": "Are you sure you want remove your uploaded credential?"
                 }
             },
             "review": {
@@ -174,7 +198,68 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
-                "notifyWhenReady": "Notify me when it's ready"
+                "notifyWhenReady": "Notify me when it's ready",
+                "quotes": {
+                    "resume": {
+                        "q0": "Scanning your resume for hidden gems...",
+                        "q1": "Extracting your work history — one line at a time.",
+                        "q2": "Highlighting your accomplishments...",
+                        "q3": "Polishing your achievements into credentials...",
+                        "q4": "Turning experience into verifiable skills...",
+                        "q5": "Giving your resume the credential treatment...",
+                        "q6": "Building your learning and work timeline...",
+                        "q7": "Parsing education and work history...",
+                        "q8": "Verifying your resume for smart records...",
+                        "q9": "Creating digital proof of your career journey..."
+                    },
+                    "certificate": {
+                        "q0": "Reading your certificate details...",
+                        "q1": "Extracting certified skills and knowledge...",
+                        "q2": "Identifying your issuing authority...",
+                        "q3": "Verifying your certification date...",
+                        "q4": "Translating your certificate into a credential...",
+                        "q5": "Generating a smart badge for your expertise...",
+                        "q6": "Recognizing your certified accomplishments...",
+                        "q7": "Checking for expiration or renewal status...",
+                        "q8": "Transforming paper credentials into digital records...",
+                        "q9": "Capturing verified skills from your certificate..."
+                    },
+                    "transcript": {
+                        "q0": "Parsing your academic transcript...",
+                        "q1": "Extracting course history and grades...",
+                        "q2": "Mapping your educational timeline...",
+                        "q3": "Reading earned credits and GPA (if available)...",
+                        "q4": "Converting course data into credentials...",
+                        "q5": "Tracking your learning progress...",
+                        "q6": "Translating transcripts into verifiable records...",
+                        "q7": "Analyzing your academic performance...",
+                        "q8": "Identifying completed programs or majors...",
+                        "q9": "Building smart records from your coursework..."
+                    },
+                    "diploma": {
+                        "q0": "Analyzing your diploma...",
+                        "q1": "Verifying institution and degree type...",
+                        "q2": "Recognizing your awarded qualification...",
+                        "q3": "Converting your diploma into a verifiable record...",
+                        "q4": "Recording your academic milestone...",
+                        "q5": "Extracting awarded date and field of study...",
+                        "q6": "Documenting your graduation achievement...",
+                        "q7": "Preserving proof of your education...",
+                        "q8": "Digitizing your academic honor...",
+                        "q9": "Building a portable credential from your diploma..."
+                    },
+                    "rawVC": {
+                        "q0": "Parsing your raw JSON credential...",
+                        "q1": "Extracting credential details...",
+                        "q2": "Verifying credential signature...",
+                        "q3": "Converting JSON into a verifiable credential...",
+                        "q4": "Generating a smart badge for your expertise...",
+                        "q5": "Recognizing your verified accomplishments...",
+                        "q6": "Checking for expiration or renewal status...",
+                        "q7": "Transforming paper credentials into digital records...",
+                        "q8": "Capturing verified skills from your credential..."
+                    }
+                }
             },
             "misc": {
                 "noCredentialsExtracted": "No credentials were extracted from this file.",
@@ -1671,7 +1756,8 @@
             "generateLink": "Generate Link",
             "editDraft": "Edit Draft",
             "sendingBoost": "Sending Boost"
-        }
+        },
+        "issuing": "Issuing Boost"
     },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
@@ -2141,5 +2227,181 @@
         "modalTitle": "Grow your skills",
         "edit": "Edit",
         "noResults": "No results found. Try a broader search term."
+    },
+    "aiPersonalization": {
+        "header": "Personalize my <0>AI Sessions</0>",
+        "loading": "Loading Personalization...",
+        "q1": {
+            "title": "I <0>learn best</0> when I",
+            "options": {
+                "o1": "See examples or visuals",
+                "o2": "Read and analyze concepts",
+                "o3": "Discuss and ask questions",
+                "o4": "Practice hands on",
+                "o5": "Follow instructions"
+            }
+        },
+        "q2": {
+            "title": "My favorite <0>fictional characters</0> are",
+            "placeholder": "Add fictional character"
+        },
+        "q3": {
+            "title": "My favorite <0>movie genres</0> are",
+            "placeholder": "Add movie genre"
+        }
+    },
+    "endorsement": {
+        "optional": "Optional",
+        "button": {
+            "request": "Request Endorsement"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "Endorsement Request",
+                "reviewTitle": "Review Endorsement",
+                "requestText": "<0>{{name}}</0> has requested an endorsement from you for <1>{{title}}</1>",
+                "endorsingText": "You’re endorsing <0>{{name}}</0> for <1>{{title}}</1>",
+                "reviewText": "<0>{{name}}</0> has written an endorsement for <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "Decline",
+                "sending": "Sending...",
+                "endorse": "Endorse"
+            },
+            "qualifications": {
+                "title": "Share your qualifications that support this endorsement.",
+                "placeholder": "My qualifications include..."
+            },
+            "relationship": {
+                "label": "Relationship",
+                "prompt": "How do you know {{name}}?",
+                "selectTitle": "Select Relationship",
+                "otherPlaceholder": "Other...",
+                "friend": "Friend",
+                "professionalColleague": "Professional Colleague",
+                "volunteeredTogether": "Volunteered Together",
+                "college": "College",
+                "other": "Other"
+            },
+            "text": {
+                "prompt": "Write a brief message to support or confirm <0>{{title}}</0>",
+                "placeholder": "Write endorsement..."
+            }
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Video",
+            "link": "Link",
+            "viewDocument": "View Document",
+            "visitLink": "Visit Link",
+            "selectType": "Select Media Type",
+            "uploaded": "{{count}}% uploaded",
+            "addSupporting": "Add Supporting Media",
+            "addAny": "Add any <0>links, images, videos,</0> or <1>documents</1> that support your endorsement.",
+            "attachmentTitle": "{{type}} Attachment",
+            "titlePlaceholder": "Title",
+            "pasteLink": "Paste link...",
+            "uploading": "Uploading...",
+            "upload": "Upload",
+            "change": "Change {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "Endorsement Request",
+                "text": "Send a request to someone who can vouch for your {{categoryType}}, <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "How do you want to send it?",
+                "copyLink": "Copy Link",
+                "generating": "Generating...",
+                "getCode": "Get Code",
+                "whatToSay": "What would you like to say?",
+                "messagePlaceholder": "Message...",
+                "emailPlaceholder": "Email",
+                "sendEmail": "Send Email Request",
+                "sending": "Sending..."
+            },
+            "success": {
+                "title": "Request Sent!",
+                "bodyPre": "You’ll be notified when the",
+                "bodyPost": "endorsement is ready."
+            },
+            "draft": {
+                "sendingPre": "Sending",
+                "sendingPost": "Endorsement...",
+                "sentPre": "Thanks!",
+                "sentPost": "Endorsement Sent!",
+                "approvedPre": "Thanks!",
+                "approvedPost": "Endorsement Approved!",
+                "waitingReview": "Waiting for review by {{name}}",
+                "approvedBy": "Approved by {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "View Endorsement"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "Endorse"
+            },
+            "success": {
+                "thanksPre": "Thanks!",
+                "thanksPost": "Your endorsement is temporarily saved.",
+                "signInBodyPre": "Sign in to send your",
+                "signInBodyPost": "endorsement.",
+                "signInButton": "Sign in to send"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> has requested your endorsement for <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "Endorsements"
+        },
+        "fullview": {
+            "endorsement": "Endorsement",
+            "qualifications": "Qualifications",
+            "supportingMedia": "Supporting Media",
+            "showEndorsement": "Show Endorsement?",
+            "active": "Active",
+            "hidden": "Hidden",
+            "notPublicWaiting": "Not public • Waiting for review",
+            "endorsedOn": "Endorsed on {{date}}",
+            "deletedOn": "Deleted on {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "Approve",
+            "approving": "Approving...",
+            "approved": "Approved"
+        },
+        "delete": {
+            "title": "Delete Endorsement?",
+            "confirm": "Yes, Delete"
+        },
+        "viewRequest": {
+            "ok": "OK",
+            "errorFetching": "Error fetching credential: {{error}}"
+        }
+    },
+    "verification": {
+        "title": "Credential Verifications",
+        "viewJson": "View json",
+        "hideJson": "Hide json",
+        "status": {
+            "success": "Success",
+            "failed": "Failed",
+            "error": "Error"
+        },
+        "checks": {
+            "proof": "Proof",
+            "revocation": "Status",
+            "expiration": "Expiration"
+        },
+        "messages": {
+            "valid": "Valid",
+            "notRevoked": "Not Revoked",
+            "doesNotExpire": "Does Not Expire",
+            "expired": "Invalid • Expired {{date}}",
+            "expires": "Valid • Expires {{date}}"
+        }
     }
 }

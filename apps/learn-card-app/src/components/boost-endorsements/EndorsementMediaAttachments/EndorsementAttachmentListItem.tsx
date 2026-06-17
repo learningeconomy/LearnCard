@@ -24,6 +24,7 @@ import {
 } from '../EndorsementForm/endorsement-state.helpers';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 const EndorsementAttachmentListItem: React.FC<{
     media: EndorsementMediaAttachment;
@@ -167,7 +168,7 @@ const EndorsementAttachmentListItem: React.FC<{
                             <span
                                 className={`line-clamp-1 text-${primaryColor} text-base font-semibold`}
                             >
-                                View Document
+                                {m['endorsement.media.viewDocument']()}
                             </span>
                         </div>
                     </div>
@@ -191,7 +192,7 @@ const EndorsementAttachmentListItem: React.FC<{
                             <span
                                 className={`line-clamp-1 text-${primaryColor} text-base font-semibold`}
                             >
-                                Visit Link
+                                {m['endorsement.media.visitLink']()}
                             </span>
                         </div>
                     </div>

@@ -177,15 +177,19 @@ export const CheckListUploadRawVC: React.FC = () => {
             if (result?.success) {
                 setRawVcText('');
                 loadRawVCs();
-                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    title: `JSON Credential Successfully Added`,
+                presentToast(m['passport.buildMyLearnCard.managers.rawVC.toastAddedBody'](), {
+                    title: m['passport.buildMyLearnCard.managers.rawVC.toastAdded'](),
                     hasDismissButton: true,
                     type: ToastTypeEnum.Success,
                     hasCheckmark: true,
                     autoDismiss: false,
                 });
             } else {
-                setRawTextErrors([`Failed to parse JSON VC. ${result?.error}`]);
+                setRawTextErrors([
+                    `${m['passport.buildMyLearnCard.managers.rawVC.toastParseFailed']()} ${
+                        result?.error
+                    }`,
+                ]);
             }
         } catch (error: any) {
             setRawTextErrors([error.message]);
@@ -291,7 +295,9 @@ export const CheckListUploadRawVC: React.FC = () => {
                         disabled={isUploading}
                     >
                         <UploadIcon className="w-[25px] h-[25px] text-white" strokeWidth="2" />
-                        {isUploading ? 'Uploading...' : 'Upload'}
+                        {isUploading
+                            ? m['passport.buildMyLearnCard.managers.uploading']()
+                            : m['passport.buildMyLearnCard.managers.upload']()}
                     </button>
 
                     <div className="w-full h-[1px] bg-grayscale-200" />
@@ -349,7 +355,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                         >
                             <Plus className="w-[25px] h-[25px] text-white" />
                             {isUploadingRawVC
-                                ? 'Parsing...'
+                                ? m['passport.buildMyLearnCard.managers.rawVC.parsing']()
                                 : m['passport.buildMyLearnCard.managers.addButton']()}
                         </button>
                     </div>
