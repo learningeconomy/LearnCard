@@ -25,7 +25,7 @@
             "executor": "nx:run-script",
             "inputs": ["source"],
             "outputs": ["dist"],
-            "dependsOn": ["^build"],
+            "dependsOn": [],
             "options": {
                 "script": "docker-build"
             }

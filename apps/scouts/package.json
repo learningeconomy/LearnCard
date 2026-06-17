@@ -106,7 +106,7 @@
         "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc LEARN_CLOUD_XAPI_URL=http://localhost:4100/xapi API_URL=http://localhost:5100/trpc VITE_SSS_SERVER_URL=/lca-api vite --host",
         "serve": "vite",
         "build": "NODE_OPTIONS=\"--max-old-space-size=4608\" vite build",
-        "docker-build": "LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=4608\" vite build -d",
+        "docker-build": "VITE_DOCKER_SOURCE=true LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=8192\" vite build -d",
         "test-playwright": "playwright test",
         "test-ui": "playwright test --ui",
         "test": "echo \"Actually we don't want to run playwright tests in CI... Use test-playwright or test-ui if you're not CI\"",

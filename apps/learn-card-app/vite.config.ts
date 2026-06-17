@@ -149,6 +149,14 @@ export default defineConfig(({ mode }) => {
                 : 'undefined',
         },
         resolve: {
+            // The self-host Docker build (docker-build script) sets VITE_DOCKER_SOURCE=true so
+            // vite resolves @learncard/* via their `development` export → TS source, exactly like
+            // the dev server. This lets the container bundle the app in one vite pass without
+            // pre-building every workspace package's dist. Netlify's `build` leaves this unset and
+            // keeps resolving the published dist outputs.
+            ...(process.env.VITE_DOCKER_SOURCE === 'true'
+                ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
+                : {}),
             alias: {
                 ...stdlibbrowser,
                 '@web3auth/openlogin-adapter':

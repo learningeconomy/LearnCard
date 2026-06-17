@@ -153,7 +153,7 @@
         "docker-start:tenant": "bun scripts/prepare-native-config.ts ${TENANT:-learncard} --stage ${STAGE:-local} && vite --host",
         "serve": "vite",
         "build": "bun scripts/prepare-native-config.ts ${TENANT:-learncard} ${STAGE:+--stage $STAGE} && NODE_OPTIONS=\"--max-old-space-size=16608\" vite build",
-        "docker-build": "bun scripts/prepare-native-config.ts learncard --stage local && NODE_OPTIONS=\"--max-old-space-size=4608\" vite build -d",
+        "docker-build": "VITE_DOCKER_SOURCE=true bun scripts/prepare-native-config.ts learncard --stage local && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build -d",
         "test:unit": "vitest run",
         "test:live-ctdl": "LEARNCARD_PATHWAYS_LIVE_TESTS=1 vitest run src/pages/pathways/import/fetchCtdlPathway.live.test.ts",
         "test-playwright": "playwright test",
