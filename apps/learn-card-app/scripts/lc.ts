@@ -491,6 +491,7 @@ const startDev = async (
     const modeArg = devMode === 'full' ? '' : ` ${devMode}`;
     const buildFlag = noBuild ? '' : ' --build';
     const fastArg = noBuild ? ' fast' : '';
+    const dockerUidEnv = 'LOCAL_UID=$(id -u) LOCAL_GID=$(id -g)';
 
     switch (devMode) {
         case 'app':
@@ -503,7 +504,7 @@ const startDev = async (
 
         case 'services':
             runCommand(
-                `docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
+                `${dockerUidEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
                 `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
                 `bun run lc dev ${tenantId}${stageArg} services${fastArg}`
             );
@@ -512,7 +513,7 @@ const startDev = async (
         case 'full':
         default:
             runCommand(
-                `TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
+                `${dockerUidEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
                 `Starting ${displayName}${stageLabel} — full stack${
                     noBuild ? ' (skipping rebuild)' : ''
                 }`,
