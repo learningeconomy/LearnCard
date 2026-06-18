@@ -12,6 +12,7 @@ import { getTypeByObv3, type CredentialTypeEntry } from './components/credential
 import { prepareImportedTemplate } from './import/prepareImport';
 import type { NormalizedImport, ImportProvenance } from './import/normalizeToObv3';
 import { RecipientMode, Recipient, LinkOptions } from './components/recipientTypes';
+import { getFriendlyIssueError, withTransientRetry, type IssueError } from './issueErrors';
 import {
     useWallet,
     useToast,
@@ -61,7 +62,7 @@ const IssueCredentialPage: React.FC = () => {
     const [resolvedSkills, setResolvedSkills] = useState<ResolvedSkill[]>([]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<IssueError | null>(null);
     const [issuedUri, setIssuedUri] = useState<string | null>(null);
     const [claimLink, setClaimLink] = useState<string | null>(null);
 
@@ -233,7 +234,12 @@ const IssueCredentialPage: React.FC = () => {
             const wallet = await initWallet();
             const jsonLd = await validateCredentialJsonLd(templateToJson(template));
             if (!jsonLd.valid) {
-                setError(jsonLd.errors.join('; '));
+                log.warn('issue.validation_failed', { errors: jsonLd.errors });
+                setError({
+                    message:
+                        "Some details on this credential aren't valid yet. Please review and try again.",
+                    canRetry: false,
+                });
                 setIsSubmitting(false);
                 return;
             }
@@ -260,13 +266,15 @@ const IssueCredentialPage: React.FC = () => {
                 }
             }
 
-            const result = await issueViaBoost(wallet, template, {
-                mode: recipientMode,
-                recipients,
-                linkOptions,
-                currentLCNUser,
-                claimLinkSA,
-            });
+            const result = await withTransientRetry(() =>
+                issueViaBoost(wallet, template, {
+                    mode: recipientMode,
+                    recipients,
+                    linkOptions,
+                    currentLCNUser,
+                    claimLinkSA,
+                })
+            );
 
             presentToast('Credential issued.', {
                 type: ToastTypeEnum.Success,
@@ -278,12 +286,7 @@ const IssueCredentialPage: React.FC = () => {
             }
         } catch (e) {
             log.error('issue.failed', e);
-            const message = (e as Error)?.message ?? '';
-            setError(
-                /network|fetch|connection/i.test(message)
-                    ? 'Connection issue. Please check your internet and try again.'
-                    : message || 'Something went wrong issuing your credential. Please try again.'
-            );
+            setError(getFriendlyIssueError(e, recipientMode));
         } finally {
             setIsSubmitting(false);
         }
@@ -431,10 +434,24 @@ const IssueCredentialPage: React.FC = () => {
                                     </div>
                                 )}
                                 {error && (
-                                    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl">
-                                        <span className="text-sm text-red-700 leading-relaxed">
-                                            {error}
-                                        </span>
+                                    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+                                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-sm text-red-700 leading-relaxed">
+                                                {error.message}
+                                            </span>
+                                            {error.canRetry && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleIssue}
+                                                    disabled={isSubmitting}
+                                                    className="mt-2 flex items-center gap-1.5 text-sm font-medium text-red-700 hover:text-red-900 transition-colors disabled:opacity-50"
+                                                >
+                                                    <RotateCcw className="w-3.5 h-3.5" />
+                                                    Try Again
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
