@@ -80,6 +80,11 @@ jobs:
                       echo "EOF"
                   } >> "$GITHUB_ENV"
 
+            # Storybook resolves @learncard/react from its built dist/, so it must be compiled first.
+            - name: Build @learncard/react
+              if: contains(env.AFFECTED, 'learn-card-app')
+              run: pnpm exec nx build react
+
             - name: Publish to Chromatic
               if: contains(env.AFFECTED, 'learn-card-app')
               uses: chromaui/action@latest
