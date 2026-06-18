@@ -273,11 +273,15 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     {compact ? (
                         <>
                             {newItemIndicator}
-                            {boostTypeDisplayName}
                             {boostTypeDisplayName && (
-                                <span className="mx-1 text-grayscale-400">·</span>
+                                <span className="truncate min-w-0">{boostTypeDisplayName}</span>
                             )}
-                            {issuanceDateDisplay}
+                            {boostTypeDisplayName && (
+                                <span className="shrink-0 mx-1 text-grayscale-400">·</span>
+                            )}
+                            <span className="shrink-0 whitespace-nowrap">
+                                {issuanceDateDisplay}
+                            </span>
                         </>
                     ) : (
                         <>
