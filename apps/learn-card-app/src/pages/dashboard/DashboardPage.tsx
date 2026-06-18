@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
@@ -221,13 +221,13 @@ const DashboardPage: React.FC = () => {
             />
         );
     };
-    const openManageDataSharing = () => {
+    const openManageDataSharing = useCallback(() => {
         openHeaderModal(
             <ManageDataSharingModal />,
             { sectionClassName: '!bg-transparent !shadow-none' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
         );
-    };
+    }, [openHeaderModal]);
 
     const pathways = pathwayStore.use.pathways();
     const activePathwayId = pathwayStore.use.activePathwayId();
@@ -497,7 +497,7 @@ const DashboardPage: React.FC = () => {
     const dataTrust = useMemo<DashboardDataTrustViewModel>(() => {
         const summary = summarizeConsent(consentedContracts);
         return { ...summary, onManage: openManageDataSharing };
-    }, [consentedContracts]);
+    }, [consentedContracts, openManageDataSharing]);
 
     const viewModel: DashboardViewModel = {
         brandName: brandingConfig.name,
