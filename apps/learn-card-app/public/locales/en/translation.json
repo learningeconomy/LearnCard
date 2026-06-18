@@ -51,7 +51,8 @@
         "updating": "Updating...",
         "revoked": "Revoked",
         "learnMore": "Learn More",
-        "viewAll": "View All"
+        "viewAll": "View All",
+        "tagline": "Universal Learning & Work Portfolio"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -1728,6 +1729,68 @@
         "redirect": {
             "heading": "Redirect Required",
             "description": "To continue, you need to complete a step on an external website."
+        },
+        "claiming": "Claiming...",
+        "claimingCredential": "Claiming Credential",
+        "fetchingCredential": "Fetching Credential",
+        "by": "by",
+        "revokedToast": "This credential has been revoked and can no longer be claimed.",
+        "failedToClaim": "Failed to claim credential: {{message}}",
+        "pleaseTryAgain": "Please try again.",
+        "errorWithMessage": "There was an error: {{message}}",
+        "fullSizeAttachment": "Full size attachment",
+        "notFound": {
+            "title": "Eeek!",
+            "message": "Unable to find Credential"
+        },
+        "received": {
+            "title": "You've received a credential!",
+            "subtitle": "Login or signup to claim.",
+            "subtitleNamed": "Login or signup to claim your {{name}}.",
+            "signUp": "Sign up for {{brand}}",
+            "haveAccount": "Have an account?"
+        },
+        "boost": {
+            "accepted": "Accepted",
+            "expiredHeader": "The boost claim link has expired or has reached the maximum number of times it can be claimed."
+        },
+        "modal": {
+            "earnedTitle": "You've Earned a Credential!",
+            "claimedTitle": "Credential Claimed!",
+            "claimedBody": "The credential has been added to your wallet.",
+            "loadingCredential": "Loading credential...",
+            "loadErrorTitle": "Unable to Load Credential",
+            "loadError": "Unable to load credential",
+            "notFoundBody": "The credential could not be found.",
+            "credentialFallback": "Credential",
+            "loadingNameAria": "Loading credential name",
+            "preparing": "Preparing...",
+            "acceptCredential": "Accept Credential",
+            "maybeLater": "Maybe Later"
+        },
+        "paste": {
+            "title": "Use a Claim Link",
+            "subtitle": "Paste a link or upload a QR",
+            "linkHeading": "Got a credential link?",
+            "linkDesc": "Paste it below to continue.",
+            "checking": "Checking…",
+            "qrHeading": "Got a QR code?",
+            "qrDesc": "Drop an image, or pick one from your device.",
+            "dropIt": "Drop it!",
+            "chooseImage": "Choose an image",
+            "releaseToUpload": "Release to upload",
+            "orDropHere": "or drop it here",
+            "somethingWentWrong": "Something went wrong.",
+            "oops": "Oops! {{message}}",
+            "qrNotFound": "We couldn't find a QR code in that image. Make sure the QR fills most of the photo and isn't blurry.",
+            "qrReadFailed": "We couldn't read a QR code from that image. Try a clearer photo, or paste the link instead.",
+            "unrecognized": {
+                "empty": "Paste a link or upload a QR code image to continue.",
+                "malformedUrl": "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.",
+                "unknownScheme": "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.",
+                "invalidVc": "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.",
+                "unknownFormat": "We couldn't make sense of that. Paste a claim link or upload a QR code image."
+            }
         }
     },
     "chapi": {

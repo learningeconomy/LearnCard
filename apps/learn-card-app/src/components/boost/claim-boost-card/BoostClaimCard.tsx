@@ -176,7 +176,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         const wallet = await initWallet();
 
         if (isRevoked) {
-            presentToast('This credential has been revoked and can no longer be claimed.', {
+            presentToast(m['claim.revokedToast'](), {
                 duration: 4000,
                 type: ToastTypeEnum.Error,
             });
@@ -248,9 +248,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         onError(err: any) {
                             setIsClaimLoading(false);
                             presentToast(
-                                `Failed to claim credential: ${
-                                    err?.message ?? 'Please try again.'
-                                }`,
+                                m['claim.failedToClaim']({
+                                    message: err?.message ?? m['claim.pleaseTryAgain'](),
+                                }),
                                 { duration: 4000, type: ToastTypeEnum.Error }
                             );
                         },
@@ -261,7 +261,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
-                    header: `There was an error: ${err?.message}`,
+                    header: m['claim.errorWithMessage']({ message: err?.message ?? '' }),
                     buttons: [
                         {
                             text: m['contacts.okay'](),
@@ -431,7 +431,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     <div className="relative max-w-full max-h-[80vh]">
                                         <img
                                             src={selectedImage}
-                                            alt="Full size attachment"
+                                            alt={m['claim.fullSizeAttachment']()}
                                             className="max-w-full max-h-[80vh] object-contain"
                                         />
                                     </div>

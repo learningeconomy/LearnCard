@@ -51,7 +51,8 @@
         "updating": "Mise à jour...",
         "revoked": "Révoqué",
         "learnMore": "En savoir plus",
-        "viewAll": "Tout voir"
+        "viewAll": "Tout voir",
+        "tagline": "Portfolio universel d'apprentissage et de travail"
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -2008,6 +2009,68 @@
         "redirect": {
             "heading": "Redirection requise",
             "description": "Pour continuer, vous devez effectuer une étape sur un site web externe."
+        },
+        "claiming": "Réclamation...",
+        "claimingCredential": "Réclamation du justificatif",
+        "fetchingCredential": "Récupération du justificatif",
+        "by": "par",
+        "revokedToast": "Ce justificatif a été révoqué et ne peut plus être réclamé.",
+        "failedToClaim": "Échec de la réclamation du justificatif : {{message}}",
+        "pleaseTryAgain": "Veuillez réessayer.",
+        "errorWithMessage": "Une erreur s'est produite : {{message}}",
+        "fullSizeAttachment": "Pièce jointe en taille réelle",
+        "notFound": {
+            "title": "Oups !",
+            "message": "Impossible de trouver le justificatif"
+        },
+        "received": {
+            "title": "Vous avez reçu un justificatif !",
+            "subtitle": "Connectez-vous ou inscrivez-vous pour le réclamer.",
+            "subtitleNamed": "Connectez-vous ou inscrivez-vous pour réclamer votre {{name}}.",
+            "signUp": "Inscrivez-vous à {{brand}}",
+            "haveAccount": "Vous avez déjà un compte ?"
+        },
+        "boost": {
+            "accepted": "Accepté",
+            "expiredHeader": "Le lien de réclamation du Boost a expiré ou a atteint le nombre maximal de réclamations autorisées."
+        },
+        "modal": {
+            "earnedTitle": "Vous avez obtenu un justificatif !",
+            "claimedTitle": "Justificatif réclamé !",
+            "claimedBody": "Le justificatif a été ajouté à votre portefeuille.",
+            "loadingCredential": "Chargement du justificatif...",
+            "loadErrorTitle": "Impossible de charger le justificatif",
+            "loadError": "Impossible de charger le justificatif",
+            "notFoundBody": "Le justificatif est introuvable.",
+            "credentialFallback": "Justificatif",
+            "loadingNameAria": "Chargement du nom du justificatif",
+            "preparing": "Préparation...",
+            "acceptCredential": "Accepter le justificatif",
+            "maybeLater": "Plus tard"
+        },
+        "paste": {
+            "title": "Utiliser un lien de réclamation",
+            "subtitle": "Collez un lien ou importez un QR",
+            "linkHeading": "Vous avez un lien de justificatif ?",
+            "linkDesc": "Collez-le ci-dessous pour continuer.",
+            "checking": "Vérification…",
+            "qrHeading": "Vous avez un code QR ?",
+            "qrDesc": "Déposez une image ou choisissez-en une depuis votre appareil.",
+            "dropIt": "Déposez-le !",
+            "chooseImage": "Choisir une image",
+            "releaseToUpload": "Relâchez pour importer",
+            "orDropHere": "ou déposez-le ici",
+            "somethingWentWrong": "Une erreur s'est produite.",
+            "oops": "Oups ! {{message}}",
+            "qrNotFound": "Nous n'avons pas trouvé de code QR dans cette image. Assurez-vous que le QR occupe la majeure partie de la photo et qu'il n'est pas flou.",
+            "qrReadFailed": "Nous n'avons pas pu lire de code QR dans cette image. Essayez une photo plus nette ou collez plutôt le lien.",
+            "unrecognized": {
+                "empty": "Collez un lien ou importez une image de code QR pour continuer.",
+                "malformedUrl": "Cela ne ressemble pas à un lien de réclamation. Essayez de copier le lien entier, commençant par https://, openid-credential-offer:// ou similaire.",
+                "unknownScheme": "Nous ne reconnaissons pas encore ce type de lien. Le lien semble valide, mais le format n'est pas pris en charge.",
+                "invalidVc": "Cela ressemble à un justificatif, mais nous n'avons pas pu le lire. Demandez une nouvelle copie à l'émetteur.",
+                "unknownFormat": "Nous n'avons pas pu interpréter cela. Collez un lien de réclamation ou importez une image de code QR."
+            }
         }
     },
     "chapi": {

@@ -51,7 +51,8 @@
         "updating": "Actualizando...",
         "revoked": "Revocado",
         "learnMore": "Más información",
-        "viewAll": "Ver todo"
+        "viewAll": "Ver todo",
+        "tagline": "Portafolio universal de aprendizaje y trabajo"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
@@ -2008,6 +2009,68 @@
         "redirect": {
             "heading": "Redirección requerida",
             "description": "Para continuar, debes completar un paso en un sitio web externo."
+        },
+        "claiming": "Reclamando...",
+        "claimingCredential": "Reclamando credencial",
+        "fetchingCredential": "Obteniendo credencial",
+        "by": "por",
+        "revokedToast": "Esta credencial ha sido revocada y ya no puede reclamarse.",
+        "failedToClaim": "No se pudo reclamar la credencial: {{message}}",
+        "pleaseTryAgain": "Inténtalo de nuevo.",
+        "errorWithMessage": "Ocurrió un error: {{message}}",
+        "fullSizeAttachment": "Archivo adjunto a tamaño completo",
+        "notFound": {
+            "title": "¡Ups!",
+            "message": "No se pudo encontrar la credencial"
+        },
+        "received": {
+            "title": "¡Has recibido una credencial!",
+            "subtitle": "Inicia sesión o regístrate para reclamarla.",
+            "subtitleNamed": "Inicia sesión o regístrate para reclamar tu {{name}}.",
+            "signUp": "Regístrate en {{brand}}",
+            "haveAccount": "¿Ya tienes una cuenta?"
+        },
+        "boost": {
+            "accepted": "Aceptada",
+            "expiredHeader": "El enlace para reclamar el Boost ha caducado o ha alcanzado el número máximo de veces que puede reclamarse."
+        },
+        "modal": {
+            "earnedTitle": "¡Has obtenido una credencial!",
+            "claimedTitle": "¡Credencial reclamada!",
+            "claimedBody": "La credencial se ha añadido a tu cartera.",
+            "loadingCredential": "Cargando credencial...",
+            "loadErrorTitle": "No se pudo cargar la credencial",
+            "loadError": "No se pudo cargar la credencial",
+            "notFoundBody": "No se pudo encontrar la credencial.",
+            "credentialFallback": "Credencial",
+            "loadingNameAria": "Cargando el nombre de la credencial",
+            "preparing": "Preparando...",
+            "acceptCredential": "Aceptar credencial",
+            "maybeLater": "Quizás más tarde"
+        },
+        "paste": {
+            "title": "Usar un enlace de reclamación",
+            "subtitle": "Pega un enlace o sube un QR",
+            "linkHeading": "¿Tienes un enlace de credencial?",
+            "linkDesc": "Pégalo abajo para continuar.",
+            "checking": "Comprobando…",
+            "qrHeading": "¿Tienes un código QR?",
+            "qrDesc": "Suelta una imagen o elige una de tu dispositivo.",
+            "dropIt": "¡Suéltalo!",
+            "chooseImage": "Elegir una imagen",
+            "releaseToUpload": "Suelta para subir",
+            "orDropHere": "o suéltalo aquí",
+            "somethingWentWrong": "Algo salió mal.",
+            "oops": "¡Ups! {{message}}",
+            "qrNotFound": "No pudimos encontrar un código QR en esa imagen. Asegúrate de que el QR ocupe la mayor parte de la foto y no esté borroso.",
+            "qrReadFailed": "No pudimos leer un código QR de esa imagen. Prueba con una foto más nítida o pega el enlace en su lugar.",
+            "unrecognized": {
+                "empty": "Pega un enlace o sube una imagen de código QR para continuar.",
+                "malformedUrl": "Eso no parece un enlace de reclamación. Intenta copiar el enlace completo, que comience con https://, openid-credential-offer:// o similar.",
+                "unknownScheme": "Aún no reconocemos este tipo de enlace. El enlace parece válido, pero el formato no es compatible.",
+                "invalidVc": "Eso parece una credencial, pero no pudimos leerla. Pídele al emisor una copia nueva.",
+                "unknownFormat": "No pudimos interpretar eso. Pega un enlace de reclamación o sube una imagen de código QR."
+            }
         }
     },
     "chapi": {

@@ -13,19 +13,20 @@ import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
+import * as m from '../../paraglide/messages.js';
 
 const unrecognizedCopyFor = (reason: UnrecognizedReason): string => {
     switch (reason) {
         case 'empty':
-            return 'Paste a link or upload a QR code image to continue.';
+            return m['claim.paste.unrecognized.empty']();
         case 'malformed_url':
-            return "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.";
+            return m['claim.paste.unrecognized.malformedUrl']();
         case 'unknown_scheme':
-            return "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.";
+            return m['claim.paste.unrecognized.unknownScheme']();
         case 'invalid_vc':
-            return "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.";
+            return m['claim.paste.unrecognized.invalidVc']();
         case 'unknown_format':
-            return "We couldn't make sense of that. Paste a claim link or upload a QR code image.";
+            return m['claim.paste.unrecognized.unknownFormat']();
     }
 };
 
@@ -156,7 +157,12 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 return true;
             } catch (err) {
                 presentToast(
-                    `Oops! ${err instanceof Error ? err.message : 'Something went wrong.'}`,
+                    m['claim.paste.oops']({
+                        message:
+                            err instanceof Error
+                                ? err.message
+                                : m['claim.paste.somethingWentWrong'](),
+                    }),
                     { type: ToastTypeEnum.Error, hasDismissButton: true }
                 );
                 return false;
@@ -179,19 +185,14 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 const scanResult = await QrScanner.scanImage(file, {
                     returnDetailedScanResult: true,
                 });
-                const decoded =
-                    typeof scanResult === 'string' ? scanResult : scanResult.data;
+                const decoded = typeof scanResult === 'string' ? scanResult : scanResult.data;
                 if (!decoded) {
-                    setErrorCopy(
-                        "We couldn't find a QR code in that image. Make sure the QR fills most of the photo and isn't blurry."
-                    );
+                    setErrorCopy(m['claim.paste.qrNotFound']());
                     return;
                 }
                 await dispatch(decoded, 'image_upload');
             } catch {
-                setErrorCopy(
-                    "We couldn't read a QR code from that image. Try a clearer photo, or paste the link instead."
-                );
+                setErrorCopy(m['claim.paste.qrReadFailed']());
             }
         },
         [dispatch]
@@ -267,10 +268,10 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                             </div>
                             <div className="flex flex-col items-start justify-center">
                                 <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[24px]">
-                                    Use a Claim Link
+                                    {m['claim.paste.title']()}
                                 </h5>
                                 <p className="text-[14px] text-grayscale-700 font-notoSans leading-[20px] mt-[2px]">
-                                    Paste a link or upload a QR
+                                    {m['claim.paste.subtitle']()}
                                 </p>
                             </div>
                         </div>
@@ -282,10 +283,10 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                     <div className="flex flex-col items-start justify-center gap-[5px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            Got a credential link?
+                            {m['claim.paste.linkHeading']()}
                         </h4>
                         <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            Paste it below to continue.
+                            {m['claim.paste.linkDesc']()}
                         </p>
                     </div>
 
@@ -311,10 +312,10 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                         {isProcessing ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Checking…
+                                {m['claim.paste.checking']()}
                             </span>
                         ) : (
-                            'Continue'
+                            m['common.continue']()
                         )}
                     </button>
                 </div>
@@ -322,10 +323,10 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                     <div className="flex flex-col items-start justify-center gap-[5px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            Got a QR code?
+                            {m['claim.paste.qrHeading']()}
                         </h4>
                         <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            Drop an image, or pick one from your device.
+                            {m['claim.paste.qrDesc']()}
                         </p>
                     </div>
 
@@ -345,14 +346,18 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                                 isDragging ? 'text-emerald-700' : 'text-grayscale-700'
                             }`}
                         >
-                            {isDragging ? 'Drop it!' : 'Choose an image'}
+                            {isDragging
+                                ? m['claim.paste.dropIt']()
+                                : m['claim.paste.chooseImage']()}
                         </p>
                         <p
                             className={`text-xs mt-1 ${
                                 isDragging ? 'text-emerald-600' : 'text-grayscale-500'
                             }`}
                         >
-                            {isDragging ? 'Release to upload' : 'or drop it here'}
+                            {isDragging
+                                ? m['claim.paste.releaseToUpload']()
+                                : m['claim.paste.orDropHere']()}
                         </p>
                     </button>
                     <input
@@ -385,7 +390,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                             onClick={closeModal}
                             className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
                     </div>
                 </div>
