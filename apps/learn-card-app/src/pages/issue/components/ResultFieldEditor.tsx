@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
@@ -24,14 +24,29 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     onChangeTemplate,
 }) => {
     const state = readResultState(template);
-    const activeOption =
-        RESULT_TYPE_OPTIONS.find(o => o.value === state.resultType) ?? RESULT_TYPE_OPTIONS[0];
 
-    const setResultType = (resultType: ResultType) =>
-        onChangeTemplate(writeResult(template, { resultType, value: '' }));
+    // The chosen grade type is held locally so it sticks before a value is
+    // entered — `writeResult` drops the result (and its type) while the value
+    // is empty, so the template can't remember the selection on its own.
+    const [selectedType, setSelectedType] = useState<ResultType>(state.resultType);
+
+    const hasStoredResult = Boolean(template.credentialSubject.result?.[0]);
+    useEffect(() => {
+        if (hasStoredResult && !state.isLegacyUntyped) setSelectedType(state.resultType);
+    }, [hasStoredResult, state.isLegacyUntyped, state.resultType]);
+
+    const activeOption =
+        RESULT_TYPE_OPTIONS.find(o => o.value === selectedType) ?? RESULT_TYPE_OPTIONS[0];
+
+    const setResultType = (resultType: ResultType) => {
+        setSelectedType(resultType);
+        // Clear any in-progress value (e.g. "A-" isn't a valid GPA); the new
+        // type's value is entered fresh and persisted via setValue.
+        if (state.value.trim()) onChangeTemplate(writeResult(template, { resultType, value: '' }));
+    };
 
     const setValue = (value: string) =>
-        onChangeTemplate(writeResult(template, { resultType: state.resultType, value }));
+        onChangeTemplate(writeResult(template, { resultType: selectedType, value }));
 
     return (
         <div className="sm:col-span-2 space-y-3">
@@ -39,7 +54,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                 <label className={LABEL_CLASS}>Grade or result</label>
                 <div className="flex flex-wrap gap-2">
                     {RESULT_TYPE_OPTIONS.map(option => {
-                        const active = option.value === state.resultType;
+                        const active = option.value === selectedType;
                         return (
                             <button
                                 key={option.value}
@@ -58,7 +73,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                 </div>
             </div>
 
-            {state.resultType === 'Status' ? (
+            {selectedType === 'Status' ? (
                 <select
                     value={state.value}
                     onChange={e => setValue(e.target.value)}

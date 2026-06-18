@@ -77,6 +77,7 @@ export type BoostPreviewProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 
 export const useVerification = (credential: VC) => {
@@ -147,6 +148,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     issuancesSummaryComponent,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const unwrappedCredential = unwrapBoostCredential(_credential);
@@ -231,6 +233,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={_credential as VC | UnsignedVC}
                 issuancesSummaryComponent={issuancesSummaryComponent}
+                isPreview={isPreview}
             />,
             {
                 className: '!bg-transparent',
@@ -349,6 +352,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         isClrChildCredential={isClrChildCredential}
                         renderMethodCredential={_credential as VC | UnsignedVC}
                         issuancesSummaryComponent={issuancesSummaryComponent}
+                        isPreview={isPreview}
                     />
                 )}
                 <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
