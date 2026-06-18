@@ -2673,5 +2673,16 @@
         "advanced": "Avanzado",
         "checkForUpdates": "Buscar actualizaciones",
         "checking": "Buscando…"
+    },
+    "learnCardId": {
+        "display": "PANTALLA",
+        "card": "Tarjeta",
+        "wallpaper": "Fondo",
+        "fadeImage": "Atenuar imagen",
+        "darkText": "Texto oscuro",
+        "repeatBackground": "Repetir fondo",
+        "dark": "Oscuro",
+        "light": "Claro",
+        "custom": "Personalizado"
     }
 }

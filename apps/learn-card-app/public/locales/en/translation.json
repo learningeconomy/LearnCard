@@ -2673,5 +2673,16 @@
         "advanced": "Advanced",
         "checkForUpdates": "Check for updates",
         "checking": "Checking…"
+    },
+    "learnCardId": {
+        "display": "DISPLAY",
+        "card": "Card",
+        "wallpaper": "Wallpaper",
+        "fadeImage": "Fade Image",
+        "darkText": "Dark Text",
+        "repeatBackground": "Repeat background",
+        "dark": "Dark",
+        "light": "Light",
+        "custom": "Custom"
     }
 }

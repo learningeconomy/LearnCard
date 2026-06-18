@@ -2673,5 +2673,16 @@
         "advanced": "متقدّم",
         "checkForUpdates": "التحقق من التحديثات",
         "checking": "جارٍ التحقق…"
+    },
+    "learnCardId": {
+        "display": "العرض",
+        "card": "البطاقة",
+        "wallpaper": "الخلفية",
+        "fadeImage": "تعتيم الصورة",
+        "darkText": "نص داكن",
+        "repeatBackground": "تكرار الخلفية",
+        "dark": "داكن",
+        "light": "فاتح",
+        "custom": "مخصّص"
     }
 }

@@ -2673,5 +2673,16 @@
         "advanced": "Avancé",
         "checkForUpdates": "Rechercher des mises à jour",
         "checking": "Recherche…"
+    },
+    "learnCardId": {
+        "display": "AFFICHAGE",
+        "card": "Carte",
+        "wallpaper": "Fond d’écran",
+        "fadeImage": "Estomper l’image",
+        "darkText": "Texte sombre",
+        "repeatBackground": "Répéter le fond",
+        "dark": "Sombre",
+        "light": "Clair",
+        "custom": "Personnalisé"
     }
 }
