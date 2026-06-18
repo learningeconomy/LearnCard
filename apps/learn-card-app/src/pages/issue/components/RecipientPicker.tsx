@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, Mail, Loader2 } from 'lucide-react';
+import { Search, X, Mail, Loader2, Calendar } from 'lucide-react';
 import { useGetSearchProfiles, useGetConnections } from 'learn-card-base';
 import useDebounce from '../../../hooks/useDebounce';
 import { RecipientMode, Recipient, LinkOptions, isEmail } from './recipientTypes';
@@ -272,7 +272,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             onChange={e => setQuery(e.target.value)}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                            placeholder="Search by name, @username, or email"
+                            placeholder="Search people..."
                             spellCheck={false}
                             autoCapitalize="none"
                             autoCorrect="off"
@@ -295,6 +295,9 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             </div>
                         )}
                     </div>
+                    <p className="text-xs text-grayscale-400 mt-1.5 ml-1">
+                        Add by name, @username, or email
+                    </p>
 
                     {inlineResults && showResults && (
                         <div className="w-full bg-white border border-grayscale-200 rounded-xl overflow-hidden">
@@ -309,20 +312,23 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                     <p className="text-sm text-grayscale-600">
                         We'll create a shareable link when you issue.
                     </p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={LABEL_CLASS}>Expires (optional)</label>
-                            <input
-                                type="date"
-                                value={linkOptions.expiresAt || ''}
-                                onChange={e =>
-                                    onLinkOptionsChange({
-                                        ...linkOptions,
-                                        expiresAt: e.target.value,
-                                    })
-                                }
-                                className={INPUT_CLASS}
-                            />
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={linkOptions.expiresAt || ''}
+                                    onChange={e =>
+                                        onLinkOptionsChange({
+                                            ...linkOptions,
+                                            expiresAt: e.target.value,
+                                        })
+                                    }
+                                    className={`${INPUT_CLASS} appearance-none pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+                                />
+                                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-grayscale-400 pointer-events-none" />
+                            </div>
                         </div>
                         <div>
                             <label className={LABEL_CLASS}>Max claims (optional)</label>
