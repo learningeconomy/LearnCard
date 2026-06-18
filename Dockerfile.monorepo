@@ -97,6 +97,20 @@ COPY tests/smoketests/package.json tests/smoketests/
 RUN --mount=type=cache,id=bun-cache,target=/root/.bun/install/cache \
     bun install --ignore-scripts --frozen-lockfile
 
+# Keep one canonical dependency tree at /app/node_modules. Bun may create
+# package-local node_modules directories/symlinks for workspaces; some Docker
+# Desktop/BuildKit versions hit "max depth exceeded" while snapshotting or
+# creating containers from those workspace-local trees.
+RUN rm -rf \
+    apps/*/node_modules \
+    examples/*/node_modules \
+    examples/app-store-apps/*/node_modules \
+    packages/*/node_modules \
+    packages/*/*/node_modules \
+    services/*/node_modules \
+    services/*/*/node_modules \
+    tests/*/node_modules
+
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
 COPY packages/lca-api-client packages/lca-api-client
 COPY packages/plugins/lca-api-plugin packages/plugins/lca-api-plugin
