@@ -801,8 +801,9 @@ export const useGetProfile = (
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
             // Own profile: the wallet MUST resolve here. On failure, throw so React
-            // Query records an error (and retries) rather than caching `null` as a
-            // definitive "no profile" — which would falsely trigger onboarding.
+            // Query records an error rather than caching `null` as a definitive
+            // "no profile" (which would falsely trigger onboarding). Recovery is the
+            // `enabled` false→true transition once the wallet lands, not retries.
             if (isLoggedIn && !profileId) {
                 const ownWallet = await initWallet();
                 if (!ownWallet) throw new Error('Wallet not ready for profile fetch');

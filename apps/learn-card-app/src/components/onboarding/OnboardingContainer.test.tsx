@@ -25,6 +25,7 @@ let mockCurrentLCNUser: {
     country?: string;
 } | null = null;
 let mockCurrentLCNUserLoading = false;
+let mockCurrentLCNUserError = false;
 
 let lastModalElement: React.ReactElement | null = null;
 
@@ -54,6 +55,7 @@ vi.mock('learn-card-base', () => ({
     useGetProfile: () => ({
         data: mockCurrentLCNUser,
         isLoading: mockCurrentLCNUserLoading,
+        isError: mockCurrentLCNUserError,
     }),
     useUpdatePreferences: () => ({
         mutateAsync: (...args: unknown[]) => mockUpdatePreferences(...args),
@@ -221,6 +223,7 @@ describe('OnboardingContainer school-code bypass', () => {
         mockAuthState = { status: 'needs_setup' };
         mockCurrentLCNUser = null;
         mockCurrentLCNUserLoading = false;
+        mockCurrentLCNUserError = false;
         setupNewKeyDeferred = createDeferred<boolean>();
 
         vi.stubGlobal('localStorage', {
@@ -294,6 +297,21 @@ describe('OnboardingContainer school-code bypass', () => {
             dob: '2000-01-01',
             country: 'US',
         };
+
+        render(<OnboardingContainer initialStep={OnboardingStepsEnum.joinNetwork} />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('onboarding-network-form')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByTestId('age-gate')).toBeNull();
+    });
+
+    it('does not drop an existing user onto the age gate when the profile fetch errors', async () => {
+        mockAuthState = { status: 'ready' };
+        mockCurrentLCNUser = null;
+        mockCurrentLCNUserLoading = false;
+        mockCurrentLCNUserError = true;
 
         render(<OnboardingContainer initialStep={OnboardingStepsEnum.joinNetwork} />);
 
