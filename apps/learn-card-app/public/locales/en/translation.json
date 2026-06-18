@@ -431,9 +431,7 @@
             },
             "shareLink": {
                 "close": "Close share modal"
-            },
-            "noCredentialsInCategory": "No credentials in this category.",
-            "noCredentialsMatch": "No credentials match \"{{query}}\"."
+            }
         }
     },
     "launchpad": {

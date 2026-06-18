@@ -430,9 +430,7 @@
             },
             "shareLink": {
                 "close": "Cerrar ventana de compartir"
-            },
-            "noCredentialsInCategory": "No hay credenciales en esta categoría.",
-            "noCredentialsMatch": "Ninguna credencial coincide con \"{{query}}\"."
+            }
         },
         "explore": "Explorar"
     },

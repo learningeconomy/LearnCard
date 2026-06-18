@@ -430,9 +430,7 @@
             },
             "shareLink": {
                 "close": "إغلاق نافذة المشاركة"
-            },
-            "noCredentialsInCategory": "لا توجد بيانات اعتماد في هذه الفئة.",
-            "noCredentialsMatch": "لا تطابق بيانات الاعتماد « {{query}} »."
+            }
         },
         "explore": "استكشاف"
     },

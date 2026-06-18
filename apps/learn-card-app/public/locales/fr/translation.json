@@ -430,9 +430,7 @@
             },
             "shareLink": {
                 "close": "Fermer la fenêtre de partage"
-            },
-            "noCredentialsInCategory": "Aucun justificatif dans cette catégorie.",
-            "noCredentialsMatch": "Aucun justificatif ne correspond à « {{query}} »."
+            }
         },
         "explore": "Explorer"
     },
