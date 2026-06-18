@@ -89,7 +89,9 @@ const getLearnCardBundlePassword = async (prompt = 'Bundle password: '): Promise
 
 const globalAssignmentPattern = /^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([\s\S]*?);?\s*$/;
 
-const parseGlobalAssignment = (source: string): { name: string; initializer: string } | undefined => {
+const parseGlobalAssignment = (
+    source: string
+): { name: string; initializer: string } | undefined => {
     const match = source.match(globalAssignmentPattern);
 
     if (!match) return;
@@ -106,7 +108,9 @@ const evaluateBunReplInput = async (source: string): Promise<unknown> => {
         const globalAssignment = parseGlobalAssignment(source);
 
         if (globalAssignment) {
-            const value = await globalThis.eval(`(async () => (${globalAssignment.initializer}))()`);
+            const value = await globalThis.eval(
+                `(async () => (${globalAssignment.initializer}))()`
+            );
             (globalThis as Record<string, unknown>)[globalAssignment.name] = value;
             return value;
         }
