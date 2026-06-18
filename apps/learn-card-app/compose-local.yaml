@@ -41,6 +41,7 @@ services:
             - .:/app/apps/learn-card-app
             - ../../packages/credential-library/src:/app/packages/credential-library/src
             - ../../packages/react-learn-card/src:/app/packages/react-learn-card/src
+            - ../../packages/learn-card-embed-sdk/src:/app/packages/learn-card-embed-sdk/src
             - ../../packages/learn-card-base/src:/app/packages/learn-card-base/src
             - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
             - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
