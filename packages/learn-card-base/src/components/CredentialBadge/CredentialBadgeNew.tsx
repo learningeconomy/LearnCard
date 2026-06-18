@@ -231,12 +231,13 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                     <div
                         className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
                     >
-                        <img
-                            src={insertParamsToFilestackUrl(
-                                badgeThumbnail,
-                                'resize=width:200/quality=value:75/'
-                            )}
-                            alt="badge thumbnail"
+                        <BadgeThumbnailImg
+                            src={
+                                insertParamsToFilestackUrl(
+                                    badgeThumbnail,
+                                    'resize=width:200/quality=value:75/'
+                                ) ?? ''
+                            }
                             className={`h-full w-full object-cover ${badgeThumbnailCustomClass}`}
                         />
                     </div>
