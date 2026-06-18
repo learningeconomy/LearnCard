@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
+import { m } from '../../../../paraglide/messages.js';
 import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-invite-guardian');
@@ -206,7 +207,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Guardian Invite',
+                title: m['family.guardianInvite.shareTitle'](),
                 text: '',
                 url: boostClaimLink,
                 dialogTitle: '',
@@ -310,7 +311,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                                 : 'text-grayscale-900'
                                         }`}
                                     >
-                                        Show QR Code
+                                        {m['family.guardianInvite.showQrCode']()}
                                     </p>
                                 </div>
                                 <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">
@@ -337,7 +338,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                                 : 'text-grayscale-900'
                                         }`}
                                     >
-                                        Share Link
+                                        {m['family.guardianInvite.shareLink']()}
                                     </p>
                                 </div>
                                 <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">
@@ -364,7 +365,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                                 : 'text-grayscale-900'
                                         }`}
                                     >
-                                        Browse Contacts
+                                        {m['family.guardianInvite.browseContacts']()}
                                     </p>
                                 </div>
                                 <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">

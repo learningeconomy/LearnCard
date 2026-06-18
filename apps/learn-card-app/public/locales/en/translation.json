@@ -1772,7 +1772,51 @@
             "trusted": "Trusted",
             "createdOn": "Created on {{date}}"
         },
-        "createToSelectPlayer": "Create a family to select a player."
+        "createToSelectPlayer": "Create a family to select a player.",
+        "gotIt": "Got It",
+        "none": "None",
+        "colorHexCode": "Color Hex Code",
+        "confirmRemoveMember": "Are you sure you want to remove this {{title}}?",
+        "titlesToggle": {
+            "admins": "Admins",
+            "kids": "Kids"
+        },
+        "delete": {
+            "confirmTitle": "Delete Family?",
+            "confirmBody": "Deleting this family will also delete the profiles and data of each child in this family.",
+            "action": "Delete",
+            "successTitle": "Family Deleted",
+            "successBody": "{{family}} family has been deleted. You can now join or create another family."
+        },
+        "leave": {
+            "confirmTitle": "Leave Family?",
+            "confirmBody": "Leaving this family will remove your access to its profiles and data.",
+            "action": "Leave",
+            "successTitle": "Family Left Successfully",
+            "successBody": "You have left {{family}}. You can now join or create another family."
+        },
+        "pinModal": {
+            "forgotTitle": "Forgot PIN?",
+            "forgotBody": "Forgot your PIN? To update it, please ensure you've logged in recently to keep your account secure.",
+            "reauthenticate": "Reauthenticate",
+            "forgotShort": "Forgot Pin",
+            "createYourPin": "Create Your Pin",
+            "updateYourPin": "Update Your Pin",
+            "setPinAction": "Set PIN",
+            "verifyTitle": "Verify PIN",
+            "verifySubtext": "Please re-enter your PIN to confirm.",
+            "enterTitle": "Enter PIN",
+            "enterSubtext": "Please enter your current PIN to proceed",
+            "verifying": "Verifying...",
+            "forUser": "for {{name}}"
+        },
+        "guardianInvite": {
+            "shareTitle": "Guardian Invite",
+            "showQrCode": "Show QR Code",
+            "shareLink": "Share Link",
+            "browseContacts": "Browse Contacts",
+            "inviteGuardians": "Invite Guardians"
+        }
     },
     "membership": {
         "adminPanel": "Admin Panel",

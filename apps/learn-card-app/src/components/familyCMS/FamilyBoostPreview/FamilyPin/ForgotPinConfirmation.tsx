@@ -3,6 +3,7 @@ import React from 'react';
 import { ProfilePicture, useModal } from 'learn-card-base';
 
 import useLogout from '../../../../hooks/useLogout';
+import { m } from '../../../../paraglide/messages.js';
 
 export const ForgotPinConfirmation: React.FC<{}> = () => {
     const { closeAllModals } = useModal();
@@ -16,11 +17,10 @@ export const ForgotPinConfirmation: React.FC<{}> = () => {
                 customSize={120}
             />
             <h4 className="text-[24px] font-normal font-poppins mt-2 text-grayscale-900 text-center">
-                Forgot PIN?
+                {m['family.pinModal.forgotTitle']()}
             </h4>
             <p className="text-sm font-poppins text-grayscale-900 text-center mt-2">
-                Forgot your PIN? To update it, please ensure you've logged in recently to keep your
-                account secure.
+                {m['family.pinModal.forgotBody']()}
             </p>
 
             <button
@@ -30,7 +30,7 @@ export const ForgotPinConfirmation: React.FC<{}> = () => {
                 }}
                 className="text-mv_blue-700 font-bold mt-2"
             >
-                Reauthenticate
+                {m['family.pinModal.reauthenticate']()}
             </button>
         </div>
     );

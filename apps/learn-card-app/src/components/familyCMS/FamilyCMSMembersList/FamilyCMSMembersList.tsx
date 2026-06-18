@@ -86,7 +86,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
         if (key === 'admins') {
             if (
                 await confirm({
-                    text: `Are you sure you want remove this ${customGuardianName.singular}`,
+                    text: m['family.confirmRemoveMember']({ title: customGuardianName.singular }),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:
@@ -108,7 +108,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
         if (key === 'issueTo') {
             if (
                 await confirm({
-                    text: `Are you sure you want remove this ${customChildrenName.singular}`,
+                    text: m['family.confirmRemoveMember']({ title: customChildrenName.singular }),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:

@@ -262,7 +262,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                             <p className="text-grayscale-600 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-sm font-semibold">
                                 {m['family.childInvite.inFamily']({
                                     title: m['family.members.child'](),
-                                    family: familyName,
+                                    family: familyName ?? '',
                                 })}
                             </p>
                         </div>

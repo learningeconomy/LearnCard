@@ -2052,7 +2052,51 @@
             "trusted": "De confianza",
             "createdOn": "Creado el {{date}}"
         },
-        "createToSelectPlayer": "Crea una familia para seleccionar un jugador."
+        "createToSelectPlayer": "Crea una familia para seleccionar un jugador.",
+        "gotIt": "Entendido",
+        "none": "Ninguno",
+        "colorHexCode": "Código de color hex",
+        "confirmRemoveMember": "¿Seguro que quieres eliminar a este {{title}}?",
+        "titlesToggle": {
+            "admins": "Administradores",
+            "kids": "Niños"
+        },
+        "delete": {
+            "confirmTitle": "¿Eliminar familia?",
+            "confirmBody": "Eliminar esta familia también eliminará los perfiles y datos de cada niño en esta familia.",
+            "action": "Eliminar",
+            "successTitle": "Familia eliminada",
+            "successBody": "La familia {{family}} ha sido eliminada. Ahora puedes unirte o crear otra familia."
+        },
+        "leave": {
+            "confirmTitle": "¿Salir de la familia?",
+            "confirmBody": "Salir de esta familia eliminará tu acceso a sus perfiles y datos.",
+            "action": "Salir",
+            "successTitle": "Saliste de la familia correctamente",
+            "successBody": "Has salido de {{family}}. Ahora puedes unirte o crear otra familia."
+        },
+        "pinModal": {
+            "forgotTitle": "¿Olvidaste tu PIN?",
+            "forgotBody": "¿Olvidaste tu PIN? Para actualizarlo, asegúrate de haber iniciado sesión recientemente para mantener tu cuenta segura.",
+            "reauthenticate": "Volver a autenticar",
+            "forgotShort": "Olvidé el PIN",
+            "createYourPin": "Crea tu PIN",
+            "updateYourPin": "Actualiza tu PIN",
+            "setPinAction": "Configurar PIN",
+            "verifyTitle": "Verificar PIN",
+            "verifySubtext": "Vuelve a ingresar tu PIN para confirmar.",
+            "enterTitle": "Ingresar PIN",
+            "enterSubtext": "Ingresa tu PIN actual para continuar",
+            "verifying": "Verificando...",
+            "forUser": "para {{name}}"
+        },
+        "guardianInvite": {
+            "shareTitle": "Invitación de tutor",
+            "showQrCode": "Mostrar código QR",
+            "shareLink": "Compartir enlace",
+            "browseContacts": "Explorar contactos",
+            "inviteGuardians": "Invitar tutores"
+        }
     },
     "membership": {
         "title": "Membresía",

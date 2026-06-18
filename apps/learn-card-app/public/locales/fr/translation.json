@@ -2052,7 +2052,51 @@
             "trusted": "De confiance",
             "createdOn": "Créé le {{date}}"
         },
-        "createToSelectPlayer": "Créez une famille pour sélectionner un joueur."
+        "createToSelectPlayer": "Créez une famille pour sélectionner un joueur.",
+        "gotIt": "Compris",
+        "none": "Aucun",
+        "colorHexCode": "Code couleur hex",
+        "confirmRemoveMember": "Voulez-vous vraiment retirer ce {{title}} ?",
+        "titlesToggle": {
+            "admins": "Administrateurs",
+            "kids": "Enfants"
+        },
+        "delete": {
+            "confirmTitle": "Supprimer la famille ?",
+            "confirmBody": "Supprimer cette famille supprimera également les profils et les données de chaque enfant de cette famille.",
+            "action": "Supprimer",
+            "successTitle": "Famille supprimée",
+            "successBody": "La famille {{family}} a été supprimée. Vous pouvez maintenant rejoindre ou créer une autre famille."
+        },
+        "leave": {
+            "confirmTitle": "Quitter la famille ?",
+            "confirmBody": "Quitter cette famille supprimera votre accès à ses profils et données.",
+            "action": "Quitter",
+            "successTitle": "Vous avez quitté la famille",
+            "successBody": "Vous avez quitté {{family}}. Vous pouvez maintenant rejoindre ou créer une autre famille."
+        },
+        "pinModal": {
+            "forgotTitle": "Code PIN oublié ?",
+            "forgotBody": "Vous avez oublié votre PIN ? Pour le mettre à jour, assurez-vous de vous être connecté récemment afin de protéger votre compte.",
+            "reauthenticate": "Se réauthentifier",
+            "forgotShort": "PIN oublié",
+            "createYourPin": "Créez votre PIN",
+            "updateYourPin": "Mettez à jour votre PIN",
+            "setPinAction": "Définir le PIN",
+            "verifyTitle": "Vérifier le PIN",
+            "verifySubtext": "Veuillez ressaisir votre PIN pour confirmer.",
+            "enterTitle": "Saisir le PIN",
+            "enterSubtext": "Veuillez saisir votre PIN actuel pour continuer",
+            "verifying": "Vérification...",
+            "forUser": "pour {{name}}"
+        },
+        "guardianInvite": {
+            "shareTitle": "Invitation de tuteur",
+            "showQrCode": "Afficher le code QR",
+            "shareLink": "Partager le lien",
+            "browseContacts": "Parcourir les contacts",
+            "inviteGuardians": "Inviter des tuteurs"
+        }
     },
     "membership": {
         "title": "Adhésion",

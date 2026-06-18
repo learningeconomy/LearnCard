@@ -2052,7 +2052,51 @@
             "trusted": "موثوق",
             "createdOn": "أُنشئ في {{date}}"
         },
-        "createToSelectPlayer": "أنشئ عائلة لاختيار لاعب."
+        "createToSelectPlayer": "أنشئ عائلة لاختيار لاعب.",
+        "gotIt": "حسنًا",
+        "none": "بدون",
+        "colorHexCode": "رمز اللون السداسي",
+        "confirmRemoveMember": "هل أنت متأكد أنك تريد إزالة هذا {{title}}؟",
+        "titlesToggle": {
+            "admins": "المسؤولون",
+            "kids": "الأطفال"
+        },
+        "delete": {
+            "confirmTitle": "حذف العائلة؟",
+            "confirmBody": "سيؤدي حذف هذه العائلة أيضًا إلى حذف ملفات وبيانات كل طفل في هذه العائلة.",
+            "action": "حذف",
+            "successTitle": "تم حذف العائلة",
+            "successBody": "تم حذف عائلة {{family}}. يمكنك الآن الانضمام إلى عائلة أخرى أو إنشاء واحدة."
+        },
+        "leave": {
+            "confirmTitle": "مغادرة العائلة؟",
+            "confirmBody": "ستؤدي مغادرة هذه العائلة إلى إزالة وصولك إلى ملفاتها وبياناتها.",
+            "action": "مغادرة",
+            "successTitle": "تمت مغادرة العائلة بنجاح",
+            "successBody": "لقد غادرت {{family}}. يمكنك الآن الانضمام إلى عائلة أخرى أو إنشاء واحدة."
+        },
+        "pinModal": {
+            "forgotTitle": "هل نسيت رقم التعريف؟",
+            "forgotBody": "هل نسيت رقم التعريف الشخصي؟ لتحديثه، تأكد من أنك سجّلت الدخول مؤخرًا للحفاظ على أمان حسابك.",
+            "reauthenticate": "إعادة المصادقة",
+            "forgotShort": "نسيت رقم التعريف",
+            "createYourPin": "أنشئ رقم التعريف الخاص بك",
+            "updateYourPin": "حدّث رقم التعريف الخاص بك",
+            "setPinAction": "تعيين رقم التعريف",
+            "verifyTitle": "التحقق من رقم التعريف",
+            "verifySubtext": "يرجى إعادة إدخال رقم التعريف للتأكيد.",
+            "enterTitle": "إدخال رقم التعريف",
+            "enterSubtext": "يرجى إدخال رقم التعريف الحالي للمتابعة",
+            "verifying": "جارٍ التحقق...",
+            "forUser": "لـ {{name}}"
+        },
+        "guardianInvite": {
+            "shareTitle": "دعوة ولي أمر",
+            "showQrCode": "عرض رمز QR",
+            "shareLink": "مشاركة الرابط",
+            "browseContacts": "تصفّح جهات الاتصال",
+            "inviteGuardians": "دعوة أولياء الأمور"
+        }
     },
     "membership": {
         "title": "العضوية",
