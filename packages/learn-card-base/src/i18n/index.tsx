@@ -33,6 +33,11 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.unknownIssuer': 'Unknown Issuer',
     'verification.appIssuer': 'App Issuer',
     'verification.untrustedIssuer': 'Untrusted Issuer',
+    'boostFooter.close': 'Close',
+    'boostFooter.back': 'Back',
+    'boostFooter.details': 'Details',
+    'boostFooter.share': 'Share',
+    'boostFooter.accept': 'Accept',
 };
 
 /** Minimal `{var}` interpolation — no dependency. */

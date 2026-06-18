@@ -48,7 +48,8 @@
         },
         "create": "Create",
         "creating": "Creating...",
-        "updating": "Updating..."
+        "updating": "Updating...",
+        "revoked": "Revoked"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -2310,6 +2311,13 @@
             "unknownIssuer": "Unknown Issuer",
             "appIssuer": "App Issuer",
             "untrustedIssuer": "Untrusted Issuer"
+        },
+        "boostFooter": {
+            "close": "Close",
+            "back": "Back",
+            "details": "Details",
+            "share": "Share",
+            "accept": "Accept"
         }
     },
     "sdk": {
@@ -2318,7 +2326,29 @@
             "trustedIssuer": "Trusted Issuer",
             "unknownIssuer": "Unknown Issuer",
             "appIssuer": "Trusted App",
-            "untrustedIssuer": "Untrusted Issuer"
+            "untrustedIssuer": "Untrusted Issuer",
+            "title": "Credential Verifications",
+            "infoText": "Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy.",
+            "status": {
+                "success": "Success",
+                "error": "Error",
+                "failed": "Failed"
+            },
+            "check": {
+                "proof": "Proof",
+                "status": "Status",
+                "expiration": "Expiration"
+            },
+            "message": {
+                "valid": "Valid",
+                "invalid": "Invalid",
+                "notRevoked": "Not Revoked",
+                "revoked": "Revoked",
+                "doesNotExpire": "Does Not Expire",
+                "expired": "Expired",
+                "active": "Active",
+                "couldNotVerify": "Boost Credential could not be verified."
+            }
         }
     },
     "skills": {

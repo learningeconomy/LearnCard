@@ -8,13 +8,28 @@ import AcuteCheckmark from '../svgs/AcuteCheckmark';
 import ExclamationPoint from '../svgs/ExclamationPoint';
 import X from '../svgs/X';
 import { capitalize } from '../../helpers/string.helpers';
+import { useT } from '../../i18n';
 
 type VerificationRowProps = {
     verification: VerificationItem;
 };
 
+/** Map the SDK's English verification messages to i18n keys; unknown messages pass through. */
+const MESSAGE_KEYS: Record<string, string> = {
+    Valid: 'valid',
+    Invalid: 'invalid',
+    'Not Revoked': 'notRevoked',
+    Revoked: 'revoked',
+    'Does Not Expire': 'doesNotExpire',
+    Expired: 'expired',
+    Active: 'active',
+    'Boost Credential could not be verified.': 'couldNotVerify',
+    'Boost Credential could not be verified': 'couldNotVerify',
+};
+
 const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     const [showInfo, setShowInfo] = useState(false);
+    const t = useT();
     const statusColor = getColorForVerificationStatus(verification.status);
 
     const getIcon = () => {
@@ -28,11 +43,19 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
         }
     };
 
+    const statusText = t(`verification.status.${String(verification.status).toLowerCase()}`);
+    const translateMessage = (msg?: string): string => {
+        if (!msg) return '';
+        const key = MESSAGE_KEYS[msg];
+        return key ? t(`verification.message.${key}`) : msg;
+    };
+    const checkLabel = verification.check ? t(`verification.check.${verification.check}`) : '';
+
     let primaryText = verification.check
-        ? `${verification.check}: ${verification.message}`
-        : verification.message;
+        ? `${checkLabel}: ${translateMessage(verification.message)}`
+        : translateMessage(verification.message);
     if (verification.status === VerificationStatusEnum.Failed) {
-        primaryText = verification.message ?? verification.details ?? '';
+        primaryText = translateMessage(verification.message ?? verification.details ?? '');
     }
     primaryText = capitalize(primaryText);
 
@@ -45,7 +68,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
                 style={{ color: statusColor }}
             >
                 {getIcon()}
-                {verification.status}
+                {statusText}
                 {infoText && (
                     <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
                         <InfoIcon color={statusColor} />

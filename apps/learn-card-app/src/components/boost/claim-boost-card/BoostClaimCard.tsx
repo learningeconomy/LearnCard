@@ -303,7 +303,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     if (isRevoked) {
-        claimStatusText = 'Revoked';
+        claimStatusText = m['common.revoked']();
     }
 
     useEffect(() => {

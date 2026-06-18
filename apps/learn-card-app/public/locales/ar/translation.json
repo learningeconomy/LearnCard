@@ -48,7 +48,8 @@
         },
         "create": "إنشاء",
         "creating": "جارٍ الإنشاء...",
-        "updating": "جارٍ التحديث..."
+        "updating": "جارٍ التحديث...",
+        "revoked": "ملغى"
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
@@ -2310,6 +2311,13 @@
             "unknownIssuer": "جهة إصدار غير معروفة",
             "appIssuer": "جهة إصدار التطبيق",
             "untrustedIssuer": "جهة إصدار غير موثوقة"
+        },
+        "boostFooter": {
+            "close": "إغلاق",
+            "back": "رجوع",
+            "details": "التفاصيل",
+            "share": "مشاركة",
+            "accept": "قبول"
         }
     },
     "sdk": {
@@ -2318,7 +2326,29 @@
             "trustedIssuer": "جهة إصدار موثوقة",
             "unknownIssuer": "جهة إصدار غير معروفة",
             "appIssuer": "تطبيق موثوق",
-            "untrustedIssuer": "جهة إصدار غير موثوقة"
+            "untrustedIssuer": "جهة إصدار غير موثوقة",
+            "title": "عمليات التحقق من بيانات الاعتماد",
+            "infoText": "تتحقق عمليات التحقق من بيانات الاعتماد من الإثبات التشفيري لبيانات الاعتماد الرقمية لضمان صحتها ودقتها.",
+            "status": {
+                "success": "نجاح",
+                "error": "خطأ",
+                "failed": "فشل"
+            },
+            "check": {
+                "proof": "الإثبات",
+                "status": "الحالة",
+                "expiration": "انتهاء الصلاحية"
+            },
+            "message": {
+                "valid": "صالح",
+                "invalid": "غير صالح",
+                "notRevoked": "غير ملغى",
+                "revoked": "ملغى",
+                "doesNotExpire": "لا تنتهي صلاحيته",
+                "expired": "منتهي الصلاحية",
+                "active": "نشط",
+                "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost."
+            }
         }
     },
     "skills": {

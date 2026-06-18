@@ -48,7 +48,8 @@
         },
         "create": "Crear",
         "creating": "Creando...",
-        "updating": "Actualizando..."
+        "updating": "Actualizando...",
+        "revoked": "Revocado"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
@@ -2310,6 +2311,13 @@
             "unknownIssuer": "Emisor desconocido",
             "appIssuer": "Emisor de la app",
             "untrustedIssuer": "Emisor no confiable"
+        },
+        "boostFooter": {
+            "close": "Cerrar",
+            "back": "Atrás",
+            "details": "Detalles",
+            "share": "Compartir",
+            "accept": "Aceptar"
         }
     },
     "sdk": {
@@ -2318,7 +2326,29 @@
             "trustedIssuer": "Emisor de confianza",
             "unknownIssuer": "Emisor desconocido",
             "appIssuer": "App de confianza",
-            "untrustedIssuer": "Emisor no confiable"
+            "untrustedIssuer": "Emisor no confiable",
+            "title": "Verificaciones de credenciales",
+            "infoText": "Las verificaciones de credenciales comprueban la prueba criptográfica de las credenciales digitales para garantizar su autenticidad y exactitud.",
+            "status": {
+                "success": "Éxito",
+                "error": "Error",
+                "failed": "Falló"
+            },
+            "check": {
+                "proof": "Prueba",
+                "status": "Estado",
+                "expiration": "Vencimiento"
+            },
+            "message": {
+                "valid": "Válido",
+                "invalid": "No válido",
+                "notRevoked": "No revocado",
+                "revoked": "Revocado",
+                "doesNotExpire": "No vence",
+                "expired": "Vencido",
+                "active": "Activo",
+                "couldNotVerify": "No se pudo verificar la credencial Boost."
+            }
         }
     },
     "skills": {

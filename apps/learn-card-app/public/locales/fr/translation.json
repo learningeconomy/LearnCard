@@ -48,7 +48,8 @@
         },
         "create": "Créer",
         "creating": "Création...",
-        "updating": "Mise à jour..."
+        "updating": "Mise à jour...",
+        "revoked": "Révoqué"
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -2310,6 +2311,13 @@
             "unknownIssuer": "Émetteur inconnu",
             "appIssuer": "Émetteur de l'application",
             "untrustedIssuer": "Émetteur non fiable"
+        },
+        "boostFooter": {
+            "close": "Fermer",
+            "back": "Retour",
+            "details": "Détails",
+            "share": "Partager",
+            "accept": "Accepter"
         }
     },
     "sdk": {
@@ -2318,7 +2326,29 @@
             "trustedIssuer": "Émetteur de confiance",
             "unknownIssuer": "Émetteur inconnu",
             "appIssuer": "Application de confiance",
-            "untrustedIssuer": "Émetteur non fiable"
+            "untrustedIssuer": "Émetteur non fiable",
+            "title": "Vérifications du justificatif",
+            "infoText": "Les vérifications de justificatifs contrôlent la preuve cryptographique des justificatifs numériques pour garantir leur authenticité et leur exactitude.",
+            "status": {
+                "success": "Succès",
+                "error": "Erreur",
+                "failed": "Échec"
+            },
+            "check": {
+                "proof": "Preuve",
+                "status": "Statut",
+                "expiration": "Expiration"
+            },
+            "message": {
+                "valid": "Valide",
+                "invalid": "Invalide",
+                "notRevoked": "Non révoqué",
+                "revoked": "Révoqué",
+                "doesNotExpire": "N’expire pas",
+                "expired": "Expiré",
+                "active": "Actif",
+                "couldNotVerify": "Le justificatif Boost n’a pas pu être vérifié."
+            }
         }
     },
     "skills": {
