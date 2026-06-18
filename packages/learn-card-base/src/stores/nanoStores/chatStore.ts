@@ -8,6 +8,7 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
+import { getActiveLocale } from '../../i18n';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
@@ -342,7 +343,7 @@ export function connectWebSocket() {
     const wsUrl = getBackendUrl().replace(/^http/, 'ws');
     const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
 
-    ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}`);
+    ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}&locale=${getActiveLocale()}`);
     const socket = ws;
 
     ws.onmessage = event => {

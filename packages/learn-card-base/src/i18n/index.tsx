@@ -42,6 +42,23 @@ export const EN_DEFAULTS: Record<string, string> = {
     'boostFooter.accept': 'Accept',
 };
 
+/**
+ * The user's active language as a plain BCP-47 string, read from the same
+ * localStorage key the app's i18n writes (`i18n.language`). For non-React call
+ * sites (network mutations, WebSocket setup) that need to tell the backend
+ * which language to generate AI content in (LC-1901). Falls back to `'en'`.
+ */
+export const getActiveLocale = (): string => {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            return localStorage.getItem('i18n.language') || 'en';
+        }
+    } catch {
+        // localStorage may be unavailable (native/SSR) — default to English.
+    }
+    return 'en';
+};
+
 /** Minimal `{var}` interpolation — no dependency. */
 const interpolate = (str: string, params?: Record<string, unknown>): string =>
     params
