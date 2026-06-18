@@ -140,13 +140,11 @@ COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 # Local Docker dev and PR previews bind-mount app/packages sources over these
-# paths. Do not copy credential-library or learn-card-app source into the image:
-# some Docker Desktop/BuildKit builds recurse through Bun's package-local
-# workspace symlinks when any path under those packages is copied and fail with
-# "max depth exceeded". package.json files are still copied before bun install so
-# workspace resolution remains valid.
-COPY packages/sss-key-manager packages/sss-key-manager
-COPY packages/email-templates packages/email-templates
+# paths. Do not copy credential-library, sss-key-manager, email-templates, or
+# learn-card-app source into the image: some Docker Desktop/BuildKit builds
+# recurse through Bun's package-local workspace symlinks when any path under
+# those packages is copied and fail with "max depth exceeded". package.json files
+# are still copied before bun install so workspace resolution remains valid.
 
 RUN mkdir -p /app/.nx-cache /app/node_modules/.cache \
     /app/apps/learn-card-app/node_modules/.vite \

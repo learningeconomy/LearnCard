@@ -111,6 +111,8 @@ services:
               required: false
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -162,6 +164,8 @@ services:
               required: false
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
+            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
         environment:
             IS_OFFLINE: true
             PORT: 4100
@@ -204,6 +208,8 @@ services:
               required: false
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
+            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'
