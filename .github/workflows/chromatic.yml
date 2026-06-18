@@ -35,7 +35,12 @@ jobs:
 
             - name: Get affected projects
               id: affected
-              run: echo "AFFECTED=$(pnpm exec nx show projects --affected --base=origin/main --head=HEAD)" >> "$GITHUB_ENV"
+              run: |
+                  {
+                      echo "AFFECTED<<EOF"
+                      pnpm exec nx show projects --affected --base=origin/main --head=HEAD
+                      echo "EOF"
+                  } >> "$GITHUB_ENV"
 
             - name: Build @learncard/react
               if: contains(env.AFFECTED, 'react')
@@ -68,7 +73,12 @@ jobs:
 
             - name: Get affected projects
               id: affected
-              run: echo "AFFECTED=$(pnpm exec nx show projects --affected --base=origin/main --head=HEAD)" >> "$GITHUB_ENV"
+              run: |
+                  {
+                      echo "AFFECTED<<EOF"
+                      pnpm exec nx show projects --affected --base=origin/main --head=HEAD
+                      echo "EOF"
+                  } >> "$GITHUB_ENV"
 
             - name: Publish to Chromatic
               if: contains(env.AFFECTED, 'learn-card-app')
