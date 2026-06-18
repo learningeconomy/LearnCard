@@ -65,6 +65,7 @@
         },
         "links": {
             "launchPad": "Apps",
+            "launchPadShort": "Apps",
             "contacts": "Contacts",
             "alerts": "Alerts",
             "personalize": "Personalize",
@@ -2716,5 +2717,65 @@
         "dark": "Dark",
         "light": "Light",
         "custom": "Custom"
+    },
+    "adminTools": {
+        "title": "Advanced Tools",
+        "developerTools": "Developer Tools",
+        "devLocked": {
+            "title": "Developer tools are limited to users with a Developer or Admin role.",
+            "subtitle": "You can update your role in your account settings."
+        },
+        "devDocs": {
+            "title": "Want to learn more?",
+            "description": "Check out the LearnCard developer docs to learn how to build and integrate with our SDKs and APIs.",
+            "button": "Launch Developer Docs"
+        },
+        "roles": {
+            "user": "User",
+            "organization": "Organization",
+            "child": "Child"
+        },
+        "partnerPortal": {
+            "label": "Partner Portal",
+            "description": "Publish and manage apps in the App Store."
+        },
+        "tools": {
+            "importCredentials": {
+                "label": "Import Credentials",
+                "description": "Upload multiple credentials at once."
+            },
+            "consentFlow": {
+                "label": "Manage ConsentFlow Contracts",
+                "description": "Create and share consent contracts."
+            },
+            "apiTokens": {
+                "label": "API Tokens",
+                "description": "Generate and manage API tokens."
+            },
+            "learnerContextTest": {
+                "label": "Learner Context Test UX",
+                "description": "Pick wallet credentials, choose a backend URL, and inspect formatter output."
+            },
+            "signingAuthorities": {
+                "label": "Signing Authorities",
+                "description": "Manage your credential signing infrastructure."
+            },
+            "networks": {
+                "label": "Networks",
+                "description": "Select your preferred network environment."
+            },
+            "storage": {
+                "label": "Storage",
+                "description": "Configure your data storage settings."
+            },
+            "syncAll": {
+                "label": "Sync All Credentials to Contracts",
+                "description": "Scan your wallet and sync all credentials to all consented contracts based on your sharing settings."
+            },
+            "cli": {
+                "label": "Developer CLI",
+                "description": "Interactive terminal for exploring and testing the LearnCard API."
+            }
+        }
     }
 }

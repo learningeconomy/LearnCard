@@ -1,6 +1,10 @@
 /* RTL: translateX uses a signed variable that flips sign under [dir="rtl"] */
-:root { --side-menu-x: -65%; }
-[dir="rtl"] { --side-menu-x: 65%; }
+:root {
+    --side-menu-x: -65%;
+}
+[dir='rtl'] {
+    --side-menu-x: 65%;
+}
 
 .nav-dot-display {
     display: none;

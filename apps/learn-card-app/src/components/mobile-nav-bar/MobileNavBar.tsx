@@ -155,7 +155,7 @@ const MobileNavBar: React.FC = () => {
                                             isSyncing={isSyncing}
                                             isCompleted={isCompleted}
                                             version={isWalletTabActive ? '2' : '1'}
-                                            className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px]`}
+                                            className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px] ml-[-4px]`}
                                         />
                                         <IonLabel
                                             className={`font-notoSans font-bold text-[12px] ${
@@ -209,7 +209,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {m['sidemenu.links.launchPad']()}
+                                            {m['sidemenu.links.launchPadShort']()}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
@@ -223,7 +223,7 @@ const MobileNavBar: React.FC = () => {
                                         href={link.path}
                                         className="mobile-nav-notification-button"
                                     >
-                                        <div className="relative">
+                                        <div className="relative mt-[-3px]">
                                             <NotificationIcon
                                                 version={isNotificationTabActive ? '2' : '1'}
                                                 className="h-[40px] w-[40px] mt-[0px] mb-0"
@@ -233,7 +233,7 @@ const MobileNavBar: React.FC = () => {
                                             )}
                                         </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[12px] ${
+                                            className={`font-notoSans font-bold mt-[3px] text-[12px] ${
                                                 isNotificationTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor

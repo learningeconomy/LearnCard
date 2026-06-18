@@ -66,6 +66,7 @@
         },
         "links": {
             "launchPad": "Applications",
+            "launchPadShort": "Applis",
             "contacts": "Contacts",
             "alerts": "Alertes",
             "personalize": "Personnaliser",
@@ -2716,5 +2717,65 @@
         "dark": "Sombre",
         "light": "Clair",
         "custom": "Personnalisé"
+    },
+    "adminTools": {
+        "title": "Outils avancés",
+        "developerTools": "Outils pour développeurs",
+        "devLocked": {
+            "title": "Les outils pour développeurs sont réservés aux utilisateurs ayant un rôle de développeur ou d'administrateur.",
+            "subtitle": "Vous pouvez modifier votre rôle dans les paramètres de votre compte."
+        },
+        "devDocs": {
+            "title": "Envie d'en savoir plus ?",
+            "description": "Consultez la documentation pour développeurs de LearnCard pour apprendre à créer et à intégrer nos SDK et API.",
+            "button": "Ouvrir la documentation développeur"
+        },
+        "roles": {
+            "user": "Utilisateur",
+            "organization": "Organisation",
+            "child": "Enfant"
+        },
+        "partnerPortal": {
+            "label": "Portail partenaires",
+            "description": "Publiez et gérez des applications dans l'App Store."
+        },
+        "tools": {
+            "importCredentials": {
+                "label": "Importer des justificatifs",
+                "description": "Téléversez plusieurs justificatifs à la fois."
+            },
+            "consentFlow": {
+                "label": "Gérer les contrats ConsentFlow",
+                "description": "Créez et partagez des contrats de consentement."
+            },
+            "apiTokens": {
+                "label": "Jetons d'API",
+                "description": "Générez et gérez des jetons d'API."
+            },
+            "learnerContextTest": {
+                "label": "UX de test du contexte de l'apprenant",
+                "description": "Sélectionnez des justificatifs du portefeuille, choisissez une URL de backend et inspectez la sortie du formateur."
+            },
+            "signingAuthorities": {
+                "label": "Autorités de signature",
+                "description": "Gérez votre infrastructure de signature de justificatifs."
+            },
+            "networks": {
+                "label": "Réseaux",
+                "description": "Sélectionnez votre environnement réseau préféré."
+            },
+            "storage": {
+                "label": "Stockage",
+                "description": "Configurez vos paramètres de stockage de données."
+            },
+            "syncAll": {
+                "label": "Synchroniser tous les justificatifs avec les contrats",
+                "description": "Analysez votre portefeuille et synchronisez tous les justificatifs avec tous les contrats consentis selon vos paramètres de partage."
+            },
+            "cli": {
+                "label": "CLI pour développeurs",
+                "description": "Terminal interactif pour explorer et tester l'API LearnCard."
+            }
+        }
     }
 }

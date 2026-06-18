@@ -1,3 +1,5 @@
+import * as m from '../../../paraglide/messages.js';
+
 export enum AdminToolOptionsEnum {
     API_TOKENS = 'API Tokens',
     LEARNER_CONTEXT_TEST = 'Learner Context Test',
@@ -119,3 +121,58 @@ export const developerToolOptions: AdminToolOption[] = [
         type: AdminToolOptionsEnum.CLI,
     },
 ];
+
+/**
+ * Localized list-row copy (label + description) keyed by tool type. References
+ * (not invocations) so the locale resolves when `getAdminToolLabel`/
+ * `getAdminToolDescription` CALL them at render — no module-load freeze.
+ *
+ * Guardian Credential Test and AppEvent Perf Bench are intentionally omitted:
+ * they're internal dev tools and fall back to their static English copy.
+ */
+const ADMIN_TOOL_COPY: Partial<
+    Record<AdminToolOptionsEnum, { label: () => string; description: () => string }>
+> = {
+    [AdminToolOptionsEnum.BULK_UPLOAD]: {
+        label: m['adminTools.tools.importCredentials.label'],
+        description: m['adminTools.tools.importCredentials.description'],
+    },
+    [AdminToolOptionsEnum.CONSENT_FLOW]: {
+        label: m['adminTools.tools.consentFlow.label'],
+        description: m['adminTools.tools.consentFlow.description'],
+    },
+    [AdminToolOptionsEnum.API_TOKENS]: {
+        label: m['adminTools.tools.apiTokens.label'],
+        description: m['adminTools.tools.apiTokens.description'],
+    },
+    [AdminToolOptionsEnum.LEARNER_CONTEXT_TEST]: {
+        label: m['adminTools.tools.learnerContextTest.label'],
+        description: m['adminTools.tools.learnerContextTest.description'],
+    },
+    [AdminToolOptionsEnum.SIGNING_AUTHORITY]: {
+        label: m['adminTools.tools.signingAuthorities.label'],
+        description: m['adminTools.tools.signingAuthorities.description'],
+    },
+    [AdminToolOptionsEnum.NETWORKS]: {
+        label: m['adminTools.tools.networks.label'],
+        description: m['adminTools.tools.networks.description'],
+    },
+    [AdminToolOptionsEnum.STORAGE]: {
+        label: m['adminTools.tools.storage.label'],
+        description: m['adminTools.tools.storage.description'],
+    },
+    [AdminToolOptionsEnum.SYNC_ALL_CREDENTIALS]: {
+        label: m['adminTools.tools.syncAll.label'],
+        description: m['adminTools.tools.syncAll.description'],
+    },
+    [AdminToolOptionsEnum.CLI]: {
+        label: m['adminTools.tools.cli.label'],
+        description: m['adminTools.tools.cli.description'],
+    },
+};
+
+export const getAdminToolLabel = (option: AdminToolOption): string =>
+    ADMIN_TOOL_COPY[option.type]?.label() ?? option.label;
+
+export const getAdminToolDescription = (option: AdminToolOption): string =>
+    ADMIN_TOOL_COPY[option.type]?.description() ?? option.description;

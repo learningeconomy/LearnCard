@@ -66,6 +66,7 @@
         },
         "links": {
             "launchPad": "Aplicaciones",
+            "launchPadShort": "Apps",
             "contacts": "Contactos",
             "alerts": "Alertas",
             "personalize": "Personalizar",
@@ -2716,5 +2717,65 @@
         "dark": "Oscuro",
         "light": "Claro",
         "custom": "Personalizado"
+    },
+    "adminTools": {
+        "title": "Herramientas avanzadas",
+        "developerTools": "Herramientas de desarrollador",
+        "devLocked": {
+            "title": "Las herramientas de desarrollador están limitadas a usuarios con rol de desarrollador o administrador.",
+            "subtitle": "Puedes actualizar tu rol en la configuración de tu cuenta."
+        },
+        "devDocs": {
+            "title": "¿Quieres saber más?",
+            "description": "Consulta la documentación para desarrolladores de LearnCard para aprender a crear e integrar con nuestros SDK y API.",
+            "button": "Abrir documentación para desarrolladores"
+        },
+        "roles": {
+            "user": "Usuario",
+            "organization": "Organización",
+            "child": "Menor"
+        },
+        "partnerPortal": {
+            "label": "Portal de socios",
+            "description": "Publica y gestiona aplicaciones en la App Store."
+        },
+        "tools": {
+            "importCredentials": {
+                "label": "Importar credenciales",
+                "description": "Sube varias credenciales a la vez."
+            },
+            "consentFlow": {
+                "label": "Gestionar contratos de ConsentFlow",
+                "description": "Crea y comparte contratos de consentimiento."
+            },
+            "apiTokens": {
+                "label": "Tokens de API",
+                "description": "Genera y gestiona tokens de API."
+            },
+            "learnerContextTest": {
+                "label": "UX de prueba de contexto del estudiante",
+                "description": "Selecciona credenciales de la cartera, elige una URL de backend e inspecciona la salida del formateador."
+            },
+            "signingAuthorities": {
+                "label": "Autoridades de firma",
+                "description": "Gestiona tu infraestructura de firma de credenciales."
+            },
+            "networks": {
+                "label": "Redes",
+                "description": "Selecciona tu entorno de red preferido."
+            },
+            "storage": {
+                "label": "Almacenamiento",
+                "description": "Configura los ajustes de almacenamiento de datos."
+            },
+            "syncAll": {
+                "label": "Sincronizar todas las credenciales con los contratos",
+                "description": "Escanea tu cartera y sincroniza todas las credenciales con todos los contratos consentidos según tus ajustes de uso compartido."
+            },
+            "cli": {
+                "label": "CLI para desarrolladores",
+                "description": "Terminal interactiva para explorar y probar la API de LearnCard."
+            }
+        }
     }
 }
