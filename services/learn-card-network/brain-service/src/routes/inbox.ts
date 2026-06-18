@@ -156,6 +156,8 @@ export const inboxRouter = t.router({
                         ...(template?.model || {}),
                     },
                     branding: ctx.tenant?.emailBranding,
+                    // Guardian email may not have a profile; fall back to the inviting child's locale.
+                    locale: resolveRecipientLocale(profile),
                     // messageStream: 'guardian-approval',
                 });
 
@@ -251,6 +253,7 @@ export const inboxRouter = t.router({
                                 },
                             },
                             branding: ctx.tenant?.emailBranding,
+                            locale: resolveRecipientLocale(requester),
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -349,6 +352,7 @@ export const inboxRouter = t.router({
                                 },
                             },
                             branding: ctx.tenant?.emailBranding,
+                            locale: resolveRecipientLocale(requester),
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -921,6 +925,8 @@ export const inboxRouter = t.router({
             );
 
             const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
+            // Guardian email may not yet belong to a profile; resolve locale best-effort, else 'en'.
+            const guardianOtpProfile = await getProfileByContactMethod(guardianContactMethod.id);
             await deliveryService.send({
                 contactMethod: { type: 'email', value: guardianEmail },
                 templateId: 'guardian-email-otp',
@@ -928,6 +934,7 @@ export const inboxRouter = t.router({
                     verificationCode: otpCode,
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(guardianOtpProfile),
                 messageStream: 'universal-inbox',
             });
 

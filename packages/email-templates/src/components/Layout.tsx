@@ -19,6 +19,7 @@ import {
 import * as React from 'react';
 
 import type { TenantBranding } from '../branding';
+import { SHARED, htmlLang, interpolate, resolveCatalogLocale } from '../i18n';
 
 interface LayoutProps {
     branding: TenantBranding;
@@ -27,69 +28,77 @@ interface LayoutProps {
     /** Show the brand icon at the top of the card. Defaults to true.
      *  Set to false when the template already has an IssuerLogo. */
     showHeaderLogo?: boolean;
+    /** Recipient locale (BCP-47). Defaults to English. */
+    locale?: string;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ branding, preview, children, showHeaderLogo = true }) => (
-    <Html lang="en">
-        <Head />
+export const Layout: React.FC<LayoutProps> = ({
+    branding,
+    preview,
+    children,
+    showHeaderLogo = true,
+    locale,
+}) => {
+    const chrome = SHARED[resolveCatalogLocale(locale)];
+    const disclaimerText = interpolate(chrome.footerDisclaimer, { brandName: branding.brandName });
 
-        <Preview>{preview}</Preview>
+    return (
+        <Html lang={htmlLang(locale)}>
+            <Head />
 
-        <Body style={body}>
-            {/* Top spacer — Gmail strips <body> padding, so use an inline div */}
-            <div style={topSpacer}>&nbsp;</div>
+            <Preview>{preview}</Preview>
 
-            {/* Wordmark — sits above the white card like the Postmark layout */}
-            <Container style={wordmarkContainer}>
-                <Text style={wordmark}>
-                    <Link href={branding.websiteUrl} style={wordmarkLink}>
-                        {branding.brandName.toUpperCase()}
-                    </Link>
-                </Text>
-            </Container>
+            <Body style={body}>
+                {/* Top spacer — Gmail strips <body> padding, so use an inline div */}
+                <div style={topSpacer}>&nbsp;</div>
 
-            <Container style={container}>
-                {/* Optional brand icon */}
-                {showHeaderLogo && (
-                    <Section style={headerLogo}>
-                        <Img
-                            src={branding.logoUrl}
-                            alt={branding.logoAlt}
-                            width={80}
-                            height={80}
-                            style={logoImg}
-                        />
+                {/* Wordmark — sits above the white card like the Postmark layout */}
+                <Container style={wordmarkContainer}>
+                    <Text style={wordmark}>
+                        <Link href={branding.websiteUrl} style={wordmarkLink}>
+                            {branding.brandName.toUpperCase()}
+                        </Link>
+                    </Text>
+                </Container>
+
+                <Container style={container}>
+                    {/* Optional brand icon */}
+                    {showHeaderLogo && (
+                        <Section style={headerLogo}>
+                            <Img
+                                src={branding.logoUrl}
+                                alt={branding.logoAlt}
+                                width={80}
+                                height={80}
+                                style={logoImg}
+                            />
+                        </Section>
+                    )}
+
+                    {/* Content */}
+                    <Section style={showHeaderLogo ? contentAfterLogo : content}>
+                        {children}
                     </Section>
-                )}
+                </Container>
 
-                {/* Content */}
-                <Section style={showHeaderLogo ? contentAfterLogo : content}>
-                    {children}
-                </Section>
-            </Container>
+                {/* Footer — sits below the white card in the gray area */}
+                <Container style={footerContainer}>
+                    <Text style={footerDisclaimer}>{disclaimerText}</Text>
 
-            {/* Footer — sits below the white card in the gray area */}
-            <Container style={footerContainer}>
-                <Text style={footerDisclaimer}>
-                    You received this email because someone requested to add this email
-                    to their {branding.brandName} account. Please ignore this email if
-                    this was not you.
-                </Text>
+                    <Text style={footerCopyright}>
+                        {branding.copyrightHolder} &copy; {new Date().getFullYear()}
+                    </Text>
 
-                <Text style={footerCopyright}>
-                    {branding.copyrightHolder} &copy; {new Date().getFullYear()}
-                </Text>
-
-                <Text style={footerLinks}>
-                    <Link href={`mailto:${branding.supportEmail}`} style={footerLink}>
-                        Contact Support
-                    </Link>
-                </Text>
-            </Container>
-        </Body>
-    </Html>
-);
-
+                    <Text style={footerLinks}>
+                        <Link href={`mailto:${branding.supportEmail}`} style={footerLink}>
+                            {chrome.contactSupport}
+                        </Link>
+                    </Text>
+                </Container>
+            </Body>
+        </Html>
+    );
+};
 // ---------------------------------------------------------------------------
 // Styles (inline for email compatibility)
 // ---------------------------------------------------------------------------
