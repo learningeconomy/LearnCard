@@ -94,6 +94,32 @@ Set `AI_AGENT_CONSENT_FLOW_CONTRACT_URI` to the contract the agent should use. W
 -   `GET /api/consent-flow/contract` resolves the active contract and returns a consent URL.
 -   `POST /api/agent/run` accepts an optional `did`. When present, the service starts loading consented data immediately and adds a request-scoped `getConsentedUserData` tool for the agent to call only if needed.
 
+## LearnCard Assistant
+
+The LearnCard Assistant stores proactive learner-facing inbox cards in MongoDB collection
+`learnCardAssistantFeedItems`. DID-backed chat and heartbeat runs receive the
+`recordLearnCardAssistantCard` tool, which creates or updates one card for the current learner.
+Use a stable `dedupeKey` when refreshing the same recommendation across runs.
+
+Assistant card types are `message`, `job-suggestion`, `pathway-update`, and `action-item`.
+Priorities are `normal` and `high`.
+
+The assistant profile is stored in `learnCardAssistantProfiles` and can customize the assistant
+name and personality used in the system prompt. Missing profiles fall back to `My Assistant`.
+
+Endpoints:
+
+-   `GET /api/users/:did/assistant-feed` returns latest cards for one DID. Optional `limit` clamps to `1..50`.
+-   `POST /api/users/:did/assistant-feed/:id/read` marks one card read.
+-   `POST /api/users/:did/assistant-feed/:id/feedback` records `{ type: 'thumbs-down' }`.
+-   `POST /api/agent/heartbeat` accepts `{ did, consentFlowContractUri?, maxItems? }` and runs a cron-invokable proactive pass. `maxItems` clamps to `1..5`.
+-   `POST /api/debug/users/:did/assistant-feed` writes one validated card for local QA and seeded UI demos.
+-   `GET /api/users/:did/assistant-profile` returns the assistant profile.
+-   `PATCH /api/users/:did/assistant-profile` updates `{ name?, personality? }`.
+-   `GET /api/users/:did/assistant-memories` returns the memory manifest and safe memory docs.
+-   `POST /api/users/:did/assistant-memories/:name/approve` approves a proposed memory.
+-   `POST /api/users/:did/assistant-memories/:name/archive` removes an active or proposed memory.
+
 ## Per-User Self-Improvement
 
 When enabled and MongoDB is reachable, DID-backed chat runs can use active user docs from

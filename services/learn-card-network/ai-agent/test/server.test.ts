@@ -16,6 +16,16 @@ import {
     createInMemoryUserDocRepository,
     createUserDocService,
 } from '../src/selfImprovement/userDocs';
+import {
+    createInMemoryLearnCardAssistantFeedRepository,
+    createLearnCardAssistantFeedRuntime,
+    createLearnCardAssistantFeedService,
+} from '../src/assistantFeed';
+import {
+    createInMemoryLearnCardAssistantProfileRepository,
+    createLearnCardAssistantProfileRuntime,
+    createLearnCardAssistantProfileService,
+} from '../src/assistantProfile';
 
 const testConfig: ServiceConfig = {
     model: 'test-model',
@@ -263,6 +273,14 @@ describe('runChatRequest', () => {
                 runAfterResponse: async () => undefined,
                 getDocsForDebug: async () => [],
                 getMemoryManifestForDebug: async () => undefined,
+                getAssistantMemoryManifest: async () => undefined,
+                getAssistantMemoryDocs: async () => [],
+                approveAssistantMemory: async () => {
+                    throw new Error('Not implemented.');
+                },
+                archiveAssistantMemory: async () => {
+                    throw new Error('Not implemented.');
+                },
                 createDebugDoc: async () => {
                     throw new Error('Not implemented.');
                 },
@@ -368,7 +386,7 @@ describe('runChatRequest', () => {
 describe('createServer', () => {
     const callRoute = async (
         app: ReturnType<typeof createAgentServer>,
-        method: 'get' | 'post',
+        method: 'get' | 'post' | 'patch',
         routePath: string,
         body?: unknown,
         params: Record<string, string> = {}
@@ -415,7 +433,7 @@ describe('createServer', () => {
                 },
             };
 
-            Promise.resolve(handler({ body, params }, res)).catch(reject);
+            Promise.resolve(handler({ body, params, query: {} }, res)).catch(reject);
         });
     };
     const healthyMongoRuntime: MongoRuntime = {
@@ -552,6 +570,14 @@ describe('createServer', () => {
             },
             getDocsForDebug: async () => [],
             getMemoryManifestForDebug: async () => undefined,
+            getAssistantMemoryManifest: async () => undefined,
+            getAssistantMemoryDocs: async () => [],
+            approveAssistantMemory: async () => {
+                throw new Error('Not implemented.');
+            },
+            archiveAssistantMemory: async () => {
+                throw new Error('Not implemented.');
+            },
             createDebugDoc: async () => {
                 throw new Error('Not implemented.');
             },
@@ -600,6 +626,12 @@ describe('createServer', () => {
             runAfterResponse: async () => undefined,
             getDocsForDebug: userDocs.getDocsForDebug,
             getMemoryManifestForDebug: userDocs.getMemoryManifest,
+            getAssistantMemoryManifest: userDocs.getMemoryManifest,
+            getAssistantMemoryDocs: userDocs.getDocsForDebug,
+            approveAssistantMemory: (ownerDid, name) =>
+                userDocs.approveDoc(ownerDid, name, { reason: 'Approved in My Assistant.' }),
+            archiveAssistantMemory: (ownerDid, name, reason = 'Removed from My Assistant.') =>
+                userDocs.archiveDoc({ ownerDid, name, reason, provenance: { reason } }),
             createDebugDoc: async input =>
                 userDocs.createDoc({
                     ...input,
@@ -693,6 +725,462 @@ describe('createServer', () => {
             },
         });
         await expect(userDocs.createSkillDefinitions('did:key:user')).resolves.toEqual([]);
+    });
+
+    it('returns an empty assistant feed when no items exist', async () => {
+        const assistantFeedService = createLearnCardAssistantFeedService(
+            createInMemoryLearnCardAssistantFeedRepository()
+        );
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+            assistantFeedRuntime: createLearnCardAssistantFeedRuntime({
+                mongoRuntime: healthyMongoRuntime,
+                service: assistantFeedService,
+            }),
+        });
+
+        await expect(
+            callRoute(app, 'get', '/api/users/:did/assistant-feed', undefined, {
+                did: 'did:key:user',
+            })
+        ).resolves.toEqual({
+            status: 200,
+            payload: {
+                ok: true,
+                items: [],
+            },
+        });
+    });
+
+    it('writes a debug assistant card and returns it on subsequent GET', async () => {
+        const assistantFeedService = createLearnCardAssistantFeedService(
+            createInMemoryLearnCardAssistantFeedRepository()
+        );
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+            assistantFeedRuntime: createLearnCardAssistantFeedRuntime({
+                mongoRuntime: healthyMongoRuntime,
+                service: assistantFeedService,
+            }),
+        });
+
+        await expect(
+            callRoute(
+                app,
+                'post',
+                '/api/debug/users/:did/assistant-feed',
+                {
+                    type: 'message',
+                    title: 'Practice interview storytelling',
+                    description: 'Your next role match needs clearer project examples.',
+                    priority: 'high',
+                    cta: {
+                        label: 'Review profile',
+                        href: '/ai/assistant',
+                    },
+                },
+                { did: 'did:key:user' }
+            )
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                item: {
+                    type: 'message',
+                    title: 'Practice interview storytelling',
+                    priority: 'high',
+                },
+            },
+        });
+
+        await expect(
+            callRoute(app, 'get', '/api/users/:did/assistant-feed', undefined, {
+                did: 'did:key:user',
+            })
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                items: [
+                    {
+                        type: 'message',
+                        title: 'Practice interview storytelling',
+                        priority: 'high',
+                    },
+                ],
+            },
+        });
+    });
+
+    it('marks assistant cards read and records feedback', async () => {
+        const assistantFeedService = createLearnCardAssistantFeedService(
+            createInMemoryLearnCardAssistantFeedRepository()
+        );
+        const card = await assistantFeedService.recordItem({
+            ownerDid: 'did:key:user',
+            type: 'message',
+            title: 'Feedback target',
+            description: 'This card should be mutable.',
+        });
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+            assistantFeedRuntime: createLearnCardAssistantFeedRuntime({
+                mongoRuntime: healthyMongoRuntime,
+                service: assistantFeedService,
+            }),
+        });
+
+        await expect(
+            callRoute(app, 'post', '/api/users/:did/assistant-feed/:id/read', undefined, {
+                did: 'did:key:user',
+                id: card.id,
+            })
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                item: {
+                    id: card.id,
+                    readAt: expect.any(String),
+                },
+            },
+        });
+
+        await expect(
+            callRoute(
+                app,
+                'post',
+                '/api/users/:did/assistant-feed/:id/feedback',
+                { type: 'thumbs-down' },
+                {
+                    did: 'did:key:user',
+                    id: card.id,
+                }
+            )
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                item: {
+                    id: card.id,
+                    feedback: {
+                        type: 'thumbs-down',
+                        createdAt: expect.any(String),
+                    },
+                },
+            },
+        });
+    });
+
+    it('returns default assistant profile and persists profile updates', async () => {
+        const assistantProfileService = createLearnCardAssistantProfileService(
+            createInMemoryLearnCardAssistantProfileRepository()
+        );
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+            assistantProfileRuntime: createLearnCardAssistantProfileRuntime({
+                mongoRuntime: healthyMongoRuntime,
+                service: assistantProfileService,
+            }),
+        });
+
+        await expect(
+            callRoute(app, 'get', '/api/users/:did/assistant-profile', undefined, {
+                did: 'did:key:user',
+            })
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                profile: {
+                    ownerDid: 'did:key:user',
+                    name: 'My Assistant',
+                    avatarVariant: 'robot',
+                },
+            },
+        });
+
+        await expect(
+            callRoute(
+                app,
+                'patch',
+                '/api/users/:did/assistant-profile',
+                {
+                    name: 'Coach',
+                    personality: 'Concise and useful.',
+                },
+                { did: 'did:key:user' }
+            )
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                profile: {
+                    name: 'Coach',
+                    personality: 'Concise and useful.',
+                },
+            },
+        });
+
+        await expect(assistantProfileService.getProfile('did:key:user')).resolves.toMatchObject({
+            name: 'Coach',
+            personality: 'Concise and useful.',
+        });
+    });
+
+    it('exposes public assistant memories and approve/archive actions', async () => {
+        const userDocs = createUserDocService(createInMemoryUserDocRepository());
+        const selfImprovementRuntime: SelfImprovementRuntime = {
+            loadRequestSkills: async ownerDid => userDocs.createSkillDefinitions(ownerDid ?? ''),
+            loadRequestTools: async () => [],
+            getMemoryManifestPrompt: async () => undefined,
+            runAfterResponse: async () => undefined,
+            getDocsForDebug: userDocs.getDocsForDebug,
+            getMemoryManifestForDebug: userDocs.getMemoryManifest,
+            getAssistantMemoryManifest: userDocs.getMemoryManifest,
+            getAssistantMemoryDocs: userDocs.getDocsForDebug,
+            approveAssistantMemory: (ownerDid, name) =>
+                userDocs.approveDoc(ownerDid, name, { reason: 'Approved in My Assistant.' }),
+            archiveAssistantMemory: (ownerDid, name, reason = 'Removed from My Assistant.') =>
+                userDocs.archiveDoc({ ownerDid, name, reason, provenance: { reason } }),
+            createDebugDoc: async input =>
+                userDocs.createDoc({
+                    ...input,
+                    createdBy: 'debug',
+                    sourceType: input.sourceType ?? 'debug',
+                }),
+            updateDebugDoc: userDocs.updateDoc,
+            approveDebugDoc: userDocs.approveDoc,
+            archiveDebugDoc: userDocs.archiveDoc,
+            getRunForDebug: async () => undefined,
+        };
+        const app = createAgentServer({
+            config: testConfig,
+            provider: {
+                complete: async () => ({
+                    message: { role: 'assistant', content: 'ok' },
+                }),
+            },
+            tools: [],
+            selfImprovementRuntime,
+        });
+
+        await userDocs.createDoc({
+            ownerDid: 'did:key:user',
+            name: 'possible-preference',
+            kind: 'memory',
+            description: 'Possible preference.',
+            content: '# Preference\\n\\nTaylor may prefer concise answers.',
+            status: 'proposed',
+            sourceType: 'agent-inferred',
+            createdBy: 'debug',
+            requiresApproval: true,
+        });
+
+        await expect(
+            callRoute(app, 'get', '/api/users/:did/assistant-memories', undefined, {
+                did: 'did:key:user',
+            })
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                manifest: {
+                    counts: {
+                        proposed: 1,
+                    },
+                },
+                docs: [
+                    {
+                        name: 'possible-preference',
+                        status: 'proposed',
+                        content: '# Preference\\n\\nTaylor may prefer concise answers.',
+                    },
+                ],
+            },
+        });
+
+        await expect(
+            callRoute(app, 'post', '/api/users/:did/assistant-memories/:name/approve', undefined, {
+                did: 'did:key:user',
+                name: 'possible-preference',
+            })
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                doc: {
+                    status: 'active',
+                },
+                manifest: {
+                    counts: {
+                        active: 1,
+                    },
+                },
+            },
+        });
+
+        await expect(
+            callRoute(
+                app,
+                'post',
+                '/api/users/:did/assistant-memories/:name/archive',
+                { reason: 'Removed in test.' },
+                {
+                    did: 'did:key:user',
+                    name: 'possible-preference',
+                }
+            )
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                doc: {
+                    status: 'archived',
+                },
+                manifest: {
+                    counts: {
+                        archived: 1,
+                    },
+                },
+            },
+        });
+    });
+
+    it('runs a heartbeat and returns cards created by the agent tool', async () => {
+        let calls = 0;
+        const assistantFeedService = createLearnCardAssistantFeedService(
+            createInMemoryLearnCardAssistantFeedRepository()
+        );
+        const consentFlowRuntime: ConsentFlowRuntime = {
+            getContractInfo: async () => ({
+                uri: 'contract-uri',
+                consentUrl: 'https://learncard.app/consent-flow?uri=contract-uri',
+                source: 'configured',
+                created: false,
+            }),
+            loadConsentedUserData: async ({ did }) => ({
+                did,
+                contract: {
+                    uri: 'contract-uri',
+                    consentUrl: 'https://learncard.app/consent-flow?uri=contract-uri',
+                    source: 'configured',
+                    created: false,
+                },
+                records: [],
+                summary: {
+                    recordCount: 0,
+                    personalKeys: [],
+                    credentialCount: 0,
+                    hydratedCredentialCount: 0,
+                },
+                paging: {
+                    pageSize: 100,
+                    pagesRead: 1,
+                    maxPages: 10,
+                    hasMore: false,
+                    incomplete: false,
+                },
+            }),
+        };
+        const provider: AgentProvider = {
+            complete: async ({ tools }) => {
+                calls += 1;
+
+                if (calls === 1) {
+                    expect(tools.map(tool => tool.name)).toContain('recordLearnCardAssistantCard');
+
+                    return {
+                        message: {
+                            role: 'assistant',
+                            content: '',
+                            toolCalls: [
+                                {
+                                    id: 'feed-call',
+                                    name: 'recordLearnCardAssistantCard',
+                                    arguments: {
+                                        dedupeKey: 'assistant:storytelling',
+                                        type: 'message',
+                                        title: 'Practice interview storytelling',
+                                        description:
+                                            'Your next role match needs clearer project examples.',
+                                        priority: 'high',
+                                    },
+                                },
+                            ],
+                        },
+                    };
+                }
+
+                return {
+                    message: {
+                        role: 'assistant',
+                        content: 'Heartbeat complete.',
+                    },
+                };
+            },
+        };
+        const app = createAgentServer({
+            config: testConfig,
+            provider,
+            tools: [],
+            consentFlowRuntime,
+            assistantFeedRuntime: createLearnCardAssistantFeedRuntime({
+                mongoRuntime: healthyMongoRuntime,
+                service: assistantFeedService,
+            }),
+        });
+
+        await expect(
+            callRoute(app, 'post', '/api/agent/heartbeat', {
+                did: 'did:key:user',
+                maxItems: 3,
+            })
+        ).resolves.toMatchObject({
+            status: 200,
+            payload: {
+                ok: true,
+                run: {
+                    message: 'Heartbeat complete.',
+                    toolRuns: [
+                        {
+                            id: 'feed-call',
+                            name: 'recordLearnCardAssistantCard',
+                        },
+                    ],
+                },
+                items: [
+                    {
+                        ownerDid: 'did:key:user',
+                        type: 'message',
+                        title: 'Practice interview storytelling',
+                        priority: 'high',
+                    },
+                ],
+            },
+        });
+    });
+
+    it('returns 503 for heartbeat when the default provider is unconfigured', async () => {
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+        });
+
+        await expect(
+            callRoute(app, 'post', '/api/agent/heartbeat', {
+                did: 'did:key:user',
+            })
+        ).resolves.toEqual({
+            status: 503,
+            payload: {
+                error: 'OPENAI_API_KEY must be set to run the AI agent.',
+            },
+        });
     });
 
     it('skips self-improvement when Mongo is unavailable', async () => {

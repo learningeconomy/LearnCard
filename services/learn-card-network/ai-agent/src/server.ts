@@ -7,6 +7,18 @@ import { z } from 'zod';
 import { createOpenAIProvider } from './agent/openAIProvider';
 import { runAgent } from './agent/runAgent';
 import type { AgentProvider, AgentToolDefinition } from './agent/types';
+import {
+    LearnCardAssistantCardToolInputValidator,
+    createLearnCardAssistantFeedRuntime,
+    toLearnCardAssistantCardResponse,
+    type LearnCardAssistantFeedRuntime,
+} from './assistantFeed';
+import {
+    UpdateLearnCardAssistantProfileValidator,
+    createLearnCardAssistantProfileRuntime,
+    toLearnCardAssistantProfileResponse,
+    type LearnCardAssistantProfileRuntime,
+} from './assistantProfile';
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
 import { createMongoRuntime, type MongoRuntime } from './mongo';
@@ -19,6 +31,8 @@ import {
     USER_DOC_KINDS,
     USER_DOC_SENSITIVITIES,
     USER_DOC_SOURCE_TYPES,
+    type AgentUserDoc,
+    type UserMemoryManifest,
 } from './selfImprovement/userDocs';
 import { createConsentedUserDataTool } from './tools/consentedUserData';
 import { createTools } from './tools';
@@ -33,6 +47,25 @@ const RunRequestValidator = z.object({
     did: z.string().optional(),
     consentFlowContractUri: z.string().optional(),
 });
+
+const HeartbeatRequestValidator = z.object({
+    did: z.string().trim().min(1),
+    consentFlowContractUri: z.string().trim().min(1).optional(),
+    maxItems: z.number().optional(),
+});
+
+const getLimitedQueryValue = (value: unknown, defaultLimit: number, maxLimit: number): number => {
+    const parsed =
+        typeof value === 'string'
+            ? Number.parseInt(value, 10)
+            : typeof value === 'number'
+            ? value
+            : defaultLimit;
+
+    if (!Number.isFinite(parsed)) return defaultLimit;
+
+    return Math.min(Math.max(Math.trunc(parsed), 1), maxLimit);
+};
 
 const OptionalExpiresAtValidator = z.preprocess(
     value => (value === null ? undefined : value),
@@ -77,6 +110,12 @@ const DebugMemoryRequestValidator = z.discriminatedUnion('action', [
     }),
 ]);
 
+const AssistantCardFeedbackRequestValidator = z.object({ type: z.literal('thumbs-down') }).strict();
+
+const AssistantMemoryArchiveRequestValidator = z
+    .object({ reason: z.string().trim().min(1).optional() })
+    .strict();
+
 export interface CreateServerOptions {
     config: ServiceConfig;
     provider?: AgentProvider;
@@ -84,6 +123,8 @@ export interface CreateServerOptions {
     consentFlowRuntime?: ConsentFlowRuntime;
     mongoRuntime?: MongoRuntime;
     selfImprovementRuntime?: SelfImprovementRuntime;
+    assistantFeedRuntime?: LearnCardAssistantFeedRuntime;
+    assistantProfileRuntime?: LearnCardAssistantProfileRuntime;
     publicDir?: string;
 }
 
@@ -94,6 +135,8 @@ export interface RunChatOptions {
     tools: AgentToolDefinition[];
     consentFlowRuntime?: ConsentFlowRuntime;
     selfImprovementRuntime?: SelfImprovementRuntime;
+    assistantFeedRuntime?: LearnCardAssistantFeedRuntime;
+    assistantProfileRuntime?: LearnCardAssistantProfileRuntime;
 }
 
 export interface RunChatResult {
@@ -128,7 +171,8 @@ const getPublicDir = (): string => path.join(process.cwd(), 'public');
 const getRunContextPrompt = (
     did: string,
     contractUri?: string,
-    memoryManifestPrompt?: string
+    memoryManifestPrompt?: string,
+    assistantProfilePrompt?: string
 ): string =>
     [
         `The current user DID is ${did}.`,
@@ -138,9 +182,43 @@ const getRunContextPrompt = (
         'A background request for this user data has already started.',
         'Call getConsentedUserData only when the user request would benefit from consented profile, credential, or personal data.',
         memoryManifestPrompt,
+        assistantProfilePrompt,
     ]
         .filter(Boolean)
         .join('\n');
+
+const serializeDate = (date?: Date): string | undefined => date?.toISOString();
+
+const serializeAssistantMemoryManifest = (manifest?: UserMemoryManifest): unknown =>
+    manifest
+        ? {
+              ...manifest,
+              generatedAt: manifest.generatedAt.toISOString(),
+              docs: manifest.docs.map(doc => ({
+                  ...doc,
+                  ...(doc.expiresAt ? { expiresAt: doc.expiresAt.toISOString() } : {}),
+                  updatedAt: doc.updatedAt.toISOString(),
+              })),
+          }
+        : undefined;
+
+const serializeAssistantMemoryDoc = (doc: AgentUserDoc): unknown => ({
+    name: doc.name,
+    kind: doc.kind,
+    description: doc.description,
+    content: doc.content,
+    status: doc.status,
+    sourceType: doc.sourceType,
+    confidence: doc.confidence,
+    sensitivity: doc.sensitivity,
+    requiresApproval: doc.requiresApproval,
+    version: doc.version,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
+    ...(serializeDate(doc.proposedAt) ? { proposedAt: serializeDate(doc.proposedAt) } : {}),
+    ...(serializeDate(doc.approvedAt) ? { approvedAt: serializeDate(doc.approvedAt) } : {}),
+    ...(serializeDate(doc.archivedAt) ? { archivedAt: serializeDate(doc.archivedAt) } : {}),
+});
 
 export const runChatRequest = async ({
     body,
@@ -149,6 +227,8 @@ export const runChatRequest = async ({
     tools,
     consentFlowRuntime,
     selfImprovementRuntime,
+    assistantFeedRuntime,
+    assistantProfileRuntime,
 }: RunChatOptions): Promise<RunChatResult> => {
     const parsed = RunRequestValidator.safeParse(body);
 
@@ -187,10 +267,23 @@ export const runChatRequest = async ({
                 return undefined;
             }
         })();
+        const assistantFeedTools = await (async () => {
+            try {
+                return (await assistantFeedRuntime?.loadRequestTools(did)) ?? [];
+            } catch {
+                return [];
+            }
+        })();
+        const assistantProfilePrompt = await (async () => {
+            try {
+                return await assistantProfileRuntime?.getPrompt(did);
+            } catch {
+                return undefined;
+            }
+        })();
         let contextPrompt: string | undefined;
 
-        agentTools.push(...memoryTools);
-
+        agentTools.push(...memoryTools, ...assistantFeedTools);
         if (did) {
             const dataPromise = runtime.loadConsentedUserData({
                 did,
@@ -202,7 +295,8 @@ export const runChatRequest = async ({
             contextPrompt = getRunContextPrompt(
                 did,
                 consentFlowContractUri || undefined,
-                memoryManifestPrompt
+                memoryManifestPrompt,
+                assistantProfilePrompt
             );
         }
 
@@ -250,6 +344,8 @@ export const createServer = ({
     consentFlowRuntime,
     mongoRuntime,
     selfImprovementRuntime,
+    assistantFeedRuntime,
+    assistantProfileRuntime,
     publicDir = getPublicDir(),
 }: CreateServerOptions): express.Express => {
     const app = express();
@@ -261,6 +357,16 @@ export const createServer = ({
         selfImprovementRuntime ??
         createSelfImprovementRuntime({
             config,
+            mongoRuntime: mongo,
+        });
+    const assistantFeed =
+        assistantFeedRuntime ??
+        createLearnCardAssistantFeedRuntime({
+            mongoRuntime: mongo,
+        });
+    const assistantProfile =
+        assistantProfileRuntime ??
+        createLearnCardAssistantProfileRuntime({
             mongoRuntime: mongo,
         });
     const agentTools =
@@ -283,6 +389,8 @@ export const createServer = ({
     app.use(express.static(publicDir));
 
     app.get('/api/health', async (_req, res) => {
+        const assistantFeedStatus = await assistantFeed.getStatus();
+        const assistantProfileStatus = await assistantProfile.getStatus();
         res.json({
             ok: true,
             model: config.model,
@@ -300,6 +408,12 @@ export const createServer = ({
                 enabled: config.selfImprovementEnabled,
                 retroModel: config.retroModel,
                 retroMaxTraceChars: config.retroMaxTraceChars,
+            },
+            assistantFeed: {
+                enabled: assistantFeedStatus.connected,
+            },
+            assistantProfile: {
+                enabled: assistantProfileStatus.connected,
             },
             webSearch: {
                 provider: config.webSearchProvider,
@@ -344,12 +458,231 @@ export const createServer = ({
             tools: agentTools,
             consentFlowRuntime: consentRuntime,
             selfImprovementRuntime: selfImprovement,
+            assistantFeedRuntime: assistantFeed,
+            assistantProfileRuntime: assistantProfile,
         });
 
         res.status(result.status).json(result.payload);
         void result.afterResponse?.().catch(() => undefined);
     });
 
+    app.post('/api/agent/heartbeat', async (req, res) => {
+        if (!providerConfigured) {
+            res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
+            return;
+        }
+
+        const parsed = HeartbeatRequestValidator.safeParse(req.body);
+
+        if (!parsed.success) {
+            res.status(400).json({ ok: false, error: 'Invalid heartbeat request.' });
+            return;
+        }
+
+        const maxItems = getLimitedQueryValue(parsed.data.maxItems, 3, 5);
+        const result = await runChatRequest({
+            body: {
+                did: parsed.data.did,
+                consentFlowContractUri: parsed.data.consentFlowContractUri,
+                messages: [
+                    {
+                        role: 'user',
+                        content: `Run a proactive LearnCard Assistant heartbeat for this learner. Review approved profile data and current memory. Create at most ${maxItems} Assistant inbox cards by calling recordLearnCardAssistantCard. Only create concrete, useful cards. Use type message for a general note or check-in, job-suggestion for job matches, pathway-update for progress or pathway changes, and action-item when the learner needs to review or decide something. Use priority high only when the learner should see it immediately.`,
+                    },
+                ],
+            },
+            config,
+            provider: agentProvider,
+            tools: agentTools,
+            consentFlowRuntime: consentRuntime,
+            selfImprovementRuntime: selfImprovement,
+            assistantFeedRuntime: assistantFeed,
+            assistantProfileRuntime: assistantProfile,
+        });
+
+        if (result.status !== 200) {
+            res.status(result.status).json(result.payload);
+            return;
+        }
+
+        await result.afterResponse?.();
+
+        res.json({
+            ok: true,
+            run: result.payload,
+            items: (await assistantFeed.listLatest(parsed.data.did, maxItems)).map(
+                toLearnCardAssistantCardResponse
+            ),
+        });
+    });
+
+    app.get('/api/users/:did/assistant-feed', async (req, res) => {
+        const limit = getLimitedQueryValue(req.query?.limit, 10, 50);
+
+        res.json({
+            ok: true,
+            items: (await assistantFeed.listLatest(req.params.did, limit)).map(
+                toLearnCardAssistantCardResponse
+            ),
+        });
+    });
+
+    app.post('/api/debug/users/:did/assistant-feed', async (req, res) => {
+        const parsed = LearnCardAssistantCardToolInputValidator.safeParse(req.body);
+
+        if (!parsed.success) {
+            res.status(400).json({ ok: false, error: 'Invalid assistant card.' });
+            return;
+        }
+
+        try {
+            const item = await assistantFeed.recordItem({
+                ...parsed.data,
+                ownerDid: req.params.did,
+            });
+
+            res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not record assistant card.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
+
+    app.post('/api/users/:did/assistant-feed/:id/read', async (req, res) => {
+        try {
+            const item = await assistantFeed.markItemRead(req.params.did, req.params.id);
+
+            res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not mark assistant card read.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
+
+    app.post('/api/users/:did/assistant-feed/:id/feedback', async (req, res) => {
+        const parsed = AssistantCardFeedbackRequestValidator.safeParse(req.body);
+
+        if (!parsed.success) {
+            res.status(400).json({ ok: false, error: 'Invalid assistant card feedback.' });
+            return;
+        }
+
+        try {
+            const item = await assistantFeed.recordFeedback(
+                req.params.did,
+                req.params.id,
+                parsed.data
+            );
+
+            res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not record assistant feedback.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
+
+    app.get('/api/users/:did/assistant-profile', async (req, res) => {
+        res.json({
+            ok: true,
+            profile: toLearnCardAssistantProfileResponse(
+                await assistantProfile.getProfile(req.params.did)
+            ),
+        });
+    });
+
+    app.patch('/api/users/:did/assistant-profile', async (req, res) => {
+        const body = typeof req.body === 'object' && req.body ? req.body : {};
+        const parsed = UpdateLearnCardAssistantProfileValidator.safeParse({
+            ...body,
+            ownerDid: req.params.did,
+        });
+
+        if (!parsed.success) {
+            res.status(400).json({ ok: false, error: 'Invalid assistant profile.' });
+            return;
+        }
+
+        try {
+            const profile = await assistantProfile.updateProfile(parsed.data);
+
+            res.json({ ok: true, profile: toLearnCardAssistantProfileResponse(profile) });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not update assistant profile.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
+
+    app.get('/api/users/:did/assistant-memories', async (req, res) => {
+        res.json({
+            ok: true,
+            manifest: serializeAssistantMemoryManifest(
+                await selfImprovement.getAssistantMemoryManifest(req.params.did)
+            ),
+            docs: (await selfImprovement.getAssistantMemoryDocs(req.params.did)).map(
+                serializeAssistantMemoryDoc
+            ),
+        });
+    });
+
+    app.post('/api/users/:did/assistant-memories/:name/approve', async (req, res) => {
+        try {
+            const doc = await selfImprovement.approveAssistantMemory(
+                req.params.did,
+                req.params.name
+            );
+
+            res.json({
+                ok: true,
+                doc: serializeAssistantMemoryDoc(doc),
+                manifest: serializeAssistantMemoryManifest(
+                    await selfImprovement.getAssistantMemoryManifest(req.params.did)
+                ),
+            });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not approve assistant memory.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
+
+    app.post('/api/users/:did/assistant-memories/:name/archive', async (req, res) => {
+        const parsed = AssistantMemoryArchiveRequestValidator.safeParse(req.body ?? {});
+
+        if (!parsed.success) {
+            res.status(400).json({ ok: false, error: 'Invalid assistant memory archive.' });
+            return;
+        }
+
+        try {
+            const doc = await selfImprovement.archiveAssistantMemory(
+                req.params.did,
+                req.params.name,
+                parsed.data.reason
+            );
+
+            res.json({
+                ok: true,
+                doc: serializeAssistantMemoryDoc(doc),
+                manifest: serializeAssistantMemoryManifest(
+                    await selfImprovement.getAssistantMemoryManifest(req.params.did)
+                ),
+            });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Could not archive assistant memory.';
+
+            res.status(400).json({ ok: false, error: message });
+        }
+    });
     app.get('/api/debug/users/:did/docs', async (req, res) => {
         res.json({
             ok: true,

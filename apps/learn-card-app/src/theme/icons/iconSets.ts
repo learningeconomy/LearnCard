@@ -267,6 +267,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // `Compass` is still used as a hero mark on the onboard
             // sub-header and AI session plan.
             pathways: CompassTwoTonedIcon,
+            myAssistant: AiSessionsTwoTonedIcon,
         },
 
         navbar: {
@@ -326,6 +327,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // variant when the feature graduates out of flag-only
             // rollout.
             pathways: CompassTwoTonedIcon,
+            myAssistant: AiSessionFormalIcon,
         },
 
         navbar: {

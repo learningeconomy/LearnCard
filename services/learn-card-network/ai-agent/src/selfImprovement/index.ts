@@ -43,6 +43,14 @@ export interface SelfImprovementRuntime {
     }) => Promise<void>;
     getDocsForDebug: (ownerDid: string) => Promise<AgentUserDoc[]>;
     getMemoryManifestForDebug: (ownerDid: string) => Promise<UserMemoryManifest | undefined>;
+    getAssistantMemoryManifest: (ownerDid: string) => Promise<UserMemoryManifest | undefined>;
+    getAssistantMemoryDocs: (ownerDid: string) => Promise<AgentUserDoc[]>;
+    approveAssistantMemory: (ownerDid: string, name: string) => Promise<AgentUserDoc>;
+    archiveAssistantMemory: (
+        ownerDid: string,
+        name: string,
+        reason?: string
+    ) => Promise<AgentUserDoc>;
     createDebugDoc: (input: WriteUserDocInput) => Promise<AgentUserDoc>;
     updateDebugDoc: (input: UpdateUserDocInput) => Promise<AgentUserDoc>;
     approveDebugDoc: (ownerDid: string, name: string) => Promise<AgentUserDoc>;
@@ -76,6 +84,14 @@ const noopRuntime: SelfImprovementRuntime = {
     runAfterResponse: async () => undefined,
     getDocsForDebug: async () => [],
     getMemoryManifestForDebug: async () => undefined,
+    getAssistantMemoryManifest: async () => undefined,
+    getAssistantMemoryDocs: async () => [],
+    approveAssistantMemory: async () => {
+        throw new Error('Self-improvement is not available.');
+    },
+    archiveAssistantMemory: async () => {
+        throw new Error('Self-improvement is not available.');
+    },
     createDebugDoc: async () => {
         throw new Error('Self-improvement is not available.');
     },
@@ -221,6 +237,35 @@ export const createSelfImprovementRuntime = ({
             const services = await getServices();
 
             return services?.userDocs.getMemoryManifest(ownerDid);
+        },
+        getAssistantMemoryManifest: async ownerDid => {
+            const services = await getServices();
+
+            return services?.userDocs.getMemoryManifest(ownerDid);
+        },
+        getAssistantMemoryDocs: async ownerDid => {
+            const services = await getServices();
+
+            return services?.userDocs.getDocsForDebug(ownerDid) ?? [];
+        },
+        approveAssistantMemory: async (ownerDid, name) => {
+            const services = await getServices();
+            if (!services) throw new Error('Self-improvement storage is not available.');
+
+            return services.userDocs.approveDoc(ownerDid, name, {
+                reason: 'Approved in My Assistant.',
+            });
+        },
+        archiveAssistantMemory: async (ownerDid, name, reason = 'Removed from My Assistant.') => {
+            const services = await getServices();
+            if (!services) throw new Error('Self-improvement storage is not available.');
+
+            return services.userDocs.archiveDoc({
+                ownerDid,
+                name,
+                reason,
+                provenance: { reason },
+            });
         },
         createDebugDoc: async input => {
             const services = await getServices();

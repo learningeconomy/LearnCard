@@ -1,9 +1,17 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import numeral from 'numeral';
 import PreloadingLink from '../generic/PreloadingLink';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { currentUserStore, useGetUnreadUserNotifications } from 'learn-card-base';
+import {
+    currentUserStore,
+    ToastTypeEnum,
+    useAiFeatureGate,
+    useGetCurrentLCNUser,
+    useGetUnreadUserNotifications,
+    useToast,
+} from 'learn-card-base';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
@@ -14,6 +22,11 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
 import { ColorSetEnum } from '../../theme/colors/index';
+import {
+    fetchLearnCardAssistantProfile,
+    getInitialAgentUrl,
+    normalizeAgentUrl,
+} from '../../pages/my-assistant/learnCardAssistant.api';
 
 type SideMenuRootLinksProps = {
     activeTab: string;
@@ -29,8 +42,22 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const flags = useFlags();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
     const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
+    const learnCardAssistantEnabled =
+        import.meta.env.DEV || Boolean(flags.enableLearnCardAssistant);
+    const { isAiEnabled, reason } = useAiFeatureGate();
+    const { presentToast } = useToast();
 
     const { newModal } = useModal();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const currentDid = currentLCNUser?.did;
+    const normalizedAgentUrl = React.useMemo(() => normalizeAgentUrl(getInitialAgentUrl()), []);
+    const { data: assistantProfile } = useQuery({
+        queryKey: ['learncard-assistant-profile', currentDid, normalizedAgentUrl],
+        queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, currentDid!),
+        enabled: learnCardAssistantEnabled && Boolean(currentDid),
+        staleTime: 60_000,
+    });
+    const assistantLabel = assistantProfile?.name ?? 'My Assistant';
 
     const handlePersonalizeMyAi = () => {
         newModal(
@@ -91,21 +118,41 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     rootLinks = walletLink?.map(link => {
         if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
+        if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
         const linkPath = link.path;
+        const linkLabel = linkPath === '/ai/assistant' ? assistantLabel : link.label;
 
         const iconStyles = getIconStyles(linkPath);
         const textStyles = getTextStyles(linkPath);
         const linkBackgroundStyles = getLinkBackgroundStyles(linkPath);
 
-        let linkEl = (
+        const isGatedAssistantRoute = linkPath === '/ai/assistant' && !isAiEnabled;
+
+        let linkEl = isGatedAssistantRoute ? (
+            <button
+                type="button"
+                onClick={e => {
+                    e.preventDefault();
+                    const msg =
+                        reason === 'disabled_minor'
+                            ? 'AI features are not available for users under 18.'
+                            : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                    presentToast(msg, { type: ToastTypeEnum.Error });
+                }}
+                className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
+            >
+                <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
+                {linkLabel}
+            </button>
+        ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                {link.label}
+                {linkLabel}
             </PreloadingLink>
         );
 
@@ -117,7 +164,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                    {link.label}
+                    {linkLabel}
                 </button>
             );
         }

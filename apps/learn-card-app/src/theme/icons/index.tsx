@@ -36,6 +36,7 @@ export type SideMenuIcons = {
     // with the non-category members of `SideMenuLinksEnum` in
     // `learn-card-base/components/sidemenu/sidemenuHelpers`.
     pathways: React.FC<{ className?: string }>;
+    myAssistant: React.FC<{ className?: string }>;
 };
 
 export type NavbarIcons = {
@@ -68,4 +69,3 @@ export enum IconSetEnum {
     navbar = 'navbar',
     placeholders = 'placeholders',
 }
-

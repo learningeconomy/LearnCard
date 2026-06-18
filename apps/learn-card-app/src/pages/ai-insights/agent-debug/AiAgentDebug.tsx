@@ -3,6 +3,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 
 import { useConsentFlowByUri } from '../../consentFlow/useConsentFlow';
+import {
+    AGENT_URL_STORAGE_KEY,
+    getInitialAgentUrl,
+    normalizeAgentUrl,
+} from '../../my-assistant/learnCardAssistant.api';
 
 type AgentMessage = {
     role: 'user' | 'assistant';
@@ -66,24 +71,6 @@ type ConsentFlowContractResponse = {
         created: boolean;
     };
     error?: string;
-};
-
-const AGENT_URL_STORAGE_KEY = 'learnCardAiAgentDebugUrl';
-const DEFAULT_AGENT_URL = 'http://localhost:4300';
-
-const normalizeAgentUrl = (url: string): string => {
-    const trimmedUrl = url.trim().replace(/\/+$/, '');
-    if (!trimmedUrl) return DEFAULT_AGENT_URL;
-
-    return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `http://${trimmedUrl}`;
-};
-
-const getInitialAgentUrl = (): string => {
-    try {
-        return localStorage.getItem(AGENT_URL_STORAGE_KEY) || DEFAULT_AGENT_URL;
-    } catch {
-        return DEFAULT_AGENT_URL;
-    }
 };
 
 const AiAgentDebug: React.FC = () => {
