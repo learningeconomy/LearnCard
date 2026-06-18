@@ -246,6 +246,12 @@ const IssueCredentialPage: React.FC = () => {
 
             let claimLinkSA: { name?: string; endpoint?: string } | undefined;
 
+            // Email recipients are delivered to an inbox and signed server-side,
+            // which requires a registered signing authority on the account. Link
+            // mode needs one too. Ensure one exists before issuing.
+            const hasEmailRecipient =
+                recipientMode === 'people' && recipients.some(r => r.kind === 'email');
+
             if (recipientMode === 'link') {
                 const rsas = await getRegisteredSigningAuthorities(wallet);
                 if (rsas && rsas.length > 0) {
@@ -264,6 +270,8 @@ const IssueCredentialPage: React.FC = () => {
                         };
                     }
                 }
+            } else if (hasEmailRecipient) {
+                await getRegisteredSigningAuthority(wallet);
             }
 
             const result = await withTransientRetry(() =>

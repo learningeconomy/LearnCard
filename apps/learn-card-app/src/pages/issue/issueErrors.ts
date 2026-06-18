@@ -52,7 +52,10 @@ export const getFriendlyIssueError = (error: unknown, mode: RecipientMode): Issu
 
     if (/signing authority|claim link|generateclaimlink/i.test(msg)) {
         return {
-            message: "We couldn't create a shareable link. Please try again.",
+            message:
+                mode === 'link'
+                    ? "We couldn't create a shareable link. Please try again."
+                    : "We couldn't set up issuing for your account. Please try again.",
             canRetry: true,
         };
     }
