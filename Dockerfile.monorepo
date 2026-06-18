@@ -147,12 +147,4 @@ COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 # are still copied before bun install so workspace resolution remains valid.
 
 RUN mkdir -p /app/.nx-cache /app/node_modules/.cache \
-    /app/apps/learn-card-app/public \
-    /app/apps/learn-card-app/ios \
-    /app/apps/learn-card-app/android \
-    && chmod 1777 /app/.nx-cache /app/node_modules/.cache \
-    && chmod a+rwx /app/apps/learn-card-app \
-    && chmod -R a+rwX \
-    /app/apps/learn-card-app/public \
-    /app/apps/learn-card-app/ios \
-    /app/apps/learn-card-app/android
+    && chmod 1777 /app/.nx-cache /app/node_modules/.cache
