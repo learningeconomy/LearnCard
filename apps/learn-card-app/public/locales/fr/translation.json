@@ -1344,7 +1344,17 @@
         "newFamily": "Nouvelle famille",
         "requestingPermissions": "Demande de permissions",
         "addingNewCredentials": "Ajout de nouvelles certifications",
-        "aiLearningData": "Données d'apprentissage IA"
+        "aiLearningData": "Données d'apprentissage IA",
+        "privacyData": {
+            "shareData": "Partagez vos données {{brand}}",
+            "cannotRead": "Cette application ne peut lire aucun justificatif de votre {{brand}}.",
+            "liveSyncDescription": "L'activation de la <0>synchronisation en direct</0> partagera automatiquement tous les justificatifs au fur et à mesure que vous les recevez. Si elle est désactivée, vous pouvez partager de façon sélective des catégories et des justificatifs spécifiques du portefeuille à tout moment",
+            "sharePersonalData": "Partagez vos données personnelles",
+            "anonymizeDescription": "L'activation d'<0>Anonymiser</0> masquera votre nom, votre photo de profil et votre adresse e-mail lors du partage avec cette application.",
+            "allowAddData": "Autoriser {{name}} à ajouter des données à votre {{brand}}",
+            "cannotWrite": "Cette application ne peut écrire aucune donnée dans votre {{brand}}.",
+            "writeDescription": "L'activation de <0>Tout autoriser</0> permettra à l'application d'émettre des justificatifs et de les ajouter à votre {{brand}}. Si elle est désactivée, vous pouvez choisir de façon sélective les catégories du portefeuille auxquelles l'application peut ajouter des données."
+        }
     },
     "recovery": {
         "protectAccount": "Protégez votre compte",
@@ -3025,5 +3035,37 @@
                 "description": "Pour créer un contrat, vous devez être connecté avec un profil d'Organisation. Si vous n'en avez pas encore, veuillez d'abord créer un profil d'Organisation."
             }
         }
+    },
+    "dataSharing": {
+        "loading": "Chargement de votre partage de données...",
+        "title": "Partage de données",
+        "subtitle": "Applications et services auxquels vous avez autorisé l'accès à vos données {{brand}}.",
+        "empty": {
+            "title": "Aucun partage de données pour le moment",
+            "subtitle": "Lorsque vous connecterez des applications, elles apparaîtront ici."
+        },
+        "revokeHint": "Vous pouvez révoquer l'accès à tout moment en appuyant sur un service.",
+        "unknownApp": "Application inconnue",
+        "readCount": "{{count}} en lecture",
+        "writeCount": "{{count}} en écriture",
+        "noPermissions": "Aucune autorisation",
+        "revokeConfirm": {
+            "title": "Révoquer l'accès ?",
+            "body": "<0>{{name}}</0> ne pourra plus accéder à vos données {{brand}}."
+        },
+        "revoking": "Révocation...",
+        "confirmRevoke": "Oui, révoquer l'accès",
+        "appDetails": "Détails de l'application",
+        "dataAccessPermissions": "Autorisations d'accès aux données",
+        "opening": "Ouverture...",
+        "openApp": "Ouvrir l'application",
+        "xapiDataFeed": "Flux de données xAPI",
+        "editPermissions": "Modifier les autorisations",
+        "revokeAccess": "Révoquer l'accès",
+        "noDataPermissions": "Aucune autorisation de données accordée",
+        "readAccess": "Accès en lecture",
+        "noReadPermissions": "Aucune autorisation de lecture accordée",
+        "writeAccess": "Accès en écriture",
+        "noWritePermissions": "Aucune autorisation d'écriture accordée"
     }
 }

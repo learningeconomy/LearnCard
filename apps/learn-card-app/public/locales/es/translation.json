@@ -1344,7 +1344,17 @@
         "newFamily": "Nueva familia",
         "requestingPermissions": "Solicitando permisos",
         "addingNewCredentials": "Agregando nuevas credenciales",
-        "aiLearningData": "Datos de Aprendizaje de IA"
+        "aiLearningData": "Datos de Aprendizaje de IA",
+        "privacyData": {
+            "shareData": "Comparte tus datos de {{brand}}",
+            "cannotRead": "Esta aplicación no puede leer ninguna credencial de tu {{brand}}.",
+            "liveSyncDescription": "Al activar la <0>sincronización en vivo</0> se compartirán automáticamente todas las credenciales a medida que las recibas. Si está desactivada, puedes compartir de forma selectiva categorías y credenciales específicas de la cartera en cualquier momento",
+            "sharePersonalData": "Comparte tus datos personales",
+            "anonymizeDescription": "Al activar <0>Anonimizar</0> se ocultarán tu nombre, foto de perfil y correo electrónico al compartir con esta aplicación.",
+            "allowAddData": "Permitir que {{name}} añada datos a tu {{brand}}",
+            "cannotWrite": "Esta aplicación no puede escribir ningún dato en tu {{brand}}.",
+            "writeDescription": "Al activar <0>Permitir todo</0> la aplicación podrá emitir credenciales y añadirlas a tu {{brand}}. Si se desactiva, puedes elegir de forma selectiva a qué categorías de la cartera puede añadir la aplicación."
+        }
     },
     "recovery": {
         "protectAccount": "Protege tu cuenta",
@@ -3025,5 +3035,37 @@
                 "description": "Para crear un contrato, debes haber iniciado sesión como perfil de Organización. Si aún no tienes uno, crea primero un perfil de Organización."
             }
         }
+    },
+    "dataSharing": {
+        "loading": "Cargando tu uso compartido de datos...",
+        "title": "Uso compartido de datos",
+        "subtitle": "Aplicaciones y servicios a los que has dado permiso para acceder a tus datos de {{brand}}.",
+        "empty": {
+            "title": "Aún no compartes datos",
+            "subtitle": "Cuando conectes aplicaciones, aparecerán aquí."
+        },
+        "revokeHint": "Puedes revocar el acceso en cualquier momento tocando un servicio.",
+        "unknownApp": "Aplicación desconocida",
+        "readCount": "{{count}} de lectura",
+        "writeCount": "{{count}} de escritura",
+        "noPermissions": "Sin permisos",
+        "revokeConfirm": {
+            "title": "¿Revocar acceso?",
+            "body": "<0>{{name}}</0> ya no podrá acceder a tus datos de {{brand}}."
+        },
+        "revoking": "Revocando...",
+        "confirmRevoke": "Sí, revocar acceso",
+        "appDetails": "Detalles de la aplicación",
+        "dataAccessPermissions": "Permisos de acceso a datos",
+        "opening": "Abriendo...",
+        "openApp": "Abrir aplicación",
+        "xapiDataFeed": "Flujo de datos xAPI",
+        "editPermissions": "Editar permisos",
+        "revokeAccess": "Revocar acceso",
+        "noDataPermissions": "No se han concedido permisos de datos",
+        "readAccess": "Acceso de lectura",
+        "noReadPermissions": "No se han concedido permisos de lectura",
+        "writeAccess": "Acceso de escritura",
+        "noWritePermissions": "No se han concedido permisos de escritura"
     }
 }

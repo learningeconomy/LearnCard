@@ -1344,7 +1344,17 @@
         "newFamily": "New Family",
         "requestingPermissions": "Requesting Permissions",
         "addingNewCredentials": "Adding New Credentials",
-        "aiLearningData": "AI Learning Data"
+        "aiLearningData": "AI Learning Data",
+        "privacyData": {
+            "shareData": "Share Your {{brand}} Data",
+            "cannotRead": "This app is not able to read any credentials from your {{brand}}.",
+            "liveSyncDescription": "Turning on <0>Live Syncing</0> will automatically share all credentials as you get them. If it's turned off, you can selectively share specific wallet categories and credentials at any time",
+            "sharePersonalData": "Share Your Personal Data",
+            "anonymizeDescription": "Turning on <0>Anonymize</0> will hide your name, profile picture, and email when sharing to this app.",
+            "allowAddData": "Allow {{name}} to Add Data to Your {{brand}}",
+            "cannotWrite": "This app is not able to write any data to your {{brand}}.",
+            "writeDescription": "Turning on <0>Allow All</0> will let the app issue credentials and add them to your {{brand}}. If turned off, you can selectively choose which wallet categories that the app can add to."
+        }
     },
     "recovery": {
         "accountRecovery": "Account Recovery",
@@ -3025,5 +3035,37 @@
                 "description": "To create a contract, you must be logged in as an Organization Profile. If you don't have one yet, please create an Organization Profile first."
             }
         }
+    },
+    "dataSharing": {
+        "loading": "Loading your data sharing...",
+        "title": "Data Sharing",
+        "subtitle": "Apps and services you've given permission to access your {{brand}} data.",
+        "empty": {
+            "title": "No data sharing yet",
+            "subtitle": "When you connect apps, they'll appear here."
+        },
+        "revokeHint": "You can revoke access at any time by tapping on a service.",
+        "unknownApp": "Unknown App",
+        "readCount": "{{count}} read",
+        "writeCount": "{{count}} write",
+        "noPermissions": "No permissions",
+        "revokeConfirm": {
+            "title": "Revoke Access?",
+            "body": "<0>{{name}}</0> will no longer be able to access your {{brand}} data."
+        },
+        "revoking": "Revoking...",
+        "confirmRevoke": "Yes, Revoke Access",
+        "appDetails": "App Details",
+        "dataAccessPermissions": "Data Access Permissions",
+        "opening": "Opening...",
+        "openApp": "Open App",
+        "xapiDataFeed": "xAPI Data Feed",
+        "editPermissions": "Edit Permissions",
+        "revokeAccess": "Revoke Access",
+        "noDataPermissions": "No data permissions granted",
+        "readAccess": "Read Access",
+        "noReadPermissions": "No read permissions granted",
+        "writeAccess": "Write Access",
+        "noWritePermissions": "No write permissions granted"
     }
 }
