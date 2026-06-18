@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { m } from '../../../../paraglide/messages.js';
 import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('family-invite-guardian');
