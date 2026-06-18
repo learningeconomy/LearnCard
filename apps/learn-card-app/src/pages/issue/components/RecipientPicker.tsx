@@ -189,11 +189,11 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                     </p>
                 </>
             )}
-            <div className="flex gap-2 bg-grayscale-100 p-1 rounded-full">
+            <div className="flex gap-1 sm:gap-2 bg-grayscale-100 p-1 rounded-full">
                 <button
                     type="button"
                     onClick={() => onModeChange('self')}
-                    className={`flex-1 py-2 px-3 rounded-full font-medium text-sm transition-colors ${
+                    className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'self'
                             ? 'bg-grayscale-900 text-white shadow-sm'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
@@ -204,24 +204,26 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                 <button
                     type="button"
                     onClick={() => onModeChange('people')}
-                    className={`flex-1 py-2 px-3 rounded-full font-medium text-sm transition-colors ${
+                    className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'people'
                             ? 'bg-grayscale-900 text-white shadow-sm'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    Specific people
+                    <span className="sm:hidden">People</span>
+                    <span className="hidden sm:inline">Specific people</span>
                 </button>
                 <button
                     type="button"
                     onClick={() => onModeChange('link')}
-                    className={`flex-1 py-2 px-3 rounded-full font-medium text-sm transition-colors ${
+                    className={`flex-1 py-2 px-2 sm:px-3 rounded-full font-medium text-xs sm:text-sm whitespace-nowrap transition-colors ${
                         mode === 'link'
                             ? 'bg-grayscale-900 text-white shadow-sm'
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    Anyone with a link
+                    <span className="sm:hidden">Link</span>
+                    <span className="hidden sm:inline">Anyone with a link</span>
                 </button>
             </div>
 

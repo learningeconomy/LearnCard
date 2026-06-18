@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
-import { ArrowLeft, Code, Database, RotateCcw, X } from 'lucide-react';
+import { ArrowLeft, Code, Database, RotateCcw, X, AlertCircle } from 'lucide-react';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import {
@@ -320,56 +320,72 @@ const IssueCredentialPage: React.FC = () => {
                     />
                 ) : (
                     <div className="font-poppins min-h-full bg-grayscale-10">
-                        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-grayscale-200">
-                            <div className="max-w-[1100px] mx-auto px-6 py-3 flex items-center justify-between gap-3">
+                        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-grayscale-200/60 transition-all duration-300">
+                            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-2 sm:gap-4">
                                 <button
                                     type="button"
                                     onClick={() => history.goBack()}
-                                    className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                    className="flex items-center gap-1.5 text-sm font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors group shrink-0"
                                 >
-                                    <ArrowLeft className="w-4 h-4" />
+                                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                                     Back
                                 </button>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                    {!canIssue && !isSubmitting && missingHint && (
+                                        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100/50 animate-fade-in-up">
+                                            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                            <span className="text-xs font-medium text-amber-700">
+                                                {missingHint}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {template && (
                                         <button
                                             type="button"
                                             onClick={() => setShowJson(v => !v)}
-                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium transition-colors ${
+                                            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
                                                 showJson
-                                                    ? 'bg-grayscale-900 text-white'
-                                                    : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                                    ? 'bg-grayscale-900 text-white shadow-md'
+                                                    : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 hover:text-grayscale-900'
                                             }`}
                                         >
                                             <Code className="w-3.5 h-3.5" />
-                                            JSON
+                                            <span className="hidden sm:inline">JSON</span>
                                         </button>
                                     )}
-                                    <div className="flex flex-col items-end gap-1">
-                                        <button
-                                            type="button"
-                                            onClick={handleIssue}
-                                            disabled={!canIssue}
-                                            className="py-2.5 px-5 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            {isSubmitting ? (
-                                                <span className="flex items-center justify-center gap-2">
-                                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    Issuing...
-                                                </span>
-                                            ) : (
-                                                'Issue Credential'
-                                            )}
-                                        </button>
-                                        {!canIssue && !isSubmitting && missingHint && (
-                                            <span className="text-xs font-medium text-amber-600 leading-none animate-fade-in-up">
-                                                {missingHint}
+
+                                    <button
+                                        type="button"
+                                        onClick={handleIssue}
+                                        disabled={!canIssue}
+                                        className="relative overflow-hidden py-2.5 px-4 sm:px-6 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:bg-grayscale-800 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-grayscale-900 shadow-sm hover:shadow-md active:scale-[0.98] shrink-0"
+                                    >
+                                        {isSubmitting ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Issuing...
                                             </span>
+                                        ) : (
+                                            <>
+                                                <span className="sm:hidden">Issue</span>
+                                                <span className="hidden sm:inline">
+                                                    Issue Credential
+                                                </span>
+                                            </>
                                         )}
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
+                            {!canIssue && !isSubmitting && missingHint && (
+                                <div className="sm:hidden bg-amber-50 border-t border-amber-100/50 px-4 py-2 flex items-center justify-center gap-1.5 animate-fade-in-up">
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                                    <span className="text-xs font-medium text-amber-700">
+                                        {missingHint}
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="max-w-[1100px] mx-auto px-6 py-8 flex flex-col-reverse desktop:flex-row desktop:items-start gap-8">
