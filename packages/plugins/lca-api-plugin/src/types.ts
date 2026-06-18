@@ -293,7 +293,10 @@ export type LCAPluginMethods = {
         authorization: SigningAuthorityAuthorization
     ) => Promise<boolean>;
     resetLCAClient: () => Promise<void>;
-    generateBoostInfo: (description: string) => Promise<{
+    generateBoostInfo: (
+        description: string,
+        locale?: string
+    ) => Promise<{
         title: string;
         description: string;
         category: string;
@@ -302,7 +305,7 @@ export type LCAPluginMethods = {
         narrative: string;
     }>;
     generateImage: (prompt: string) => Promise<string>;
-    generateBoostSkills: (description: string) => Promise<BoostSkills[]>;
+    generateBoostSkills: (description: string, locale?: string) => Promise<BoostSkills[]>;
     generateSkillIcons: (names: string[]) => Promise<Record<string, string>>;
     createPin: (pin: string) => Promise<boolean>;
     hasPin: (did?: string) => Promise<boolean>;
