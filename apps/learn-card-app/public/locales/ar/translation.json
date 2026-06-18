@@ -90,6 +90,10 @@
     },
     "passport": {
         "buildMyLearnCard": {
+            "addVCs": {
+                "title": "إضافة بيانات اعتماد قابلة للتحقق",
+                "description": "إذا كان لديك بيانات اعتماد بصيغة JSON، يمكنك إضافتها إلى محفظتك هنا."
+            },
             "title": "إنشاء {{brand}} الخاص بي",
             "progress": "{{percent}}% محسّن",
             "processing": "جاري معالجة المستندات…",

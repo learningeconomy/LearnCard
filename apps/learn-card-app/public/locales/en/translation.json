@@ -90,6 +90,10 @@
     },
     "passport": {
         "buildMyLearnCard": {
+            "addVCs": {
+                "title": "Add Verifiable Credentials",
+                "description": "If you have raw JSON credentials, you can add them to your wallet here."
+            },
             "title": "Build My {{brand}}",
             "progress": "{{percent}}% optimized",
             "processing": "Processing documents…",

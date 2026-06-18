@@ -90,6 +90,10 @@
     },
     "passport": {
         "buildMyLearnCard": {
+            "addVCs": {
+                "title": "Ajouter des justificatifs vérifiables",
+                "description": "Si vous avez des justificatifs au format JSON brut, vous pouvez les ajouter à votre portefeuille ici."
+            },
             "title": "Construire mon {{brand}}",
             "progress": "{{percent}}% optimisé",
             "processing": "Traitement des documents…",

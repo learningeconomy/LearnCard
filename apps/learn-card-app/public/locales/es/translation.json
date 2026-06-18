@@ -90,6 +90,10 @@
     },
     "passport": {
         "buildMyLearnCard": {
+            "addVCs": {
+                "title": "Agregar credenciales verificables",
+                "description": "Si tienes credenciales en formato JSON, puedes agregarlas a tu cartera aquí."
+            },
             "title": "Construye tu {{brand}}",
             "progress": "{{percent}}% optimizado",
             "processing": "Procesando documentos…",
