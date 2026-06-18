@@ -41,7 +41,11 @@
         "continue": "Continuer",
         "loading": "Chargement...",
         "add": "Ajouter",
-        "saving": "Enregistrement..."
+        "saving": "Enregistrement...",
+        "searchResults": {
+            "noResults": "Aucun résultat trouvé",
+            "noResultsFor": "Aucun résultat trouvé pour <0>{{query}}</0>"
+        }
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -426,7 +430,9 @@
             },
             "shareLink": {
                 "close": "Fermer la fenêtre de partage"
-            }
+            },
+            "noCredentialsInCategory": "Aucun justificatif dans cette catégorie.",
+            "noCredentialsMatch": "Aucun justificatif ne correspond à « {{query}} »."
         },
         "explore": "Explorer"
     },
@@ -461,7 +467,10 @@
             "nothingInCategory": "Rien dans {{category}} pour le moment",
             "installSomething": "Installez une application depuis la boutique pour commencer.",
             "checkBackLater": "Revenez plus tard — de nouvelles applications sont ajoutées régulièrement.",
-            "checkBackSoon": "Revenez bientôt ou parcourez toutes les applications."
+            "checkBackSoon": "Revenez bientôt ou parcourez toutes les applications.",
+            "noTemplates": "Aucun modèle trouvé",
+            "noCredentialsEarned": "Aucun justificatif obtenu pour l'instant",
+            "keepExploring": "Continuez à explorer {{appName}} ! Les justificatifs que vous obtenez apparaîtront ici."
         },
         "aiDisabledMinor": "Les fonctionnalités IA ne sont pas disponibles pour les utilisateurs de moins de 18 ans.",
         "aiDisabledPrivacy": "Les fonctionnalités IA sont actuellement désactivées. Vous pouvez les activer dans Confidentialité et données depuis votre profil.",
@@ -1521,7 +1530,8 @@
         "neverExpires": "N'expire jamais",
         "link": "Lien",
         "shareProfile": "Partager le profil",
-        "generateInviteLink": "Générer un lien d'invitation"
+        "generateInviteLink": "Générer un lien d'invitation",
+        "noCredentialsToShare": "Aucun justificatif à partager."
     },
     "scanner": {
         "title": "Scanner le code QR",
@@ -1668,7 +1678,10 @@
         "saveProfile": "Enregistrer le profil",
         "addSkill": "Ajouter une compétence",
         "removeSkill": "Supprimer",
-        "noSkills": "Aucune compétence ajoutée pour le moment"
+        "noSkills": "Aucune compétence ajoutée pour le moment",
+        "noMatches": "Aucune correspondance",
+        "noMatchesBlurb": "Rien ne correspond à « {{query}} ». Essayez moins de mots ou effacez la recherche.",
+        "noCredentialsYetStartFromGoal": "Aucun justificatif pour l'instant — ce n'est pas grave. Nous commencerons à partir de votre objectif."
     },
     "boost": {
         "title": "Boosts",

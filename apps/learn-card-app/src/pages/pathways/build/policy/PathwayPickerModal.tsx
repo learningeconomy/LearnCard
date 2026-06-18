@@ -37,6 +37,7 @@ import { wouldCreateCycle, type PathwayMap } from '../../core/composition';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import PathwayPortal from '../../PathwayPortal';
 import type { Pathway } from '../../types';
+import * as m from '../../../../paraglide/messages.js';
 
 interface PathwayPickerModalProps {
     parentPathwayId: string;
@@ -232,8 +233,8 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                             />
                         ) : filtered.length === 0 ? (
                             <EmptyState
-                                title="No matches"
-                                blurb={`Nothing matches "${query}". Try fewer words or clear the search.`}
+                                title={m['pathways.noMatches']()}
+                                blurb={m['pathways.noMatchesBlurb']({ query })}
                             />
                         ) : (
                             <ul className="space-y-1.5">

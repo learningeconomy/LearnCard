@@ -41,7 +41,11 @@
         "continue": "Continue",
         "loading": "Loading...",
         "add": "Add",
-        "saving": "Saving..."
+        "saving": "Saving...",
+        "searchResults": {
+            "noResults": "No results found",
+            "noResultsFor": "No results found for <0>{{query}}</0>"
+        }
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -427,7 +431,9 @@
             },
             "shareLink": {
                 "close": "Close share modal"
-            }
+            },
+            "noCredentialsInCategory": "No credentials in this category.",
+            "noCredentialsMatch": "No credentials match \"{{query}}\"."
         }
     },
     "launchpad": {
@@ -515,7 +521,10 @@
             "nothingInCategory": "Nothing in {{category}} yet",
             "installSomething": "Install something from the App Store to get started.",
             "checkBackLater": "Check back later — new apps are added all the time.",
-            "checkBackSoon": "Check back soon, or browse all apps."
+            "checkBackSoon": "Check back soon, or browse all apps.",
+            "noTemplates": "No templates found",
+            "noCredentialsEarned": "No credentials earned yet",
+            "keepExploring": "Keep exploring {{appName}}! Credentials you earn will appear here."
         },
         "header": {
             "contacts": "Contacts",
@@ -1521,7 +1530,8 @@
         "profileLinkCopied": "Profile link copied to clipboard",
         "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
         "shareProfile": "Share Profile",
-        "generateInviteLink": "Generate Invite Link"
+        "generateInviteLink": "Generate Invite Link",
+        "noCredentialsToShare": "No credentials to share."
     },
     "scanner": {
         "cameraPermission": "Camera permission required",
@@ -1668,7 +1678,10 @@
         "saveProfile": "Save Profile",
         "skillProfile": "Skills Profile",
         "title": "Pathways",
-        "workHistory": "Work History"
+        "workHistory": "Work History",
+        "noMatches": "No matches",
+        "noMatchesBlurb": "Nothing matches \"{{query}}\". Try fewer words or clear the search.",
+        "noCredentialsYetStartFromGoal": "No credentials yet — that's fine. We'll start from your goal."
     },
     "legal": {
         "appEcosystem": "App Ecosystem",

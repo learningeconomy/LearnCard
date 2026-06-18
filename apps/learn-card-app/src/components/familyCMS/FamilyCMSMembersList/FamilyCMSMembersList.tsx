@@ -5,6 +5,7 @@ import { useConfirmation, useModal, ModalTypes } from 'learn-card-base';
 import { IonInput } from '@ionic/react';
 import AddUser from '../../svgs/AddUser';
 import { m } from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import FamilyCMSInviteModal from '../FamilyCMSInviteModal/FamilyCMSInviteModal';
 import FamilyCMSMemberListItem from './FamilyCMSMemberListItem';
 
@@ -253,7 +254,11 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                 {filteredList.length === 0 && search.length > 0 && (
                     <div className="w-full text-left flex flex-col items-start justify-center border-t-[2px] border-solid border-grayscale-100 pt-2 mt-2">
                         <p className="text-grayscale-600 text-base font-normal font-notoSans">
-                            No results found for <span className="text-black italic">{search}</span>
+                            <TransP
+                                m={m['common.searchResults.noResultsFor']}
+                                values={{ query: search }}
+                                components={[<span className="text-black italic" />]}
+                            />
                         </p>
                     </div>
                 )}

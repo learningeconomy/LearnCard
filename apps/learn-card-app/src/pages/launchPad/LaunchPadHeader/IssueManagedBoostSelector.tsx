@@ -16,6 +16,7 @@ import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import { IonInput, IonSpinner } from '@ionic/react';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
+import * as m from '../../../paraglide/messages.js';
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -241,7 +242,9 @@ const IssueManagedBoostSelector: React.FC = () => {
 
                     {!boostsLoading && displayBoosts.length === 0 && (
                         <div className="text-center text-grayscale-500 font-poppins mt-10">
-                            {debouncedSearchInput ? 'No results found' : 'No templates found'}
+                            {debouncedSearchInput
+                                ? m['common.searchResults.noResults']()
+                                : m['launchpad.emptyStates.noTemplates']()}
                         </div>
                     )}
 

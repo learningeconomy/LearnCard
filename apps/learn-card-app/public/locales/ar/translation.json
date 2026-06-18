@@ -41,7 +41,11 @@
         "continue": "متابعة",
         "loading": "جاري التحميل...",
         "add": "إضافة",
-        "saving": "جارٍ الحفظ..."
+        "saving": "جارٍ الحفظ...",
+        "searchResults": {
+            "noResults": "لم يتم العثور على نتائج",
+            "noResultsFor": "لم يتم العثور على نتائج لـ <0>{{query}}</0>"
+        }
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
@@ -426,7 +430,9 @@
             },
             "shareLink": {
                 "close": "إغلاق نافذة المشاركة"
-            }
+            },
+            "noCredentialsInCategory": "لا توجد بيانات اعتماد في هذه الفئة.",
+            "noCredentialsMatch": "لا تطابق بيانات الاعتماد « {{query}} »."
         },
         "explore": "استكشاف"
     },
@@ -461,7 +467,10 @@
             "nothingInCategory": "لا يوجد شيء في {{category}} بعد",
             "installSomething": "قم بتثبيت تطبيق من المتجر للبدء.",
             "checkBackLater": "تحقق لاحقاً — تُضاف تطبيقات جديدة باستمرار.",
-            "checkBackSoon": "تحقق قريباً أو تصفح جميع التطبيقات."
+            "checkBackSoon": "تحقق قريباً أو تصفح جميع التطبيقات.",
+            "noTemplates": "لم يتم العثور على قوالب",
+            "noCredentialsEarned": "لا توجد بيانات اعتماد مكتسبة بعد",
+            "keepExploring": "استمر في استكشاف {{appName}}! ستظهر بيانات الاعتماد التي تكسبها هنا."
         },
         "aiDisabledMinor": "ميزات الذكاء الاصطناعي غير متاحة للمستخدمين دون 18 عاماً.",
         "aiDisabledPrivacy": "ميزات الذكاء الاصطناعي معطلة حالياً. يمكنك تفعيلها من الخصوصية والبيانات في ملفك الشخصي.",
@@ -1521,7 +1530,8 @@
         "neverExpires": "لا ينتهي أبداً",
         "link": "الرابط",
         "shareProfile": "مشاركة الملف الشخصي",
-        "generateInviteLink": "إنشاء رابط دعوة"
+        "generateInviteLink": "إنشاء رابط دعوة",
+        "noCredentialsToShare": "لا توجد بيانات اعتماد للمشاركة."
     },
     "scanner": {
         "title": "مسح رمز QR",
@@ -1668,7 +1678,10 @@
         "saveProfile": "حفظ الملف الشخصي",
         "addSkill": "إضافة مهارة",
         "removeSkill": "إزالة",
-        "noSkills": "لم تتم إضافة مهارات بعد"
+        "noSkills": "لم تتم إضافة مهارات بعد",
+        "noMatches": "لا تطابق",
+        "noMatchesBlurb": "لا شيء يطابق « {{query}} ». جرّب كلمات أقل أو امسح البحث.",
+        "noCredentialsYetStartFromGoal": "لا توجد بيانات اعتماد بعد — لا بأس بذلك. سنبدأ من هدفك."
     },
     "boost": {
         "title": "الترقيات",

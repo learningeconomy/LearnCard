@@ -3,6 +3,7 @@ import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
@@ -383,10 +384,17 @@ const LaunchPad: React.FC = () => {
                                             <div className="w-full flex items-center justify-center z-10">
                                                 <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                        No results found for{' '}
-                                                        <span className="text-black italic">
-                                                            {searchInput}
-                                                        </span>
+                                                        <TransP
+                                                            m={
+                                                                m[
+                                                                    'common.searchResults.noResultsFor'
+                                                                ]
+                                                            }
+                                                            values={{ query: searchInput }}
+                                                            components={[
+                                                                <span className="text-black italic" />,
+                                                            ]}
+                                                        />
                                                     </p>
                                                 </div>
                                             </div>
