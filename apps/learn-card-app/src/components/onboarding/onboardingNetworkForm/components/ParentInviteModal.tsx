@@ -117,7 +117,11 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
                         disabled={loading || !inviteLink}
                         className="flex items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[12px] text-white font-poppins text-[16px] w-full shadow-lg"
                     >
-                        {loading ? <IonSpinner name="crescent" /> : m['onboarding.consent.parentInvite.shareInvite']()}
+                        {loading ? (
+                            <IonSpinner name="crescent" />
+                        ) : (
+                            m['onboarding.consent.parentInvite.shareInvite']()
+                        )}
                     </button>
                 </div>
 

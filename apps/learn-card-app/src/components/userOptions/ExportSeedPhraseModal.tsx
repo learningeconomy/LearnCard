@@ -25,7 +25,9 @@ const ExportSeedPhraseModal: React.FC<{}> = () => {
         currentFirebaseUser?.email ?? currentFirebaseUser?.phoneNumber ?? currentUser?.email ?? ''
     );
     const [confirmationPhrase, setConfirmationPhrase] = useState<string>();
-    const placeholderSource = currentFirebaseUser?.phoneNumber ? m['profile.export.phonePlaceholder']() : m['profile.export.emailPlaceholder']();
+    const placeholderSource = currentFirebaseUser?.phoneNumber
+        ? m['profile.export.phonePlaceholder']()
+        : m['profile.export.emailPlaceholder']();
     const canExportPhrase = phrase === confirmationPhrase;
 
     const handleExportSeed = () => {

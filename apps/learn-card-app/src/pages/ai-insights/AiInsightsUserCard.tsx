@@ -164,7 +164,9 @@ export const AiInsightsUserCard: React.FC<{
     let subText: string | React.ReactNode = '';
     if (mode === AiInsightsUserCardMode.View || mode === AiInsightsUserCardMode.Preview) {
         if (requestStatus === RequestInsightStatusEnum.pending) {
-            subText = <span className="font-semibold text-indigo-600">{m['aiInsights.pending']()}</span>;
+            subText = (
+                <span className="font-semibold text-indigo-600">{m['aiInsights.pending']()}</span>
+            );
         }
 
         if (requestStatus === RequestInsightStatusEnum.accepted) {

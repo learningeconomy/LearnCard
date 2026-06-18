@@ -110,10 +110,7 @@ function pickSupported(
  * @param supported Branch's SUPPORTED_LANGUAGES list (e.g. `['en','es','fr','ar']`)
  * @param fallback Last-resort fallback (typically `'en'`)
  */
-export function detectInitialLocaleSync(
-    supported: readonly string[],
-    fallback = 'en'
-): string {
+export function detectInitialLocaleSync(supported: readonly string[], fallback = 'en'): string {
     return (
         pickSupported([readPersistedLocale()], supported) ??
         pickSupported([readBrowserLocale()], supported) ??

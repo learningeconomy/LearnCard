@@ -76,9 +76,8 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
     const analytics = useAnalytics();
 
     const [open, setOpen] = useState(false);
-    const [relationship, setRelationship] = useState<
-        EndorsementRef['endorserRelationship']
-    >('mentor');
+    const [relationship, setRelationship] =
+        useState<EndorsementRef['endorserRelationship']>('mentor');
     const [contact, setContact] = useState('');
 
     const canSubmit = contact.trim().length > 0;
@@ -179,7 +178,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                                 value={relationship}
                                 onChange={e =>
                                     setRelationship(
-                                        e.target.value as EndorsementRef['endorserRelationship'],
+                                        e.target.value as EndorsementRef['endorserRelationship']
                                     )
                                 }
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm

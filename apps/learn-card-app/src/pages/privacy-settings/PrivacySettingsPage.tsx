@@ -81,9 +81,7 @@ const PrivacySettingsPage: React.FC = () => {
                 <div className="max-w-[600px] mx-auto flex flex-col gap-4 mt-4">
                     {isMinor && (
                         <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
-                            <p className="text-sm text-amber-800">
-                                {m['settings.minorWarning']()}
-                            </p>
+                            <p className="text-sm text-amber-800">{m['settings.minorWarning']()}</p>
                         </div>
                     )}
 

@@ -60,7 +60,9 @@ const BoostCMSMemberOptions: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-2xl p-0 m-0">{m['boost.cms.privacy.memberOptions']()}</h1>
+                <h1 className="text-black text-2xl p-0 m-0">
+                    {m['boost.cms.privacy.memberOptions']()}
+                </h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${

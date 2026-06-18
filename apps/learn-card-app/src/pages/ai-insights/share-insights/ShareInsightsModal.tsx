@@ -48,7 +48,9 @@ export const ShareInsightsModal: React.FC = () => {
                 {/* header */}
                 <div className="w-full ion-padding flex flex-col gap-2">
                     <div className="w-full flex items-center justify-between">
-                        <h1 className="text-3xl text-indigo-500 font-semibold">{m['aiInsights.shareInsights']()}</h1>
+                        <h1 className="text-3xl text-indigo-500 font-semibold">
+                            {m['aiInsights.shareInsights']()}
+                        </h1>
                         <button
                             type="button"
                             onClick={() => closeModal()}
@@ -89,7 +91,9 @@ export const ShareInsightsModal: React.FC = () => {
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-8">
                                     <IonSpinner color="grayscale-900" />
-                                    <p className="mt-2 font-bold text-lg">{m['aiInsights.loading']()}</p>
+                                    <p className="mt-2 font-bold text-lg">
+                                        {m['aiInsights.loading']()}
+                                    </p>
                                 </section>
                             )}
 

@@ -230,10 +230,15 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     return (
         <div
-            className={`relative w-full flex flex-col pt-[80px] ${isDesktop ? 'max-w-[800px]' : ''}`}
+            className={`relative w-full flex flex-col pt-[80px] ${
+                isDesktop ? 'max-w-[800px]' : ''
+            }`}
             style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
         >
-            <OnboardingHeader title={m['aiSession.newTopic']()} onClose={isDesktop ? handleStartOver : undefined} />
+            <OnboardingHeader
+                title={m['aiSession.newTopic']()}
+                onClose={isDesktop ? handleStartOver : undefined}
+            />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}

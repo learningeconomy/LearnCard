@@ -111,7 +111,8 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
             <IonCol size="12" className="w-full bg-white rounded-[20px]">
                 <button className="flex items-center justify-between w-full ion-padding">
                     <h1 className="font-poppins text-grayscale-900 text-xl p-0 m-0 flex items-center justify-center">
-                        <PaperClip className="h-[30px] w-[30px] mr-1" /> {m['boost.cms.media.mediaAttachments']()}
+                        <PaperClip className="h-[30px] w-[30px] mr-1" />{' '}
+                        {m['boost.cms.media.mediaAttachments']()}
                     </h1>
                 </button>
 
@@ -199,7 +200,8 @@ export const BoostCMSMediaForm: React.FC<BoostCMSMediaFormProps> = ({
                         disabled={disabled}
                         className="w-full flex items-center justify-between p-4 bg-grayscale-100 text-grayscale-800 text-base rounded-[10px]"
                     >
-                        {m['boost.cms.media.addMedia']} <Plus className="h-[30px] w-[30px] text-grayscale-700" />
+                        {m['boost.cms.media.addMedia']}{' '}
+                        <Plus className="h-[30px] w-[30px] text-grayscale-700" />
                     </button>
                 </div>
 

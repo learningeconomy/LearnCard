@@ -1,14 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import {
-    IonContent,
-    IonHeader,
-    IonPage,
-    IonSpinner,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
 

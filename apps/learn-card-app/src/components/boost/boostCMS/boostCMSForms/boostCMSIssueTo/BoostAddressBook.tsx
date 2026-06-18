@@ -261,7 +261,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     <div className="flex items-center justify-start w-full">
                                         <IonInput
                                             autocapitalize="on"
-                                            placeholder={m['boost.cms.issueTo.searchNetwork']({ name: brandingConfig?.name || '' })}
+                                            placeholder={m['boost.cms.issueTo.searchNetwork']({
+                                                name: brandingConfig?.name || '',
+                                            })}
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                                             onIonInput={e => handleSearch(e?.detail?.value ?? '')}
