@@ -1953,7 +1953,13 @@
         "browseEarnedPlaceholder": "Parcourir les obtenus...",
         "browseManagedPlaceholder": "Parcourir les gérés...",
         "issue": "Délivrer",
-        "editDraft": "Modifier le brouillon"
+        "editDraft": "Modifier le brouillon",
+        "search": {
+            "searchEarned": "Rechercher {{count}} Boost(s) obtenu(s)",
+            "searchManaged": "Rechercher {{count}} Boost(s) géré(s)",
+            "noResultsTitled": "Aucun résultat intitulé « {{query}} »",
+            "foundResults": "{{count}} résultat(s) trouvé(s) pour « {{query}} »"
+        }
     },
     "legal": {
         "termsOfService": "Conditions d'utilisation",

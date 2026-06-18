@@ -1953,7 +1953,13 @@
         "browseEarnedPlaceholder": "Explorar obtenidos...",
         "browseManagedPlaceholder": "Explorar gestionados...",
         "issue": "Emitir",
-        "editDraft": "Editar borrador"
+        "editDraft": "Editar borrador",
+        "search": {
+            "searchEarned": "Buscar {{count}} Boost(s) obtenido(s)",
+            "searchManaged": "Buscar {{count}} Boost(s) gestionado(s)",
+            "noResultsTitled": "No hay resultados titulados \"{{query}}\"",
+            "foundResults": "Se encontraron {{count}} resultado(s) para \"{{query}}\""
+        }
     },
     "legal": {
         "termsOfService": "Términos de servicio",

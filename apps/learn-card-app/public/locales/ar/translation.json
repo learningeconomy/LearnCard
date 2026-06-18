@@ -1953,7 +1953,13 @@
         "browseEarnedPlaceholder": "تصفّح المكتسبة...",
         "browseManagedPlaceholder": "تصفّح المُدارة...",
         "issue": "إصدار",
-        "editDraft": "تعديل المسودة"
+        "editDraft": "تعديل المسودة",
+        "search": {
+            "searchEarned": "البحث في {{count}} Boost المكتسبة",
+            "searchManaged": "البحث في {{count}} Boost المُدارة",
+            "noResultsTitled": "لا توجد نتائج بعنوان \"{{query}}\"",
+            "foundResults": "تم العثور على {{count}} نتيجة لـ \"{{query}}\""
+        }
     },
     "legal": {
         "termsOfService": "شروط الخدمة",

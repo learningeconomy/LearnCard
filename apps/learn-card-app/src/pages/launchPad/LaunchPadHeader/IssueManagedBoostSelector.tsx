@@ -17,6 +17,7 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import { IonInput, IonSpinner } from '@ionic/react';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 import * as m from '../../../paraglide/messages.js';
+import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -32,31 +33,6 @@ const ALLOWED_CATEGORIES = [
     BoostCategoryOptionsEnum.accomplishment,
     BoostCategoryOptionsEnum.accommodation,
 ];
-
-/**
- * Map each boost category to the SAME wallet-catalog label the wallet already
- * uses (`wallet.categories.*`), so the selector and the wallet stay in sync.
- * `all` has no wallet equivalent, so it reuses the generic `launchpad.tabs.all`.
- *
- * Note: these are message-function REFERENCES (captured at module load), not
- * invocations — the locale is resolved when each function is CALLED inside
- * render, so there is no module-load locale freeze.
- */
-const CATEGORY_LABEL_FNS: Partial<Record<BoostCategoryOptionsEnum, () => string>> = {
-    [BoostCategoryOptionsEnum.all]: m['launchpad.tabs.all'],
-    [BoostCategoryOptionsEnum.socialBadge]: m['wallet.categories.socialBadges'],
-    [BoostCategoryOptionsEnum.achievement]: m['wallet.categories.achievements'],
-    [BoostCategoryOptionsEnum.id]: m['wallet.categories.ids'],
-    [BoostCategoryOptionsEnum.workHistory]: m['wallet.categories.experiences'],
-    [BoostCategoryOptionsEnum.course]: m['wallet.categories.studies'],
-    [BoostCategoryOptionsEnum.learningHistory]: m['wallet.categories.studies'],
-    [BoostCategoryOptionsEnum.family]: m['wallet.categories.families'],
-    [BoostCategoryOptionsEnum.accomplishment]: m['wallet.categories.portfolio'],
-    [BoostCategoryOptionsEnum.accommodation]: m['wallet.categories.assistance'],
-};
-
-const getCategoryLabel = (category: BoostCategoryOptionsEnum, fallback: string): string =>
-    CATEGORY_LABEL_FNS[category]?.() ?? fallback;
 
 const CategorySelectorModal: React.FC<{
     selectedCategory: BoostCategoryOptionsEnum;
@@ -99,7 +75,7 @@ const CategorySelectorModal: React.FC<{
                                 <Icon className="w-6 h-6" />
                             </div>
                             <span className="font-poppins font-medium text-grayscale-900 text-lg">
-                                {getCategoryLabel(category, meta.title)}
+                                {getBoostCategoryLabel(category, meta.title)}
                             </span>
                         </button>
                     );
@@ -228,7 +204,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                                 <CategoryIcon className="w-6 h-6" />
                             </div>
                             <span className={`text-${metaTextColor} font-medium text-lg`}>
-                                {getCategoryLabel(selectedCategory, categoryMeta.title)}
+                                {getBoostCategoryLabel(selectedCategory, categoryMeta.title)}
                             </span>
                         </div>
                         <CaretDown className="w-4 h-4 text-grayscale-600" />

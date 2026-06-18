@@ -1982,7 +1982,13 @@
         "browseEarnedPlaceholder": "Browse earned...",
         "browseManagedPlaceholder": "Browse managed...",
         "issue": "Issue",
-        "editDraft": "Edit Draft"
+        "editDraft": "Edit Draft",
+        "search": {
+            "searchEarned": "Search {{count}} earned Boost(s)",
+            "searchManaged": "Search {{count}} managed Boost(s)",
+            "noResultsTitled": "No results titled \"{{query}}\"",
+            "foundResults": "Found {{count}} result(s) for \"{{query}}\""
+        }
     },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
