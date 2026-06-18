@@ -254,7 +254,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
-                                            {contactCount ?? 0} Contacts
+                                            {m['contacts.contactsCount']({
+                                                count: contactCount ?? 0,
+                                            })}
                                         </h3>
                                     </IonCol>
 
@@ -305,7 +307,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 />
                             </div>
                             <p className="font-bold text-grayscale-800 mt-[20px]">
-                                No connections yet
+                                {m['contacts.noConnectionsYet']()}
                             </p>
                         </section>
                     )}
@@ -347,7 +349,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         onClick={handleSaveContacts}
                                         className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white font-poppins text-xl w-full shadow-lg normal font-medium text-center"
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </IonCol>
                             </div>

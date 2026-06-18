@@ -45,7 +45,10 @@
         "searchResults": {
             "noResults": "No se encontraron resultados",
             "noResultsFor": "No se encontraron resultados para <0>{{query}}</0>"
-        }
+        },
+        "create": "Crear",
+        "creating": "Creando...",
+        "updating": "Actualizando..."
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
@@ -1219,7 +1222,9 @@
         "requestCountOther": "{{count}} solicitudes",
         "blockedCountLabel": "{{count}} bloqueados",
         "removeContactError": "Ocurrió un error, no se pudo eliminar el contacto",
-        "blockUserError": "Ocurrió un error, no se pudo bloquear al usuario"
+        "blockUserError": "Ocurrió un error, no se pudo bloquear al usuario",
+        "contactsCount": "{{count}} contactos",
+        "noConnectionsYet": "Aún no hay conexiones"
     },
     "consentFlow": {
         "title": "Consentimiento",
@@ -2286,7 +2291,14 @@
         "loadingTitle": "Cargando título",
         "newTopic": "Nuevo tema",
         "browse": "Explorar...",
-        "somethingElse": "Algo más..."
+        "somethingElse": "Algo más...",
+        "hasCompleted": "ha completado con éxito",
+        "summary": "Resumen de sesión de IA",
+        "startedOn": "Iniciado el {{date}}",
+        "unfinished": "Sin terminar",
+        "learningOverview": "Resumen de aprendizaje",
+        "finishSession": "Finalizar sesión",
+        "finish": "Finalizar"
     },
     "aiFeatureLinks": {
         "skillsHub": "Centro de habilidades"
@@ -2389,6 +2401,17 @@
         },
         "myHub": {
             "noResultsFoundFor": "No se encontraron resultados para <0>{{query}}</0>"
+        },
+        "frameworks": {
+            "create": "Crear marco",
+            "edit": "Editar marco",
+            "startNew": "Crea un nuevo marco. Puedes agregar competencias manualmente o importar un archivo después de crearlo.",
+            "editThumbnail": "Editar miniatura",
+            "namePlaceholder": "Nombre del marco *",
+            "descriptionPlaceholder": "Descripción del marco",
+            "adminCount": "{{count}} administrador(es)",
+            "createFailed": "No se pudo crear el marco. Inténtalo de nuevo.",
+            "updateFailed": "No se pudo actualizar el marco. Inténtalo de nuevo."
         }
     },
     "skillProfile": {
@@ -2634,5 +2657,21 @@
             "expired": "Inválido • Vencido {{date}}",
             "expires": "Válido • Vence {{date}}"
         }
+    },
+    "versionInfo": {
+        "gathering": "Obteniendo información de versión…",
+        "version": "Versión",
+        "supportBlurb": "Estos detalles ayudan al soporte a identificar exactamente qué compilación estás usando si alguna vez necesitas reportar un problema.",
+        "platform": "Plataforma",
+        "appVersion": "Versión de la app",
+        "nativeVersion": "Versión nativa",
+        "contentVersion": "Versión de contenido",
+        "updateChannel": "Canal de actualización",
+        "lastUpdated": "Última actualización",
+        "copyDetails": "Copiar detalles",
+        "copiedToClipboard": "Copiado al portapapeles",
+        "advanced": "Avanzado",
+        "checkForUpdates": "Buscar actualizaciones",
+        "checking": "Buscando…"
     }
 }

@@ -45,7 +45,10 @@
         "searchResults": {
             "noResults": "Aucun résultat trouvé",
             "noResultsFor": "Aucun résultat trouvé pour <0>{{query}}</0>"
-        }
+        },
+        "create": "Créer",
+        "creating": "Création...",
+        "updating": "Mise à jour..."
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -1219,7 +1222,9 @@
         "requestCountOther": "{{count}} demandes",
         "blockedCountLabel": "{{count}} bloqués",
         "removeContactError": "Une erreur s'est produite, impossible de supprimer le contact",
-        "blockUserError": "Une erreur s'est produite, impossible de bloquer l'utilisateur"
+        "blockUserError": "Une erreur s'est produite, impossible de bloquer l'utilisateur",
+        "contactsCount": "{{count}} contacts",
+        "noConnectionsYet": "Aucune connexion pour le moment"
     },
     "consentFlow": {
         "title": "Consentement",
@@ -2286,7 +2291,14 @@
         "loadingTitle": "Chargement du titre",
         "newTopic": "Nouveau sujet",
         "browse": "Parcourir...",
-        "somethingElse": "Autre chose..."
+        "somethingElse": "Autre chose...",
+        "hasCompleted": "a terminé avec succès",
+        "summary": "Résumé de session IA",
+        "startedOn": "Commencé le {{date}}",
+        "unfinished": "Inachevé",
+        "learningOverview": "Aperçu des apprentissages",
+        "finishSession": "Terminer la session",
+        "finish": "Terminer"
     },
     "aiFeatureLinks": {
         "skillsHub": "Pôle de compétences"
@@ -2389,6 +2401,17 @@
         },
         "myHub": {
             "noResultsFoundFor": "Aucun résultat trouvé pour <0>{{query}}</0>"
+        },
+        "frameworks": {
+            "create": "Créer un référentiel",
+            "edit": "Modifier le référentiel",
+            "startNew": "Démarrez un nouveau référentiel. Vous pouvez ajouter des compétences manuellement ou importer un fichier après l’avoir créé.",
+            "editThumbnail": "Modifier la vignette",
+            "namePlaceholder": "Nom du référentiel *",
+            "descriptionPlaceholder": "Description du référentiel",
+            "adminCount": "{{count}} administrateur(s)",
+            "createFailed": "Échec de la création du référentiel. Veuillez réessayer.",
+            "updateFailed": "Échec de la mise à jour du référentiel. Veuillez réessayer."
         }
     },
     "skillProfile": {
@@ -2634,5 +2657,21 @@
             "expired": "Invalide • Expiré {{date}}",
             "expires": "Valide • Expire {{date}}"
         }
+    },
+    "versionInfo": {
+        "gathering": "Récupération des informations de version…",
+        "version": "Version",
+        "supportBlurb": "Ces détails aident le support à identifier précisément la version que vous utilisez si vous avez besoin de signaler un problème.",
+        "platform": "Plateforme",
+        "appVersion": "Version de l’app",
+        "nativeVersion": "Version native",
+        "contentVersion": "Version du contenu",
+        "updateChannel": "Canal de mise à jour",
+        "lastUpdated": "Dernière mise à jour",
+        "copyDetails": "Copier les détails",
+        "copiedToClipboard": "Copié dans le presse-papiers",
+        "advanced": "Avancé",
+        "checkForUpdates": "Rechercher des mises à jour",
+        "checking": "Recherche…"
     }
 }

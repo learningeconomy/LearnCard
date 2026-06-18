@@ -45,7 +45,10 @@
         "searchResults": {
             "noResults": "لم يتم العثور على نتائج",
             "noResultsFor": "لم يتم العثور على نتائج لـ <0>{{query}}</0>"
-        }
+        },
+        "create": "إنشاء",
+        "creating": "جارٍ الإنشاء...",
+        "updating": "جارٍ التحديث..."
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
@@ -1219,7 +1222,9 @@
         "requestCountOther": "{{count}} طلبات",
         "blockedCountLabel": "{{count}} محظور",
         "removeContactError": "حدث خطأ، تعذّر إزالة جهة الاتصال",
-        "blockUserError": "حدث خطأ، تعذّر حظر المستخدم"
+        "blockUserError": "حدث خطأ، تعذّر حظر المستخدم",
+        "contactsCount": "{{count}} جهات اتصال",
+        "noConnectionsYet": "لا توجد اتصالات بعد"
     },
     "consentFlow": {
         "title": "الموافقة",
@@ -2286,7 +2291,14 @@
         "loadingTitle": "تحميل العنوان",
         "newTopic": "موضوع جديد",
         "browse": "...تصفح",
-        "somethingElse": "...شيء آخر"
+        "somethingElse": "...شيء آخر",
+        "hasCompleted": "أكمل بنجاح",
+        "summary": "ملخص جلسة الذكاء الاصطناعي",
+        "startedOn": "بدأت في {{date}}",
+        "unfinished": "غير مكتمل",
+        "learningOverview": "نظرة عامة على التعلّم",
+        "finishSession": "إنهاء الجلسة",
+        "finish": "إنهاء"
     },
     "aiFeatureLinks": {
         "skillsHub": "مركز المهارات"
@@ -2389,6 +2401,17 @@
         },
         "myHub": {
             "noResultsFoundFor": "لا توجد نتائج لـ <0>{{query}}</0>"
+        },
+        "frameworks": {
+            "create": "إنشاء إطار",
+            "edit": "تعديل الإطار",
+            "startNew": "ابدأ إطارًا جديدًا. يمكنك إضافة المهارات يدويًا أو استيراد ملف بعد إنشائه.",
+            "editThumbnail": "تعديل الصورة المصغرة",
+            "namePlaceholder": "اسم الإطار *",
+            "descriptionPlaceholder": "وصف الإطار",
+            "adminCount": "{{count}} مشرف",
+            "createFailed": "تعذّر إنشاء الإطار. حاول مرة أخرى.",
+            "updateFailed": "تعذّر تحديث الإطار. حاول مرة أخرى."
         }
     },
     "skillProfile": {
@@ -2634,5 +2657,21 @@
             "expired": "غير صالح • منتهٍ {{date}}",
             "expires": "صالح • ينتهي {{date}}"
         }
+    },
+    "versionInfo": {
+        "gathering": "جارٍ جمع معلومات الإصدار…",
+        "version": "الإصدار",
+        "supportBlurb": "تساعد هذه التفاصيل فريق الدعم على تحديد الإصدار الذي تستخدمه بدقة إذا احتجت إلى الإبلاغ عن مشكلة.",
+        "platform": "المنصة",
+        "appVersion": "إصدار التطبيق",
+        "nativeVersion": "الإصدار الأصلي",
+        "contentVersion": "إصدار المحتوى",
+        "updateChannel": "قناة التحديث",
+        "lastUpdated": "آخر تحديث",
+        "copyDetails": "نسخ التفاصيل",
+        "copiedToClipboard": "تم النسخ إلى الحافظة",
+        "advanced": "متقدّم",
+        "checkForUpdates": "التحقق من التحديثات",
+        "checking": "جارٍ التحقق…"
     }
 }

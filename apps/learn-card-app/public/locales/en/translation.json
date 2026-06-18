@@ -45,7 +45,10 @@
         "searchResults": {
             "noResults": "No results found",
             "noResultsFor": "No results found for <0>{{query}}</0>"
-        }
+        },
+        "create": "Create",
+        "creating": "Creating...",
+        "updating": "Updating..."
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -1219,7 +1222,9 @@
         "requestCountOther": "{{count}} Requests",
         "blockedCountLabel": "{{count}} Blocked",
         "removeContactError": "An error occurred, unable to remove contact",
-        "blockUserError": "An error occurred, unable to block user"
+        "blockUserError": "An error occurred, unable to block user",
+        "contactsCount": "{{count}} Contacts",
+        "noConnectionsYet": "No connections yet"
     },
     "consentFlow": {
         "acceptAndSync": "Accept & Sync",
@@ -2286,7 +2291,14 @@
         "loadingTitle": "Loading title",
         "newTopic": "New Topic",
         "browse": "Browse...",
-        "somethingElse": "Something else..."
+        "somethingElse": "Something else...",
+        "hasCompleted": "has successfully completed",
+        "summary": "AI Session Summary",
+        "startedOn": "Started on {{date}}",
+        "unfinished": "Unfinished",
+        "learningOverview": "Learning Overview",
+        "finishSession": "Finish Session",
+        "finish": "Finish"
     },
     "aiFeatureLinks": {
         "skillsHub": "Skills Hub"
@@ -2389,6 +2401,17 @@
         },
         "myHub": {
             "noResultsFoundFor": "No results found for <0>{{query}}</0>"
+        },
+        "frameworks": {
+            "create": "Create Framework",
+            "edit": "Edit Framework",
+            "startNew": "Start a new framework. You can add skills manually or import a file after creating it.",
+            "editThumbnail": "Edit thumbnail",
+            "namePlaceholder": "Framework Name *",
+            "descriptionPlaceholder": "Framework Description",
+            "adminCount": "{{count}} Admin(s)",
+            "createFailed": "Failed to create framework. Please try again.",
+            "updateFailed": "Failed to update framework. Please try again."
         }
     },
     "skillProfile": {
@@ -2634,5 +2657,21 @@
             "expired": "Invalid • Expired {{date}}",
             "expires": "Valid • Expires {{date}}"
         }
+    },
+    "versionInfo": {
+        "gathering": "Gathering version info…",
+        "version": "Version",
+        "supportBlurb": "These details help support identify exactly which build you’re running if you ever need to report an issue.",
+        "platform": "Platform",
+        "appVersion": "App version",
+        "nativeVersion": "Native version",
+        "contentVersion": "Content version",
+        "updateChannel": "Update channel",
+        "lastUpdated": "Last updated",
+        "copyDetails": "Copy details",
+        "copiedToClipboard": "Copied to clipboard",
+        "advanced": "Advanced",
+        "checkForUpdates": "Check for updates",
+        "checking": "Checking…"
     }
 }

@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React from 'react';
 import moment from 'moment';
 
@@ -76,7 +77,7 @@ export const FinishedAiSessionAssessmentPreviewDetails: React.FC<{
         >
             <div className="h-full w-full ion-padding max-w-[600px] overflow-y-scroll pb-[200px] scrollbar-hide">
                 <div className="rounded-[20px] bg-white mt-4 w-full ion-padding mb-4">
-                    <h3 className="text-xl text-gray-900 font-notoSans">Details</h3>
+                    <h3 className="text-xl text-gray-900 font-notoSans">{m['common.details']()}</h3>
                     <div className="flex flex-col items-start justify-start">
                         <div className="flex flex-col items-start justify-start mt-4 last:mb-4">
                             <p className="text-grayscale-900 text-[17px] font-notoSans font-semibold p-0 mt-0">
