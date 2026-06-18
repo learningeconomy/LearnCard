@@ -13,6 +13,7 @@ import {
     isSupportedPersonalField,
 } from '../../helpers/contract.helpers';
 import * as m from '../../paraglide/messages.js';
+import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
 type ConsentFlowWriteSharingItemProps = {
     term: ConsentFlowTerms['write']['credentials']['categories'][string];
@@ -137,7 +138,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
 
                 <div className="flex flex-col flex-1 items-start">
                     <h4 className="text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left capitalize">
-                        {titleOverride ?? title}
+                        {titleOverride ?? localizeCategoryTitle(title)}
                     </h4>
 
                     {required && (

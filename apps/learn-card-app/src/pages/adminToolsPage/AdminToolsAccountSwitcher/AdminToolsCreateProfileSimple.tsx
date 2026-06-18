@@ -55,32 +55,30 @@ import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateCh
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 import * as m from '../../../paraglide/messages.js';
 
-const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(' Name is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-});
-
-const ProfileIDStateValidator = z.object({
-    profileId: z
-        .string()
-        .nonempty(' User ID is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(25, ' Must contain at most 25 character(s).')
-        .regex(
-            /^[a-zA-Z0-9-]+$/,
-            ` Alpha numeric characters(s) and dashes '-' only, no spaces allowed.`
-        ),
-});
-
 type AdminToolsCreateProfileSimpleProps = { profileType: 'child' | 'organization' };
 
 const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps> = ({
     profileType,
 }) => {
+    // Defined in-component so validation messages resolve in the active locale.
+    const StateValidator = z.object({
+        name: z
+            .string()
+            .nonempty(m['createProfile.validation.nameRequired']())
+            .min(3, m['createProfile.validation.minChars']())
+            .max(30, m['createProfile.validation.nameMaxChars']())
+            .regex(/^[A-Za-z0-9 ]+$/, m['createProfile.validation.nameFormat']()),
+    });
+
+    const ProfileIDStateValidator = z.object({
+        profileId: z
+            .string()
+            .nonempty(m['createProfile.validation.userIdRequired']())
+            .min(3, m['createProfile.validation.minChars']())
+            .max(25, m['createProfile.validation.profileIdMaxChars']())
+            .regex(/^[a-zA-Z0-9-]+$/, m['createProfile.validation.profileIdFormat']()),
+    });
+
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();

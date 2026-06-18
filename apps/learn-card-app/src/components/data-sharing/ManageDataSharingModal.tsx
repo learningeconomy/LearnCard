@@ -30,6 +30,7 @@ import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
+import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
@@ -478,7 +479,7 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                                     {metadata?.IconWithShape && (
                                         <metadata.IconWithShape className="w-3.5 h-3.5" />
                                     )}
-                                    {metadata?.title || category}
+                                    {localizeCategoryTitle(metadata?.title) || category}
                                 </span>
                             );
                         })}
@@ -511,7 +512,7 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                                     {metadata?.IconWithShape && (
                                         <metadata.IconWithShape className="w-3.5 h-3.5" />
                                     )}
-                                    {metadata?.title || category}
+                                    {localizeCategoryTitle(metadata?.title) || category}
                                 </span>
                             );
                         })}

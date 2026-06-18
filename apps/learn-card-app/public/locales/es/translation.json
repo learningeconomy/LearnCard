@@ -3102,6 +3102,45 @@
             "length": "Debe tener entre 3 y 25 caracteres.",
             "format": "Solo letras, números y guiones (-).",
             "unique": "Debe ser único."
+        },
+        "validation": {
+            "nameRequired": "El nombre es obligatorio.",
+            "minChars": "Debe contener al menos 3 caracteres.",
+            "nameMaxChars": "Debe contener como máximo 30 caracteres.",
+            "nameFormat": "Solo caracteres alfanuméricos.",
+            "userIdRequired": "El ID de usuario es obligatorio.",
+            "profileIdMaxChars": "Debe contener como máximo 25 caracteres.",
+            "profileIdFormat": "Solo caracteres alfanuméricos y guiones '-', sin espacios."
         }
+    },
+    "category": {
+        "aiSummaries": "Resúmenes de IA",
+        "aiTopics": "Temas de IA",
+        "aiAssessments": "Evaluaciones de IA",
+        "learningPathways": "Rutas de aprendizaje",
+        "membership": "Membresía",
+        "resumes": "Currículums",
+        "goals": "Objetivos",
+        "events": "Eventos",
+        "verifiableData": "Datos verificables",
+        "all": "Todo",
+        "course": "Curso",
+        "job": "Empleo",
+        "currency": "Moneda",
+        "describe": "Describir",
+        "relationship": "Relación",
+        "professionalTitle": "Título profesional",
+        "roleExperience": "Experiencia en el puesto",
+        "workExperience": "Experiencia laboral",
+        "payRate": "Tarifa de pago",
+        "workLifeBalance": "Equilibrio entre trabajo y vida",
+        "jobStability": "Estabilidad laboral",
+        "selfAssignedSkills": "Habilidades autoasignadas",
+        "meritBadge": "Insignia al mérito",
+        "troop": "Tropa",
+        "troopLeaderId": "ID de líder de tropa",
+        "scoutId": "ID de scout",
+        "globalAdminId": "ID de administrador global",
+        "nationalNetworkAdminId": "ID de administrador de red nacional"
     }
 }

@@ -3102,6 +3102,45 @@
             "length": "Must be between 3 to 25 characters.",
             "format": "Letters, numbers, and dashes (-) only.",
             "unique": "Must be unique."
+        },
+        "validation": {
+            "nameRequired": "Name is required.",
+            "minChars": "Must contain at least 3 character(s).",
+            "nameMaxChars": "Must contain at most 30 character(s).",
+            "nameFormat": "Alphanumeric characters only.",
+            "userIdRequired": "User ID is required.",
+            "profileIdMaxChars": "Must contain at most 25 character(s).",
+            "profileIdFormat": "Alphanumeric characters and dashes '-' only, no spaces allowed."
         }
+    },
+    "category": {
+        "aiSummaries": "AI Summaries",
+        "aiTopics": "AI Topics",
+        "aiAssessments": "AI Assessments",
+        "learningPathways": "Learning Pathways",
+        "membership": "Membership",
+        "resumes": "Resumes",
+        "goals": "Goals",
+        "events": "Events",
+        "verifiableData": "Verifiable Data",
+        "all": "All",
+        "course": "Course",
+        "job": "Job",
+        "currency": "Currency",
+        "describe": "Describe",
+        "relationship": "Relationship",
+        "professionalTitle": "Professional Title",
+        "roleExperience": "Role Experience",
+        "workExperience": "Work Experience",
+        "payRate": "Pay Rate",
+        "workLifeBalance": "Work Life Balance",
+        "jobStability": "Job Stability",
+        "selfAssignedSkills": "Self-Assigned Skills",
+        "meritBadge": "Merit Badge",
+        "troop": "Troop",
+        "troopLeaderId": "Troop Leader ID",
+        "scoutId": "Scout ID",
+        "globalAdminId": "Global Admin ID",
+        "nationalNetworkAdminId": "National Network Admin ID"
     }
 }

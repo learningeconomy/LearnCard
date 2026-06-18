@@ -3102,6 +3102,45 @@
             "length": "يجب أن يتراوح بين 3 و25 حرفًا.",
             "format": "أحرف وأرقام وشرطات (-) فقط.",
             "unique": "يجب أن يكون فريدًا."
+        },
+        "validation": {
+            "nameRequired": "الاسم مطلوب.",
+            "minChars": "يجب أن يحتوي على 3 أحرف على الأقل.",
+            "nameMaxChars": "يجب أن يحتوي على 30 حرفًا كحد أقصى.",
+            "nameFormat": "أحرف وأرقام فقط.",
+            "userIdRequired": "معرّف المستخدم مطلوب.",
+            "profileIdMaxChars": "يجب أن يحتوي على 25 حرفًا كحد أقصى.",
+            "profileIdFormat": "أحرف وأرقام وشرطات '-' فقط، بدون مسافات."
         }
+    },
+    "category": {
+        "aiSummaries": "ملخصات الذكاء الاصطناعي",
+        "aiTopics": "مواضيع الذكاء الاصطناعي",
+        "aiAssessments": "تقييمات الذكاء الاصطناعي",
+        "learningPathways": "مسارات التعلّم",
+        "membership": "العضوية",
+        "resumes": "السير الذاتية",
+        "goals": "الأهداف",
+        "events": "الأحداث",
+        "verifiableData": "البيانات القابلة للتحقق",
+        "all": "الكل",
+        "course": "دورة",
+        "job": "وظيفة",
+        "currency": "العملة",
+        "describe": "وصف",
+        "relationship": "علاقة",
+        "professionalTitle": "المسمى المهني",
+        "roleExperience": "خبرة الدور",
+        "workExperience": "الخبرة العملية",
+        "payRate": "معدل الأجر",
+        "workLifeBalance": "التوازن بين العمل والحياة",
+        "jobStability": "الاستقرار الوظيفي",
+        "selfAssignedSkills": "المهارات المعيّنة ذاتيًا",
+        "meritBadge": "شارة الجدارة",
+        "troop": "الفرقة",
+        "troopLeaderId": "معرّف قائد الفرقة",
+        "scoutId": "معرّف الكشّاف",
+        "globalAdminId": "معرّف المسؤول العام",
+        "nationalNetworkAdminId": "معرّف مسؤول الشبكة الوطنية"
     }
 }
