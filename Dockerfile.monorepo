@@ -139,10 +139,8 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
-# Copy credential-library source explicitly. Docker Desktop/BuildKit can recurse
+# Copy only credential-library runtime source. Docker Desktop/BuildKit can recurse
 # through Bun's package-local workspace symlinks when this package root is copied.
-COPY packages/credential-library/project.json packages/credential-library/tsconfig.json packages/credential-library/vitest.config.ts packages/credential-library/
-COPY packages/credential-library/scripts packages/credential-library/scripts
 COPY packages/credential-library/src packages/credential-library/src
 COPY apps/learn-card-app apps/learn-card-app
 COPY packages/sss-key-manager packages/sss-key-manager
