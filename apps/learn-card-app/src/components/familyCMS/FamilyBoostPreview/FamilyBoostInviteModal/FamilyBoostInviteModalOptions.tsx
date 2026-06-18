@@ -11,6 +11,7 @@ import { FamilyChildAccount } from '../../familyCMSState';
 
 import { ModalTypes, useGetBoostChildrenProfileManagers, useModal } from 'learn-card-base';
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
+import { m } from '../../../../paraglide/messages.js';
 
 const FamilyBoostInviteModalOptions: React.FC<{
     credential?: VC;
@@ -72,7 +73,9 @@ const FamilyBoostInviteModalOptions: React.FC<{
                 >
                     <div className="flex flex-col items-start justify-center">
                         <p className="m-0 p-0 text-lg font-poppins text-grayscale-900">
-                            Invite a {guardianTitle?.singular}
+                            {m['family.invite.inviteMember']({
+                                title: guardianTitle?.singular || m['family.members.guardian'](),
+                            })}
                         </p>
                     </div>
                     <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">
@@ -90,7 +93,9 @@ const FamilyBoostInviteModalOptions: React.FC<{
                 >
                     <div className="flex flex-col items-start justify-center">
                         <p className="m-0 p-0 text-lg font-poppins text-grayscale-900">
-                            Add a {dependentTitle?.singular}
+                            {m['family.invite.addMember']({
+                                title: dependentTitle?.singular || m['family.members.child'](),
+                            })}
                         </p>
                     </div>
                     <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">

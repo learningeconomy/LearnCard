@@ -1706,7 +1706,73 @@
         "joinFamily": "Join Family",
         "parentProfile": "Parent Profile",
         "switchProfile": "Switch Profile",
-        "title": "Families"
+        "title": "Families",
+        "editor": {
+            "headingNew": "New Family",
+            "headingEdit": "Edit Family",
+            "tabContent": "Content",
+            "tabAppearance": "Appearance",
+            "familyNameLabel": "Family name",
+            "familyNamePlaceholder": "Family Name",
+            "addEmoji": "Add a Family Emoji",
+            "mottoLabel": "Family Motto",
+            "mottoPlaceholder": "About my family..."
+        },
+        "members": {
+            "count": "{{count}} Members",
+            "all": "All",
+            "searchPlaceholder": "Search...",
+            "child": "Child",
+            "children": "Children",
+            "guardian": "Guardian",
+            "guardians": "Guardians"
+        },
+        "invite": {
+            "addMember": "Add a {{title}}",
+            "inviteMember": "Invite a {{title}}"
+        },
+        "actionMenu": {
+            "editFamily": "Edit Family",
+            "shareFamily": "Share Family"
+        },
+        "childInvite": {
+            "title": "Child Account",
+            "inFamily": "{{title}} in {{family}}",
+            "nameLabel": "Name",
+            "taglineLabel": "Tagline",
+            "dobLabel": "Date of Birth",
+            "countryLabel": "Country (Optional)",
+            "selectCountry": "Select Country",
+            "edit": "Edit {{brand}}"
+        },
+        "titles": {
+            "heading": "Member Titles",
+            "connectedHeading": "Connected Users Titles",
+            "connectedDesc": "Connected users are primary LearnCard accounts that exist independent of families.",
+            "dependentsHeading": "Dependents Titles",
+            "dependentsDesc": "Dependent accounts exist only in the family that they are created in. They have no personal login and limited permissions in LearnCard.",
+            "singular": "Singular",
+            "plural": "Plural"
+        },
+        "appearance": {
+            "wallpaper": "Wallpaper",
+            "fadeBackground": "Fade background",
+            "repeatBackground": "Repeat background",
+            "wallpaperBackground": "Wallpaper Background"
+        },
+        "pin": {
+            "heading": "Personal PIN",
+            "description": "Your pin allows you to access and manage controls that require your authorization.",
+            "setPin": "Set Pin",
+            "editPin": "Edit Pin",
+            "createPin": "Create Pin"
+        },
+        "preview": {
+            "details": "Details",
+            "trusted": "Trusted",
+            "createdOn": "Created on {{date}}"
+        },
+        "createToSelectPlayer": "Create a family to select a player."
     },
     "membership": {
         "adminPanel": "Admin Panel",

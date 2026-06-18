@@ -1986,7 +1986,73 @@
         "familyAccount": "Cuenta familiar",
         "switchProfile": "Cambiar perfil",
         "childProfile": "Perfil del niño",
-        "parentProfile": "Perfil del padre"
+        "parentProfile": "Perfil del padre",
+        "editor": {
+            "headingNew": "Nueva familia",
+            "headingEdit": "Editar familia",
+            "tabContent": "Contenido",
+            "tabAppearance": "Apariencia",
+            "familyNameLabel": "Nombre de la familia",
+            "familyNamePlaceholder": "Nombre de la familia",
+            "addEmoji": "Añadir un emoji de familia",
+            "mottoLabel": "Lema de la familia",
+            "mottoPlaceholder": "Sobre mi familia..."
+        },
+        "members": {
+            "count": "{{count}} miembros",
+            "all": "Todos",
+            "searchPlaceholder": "Buscar...",
+            "child": "Niño",
+            "children": "Niños",
+            "guardian": "Tutor",
+            "guardians": "Tutores"
+        },
+        "invite": {
+            "addMember": "Añadir un {{title}}",
+            "inviteMember": "Invitar a un {{title}}"
+        },
+        "actionMenu": {
+            "editFamily": "Editar familia",
+            "shareFamily": "Compartir familia"
+        },
+        "childInvite": {
+            "title": "Cuenta de niño",
+            "inFamily": "{{title}} en {{family}}",
+            "nameLabel": "Nombre",
+            "taglineLabel": "Lema",
+            "dobLabel": "Fecha de nacimiento",
+            "countryLabel": "País (opcional)",
+            "selectCountry": "Seleccionar país",
+            "edit": "Editar {{brand}}"
+        },
+        "titles": {
+            "heading": "Títulos de los miembros",
+            "connectedHeading": "Títulos de usuarios conectados",
+            "connectedDesc": "Los usuarios conectados son cuentas principales de LearnCard que existen de forma independiente de las familias.",
+            "dependentsHeading": "Títulos de dependientes",
+            "dependentsDesc": "Las cuentas de dependientes existen solo en la familia en la que se crean. No tienen inicio de sesión personal y tienen permisos limitados en LearnCard.",
+            "singular": "Singular",
+            "plural": "Plural"
+        },
+        "appearance": {
+            "wallpaper": "Fondo de pantalla",
+            "fadeBackground": "Atenuar fondo",
+            "repeatBackground": "Repetir fondo",
+            "wallpaperBackground": "Fondo de pantalla"
+        },
+        "pin": {
+            "heading": "PIN personal",
+            "description": "Tu PIN te permite acceder y gestionar los controles que requieren tu autorización.",
+            "setPin": "Configurar PIN",
+            "editPin": "Editar PIN",
+            "createPin": "Crear PIN"
+        },
+        "preview": {
+            "details": "Detalles",
+            "trusted": "De confianza",
+            "createdOn": "Creado el {{date}}"
+        },
+        "createToSelectPlayer": "Crea una familia para seleccionar un jugador."
     },
     "membership": {
         "title": "Membresía",

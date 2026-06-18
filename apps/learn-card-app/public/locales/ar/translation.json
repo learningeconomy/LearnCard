@@ -1986,7 +1986,73 @@
         "familyAccount": "حساب العائلة",
         "switchProfile": "تبديل الملف الشخصي",
         "childProfile": "ملف الطفل",
-        "parentProfile": "ملف ولي الأمر"
+        "parentProfile": "ملف ولي الأمر",
+        "editor": {
+            "headingNew": "عائلة جديدة",
+            "headingEdit": "تعديل العائلة",
+            "tabContent": "المحتوى",
+            "tabAppearance": "المظهر",
+            "familyNameLabel": "اسم العائلة",
+            "familyNamePlaceholder": "اسم العائلة",
+            "addEmoji": "إضافة رمز تعبيري للعائلة",
+            "mottoLabel": "شعار العائلة",
+            "mottoPlaceholder": "عن عائلتي..."
+        },
+        "members": {
+            "count": "{{count}} عضو",
+            "all": "الكل",
+            "searchPlaceholder": "بحث...",
+            "child": "طفل",
+            "children": "أطفال",
+            "guardian": "ولي الأمر",
+            "guardians": "أولياء الأمور"
+        },
+        "invite": {
+            "addMember": "إضافة {{title}}",
+            "inviteMember": "دعوة {{title}}"
+        },
+        "actionMenu": {
+            "editFamily": "تعديل العائلة",
+            "shareFamily": "مشاركة العائلة"
+        },
+        "childInvite": {
+            "title": "حساب طفل",
+            "inFamily": "{{title}} في {{family}}",
+            "nameLabel": "الاسم",
+            "taglineLabel": "الشعار",
+            "dobLabel": "تاريخ الميلاد",
+            "countryLabel": "الدولة (اختياري)",
+            "selectCountry": "اختر الدولة",
+            "edit": "تعديل {{brand}}"
+        },
+        "titles": {
+            "heading": "ألقاب الأعضاء",
+            "connectedHeading": "ألقاب المستخدمين المتصلين",
+            "connectedDesc": "المستخدمون المتصلون هم حسابات LearnCard أساسية موجودة بشكل مستقل عن العائلات.",
+            "dependentsHeading": "ألقاب التابعين",
+            "dependentsDesc": "حسابات التابعين موجودة فقط في العائلة التي أُنشئت فيها. ليس لها تسجيل دخول شخصي ولديها أذونات محدودة في LearnCard.",
+            "singular": "مفرد",
+            "plural": "جمع"
+        },
+        "appearance": {
+            "wallpaper": "الخلفية",
+            "fadeBackground": "تعتيم الخلفية",
+            "repeatBackground": "تكرار الخلفية",
+            "wallpaperBackground": "خلفية الشاشة"
+        },
+        "pin": {
+            "heading": "رقم التعريف الشخصي",
+            "description": "يتيح لك رقم التعريف الشخصي الوصول إلى عناصر التحكم التي تتطلب تفويضك وإدارتها.",
+            "setPin": "تعيين رقم التعريف",
+            "editPin": "تعديل رقم التعريف",
+            "createPin": "إنشاء رقم التعريف"
+        },
+        "preview": {
+            "details": "التفاصيل",
+            "trusted": "موثوق",
+            "createdOn": "أُنشئ في {{date}}"
+        },
+        "createToSelectPlayer": "أنشئ عائلة لاختيار لاعب."
     },
     "membership": {
         "title": "العضوية",

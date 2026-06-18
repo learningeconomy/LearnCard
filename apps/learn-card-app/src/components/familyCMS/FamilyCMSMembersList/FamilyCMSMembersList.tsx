@@ -169,7 +169,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
             <div className="w-full flex items-start justify-center flex-col">
                 <div className="w-full flex items-center justify-between">
                     <h3 className="font-poppins text-xl font-normal text-grayscale-800">
-                        {childrenAndGuardiansListCount} Members
+                        {m['family.members.count']({ count: childrenAndGuardiansListCount })}
                     </h3>
 
                     <button
@@ -191,7 +191,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                         : 'text-grayscale-700'
                                 }`}
                             >
-                                All
+                                {m['family.members.all']()}
                             </button>
                             {childsListCount > 0 && (
                                 <button
@@ -204,8 +204,10 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                 >
                                     {childsListCount}{' '}
                                     {childsListCount === 1
-                                        ? customChildrenName?.singular || 'Child'
-                                        : customChildrenName?.plural || 'Children'}
+                                        ? customChildrenName?.singular ||
+                                          m['family.members.child']()
+                                        : customChildrenName?.plural ||
+                                          m['family.members.children']()}
                                 </button>
                             )}
 
@@ -220,14 +222,16 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                 >
                                     {GuardiansListCount}{' '}
                                     {GuardiansListCount === 1
-                                        ? customGuardianName?.singular || 'Guardian'
-                                        : customGuardianName?.plural || 'Guardians'}
+                                        ? customGuardianName?.singular ||
+                                          m['family.members.guardian']()
+                                        : customGuardianName?.plural ||
+                                          m['family.members.guardians']()}
                                 </button>
                             )}
                         </div>
                         <IonInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder mb-2"
-                            placeholder="Search..."
+                            placeholder={m['family.members.searchPlaceholder']()}
                             value={search}
                             onIonInput={e => setSearch(e.detail.value)}
                         />

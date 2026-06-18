@@ -54,7 +54,7 @@ export const CreateFamilyGamePrompt: React.FC<CreateFamilyGamePromptProps> = ({
                 <div className="h-[1px] w-[80px] bg-grayscale-200" />
 
                 <div className="text-[20px] text-grayscale-800 font-notoSans text-center">
-                    Create a family to select a player.
+                    {m['family.createToSelectPlayer']()}
                 </div>
             </div>
 
