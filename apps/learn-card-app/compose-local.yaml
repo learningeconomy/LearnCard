@@ -8,7 +8,7 @@ services:
         tmpfs:
             - /app/.nx-cache:mode=1777
             - /app/node_modules/.cache:mode=1777
-            - /app/apps/learn-card-app/node_modules/.vite:mode=1777
+            - /app/apps/learn-card-app/node_modules:mode=1777
         container_name: 'lcn-app'
         expose:
             - 3000
@@ -38,9 +38,20 @@ services:
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
         volumes:
-            - ./src:/app/apps/learn-card-app/src
-            - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
-            - ../../packages:/app/packages
+            - .:/app/apps/learn-card-app
+            - ../../packages/credential-library/src:/app/packages/credential-library/src
+            - ../../packages/react-learn-card/src:/app/packages/react-learn-card/src
+            - ../../packages/learn-card-base/src:/app/packages/learn-card-base/src
+            - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
+            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
+            - ../../packages/learn-card-init/src:/app/packages/learn-card-init/src
+            - ../../packages/learn-card-core/src:/app/packages/learn-card-core/src
+            - ../../packages/learn-card-network/brain-client/src:/app/packages/learn-card-network/brain-client/src
+            - ../../packages/learn-card-network/cloud-client/src:/app/packages/learn-card-network/cloud-client/src
+            - ../../packages/plugins/lca-api-plugin/src:/app/packages/plugins/lca-api-plugin/src
+            - ../../packages/plugins/learn-card-network/src:/app/packages/plugins/learn-card-network/src
+            - ../../packages/plugins/learn-cloud/src:/app/packages/plugins/learn-cloud/src
+            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -100,7 +111,6 @@ services:
               required: false
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
-            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -152,7 +162,6 @@ services:
               required: false
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
-            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4100
@@ -195,7 +204,6 @@ services:
               required: false
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
-            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'

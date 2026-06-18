@@ -139,28 +139,24 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
-# Local Docker dev bind-mounts ../../packages over /app/packages. Do not copy
-# credential-library source into the image: some Docker Desktop/BuildKit builds
-# recurse through Bun's package-local workspace symlinks when any path under this
-# package is copied and fail with "max depth exceeded". package.json is still
-# copied before bun install so workspace resolution remains valid.
-COPY apps/learn-card-app/index.html apps/learn-card-app/index.template.html apps/learn-card-app/project.json apps/learn-card-app/tsconfig.json apps/learn-card-app/vite.config.ts apps/learn-card-app/tailwind.config.js apps/learn-card-app/postcss.config.js apps/learn-card-app/capacitor.config.ts apps/learn-card-app/
-COPY apps/learn-card-app/scripts apps/learn-card-app/scripts
-COPY apps/learn-card-app/environments apps/learn-card-app/environments
-COPY apps/learn-card-app/public apps/learn-card-app/public
-COPY apps/learn-card-app/src apps/learn-card-app/src
-COPY apps/learn-card-app/android apps/learn-card-app/android
-COPY apps/learn-card-app/ios apps/learn-card-app/ios
+# Local Docker dev and PR previews bind-mount app/packages sources over these
+# paths. Do not copy credential-library or learn-card-app source into the image:
+# some Docker Desktop/BuildKit builds recurse through Bun's package-local
+# workspace symlinks when any path under those packages is copied and fail with
+# "max depth exceeded". package.json files are still copied before bun install so
+# workspace resolution remains valid.
 COPY packages/sss-key-manager packages/sss-key-manager
 COPY packages/email-templates packages/email-templates
 
 RUN mkdir -p /app/.nx-cache /app/node_modules/.cache \
     /app/apps/learn-card-app/node_modules/.vite \
+    /app/apps/learn-card-app/public \
+    /app/apps/learn-card-app/ios \
+    /app/apps/learn-card-app/android \
     && chmod 1777 /app/.nx-cache /app/node_modules/.cache \
     /app/apps/learn-card-app/node_modules/.vite \
     && chmod a+rwx /app/apps/learn-card-app \
     && chmod -R a+rwX \
     /app/apps/learn-card-app/public \
     /app/apps/learn-card-app/ios \
-    /app/apps/learn-card-app/android \
-    && chmod a+rw /app/apps/learn-card-app/index.html
+    /app/apps/learn-card-app/android

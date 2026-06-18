@@ -16,7 +16,7 @@ services:
         expose:
             - 3000
         # Run vite directly (not docker-start) so we can control env vars for the proxy domain
-        command: ['sh', '-c', 'cd apps/learn-card-app && pnpm exec vite --host']
+        command: ['sh', '-c', 'cd apps/learn-card-app && bun run start']
         depends_on:
             - brain
             - cloud
@@ -37,6 +37,23 @@ services:
             REACT_APP_KEY_DERIVATION_PROVIDER: sss
             REACT_APP_SSS_SERVER_URL: https://${PREVIEW_DOMAIN:-localhost}/lca-api
             SKIP_DIDKIT_NAPI: '1'
+        tmpfs:
+            - /app/apps/learn-card-app/node_modules:mode=1777
+        volumes:
+            - ../apps/learn-card-app:/app/apps/learn-card-app
+            - ../packages/credential-library/src:/app/packages/credential-library/src
+            - ../packages/react-learn-card/src:/app/packages/react-learn-card/src
+            - ../packages/learn-card-base/src:/app/packages/learn-card-base/src
+            - ../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
+            - ../packages/learn-card-types/src:/app/packages/learn-card-types/src
+            - ../packages/learn-card-init/src:/app/packages/learn-card-init/src
+            - ../packages/learn-card-core/src:/app/packages/learn-card-core/src
+            - ../packages/learn-card-network/brain-client/src:/app/packages/learn-card-network/brain-client/src
+            - ../packages/learn-card-network/cloud-client/src:/app/packages/learn-card-network/cloud-client/src
+            - ../packages/plugins/lca-api-plugin/src:/app/packages/plugins/lca-api-plugin/src
+            - ../packages/plugins/learn-card-network/src:/app/packages/plugins/learn-card-network/src
+            - ../packages/plugins/learn-cloud/src:/app/packages/plugins/learn-cloud/src
+            - ../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
 
     brain:
         image: learncard-monorepo-local
@@ -45,7 +62,7 @@ services:
             dockerfile: Dockerfile.monorepo
         expose:
             - 4000
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
         depends_on:
             neo4j:
                 condition: service_healthy
@@ -88,7 +105,7 @@ services:
             dockerfile: Dockerfile.monorepo
         expose:
             - 4100
-        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
         depends_on:
             - mongodb
             - redis2
@@ -119,7 +136,8 @@ services:
             dockerfile: Dockerfile.monorepo
         expose:
             - 4200
-        command: ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && pnpm dev']
+        command:
+            ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && bun run dev']
         depends_on:
             - mongodb
             - redis3
@@ -186,7 +204,11 @@ services:
     neo4j:
         image: neo4j:latest
         healthcheck:
-            test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1']
+            test:
+                [
+                    'CMD-SHELL',
+                    'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
+                ]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -222,7 +244,17 @@ services:
             - learn-card
 
     mongodb:
-        command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017', '--quiet', '--logpath', '/var/log/mongodb/mongod.log']
+        command:
+            [
+                '--replSet',
+                'rs0',
+                '--bind_ip_all',
+                '--port',
+                '27017',
+                '--quiet',
+                '--logpath',
+                '/var/log/mongodb/mongod.log',
+            ]
         image: mongo:7.0
         extra_hosts:
             - 'localhost:host-gateway'

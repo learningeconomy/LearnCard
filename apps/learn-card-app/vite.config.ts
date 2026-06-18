@@ -4,7 +4,6 @@ import { createRequire } from 'module';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
@@ -66,8 +65,9 @@ const workspacePackages = [
     '@learncard/sd-jwt-vc-plugin',
 ];
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
 
     // Keyed off VITE_DOCKER_SOURCE alone (not `mode`) because the self-host build
     // legitimately runs `vite build` in production mode, so `mode` can't distinguish it
