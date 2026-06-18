@@ -1088,7 +1088,7 @@ async function launchWalletFeature(path: string, description?: string) {
         }
     };
 
-    const installCode = `bun add @learncard/partner-connect`;
+    const installCode = `npm install @learncard/partner-connect`;
 
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 

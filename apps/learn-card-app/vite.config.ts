@@ -68,6 +68,28 @@ const workspacePackages = [
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+
+    // Keyed off VITE_DOCKER_SOURCE alone (not `mode`) because the self-host build
+    // legitimately runs `vite build` in production mode, so `mode` can't distinguish it
+    // from a Netlify/dist build. We instead emit a loud build-log notice so an accidental
+    // production build with this flag set — which would ship uncompiled TS — is obvious.
+    const useDockerSourceMode = process.env.VITE_DOCKER_SOURCE === 'true';
+
+    if (useDockerSourceMode) {
+        console.warn(
+            [
+                '',
+                '════════════════════════════════════════════════════════════════════════',
+                '⚠️  VITE_DOCKER_SOURCE=true — resolving @learncard/* to TypeScript SOURCE.',
+                '    Intended ONLY for self-host container builds (docker-build).',
+                '    A production/Netlify/npm-dist build MUST leave this UNSET, otherwise',
+                '    the app ships uncompiled workspace sources instead of optimized dist.',
+                '════════════════════════════════════════════════════════════════════════',
+                '',
+            ].join('\n')
+        );
+    }
+
     return {
         plugins: [
             react(),
@@ -149,12 +171,9 @@ export default defineConfig(({ mode }) => {
                 : 'undefined',
         },
         resolve: {
-            // The self-host Docker build (docker-build script) sets VITE_DOCKER_SOURCE=true so
-            // vite resolves @learncard/* via their `development` export → TS source, exactly like
-            // the dev server. This lets the container bundle the app in one vite pass without
-            // pre-building every workspace package's dist. Netlify's `build` leaves this unset and
-            // keeps resolving the published dist outputs.
-            ...(process.env.VITE_DOCKER_SOURCE === 'true'
+            // See useDockerSourceMode above: source-mode resolution for self-host container
+            // builds; Netlify/dist builds leave VITE_DOCKER_SOURCE unset and use published dist.
+            ...(useDockerSourceMode
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),
             alias: {
