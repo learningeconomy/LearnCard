@@ -5,6 +5,8 @@ lib/ssi/target
 # Dependencies (copied selectively in Dockerfiles)
 node_modules
 **/node_modules
+node_modules/**
+**/node_modules/**
 
 # Build outputs
 **/dist
