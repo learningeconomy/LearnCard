@@ -13,24 +13,37 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
 import { Confetti } from './Confetti';
-import type { LinkOptions } from './recipientTypes';
+import type { LinkOptions, Recipient, RecipientMode } from './recipientTypes';
 
 const log = getLogger('issue-success');
 
 interface IssueSuccessProps {
-    credentialUri: string;
     credential: Record<string, unknown> | null;
     credentialType: SimpleCredentialType | null;
+    recipientMode: RecipientMode;
+    recipients: Recipient[];
     claimLink?: string | null;
     linkOptions?: LinkOptions;
     onIssueAnother: () => void;
     onViewWallet: () => void;
 }
 
+const recipientName = (recipient: Recipient): string =>
+    recipient.kind === 'profile' ? recipient.displayName : recipient.email;
+
+const summarizeRecipients = (recipients: Recipient[]): string => {
+    const names = recipients.map(recipientName).filter(Boolean);
+    if (names.length === 0) return 'the recipient';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} and ${names[1]}`;
+    return `${names[0]} and ${names.length - 1} others`;
+};
+
 export const IssueSuccess: React.FC<IssueSuccessProps> = ({
-    credentialUri,
     credential,
     credentialType,
+    recipientMode,
+    recipients,
     claimLink,
     linkOptions,
     onIssueAnother,
@@ -40,11 +53,10 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
     const [copied, setCopied] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
-    const linkToCopy = claimLink || credentialUri;
-
     const handleCopy = useCallback(async () => {
+        if (!claimLink) return;
         try {
-            await navigator.clipboard.writeText(linkToCopy);
+            await navigator.clipboard.writeText(claimLink);
             setCopied(true);
             presentToast('Link copied.', {
                 type: ToastTypeEnum.Success,
@@ -54,14 +66,15 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
         } catch (e) {
             log.error('issue-success.copy_failed', e);
         }
-    }, [linkToCopy, presentToast]);
+    }, [claimLink, presentToast]);
 
     const handleShare = useCallback(async () => {
+        if (!claimLink) return;
         if (typeof navigator !== 'undefined' && navigator.share) {
             try {
                 await navigator.share({
                     title: 'A credential for you',
-                    url: linkToCopy,
+                    url: claimLink,
                 });
                 return;
             } catch (e) {
@@ -70,7 +83,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             }
         }
         await handleCopy();
-    }, [linkToCopy, handleCopy]);
+    }, [claimLink, handleCopy]);
 
     const handleDownloadQR = useCallback(() => {
         if (!canvasRef.current) return;
@@ -248,6 +261,33 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </button>
                     </div>
                 </div>
+            ) : recipientMode === 'people' ? (
+                <div className="relative w-full max-w-[420px] text-center space-y-6">
+                    {renderCard()}
+                    <div className="animate-fade-in-up">
+                        <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Sent!</h2>
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            Delivered to {summarizeRecipients(recipients)}.
+                        </p>
+                    </div>
+
+                    <div className="space-y-3 animate-fade-in-up">
+                        <button
+                            type="button"
+                            onClick={onViewWallet}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            Done
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onIssueAnother}
+                            className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        >
+                            Issue Another
+                        </button>
+                    </div>
+                </div>
             ) : (
                 <div className="relative w-full max-w-[420px] text-center space-y-6">
                     {renderCard()}
@@ -256,7 +296,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             You made it!
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Your credential is signed and on its way.
+                            Your credential is signed and saved to your wallet.
                         </p>
                     </div>
 
@@ -268,28 +308,6 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         >
                             View in Wallet
                         </button>
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={handleCopy}
-                                className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
-                            >
-                                {copied ? (
-                                    <Check className="w-4 h-4 text-emerald-500" />
-                                ) : (
-                                    <Copy className="w-4 h-4" />
-                                )}
-                                {copied ? 'Copied' : 'Copy link'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleShare}
-                                className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Share2 className="w-4 h-4" />
-                                Share
-                            </button>
-                        </div>
                         <button
                             type="button"
                             onClick={onIssueAnother}

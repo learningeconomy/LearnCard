@@ -150,12 +150,17 @@ const deliverBoost = async (
             templateUri: boostUri,
         });
 
-        if (response.uri) {
-            await wallet.invoke.acceptCredential(response.uri);
+        // `send` returns `credentialUri` (the issued credential) and `uri` (the boost
+        // template). acceptCredential requires the credential URI — passing the boost
+        // URI throws "Not a credential URI".
+        const sentCredentialUri = response.credentialUri ?? response.uri;
+
+        if (sentCredentialUri) {
+            await wallet.invoke.acceptCredential(sentCredentialUri);
             if (wallet.store?.LearnCloud?.uploadEncrypted) {
                 const credential =
                     signedCredential ??
-                    ((await wallet.read.get(response.uri).catch(() => undefined)) as
+                    ((await wallet.read.get(sentCredentialUri).catch(() => undefined)) as
                         | Record<string, unknown>
                         | undefined);
                 if (credential) await wallet.store.LearnCloud.uploadEncrypted(credential);

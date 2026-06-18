@@ -27,6 +27,10 @@ import {
     type OBv3CredentialTemplate,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
+import type { CredentialCategoryEnum } from 'learn-card-base';
+
 import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
 import { JsonLens } from './components/JsonLens';
@@ -169,16 +173,22 @@ const IssueCredentialPage: React.FC = () => {
         let credentialSubjectImage: string | undefined;
         let showIssuerImage = true;
 
+        // getImageUrlFromCredential ranks credentialSubject.image above
+        // achievement.image, so a recipient photo would hide the badge artwork.
+        // The issued credential never sets credentialSubject.image; only inject
+        // it here when there's no badge image, keeping the preview faithful.
+        const hasBadgeImage = Boolean(ach?.image?.value);
+
         if (recipientMode === 'self') {
             credentialSubjectName = currentLCNUser?.displayName || issuerName;
-            credentialSubjectImage = issuerImage;
+            credentialSubjectImage = hasBadgeImage ? undefined : issuerImage;
         } else if (
             recipientMode === 'people' &&
             recipients.length === 1 &&
             recipients[0].kind === 'profile'
         ) {
             credentialSubjectName = recipients[0].displayName;
-            credentialSubjectImage = recipients[0].image;
+            credentialSubjectImage = hasBadgeImage ? undefined : recipients[0].image;
         } else {
             // No specific recipient yet (link / anyone / email / multiple): don't
             // let the badge fall back to the issuer's photo — show the category's
@@ -310,13 +320,23 @@ const IssueCredentialPage: React.FC = () => {
             <IonContent>
                 {issuedUri ? (
                     <IssueSuccess
-                        credentialUri={issuedUri}
                         credential={previewCredential}
                         credentialType={selectedType?.baseSimpleType ?? null}
+                        recipientMode={recipientMode}
+                        recipients={recipients}
                         claimLink={claimLink}
                         linkOptions={linkOptions}
                         onIssueAnother={reset}
-                        onViewWallet={() => history.push('/wallet')}
+                        onViewWallet={() => {
+                            const category = previewCredential
+                                ? getDefaultCategoryForCredential(previewCredential as any)
+                                : undefined;
+                            const route =
+                                recipientMode === 'self' && category
+                                    ? CATEGORY_TO_ROUTE[category as CredentialCategoryEnum]
+                                    : undefined;
+                            history.push(route ?? '/wallet');
+                        }}
                     />
                 ) : (
                     <div className="font-poppins min-h-full bg-grayscale-10">
