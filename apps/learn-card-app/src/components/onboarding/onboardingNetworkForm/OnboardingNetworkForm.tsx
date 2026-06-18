@@ -449,7 +449,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 log.info('createProfile::error', err);
                 const message =
                     (err as any)?.message ??
-                    (typeof err === 'string' ? err : 'There was an error creating your profile');
+                    (typeof err === 'string' ? err : m['onboarding.profile.error.createFailed']());
                 setProfileIdError(message as string);
                 setIsLoading(false);
                 setIsCreateLoading(false);
@@ -605,7 +605,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     });
                 } catch (e) {
                     presentLogoutErrorModal();
-                    setProfileIdError(`There was a firebase error: ${e?.toString?.()}`);
+                    setProfileIdError(
+                        m['onboarding.profile.error.firebase']({ error: e?.toString?.() ?? '' })
+                    );
                 }
             }
 
@@ -672,12 +674,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         </p>
                     </div>
                 )}
-                <OnboardingHeader text="Set up your profile to get started!" />
+                <OnboardingHeader text={m['onboarding.profile.header']()} />
                 {isLoading && (
                     <div className="absolute top-0 left-0 w-full h-full z-[10000] flex flex-col items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">
                         <IonSpinner color="dark" />
                         <span className="text-grayscale-900 flex items-center justify-center w-full">
-                            Joining Network...
+                            {m['onboarding.profile.joiningNetwork']()}
                         </span>
                     </div>
                 )}
@@ -731,9 +733,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     autocapitalize="on"
                                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-wider text-base mb-4`}
                                     value={`@${lcNetworkProfile?.profileId}`}
-                                    placeholder="User ID"
+                                    placeholder={m['onboarding.profile.userId.placeholder']()}
                                     type="text"
-                                    aria-label="User ID"
+                                    aria-label={m['onboarding.profile.userId.placeholder']()}
                                     readonly
                                 />
                             )}
@@ -749,9 +751,9 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         handleNameChange(e.detail.value);
                                     }}
                                     value={name}
-                                    placeholder="Full Name"
+                                    placeholder={m['onboarding.profile.fullName']()}
                                     type="text"
-                                    aria-label="Full Name"
+                                    aria-label={m['onboarding.profile.fullName']()}
                                 />
                                 {errors.name && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
@@ -782,8 +784,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                                 handleProfileIdInput(e.detail.value);
                                             }}
                                             value={profileId}
-                                            placeholder="User ID"
-                                            aria-label="User ID"
+                                            placeholder={m[
+                                                'onboarding.profile.userId.placeholder'
+                                            ]()}
+                                            aria-label={m[
+                                                'onboarding.profile.userId.placeholder'
+                                            ]()}
                                             type="text"
                                         />
                                     </div>
@@ -802,7 +808,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         ) : (
                                             <X className="w-[20px] h-auto scale-[0.9]" />
                                         )}
-                                        Must be between 3 to 25 characters.
+                                        {m['onboarding.profile.userId.charLength']()}
                                     </p>
 
                                     <p className="flex items-center gap-1 text-grayscale-700 text-xs font-normal min-h-[20px] h-[20px]">
@@ -811,7 +817,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         ) : (
                                             <X className="w-[20px] h-auto scale-[0.9]" />
                                         )}
-                                        Letters, numbers, and dashes (-) only.
+                                        {m['onboarding.profile.userId.format']()}
                                     </p>
 
                                     <p className="flex items-center gap-1 text-grayscale-700 text-xs font-normal min-h-[20px] h-[20px]">
@@ -827,7 +833,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                         {!isUniqueValid && !isCheckingUnique && (
                                             <X className="w-[20px] h-auto scale-[0.9]" />
                                         )}
-                                        Must be unique.
+                                        {m['onboarding.profile.userId.unique']()}
                                     </p>
                                 </div>
                             </IonRow>
@@ -838,14 +844,14 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 <p className="text-center text-sm font-normal px-16 text-grayscale-600 mt-4">
                     {m['legal.dataOwnership']()}
                     <br />
-                    All connections are encrypted.
+                    {m['legal.connectionsEncrypted']()}
                 </p>
             </div>
             <OnboardingFooter
                 step={step}
                 role={role}
                 setStep={setStep}
-                text={isLoading ? 'Loading...' : 'Continue'}
+                text={isLoading ? m['common.loading']() : m['common.continue']()}
                 onClick={handleClick}
                 showBackButton
                 showCloseButton={!!lcNetworkProfile?.profileId}

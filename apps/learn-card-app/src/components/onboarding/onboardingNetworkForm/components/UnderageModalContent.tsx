@@ -74,8 +74,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                 {!isSchoolView && familyInviteUrl && (
                     <div className="mt-5 p-4 rounded-[20px] bg-grayscale-10 border border-grayscale-200 flex flex-col items-center gap-3">
                         <p className="text-sm text-grayscale-700 leading-relaxed">
-                            Share this link with your parent so they can finish setting up the
-                            family.
+                            {m['onboarding.consent.underage.shareLink']()}
                         </p>
                         <button
                             type="button"
@@ -86,7 +85,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                     window.setTimeout(() => setCopied(false), 2000);
                                 } catch {
                                     setCopied(false);
-                                    presentToast('Failed to copy to clipboard.', {
+                                    presentToast(m['onboarding.consent.underage.copyFailed'](), {
                                         type: ToastTypeEnum.Error,
                                         hasDismissButton: true,
                                     });
@@ -94,7 +93,9 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                             }}
                             className="w-full max-w-[320px] py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            {copied ? 'Link copied' : 'Copy family link'}
+                            {copied
+                                ? m['onboarding.consent.underage.linkCopied']()
+                                : m['onboarding.consent.underage.copyLink']()}
                         </button>
                     </div>
                 )}

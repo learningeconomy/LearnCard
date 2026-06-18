@@ -804,6 +804,11 @@
         "logout": "Cerrando sesión..."
     },
     "onboarding": {
+        "ageGate": {
+            "heading": "Ingresa tu edad y país para continuar",
+            "subtitle": "Solicitamos esta información para asegurarnos de cumplir con las leyes de privacidad y mantenerte seguro",
+            "checking": "Comprobando..."
+        },
         "selectRole": {
             "header": "¡Selecciona lo que mejor te describe!"
         },
@@ -816,6 +821,7 @@
             "age": "Edad: {{age}}",
             "countryOfResidence": "País de residencia",
             "userId": {
+                "unique": "Debe ser único.",
                 "placeholder": "ID de usuario",
                 "charLength": "Debe tener entre 3 y 25 caracteres.",
                 "format": "Solo letras, números y guiones (-)."
@@ -862,6 +868,10 @@
         },
         "consent": {
             "underage": {
+                "shareLink": "Comparte este enlace con tu padre/madre para que pueda terminar de configurar la familia.",
+                "copyLink": "Copiar enlace de la familia",
+                "linkCopied": "Enlace copiado",
+                "copyFailed": "No se pudo copiar al portapapeles.",
                 "heading": "Busca un adulto",
                 "description": "Necesitarás que un padre o tutor te agregue a una cuenta familiar antes de poder unirte.",
                 "schoolCode": {
@@ -1971,6 +1981,7 @@
         }
     },
     "legal": {
+        "connectionsEncrypted": "Todas las conexiones están cifradas.",
         "termsOfService": "Términos de servicio",
         "privacyPolicy": "Política de privacidad",
         "consentLayer": "Capa de consentimiento",

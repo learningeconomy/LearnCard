@@ -804,9 +804,18 @@
         }
     },
     "onboarding": {
+        "ageGate": {
+            "heading": "Please enter your age and country to continue",
+            "subtitle": "We ask for this information to make sure we comply with privacy laws and keep you safe",
+            "checking": "Checking..."
+        },
         "back": "Back",
         "consent": {
             "underage": {
+                "shareLink": "Share this link with your parent so they can finish setting up the family.",
+                "copyLink": "Copy family link",
+                "linkCopied": "Link copied",
+                "copyFailed": "Failed to copy to clipboard.",
                 "heading": "Get an Adult",
                 "description": "You'll need a parent or guardian to add you to a family account before you can join.",
                 "schoolCode": {
@@ -875,7 +884,8 @@
             "userId": {
                 "placeholder": "User ID",
                 "charLength": "Must be between 3 to 25 characters.",
-                "format": "Letters, numbers, and dashes (-) only."
+                "format": "Letters, numbers, and dashes (-) only.",
+                "unique": "Must be unique."
             },
             "privacyNotice": "We ask for your age and country to make sure we comply with privacy laws and keep you safe.",
             "joiningNetwork": "Joining Network...",
@@ -1691,6 +1701,7 @@
         "noCredentialsYetStartFromGoal": "No credentials yet — that's fine. We'll start from your goal."
     },
     "legal": {
+        "connectionsEncrypted": "All connections are encrypted.",
         "appEcosystem": "App Ecosystem",
         "consentLayer": "Consent Layer",
         "consentLayerDefinition": "You decide what data connects to which apps, and for how long.",

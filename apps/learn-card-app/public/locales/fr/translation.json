@@ -804,6 +804,11 @@
         "logout": "Déconnexion..."
     },
     "onboarding": {
+        "ageGate": {
+            "heading": "Veuillez saisir votre âge et votre pays pour continuer",
+            "subtitle": "Nous demandons ces informations pour nous assurer de respecter les lois sur la confidentialité et d'assurer votre sécurité",
+            "checking": "Vérification..."
+        },
         "selectRole": {
             "header": "Sélectionnez ce qui vous décrit le mieux !"
         },
@@ -816,6 +821,7 @@
             "age": "Âge : {{age}}",
             "countryOfResidence": "Pays de résidence",
             "userId": {
+                "unique": "Doit être unique.",
                 "placeholder": "Identifiant",
                 "charLength": "Doit contenir entre 3 et 25 caractères.",
                 "format": "Lettres, chiffres et tirets (-) uniquement."
@@ -862,6 +868,10 @@
         },
         "consent": {
             "underage": {
+                "shareLink": "Partagez ce lien avec votre parent pour qu'il puisse terminer la configuration de la famille.",
+                "copyLink": "Copier le lien de la famille",
+                "linkCopied": "Lien copié",
+                "copyFailed": "Échec de la copie dans le presse-papiers.",
                 "heading": "Trouvez un adulte",
                 "description": "Vous aurez besoin qu'un parent ou tuteur vous ajoute à un compte familial avant de pouvoir rejoindre.",
                 "schoolCode": {
@@ -1971,6 +1981,7 @@
         }
     },
     "legal": {
+        "connectionsEncrypted": "Toutes les connexions sont chiffrées.",
         "termsOfService": "Conditions d'utilisation",
         "privacyPolicy": "Politique de confidentialité",
         "consentLayer": "Couche de consentement",
