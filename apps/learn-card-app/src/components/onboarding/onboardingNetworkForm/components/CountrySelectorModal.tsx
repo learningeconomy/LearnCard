@@ -24,7 +24,9 @@ const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, o
         <div className="w-full h-full transparent flex items-center justify-center">
             <div className="bg-white text-grayscale-800 w-full rounded-[20px] shadow-3xl z-50 font-notoSans max-w-[600px] h-[600px] max-h-[85vh] flex flex-col">
                 <div className="px-4 py-3 border-b border-grayscale-100">
-                    <h2 className="font-notoSans font-semibold text-[16px] normal-case">{m['onboarding.country.title']()}</h2>
+                    <h2 className="font-notoSans font-semibold text-[16px] normal-case">
+                        {m['onboarding.country.title']()}
+                    </h2>
                 </div>
                 <div className="p-4">
                     <IonInput
@@ -45,8 +47,7 @@ const CountrySelectorModal: React.FC<CountrySelectorModalProps> = ({ selected, o
                             <span className="text-grayscale-800 text-[16px] flex gap-[10px] items-center">
                                 <img
                                     src={`https://flagcdn.com/36x27/${code.toLowerCase()}.png`}
-                                    alt={`${label} flag`
-                                    }
+                                    alt={`${label} flag`}
                                     className="w-[36px] h-[27px] object-cover"
                                 />
                                 {label}

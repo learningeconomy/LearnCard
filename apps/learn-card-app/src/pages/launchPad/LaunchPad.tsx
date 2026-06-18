@@ -20,7 +20,10 @@ import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
 import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
-import LaunchPadAppTabs, { LaunchPadTabEnum, getTabTranslationKey } from './LaunchPadHeader/LaunchPadAppTabs';
+import LaunchPadAppTabs, {
+    LaunchPadTabEnum,
+    getTabTranslationKey,
+} from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -53,7 +56,7 @@ const LaunchPad: React.FC = () => {
             [LaunchPadTabEnum.other]: m['launchpad.tabs.other'],
             [LaunchPadTabEnum.plugins]: m['launchpad.tabs.plugins'],
             [LaunchPadTabEnum.all]: m['launchpad.tabs.all'],
-        })[tab]();
+        }[tab]());
 
     const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
@@ -343,7 +346,9 @@ const LaunchPad: React.FC = () => {
                                                                       ? 'Plugin'
                                                                       : 'Plugins'
                                                               }`
-                                                            : `${filteredAvailableApps.length} Search ${
+                                                            : `${
+                                                                  filteredAvailableApps.length
+                                                              } Search ${
                                                                   filteredAvailableApps.length === 1
                                                                       ? 'Result'
                                                                       : 'Results'
@@ -440,7 +445,9 @@ const LaunchPad: React.FC = () => {
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
                                                         {isAll
                                                             ? m['launchpad.sections.allApps']()
-                                                            : m['launchpad.sections.allCategory']({ category: tabLabel(tab) })}
+                                                            : m['launchpad.sections.allCategory']({
+                                                                  category: tabLabel(tab),
+                                                              })}
                                                     </p>
                                                 </div>
                                                 {nonPromotedAvailableApps.map(app => (
@@ -502,14 +509,16 @@ const LaunchPad: React.FC = () => {
                                         const title = isMyApps
                                             ? m['launchpad.emptyStates.noInstalledApps']()
                                             : isAll
-                                              ? m['launchpad.emptyStates.noAppsAvailable']()
-                                              : m['launchpad.emptyStates.nothingInCategory']({ category: tabLabelStr })
+                                            ? m['launchpad.emptyStates.noAppsAvailable']()
+                                            : m['launchpad.emptyStates.nothingInCategory']({
+                                                  category: tabLabelStr,
+                                              });
 
                                         const subtitle = isMyApps
                                             ? m['launchpad.emptyStates.installSomething']()
                                             : isAll
-                                              ? m['launchpad.emptyStates.checkBackLater']()
-                                              : m['launchpad.emptyStates.checkBackSoon']();
+                                            ? m['launchpad.emptyStates.checkBackLater']()
+                                            : m['launchpad.emptyStates.checkBackSoon']();
 
                                         const showCta = !isAll;
 
@@ -527,9 +536,7 @@ const LaunchPad: React.FC = () => {
                                                 </p>
                                                 {showCta && (
                                                     <button
-                                                        onClick={() =>
-                                                            setTab(LaunchPadTabEnum.all)
-                                                        }
+                                                        onClick={() => setTab(LaunchPadTabEnum.all)}
                                                         className="mt-5 px-5 py-2 rounded-full bg-grayscale-900 text-white text-sm font-semibold font-poppins"
                                                     >
                                                         Browse all apps

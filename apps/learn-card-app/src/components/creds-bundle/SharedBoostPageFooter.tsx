@@ -70,7 +70,8 @@ export const SharedBoostPageFooterMobile: React.FC = () => {
                         onClick={openToS}
                         className="flex items-center justify-center text-emerald-600 font-bold text-xs mr-2"
                     >
-                        {m['legal.termsOfService']()} <span className="text-grayscale-900">&nbsp;•</span>
+                        {m['legal.termsOfService']()}{' '}
+                        <span className="text-grayscale-900">&nbsp;•</span>
                     </button>
                     <button
                         onClick={openPP}
@@ -81,8 +82,8 @@ export const SharedBoostPageFooterMobile: React.FC = () => {
                 </div>
                 <div>
                     <p className="text-grayscale-900 text-xs text-center">
-                        POWERED BY CONSENT FLOW • {m['legal.dataOwnership']()} <br /> data • All connections
-                        are&nbsp;
+                        POWERED BY CONSENT FLOW • {m['legal.dataOwnership']()} <br /> data • All
+                        connections are&nbsp;
                         <u>encrypted</u>
                     </p>
                 </div>

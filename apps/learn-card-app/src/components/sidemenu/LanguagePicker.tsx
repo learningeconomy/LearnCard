@@ -6,7 +6,12 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import GlobeStand from 'learn-card-base/svgs/GlobeStand';
 
 import * as m from '../../paraglide/messages.js';
-import { SUPPORTED_LANGUAGES, useLocale, useChangeLocale, type SupportedLanguage } from '../../i18n';
+import {
+    SUPPORTED_LANGUAGES,
+    useLocale,
+    useChangeLocale,
+    type SupportedLanguage,
+} from '../../i18n';
 
 /**
  * Native names for every supported language, shown in their own script.
@@ -127,9 +132,7 @@ export default LanguagePicker;
  * green theme). Override via `className` if your surface needs a different
  * palette.
  */
-export const LanguagePickerCompact: React.FC<{ className?: string }> = ({
-    className = '',
-}) => {
+export const LanguagePickerCompact: React.FC<{ className?: string }> = ({ className = '' }) => {
     const currentLang = useLocale();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,

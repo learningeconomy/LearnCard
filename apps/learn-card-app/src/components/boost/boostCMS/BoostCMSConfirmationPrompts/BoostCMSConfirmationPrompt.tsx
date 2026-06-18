@@ -51,8 +51,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     let promptText = null;
 
     if (currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep) {
-        promptText =
-            m['boost.cms.confirm.publishedNoEdits']();
+        promptText = m['boost.cms.confirm.publishedNoEdits']();
     }
 
     // Show "Issue Later" only when on issueTo step AND publish step was NOT skipped

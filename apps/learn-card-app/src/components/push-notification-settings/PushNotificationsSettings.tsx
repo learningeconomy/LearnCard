@@ -17,12 +17,14 @@ const PushNotificationsSettings: React.FC<{
 }> = ({ handleCloseModal, settings, handleStateChange }) => {
     const translatedSettingOptions = pushNotificationSettingOptions.map(setting => ({
         ...setting,
-        title: setting.type === PushNotificationSettingsEnum.connectionRequests
-            ? m['settings.notifications.connectionRequests.title']()
-            : m['settings.notifications.newBoosts.title'](),
-        description: setting.type === PushNotificationSettingsEnum.connectionRequests
-            ? m['settings.notifications.connectionRequests.description']()
-            : m['settings.notifications.newBoosts.description'](),
+        title:
+            setting.type === PushNotificationSettingsEnum.connectionRequests
+                ? m['settings.notifications.connectionRequests.title']()
+                : m['settings.notifications.newBoosts.title'](),
+        description:
+            setting.type === PushNotificationSettingsEnum.connectionRequests
+                ? m['settings.notifications.connectionRequests.description']()
+                : m['settings.notifications.newBoosts.description'](),
     }));
 
     const settingsList = translatedSettingOptions.map(setting => {

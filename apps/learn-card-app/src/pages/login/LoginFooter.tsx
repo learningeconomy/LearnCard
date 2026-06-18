@@ -6,11 +6,7 @@ import { useHistory } from 'react-router-dom';
 import { IonCol } from '@ionic/react';
 import SeedPhraseModal from './SeedPhraseModal';
 
-import {
-    openToS,
-    openPP,
-    openLCwebsite,
-} from '../../helpers/externalLinkHelpers';
+import { openToS, openPP, openLCwebsite } from '../../helpers/externalLinkHelpers';
 import { useTenantLinks } from 'learn-card-base/config/TenantConfigProvider';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal } from 'learn-card-base';
