@@ -146,5 +146,3 @@ COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
 # those packages is copied and fail with "max depth exceeded". package.json files
 # are still copied before bun install so workspace resolution remains valid.
 
-RUN mkdir -p /app/.nx-cache /app/node_modules/.cache \
-    && chmod 1777 /app/.nx-cache /app/node_modules/.cache
