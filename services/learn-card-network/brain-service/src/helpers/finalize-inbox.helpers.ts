@@ -211,19 +211,18 @@ export async function finalizeInboxCredentialsForProfile(
                 // Error webhook if configured
                 if (inboxCredential.webhookUrl) {
                     try {
+                        const issuanceErrorMsg = getNotificationMessage('issuanceError', 'en', {
+                            value: cm.value,
+                        });
                         await addNotificationToQueue({
                             webhookUrl: inboxCredential.webhookUrl,
                             type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
                             from: { did: lcDid || profile.did },
                             to: { did: inboxCredential.issuerDid },
                             message: {
-                                title: getNotificationMessage('issuanceError', 'en').title,
+                                title: issuanceErrorMsg.title,
                                 body:
-                                    error instanceof Error
-                                        ? error.message
-                                        : getNotificationMessage('issuanceError', 'en', {
-                                              value: cm.value,
-                                          }).body,
+                                    error instanceof Error ? error.message : issuanceErrorMsg.body,
                             },
                             data: {
                                 inbox: {

@@ -80,7 +80,15 @@ export const useSyncLocaleToProfile = (): void => {
                 // fall back to 'en' for this user until a future successful sync.
                 log.warn('Failed to sync locale to profile', error);
             } finally {
-                if (!cancelled) writingRef.current = null;
+                // Always release the write lock, even when this effect run was
+                // cancelled mid-flight. The `writingRef.current !== null` guard
+                // above prevents any overlapping write from starting while this
+                // one owns the ref, so the async that set it is its sole owner —
+                // unconditional reset is safe. Skipping the reset on cancel would
+                // leave the ref permanently set, blocking every future sync for
+                // this component's lifetime (rapid locale toggles, or a
+                // post-invalidation profileLocale change firing cleanup).
+                writingRef.current = null;
             }
         })();
 

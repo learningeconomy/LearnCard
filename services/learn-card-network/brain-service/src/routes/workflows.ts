@@ -779,19 +779,17 @@ async function handleInboxClaimPresentation(
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {
                     const learnCard = await getLearnCard();
+                    const issuanceErrorMsg = getNotificationMessage('issuanceError', 'en', {
+                        value: contactMethod.value,
+                    });
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
                         from: { did: learnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: {
-                            title: getNotificationMessage('issuanceError', 'en').title,
-                            body:
-                                error instanceof Error
-                                    ? error.message
-                                    : getNotificationMessage('issuanceError', 'en', {
-                                          value: contactMethod.value,
-                                      }).body,
+                            title: issuanceErrorMsg.title,
+                            body: error instanceof Error ? error.message : issuanceErrorMsg.body,
                         },
                         data: {
                             inbox: {
