@@ -2057,7 +2057,9 @@
                 "anyoneCanView": "Anyone can view this credential template",
                 "whoToBoost": "Who do you want to boost?",
                 "boostMyself": "Boost Myself",
-                "boostOthers": "Boost Others"
+                "boostOthers": "Boost Others",
+                "assignAdmins": "Assign Admins",
+                "adminsDescription": "Admins are granted permission to send and edit this Boost."
             },
             "notes": {
                 "title": "Notes",
@@ -2133,7 +2135,16 @@
                 "saving": "Saving boost...",
                 "autoSaving": "Auto-saving...",
                 "loading": "Loading boost..."
-            }
+            },
+            "quit": "Quit",
+            "leavePage": {
+                "title": "Leave This Page?",
+                "body": "You have unsaved changes. Your progress will be saved locally and you can continue editing later.",
+                "leave": "Leave Page",
+                "stay": "Stay & Continue Editing"
+            },
+            "continueEditing": "Continue Editing",
+            "continueIssuing": "Continue Issuing"
         },
         "confirmDelete": "Are you sure you want to delete this boost?",
         "createBoost": "Create Boost",
@@ -2570,6 +2581,10 @@
             "details": "Details",
             "share": "Share",
             "accept": "Accept"
+        },
+        "common": {
+            "close": "Close",
+            "select": "Select"
         }
     },
     "sdk": {
@@ -3067,5 +3082,26 @@
         "noReadPermissions": "No read permissions granted",
         "writeAccess": "Write Access",
         "noWritePermissions": "No write permissions granted"
+    },
+    "recoveryPrompt": {
+        "title": "Recover Your Progress",
+        "continueEditing": "Continue Editing",
+        "startFresh": "Start Fresh",
+        "body": "We found a {{itemType}} with unsaved changes. Would you like to continue where you left off?",
+        "defaultItemType": "item"
+    },
+    "createProfile": {
+        "organizationTitle": "Create New Organization",
+        "profileTitle": "Create a New Profile",
+        "namePlaceholder": "Name",
+        "organizationNamePlaceholder": "Organization Name",
+        "taglinePlaceholder": "Tagline",
+        "organizationProfileId": "Organization Profile ID",
+        "fullNameAria": "Full Name",
+        "rules": {
+            "length": "Must be between 3 to 25 characters.",
+            "format": "Letters, numbers, and dashes (-) only.",
+            "unique": "Must be unique."
+        }
     }
 }

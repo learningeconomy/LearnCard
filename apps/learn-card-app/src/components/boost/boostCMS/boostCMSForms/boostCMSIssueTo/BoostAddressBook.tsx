@@ -453,7 +453,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </div>
                         {collectionPropName === 'admins' && (
                             <p className="px-[16px] pb-6 font-poppins text-black text-base">
-                                Admins are granted permission to send and edit this Boost.
+                                {m['boost.cms.issueTo.adminsDescription']()}
                             </p>
                         )}
 

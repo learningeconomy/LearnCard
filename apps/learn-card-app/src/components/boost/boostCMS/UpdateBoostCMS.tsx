@@ -681,7 +681,9 @@ const UpdateBoostCMS: React.FC = () => {
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boost.cms.continueIssuing']()
+                : m['boost.cms.continueEditing']();
 
         newModal(
             <BoostCMSConfirmationPrompt
@@ -768,7 +770,7 @@ const UpdateBoostCMS: React.FC = () => {
                     isLoading={loading}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boost.cms.issueTo.assignAdmins']()}
                     hideBoostShareableCode
                 />
                 {/* {isMembership && <BoostIDCardCMSMembersForm state={state} setState={setState} />} */}
@@ -871,7 +873,7 @@ const UpdateBoostCMS: React.FC = () => {
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boost.cms.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

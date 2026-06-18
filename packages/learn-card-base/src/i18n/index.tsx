@@ -28,6 +28,8 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  * inside its own catalog/resolver.
  */
 export const EN_DEFAULTS: Record<string, string> = {
+    'common.close': 'Close',
+    'common.select': 'Select',
     'verification.selfIssued': 'Self Issued',
     'verification.trustedIssuer': 'Trusted Issuer',
     'verification.unknownIssuer': 'Unknown Issuer',

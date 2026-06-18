@@ -1860,7 +1860,9 @@
                 "anyoneCanView": "Cualquiera puede ver esta plantilla de credencial",
                 "whoToBoost": "¿A quién quieres emitir un Boost?",
                 "boostMyself": "Emitirme un Boost",
-                "boostOthers": "Emitir a otros"
+                "boostOthers": "Emitir a otros",
+                "assignAdmins": "Asignar administradores",
+                "adminsDescription": "Los administradores reciben permiso para enviar y editar este Boost."
             },
             "notes": {
                 "title": "Notas",
@@ -1936,7 +1938,16 @@
                 "saving": "Guardando Boost...",
                 "autoSaving": "Guardando automáticamente...",
                 "loading": "Cargando Boost..."
-            }
+            },
+            "quit": "Salir",
+            "leavePage": {
+                "title": "¿Salir de esta página?",
+                "body": "Tienes cambios sin guardar. Tu progreso se guardará localmente y podrás continuar editando más tarde.",
+                "leave": "Salir de la página",
+                "stay": "Quedarse y seguir editando"
+            },
+            "continueEditing": "Continuar editando",
+            "continueIssuing": "Continuar emitiendo"
         },
         "menu": {
             "manageIssuances": "Gestionar emisiones",
@@ -2570,6 +2581,10 @@
             "details": "Detalles",
             "share": "Compartir",
             "accept": "Aceptar"
+        },
+        "common": {
+            "close": "Cerrar",
+            "select": "Seleccionar"
         }
     },
     "sdk": {
@@ -3067,5 +3082,26 @@
         "noReadPermissions": "No se han concedido permisos de lectura",
         "writeAccess": "Acceso de escritura",
         "noWritePermissions": "No se han concedido permisos de escritura"
+    },
+    "recoveryPrompt": {
+        "title": "Recupera tu progreso",
+        "continueEditing": "Continuar editando",
+        "startFresh": "Empezar de nuevo",
+        "body": "Encontramos un {{itemType}} con cambios sin guardar. ¿Quieres continuar donde lo dejaste?",
+        "defaultItemType": "elemento"
+    },
+    "createProfile": {
+        "organizationTitle": "Crear nueva organización",
+        "profileTitle": "Crear un nuevo perfil",
+        "namePlaceholder": "Nombre",
+        "organizationNamePlaceholder": "Nombre de la organización",
+        "taglinePlaceholder": "Eslogan",
+        "organizationProfileId": "ID de perfil de la organización",
+        "fullNameAria": "Nombre completo",
+        "rules": {
+            "length": "Debe tener entre 3 y 25 caracteres.",
+            "format": "Solo letras, números y guiones (-).",
+            "unique": "Debe ser único."
+        }
     }
 }

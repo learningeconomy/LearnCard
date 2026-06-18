@@ -1860,7 +1860,9 @@
                 "anyoneCanView": "Tout le monde peut voir ce modèle de crédential",
                 "whoToBoost": "À qui voulez-vous délivrer un Boost ?",
                 "boostMyself": "Me délivrer un Boost",
-                "boostOthers": "Délivrer à d'autres"
+                "boostOthers": "Délivrer à d'autres",
+                "assignAdmins": "Attribuer des administrateurs",
+                "adminsDescription": "Les administrateurs reçoivent l'autorisation d'envoyer et de modifier ce Boost."
             },
             "notes": {
                 "title": "Notes",
@@ -1936,7 +1938,16 @@
                 "saving": "Enregistrement du Boost...",
                 "autoSaving": "Enregistrement automatique...",
                 "loading": "Chargement du Boost..."
-            }
+            },
+            "quit": "Quitter",
+            "leavePage": {
+                "title": "Quitter cette page ?",
+                "body": "Vous avez des modifications non enregistrées. Votre progression sera enregistrée localement et vous pourrez continuer à modifier plus tard.",
+                "leave": "Quitter la page",
+                "stay": "Rester et continuer la modification"
+            },
+            "continueEditing": "Continuer la modification",
+            "continueIssuing": "Continuer l'émission"
         },
         "menu": {
             "manageIssuances": "Gérer les émissions",
@@ -2570,6 +2581,10 @@
             "details": "Détails",
             "share": "Partager",
             "accept": "Accepter"
+        },
+        "common": {
+            "close": "Fermer",
+            "select": "Sélectionner"
         }
     },
     "sdk": {
@@ -3067,5 +3082,26 @@
         "noReadPermissions": "Aucune autorisation de lecture accordée",
         "writeAccess": "Accès en écriture",
         "noWritePermissions": "Aucune autorisation d'écriture accordée"
+    },
+    "recoveryPrompt": {
+        "title": "Récupérez votre progression",
+        "continueEditing": "Continuer la modification",
+        "startFresh": "Recommencer",
+        "body": "Nous avons trouvé un {{itemType}} avec des modifications non enregistrées. Voulez-vous reprendre là où vous vous êtes arrêté ?",
+        "defaultItemType": "élément"
+    },
+    "createProfile": {
+        "organizationTitle": "Créer une nouvelle organisation",
+        "profileTitle": "Créer un nouveau profil",
+        "namePlaceholder": "Nom",
+        "organizationNamePlaceholder": "Nom de l'organisation",
+        "taglinePlaceholder": "Slogan",
+        "organizationProfileId": "ID de profil de l'organisation",
+        "fullNameAria": "Nom complet",
+        "rules": {
+            "length": "Doit comporter entre 3 et 25 caractères.",
+            "format": "Lettres, chiffres et tirets (-) uniquement.",
+            "unique": "Doit être unique."
+        }
     }
 }

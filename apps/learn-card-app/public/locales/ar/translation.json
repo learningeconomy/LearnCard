@@ -1860,7 +1860,9 @@
                 "anyoneCanView": "يمكن لأي شخص عرض قالب الاعتماد هذا",
                 "whoToBoost": "لمن تريد إصدار Boost؟",
                 "boostMyself": "إصدار Boost لي",
-                "boostOthers": "إصدار Boost لآخرين"
+                "boostOthers": "إصدار Boost لآخرين",
+                "assignAdmins": "تعيين مسؤولين",
+                "adminsDescription": "يُمنح المسؤولون إذن إرسال هذا الـ Boost وتحريره."
             },
             "notes": {
                 "title": "ملاحظات",
@@ -1936,7 +1938,16 @@
                 "saving": "جارٍ حفظ Boost...",
                 "autoSaving": "حفظ تلقائي...",
                 "loading": "جارٍ تحميل Boost..."
-            }
+            },
+            "quit": "خروج",
+            "leavePage": {
+                "title": "مغادرة هذه الصفحة؟",
+                "body": "لديك تغييرات غير محفوظة. سيتم حفظ تقدّمك محليًا ويمكنك متابعة التحرير لاحقًا.",
+                "leave": "مغادرة الصفحة",
+                "stay": "البقاء ومتابعة التحرير"
+            },
+            "continueEditing": "متابعة التحرير",
+            "continueIssuing": "متابعة الإصدار"
         },
         "menu": {
             "manageIssuances": "إدارة الإصدارات",
@@ -2570,6 +2581,10 @@
             "details": "التفاصيل",
             "share": "مشاركة",
             "accept": "قبول"
+        },
+        "common": {
+            "close": "إغلاق",
+            "select": "تحديد"
         }
     },
     "sdk": {
@@ -3067,5 +3082,26 @@
         "noReadPermissions": "لم يتم منح أذونات قراءة",
         "writeAccess": "وصول الكتابة",
         "noWritePermissions": "لم يتم منح أذونات كتابة"
+    },
+    "recoveryPrompt": {
+        "title": "استعادة تقدّمك",
+        "continueEditing": "متابعة التحرير",
+        "startFresh": "البدء من جديد",
+        "body": "وجدنا {{itemType}} يحتوي على تغييرات غير محفوظة. هل تريد المتابعة من حيث توقفت؟",
+        "defaultItemType": "عنصر"
+    },
+    "createProfile": {
+        "organizationTitle": "إنشاء مؤسسة جديدة",
+        "profileTitle": "إنشاء ملف تعريف جديد",
+        "namePlaceholder": "الاسم",
+        "organizationNamePlaceholder": "اسم المؤسسة",
+        "taglinePlaceholder": "شعار",
+        "organizationProfileId": "معرّف ملف تعريف المؤسسة",
+        "fullNameAria": "الاسم الكامل",
+        "rules": {
+            "length": "يجب أن يتراوح بين 3 و25 حرفًا.",
+            "format": "أحرف وأرقام وشرطات (-) فقط.",
+            "unique": "يجب أن يكون فريدًا."
+        }
     }
 }

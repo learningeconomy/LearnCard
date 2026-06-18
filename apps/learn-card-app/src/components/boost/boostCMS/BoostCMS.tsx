@@ -369,11 +369,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <div className="flex flex-col items-center justify-center w-full">
                         <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
                             <h6 className="font-semibold text-black font-poppins text-xl mb-2">
-                                Leave This Page?
+                                {m['boost.cms.leavePage.title']()}
                             </h6>
                             <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
-                                You have unsaved changes. Your progress will be saved locally and
-                                you can continue editing later.
+                                {m['boost.cms.leavePage.body']()}
                             </p>
                             <button
                                 onClick={() => {
@@ -383,13 +382,13 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 }}
                                 className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
                             >
-                                Leave Page
+                                {m['boost.cms.leavePage.leave']()}
                             </button>
                             <button
                                 onClick={() => closeModalRef.current()}
                                 className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
                             >
-                                Stay & Continue Editing
+                                {m['boost.cms.leavePage.stay']()}
                             </button>
                         </div>
                     </div>
@@ -985,7 +984,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boost.cms.continueIssuing']()
+                : m['boost.cms.continueEditing']();
 
         newModal(
             <BoostCMSConfirmationPrompt
@@ -1088,7 +1089,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boost.cms.issueTo.assignAdmins']()}
                     hideBoostShareableCode
                 />
             </>
@@ -1168,7 +1169,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boost.cms.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>
