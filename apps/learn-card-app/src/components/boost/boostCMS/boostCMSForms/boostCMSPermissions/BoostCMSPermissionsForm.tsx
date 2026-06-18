@@ -36,7 +36,9 @@ const BoostCMSPermissionsForm: React.FC<{
 
                     <div className="w-full flex items-center justify-between py-[8px]">
                         <div className="w-10/12">
-                            <p className="text-grayscale-900 font-medium m-0">{m['boost.cms.permissions.viewTemplate']()}</p>
+                            <p className="text-grayscale-900 font-medium m-0">
+                                {m['boost.cms.permissions.viewTemplate']()}
+                            </p>
                             <p className="text-grayscale-600 text-xs m-0">
                                 {m['boost.cms.permissions.viewTemplateDescription']()}
                             </p>
@@ -61,7 +63,9 @@ const BoostCMSPermissionsForm: React.FC<{
 
                     <div className="w-full flex items-center justify-between py-[8px]">
                         <div className="w-10/12">
-                            <p className="text-grayscale-900 font-medium m-0">{m['boost.cms.permissions.editTemplate']()}</p>
+                            <p className="text-grayscale-900 font-medium m-0">
+                                {m['boost.cms.permissions.editTemplate']()}
+                            </p>
                             <p className="text-grayscale-600 text-xs m-0">
                                 {m['boost.cms.permissions.editTemplateDescription']()}
                             </p>
@@ -90,7 +94,9 @@ const BoostCMSPermissionsForm: React.FC<{
 
                     <div className="w-full flex items-center justify-between py-[8px]">
                         <div className="w-10/12">
-                            <p className="text-grayscale-900 font-medium m-0">{m['boost.cms.permissions.sendTemplate']()}</p>
+                            <p className="text-grayscale-900 font-medium m-0">
+                                {m['boost.cms.permissions.sendTemplate']()}
+                            </p>
                             <p className="text-grayscale-600 text-xs m-0">
                                 {m['boost.cms.permissions.sendTemplateDescription']()}
                             </p>

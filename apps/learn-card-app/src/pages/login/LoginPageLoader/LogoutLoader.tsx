@@ -26,28 +26,32 @@ export const LogoutLoadingPage: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent fullscreen className="flex items-center justify-center" style={{ '--background': colors[currentColorIndex] } as React.CSSProperties}>
+            <IonContent
+                fullscreen
+                className="flex items-center justify-center"
+                style={{ '--background': colors[currentColorIndex] } as React.CSSProperties}
+            >
                 <IonRow
                     className="h-full w-full transition-colors duration-1000 ease-in-out flex items-center justify-center text-white text-2xl"
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
                     <div className="flex flex-col items-center justify-center">
-                    <img
-                        src={textLogo}
-                        alt="Logo"
-                        className="mb-8 max-w-[300px] max-h-[80px] object-contain"
-                    />
-                    <div className="w-full flex items-center justify-center text-center px-6">
-                        <Typewriter
-                            options={{
-                                strings: [m['login.logout']()],
-                                autoStart: true,
-                                loop: true,
-                                delay: 70,
-                                deleteSpeed: 50,
-                            }}
+                        <img
+                            src={textLogo}
+                            alt="Logo"
+                            className="mb-8 max-w-[300px] max-h-[80px] object-contain"
                         />
-                    </div>
+                        <div className="w-full flex items-center justify-center text-center px-6">
+                            <Typewriter
+                                options={{
+                                    strings: [m['login.logout']()],
+                                    autoStart: true,
+                                    loop: true,
+                                    delay: 70,
+                                    deleteSpeed: 50,
+                                }}
+                            />
+                        </div>
                     </div>
                 </IonRow>
             </IonContent>

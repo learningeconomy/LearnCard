@@ -51,7 +51,10 @@ const BoostCMSTitleForm: React.FC<{
         });
     };
 
-    const placeHolder = isID || isMembership ? m['boost.cms.title.titlePlaceholder']() : m['boost.cms.title.boostTitlePlaceholder']();
+    const placeHolder =
+        isID || isMembership
+            ? m['boost.cms.title.titlePlaceholder']()
+            : m['boost.cms.title.boostTitlePlaceholder']();
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-6">

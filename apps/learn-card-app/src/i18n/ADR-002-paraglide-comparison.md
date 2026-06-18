@@ -92,20 +92,23 @@ pre-existing worktree infrastructure (see Check #1). Architectural analysis
 substitutes:
 
 **Known facts** (confirmed via [opral/paraglide-js#22](https://github.com/opral/paraglide-js/issues/22), [#222](https://github.com/opral/paraglide-js/issues/222)):
-- Paraglide v2 single-bundles all locales inline into each message function.
-  Per-locale code splitting is explicitly closed as "not planned."
-- Maintainers flag 10 languages as the threshold where multilingual payload
-  starts dominating tree-shaking benefits.
+
+-   Paraglide v2 single-bundles all locales inline into each message function.
+    Per-locale code splitting is explicitly closed as "not planned."
+-   Maintainers flag 10 languages as the threshold where multilingual payload
+    starts dominating tree-shaking benefits.
 
 **Rough estimate for our case** (~300 messages × ~40 chars avg per locale
 string; growing to ~550 messages at rollout):
-- 4 locales ≈ 12–18 KB gzipped
-- 10 locales ≈ 30–45 KB
-- 20 locales ≈ 60–90 KB
+
+-   4 locales ≈ 12–18 KB gzipped
+-   10 locales ≈ 30–45 KB
+-   20 locales ≈ 60–90 KB
 
 **Comparison point**: react-i18next + http-backend ships ~3 KB English inline
-+ ~40 KB runtime = ~43 KB per user regardless of locale count (non-EN locales
-lazy-load).
+
+-   ~40 KB runtime = ~43 KB per user regardless of locale count (non-EN locales
+    lazy-load).
 
 **Threshold analysis**: If LearnCard's 2-year language ceiling stays at 6–10
 languages (current projection based on regional partnerships), Paraglide wins.
@@ -115,15 +118,15 @@ before finalising the library choice.
 
 ## Bundle-size delta vs react-i18next baseline
 
-| Metric | react-i18next (PR #1255) | Paraglide (this branch) |
-|--------|--------------------------|-------------------------|
-| i18n runtime | ~40 KB (i18next + plugins) | ~2 KB (runtime.js) |
-| Active locale | ~3 KB EN inline | All 4 locales inline (~15 KB) |
-| Non-active locales | Lazy-loaded on demand | Inlined (no lazy load) |
-| **Total i18n (gzipped est.)** | ~43 KB | ~17 KB |
-| Flash-of-key risk | Mitigated (3 guards) | Zero (compile-time) |
-| TypeScript safety | Partial (string keys) | Full (generated functions) |
-| Language switching | Async (chunk fetch) | Synchronous |
+| Metric                        | react-i18next (PR #1255)   | Paraglide (this branch)       |
+| ----------------------------- | -------------------------- | ----------------------------- |
+| i18n runtime                  | ~40 KB (i18next + plugins) | ~2 KB (runtime.js)            |
+| Active locale                 | ~3 KB EN inline            | All 4 locales inline (~15 KB) |
+| Non-active locales            | Lazy-loaded on demand      | Inlined (no lazy load)        |
+| **Total i18n (gzipped est.)** | ~43 KB                     | ~17 KB                        |
+| Flash-of-key risk             | Mitigated (3 guards)       | Zero (compile-time)           |
+| TypeScript safety             | Partial (string keys)      | Full (generated functions)    |
+| Language switching            | Async (chunk fetch)        | Synchronous                   |
 
 **Note**: These are architectural estimates. Actual measurements blocked by
 pre-existing build infrastructure. Re-measure once `npx vite build` works.
@@ -139,12 +142,12 @@ to Paraglide's markup-start/markup-end parts. A `renderParts()` helper
 
 ### Messages migrated
 
-| Message | Original (`<Trans>`) | Paraglide (`.parts()`) |
-|---------|---------------------|----------------------|
-| `sidemenu.footer.poweredBy` | `<0>Consent Flow</0>` with `<span>` wrapper | `renderParts(m.sidemenu_footer_poweredby1.parts(), {'0': <span/>})` |
-| `sidemenu.footer.connectionsEncrypted` | `<0>encrypted.</0>` with `<span>` wrapper | `renderParts(m.sidemenu_footer_connectionsencrypted1.parts(), {'0': <span/>})` |
-| `passport.buildMyLearnCard.stepsCompleted` | `<0>{{completed}}</0> of <1>{{total}}</1>` | `renderParts(m.passport_buildmylearncard_stepscompleted4.parts({completed, total}), {'0': <span/>, '1': <span/>})` |
-| `passport.resumeBuilder.updatedToday` | `Updated <0>today</0>` | `renderParts(m.passport_resumebuilder_updatedtoday2.parts(), {'0': <span/>})` |
+| Message                                    | Original (`<Trans>`)                        | Paraglide (`.parts()`)                                                                                             |
+| ------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `sidemenu.footer.poweredBy`                | `<0>Consent Flow</0>` with `<span>` wrapper | `renderParts(m.sidemenu_footer_poweredby1.parts(), {'0': <span/>})`                                                |
+| `sidemenu.footer.connectionsEncrypted`     | `<0>encrypted.</0>` with `<span>` wrapper   | `renderParts(m.sidemenu_footer_connectionsencrypted1.parts(), {'0': <span/>})`                                     |
+| `passport.buildMyLearnCard.stepsCompleted` | `<0>{{completed}}</0> of <1>{{total}}</1>`  | `renderParts(m.passport_buildmylearncard_stepscompleted4.parts({completed, total}), {'0': <span/>, '1': <span/>})` |
+| `passport.resumeBuilder.updatedToday`      | `Updated <0>today</0>`                      | `renderParts(m.passport_resumebuilder_updatedtoday2.parts(), {'0': <span/>})`                                      |
 
 The Arabic `stepsCompleted` message has different part ordering (text before
 markup-start for "اكتملت") — Paraglide handles this correctly per locale.
@@ -161,9 +164,9 @@ type Sidemenu_Addto1Inputs = { brand: NonNullable<unknown> };
 const sidemenu_addto1 = (inputs: Sidemenu_Addto1Inputs, ...) => LocalizedString;
 ```
 
-- **Missing parameter** → TypeScript error at the call site
-- **Wrong parameter type** → TypeScript error
-- **Renamed/split key** → Import breaks at the barrel (`messages.js` re-exports every key)
+-   **Missing parameter** → TypeScript error at the call site
+-   **Wrong parameter type** → TypeScript error
+-   **Renamed/split key** → Import breaks at the barrel (`messages.js` re-exports every key)
 
 This is structurally stronger than react-i18next's `t('key.path')` string approach,
 where key typos are runtime failures unless lint rules catch them upfront.
@@ -174,24 +177,24 @@ would cause `tsc` to flag every consumer call site because the export name in
 
 ## Capacitor / Capgo Live Updates notes
 
-- **Single bundle**: All locale strings are inlined. No per-locale chunk
-  management needed for OTA updates.
-- **Capgo**: Ships the entire dist/ as one payload — same behavior as current.
-  No additional chunk-splitting complexity.
-- **No SSR dependency**: The "experimental middleware locale splitting" mode
-  requires SSR — not applicable.
+-   **Single bundle**: All locale strings are inlined. No per-locale chunk
+    management needed for OTA updates.
+-   **Capgo**: Ships the entire dist/ as one payload — same behavior as current.
+    No additional chunk-splitting complexity.
+-   **No SSR dependency**: The "experimental middleware locale splitting" mode
+    requires SSR — not applicable.
 
 ## DX comparison
 
-| Aspect | react-i18next | Paraglide |
-|--------|--------------|-----------|
-| **Authoring** | `t('key.path', 'default', {param})` | `m.key_path({param})` |
-| **Autocomplete** | No (string key) | Yes (exported function) |
-| **Refactoring** | String keys break silently | Compile errors on rename |
-| **Inline markup** | `<Trans>` component | `renderParts(m.foo.parts(), {...})` |
-| **Adding a key** | Add to JSON + use `t()` | Add to JSON + recompile + use `m.*()` |
-| **Mental model** | Runtime key-value lookup | Build-time code generation |
-| **Bundle overhead** | ~40 KB runtime | ~2 KB runtime |
+| Aspect              | react-i18next                       | Paraglide                             |
+| ------------------- | ----------------------------------- | ------------------------------------- |
+| **Authoring**       | `t('key.path', 'default', {param})` | `m.key_path({param})`                 |
+| **Autocomplete**    | No (string key)                     | Yes (exported function)               |
+| **Refactoring**     | String keys break silently          | Compile errors on rename              |
+| **Inline markup**   | `<Trans>` component                 | `renderParts(m.foo.parts(), {...})`   |
+| **Adding a key**    | Add to JSON + use `t()`             | Add to JSON + recompile + use `m.*()` |
+| **Mental model**    | Runtime key-value lookup            | Build-time code generation            |
+| **Bundle overhead** | ~40 KB runtime                      | ~2 KB runtime                         |
 
 **Subjective**: `m.some_key()` feels cleaner to author than `t('some.key', 'default')`.
 The TypeScript autocomplete alone is compelling. The compile-time guarantee
@@ -202,15 +205,15 @@ mitigations to prevent.
 
 Based on the POC slice migration (~100 strings across ~14 files, ~60–90 minutes):
 
-| Activity | Files | Strings | Est. time |
-|----------|-------|---------|-----------|
-| POC slice (this commit) | 14 | ~100 | 60–90 min |
-| Auth flows | ~8 | ~40 | 30–45 min |
-| Boost CMS | ~12 | ~60 | 45–60 min |
-| AI chat | ~15 | ~50 | 45–60 min |
-| App store | ~5 | ~20 | 15–30 min |
-| Notifications | ~3 | ~15 | 10–20 min |
-| Settings | ~5 | ~25 | 15–30 min |
+| Activity                | Files   | Strings  | Est. time      |
+| ----------------------- | ------- | -------- | -------------- |
+| POC slice (this commit) | 14      | ~100     | 60–90 min      |
+| Auth flows              | ~8      | ~40      | 30–45 min      |
+| Boost CMS               | ~12     | ~60      | 45–60 min      |
+| AI chat                 | ~15     | ~50      | 45–60 min      |
+| App store               | ~5      | ~20      | 15–30 min      |
+| Notifications           | ~3      | ~15      | 10–20 min      |
+| Settings                | ~5      | ~25      | 15–30 min      |
 | **Total rollout sweep** | **~48** | **~210** | **~3–5 hours** |
 
 The migration is mechanical: import `* as m`, replace `t('key.path', 'default')`
@@ -227,6 +230,7 @@ libraries need translated strings.
 **Leaning: Paraglide** — pending native build verification + on-device QA.
 
 **Reasons**:
+
 1. **Zero flash-of-key** — structural guarantee, not mitigated
 2. **TypeScript safety** — compile-time errors for missing/wrong keys
 3. **Better DX** — autocomplete, safe refactoring
@@ -235,6 +239,7 @@ libraries need translated strings.
 6. **All 4 `<Trans>` messages migrated cleanly** — no blocking issues
 
 **Risks to validate** (on-device QA + native builds):
+
 1. **Bundle-size growth at scale** — re-measure Check #5 once builds work.
    If 20-locale gzipped delta > 150 KB, reconsider react-i18next.
 2. **Native iOS + Android behavior** — Capacitor webview parse time, language
@@ -249,11 +254,11 @@ is low-cost.
 
 ## References
 
-- ADR-001: `apps/learn-card-app/src/i18n/ADR-001-library-spike.md`
-- Confluence: [LC-1831 — i18n Multi-Language Support Investigation](https://welibrary.atlassian.net/wiki/spaces/~896526201/pages/977108993)
-- PR #1255 (react-i18next baseline): feat/lc-1831-i18n-poc
-- Paraglide branch: feat/lc-1831-paraglide-exploration
-- [Paraglide JS docs](https://inlang.com/m/gerre34r/library-inlang-paraglideJs)
-- [opral/paraglide-js#22](https://github.com/opral/paraglide-js/issues/22) — per-locale splitting closed as not planned
-- [opral/paraglide-js#222](https://github.com/opral/paraglide-js/issues/222) — maintainer benchmark guidance
-- [Why I Replaced i18next with Paraglide JS](https://dropanote.de/en/blog/20250726-why-i-replaced-i18next-with-paraglide-js/)
+-   ADR-001: `apps/learn-card-app/src/i18n/ADR-001-library-spike.md`
+-   Confluence: [LC-1831 — i18n Multi-Language Support Investigation](https://welibrary.atlassian.net/wiki/spaces/~896526201/pages/977108993)
+-   PR #1255 (react-i18next baseline): feat/lc-1831-i18n-poc
+-   Paraglide branch: feat/lc-1831-paraglide-exploration
+-   [Paraglide JS docs](https://inlang.com/m/gerre34r/library-inlang-paraglideJs)
+-   [opral/paraglide-js#22](https://github.com/opral/paraglide-js/issues/22) — per-locale splitting closed as not planned
+-   [opral/paraglide-js#222](https://github.com/opral/paraglide-js/issues/222) — maintainer benchmark guidance
+-   [Why I Replaced i18next with Paraglide JS](https://dropanote.de/en/blog/20250726-why-i-replaced-i18next-with-paraglide-js/)

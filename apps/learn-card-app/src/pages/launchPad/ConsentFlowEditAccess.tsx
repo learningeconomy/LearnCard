@@ -258,7 +258,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         )}
                         {!contractReadDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not reading any data from your {brandingConfig?.name}
+                                This contract is not reading any data from your{' '}
+                                {brandingConfig?.name}
                             </p>
                         )}
                     </IonCol>

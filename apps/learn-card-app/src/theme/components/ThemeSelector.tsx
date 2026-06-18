@@ -132,7 +132,14 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                             className="w-[30px] h-[30px] object-contain"
                                         />
                                     )}
-                                    <span className="ml-1">{({colorful: m['theme.names.colorful'], formal: m['theme.names.formal'], vetpass: m['theme.names.vetpass']})[btn.theme as 'colorful' | 'formal' | 'vetpass']?.() ?? btn.label}</span>
+                                    <span className="ml-1">
+                                        {{
+                                            colorful: m['theme.names.colorful'],
+                                            formal: m['theme.names.formal'],
+                                            vetpass: m['theme.names.vetpass'],
+                                        }[btn.theme as 'colorful' | 'formal' | 'vetpass']?.() ??
+                                            btn.label}
+                                    </span>
                                 </button>
                             );
                         })}

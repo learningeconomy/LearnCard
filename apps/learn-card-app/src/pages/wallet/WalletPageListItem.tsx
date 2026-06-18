@@ -80,7 +80,9 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <div
             role="button"
             onClick={() => handleItemClick(categoryType)}
-            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white ${!passportCardBgColor ? `bg-${primaryColor}` : ''}`}
+            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white ${
+                !passportCardBgColor ? `bg-${primaryColor}` : ''
+            }`}
             style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
         >
             <div className="flex items-center justify-center relative">
@@ -92,7 +94,11 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
             </div>
 
             <div className="flex flex-col items-start justify-center">
-                <p className={`font-poppins text-[17px] font-[600] leading-[130%] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
+                <p
+                    className={`font-poppins text-[17px] font-[600] leading-[130%] ${
+                        passportCardTextColor ?? 'text-grayscale-900'
+                    }`}
+                >
                     {CATEGORY_TITLE[walletPageItem.categoryId]?.() ?? walletPageItem.labels.plural}
                 </p>
                 {countDisplay}

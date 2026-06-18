@@ -28,7 +28,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                     {/* Decorative background elements */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-                    
+
                     {/* Floating icons */}
                     <div className="absolute top-3 right-4 opacity-20">
                         <Code2 className="w-8 h-8 text-white" />

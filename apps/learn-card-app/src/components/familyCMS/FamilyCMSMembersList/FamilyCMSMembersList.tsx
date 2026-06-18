@@ -184,20 +184,22 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                         <div className="flex mb-2">
                             <button
                                 onClick={() => setActiveTab(FamilyMembersListTabsEnum.all)}
-                                className={`text-sm font-poppins font-semibold mr-2 ${activeTab === FamilyMembersListTabsEnum.all
+                                className={`text-sm font-poppins font-semibold mr-2 ${
+                                    activeTab === FamilyMembersListTabsEnum.all
                                         ? 'text-[#0094B4]'
                                         : 'text-grayscale-700'
-                                    }`}
+                                }`}
                             >
                                 All
                             </button>
                             {childsListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(FamilyMembersListTabsEnum.child)}
-                                    className={`text-sm font-poppins font-semibold mr-2  ${activeTab === FamilyMembersListTabsEnum.child
+                                    className={`text-sm font-poppins font-semibold mr-2  ${
+                                        activeTab === FamilyMembersListTabsEnum.child
                                             ? 'text-[#0094B4]'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
                                     {childsListCount}{' '}
                                     {childsListCount === 1
@@ -209,10 +211,11 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                             {GuardiansListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(FamilyMembersListTabsEnum.guardian)}
-                                    className={`text-sm font-poppins font-semibold mr-2  ${activeTab === FamilyMembersListTabsEnum.guardian
+                                    className={`text-sm font-poppins font-semibold mr-2  ${
+                                        activeTab === FamilyMembersListTabsEnum.guardian
                                             ? 'text-[#0094B4]'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
                                     {GuardiansListCount}{' '}
                                     {GuardiansListCount === 1

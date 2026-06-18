@@ -4,7 +4,12 @@ import { m } from '../../../../paraglide/messages.js';
 
 import { ArrowUp } from 'lucide-react';
 
-import { isPlatformIOS, ProfilePicture, useDeviceTypeByWidth, useKeyboardHeight } from 'learn-card-base';
+import {
+    isPlatformIOS,
+    ProfilePicture,
+    useDeviceTypeByWidth,
+    useKeyboardHeight,
+} from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';

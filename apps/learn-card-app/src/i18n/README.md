@@ -7,11 +7,11 @@ This directory contains the i18n infrastructure for the LearnCard app using
 
 ### Supported languages
 
-| Code | Name | RTL |
-|------|------|-----|
-| `en` | English | No |
-| `es` | Español | No |
-| `de` | Deutsch | No |
+| Code | Name    | RTL     |
+| ---- | ------- | ------- |
+| `en` | English | No      |
+| `es` | Español | No      |
+| `de` | Deutsch | No      |
 | `ar` | العربية | **Yes** |
 
 ### Adding a translation key
@@ -24,14 +24,20 @@ This directory contains the i18n infrastructure for the LearnCard app using
 import * as m from '<relative-path>/paraglide/messages.js';
 
 // Simple message:
-{m.some_key()}
+{
+    m.some_key();
+}
 
 // With parameters:
-{m.some_key({ param: value })}
+{
+    m.some_key({ param: value });
+}
 
 // With inline markup (replaces <Trans>):
 import { renderParts } from '<relative-path>/i18n';
-{renderParts(m.some_key.parts(), { '0': <span className="bold" /> })}
+{
+    renderParts(m.some_key.parts(), { '0': <span className="bold" /> });
+}
 ```
 
 ### Adding a new language
@@ -69,11 +75,12 @@ Arabic (`ar`) is RTL. The `LocaleProvider` (in `./index.ts`) sets
 `document.documentElement.dir = 'rtl'` for `ar` via a React effect.
 
 **CSS conventions:**
-- Use Tailwind's `rtl:` variant for directional overrides
-- Use CSS logical properties (`margin-inline-start`, `padding-inline-end`,
-  `inset-inline`, etc.) in SCSS instead of `margin-left/right`
-- Use `DirectionalIcon` wrapper for icons that need to flip in RTL
-  (the `useLocale()` hook provides the current locale)
+
+-   Use Tailwind's `rtl:` variant for directional overrides
+-   Use CSS logical properties (`margin-inline-start`, `padding-inline-end`,
+    `inset-inline`, etc.) in SCSS instead of `margin-left/right`
+-   Use `DirectionalIcon` wrapper for icons that need to flip in RTL
+    (the `useLocale()` hook provides the current locale)
 
 ## Architecture
 

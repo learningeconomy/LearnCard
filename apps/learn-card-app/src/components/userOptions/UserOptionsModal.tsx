@@ -42,7 +42,7 @@ const UserOptions: React.FC<{
         handleCloseModal: () => dismissSheetModal(),
         showCloseButton: false,
         showFixedFooter: true,
-        handleLogout: () => onLogout()
+        handleLogout: () => onLogout(),
     });
 
     const userOptions = [
@@ -56,7 +56,7 @@ const UserOptions: React.FC<{
     const onLogout = () => {
         handleCloseModal();
         handleLogout();
-    }
+    };
 
     const fixedFooterStyles = showFixedFooter ? 'absolute bottom-[25%] left-0 w-full' : '';
 
@@ -82,7 +82,8 @@ const UserOptions: React.FC<{
                             <button
                                 onClick={() =>
                                     presentCenterModal({
-                                        cssClass: 'center-modal user-options-modal delete-user-modal',
+                                        cssClass:
+                                            'center-modal user-options-modal delete-user-modal',
                                         backdropDismiss: false,
                                         showBackdrop: false,
                                     })

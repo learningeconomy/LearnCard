@@ -58,10 +58,7 @@ import { useHistory } from 'react-router-dom';
 import { AnalyticsEvents, useAnalytics } from '../../analytics';
 import { pathwayStore } from '../../stores/pathways';
 
-import {
-    computePathwayProgress,
-    findParentPathway,
-} from './core/composition';
+import { computePathwayProgress, findParentPathway } from './core/composition';
 
 import type { Pathway } from './types';
 
@@ -69,14 +66,9 @@ import type { Pathway } from './types';
 // Presentation-only progress badge
 // ---------------------------------------------------------------------------
 
-const ProgressBadge: React.FC<{ completed: number; total: number }> = ({
-    completed,
-    total,
-}) => {
+const ProgressBadge: React.FC<{ completed: number; total: number }> = ({ completed, total }) => {
     if (total === 0) {
-        return (
-            <span className="text-[11px] text-grayscale-500">No steps yet</span>
-        );
+        return <span className="text-[11px] text-grayscale-500">No steps yet</span>;
     }
 
     return (
@@ -175,18 +167,11 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                 */}
                 <span
                     className={`shrink-0 w-4 h-4 mt-0.5 rounded-full flex items-center justify-center ${
-                        isActive
-                            ? 'bg-emerald-600 text-white'
-                            : 'border border-grayscale-300'
+                        isActive ? 'bg-emerald-600 text-white' : 'border border-grayscale-300'
                     }`}
                     aria-hidden
                 >
-                    {isActive && (
-                        <IonIcon
-                            icon={checkmarkOutline}
-                            className="text-[10px]"
-                        />
-                    )}
+                    {isActive && <IonIcon icon={checkmarkOutline} className="text-[10px]" />}
                 </span>
 
                 <span className="min-w-0 flex-1">
@@ -195,8 +180,8 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                             isActive
                                 ? 'font-medium text-grayscale-900'
                                 : isChild
-                                    ? 'text-grayscale-700'
-                                    : 'text-grayscale-800'
+                                ? 'text-grayscale-700'
+                                : 'text-grayscale-800'
                         }`}
                     >
                         {pathway.title}
@@ -213,9 +198,11 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                             beat in compressed form.
                         */}
                         {isCompleted ? (
-                            <span className="inline-flex items-center gap-1
+                            <span
+                                className="inline-flex items-center gap-1
                                              text-[11px] font-semibold uppercase
-                                             tracking-wide text-emerald-700">
+                                             tracking-wide text-emerald-700"
+                            >
                                 <IonIcon
                                     icon={sparklesOutline}
                                     className="text-[11px]"
@@ -224,18 +211,12 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                                 Completed
                             </span>
                         ) : (
-                            <ProgressBadge
-                                completed={progress.completed}
-                                total={progress.total}
-                            />
+                            <ProgressBadge completed={progress.completed} total={progress.total} />
                         )}
 
                         {isChild && (
                             <>
-                                <span
-                                    aria-hidden
-                                    className="text-grayscale-300 text-[10px]"
-                                >
+                                <span aria-hidden className="text-grayscale-300 text-[10px]">
                                     ·
                                 </span>
 
@@ -255,9 +236,11 @@ const PathwayRow: React.FC<PathwayRowProps> = ({
                         quote also opens the pathway.
                     */}
                     {isCompleted && pathway.completionReflection && (
-                        <span className="block mt-1 text-[11px] italic
+                        <span
+                            className="block mt-1 text-[11px] italic
                                          text-grayscale-500 leading-snug
-                                         line-clamp-2">
+                                         line-clamp-2"
+                        >
                             &ldquo;{pathway.completionReflection}&rdquo;
                         </span>
                     )}
@@ -327,9 +310,7 @@ interface PathwaySwitcherProps {
     variant?: SwitcherVariant;
 }
 
-const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
-    variant = 'chip',
-}) => {
+const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) => {
     const history = useHistory();
     const analytics = useAnalytics();
 
@@ -385,11 +366,9 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
         // first; everything else is alphabetical for stability.
         rootList.sort((a, b) => {
             const aHasActive =
-                a.id === activeId ||
-                (byParent.get(a.id) ?? []).some(c => c.id === activeId);
+                a.id === activeId || (byParent.get(a.id) ?? []).some(c => c.id === activeId);
             const bHasActive =
-                b.id === activeId ||
-                (byParent.get(b.id) ?? []).some(c => c.id === activeId);
+                b.id === activeId || (byParent.get(b.id) ?? []).some(c => c.id === activeId);
 
             if (aHasActive && !bHasActive) return -1;
             if (bHasActive && !aHasActive) return 1;
@@ -404,7 +383,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
         for (const [parentId, kids] of byParent.entries()) {
             byParent.set(
                 parentId,
-                [...kids].sort((a, b) => a.title.localeCompare(b.title)),
+                [...kids].sort((a, b) => a.title.localeCompare(b.title))
             );
         }
 
@@ -481,8 +460,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
                   }? You can re-add it later.`
                 : `Remove "${title}" from your pathways? You can re-add it later.`;
 
-        const ok =
-            typeof window !== 'undefined' ? window.confirm(message) : true;
+        const ok = typeof window !== 'undefined' ? window.confirm(message) : true;
 
         if (!ok) return;
 
@@ -537,9 +515,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
            transition-colors max-w-[240px]`;
 
     const chevronSizeClass = isTitle ? 'text-sm' : 'text-xs';
-    const addIconColorClass = isTitle
-        ? 'text-grayscale-400'
-        : '';
+    const addIconColorClass = isTitle ? 'text-grayscale-400' : '';
 
     // Dropdown anchors differently per variant: the title variant sits
     // on the left edge of the header, so the popover opens flush-left
@@ -602,9 +578,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
 
     const hasMeaningfulPrefix = colonIdx > 0 && colonIdx < fullTitle.length - 1;
 
-    const mobilePrefix = hasMeaningfulPrefix
-        ? fullTitle.slice(0, colonIdx)
-        : fullTitle;
+    const mobilePrefix = hasMeaningfulPrefix ? fullTitle.slice(0, colonIdx) : fullTitle;
 
     return (
         <div className={isTitle ? 'relative min-w-0' : 'relative'} ref={containerRef}>
@@ -654,8 +628,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
 
                         <ul className="max-h-[360px] overflow-y-auto py-1">
                             {roots.map(root => {
-                                const children =
-                                    childrenByParentId.get(root.id) ?? [];
+                                const children = childrenByParentId.get(root.id) ?? [];
 
                                 return (
                                     <React.Fragment key={root.id}>
@@ -674,9 +647,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
                                                 key={child.id}
                                                 pathway={child}
                                                 depth={1}
-                                                isLastChildInGroup={
-                                                    idx === children.length - 1
-                                                }
+                                                isLastChildInGroup={idx === children.length - 1}
                                                 isActive={child.id === activeId}
                                                 onSwitch={handleSwitch}
                                                 onRemove={handleRemove}
@@ -701,7 +672,6 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({
                                 className="text-base text-grayscale-500"
                                 aria-hidden
                             />
-
                             Add another pathway
                         </button>
                     </motion.div>

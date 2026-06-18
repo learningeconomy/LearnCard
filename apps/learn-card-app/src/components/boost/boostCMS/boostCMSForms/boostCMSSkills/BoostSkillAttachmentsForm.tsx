@@ -231,7 +231,11 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSSkillOptions, {
         state: _state,
         setState: _setState,
-        title: <p className="font-poppins text-center text-xl text-grayscale-900">{m['boost.cms.skills.addSkills']()}</p>,
+        title: (
+            <p className="font-poppins text-center text-xl text-grayscale-900">
+                {m['boost.cms.skills.addSkills']()}
+            </p>
+        ),
         showCloseButton: true,
         handleAddSkill: (
             skill: {
@@ -266,7 +270,11 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSSkillOptions, {
         state: _state,
         setState: _setState,
-        title: <p className="font-poppins text-center text-xl text-grayscale-900">{m['boost.cms.skills.addSkills']()}</p>,
+        title: (
+            <p className="font-poppins text-center text-xl text-grayscale-900">
+                {m['boost.cms.skills.addSkills']()}
+            </p>
+        ),
         showCloseButton: false,
         handleAddSkill: (
             skill: {

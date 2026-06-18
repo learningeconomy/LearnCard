@@ -179,7 +179,9 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 <h3 className="text-[18px] font-semibold text-grayscale-900">
                     {m['aiInsights.yourMarketComparison']()}
                 </h3>
-                <p className="mt-2 text-sm text-grayscale-600">{m['aiInsights.findingMarketData']()}</p>
+                <p className="mt-2 text-sm text-grayscale-600">
+                    {m['aiInsights.findingMarketData']()}
+                </p>
             </div>
         );
     }
@@ -204,7 +206,10 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                     {m['aiInsights.yourMarketComparison']()}
                 </h3>
                 <p className="text-[14px] text-grayscale-600 leading-[18px] text-left">
-                    {m['aiInsights.makeMoreThan']({ percent: comparisonPercentLabel ?? 0, title: toTitleCase(titlePlural) })}
+                    {m['aiInsights.makeMoreThan']({
+                        percent: comparisonPercentLabel ?? 0,
+                        title: toTitleCase(titlePlural),
+                    })}
                 </p>
             </div>
 
