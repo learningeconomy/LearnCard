@@ -6,7 +6,10 @@ import * as m from '../../paraglide/messages.js';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { currentUserStore, useGetUnreadUserNotifications } from 'learn-card-base';
-import { SideMenuLinksEnum, getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
+import {
+    SideMenuLinksEnum,
+    getSideMenuTranslationKey,
+} from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';

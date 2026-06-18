@@ -21,7 +21,9 @@ export const AiInsightsEmptyPlaceholder: React.FC<{ isSharedView?: boolean }> = 
                     <p className="text-sm text-grayscale-700 font-notoSans text-center">
                         {isSharedView
                             ? m['aiInsights.noInsightsSharedView']()
-                            : m['aiInsights.buildYourProfile']({ brand: brandingConfig?.name ?? '' })}
+                            : m['aiInsights.buildYourProfile']({
+                                  brand: brandingConfig?.name ?? '',
+                              })}
                     </p>
                 </div>
                 {!isSharedView && <CheckListButton />}

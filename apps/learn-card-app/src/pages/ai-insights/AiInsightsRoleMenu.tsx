@@ -223,7 +223,9 @@ const AiInsightsRoleMenu: React.FC<AiInsightsRoleMenuProps> = ({
                     ) : isLoadingSearchResults ? (
                         <div className="flex items-center justify-center gap-[10px] px-[10px] py-[10px] text-grayscale-600 min-h-[125px]">
                             <span className="h-[16px] w-[16px] shrink-0 animate-spin rounded-full border-2 border-grayscale-200 border-t-grayscale-900" />
-                            <span className="text-[14px] leading-[20px]">{m['aiInsights.searchingRoles']()}</span>
+                            <span className="text-[14px] leading-[20px]">
+                                {m['aiInsights.searchingRoles']()}
+                            </span>
                         </div>
                     ) : isSearchActive ? (
                         <RoleSection

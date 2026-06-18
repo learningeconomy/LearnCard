@@ -72,7 +72,11 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
         categoryType === CredentialCategoryEnum.aiInsight ||
         categoryType === CredentialCategoryEnum.aiPathway
     ) {
-        metaData = <p className="text-white font-poppins font-semibold text-base">{m['passport.explore']()}</p>;
+        metaData = (
+            <p className="text-white font-poppins font-semibold text-base">
+                {m['passport.explore']()}
+            </p>
+        );
         metaDataContainerStyles = 'w-[80px]';
     }
 
@@ -95,7 +99,9 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
             onClick={() => handleClickSquare(categoryType)}
         >
             <div
-                className={`w-[160px] flex-1 rounded-[25px] shadow-bottom-2-6 px-4 pb-6  flex flex-col items-center justify-between border-[3px] border-white ${cardStyles} ${!passportCardBgColor ? `bg-${primaryColor}` : ''} ${styles?.cardStyles}`}
+                className={`w-[160px] flex-1 rounded-[25px] shadow-bottom-2-6 px-4 pb-6  flex flex-col items-center justify-between border-[3px] border-white ${cardStyles} ${
+                    !passportCardBgColor ? `bg-${primaryColor}` : ''
+                } ${styles?.cardStyles}`}
                 style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
             >
                 <div className="w-full flex items-center justify-center relative">
@@ -107,7 +113,11 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                 </div>
 
                 <div className="w-full flex items-center justify-center flex-col relative">
-                    <p className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${passportCardTextColor ?? 'text-grayscale-900'}`}>
+                    <p
+                        className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${
+                            passportCardTextColor ?? 'text-grayscale-900'
+                        }`}
+                    >
                         {CATEGORY_TITLE[categoryType]?.() ?? walletPageItem.labels.plural}
                     </p>
                     {/* TODO: ADD SKELETON LOADER HERE ... i want the skeleton loader to retain the same width and height as the div + color but with a skeleton loader */}

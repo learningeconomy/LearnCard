@@ -68,17 +68,32 @@ const PrivacySettingsModal: React.FC = () => {
 
     const visibilityOptions = useMemo(
         () => [
-            { value: ProfileVisibilityEnum.enum.public, label: m['settings.privacy.visibilityPublic']() },
-            { value: ProfileVisibilityEnum.enum.connections_only, label: m['settings.privacy.visibilityConnectionsOnly']() },
-            { value: ProfileVisibilityEnum.enum.private, label: m['settings.privacy.visibilityPrivate']() },
+            {
+                value: ProfileVisibilityEnum.enum.public,
+                label: m['settings.privacy.visibilityPublic'](),
+            },
+            {
+                value: ProfileVisibilityEnum.enum.connections_only,
+                label: m['settings.privacy.visibilityConnectionsOnly'](),
+            },
+            {
+                value: ProfileVisibilityEnum.enum.private,
+                label: m['settings.privacy.visibilityPrivate'](),
+            },
         ],
         []
     );
 
     const connectionRequestOptions = useMemo(
         () => [
-            { value: AllowConnectionRequestsEnum.enum.anyone, label: m['settings.privacy.connectionRequestsAnyone']() },
-            { value: AllowConnectionRequestsEnum.enum.invite_only, label: m['settings.privacy.connectionRequestsInviteOnly']() },
+            {
+                value: AllowConnectionRequestsEnum.enum.anyone,
+                label: m['settings.privacy.connectionRequestsAnyone'](),
+            },
+            {
+                value: AllowConnectionRequestsEnum.enum.invite_only,
+                label: m['settings.privacy.connectionRequestsInviteOnly'](),
+            },
         ],
         []
     );
@@ -146,15 +161,15 @@ const PrivacySettingsModal: React.FC = () => {
                 <button onClick={() => closeModal()} className="p-1 -ml-1">
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
                 </button>
-                <h1 className="text-xl font-semibold text-grayscale-900">{m['settings.privacyTitle']()}</h1>
+                <h1 className="text-xl font-semibold text-grayscale-900">
+                    {m['settings.privacyTitle']()}
+                </h1>
             </div>
 
             <div className="modal-scrollable flex flex-col gap-4">
                 {isMinor && (
                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
-                        <p className="text-sm text-amber-800">
-                            {m['settings.minorWarning']()}
-                        </p>
+                        <p className="text-sm text-amber-800">{m['settings.minorWarning']()}</p>
                     </div>
                 )}
 

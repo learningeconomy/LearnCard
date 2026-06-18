@@ -175,7 +175,9 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
                 </div>
 
                 {isLoading ? (
-                    <p className="text-sm text-grayscale-600">{m['aiInsights.findingSalaryData']()}</p>
+                    <p className="text-sm text-grayscale-600">
+                        {m['aiInsights.findingSalaryData']()}
+                    </p>
                 ) : activeOccupation && selectedWages ? (
                     <>
                         <p className="flex flex-wrap items-end gap-1 leading-none">
@@ -189,12 +191,18 @@ const AiInsightsAverageSalaryBox: React.FC<AiInsightsAverageSalaryBoxProps> = ({
 
                         <div className="flex flex-col items-start text-[12px] text-grayscale-600 font-bold">
                             <p>
-                                {m['aiInsights.range']({ min: formattedMinSalary, max: formattedMaxSalary })}
+                                {m['aiInsights.range']({
+                                    min: formattedMinSalary,
+                                    max: formattedMaxSalary,
+                                })}
                             </p>
 
                             {totalEmploymentCount && (
                                 <p className="text-left">
-                                    {m['aiInsights.aboutCount']({ count: totalEmploymentCount, title: pluralizedTitle })}
+                                    {m['aiInsights.aboutCount']({
+                                        count: totalEmploymentCount,
+                                        title: pluralizedTitle,
+                                    })}
                                 </p>
                             )}
                         </div>

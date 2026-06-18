@@ -108,8 +108,7 @@ export const createTeacherStudentContract = async ({
     const contractDefinition = buildTeacherStudentContract({
         image: teacherProfile?.image,
         expiresAt: '',
-        reasonForAccessing:
-            m['aiInsights.teacherReasonForAccessing'](),
+        reasonForAccessing: m['aiInsights.teacherReasonForAccessing'](),
     });
 
     const contractUri = await teacherWallet.invoke.createContract({

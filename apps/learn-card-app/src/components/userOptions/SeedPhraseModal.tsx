@@ -61,7 +61,9 @@ const SeedPhraseModal: React.FC<{}> = () => {
     return (
         <section className="h-full pb-[100px]">
             <div className="flex flex-col p-6 w-full bg-white rounded-[30px]">
-                <h2 className="flex text-[16px] font-semibold">{m['profile.seed.yourSeedPhrase']()}</h2>
+                <h2 className="flex text-[16px] font-semibold">
+                    {m['profile.seed.yourSeedPhrase']()}
+                </h2>
                 <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
                     <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                         <div className="w-[90%] flex justify-start items-center text-left">
