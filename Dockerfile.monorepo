@@ -139,9 +139,18 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
 COPY packages/learn-card-embed-sdk packages/learn-card-embed-sdk
-# Copy only credential-library runtime source. Docker Desktop/BuildKit can recurse
-# through Bun's package-local workspace symlinks when this package root is copied.
-COPY packages/credential-library/src packages/credential-library/src
+# Copy credential-library runtime source file-by-file. Docker Desktop/BuildKit can
+# recurse through Bun's package-local workspace symlinks when this package root,
+# or even its src directory, is copied as one directory source.
+COPY packages/credential-library/src/index.ts packages/credential-library/src/prepare.ts packages/credential-library/src/registry.ts packages/credential-library/src/types.ts packages/credential-library/src/
+COPY packages/credential-library/src/fixtures/index.ts packages/credential-library/src/fixtures/
+COPY packages/credential-library/src/fixtures/boost/basic.ts packages/credential-library/src/fixtures/boost/boost-id.ts packages/credential-library/src/fixtures/boost/community-award.ts packages/credential-library/src/fixtures/boost/delegate.ts packages/credential-library/src/fixtures/boost/with-skills.ts packages/credential-library/src/fixtures/boost/
+COPY packages/credential-library/src/fixtures/clr/competency-aligned.ts packages/credential-library/src/fixtures/clr/great-plains-full.ts packages/credential-library/src/fixtures/clr/minimal.ts packages/credential-library/src/fixtures/clr/multi-achievement.ts packages/credential-library/src/fixtures/clr/nd-student-transcript.ts packages/credential-library/src/fixtures/clr/university-transcript.ts packages/credential-library/src/fixtures/clr/westbridge-full.ts packages/credential-library/src/fixtures/clr/
+COPY packages/credential-library/src/fixtures/invalid/empty-type.ts packages/credential-library/src/fixtures/invalid/missing-context.ts packages/credential-library/src/fixtures/invalid/missing-issuer.ts packages/credential-library/src/fixtures/invalid/
+COPY packages/credential-library/src/fixtures/obv3/1edtech-full.ts packages/credential-library/src/fixtures/obv3/course-completion.ts packages/credential-library/src/fixtures/obv3/endorsement.ts packages/credential-library/src/fixtures/obv3/full-badge.ts packages/credential-library/src/fixtures/obv3/k12-diploma.ts packages/credential-library/src/fixtures/obv3/micro-credential.ts packages/credential-library/src/fixtures/obv3/minimal-badge.ts packages/credential-library/src/fixtures/obv3/plugfest-jff2.ts packages/credential-library/src/fixtures/obv3/professional-cert.ts packages/credential-library/src/fixtures/obv3/with-alignment.ts packages/credential-library/src/fixtures/obv3/with-endorsement.ts packages/credential-library/src/fixtures/obv3/
+COPY packages/credential-library/src/fixtures/render-method/render-method-example.ts packages/credential-library/src/fixtures/render-method/
+COPY packages/credential-library/src/fixtures/vc-v1/alumni-credential.ts packages/credential-library/src/fixtures/vc-v1/basic.ts packages/credential-library/src/fixtures/vc-v1/with-status.ts packages/credential-library/src/fixtures/vc-v1/
+COPY packages/credential-library/src/fixtures/vc-v2/basic.ts packages/credential-library/src/fixtures/vc-v2/digital-id.ts packages/credential-library/src/fixtures/vc-v2/education-degree.ts packages/credential-library/src/fixtures/vc-v2/employment-credential.ts packages/credential-library/src/fixtures/vc-v2/license-credential.ts packages/credential-library/src/fixtures/vc-v2/membership-credential.ts packages/credential-library/src/fixtures/vc-v2/multiple-subjects.ts packages/credential-library/src/fixtures/vc-v2/with-evidence.ts packages/credential-library/src/fixtures/vc-v2/
 COPY apps/learn-card-app apps/learn-card-app
 COPY packages/sss-key-manager packages/sss-key-manager
 COPY packages/email-templates packages/email-templates
