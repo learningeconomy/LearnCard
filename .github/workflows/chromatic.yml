@@ -80,11 +80,16 @@ jobs:
                       echo "EOF"
                   } >> "$GITHUB_ENV"
 
-            # The app's Storybook imports workspace packages from their built dist/ output, so every
-            # dist-based local dependency must be compiled first (nx builds their transitive deps too).
+            # The app's Storybook imports workspace packages from their built dist/ output, so the
+            # app's entire transitive dependency closure must be compiled first. The closure is derived
+            # from the nx graph at runtime (rather than hardcoded) so new dependencies are covered
+            # automatically. run-many skips any project in the closure that has no build target.
             - name: Build workspace dependencies
               if: contains(env.AFFECTED, 'learn-card-app')
-              run: pnpm exec nx run-many -t build --projects=react,sss-key-manager,helpers,credential-library,embed-sdk,lca-api-plugin,ler-rs-plugin,open-badge-v2-plugin,render-method-plugin
+              run: |
+                  pnpm exec nx graph --focus=learn-card-app --file=dep-graph.json
+                  PROJECTS=$(node -e "const g=require('./dep-graph.json');const deps=g.graph.dependencies;const seen=new Set();const q=['learn-card-app'];while(q.length){const n=q.pop();for(const d of (deps[n]||[])){if(d.target.startsWith('npm:'))continue;if(!seen.has(d.target)){seen.add(d.target);q.push(d.target);}}}process.stdout.write([...seen].join(','));")
+                  pnpm exec nx run-many -t build --projects="$PROJECTS"
 
             - name: Publish to Chromatic
               if: contains(env.AFFECTED, 'learn-card-app')
