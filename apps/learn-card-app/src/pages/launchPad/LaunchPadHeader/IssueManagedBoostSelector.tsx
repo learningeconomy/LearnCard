@@ -33,6 +33,31 @@ const ALLOWED_CATEGORIES = [
     BoostCategoryOptionsEnum.accommodation,
 ];
 
+/**
+ * Map each boost category to the SAME wallet-catalog label the wallet already
+ * uses (`wallet.categories.*`), so the selector and the wallet stay in sync.
+ * `all` has no wallet equivalent, so it reuses the generic `launchpad.tabs.all`.
+ *
+ * Note: these are message-function REFERENCES (captured at module load), not
+ * invocations — the locale is resolved when each function is CALLED inside
+ * render, so there is no module-load locale freeze.
+ */
+const CATEGORY_LABEL_FNS: Partial<Record<BoostCategoryOptionsEnum, () => string>> = {
+    [BoostCategoryOptionsEnum.all]: m['launchpad.tabs.all'],
+    [BoostCategoryOptionsEnum.socialBadge]: m['wallet.categories.socialBadges'],
+    [BoostCategoryOptionsEnum.achievement]: m['wallet.categories.achievements'],
+    [BoostCategoryOptionsEnum.id]: m['wallet.categories.ids'],
+    [BoostCategoryOptionsEnum.workHistory]: m['wallet.categories.experiences'],
+    [BoostCategoryOptionsEnum.course]: m['wallet.categories.studies'],
+    [BoostCategoryOptionsEnum.learningHistory]: m['wallet.categories.studies'],
+    [BoostCategoryOptionsEnum.family]: m['wallet.categories.families'],
+    [BoostCategoryOptionsEnum.accomplishment]: m['wallet.categories.portfolio'],
+    [BoostCategoryOptionsEnum.accommodation]: m['wallet.categories.assistance'],
+};
+
+const getCategoryLabel = (category: BoostCategoryOptionsEnum, fallback: string): string =>
+    CATEGORY_LABEL_FNS[category]?.() ?? fallback;
+
 const CategorySelectorModal: React.FC<{
     selectedCategory: BoostCategoryOptionsEnum;
     onSelect: (category: BoostCategoryOptionsEnum) => void;
@@ -43,7 +68,7 @@ const CategorySelectorModal: React.FC<{
         <div className="flex flex-col w-full h-full bg-white p-5">
             <div className="flex justify-between items-center mb-4 border-b border-grayscale-200 pb-4">
                 <h2 className="text-[22px] font-poppins font-semibold text-grayscale-900">
-                    Select Category
+                    {m['boost.selectCategory']()}
                 </h2>
                 <button
                     onClick={closeModal}
@@ -74,7 +99,7 @@ const CategorySelectorModal: React.FC<{
                                 <Icon className="w-6 h-6" />
                             </div>
                             <span className="font-poppins font-medium text-grayscale-900 text-lg">
-                                {meta.title}
+                                {getCategoryLabel(category, meta.title)}
                             </span>
                         </button>
                     );
@@ -180,7 +205,7 @@ const IssueManagedBoostSelector: React.FC = () => {
             <div className="flex flex-col p-5 border-b border-grayscale-200 bg-white z-10">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-[22px] font-poppins font-semibold text-grayscale-900">
-                        Issue Credential
+                        {m['launchpad.actions.issueCredential']()}
                     </h2>
                     <button
                         type="button"
@@ -203,7 +228,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                                 <CategoryIcon className="w-6 h-6" />
                             </div>
                             <span className={`text-${metaTextColor} font-medium text-lg`}>
-                                {categoryMeta.title}
+                                {getCategoryLabel(selectedCategory, categoryMeta.title)}
                             </span>
                         </div>
                         <CaretDown className="w-4 h-4 text-grayscale-600" />
@@ -220,7 +245,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                         <IonInput
                             type="text"
                             value={searchInput}
-                            placeholder="Search templates..."
+                            placeholder={m['boost.searchBoosts']()}
                             onIonInput={e => setSearchInput(e.detail.value || '')}
                             className="bg-grayscale-50 text-grayscale-900 rounded-[15px] !p-[5px] !font-notoSans text-[16px] !pl-[44px] --padding-start=44px border border-grayscale-200"
                         />
