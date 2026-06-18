@@ -7,6 +7,23 @@ node_modules
 **/node_modules
 node_modules/**
 **/node_modules/**
+# Docker Desktop/BuildKit can still traverse package-local Bun workspace
+# symlinks during path-specific COPY instructions unless the workspace
+# node_modules directories are matched explicitly.
+**/node_modules/
+**/node_modules/*
+packages/*/node_modules
+packages/*/node_modules/**
+packages/*/*/node_modules
+packages/*/*/node_modules/**
+packages/*/*/*/node_modules
+packages/*/*/*/node_modules/**
+apps/*/node_modules
+apps/*/node_modules/**
+services/*/node_modules
+services/*/node_modules/**
+services/*/*/node_modules
+services/*/*/node_modules/**
 
 # Build outputs
 **/dist
