@@ -149,7 +149,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         showCloseButton: true,
         title: (
             <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
-                Select Recipient
+                {m['boost.shortBoost.selectRecipient']()}
             </p>
         ),
         search,
@@ -167,7 +167,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         showCloseButton: false,
         title: (
             <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                Who do you want to boost?
+                {m['boost.cms.issueTo.whoToBoost']()}
             </p>
         ),
         search,

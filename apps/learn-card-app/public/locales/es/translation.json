@@ -441,7 +441,12 @@
                 "descriptionPlaceholder": "Descripción..."
             },
             "shareLink": {
-                "close": "Cerrar ventana de compartir"
+                "close": "Cerrar ventana de compartir",
+                "copyLink": "Copiar enlace",
+                "generatingLink": "Generando enlace...",
+                "heading": "Comparte tu currículum de {{brand}}",
+                "description1": "Este enlace y el código QR permiten que otros vean tu currículum compartido.",
+                "description2": "Compártelo con reclutadores, responsables de contratación, amigos o cualquier persona que quieras que revise tu currículum."
             }
         },
         "explore": "Explorar"
@@ -1842,7 +1847,10 @@
                 "generateClaimLink": "¿Generar enlace de reclamación?",
                 "cannotGenerateClaimLinks": "Esta plantilla no puede generar enlaces de reclamación porque el permiso de visualización está deshabilitado.",
                 "enableViewing": "Habilita la visualización para continuar con la generación del enlace de reclamación.",
-                "anyoneCanView": "Cualquiera puede ver esta plantilla de credencial"
+                "anyoneCanView": "Cualquiera puede ver esta plantilla de credencial",
+                "whoToBoost": "¿A quién quieres emitir un Boost?",
+                "boostMyself": "Emitirme un Boost",
+                "boostOthers": "Emitir a otros"
             },
             "notes": {
                 "title": "Notas",
@@ -1910,6 +1918,14 @@
                 "criteria": "Criterios",
                 "certificate": "Certificado",
                 "id": "ID"
+            },
+            "loading": {
+                "issuing": "Emitiendo Boost...",
+                "creating": "Creando Boost...",
+                "publishing": "Publicando Boost...",
+                "saving": "Guardando Boost...",
+                "autoSaving": "Guardando automáticamente...",
+                "loading": "Cargando Boost..."
             }
         },
         "menu": {
@@ -2969,7 +2985,8 @@
             },
             "consentFlow": {
                 "label": "Gestionar contratos de ConsentFlow",
-                "description": "Crea y comparte contratos de consentimiento."
+                "description": "Crea y comparte contratos de consentimiento.",
+                "actionLabel": "Crear contrato"
             },
             "apiTokens": {
                 "label": "Tokens de API",
@@ -2998,6 +3015,14 @@
             "cli": {
                 "label": "CLI para desarrolladores",
                 "description": "Terminal interactiva para explorar y probar la API de LearnCard."
+            }
+        },
+        "consentFlow": {
+            "contracts": "Contratos",
+            "noContracts": "No hay contratos existentes.",
+            "warning": {
+                "title": "Se requiere un perfil de Organización",
+                "description": "Para crear un contrato, debes haber iniciado sesión como perfil de Organización. Si aún no tienes uno, crea primero un perfil de Organización."
             }
         }
     }

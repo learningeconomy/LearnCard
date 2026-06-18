@@ -1126,15 +1126,17 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Issuing boost...';
+        loadingText = m['boost.cms.loading.issuing']();
     } else if (isPublishLoading) {
-        loadingText = skippedPublishStep ? 'Creating boost...' : 'Publishing boost...';
+        loadingText = skippedPublishStep
+            ? m['boost.cms.loading.creating']()
+            : m['boost.cms.loading.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving boost...';
+        loadingText = m['boost.cms.loading.saving']();
     } else if (isAutosaving) {
-        loadingText = 'Auto-saving...';
+        loadingText = m['boost.cms.loading.autoSaving']();
     } else if (stylePackLoading) {
-        loadingText = 'Loading boost...';
+        loadingText = m['boost.cms.loading.loading']();
     }
 
     return (

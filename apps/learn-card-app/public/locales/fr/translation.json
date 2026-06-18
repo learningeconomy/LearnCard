@@ -441,7 +441,12 @@
                 "descriptionPlaceholder": "Description..."
             },
             "shareLink": {
-                "close": "Fermer la fenêtre de partage"
+                "close": "Fermer la fenêtre de partage",
+                "copyLink": "Copier le lien",
+                "generatingLink": "Génération du lien...",
+                "heading": "Partagez votre CV {{brand}}",
+                "description1": "Ce lien et ce QR code permettent à d'autres de consulter votre CV partagé.",
+                "description2": "Partagez-le avec des recruteurs, des responsables du recrutement, des amis ou toute personne à qui vous souhaitez faire consulter votre CV."
             }
         },
         "explore": "Explorer"
@@ -1842,7 +1847,10 @@
                 "generateClaimLink": "Générer un lien de réclamation ?",
                 "cannotGenerateClaimLinks": "Ce modèle ne peut pas générer de liens de réclamation car la permission d'affichage est désactivée.",
                 "enableViewing": "Activez l'affichage pour continuer la génération de liens.",
-                "anyoneCanView": "Tout le monde peut voir ce modèle de crédential"
+                "anyoneCanView": "Tout le monde peut voir ce modèle de crédential",
+                "whoToBoost": "À qui voulez-vous délivrer un Boost ?",
+                "boostMyself": "Me délivrer un Boost",
+                "boostOthers": "Délivrer à d'autres"
             },
             "notes": {
                 "title": "Notes",
@@ -1910,6 +1918,14 @@
                 "criteria": "Critères",
                 "certificate": "Certificat",
                 "id": "ID"
+            },
+            "loading": {
+                "issuing": "Émission du Boost...",
+                "creating": "Création du Boost...",
+                "publishing": "Publication du Boost...",
+                "saving": "Enregistrement du Boost...",
+                "autoSaving": "Enregistrement automatique...",
+                "loading": "Chargement du Boost..."
             }
         },
         "menu": {
@@ -2969,7 +2985,8 @@
             },
             "consentFlow": {
                 "label": "Gérer les contrats ConsentFlow",
-                "description": "Créez et partagez des contrats de consentement."
+                "description": "Créez et partagez des contrats de consentement.",
+                "actionLabel": "Créer un contrat"
             },
             "apiTokens": {
                 "label": "Jetons d'API",
@@ -2998,6 +3015,14 @@
             "cli": {
                 "label": "CLI pour développeurs",
                 "description": "Terminal interactif pour explorer et tester l'API LearnCard."
+            }
+        },
+        "consentFlow": {
+            "contracts": "Contrats",
+            "noContracts": "Aucun contrat existant.",
+            "warning": {
+                "title": "Profil d'Organisation requis",
+                "description": "Pour créer un contrat, vous devez être connecté avec un profil d'Organisation. Si vous n'en avez pas encore, veuillez d'abord créer un profil d'Organisation."
             }
         }
     }

@@ -441,7 +441,12 @@
                 "descriptionPlaceholder": "الوصف..."
             },
             "shareLink": {
-                "close": "إغلاق نافذة المشاركة"
+                "close": "إغلاق نافذة المشاركة",
+                "copyLink": "نسخ الرابط",
+                "generatingLink": "جارٍ إنشاء الرابط...",
+                "heading": "شارك سيرتك الذاتية في {{brand}}",
+                "description1": "يتيح هذا الرابط ورمز QR للآخرين عرض سيرتك الذاتية المشتركة.",
+                "description2": "شاركها مع جهات التوظيف ومديري التوظيف والأصدقاء أو أي شخص تريد أن يطّلع على سيرتك الذاتية."
             }
         },
         "explore": "استكشاف"
@@ -1842,7 +1847,10 @@
                 "generateClaimLink": "توليد رابط مطالبة؟",
                 "cannotGenerateClaimLinks": "لا يمكن لهذا القالب إنشاء روابط مطالبة لأن إذن العرض معطل.",
                 "enableViewing": "قم بتمكين العرض للمتابعة مع إنشاء رابط المطالبة.",
-                "anyoneCanView": "يمكن لأي شخص عرض قالب الاعتماد هذا"
+                "anyoneCanView": "يمكن لأي شخص عرض قالب الاعتماد هذا",
+                "whoToBoost": "لمن تريد إصدار Boost؟",
+                "boostMyself": "إصدار Boost لي",
+                "boostOthers": "إصدار Boost لآخرين"
             },
             "notes": {
                 "title": "ملاحظات",
@@ -1910,6 +1918,14 @@
                 "criteria": "المعايير",
                 "certificate": "شهادة",
                 "id": "معرف"
+            },
+            "loading": {
+                "issuing": "جارٍ إصدار Boost...",
+                "creating": "جارٍ إنشاء Boost...",
+                "publishing": "جارٍ نشر Boost...",
+                "saving": "جارٍ حفظ Boost...",
+                "autoSaving": "حفظ تلقائي...",
+                "loading": "جارٍ تحميل Boost..."
             }
         },
         "menu": {
@@ -2969,7 +2985,8 @@
             },
             "consentFlow": {
                 "label": "إدارة عقود ConsentFlow",
-                "description": "إنشاء ومشاركة عقود الموافقة."
+                "description": "إنشاء ومشاركة عقود الموافقة.",
+                "actionLabel": "إنشاء عقد"
             },
             "apiTokens": {
                 "label": "رموز API",
@@ -2998,6 +3015,14 @@
             "cli": {
                 "label": "CLI للمطوّرين",
                 "description": "طرفية تفاعلية لاستكشاف واختبار واجهة LearnCard API."
+            }
+        },
+        "consentFlow": {
+            "contracts": "العقود",
+            "noContracts": "لا توجد عقود حالية.",
+            "warning": {
+                "title": "مطلوب ملف تعريف مؤسسة",
+                "description": "لإنشاء عقد، يجب أن تكون مسجّلاً الدخول بملف تعريف مؤسسة. إذا لم يكن لديك واحد بعد، فأنشئ ملف تعريف مؤسسة أولاً."
             }
         }
     }

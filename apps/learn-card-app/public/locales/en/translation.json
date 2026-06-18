@@ -442,7 +442,12 @@
                 "descriptionPlaceholder": "Description..."
             },
             "shareLink": {
-                "close": "Close share modal"
+                "close": "Close share modal",
+                "copyLink": "Copy Link",
+                "generatingLink": "Generating link...",
+                "heading": "Share your {{brand}} resume",
+                "description1": "This link and QR code let others view your shared resume.",
+                "description2": "Share with recruiters, hiring managers, friends, or anyone you want to review your resume."
             }
         }
     },
@@ -2039,7 +2044,10 @@
                 "generateClaimLink": "Generate Claim Link?",
                 "cannotGenerateClaimLinks": "This template cannot generate claim links because view permission are disabled.",
                 "enableViewing": "Enable viewing to continue with claim link generation.",
-                "anyoneCanView": "Anyone can view this credential template"
+                "anyoneCanView": "Anyone can view this credential template",
+                "whoToBoost": "Who do you want to boost?",
+                "boostMyself": "Boost Myself",
+                "boostOthers": "Boost Others"
             },
             "notes": {
                 "title": "Notes",
@@ -2107,6 +2115,14 @@
                 "criteria": "Criteria",
                 "certificate": "Certificate",
                 "id": "ID"
+            },
+            "loading": {
+                "issuing": "Issuing boost...",
+                "creating": "Creating boost...",
+                "publishing": "Publishing boost...",
+                "saving": "Saving boost...",
+                "autoSaving": "Auto-saving...",
+                "loading": "Loading boost..."
             }
         },
         "confirmDelete": "Are you sure you want to delete this boost?",
@@ -2969,7 +2985,8 @@
             },
             "consentFlow": {
                 "label": "Manage ConsentFlow Contracts",
-                "description": "Create and share consent contracts."
+                "description": "Create and share consent contracts.",
+                "actionLabel": "Create Contract"
             },
             "apiTokens": {
                 "label": "API Tokens",
@@ -2998,6 +3015,14 @@
             "cli": {
                 "label": "Developer CLI",
                 "description": "Interactive terminal for exploring and testing the LearnCard API."
+            }
+        },
+        "consentFlow": {
+            "contracts": "Contracts",
+            "noContracts": "No existing contracts.",
+            "warning": {
+                "title": "Organization Profile Required",
+                "description": "To create a contract, you must be logged in as an Organization Profile. If you don't have one yet, please create an Organization Profile first."
             }
         }
     }

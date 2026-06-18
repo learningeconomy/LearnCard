@@ -131,7 +131,15 @@ export const developerToolOptions: AdminToolOption[] = [
  * they're internal dev tools and fall back to their static English copy.
  */
 const ADMIN_TOOL_COPY: Partial<
-    Record<AdminToolOptionsEnum, { label: () => string; description: () => string }>
+    Record<
+        AdminToolOptionsEnum,
+        {
+            label: () => string;
+            description: () => string;
+            title?: () => string;
+            actionLabel?: () => string;
+        }
+    >
 > = {
     [AdminToolOptionsEnum.BULK_UPLOAD]: {
         label: m['adminTools.tools.importCredentials.label'],
@@ -140,6 +148,8 @@ const ADMIN_TOOL_COPY: Partial<
     [AdminToolOptionsEnum.CONSENT_FLOW]: {
         label: m['adminTools.tools.consentFlow.label'],
         description: m['adminTools.tools.consentFlow.description'],
+        title: m['adminTools.tools.consentFlow.label'],
+        actionLabel: m['adminTools.tools.consentFlow.actionLabel'],
     },
     [AdminToolOptionsEnum.API_TOKENS]: {
         label: m['adminTools.tools.apiTokens.label'],
@@ -176,3 +186,9 @@ export const getAdminToolLabel = (option: AdminToolOption): string =>
 
 export const getAdminToolDescription = (option: AdminToolOption): string =>
     ADMIN_TOOL_COPY[option.type]?.description() ?? option.description;
+
+export const getAdminToolTitle = (option: AdminToolOption): string =>
+    ADMIN_TOOL_COPY[option.type]?.title?.() ?? option.title;
+
+export const getAdminToolActionLabel = (option: AdminToolOption): string =>
+    ADMIN_TOOL_COPY[option.type]?.actionLabel?.() ?? option.actionLabel;
