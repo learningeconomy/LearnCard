@@ -1704,6 +1704,41 @@
         "noMatchesBlurb": "Nothing matches \"{{query}}\". Try fewer words or clear the search.",
         "noCredentialsYetStartFromGoal": "No credentials yet — that's fine. We'll start from your goal."
     },
+    "claim": {
+        "didAuth": {
+            "title": "You've Been Sent a Credential!",
+            "subtitle": "Someone wants to issue you a verifiable credential",
+            "ready": "Ready to claim it?",
+            "intro": "To receive this credential, you'll need to confirm your identity. This lets the issuer securely deliver it to your wallet.",
+            "whatHappens": "What happens when you continue:",
+            "step1": "Your wallet confirms your identity to the issuer",
+            "step2": "The credential is securely delivered to your wallet",
+            "step3": "You own and control this credential forever",
+            "privacy": "Your identity is only shared with the issuer to complete this exchange. You're always in control of your data.",
+            "connecting": "Connecting...",
+            "claimButton": "Claim My Credential",
+            "decline": "No thanks, take me home",
+            "loginRequired": "Please log in to continue."
+        },
+        "initiate": {
+            "heading": "You've been sent a request",
+            "description": "Click the button below to begin the exchange process.",
+            "begin": "Begin"
+        },
+        "redirect": {
+            "heading": "Redirect Required",
+            "description": "To continue, you need to complete a step on an external website."
+        }
+    },
+    "chapi": {
+        "back": "Back",
+        "title": "About Chapi",
+        "p1": "The Credential Handler API (CHAPI) is an open-source solution for communicating Verifiable Credentials on the Web.",
+        "p2": "Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.",
+        "p3": "It allows your digital wallet to send or receive Verifiable Credentials from an independent third-party verifier or issuer in a way that establishes trust and preserves privacy.",
+        "readMore": "Read More",
+        "connectHandler": "Connect Handler"
+    },
     "legal": {
         "connectionsEncrypted": "All connections are encrypted.",
         "appEcosystem": "App Ecosystem",

@@ -1984,6 +1984,41 @@
             "foundResults": "Se encontraron {{count}} resultado(s) para \"{{query}}\""
         }
     },
+    "claim": {
+        "didAuth": {
+            "title": "¡Te han enviado una credencial!",
+            "subtitle": "Alguien quiere emitirte una credencial verificable",
+            "ready": "¿Listo para reclamarla?",
+            "intro": "Para recibir esta credencial, deberás confirmar tu identidad. Esto permite que el emisor te la entregue de forma segura en tu cartera.",
+            "whatHappens": "Qué sucede cuando continúas:",
+            "step1": "Tu cartera confirma tu identidad al emisor",
+            "step2": "La credencial se entrega de forma segura en tu cartera",
+            "step3": "Eres dueño y controlas esta credencial para siempre",
+            "privacy": "Tu identidad solo se comparte con el emisor para completar este intercambio. Siempre tienes el control de tus datos.",
+            "connecting": "Conectando...",
+            "claimButton": "Reclamar mi credencial",
+            "decline": "No gracias, llévame al inicio",
+            "loginRequired": "Inicia sesión para continuar."
+        },
+        "initiate": {
+            "heading": "Te han enviado una solicitud",
+            "description": "Haz clic en el botón de abajo para comenzar el proceso de intercambio.",
+            "begin": "Comenzar"
+        },
+        "redirect": {
+            "heading": "Redirección requerida",
+            "description": "Para continuar, debes completar un paso en un sitio web externo."
+        }
+    },
+    "chapi": {
+        "back": "Volver",
+        "title": "Acerca de Chapi",
+        "p1": "La API de gestión de credenciales (CHAPI) es una solución de código abierto para comunicar credenciales verificables en la web.",
+        "p2": "Imagina una paloma mensajera confiable y confidencial, pero para credenciales verificables.",
+        "p3": "Permite que tu cartera digital envíe o reciba credenciales verificables de un verificador o emisor externo independiente, de una manera que establece confianza y preserva la privacidad.",
+        "readMore": "Leer más",
+        "connectHandler": "Conectar gestor"
+    },
     "legal": {
         "connectionsEncrypted": "Todas las conexiones están cifradas.",
         "termsOfService": "Términos de servicio",

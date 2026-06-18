@@ -1984,6 +1984,41 @@
             "foundResults": "{{count}} résultat(s) trouvé(s) pour « {{query}} »"
         }
     },
+    "claim": {
+        "didAuth": {
+            "title": "Un justificatif vous a été envoyé !",
+            "subtitle": "Quelqu'un souhaite vous délivrer un justificatif vérifiable",
+            "ready": "Prêt à le réclamer ?",
+            "intro": "Pour recevoir ce justificatif, vous devrez confirmer votre identité. Cela permet à l'émetteur de vous le remettre en toute sécurité dans votre portefeuille.",
+            "whatHappens": "Ce qui se passe lorsque vous continuez :",
+            "step1": "Votre portefeuille confirme votre identité à l'émetteur",
+            "step2": "Le justificatif est remis en toute sécurité dans votre portefeuille",
+            "step3": "Vous possédez et contrôlez ce justificatif pour toujours",
+            "privacy": "Votre identité n'est partagée qu'avec l'émetteur pour finaliser cet échange. Vous gardez toujours le contrôle de vos données.",
+            "connecting": "Connexion...",
+            "claimButton": "Réclamer mon justificatif",
+            "decline": "Non merci, ramenez-moi à l'accueil",
+            "loginRequired": "Veuillez vous connecter pour continuer."
+        },
+        "initiate": {
+            "heading": "Une demande vous a été envoyée",
+            "description": "Cliquez sur le bouton ci-dessous pour démarrer le processus d'échange.",
+            "begin": "Commencer"
+        },
+        "redirect": {
+            "heading": "Redirection requise",
+            "description": "Pour continuer, vous devez effectuer une étape sur un site web externe."
+        }
+    },
+    "chapi": {
+        "back": "Retour",
+        "title": "À propos de Chapi",
+        "p1": "L'API de gestion des justificatifs (CHAPI) est une solution open source pour communiquer des justificatifs vérifiables sur le Web.",
+        "p2": "Imaginez un pigeon voyageur fiable et confidentiel, mais pour les justificatifs vérifiables.",
+        "p3": "Elle permet à votre portefeuille numérique d'envoyer ou de recevoir des justificatifs vérifiables d'un vérificateur ou d'un émetteur tiers indépendant, d'une manière qui établit la confiance et préserve la confidentialité.",
+        "readMore": "En savoir plus",
+        "connectHandler": "Connecter le gestionnaire"
+    },
     "legal": {
         "connectionsEncrypted": "Toutes les connexions sont chiffrées.",
         "termsOfService": "Conditions d'utilisation",
