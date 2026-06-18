@@ -171,7 +171,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            aria-label="Close"
+                            aria-label={m['common.close']()}
                             className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full text-grayscale-500 hover:bg-grayscale-100 hover:text-grayscale-800 transition-colors"
                         >
                             <IonIcon icon={closeOutline} aria-hidden className="text-lg" />

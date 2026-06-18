@@ -49,7 +49,9 @@
         "create": "إنشاء",
         "creating": "جارٍ الإنشاء...",
         "updating": "جارٍ التحديث...",
-        "revoked": "ملغى"
+        "revoked": "ملغى",
+        "learnMore": "اعرف المزيد",
+        "viewAll": "عرض الكل"
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",

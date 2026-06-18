@@ -49,7 +49,9 @@
         "create": "Crear",
         "creating": "Creando...",
         "updating": "Actualizando...",
-        "revoked": "Revocado"
+        "revoked": "Revocado",
+        "learnMore": "Más información",
+        "viewAll": "Ver todo"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",

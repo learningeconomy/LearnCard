@@ -272,7 +272,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     </button>
                                 )}
                             </div>
-                            <p className="font-poppins text-xl text-white">Share</p>
+                            <p className="font-poppins text-xl text-white">{m['common.share']()}</p>
                             <button onClick={handleClose}>
                                 <X className="text-white h-8 w-8" />
                             </button>
