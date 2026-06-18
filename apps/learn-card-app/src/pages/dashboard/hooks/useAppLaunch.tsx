@@ -10,14 +10,14 @@ import {
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
-const log = getLogger('dashboard');
-
 import AppStoreDetailModal from '../../launchPad/AppStoreDetailModal';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
 import AiTutorConnectedView from '../../launchPad/AiTutorConnectedView';
 import GuardianConsentLaunchModal from '../../launchPad/GuardianConsentLaunchModal';
 import { useConsentFlowByUri } from '../../consentFlow/useConsentFlow';
 import { openExternalLink } from '../../../helpers/externalLinkHelpers';
+
+const log = getLogger('dashboard');
 
 type AnyListing = AppStoreListing | InstalledApp;
 
