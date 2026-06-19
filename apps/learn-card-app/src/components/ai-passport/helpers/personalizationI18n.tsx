@@ -20,7 +20,12 @@ import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 import { PersonalizedQuestionEnum } from '../personalizedQuestions.helpers';
 
-const TITLE_KEYS: Record<PersonalizedQuestionEnum, string> = {
+// Exported for `personalizationI18n.test.ts`, which asserts every key here
+// resolves to a real Paraglide message. The dynamic `m[key]` lookup below is
+// invisible to both i18n CI guards (the build-time onwarn and the static
+// check-i18n-keys scanner only see literal `m['…']`), so the test is the
+// safety net against a typo here silently rendering nothing.
+export const TITLE_KEYS: Record<PersonalizedQuestionEnum, string> = {
     [PersonalizedQuestionEnum.iLearnBest]: 'aiPersonalization.q1.title',
     [PersonalizedQuestionEnum.favFictionalCharacter]: 'aiPersonalization.q2.title',
     [PersonalizedQuestionEnum.favMovieGenre]: 'aiPersonalization.q3.title',
@@ -28,7 +33,7 @@ const TITLE_KEYS: Record<PersonalizedQuestionEnum, string> = {
 
 // Only Q1 (iLearnBest) has predefined options. Index order matches the data
 // file's `predefinedAnswers` array.
-const Q1_OPTION_KEYS = [
+export const Q1_OPTION_KEYS = [
     'aiPersonalization.q1.options.o1',
     'aiPersonalization.q1.options.o2',
     'aiPersonalization.q1.options.o3',
@@ -36,7 +41,7 @@ const Q1_OPTION_KEYS = [
     'aiPersonalization.q1.options.o5',
 ];
 
-const PLACEHOLDER_KEYS: Partial<Record<PersonalizedQuestionEnum, string>> = {
+export const PLACEHOLDER_KEYS: Partial<Record<PersonalizedQuestionEnum, string>> = {
     [PersonalizedQuestionEnum.favFictionalCharacter]: 'aiPersonalization.q2.placeholder',
     [PersonalizedQuestionEnum.favMovieGenre]: 'aiPersonalization.q3.placeholder',
 };
