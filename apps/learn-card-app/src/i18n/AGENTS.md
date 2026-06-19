@@ -10,8 +10,8 @@ at build time from `public/locales/{en,es,fr,ar}/translation.json` into
 ```tsx
 import * as m from '<rel>/paraglide/messages.js';
 
-m['namespace.key']()                       // simple string
-m['namespace.key']({ brand: name })        // {{brand}} interpolation
+m['namespace.key'](); // simple string
+m['namespace.key']({ brand: name }); // {{brand}} interpolation
 ```
 
 Inline markup (bold / link inside a translated string) — use `TransP`, never
@@ -40,7 +40,7 @@ Locale switching: `useLocale()` / `useChangeLocale()` from `../i18n`.
    breaks the moment `title` is localized. Switch on a stable id/enum
    (`CredentialCategoryEnum`, `link.id`), not the display label. (Bit us in
    `CategoryDescriptorModal` and `SideMenuRootLinks`.)
-2. **Plurals compile to *separate* functions.** The inlang i18next plugin emits
+2. **Plurals compile to _separate_ functions.** The inlang i18next plugin emits
    `key_one` / `key_other` as distinct message fns — there is no runtime plural
    selector. Use a ternary with two keys
    (`count === 1 ? m['x.matchingSkill']() : m['x.matchingSkills']()`) or a
@@ -74,16 +74,16 @@ locale JSONs. See `2026-06-17-localizing-shared-packages` in the Obsidian vault.
 ≤1 language remains visible, the selector auto-hides. The **off** variation must
 serve `[]`.
 
-- Resolver (pure, unit-tested): `src/i18n/languageSelectorConfig.ts`
-- Hooks: `useLanguageSelectorConfig()` + `useEnforceVisibleLocale()` (mounted in `App`)
-- Both pickers (`LanguagePicker`, `LanguagePickerCompact`) self-gate; the modal
-  lists only `visibleLanguages`. Falls a user off a now-hidden active locale.
+-   Resolver (pure, unit-tested): `src/i18n/languageSelectorConfig.ts`
+-   Hooks: `useLanguageSelectorConfig()` + `useEnforceVisibleLocale()` (mounted in `App`)
+-   Both pickers (`LanguagePicker`, `LanguagePickerCompact`) self-gate; the modal
+    lists only `visibleLanguages`. Falls a user off a now-hidden active locale.
 
 ## Known untranslated surfaces (follow-up)
 
-- **App Store admin + developer guides** (`src/pages/appStoreDeveloper/`,
-  ~127 files / ~56k LOC) — effectively a standalone app; tracked separately.
-- Keep this list current as surfaces are swept.
+-   **App Store admin + developer guides** (`src/pages/appStoreDeveloper/`,
+    ~127 files / ~56k LOC) — effectively a standalone app; tracked separately.
+-   Keep this list current as surfaces are swept.
 
 ## Adding a new language
 

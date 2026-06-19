@@ -88,7 +88,9 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                 <div className="flex flex-col items-center justify-center px-6 pt-4 pb-10 text-center">
                     <Shield className="w-12 h-12 text-grayscale-300 mb-4" />
 
-                    <p className="text-grayscale-600 font-medium">{m['dataSharing.empty.title']()}</p>
+                    <p className="text-grayscale-600 font-medium">
+                        {m['dataSharing.empty.title']()}
+                    </p>
 
                     <p className="text-sm text-grayscale-500 mt-1">
                         {m['dataSharing.empty.subtitle']()}
