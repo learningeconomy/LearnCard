@@ -88,6 +88,19 @@ module.exports = {
                                 message:
                                     'Do not gate prompts on raw login state — it is true during the resume race before the wallet is ready. Use useAuthStatus() + shouldPromptProfileOnboarding() from learn-card-base instead.',
                             },
+                            {
+                                name: 'learn-card-base/stores/currentUserStore',
+                                importNames: ['useIsLoggedIn', 'default'],
+                                message:
+                                    'Do not gate prompts on raw login state — it is true during the resume race before the wallet is ready. Use useAuthStatus() + shouldPromptProfileOnboarding() from learn-card-base instead.',
+                            },
+                        ],
+                        patterns: [
+                            {
+                                group: ['**/stores/currentUserStore'],
+                                message:
+                                    'Do not gate prompts on raw login/currentUser state in network-prompts — use useAuthStatus() + shouldPromptProfileOnboarding() from learn-card-base instead.',
+                            },
                         ],
                     },
                 ],

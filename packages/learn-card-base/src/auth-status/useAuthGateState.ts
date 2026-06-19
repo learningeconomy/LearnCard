@@ -3,16 +3,8 @@ import { useMemo } from 'react';
 import { useOptionalAuthCoordinator } from '../auth-coordinator/AuthCoordinatorProvider';
 import { walletStore } from '../stores/walletStore';
 import { useIsLoggedIn } from '../stores/currentUserStore';
-import { getLogger } from '../logging/logger';
 
-import {
-    deriveAuthStatus,
-    shouldPromptProfileOnboarding,
-    type AuthGateState,
-    type CoordinatorStatus,
-} from './authStatus';
-
-const log = getLogger('auth-status');
+import { deriveAuthStatus, type AuthGateState, type CoordinatorStatus } from './authStatus';
 
 /**
  * Derive a coordinator status even when the AuthCoordinatorProvider isn't mounted
@@ -51,30 +43,16 @@ export const useAuthGateState = (
         isLoggedIn
     );
 
-    return useMemo(() => {
-        const state = deriveAuthStatus({
-            coordinatorStatus,
-            walletReady,
-            profileQueryStatus,
-            hasProfile,
-        });
-
-        // Dev/staging contradiction tripwire: onboarding may be authorized ONLY
-        // from a fully-settled wallet. If this ever fires, the race has regressed.
-        if (
-            process.env.NODE_ENV !== 'production' &&
-            shouldPromptProfileOnboarding(state) &&
-            !walletReady
-        ) {
-            log.error('auth-status.invariant_violation', {
+    return useMemo(
+        () =>
+            deriveAuthStatus({
                 coordinatorStatus,
                 walletReady,
                 profileQueryStatus,
-            });
-        }
-
-        return state;
-    }, [coordinatorStatus, walletReady, profileQueryStatus, hasProfile]);
+                hasProfile,
+            }),
+        [coordinatorStatus, walletReady, profileQueryStatus, hasProfile]
+    );
 };
 
 export default useAuthGateState;

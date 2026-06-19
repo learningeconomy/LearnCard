@@ -25,10 +25,6 @@ vi.mock('../stores/currentUserStore', () => ({
     useIsLoggedIn: () => mockUseIsLoggedIn(),
 }));
 
-vi.mock('../logging/logger', () => ({
-    getLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
-}));
-
 import { shouldPromptProfileOnboarding, hasNetworkProfile, isAuthResolving } from './authStatus';
 import { useAuthGateState } from './useAuthGateState';
 
