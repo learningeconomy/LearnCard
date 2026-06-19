@@ -573,7 +573,8 @@
             "ok": "OK",
             "requiresAgeBefore": "Cette application exige que les utilisateurs aient ",
             "requiresAgeAfter": " ans."
-        }
+        },
+        "searchApps": "Rechercher des applications..."
     },
     "wallet": {
         "categories": {
@@ -1996,7 +1997,8 @@
             "noResults": "Aucun résultat trouvé",
             "noBoosts": "Aucun boost pour le moment !",
             "newTemplate": "Nouveau modèle",
-            "brandTemplate": "Modèle {{brand}}"
+            "brandTemplate": "Modèle {{brand}}",
+            "boostTypePlaceholder": "Type de Boost..."
         },
         "newBoost": {
             "study": "Nouvelle formation",
@@ -2020,7 +2022,8 @@
             "searchManaged": "Rechercher {{count}} Boost(s) géré(s)",
             "noResultsTitled": "Aucun résultat intitulé « {{query}} »",
             "foundResults": "{{count}} résultat(s) trouvé(s) pour « {{query}} »"
-        }
+        },
+        "endorsements": "Recommandations"
     },
     "claim": {
         "didAuth": {
@@ -2629,7 +2632,8 @@
         "framework": {
             "framework": "Référentiel",
             "locationInFramework": "Emplacement dans le référentiel",
-            "browse": "Parcourir"
+            "browse": "Parcourir",
+            "searchPlaceholder": "Rechercher un référentiel..."
         },
         "boostsBySkill": {
             "noBoosts": "Pas encore de Boosts !"
@@ -2708,8 +2712,15 @@
             "descriptionPlaceholder": "Description du référentiel",
             "adminCount": "{{count}} administrateur(s)",
             "createFailed": "Échec de la création du référentiel. Veuillez réessayer.",
-            "updateFailed": "Échec de la mise à jour du référentiel. Veuillez réessayer."
-        }
+            "updateFailed": "Échec de la mise à jour du référentiel. Veuillez réessayer.",
+            "approve": "Approuver",
+            "approveFramework": "Approuver le référentiel",
+            "saveFramework": "Enregistrer le référentiel",
+            "editShort": "Modifier"
+        },
+        "addSkillsCount": "Ajouter {{count}} compétences",
+        "skillsCount": "{{count}} compétences",
+        "loadingSkills": "... compétences"
     },
     "skillProfile": {
         "header": "Mon profil de compétences",

@@ -573,7 +573,8 @@
             "plugins": "Plugins",
             "all": "All"
         },
-        "title": "Apps"
+        "title": "Apps",
+        "searchApps": "Search apps..."
     },
     "wallet": {
         "actions": "Actions",
@@ -2233,7 +2234,8 @@
             "noResults": "No results found",
             "noBoosts": "No Boosts yet!",
             "newTemplate": "New Template",
-            "brandTemplate": "{{brand}} Template"
+            "brandTemplate": "{{brand}} Template",
+            "boostTypePlaceholder": "Boost type..."
         },
         "newBoost": {
             "study": "New Study",
@@ -2257,7 +2259,8 @@
             "searchManaged": "Search {{count}} managed Boost(s)",
             "noResultsTitled": "No results titled \"{{query}}\"",
             "foundResults": "Found {{count}} result(s) for \"{{query}}\""
-        }
+        },
+        "endorsements": "Endorsements"
     },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
@@ -2629,7 +2632,8 @@
         "framework": {
             "framework": "Framework",
             "locationInFramework": "Location in Framework",
-            "browse": "Browse"
+            "browse": "Browse",
+            "searchPlaceholder": "Search framework..."
         },
         "boostsBySkill": {
             "noBoosts": "No Boosts yet!"
@@ -2708,8 +2712,15 @@
             "descriptionPlaceholder": "Framework Description",
             "adminCount": "{{count}} Admin(s)",
             "createFailed": "Failed to create framework. Please try again.",
-            "updateFailed": "Failed to update framework. Please try again."
-        }
+            "updateFailed": "Failed to update framework. Please try again.",
+            "approve": "Approve",
+            "approveFramework": "Approve Framework",
+            "saveFramework": "Save Framework",
+            "editShort": "Edit"
+        },
+        "addSkillsCount": "Add {{count}} Skills",
+        "skillsCount": "{{count}} skills",
+        "loadingSkills": "... skills"
     },
     "skillProfile": {
         "header": "My Skill Profile",

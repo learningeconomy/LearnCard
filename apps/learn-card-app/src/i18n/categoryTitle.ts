@@ -66,4 +66,32 @@ export const localizeCategoryTitle = (title?: string | null): string => {
     return typeof fn === 'function' ? (fn as () => string)() : title;
 };
 
+/**
+ * Localizes the "New <Type>" boost-creation title. The English category
+ * `titleSingular` maps to the gendered `boost.newBoost.*` phrases; unmapped
+ * types fall back to the `New {{type}}` generic with the English singular.
+ */
+const SINGULAR_TO_NEWBOOST_KEY: Record<string, string> = {
+    Boost: 'boost.newBoost.boost',
+    Achievement: 'boost.newBoost.achievement',
+    Experience: 'boost.newBoost.experience',
+    Study: 'boost.newBoost.study',
+    Studies: 'boost.newBoost.study',
+    Portfolio: 'boost.newBoost.portfolio',
+    Assistance: 'boost.newBoost.assistance',
+    Skill: 'boost.newBoost.skill',
+    ID: 'boost.newBoost.id',
+    Membership: 'boost.newBoost.membership',
+    Course: 'boost.newBoost.course',
+};
+
+export const localizeNewBoostTitle = (titleSingular?: string | null): string => {
+    const key = titleSingular ? SINGULAR_TO_NEWBOOST_KEY[titleSingular] : undefined;
+    const fn = key ? (m as Record<string, unknown>)[key] : undefined;
+    if (typeof fn === 'function') return (fn as () => string)();
+    return (m as Record<string, (p: Record<string, unknown>) => string>)['boost.newBoost.generic']({
+        type: titleSingular ?? '',
+    });
+};
+
 export default localizeCategoryTitle;

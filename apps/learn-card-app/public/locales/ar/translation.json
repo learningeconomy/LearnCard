@@ -573,7 +573,8 @@
             "ok": "حسناً",
             "requiresAgeBefore": "يتطلب هذا التطبيق أن يكون المستخدمون ",
             "requiresAgeAfter": " سنة."
-        }
+        },
+        "searchApps": "البحث عن التطبيقات..."
     },
     "wallet": {
         "categories": {
@@ -1996,7 +1997,8 @@
             "noResults": "لم يتم العثور على نتائج",
             "noBoosts": "لا توجد تعزيزات بعد!",
             "newTemplate": "قالب جديد",
-            "brandTemplate": "قالب {{brand}}"
+            "brandTemplate": "قالب {{brand}}",
+            "boostTypePlaceholder": "نوع Boost..."
         },
         "newBoost": {
             "study": "دراسة جديدة",
@@ -2020,7 +2022,8 @@
             "searchManaged": "البحث في {{count}} Boost المُدارة",
             "noResultsTitled": "لا توجد نتائج بعنوان \"{{query}}\"",
             "foundResults": "تم العثور على {{count}} نتيجة لـ \"{{query}}\""
-        }
+        },
+        "endorsements": "التزكيات"
     },
     "claim": {
         "didAuth": {
@@ -2629,7 +2632,8 @@
         "framework": {
             "framework": "الإطار",
             "locationInFramework": "الموقع في الإطار",
-            "browse": "تصفّح"
+            "browse": "تصفّح",
+            "searchPlaceholder": "البحث في الإطار..."
         },
         "boostsBySkill": {
             "noBoosts": "لا توجد Boosts بعد!"
@@ -2708,8 +2712,15 @@
             "descriptionPlaceholder": "وصف الإطار",
             "adminCount": "{{count}} مشرف",
             "createFailed": "تعذّر إنشاء الإطار. حاول مرة أخرى.",
-            "updateFailed": "تعذّر تحديث الإطار. حاول مرة أخرى."
-        }
+            "updateFailed": "تعذّر تحديث الإطار. حاول مرة أخرى.",
+            "approve": "اعتماد",
+            "approveFramework": "اعتماد الإطار",
+            "saveFramework": "حفظ الإطار",
+            "editShort": "تعديل"
+        },
+        "addSkillsCount": "إضافة {{count}} مهارة",
+        "skillsCount": "{{count}} مهارة",
+        "loadingSkills": "... مهارة"
     },
     "skillProfile": {
         "header": "ملفي للمهارات",

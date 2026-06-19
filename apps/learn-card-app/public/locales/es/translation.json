@@ -573,7 +573,8 @@
             "ok": "OK",
             "requiresAgeBefore": "Esta app requiere que los usuarios tengan ",
             "requiresAgeAfter": " años."
-        }
+        },
+        "searchApps": "Buscar aplicaciones..."
     },
     "wallet": {
         "categories": {
@@ -1996,7 +1997,8 @@
             "noResults": "No se encontraron resultados",
             "noBoosts": "¡Aún no hay boosts!",
             "newTemplate": "Nueva plantilla",
-            "brandTemplate": "Plantilla de {{brand}}"
+            "brandTemplate": "Plantilla de {{brand}}",
+            "boostTypePlaceholder": "Tipo de Boost..."
         },
         "newBoost": {
             "study": "Nuevo estudio",
@@ -2020,7 +2022,8 @@
             "searchManaged": "Buscar {{count}} Boost(s) gestionado(s)",
             "noResultsTitled": "No hay resultados titulados \"{{query}}\"",
             "foundResults": "Se encontraron {{count}} resultado(s) para \"{{query}}\""
-        }
+        },
+        "endorsements": "Avales"
     },
     "claim": {
         "didAuth": {
@@ -2629,7 +2632,8 @@
         "framework": {
             "framework": "Marco",
             "locationInFramework": "Ubicación en el marco",
-            "browse": "Explorar"
+            "browse": "Explorar",
+            "searchPlaceholder": "Buscar marco..."
         },
         "boostsBySkill": {
             "noBoosts": "¡Aún no hay Boosts!"
@@ -2708,8 +2712,15 @@
             "descriptionPlaceholder": "Descripción del marco",
             "adminCount": "{{count}} administrador(es)",
             "createFailed": "No se pudo crear el marco. Inténtalo de nuevo.",
-            "updateFailed": "No se pudo actualizar el marco. Inténtalo de nuevo."
-        }
+            "updateFailed": "No se pudo actualizar el marco. Inténtalo de nuevo.",
+            "approve": "Aprobar",
+            "approveFramework": "Aprobar marco",
+            "saveFramework": "Guardar marco",
+            "editShort": "Editar"
+        },
+        "addSkillsCount": "Añadir {{count}} habilidades",
+        "skillsCount": "{{count}} habilidades",
+        "loadingSkills": "... habilidades"
     },
     "skillProfile": {
         "header": "Mi perfil de habilidades",
