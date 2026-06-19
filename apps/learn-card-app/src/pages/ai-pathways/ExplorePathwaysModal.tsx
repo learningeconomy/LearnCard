@@ -672,7 +672,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                             className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                         >
                             <PuzzlePiece className="w-[30px] h-[30px]" />
-                            Grow Skills
+                            {m['growSkills.title']()}
                         </button>
                     )}
 
@@ -691,7 +691,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                             className="w-full bg-cyan-501 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                         >
                             <WalletIcons.ExperiencesIconWithShape className="w-[30px] h-[30px]" />
-                            Explore Roles
+                            {m['aiPathways.exploreRoles']()}
                         </button>
                     )}
                 </div>

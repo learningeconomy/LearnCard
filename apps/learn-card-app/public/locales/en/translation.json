@@ -2587,7 +2587,17 @@
             "joinToUnlock": "Join {{brand}}\nto unlock AI Pathways",
             "connectDescription": "AI Pathways connect your skills to relevant courses, careers, salaries, and learning content.",
             "joinBrand": "Join {{brand}}"
-        }
+        },
+        "exploreRolesSubtitle": "Use your current skills to start new opportunities.",
+        "avgAnnualSalary": "AVG. ANNUAL SALARY",
+        "matchingSkill": "Matching Skill",
+        "matchingSkills": "Matching Skills",
+        "plusMore": "+ {{count}} more",
+        "skill": "Skill",
+        "skills": "Skills",
+        "goals": "Goals",
+        "searchToExplore": "Search to explore matching roles.",
+        "noRolesMatched": "No roles matched your search. Try a broader keyword."
     },
     "aiSession": {
         "loadingTitle": "Loading title",

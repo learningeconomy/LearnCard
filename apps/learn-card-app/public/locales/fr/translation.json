@@ -2587,7 +2587,17 @@
             "joinToUnlock": "Rejoignez {{brand}}\npour débloquer AI Pathways",
             "connectDescription": "AI Pathways relie vos compétences à des cours, des carrières, des salaires et du contenu d'apprentissage pertinents.",
             "joinBrand": "Rejoignez {{brand}}"
-        }
+        },
+        "exploreRolesSubtitle": "Utilisez vos compétences actuelles pour saisir de nouvelles opportunités.",
+        "avgAnnualSalary": "SALAIRE ANNUEL MOYEN",
+        "matchingSkill": "Compétence correspondante",
+        "matchingSkills": "Compétences correspondantes",
+        "plusMore": "+ {{count}} de plus",
+        "skill": "Compétence",
+        "skills": "Compétences",
+        "goals": "Objectifs",
+        "searchToExplore": "Recherchez pour explorer les rôles correspondants.",
+        "noRolesMatched": "Aucun rôle ne correspond à votre recherche. Essayez un mot-clé plus général."
     },
     "aiSession": {
         "loadingTitle": "Chargement du titre",

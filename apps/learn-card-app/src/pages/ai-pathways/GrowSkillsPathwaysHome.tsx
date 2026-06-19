@@ -93,7 +93,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                 >
                     <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
-                    Grow Skills
+                    {m['growSkills.title']()}
                 </button>
             </div>
 

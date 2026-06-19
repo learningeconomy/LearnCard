@@ -2587,7 +2587,17 @@
             "joinToUnlock": "انضم إلى {{brand}}\nلفتح AI Pathways",
             "connectDescription": "تربط AI Pathways مهاراتك بالدورات والمهن والرواتب ومحتوى التعلّم ذي الصلة.",
             "joinBrand": "انضم إلى {{brand}}"
-        }
+        },
+        "exploreRolesSubtitle": "استخدم مهاراتك الحالية لبدء فرص جديدة.",
+        "avgAnnualSalary": "متوسط الراتب السنوي",
+        "matchingSkill": "مهارة مطابقة",
+        "matchingSkills": "مهارات مطابقة",
+        "plusMore": "+ {{count}} أخرى",
+        "skill": "مهارة",
+        "skills": "مهارات",
+        "goals": "الأهداف",
+        "searchToExplore": "ابحث لاستكشاف الأدوار المطابقة.",
+        "noRolesMatched": "لا توجد أدوار تطابق بحثك. جرّب كلمة مفتاحية أوسع."
     },
     "aiSession": {
         "loadingTitle": "تحميل العنوان",
