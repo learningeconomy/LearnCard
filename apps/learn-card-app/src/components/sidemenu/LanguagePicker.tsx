@@ -6,12 +6,8 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import GlobeStand from 'learn-card-base/svgs/GlobeStand';
 
 import * as m from '../../paraglide/messages.js';
-import {
-    SUPPORTED_LANGUAGES,
-    useLocale,
-    useChangeLocale,
-    type SupportedLanguage,
-} from '../../i18n';
+import { useLocale, useChangeLocale, type SupportedLanguage } from '../../i18n';
+import { useLanguageSelectorConfig } from '../../i18n/useLanguageSelectorConfig';
 
 /**
  * Native names for every supported language, shown in their own script.
@@ -35,6 +31,7 @@ const LANGUAGE_NATIVE_NAMES: Record<SupportedLanguage, string> = {
 const LanguageSelectorModal: React.FC<{ currentLang: SupportedLanguage }> = ({ currentLang }) => {
     const changeLocale = useChangeLocale();
     const { closeModal } = useModal();
+    const { visibleLanguages } = useLanguageSelectorConfig();
 
     const handlePick = (lang: SupportedLanguage) => {
         if (lang !== currentLang) {
@@ -49,7 +46,7 @@ const LanguageSelectorModal: React.FC<{ currentLang: SupportedLanguage }> = ({ c
                 {m['language.select']()}
             </h3>
             <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
-                {SUPPORTED_LANGUAGES.map(lang => {
+                {visibleLanguages.map(lang => {
                     const selected = lang === currentLang;
                     return (
                         <button
@@ -84,12 +81,15 @@ const LanguageSelectorModal: React.FC<{ currentLang: SupportedLanguage }> = ({ c
  */
 const LanguagePicker: React.FC = () => {
     const currentLang = useLocale();
+    const { hideSelector } = useLanguageSelectorConfig();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
 
     const currentLabel = LANGUAGE_NATIVE_NAMES[currentLang] ?? LANGUAGE_NATIVE_NAMES.en;
+
+    if (hideSelector) return null;
 
     const openLanguageModal = () => {
         newModal(
@@ -134,12 +134,15 @@ export default LanguagePicker;
  */
 export const LanguagePickerCompact: React.FC<{ className?: string }> = ({ className = '' }) => {
     const currentLang = useLocale();
+    const { hideSelector } = useLanguageSelectorConfig();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
 
     const currentLabel = LANGUAGE_NATIVE_NAMES[currentLang] ?? LANGUAGE_NATIVE_NAMES.en;
+
+    if (hideSelector) return null;
 
     const openLanguageModal = () => {
         newModal(
