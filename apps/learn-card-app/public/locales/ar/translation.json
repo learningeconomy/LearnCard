@@ -52,7 +52,8 @@
         "revoked": "ملغى",
         "learnMore": "اعرف المزيد",
         "viewAll": "عرض الكل",
-        "tagline": "محفظة التعلّم والعمل الشاملة"
+        "tagline": "محفظة التعلّم والعمل الشاملة",
+        "gotIt": "حسنًا."
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
@@ -1360,6 +1361,20 @@
             "allowAddData": "السماح لـ {{name}} بإضافة بيانات إلى {{brand}} الخاص بك",
             "cannotWrite": "لا يمكن لهذا التطبيق كتابة أي بيانات في {{brand}} الخاص بك.",
             "writeDescription": "يؤدي تفعيل <0>السماح بالكل</0> إلى السماح للتطبيق بإصدار بيانات اعتماد وإضافتها إلى {{brand}} الخاص بك. إذا تم إيقافه، يمكنك اختيار فئات المحفظة التي يمكن للتطبيق الإضافة إليها بشكل انتقائي."
+        },
+        "terms": {
+            "requestedAccessTo": "طلب الوصول إلى",
+            "requestingAccessTo": "يطلب الوصول إلى",
+            "notRequesting": "لا يطلب قراءة أو كتابة أي شيء في {{brand}} الخاص بك",
+            "viewPersonal": "عرض {{fields}}",
+            "viewCredentials": "<0>عرض بيانات الاعتماد والوصول إليها</0> التي تختار مشاركتها",
+            "sendCredentials": "إرسال بيانات اعتماد إليك",
+            "developerPrivacyPolicy": "سياسة خصوصية المطوّر"
+        },
+        "personalField": {
+            "name": "الاسم",
+            "email": "البريد الإلكتروني",
+            "profilePicture": "صورة الملف الشخصي"
         }
     },
     "recovery": {
@@ -2521,7 +2536,10 @@
         "hasRequestedToView": "<0>{{ownerName}}</0> طلب عرض رؤى <1>{{userName}}</1>.",
         "teacherReasonForAccessing": "يحتاج معلمك إلى هذه البيانات لعرض تقدمك وتقديم الملاحظات.",
         "contractSubtitle": "شارك تقدمك التعليمي مع معلمك",
-        "contractDescription": "يتيح لمعلمك عرض الرؤى المحددة"
+        "contractDescription": "يتيح لمعلمك عرض الرؤى المحددة",
+        "shareChildInsights": "شارك رؤى <0>{{child}}</0> مع <1>{{teacher}}</1>",
+        "successfullyShared": "لقد شاركت الرؤى مع {{name}} بنجاح",
+        "approveDescription": "إذا وافقت، سيتمكن معلمك من رؤية أهم مهاراتك ولمحات تعلّمك والمسارات المقترحة. وسيتمكن أيضًا من إرسال اقتراحات مسارات التعلّم إليك."
     },
     "aiPathways": {
         "searchSkillGoalJob": "...البحث بالمهارة أو الهدف أو الوظيفة",

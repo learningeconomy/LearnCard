@@ -52,7 +52,8 @@
         "revoked": "Revoked",
         "learnMore": "Learn More",
         "viewAll": "View All",
-        "tagline": "Universal Learning & Work Portfolio"
+        "tagline": "Universal Learning & Work Portfolio",
+        "gotIt": "Got it."
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -1360,6 +1361,20 @@
             "allowAddData": "Allow {{name}} to Add Data to Your {{brand}}",
             "cannotWrite": "This app is not able to write any data to your {{brand}}.",
             "writeDescription": "Turning on <0>Allow All</0> will let the app issue credentials and add them to your {{brand}}. If turned off, you can selectively choose which wallet categories that the app can add to."
+        },
+        "terms": {
+            "requestedAccessTo": "has requested access to",
+            "requestingAccessTo": "is requesting access to",
+            "notRequesting": "is not requesting to read or write anything to your {{brand}}",
+            "viewPersonal": "view your {{fields}}",
+            "viewCredentials": "<0>view and access credentials</0> you select to share",
+            "sendCredentials": "send credentials to you",
+            "developerPrivacyPolicy": "Developer's Privacy Policy"
+        },
+        "personalField": {
+            "name": "name",
+            "email": "email",
+            "profilePicture": "profile picture"
         }
     },
     "recovery": {
@@ -2521,7 +2536,10 @@
         "workLife.veryLow": "Your current work life balance <0>is very low</0> compared to others.",
         "workLife.veryStrong": "Your current work life balance <0>is very strong</0> compared to others.",
         "workLifeBalance": "Work Life Balance",
-        "yourMarketComparison": "Your Market Comparison"
+        "yourMarketComparison": "Your Market Comparison",
+        "shareChildInsights": "Share <0>{{child}}</0>'s insights with <1>{{teacher}}</1>",
+        "successfullyShared": "You've successfully shared insights with {{name}}",
+        "approveDescription": "If you approve, your teacher will be able to see your Top Skills, Learning Snapshots, Suggested Pathways. They will also be able to send learning pathway suggestions to you."
     },
     "aiPathways": {
         "searchSkillGoalJob": "Search by skill, goal, or job...",

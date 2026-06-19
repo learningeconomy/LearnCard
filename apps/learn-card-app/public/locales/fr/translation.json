@@ -52,7 +52,8 @@
         "revoked": "Révoqué",
         "learnMore": "En savoir plus",
         "viewAll": "Tout voir",
-        "tagline": "Portfolio universel d'apprentissage et de travail"
+        "tagline": "Portfolio universel d'apprentissage et de travail",
+        "gotIt": "Compris."
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -1360,6 +1361,20 @@
             "allowAddData": "Autoriser {{name}} à ajouter des données à votre {{brand}}",
             "cannotWrite": "Cette application ne peut écrire aucune donnée dans votre {{brand}}.",
             "writeDescription": "L'activation de <0>Tout autoriser</0> permettra à l'application d'émettre des justificatifs et de les ajouter à votre {{brand}}. Si elle est désactivée, vous pouvez choisir de façon sélective les catégories du portefeuille auxquelles l'application peut ajouter des données."
+        },
+        "terms": {
+            "requestedAccessTo": "a demandé l'accès pour",
+            "requestingAccessTo": "demande l'accès pour",
+            "notRequesting": "ne demande à lire ni à écrire quoi que ce soit dans votre {{brand}}",
+            "viewPersonal": "voir votre {{fields}}",
+            "viewCredentials": "<0>voir et accéder aux justificatifs</0> que vous choisissez de partager",
+            "sendCredentials": "vous envoyer des justificatifs",
+            "developerPrivacyPolicy": "Politique de confidentialité du développeur"
+        },
+        "personalField": {
+            "name": "nom",
+            "email": "e-mail",
+            "profilePicture": "photo de profil"
         }
     },
     "recovery": {
@@ -2521,7 +2536,10 @@
         "hasRequestedToView": "<0>{{ownerName}}</0> a demandé à voir les insights de <1>{{userName}}</1>.",
         "teacherReasonForAccessing": "Votre enseignant a besoin de ces données pour voir votre progression et vous donner un retour.",
         "contractSubtitle": "Partagez votre progression avec votre enseignant",
-        "contractDescription": "Permet à votre enseignant de voir les insights sélectionnés"
+        "contractDescription": "Permet à votre enseignant de voir les insights sélectionnés",
+        "shareChildInsights": "Partagez les Insights de <0>{{child}}</0> avec <1>{{teacher}}</1>",
+        "successfullyShared": "Vous avez partagé les Insights avec {{name}} avec succès",
+        "approveDescription": "Si vous approuvez, votre enseignant pourra voir vos Compétences Principales, vos Aperçus d'Apprentissage et vos Parcours Suggérés. Il pourra également vous envoyer des suggestions de parcours d'apprentissage."
     },
     "aiPathways": {
         "searchSkillGoalJob": "Rechercher par compétence, objectif ou métier...",
