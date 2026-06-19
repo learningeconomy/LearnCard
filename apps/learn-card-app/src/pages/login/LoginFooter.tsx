@@ -33,7 +33,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
             <div className="w-full flex items-center justify-center flex-col max-w-[400px]">
                 <IonCol
                     size="12"
-                    className="w-full flex items-center justify-center p-0 mt-2 gap-[15px]"
+                    className="w-full flex flex-wrap items-center justify-center p-0 mt-2 gap-x-[15px] gap-y-[8px]"
                 >
                     <a
                         href={links.termsOfServiceUrl}
@@ -43,7 +43,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openToS();
                             }
                         }}
-                        className="flex items-center justify-center text-white/80 font-bold text-xs hover:underline"
+                        className="flex items-center justify-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
                         {m['login.footer.terms']()}
                     </a>
@@ -55,7 +55,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openPP();
                             }
                         }}
-                        className="flex items-center text-white/80 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
                         {m['login.footer.privacy']()}
                     </a>
@@ -67,7 +67,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openLCwebsite();
                             }
                         }}
-                        className="flex items-center text-white/80 font-bold text-xs hover:underline min-w-[69px]"
+                        className="flex items-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
                         {m['login.footer.learnMore']()}
                     </a>
@@ -76,7 +76,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                             e.preventDefault();
                             history.push('/ai/pathways/discovery');
                         }}
-                        className="flex items-center text-white/80 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
                         {m['login.footer.explorePathways']()}
                     </button>
