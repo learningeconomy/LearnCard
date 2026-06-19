@@ -49,6 +49,7 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | App Store examples | `examples/app-store-apps/AGENTS.md` | Example app patterns, Astro + Partner Connect stack |
 | ScoutPass app | `apps/scouts/AGENTS.md` | Troop/Scout hierarchy, credential status, key components |
 | LearnCard app (E2E testing, architecture) | `apps/learn-card-app/AGENTS.md` | Multi-tenant config, JSON themes, Playwright E2E, Ionic modal gotchas, credential flows |
+| i18n / translations (Paraglide) | `apps/learn-card-app/src/i18n/AGENTS.md` | Paraglide conventions, `m[...]`/`TransP`, gotchas (translated-string comparisons, plurals, RTL), shared-package `useT`, `hideLanguageSelector` LD flag |
 | Developer portal (guides, dashboards) | `PATTERNS.md` (Dashboard Patterns section) | Guide/dashboard tab system, guide state access, per-guideType routing |
 | ConsentFlow test harness | `examples/consent-flow-test/README.md` | Standalone test app for consent redirect + credential sending |
 
