@@ -54,7 +54,8 @@
         "viewAll": "عرض الكل",
         "tagline": "محفظة التعلّم والعمل الشاملة",
         "gotIt": "حسنًا.",
-        "edit": "تعديل"
+        "edit": "تعديل",
+        "clear": "مسح"
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
@@ -2576,7 +2577,17 @@
         "previousCredential": "الشهادة السابقة",
         "nextCredential": "الشهادة التالية",
         "noSessionsYet": "لا توجد جلسات بعد",
-        "aiLearningSessions": "جلسات التعلّم بالذكاء الاصطناعي"
+        "aiLearningSessions": "جلسات التعلّم بالذكاء الاصطناعي",
+        "discovery": {
+            "enterCareerKeyword": "أدخل كلمة مفتاحية للمهنة",
+            "keywordPlaceholder": "مثال: مهندس برمجيات",
+            "searchingFor": "البحث عن: <0>{{keyword}}</0>",
+            "noPathwaysYet": "لا توجد AI Pathways بعد.",
+            "buildToUnlock": "ابنِ {{brand}} الخاص بك لفتح مسارات مخصّصة واكتشاف مسارات مهنية وتجارب تعلّم تتوافق مع مهاراتك.",
+            "joinToUnlock": "انضم إلى {{brand}}\nلفتح AI Pathways",
+            "connectDescription": "تربط AI Pathways مهاراتك بالدورات والمهن والرواتب ومحتوى التعلّم ذي الصلة.",
+            "joinBrand": "انضم إلى {{brand}}"
+        }
     },
     "aiSession": {
         "loadingTitle": "تحميل العنوان",

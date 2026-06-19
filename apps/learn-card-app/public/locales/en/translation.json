@@ -54,7 +54,8 @@
         "viewAll": "View All",
         "tagline": "Universal Learning & Work Portfolio",
         "gotIt": "Got it.",
-        "edit": "Edit"
+        "edit": "Edit",
+        "clear": "Clear"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -2576,7 +2577,17 @@
         "previousCredential": "Previous credential",
         "nextCredential": "Next credential",
         "noSessionsYet": "No sessions yet",
-        "aiLearningSessions": "AI Learning Sessions"
+        "aiLearningSessions": "AI Learning Sessions",
+        "discovery": {
+            "enterCareerKeyword": "Enter a career keyword",
+            "keywordPlaceholder": "e.g. Software Engineer",
+            "searchingFor": "Searching for: <0>{{keyword}}</0>",
+            "noPathwaysYet": "No AI Pathways yet.",
+            "buildToUnlock": "Build your {{brand}} to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.",
+            "joinToUnlock": "Join {{brand}}\nto unlock AI Pathways",
+            "connectDescription": "AI Pathways connect your skills to relevant courses, careers, salaries, and learning content.",
+            "joinBrand": "Join {{brand}}"
+        }
     },
     "aiSession": {
         "loadingTitle": "Loading title",

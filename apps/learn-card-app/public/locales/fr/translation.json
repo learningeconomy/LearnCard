@@ -54,7 +54,8 @@
         "viewAll": "Tout voir",
         "tagline": "Portfolio universel d'apprentissage et de travail",
         "gotIt": "Compris.",
-        "edit": "Modifier"
+        "edit": "Modifier",
+        "clear": "Effacer"
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -2576,7 +2577,17 @@
         "previousCredential": "Certificat précédent",
         "nextCredential": "Certificat suivant",
         "noSessionsYet": "Pas encore de sessions",
-        "aiLearningSessions": "Sessions d'apprentissage par IA"
+        "aiLearningSessions": "Sessions d'apprentissage par IA",
+        "discovery": {
+            "enterCareerKeyword": "Saisissez un mot-clé de carrière",
+            "keywordPlaceholder": "p. ex. Ingénieur logiciel",
+            "searchingFor": "Recherche : <0>{{keyword}}</0>",
+            "noPathwaysYet": "Aucun AI Pathways pour le moment.",
+            "buildToUnlock": "Construisez votre {{brand}} pour débloquer des parcours personnalisés et découvrir des trajectoires professionnelles et des expériences d'apprentissage adaptées à vos compétences.",
+            "joinToUnlock": "Rejoignez {{brand}}\npour débloquer AI Pathways",
+            "connectDescription": "AI Pathways relie vos compétences à des cours, des carrières, des salaires et du contenu d'apprentissage pertinents.",
+            "joinBrand": "Rejoignez {{brand}}"
+        }
     },
     "aiSession": {
         "loadingTitle": "Chargement du titre",

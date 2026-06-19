@@ -54,7 +54,8 @@
         "viewAll": "Ver todo",
         "tagline": "Portafolio universal de aprendizaje y trabajo",
         "gotIt": "Entendido.",
-        "edit": "Editar"
+        "edit": "Editar",
+        "clear": "Borrar"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
@@ -2576,7 +2577,17 @@
         "previousCredential": "Credencial anterior",
         "nextCredential": "Siguiente credencial",
         "noSessionsYet": "Aún no hay sesiones",
-        "aiLearningSessions": "Sesiones de aprendizaje con IA"
+        "aiLearningSessions": "Sesiones de aprendizaje con IA",
+        "discovery": {
+            "enterCareerKeyword": "Introduce una palabra clave de carrera",
+            "keywordPlaceholder": "p. ej. Ingeniero de software",
+            "searchingFor": "Buscando: <0>{{keyword}}</0>",
+            "noPathwaysYet": "Aún no hay AI Pathways.",
+            "buildToUnlock": "Crea tu {{brand}} para desbloquear rutas personalizadas y descubrir trayectorias profesionales y experiencias de aprendizaje alineadas con tus habilidades.",
+            "joinToUnlock": "Únete a {{brand}}\npara desbloquear AI Pathways",
+            "connectDescription": "AI Pathways conecta tus habilidades con cursos, carreras, salarios y contenido de aprendizaje relevantes.",
+            "joinBrand": "Únete a {{brand}}"
+        }
     },
     "aiSession": {
         "loadingTitle": "Cargando título",
