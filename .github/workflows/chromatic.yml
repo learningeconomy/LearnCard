@@ -14,7 +14,10 @@ concurrency:
 
 env:
     CI: true
-    NODE_OPTIONS: '--max_old_space_size=4096'
+    # The app's Storybook build bundles the whole app (~13k modules) and needs
+    # more than the default/4096 MB heap — 8 GB verified locally. (Raised after
+    # i18n'd components pushed the build past the previous ceiling.)
+    NODE_OPTIONS: '--max_old_space_size=8192'
 
 jobs:
     chromatic-deployment:
