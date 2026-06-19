@@ -1,7 +1,9 @@
 import React from 'react';
 import moment from 'moment';
 
-import { getTimeOfDayGreeting, getFirstName } from '../helpers/greeting';
+import * as m from '../../../paraglide/messages.js';
+
+import { getTimeOfDay, getFirstName } from '../helpers/greeting';
 
 type Affiliation = {
     role: string;
@@ -52,9 +54,9 @@ const getInitials = (name: string): string => {
 
 const formatIssuedAt = (iso?: string): string | null => {
     if (!iso) return null;
-    const m = moment(iso);
-    if (!m.isValid()) return null;
-    return `Since ${m.format('MMM YYYY')}`;
+    const mo = moment(iso);
+    if (!mo.isValid()) return null;
+    return m['dashboard.header.since']({ date: mo.format('MMM YYYY') });
 };
 
 const capitalize = (value: string): string => {
@@ -90,7 +92,10 @@ const resolveSubtitle = (
     if (role && bio) return { primary: capitalize(role), secondary: bio, primaryStyle: 'pill' };
     if (role) return { primary: capitalize(role), primaryStyle: 'pill' };
     if (bio) return { primary: bio, primaryStyle: 'text' };
-    return { primary: `New to ${brandName}`, primaryStyle: 'text' };
+    return {
+        primary: m['dashboard.header.newToBrand']({ brand: brandName }),
+        primaryStyle: 'text',
+    };
 };
 
 const formatExperience = (experience?: ExperienceDuration): string | null => {
@@ -98,10 +103,14 @@ const formatExperience = (experience?: ExperienceDuration): string | null => {
     const years = experience.years ?? 0;
     const months = experience.months ?? 0;
     if (years > 0) {
-        return `${years} ${years === 1 ? 'yr' : 'yrs'} experience`;
+        return years === 1
+            ? m['dashboard.header.experienceYear']({ count: years })
+            : m['dashboard.header.experienceYears']({ count: years });
     }
     if (months > 0) {
-        return `${months} ${months === 1 ? 'month' : 'months'} experience`;
+        return months === 1
+            ? m['dashboard.header.experienceMonth']({ count: months })
+            : m['dashboard.header.experienceMonths']({ count: months });
     }
     return null;
 };
@@ -111,11 +120,22 @@ const buildStatsLine = (stats?: HeaderStats): string | null => {
     const parts: string[] = [];
     if (stats.credentials > 0)
         parts.push(
-            `${stats.credentials} ${stats.credentials === 1 ? 'credential' : 'credentials'}`
+            stats.credentials === 1
+                ? m['dashboard.header.statCredential']({ count: stats.credentials })
+                : m['dashboard.header.statCredentials']({ count: stats.credentials })
         );
-    if (stats.skills > 0) parts.push(`${stats.skills} ${stats.skills === 1 ? 'skill' : 'skills'}`);
+    if (stats.skills > 0)
+        parts.push(
+            stats.skills === 1
+                ? m['dashboard.header.statSkill']({ count: stats.skills })
+                : m['dashboard.header.statSkills']({ count: stats.skills })
+        );
     if (stats.contacts > 0)
-        parts.push(`${stats.contacts} ${stats.contacts === 1 ? 'contact' : 'contacts'}`);
+        parts.push(
+            stats.contacts === 1
+                ? m['dashboard.header.statContact']({ count: stats.contacts })
+                : m['dashboard.header.statContacts']({ count: stats.contacts })
+        );
     if (parts.length === 0) return null;
     return parts.join(' · ');
 };
@@ -140,7 +160,20 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
 }) => {
     const initials = getInitials(displayName);
     const firstName = getFirstName(displayName);
-    const greeting = getTimeOfDayGreeting();
+    const timeOfDay = getTimeOfDay();
+    const greetingText = (() => {
+        if (timeOfDay === 'morning')
+            return firstName
+                ? m['dashboard.header.greetingMorning']({ name: firstName })
+                : m['dashboard.header.greetingMorningNoName']();
+        if (timeOfDay === 'afternoon')
+            return firstName
+                ? m['dashboard.header.greetingAfternoon']({ name: firstName })
+                : m['dashboard.header.greetingAfternoonNoName']();
+        return firstName
+            ? m['dashboard.header.greetingEvening']({ name: firstName })
+            : m['dashboard.header.greetingEveningNoName']();
+    })();
     const issuedAtLabel = formatIssuedAt(affiliation?.issuedAt);
     const subtitle = resolveSubtitle(
         brandName,
@@ -182,13 +215,13 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             <button
                                 type="button"
                                 onClick={onAvatarClick}
-                                aria-label={`Open your ${brandName}`}
+                                aria-label={m['dashboard.header.avatarAria']({ brand: brandName })}
                                 className="rounded-full active:scale-[0.97] transition-transform"
                             >
                                 {profileImage ? (
                                     <img
                                         src={profileImage}
-                                        alt={displayName || 'Profile'}
+                                        alt={displayName || m['dashboard.header.profileAlt']()}
                                         className="w-[72px] h-[72px] rounded-full object-cover border-2 border-white shadow-soft-bottom"
                                     />
                                 ) : (
@@ -212,7 +245,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
 
                     <div className="flex-1 min-w-0">
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight">
-                            {greeting}, {firstName}.
+                            {greetingText}
                         </h1>
                         {subtitle.primaryStyle === 'pill' ? (
                             <span className="inline-flex mt-1.5 px-2.5 py-1 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium">
@@ -268,7 +301,9 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                                 onClick={onSkillPillClick}
                                 className="px-2.5 py-1 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors text-xs font-medium text-grayscale-500"
                             >
-                                +{overflowSkillCount} more
+                                {m['dashboard.header.overflowSkills']({
+                                    count: overflowSkillCount,
+                                })}
                             </button>
                         )}
                     </div>

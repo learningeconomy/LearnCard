@@ -85,6 +85,23 @@ serve `[]`.
     ~127 files / ~56k LOC) — effectively a standalone app; tracked separately.
 -   Keep this list current as surfaces are swept.
 
+### Swept
+
+-   **Dashboard Home Screen** (`src/pages/dashboard/`, LC-1831) — fully localized
+    under the `dashboard.*` namespace (~130 keys). Notes for future edits there:
+    -   `helpers/greeting.ts` is intentionally id-based: `getTimeOfDay()` returns
+        `'morning' | 'afternoon' | 'evening'` and `getFirstName()` returns `''`
+        when there's no name, so `DashboardHeaderCard` maps to a localized greeting
+        (named vs. `…NoName` variant). Don't bake copy back into the helper.
+    -   `quickActions/registry.ts` builds `label`/`caption` via
+        `m['dashboard.quickActions.*']` inside `build()` — these run during render,
+        so calling `m` there is fine.
+    -   Notification titles, skill tiers, and goal CTAs switch on stable ids/enums
+        (`n.type`, `skill.strengthTier`, `pathwaysEnabled`/`nextNode`), never on the
+        translated label.
+    -   `DashboardView.stories.tsx` + `dashboard.personas.ts` are Storybook-only
+        fixtures (not imported by production) — left untranslated as test data.
+
 ## Adding a new language
 
 1. Create `public/locales/<code>/translation.json` (all keys translated)

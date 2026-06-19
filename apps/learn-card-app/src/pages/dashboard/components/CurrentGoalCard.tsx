@@ -1,6 +1,8 @@
 import React from 'react';
 import type { PathwayNode } from '../../pathways/types';
 
+import * as m from '../../../paraglide/messages.js';
+
 type GoalSummary = {
     title: string;
     goal: string;
@@ -67,21 +69,22 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                     />
                     <div className="relative">
                         <p className="text-[11px] font-medium tracking-[0.14em] text-white/60 uppercase">
-                            Current goal
+                            {m['dashboard.currentGoal.label']()}
                         </p>
                         <h2 className="mt-1 text-2xl desktop:text-3xl font-semibold leading-tight">
-                            Set your direction
+                            {m['dashboard.currentGoal.emptyHeroTitle']()}
                         </h2>
                         <p className="mt-2 text-sm text-white/80 leading-relaxed max-w-md">
-                            Pick a goal and we&apos;ll map a personal path with the steps, skills,
-                            and credentials to get there.
+                            {m['dashboard.currentGoal.emptyHeroSubtitle']()}
                         </p>
                         <button
                             type="button"
                             onClick={onContinue}
                             className={`mt-5 inline-flex w-full desktop:w-auto justify-center py-3 px-6 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
                         >
-                            {pathwaysEnabled ? 'Start a journey' : 'Start a pathway'}
+                            {pathwaysEnabled
+                                ? m['dashboard.currentGoal.startJourney']()
+                                : m['dashboard.currentGoal.startPathway']()}
                         </button>
                     </div>
                 </section>
@@ -90,16 +93,18 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
         return (
             <section className="bg-white rounded-[20px] p-5 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
                 <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                    Current goal
+                    {m['dashboard.currentGoal.label']()}
                 </p>
                 <h2 className="mt-1 text-lg font-semibold text-grayscale-900">
-                    No active journey yet
+                    {m['dashboard.currentGoal.emptyTitle']()}
                 </h2>
                 <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
-                    Set a goal and we&apos;ll help you build the path to get there.
+                    {m['dashboard.currentGoal.emptySubtitle']()}
                 </p>
                 <button type="button" onClick={onContinue} className={buttonClass}>
-                    {pathwaysEnabled ? 'Start a journey' : 'Start a pathway'}
+                    {pathwaysEnabled
+                        ? m['dashboard.currentGoal.startJourney']()
+                        : m['dashboard.currentGoal.startPathway']()}
                 </button>
             </section>
         );
@@ -117,7 +122,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                 <div className="relative">
                     <div className="flex items-start justify-between gap-3">
                         <p className="text-[11px] font-medium tracking-[0.14em] text-white/60 uppercase">
-                            Current goal
+                            {m['dashboard.currentGoal.label']()}
                         </p>
                         {reviewsDueToday > 0 && (
                             <button
@@ -126,7 +131,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                                 className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/25 text-indigo-100 text-xs font-medium hover:bg-indigo-500/35 transition-colors"
                             >
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-300" />
-                                {reviewsDueToday} due today
+                                {m['dashboard.currentGoal.dueToday']({ count: reviewsDueToday })}
                             </button>
                         )}
                     </div>
@@ -160,7 +165,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                                 })}
                             </div>
                             <span className="shrink-0 text-xs text-white/80 font-medium">
-                                {completed} of {total}
+                                {m['dashboard.currentGoal.progress']({ completed, total })}
                             </span>
                         </div>
                     )}
@@ -170,7 +175,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                             <span className="mt-1.5 w-2.5 h-2.5 rounded-full bg-indigo-300 shrink-0" />
                             <div className="flex-1 min-w-0">
                                 <p className="text-[11px] font-medium tracking-[0.14em] text-white/60 uppercase">
-                                    Next step
+                                    {m['dashboard.currentGoal.nextStep']()}
                                 </p>
                                 <p className="mt-1 text-sm font-medium leading-relaxed">
                                     {nextNode.title}
@@ -191,9 +196,9 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                     >
                         {pathwaysEnabled
                             ? nextNode
-                                ? 'Continue journey'
-                                : 'Open journey'
-                            : 'Navigate pathways'}
+                                ? m['dashboard.currentGoal.continueJourney']()
+                                : m['dashboard.currentGoal.openJourney']()
+                            : m['dashboard.currentGoal.navigatePathways']()}
                     </button>
                 </div>
             </section>
@@ -216,7 +221,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                         className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition-colors"
                     >
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        {reviewsDueToday} due today
+                        {m['dashboard.currentGoal.dueToday']({ count: reviewsDueToday })}
                     </button>
                 )}
             </div>
@@ -226,7 +231,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                 <div className="mt-5 flex items-center gap-3">
                     <ProgressSegments total={total} completed={completed} />
                     <span className="shrink-0 text-xs text-grayscale-600 font-medium">
-                        {completed} of {total} steps complete
+                        {m['dashboard.currentGoal.progressSteps']({ completed, total })}
                     </span>
                 </div>
             )}
@@ -236,7 +241,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                     <span className="mt-1.5 w-2.5 h-2.5 rounded-full bg-grayscale-900 shrink-0" />
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                            Next step
+                            {m['dashboard.currentGoal.nextStep']()}
                         </p>
                         <p className="mt-1 text-sm text-grayscale-900 font-medium leading-relaxed">
                             {nextNode.title}
@@ -253,9 +258,9 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
             <button type="button" onClick={onContinue} className={buttonClass}>
                 {pathwaysEnabled
                     ? nextNode
-                        ? 'Continue journey'
-                        : 'Open journey'
-                    : 'Navigate pathways'}
+                        ? m['dashboard.currentGoal.continueJourney']()
+                        : m['dashboard.currentGoal.openJourney']()
+                    : m['dashboard.currentGoal.navigatePathways']()}
             </button>
         </section>
     );

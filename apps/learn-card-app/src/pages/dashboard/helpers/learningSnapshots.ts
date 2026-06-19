@@ -1,3 +1,5 @@
+import * as m from '../../../paraglide/messages.js';
+
 export type DashboardLearningSnapshot = {
     label: string;
     title: string;
@@ -40,8 +42,12 @@ export const buildLearningSnapshots = (
     if (!insights) return [];
 
     return [
-        toSnapshot(insights.strongestArea, 'strength', 'Strongest area'),
-        toSnapshot(insights.weakestArea, 'weakness', 'Needs work'),
-        toSnapshot(insights.roomForGrowth, 'growth', 'Room for growth'),
+        toSnapshot(
+            insights.strongestArea,
+            'strength',
+            m['dashboard.learningProfile.snapStrongest']()
+        ),
+        toSnapshot(insights.weakestArea, 'weakness', m['dashboard.learningProfile.snapWeakest']()),
+        toSnapshot(insights.roomForGrowth, 'growth', m['dashboard.learningProfile.snapGrowth']()),
     ].filter((snapshot): snapshot is DashboardLearningSnapshot => snapshot !== null);
 };
