@@ -15,7 +15,7 @@ const SkillsInsightCard: React.FC = () => {
             <div className="w-full bg-indigo-600 rounded-[16px] flex items-center justify-between mb-4 relative shadow-soft-bottom">
                 <div className="flex flex-col items-start justify-center py-4 pl-4">
                     <h2 className="font-poppins font-semibold text-[20px] text-grayscale-50 text-left">
-                        AI Insights
+                        Insights
                     </h2>
                     <p className="font-poppins font-semibold text-[14px] text-indigo-50 text-left my-2">
                         <span className="font-normal text-grayscale-200">Your</span> top skills,

@@ -215,7 +215,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 openConsentFlowModal(
                     true,
                     () => {
-                        presentToast('AI Insights shared!');
+                        presentToast('Insights shared!');
                         refetchNotifications();
                     },
                     notification?.data?.metadata?.targetProfileId as string,
@@ -269,7 +269,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
             openConsentFlowModal(
                 true,
                 () => {
-                    presentToast('AI Insights shared!');
+                    presentToast('Insights shared!');
                     refetchNotifications();
                 },
                 notification?.from?.profileId as string,
