@@ -12,6 +12,7 @@ import {
 } from '../../types';
 import { VC, VerificationItem } from '@learncard/types';
 import { KnownDIDRegistryType } from '../../types';
+import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 export type VCIDDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -38,6 +39,10 @@ export type VCIDDisplayCardProps = {
     hideGradientBackground?: boolean;
     customLinkedCredentialsComponent?: React.ReactNode;
     unknownVerifierTitle?: string;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -65,6 +70,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     hideGradientBackground = false,
     customLinkedCredentialsComponent,
     unknownVerifierTitle,
+    onVerifierClick,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
@@ -109,6 +115,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     hideQRCode={hideQRCode}
                                     customIDDescription={customIDDescription}
                                     unknownVerifierTitle={unknownVerifierTitle}
+                                    onVerifierClick={onVerifierClick}
                                 />
                             )}
                             {!isFront && (

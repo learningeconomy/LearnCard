@@ -20,6 +20,7 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
 import { ColorSetEnum } from '../../theme/colors/index';
+import { useDashboardAsHome } from '../../pages/dashboard/hooks/useDashboardAsHome';
 
 type SideMenuRootLinksProps = {
     activeTab: string;
@@ -35,6 +36,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const flags = useFlags();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
     const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
+    // Same two-layer gate as the `/` landing redirect in Routes.tsx, so the
+    // Dashboard nav entry and the home route can never drift.
+    const dashboardAsHome = useDashboardAsHome();
 
     const { newModal } = useModal();
 
@@ -97,6 +101,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     rootLinks = walletLink?.map(link => {
         if (link.id === SideMenuLinksEnum.adminTools && !hasAdminAccess) return null;
+        if (link.path === '/dashboard' && !dashboardAsHome) return null;
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
         const linkPath = link.path;

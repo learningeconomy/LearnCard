@@ -40,8 +40,8 @@ const PrivacySettingsPage: React.FC = () => {
         : ageGate.isChildProfile
         ? preferences?.aiEnabled ?? false
         : preferences?.aiEnabled ?? true;
-    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
-    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
+    const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
+    const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
 
     const handleAnalyticsToggle = useCallback(
         (enabled: boolean) => {
@@ -80,8 +80,8 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent className="ion-padding">
                 <div className="max-w-[600px] mx-auto flex flex-col gap-4 mt-4">
                     {isMinor && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
-                            <p className="text-sm text-amber-800">{m['settings.minorWarning']()}</p>
+                        <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
+                            <p className="text-sm text-sky-800">{m['settings.minorWarning']()}</p>
                         </div>
                     )}
 
@@ -120,11 +120,8 @@ const PrivacySettingsPage: React.FC = () => {
                             </div>
                             <IonToggle
                                 checked={analyticsEnabled}
-                                disabled={isMinor}
-                                onIonChange={e =>
-                                    !isMinor && handleAnalyticsToggle(e.detail.checked)
-                                }
-                                aria-label="Analytics & Insights"
+                                onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
+                                aria-label="Usage Analytics"
                             />
                         </div>
                     </div>
@@ -142,11 +139,8 @@ const PrivacySettingsPage: React.FC = () => {
                             </div>
                             <IonToggle
                                 checked={bugReportsEnabled}
-                                disabled={isMinor}
-                                onIonChange={e =>
-                                    !isMinor && handleBugReportsToggle(e.detail.checked)
-                                }
-                                aria-label="Bug Reports"
+                                onIonChange={e => handleBugReportsToggle(e.detail.checked)}
+                                aria-label="Crash Reports"
                             />
                         </div>
                     </div>
