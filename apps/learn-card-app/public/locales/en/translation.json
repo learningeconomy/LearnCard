@@ -53,7 +53,8 @@
         "learnMore": "Learn More",
         "viewAll": "View All",
         "tagline": "Universal Learning & Work Portfolio",
-        "gotIt": "Got it."
+        "gotIt": "Got it.",
+        "edit": "Edit"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -3176,5 +3177,52 @@
         "scoutId": "Scout ID",
         "globalAdminId": "Global Admin ID",
         "nationalNetworkAdminId": "National Network Admin ID"
+    },
+    "appInstall": {
+        "installApp": "Install <0>{{name}}</0>?",
+        "requestingPermissions": "This app is requesting the following permissions",
+        "willBeAbleTo": "This app will be able to:",
+        "noSpecialPermissions": "This app doesn't require any special permissions.",
+        "loadingDataPermissions": "Loading data permissions...",
+        "noReadRequested": "No read permissions requested",
+        "noWriteRequested": "No write permissions requested",
+        "unableToLoadPermissions": "Unable to load data permissions for this app.",
+        "uninstallNote": "You can uninstall this app at any time from your installed apps.",
+        "previewOnly": "Preview Only",
+        "connecting": "Connecting...",
+        "install": "Install",
+        "permission": {
+            "requestIdentity": {
+                "label": "Request Identity",
+                "description": "View your profile information and verify your identity"
+            },
+            "sendCredential": {
+                "label": "Send Credentials",
+                "description": "Send verifiable credentials to your wallet"
+            },
+            "launchFeature": {
+                "label": "Launch Features",
+                "description": "Open wallet features programmatically"
+            },
+            "credentialSearch": {
+                "label": "Search Credentials",
+                "description": "Search through your stored credentials"
+            },
+            "credentialById": {
+                "label": "Access Credentials",
+                "description": "Retrieve specific credentials by their ID"
+            },
+            "requestConsent": {
+                "label": "Request Consent",
+                "description": "Ask for your consent to access or share data"
+            },
+            "templateIssuance": {
+                "label": "Issue Credentials",
+                "description": "Create and issue credentials from templates"
+            }
+        },
+        "installFailed": "Unable to install app, please try again.",
+        "setDobFirst": "Please set your date of birth before installing this app.",
+        "previewDisabled": "Install is disabled in preview mode"
     }
 }

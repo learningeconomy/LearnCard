@@ -53,7 +53,8 @@
         "learnMore": "اعرف المزيد",
         "viewAll": "عرض الكل",
         "tagline": "محفظة التعلّم والعمل الشاملة",
-        "gotIt": "حسنًا."
+        "gotIt": "حسنًا.",
+        "edit": "تعديل"
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",
@@ -3176,5 +3177,52 @@
         "scoutId": "معرّف الكشّاف",
         "globalAdminId": "معرّف المسؤول العام",
         "nationalNetworkAdminId": "معرّف مسؤول الشبكة الوطنية"
+    },
+    "appInstall": {
+        "installApp": "تثبيت <0>{{name}}</0>؟",
+        "requestingPermissions": "يطلب هذا التطبيق الأذونات التالية",
+        "willBeAbleTo": "سيتمكن هذا التطبيق من:",
+        "noSpecialPermissions": "لا يتطلب هذا التطبيق أي أذونات خاصة.",
+        "loadingDataPermissions": "جارٍ تحميل أذونات البيانات...",
+        "noReadRequested": "لم يُطلب أي أذونات قراءة",
+        "noWriteRequested": "لم يُطلب أي أذونات كتابة",
+        "unableToLoadPermissions": "تعذّر تحميل أذونات البيانات لهذا التطبيق.",
+        "uninstallNote": "يمكنك إلغاء تثبيت هذا التطبيق في أي وقت من تطبيقاتك المثبّتة.",
+        "previewOnly": "معاينة فقط",
+        "connecting": "جارٍ الاتصال...",
+        "install": "تثبيت",
+        "permission": {
+            "requestIdentity": {
+                "label": "طلب الهوية",
+                "description": "عرض معلومات ملفك الشخصي والتحقق من هويتك"
+            },
+            "sendCredential": {
+                "label": "إرسال بيانات الاعتماد",
+                "description": "إرسال بيانات اعتماد قابلة للتحقق إلى محفظتك"
+            },
+            "launchFeature": {
+                "label": "تشغيل الميزات",
+                "description": "فتح ميزات المحفظة برمجيًا"
+            },
+            "credentialSearch": {
+                "label": "البحث في بيانات الاعتماد",
+                "description": "البحث ضمن بيانات الاعتماد المخزّنة"
+            },
+            "credentialById": {
+                "label": "الوصول إلى بيانات الاعتماد",
+                "description": "استرداد بيانات اعتماد محددة عبر معرّفها"
+            },
+            "requestConsent": {
+                "label": "طلب الموافقة",
+                "description": "طلب موافقتك للوصول إلى البيانات أو مشاركتها"
+            },
+            "templateIssuance": {
+                "label": "إصدار بيانات الاعتماد",
+                "description": "إنشاء وإصدار بيانات اعتماد من القوالب"
+            }
+        },
+        "installFailed": "تعذّر تثبيت التطبيق، يرجى المحاولة مرة أخرى.",
+        "setDobFirst": "يرجى تعيين تاريخ ميلادك قبل تثبيت هذا التطبيق.",
+        "previewDisabled": "التثبيت معطّل في وضع المعاينة"
     }
 }

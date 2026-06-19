@@ -53,7 +53,8 @@
         "learnMore": "En savoir plus",
         "viewAll": "Tout voir",
         "tagline": "Portfolio universel d'apprentissage et de travail",
-        "gotIt": "Compris."
+        "gotIt": "Compris.",
+        "edit": "Modifier"
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",
@@ -3176,5 +3177,52 @@
         "scoutId": "ID de scout",
         "globalAdminId": "ID d'administrateur global",
         "nationalNetworkAdminId": "ID d'administrateur de réseau national"
+    },
+    "appInstall": {
+        "installApp": "Installer <0>{{name}}</0> ?",
+        "requestingPermissions": "Cette application demande les autorisations suivantes",
+        "willBeAbleTo": "Cette application pourra :",
+        "noSpecialPermissions": "Cette application ne nécessite aucune autorisation spéciale.",
+        "loadingDataPermissions": "Chargement des autorisations de données...",
+        "noReadRequested": "Aucune autorisation de lecture demandée",
+        "noWriteRequested": "Aucune autorisation d'écriture demandée",
+        "unableToLoadPermissions": "Impossible de charger les autorisations de données de cette application.",
+        "uninstallNote": "Vous pouvez désinstaller cette application à tout moment depuis vos applications installées.",
+        "previewOnly": "Aperçu uniquement",
+        "connecting": "Connexion...",
+        "install": "Installer",
+        "permission": {
+            "requestIdentity": {
+                "label": "Demander l'identité",
+                "description": "Voir les informations de votre profil et vérifier votre identité"
+            },
+            "sendCredential": {
+                "label": "Envoyer des justificatifs",
+                "description": "Envoyer des justificatifs vérifiables à votre portefeuille"
+            },
+            "launchFeature": {
+                "label": "Lancer des fonctionnalités",
+                "description": "Ouvrir des fonctionnalités du portefeuille de façon programmatique"
+            },
+            "credentialSearch": {
+                "label": "Rechercher des justificatifs",
+                "description": "Rechercher parmi vos justificatifs stockés"
+            },
+            "credentialById": {
+                "label": "Accéder aux justificatifs",
+                "description": "Récupérer des justificatifs spécifiques par leur ID"
+            },
+            "requestConsent": {
+                "label": "Demander le consentement",
+                "description": "Demander votre consentement pour accéder aux données ou les partager"
+            },
+            "templateIssuance": {
+                "label": "Émettre des justificatifs",
+                "description": "Créer et émettre des justificatifs à partir de modèles"
+            }
+        },
+        "installFailed": "Impossible d'installer l'application, veuillez réessayer.",
+        "setDobFirst": "Veuillez définir votre date de naissance avant d'installer cette application.",
+        "previewDisabled": "L'installation est désactivée en mode aperçu"
     }
 }

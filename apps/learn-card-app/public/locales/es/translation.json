@@ -53,7 +53,8 @@
         "learnMore": "Más información",
         "viewAll": "Ver todo",
         "tagline": "Portafolio universal de aprendizaje y trabajo",
-        "gotIt": "Entendido."
+        "gotIt": "Entendido.",
+        "edit": "Editar"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",
@@ -3176,5 +3177,52 @@
         "scoutId": "ID de scout",
         "globalAdminId": "ID de administrador global",
         "nationalNetworkAdminId": "ID de administrador de red nacional"
+    },
+    "appInstall": {
+        "installApp": "¿Instalar <0>{{name}}</0>?",
+        "requestingPermissions": "Esta aplicación solicita los siguientes permisos",
+        "willBeAbleTo": "Esta aplicación podrá:",
+        "noSpecialPermissions": "Esta aplicación no requiere permisos especiales.",
+        "loadingDataPermissions": "Cargando permisos de datos...",
+        "noReadRequested": "No se solicitan permisos de lectura",
+        "noWriteRequested": "No se solicitan permisos de escritura",
+        "unableToLoadPermissions": "No se pudieron cargar los permisos de datos de esta aplicación.",
+        "uninstallNote": "Puedes desinstalar esta aplicación en cualquier momento desde tus aplicaciones instaladas.",
+        "previewOnly": "Solo vista previa",
+        "connecting": "Conectando...",
+        "install": "Instalar",
+        "permission": {
+            "requestIdentity": {
+                "label": "Solicitar identidad",
+                "description": "Ver la información de tu perfil y verificar tu identidad"
+            },
+            "sendCredential": {
+                "label": "Enviar credenciales",
+                "description": "Enviar credenciales verificables a tu cartera"
+            },
+            "launchFeature": {
+                "label": "Iniciar funciones",
+                "description": "Abrir funciones de la cartera de forma programática"
+            },
+            "credentialSearch": {
+                "label": "Buscar credenciales",
+                "description": "Buscar entre tus credenciales almacenadas"
+            },
+            "credentialById": {
+                "label": "Acceder a credenciales",
+                "description": "Recuperar credenciales específicas por su ID"
+            },
+            "requestConsent": {
+                "label": "Solicitar consentimiento",
+                "description": "Pedir tu consentimiento para acceder o compartir datos"
+            },
+            "templateIssuance": {
+                "label": "Emitir credenciales",
+                "description": "Crear y emitir credenciales a partir de plantillas"
+            }
+        },
+        "installFailed": "No se pudo instalar la aplicación, inténtalo de nuevo.",
+        "setDobFirst": "Establece tu fecha de nacimiento antes de instalar esta aplicación.",
+        "previewDisabled": "La instalación está deshabilitada en el modo de vista previa"
     }
 }
