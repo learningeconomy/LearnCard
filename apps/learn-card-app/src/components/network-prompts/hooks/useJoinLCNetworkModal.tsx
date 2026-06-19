@@ -1,6 +1,11 @@
 import JoinNetworkPrompt from '../JoinNetworkPrompt';
 
-import { ModalTypes, useIsCurrentUserLCNUser, useIsLoggedIn, useModal } from 'learn-card-base';
+import {
+    ModalTypes,
+    useAuthStatus,
+    shouldPromptProfileOnboarding,
+    useModal,
+} from 'learn-card-base';
 import OnboardingContainer from '../../onboarding/OnboardingContainer';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
@@ -18,8 +23,7 @@ export const JoinNetworkModalWrapper: React.FC<{
 };
 
 export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
-    const { data, isLoading } = useIsCurrentUserLCNUser();
-    const isLoggedIn = useIsLoggedIn();
+    const authStatus = useAuthStatus();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -45,7 +49,7 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
             return { prompted: false };
         }
 
-        if (!isLoading && !data && isLoggedIn) {
+        if (shouldPromptProfileOnboarding(authStatus)) {
             presentNetworkModal(onSuccess);
             return { prompted: true };
         }
