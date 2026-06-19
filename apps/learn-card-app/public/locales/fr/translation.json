@@ -812,7 +812,12 @@
                 "9": "Préparez-vous pour l'étincelle des certifications !"
             }
         },
-        "logout": "Déconnexion..."
+        "logout": "Déconnexion...",
+        "prompt": {
+            "newUser": "Créez votre compte en quelques étapes rapides.",
+            "returning": "Bon retour — connectez-vous pour continuer.",
+            "default": "Connectez-vous ou créez votre compte."
+        }
     },
     "onboarding": {
         "ageGate": {

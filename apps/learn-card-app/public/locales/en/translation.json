@@ -812,6 +812,11 @@
                 "achievements": "Achievements",
                 "skills": "Skills"
             }
+        },
+        "prompt": {
+            "newUser": "Create your account in a few quick steps.",
+            "returning": "Welcome back — sign in to continue.",
+            "default": "Sign in or create your account."
         }
     },
     "onboarding": {

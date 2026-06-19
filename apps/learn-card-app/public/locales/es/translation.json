@@ -812,7 +812,12 @@
                 "9": "¡Prepárate para la chispa de credenciales!"
             }
         },
-        "logout": "Cerrando sesión..."
+        "logout": "Cerrando sesión...",
+        "prompt": {
+            "newUser": "Crea tu cuenta en unos pocos pasos rápidos.",
+            "returning": "Bienvenido de nuevo: inicia sesión para continuar.",
+            "default": "Inicia sesión o crea tu cuenta."
+        }
     },
     "onboarding": {
         "ageGate": {
