@@ -41,7 +41,7 @@
 		},
 		"CapacitorUpdater": {
 			"appId": "com.learncard.app",
-			"autoUpdate": true
+			"autoUpdate": false
 		}
 	},
 	"packageClassList": [

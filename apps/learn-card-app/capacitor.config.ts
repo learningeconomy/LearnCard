@@ -52,7 +52,7 @@ const config: CapacitorConfig = {
         },
         CapacitorUpdater: {
             appId: 'com.learncard.app',
-            autoUpdate: true,
+            autoUpdate: false,
             // SINGLE SOURCE OF TRUTH for the Capgo channel.
             // - CI reads this value via `tools/capgo/getCapgoChannel.js` (regex match) to pick
             //   the channel that OTA bundles are uploaded to in the deploy workflow.
@@ -62,7 +62,7 @@ const config: CapacitorConfig = {
             // Bump this value whenever you bump native binaries; do NOT add a parallel
             // tenant-level override — that's how channels drift and OTA updates land in
             // an empty channel (see PR #1063 incident).
-            defaultChannel: '1.0.8', // bumped here https://github.com/learningeconomy/LearnCard/pull/1313
+            defaultChannel: '1.0.9', // bumped here https://github.com/learningeconomy/LearnCard/pull/1313
         },
     },
 };
