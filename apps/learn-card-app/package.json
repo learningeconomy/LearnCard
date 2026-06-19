@@ -143,6 +143,7 @@
         "start-p-4000": "vite --port=4000",
         "storybook": "storybook dev -p 6007",
         "build-storybook": "storybook build",
+        "i18n:check-keys": "node scripts/check-i18n-keys.mjs",
         "prepare-config": "npx tsx scripts/prepare-native-config.ts",
         "generate-assets": "npx tsx scripts/generate-tenant-assets.ts",
         "validate-configs": "npx tsx scripts/validate-tenant-configs.ts",
