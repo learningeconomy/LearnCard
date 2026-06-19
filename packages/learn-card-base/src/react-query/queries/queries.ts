@@ -14,6 +14,7 @@ import {
     switchedProfileStore,
 } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { walletStore } from 'learn-card-base/stores/walletStore';
 import {
     Boost,
     BoostRecipientInfo,
@@ -765,7 +766,10 @@ export const useIsCurrentUserLCNUser = () => {
     return {
         ...result,
         data: Boolean(result.data),
-        isLoading: result.status === 'pending',
+        // `error` is treated as "still resolving", NOT "no profile": a transient
+        // wallet-init/network failure on resume must not falsely trigger the
+        // Complete Profile / age gate / JoinNetworkModal onboarding prompts.
+        isLoading: result.status === 'pending' || result.status === 'error',
     };
 };
 
@@ -775,10 +779,19 @@ export const useGetProfile = (
 ): UseQueryResult<QueriedProfile | null> => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
+    const wallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
+    // Fetching the current user's OWN profile (no explicit profileId) needs a
+    // reconstructed wallet. On resume the persisted `currentUser` rehydrates (so
+    // `isLoggedIn` flips true) before the private key is restored; gating on the
+    // wallet being present stops the query from running early and caching a bogus
+    // `null` for the whole staleTime — the root cause of the mixed-login state.
+    const requiresOwnWallet = isLoggedIn && !profileId;
+    const walletReady = !!wallet;
+
     return useQuery<QueriedProfile | null>({
-        enabled: enabled && (!!profileId || isLoggedIn),
+        enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
         // The current user's profile changes rarely (avatar/displayName edits).
         // Keep cached data fresh for 5 minutes so navigations between pages don't
@@ -787,19 +800,23 @@ export const useGetProfile = (
         // (e.g., editProfile) are responsible for invalidating this query.
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
-            // If user is logged in, try to use the wallet
-            if (isLoggedIn) {
-                try {
-                    const wallet = await initWallet();
-                    if (wallet) {
-                        if (profileId) {
-                            const data = await wallet.invoke.getProfile(profileId);
+            // Own profile: the wallet MUST resolve here. On failure, throw so React
+            // Query records an error rather than caching `null` as a definitive
+            // "no profile" (which would falsely trigger onboarding). Recovery is the
+            // `enabled` false→true transition once the wallet lands, not retries.
+            if (isLoggedIn && !profileId) {
+                const ownWallet = await initWallet();
+                if (!ownWallet) throw new Error('Wallet not ready for profile fetch');
+                const data = await ownWallet.invoke.getProfile();
+                return data ?? null;
+            }
 
-                            return data ?? null;
-                        } else {
-                            const data = await wallet.invoke.getProfile();
-                            return data ?? null;
-                        }
+            if (isLoggedIn && profileId) {
+                try {
+                    const loggedInWallet = await initWallet();
+                    if (loggedInWallet) {
+                        const data = await loggedInWallet.invoke.getProfile(profileId);
+                        return data ?? null;
                     }
                 } catch (error) {
                     log.warn('Failed to initialize wallet, falling back to public API', error);
