@@ -5,6 +5,7 @@ import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { mergeConfig, type PluginOption } from 'vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { paraglideMissingKeyOnWarn } from '../paraglideOnWarn';
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import fs from 'fs';
@@ -62,6 +63,12 @@ const config: StorybookConfig = {
                     ignoreConfigErrors: true,
                 }),
             ],
+            build: {
+                rollupOptions: {
+                    // Fail the Storybook (Chromatic) build on missing Paraglide keys.
+                    onwarn: paraglideMissingKeyOnWarn,
+                },
+            },
             define: {
                 __PACKAGE_VERSION__: JSON.stringify('storybook'),
                 __BUILD_SHA__: JSON.stringify('storybook'),
