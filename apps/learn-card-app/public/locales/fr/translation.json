@@ -1704,7 +1704,8 @@
         "start": "Commencer",
         "unfinished": "Inachevé",
         "untitledSession": "Session sans titre",
-        "browseTopicsPlaceholder": "Parcourir les sujets..."
+        "browseTopicsPlaceholder": "Parcourir les sujets...",
+        "personalizeMyAi": "Personnaliser mon IA"
     },
     "pathways": {
         "title": "Parcours",

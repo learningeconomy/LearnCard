@@ -1704,7 +1704,8 @@
         "start": "ابدأ",
         "unfinished": "غير مكتمل",
         "untitledSession": "جلسة بدون عنوان",
-        "browseTopicsPlaceholder": "تصفح المواضيع..."
+        "browseTopicsPlaceholder": "تصفح المواضيع...",
+        "personalizeMyAi": "تخصيص الذكاء الاصطناعي الخاص بي"
     },
     "pathways": {
         "title": "المسارات",

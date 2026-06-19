@@ -1704,7 +1704,8 @@
         "start": "Start",
         "unfinished": "Unfinished",
         "untitledSession": "Untitled Session",
-        "browseTopicsPlaceholder": "Browse topics..."
+        "browseTopicsPlaceholder": "Browse topics...",
+        "personalizeMyAi": "Personalize My AI"
     },
     "pathways": {
         "addSkill": "Add Skill",

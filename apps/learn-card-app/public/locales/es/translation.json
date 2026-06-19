@@ -1704,7 +1704,8 @@
         "start": "Comenzar",
         "unfinished": "Inacabada",
         "untitledSession": "Sesión sin título",
-        "browseTopicsPlaceholder": "Explorar temas..."
+        "browseTopicsPlaceholder": "Explorar temas...",
+        "personalizeMyAi": "Personaliza mi IA"
     },
     "pathways": {
         "title": "Caminos",
