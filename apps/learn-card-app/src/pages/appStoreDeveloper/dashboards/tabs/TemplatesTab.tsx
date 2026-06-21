@@ -7,6 +7,7 @@
  * - Full CredentialBuilder editing
  */
 
+import * as m from '../../../../paraglide/messages.js';
 import React, { useMemo } from 'react';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 
@@ -68,7 +69,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
             />
 
             <p className="text-xs text-gray-400 mt-4 text-center">
-                See the <strong className="text-gray-500">Code</strong> tab for send examples using your template URIs.
+                {m['developerPortal.dashboards.tabs.templates.footnote']()}
             </p>
         </div>
     );

@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-listings-tab');
 /**
@@ -215,19 +216,19 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             case 'LISTED':
                 return (
                     <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
-                        Live
+                        {m['developerPortal.dashboards.tabs.appListings.live']()}
                     </span>
                 );
             case 'PENDING_REVIEW':
                 return (
                     <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                        In Review
+                        {m['developerPortal.dashboards.tabs.appListings.inReview']()}
                     </span>
                 );
             default:
                 return (
                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                        Draft
+                        {m['developerPortal.dashboards.tabs.appListings.draft']()}
                     </span>
                 );
         }

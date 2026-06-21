@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('csv-upload-tab');
 /**
@@ -288,7 +289,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
             }
             rows.push(row);
         } else {
-            presentToast('Please select a template first', { hasDismissButton: true });
+            presentToast(m['developerPortal.dashboards.tabs.csvUpload.selectTemplateFirst'](), { hasDismissButton: true });
             return;
         }
 
@@ -312,7 +313,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         a.click();
         URL.revokeObjectURL(url);
 
-        presentToast('CSV template downloaded!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.csvUpload.csvDownloaded'](), { hasDismissButton: true });
     };
 
     // Clear uploaded CSV
@@ -355,14 +356,14 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         // Validation based on mode
         if (isMultiTemplateMode) {
             if (!boostSelectorColumn || !recipientColumn || csvRows.length === 0) {
-                presentToast('Please select recipient and course ID columns', {
+                presentToast(m['developerPortal.dashboards.tabs.csvUpload.selectRecipientAndCourse'](), {
                     hasDismissButton: true,
                 });
                 return;
             }
         } else {
             if (!selectedTemplate?.boostUri || !recipientColumn || csvRows.length === 0) {
-                presentToast('Please select a template, recipient column, and upload a CSV', {
+                presentToast(m['developerPortal.dashboards.tabs.csvUpload.selectTemplateAndRecipient'](), {
                     hasDismissButton: true,
                 });
                 return;
@@ -392,7 +393,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 if (!recipient) {
                     setProcessingResults(prev =>
                         prev.map((r, idx) =>
-                            idx === i ? { ...r, status: 'error', message: 'Missing recipient' } : r
+                            idx === i ? { ...r, status: 'error', message: m['developerPortal.dashboards.tabs.csvUpload.errorMissingRecipient']() } : r
                         )
                     );
                     continue;
@@ -413,7 +414,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                     ? {
                                           ...r,
                                           status: 'error',
-                                          message: `No template found for "${selectorValue}"`,
+                                          message: m['developerPortal.dashboards.tabs.csvUpload.errorNoTemplateFound']({ value: selectorValue }),
                                       }
                                     : r
                             )
@@ -440,7 +441,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                     setProcessingResults(prev =>
                         prev.map((r, idx) =>
                             idx === i
-                                ? { ...r, status: 'error', message: 'No template available' }
+                                ? { ...r, status: 'error', message: m['developerPortal.dashboards.tabs.csvUpload.errorNoTemplateAvailable']() }
                                 : r
                         )
                     );
@@ -488,7 +489,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         )
                     );
                 } catch (err) {
-                    const errorMessage = err instanceof Error ? err.message : 'Send failed';
+                    const errorMessage = err instanceof Error ? err.message : m['developerPortal.dashboards.tabs.csvUpload.errorSendFailed']();
                     setProcessingResults(prev =>
                         prev.map((r, idx) =>
                             idx === i ? { ...r, status: 'error', message: errorMessage } : r
@@ -502,13 +503,13 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 }
             }
 
-            presentToast(`Processed ${csvRows.length} rows`, {
+            presentToast(m['developerPortal.dashboards.tabs.csvUpload.processedRows']({ count: csvRows.length }), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
             log.error('CSV processing error:', err);
-            presentToast('Failed to process CSV', {
+            presentToast(m['developerPortal.dashboards.tabs.csvUpload.failedToProcess'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

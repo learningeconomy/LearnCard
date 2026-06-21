@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Globe, X, Plus, Palette, Settings, Upload, Loader2, Award } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
@@ -93,7 +94,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     const selectedTemplate = templates[safeIdx];
     const credential = useMemo(
         () => ({
-            name: selectedTemplate?.name || 'Untitled Template',
+            name: selectedTemplate?.name || m['developerPortal.dashboards.tabs.embedConfig.untitledTemplate'](),
             ...(selectedTemplate || {}),
         }),
         [selectedTemplate]
@@ -310,7 +311,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                         className="px-3 py-1.5 bg-cyan-500 text-white text-sm rounded-lg hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
                         <Plus className="w-3.5 h-3.5" />
-                        Add
+                        {m['developerPortal.dashboards.tabs.embedConfig.add']()}
                     </button>
                 </div>
 

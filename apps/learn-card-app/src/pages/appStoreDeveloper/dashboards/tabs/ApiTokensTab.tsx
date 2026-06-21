@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState } from 'react';
 import { Key, Copy, Check, Trash2, Plus, Loader2, AlertTriangle, Code } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -9,12 +10,12 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { AuthGrant } from '../types';
 
-const SCOPE_OPTIONS = [
-    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+const getScopeOptions = () => [
+    { label: m['developerPortal.dashboards.tabs.apiTokens.fullAccess'](), value: '*:*', description: m['developerPortal.dashboards.tabs.apiTokens.fullAccessDesc']() },
     {
-        label: 'Credentials Only',
+        label: m['developerPortal.dashboards.tabs.apiTokens.credentialsOnly'](),
         value: 'credential:* presentation:*',
-        description: 'Issue and manage credentials',
+        description: m['developerPortal.dashboards.tabs.apiTokens.credentialsOnlyDesc'](),
     },
 ];
 
@@ -157,14 +158,14 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                             onChange={e => setSelectedScope(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         >
-                            {SCOPE_OPTIONS.map(option => (
+                            {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
                             ))}
                         </select>
                         <p className="text-xs text-gray-500 mt-1">
-                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                            {getScopeOptions().find(o => o.value === selectedScope)?.description}
                         </p>
                     </div>
 
@@ -275,7 +276,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                                         ) : (
                                             <Copy className="w-4 h-4" />
                                         )}
-                                        Copy
+                                        {m['developerPortal.dashboards.tabs.apiTokens.copyToken']()}
                                     </button>
 
                                     <button

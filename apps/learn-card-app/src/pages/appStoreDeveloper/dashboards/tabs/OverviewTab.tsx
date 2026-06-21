@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React from 'react';
 import {
     Key,
@@ -53,8 +54,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             id: 'tokens',
             icon: Key,
             iconColor: 'text-cyan-600',
-            title: 'Manage API Tokens',
-            description: `${stats.activeTokens} active tokens`,
+            title: m['developerPortal.dashboards.tabs.overview.manageApiTokens'](),
+            description: m['developerPortal.dashboards.tabs.overview.tokenCount']({ count: stats.activeTokens }),
             hoverColor: 'hover:border-cyan-300 hover:bg-cyan-50',
         });
     }
@@ -64,8 +65,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             id: 'templates',
             icon: Award,
             iconColor: 'text-violet-600',
-            title: 'Manage Templates',
-            description: `${stats.templateCount || 0} credential templates`,
+            title: m['developerPortal.dashboards.tabs.overview.manageTemplates'](),
+            description: m['developerPortal.dashboards.tabs.overview.templateCount']({ count: stats.templateCount || 0 }),
             hoverColor: 'hover:border-violet-300 hover:bg-violet-50',
         });
     }
@@ -75,8 +76,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             id: 'embed-code',
             icon: Code,
             iconColor: 'text-pink-600',
-            title: 'Get Embed Code',
-            description: 'Copy code for your website',
+            title: m['developerPortal.dashboards.tabs.overview.getEmbedCode'](),
+            description: m['developerPortal.dashboards.tabs.overview.copyCodeForWebsite'](),
             hoverColor: 'hover:border-pink-300 hover:bg-pink-50',
         });
     }
@@ -86,8 +87,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             id: 'contracts',
             icon: FileText,
             iconColor: 'text-emerald-600',
-            title: 'Manage Contracts',
-            description: `${stats.activeContracts || 0} active contracts`,
+            title: m['developerPortal.dashboards.tabs.overview.manageContracts'](),
+            description: m['developerPortal.dashboards.tabs.overview.contractCount']({ count: stats.activeContracts || 0 }),
             hoverColor: 'hover:border-emerald-300 hover:bg-emerald-50',
         });
     }
@@ -97,8 +98,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             id: 'signing',
             icon: Shield,
             iconColor: 'text-emerald-600',
-            title: 'Signing Authority',
-            description: 'Configure credential signing',
+            title: m['developerPortal.dashboards.tabs.overview.signingAuthority'](),
+            description: m['developerPortal.dashboards.tabs.overview.configureSigning'](),
             hoverColor: 'hover:border-emerald-300 hover:bg-emerald-50',
         });
     }
@@ -109,9 +110,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">Quick Actions</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">{m['developerPortal.dashboards.tabs.overview.title']()}</h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Common tasks for managing your integration
+                    {m['developerPortal.dashboards.tabs.overview.description']()}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -135,9 +136,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     >
                         <ExternalLink className="w-8 h-8 text-cyan-600 mb-3" />
                         <h3 className="font-medium text-gray-800 group-hover:text-cyan-700">
-                            Documentation
+                            {m['developerPortal.dashboards.tabs.overview.documentation']()}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">Learn how to integrate</p>
+                        <p className="text-sm text-gray-500 mt-1">{m['developerPortal.dashboards.tabs.overview.learnHowToIntegrate']()}</p>
                     </button>
                 </div>
             </div>
@@ -154,7 +155,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                            text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
                                            focus:border-transparent cursor-pointer transition-colors max-w-[180px]"
                             >
-                                <option value="ALL">All Apps</option>
+                                <option value="ALL">{m['developerPortal.dashboards.tabs.overview.allApps']()}</option>
                                 {appListings.map(listing => (
                                     <option key={listing.listing_id} value={listing.listing_id}>
                                         {listing.display_name}
@@ -168,7 +169,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 )}
 
                 <IssuanceList
-                    title="Recent Activity"
+                    title={m['developerPortal.dashboards.tabs.overview.recentActivity']()}
                     surface="issuer-dashboard"
                     integrationId={integration.id}
                     integrationName={integration.name}

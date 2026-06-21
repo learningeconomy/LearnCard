@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('testing-tab');
 /**
@@ -286,7 +287,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             {/* Template Selector */}
             <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                    Select Template to Test
+                    {m['developerPortal.dashboards.tabs.testing.selectTemplate']()}
                 </label>
 
                 <div className="relative">

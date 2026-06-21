@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState, useMemo } from 'react';
 import { FileText, Copy, Check, Shield, Send, Info } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -120,12 +121,12 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
 
                     <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg inline-block text-left">
                         <p className="text-xs text-gray-500">
-                            <strong>How to add a contract:</strong>
+                            <strong>{m['developerPortal.dashboards.tabs.contracts.howToAddTitle']()}</strong>
                         </p>
                         <ol className="text-xs text-gray-400 mt-1 space-y-1 list-decimal list-inside">
-                            <li>Go to the Integration Hub</li>
-                            <li>Select "Request Data Consent" feature</li>
-                            <li>Configure a ConsentFlow contract</li>
+                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep1']()}</li>
+                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep2']()}</li>
+                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep3']()}</li>
                         </ol>
                     </div>
                 </div>
