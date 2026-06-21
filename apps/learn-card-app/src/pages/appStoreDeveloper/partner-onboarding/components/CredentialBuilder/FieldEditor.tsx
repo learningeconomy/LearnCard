@@ -5,6 +5,8 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Zap, ZapOff, ChevronDown, ChevronUp, HelpCircle, Upload, Loader2, Settings, Lock } from 'lucide-react';
 
+import * as m from '../../../../../paraglide/messages.js';
+
 import { useFilestack } from 'learn-card-base';
 
 import { TemplateFieldValue, staticField, dynamicField } from './types';
@@ -275,12 +277,12 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                         {field.isDynamic ? (
                             <>
                                 <Zap className="w-3 h-3" />
-                                Dynamic
+                                {m['developerPortal.credentialBuilder.fieldEditor.dynamic']()}
                             </>
                         ) : (
                             <>
                                 <ZapOff className="w-3 h-3" />
-                                Static
+                                {m['developerPortal.credentialBuilder.fieldEditor.static']()}
                             </>
                         )}
                     </button>
@@ -299,7 +301,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
 
             {field.isDynamic && (
                 <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-violet-600">Variable:</span>
+                    <span className="text-xs text-violet-600">{m['developerPortal.credentialBuilder.fieldEditor.variable']()}</span>
 
                     {customVarName ? (
                         <input
@@ -368,7 +370,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                 <span className="flex-1 text-left font-medium text-gray-800">{title}</span>
 
                 {optional && (
-                    <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-200 rounded">Optional</span>
+                    <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-200 rounded">{m['developerPortal.credentialBuilder.optional']()}</span>
                 )}
 
                 {badge && (
@@ -394,7 +396,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                                     onClick={onRemove}
                                     className="text-xs text-red-600 hover:text-red-800"
                                 >
-                                    Remove Section
+                                    {m['developerPortal.credentialBuilder.fieldEditor.removeSection']()}
                                 </button>
                             )}
                         </div>

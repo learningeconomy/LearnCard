@@ -5,6 +5,8 @@
 import React from 'react';
 import { User, Plus, X } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import { 
     OBv3CredentialTemplate, 
     CredentialSubjectTemplate, 
@@ -61,83 +63,83 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Recipient & Activity"
+            title={m['developerPortal.credentialBuilder.sectionTitles.recipient']()}
             icon={<User className="w-4 h-4 text-emerald-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
         >
             <FieldEditor
-                label="Recipient Name"
+                label={m['developerPortal.credentialBuilder.recipient.recipientName']()}
                 field={subject.name || staticField('')}
                 onChange={(f) => updateSubject('name', f)}
-                placeholder="Recipient's full name"
-                helpText="The name of the person receiving this credential"
+                placeholder={m['developerPortal.credentialBuilder.recipient.recipientNamePlaceholder']()}
+                helpText={m['developerPortal.credentialBuilder.recipient.recipientNameHelp']()}
                 showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
-                label="Recipient ID (DID)"
+                label={m['developerPortal.credentialBuilder.recipient.recipientDid']()}
                 field={systemField('The recipient\'s Decentralized Identifier (DID) resolved from their email or wallet')}
                 onChange={() => {}}
-                helpText="Automatically set when the credential is sent to the recipient"
+                helpText={m['developerPortal.credentialBuilder.recipient.recipientDidHelp']()}
             />
 
             {/* Activity Details */}
             <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Activity Details</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.credentialBuilder.recipient.activityDetails']()}</h4>
 
                 <div className="grid grid-cols-2 gap-3">
                     <FieldEditor
-                        label="Credits Earned"
+                        label={m['developerPortal.credentialBuilder.recipient.creditsEarned']()}
                         field={subject.creditsEarned || staticField('')}
                         onChange={(f) => updateSubject('creditsEarned', f)}
-                        placeholder="e.g., 3"
-                        helpText="Credits earned by recipient"
+                        placeholder={m['developerPortal.credentialBuilder.recipient.creditsEarnedPlaceholder']()}
+                        helpText={m['developerPortal.credentialBuilder.recipient.creditsEarnedHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label="Term"
+                        label={m['developerPortal.credentialBuilder.recipient.term']()}
                         field={subject.term || staticField('')}
                         onChange={(f) => updateSubject('term', f)}
-                        placeholder="e.g., Fall 2024"
-                        helpText="Academic term"
+                        placeholder={m['developerPortal.credentialBuilder.recipient.termPlaceholder']()}
+                        helpText={m['developerPortal.credentialBuilder.recipient.termHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label="Activity Start Date"
+                        label={m['developerPortal.credentialBuilder.recipient.activityStartDate']()}
                         field={subject.activityStartDate || staticField('')}
                         onChange={(f) => updateSubject('activityStartDate', f)}
-                        placeholder="YYYY-MM-DD"
-                        helpText="When the activity started"
+                        placeholder={m['developerPortal.credentialBuilder.recipient.activityStartDatePlaceholder']()}
+                        helpText={m['developerPortal.credentialBuilder.recipient.activityStartDateHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label="Activity End Date"
+                        label={m['developerPortal.credentialBuilder.recipient.activityEndDate']()}
                         field={subject.activityEndDate || staticField('')}
                         onChange={(f) => updateSubject('activityEndDate', f)}
-                        placeholder="YYYY-MM-DD"
-                        helpText="When the activity ended (completion date)"
+                        placeholder={m['developerPortal.credentialBuilder.recipient.activityEndDatePlaceholder']()}
+                        helpText={m['developerPortal.credentialBuilder.recipient.activityEndDateHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label="License Number"
+                        label={m['developerPortal.credentialBuilder.recipient.licenseNumber']()}
                         field={subject.licenseNumber || staticField('')}
                         onChange={(f) => updateSubject('licenseNumber', f)}
-                        placeholder="e.g., A-12345"
-                        helpText="License or certificate number"
+                        placeholder={m['developerPortal.credentialBuilder.recipient.licenseNumberPlaceholder']()}
+                        helpText={m['developerPortal.credentialBuilder.recipient.licenseNumberHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label="Role"
+                        label={m['developerPortal.credentialBuilder.recipient.role']()}
                         field={subject.role || staticField('')}
                         onChange={(f) => updateSubject('role', f)}
-                        placeholder="e.g., Student"
-                        helpText="Recipient's role"
+                        placeholder={m['developerPortal.credentialBuilder.recipient.rolePlaceholder']()}
+                        helpText={m['developerPortal.credentialBuilder.recipient.roleHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
                 </div>
@@ -146,7 +148,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
             {/* Results (Grades/Scores) */}
             <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-700">Results (Grades/Scores)</h4>
+                    <h4 className="text-sm font-medium text-gray-700">{m['developerPortal.credentialBuilder.recipient.results']()}</h4>
 
                     <button
                         type="button"
@@ -154,16 +156,16 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors"
                     >
                         <Plus className="w-3 h-3" />
-                        Add Result
+                        {m['developerPortal.credentialBuilder.recipient.addResult']()}
                     </button>
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
-                    Record grades, scores, or completion status
+                    {m['developerPortal.credentialBuilder.recipient.resultsDescription']()}
                 </p>
 
                 {(subject.result || []).length === 0 ? (
-                    <p className="text-xs text-gray-400 italic pl-3">No results added</p>
+                    <p className="text-xs text-gray-400 italic pl-3">{m['developerPortal.credentialBuilder.recipient.noResults']()}</p>
                 ) : (
                     <div className="space-y-4">
                         {(subject.result || []).map((result, index) => (
@@ -183,20 +185,20 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                                 </div>
 
                                 <FieldEditor
-                                    label="Value"
+                                    label={m['developerPortal.credentialBuilder.recipient.resultValue']()}
                                     field={result.value || staticField('')}
                                     onChange={(f) => updateResult(index, 'value', f)}
-                                    placeholder="e.g., A, 95%, Pass"
-                                    helpText="The achieved result"
+                                    placeholder={m['developerPortal.credentialBuilder.recipient.resultValuePlaceholder']()}
+                                    helpText={m['developerPortal.credentialBuilder.recipient.resultValueHelp']()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
-                                    label="Status"
+                                    label={m['developerPortal.credentialBuilder.recipient.resultStatus']()}
                                     field={result.status || staticField('')}
                                     onChange={(f) => updateResult(index, 'status', f)}
-                                    placeholder="e.g., Completed, Passed"
-                                    helpText="Result status"
+                                    placeholder={m['developerPortal.credentialBuilder.recipient.resultStatusPlaceholder']()}
+                                    helpText={m['developerPortal.credentialBuilder.recipient.resultStatusHelp']()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
                             </div>

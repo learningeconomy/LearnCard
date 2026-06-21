@@ -8,6 +8,8 @@
 import React from 'react';
 import { Link2, Plus, X, ChevronDown } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import {
     OBv3CredentialTemplate,
     AssociationTemplate,
@@ -128,7 +130,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                 {/* Source Achievement */}
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">
-                                        Source Achievement
+                                        {m['developerPortal.credentialBuilder.associations.sourceAchievement']()}
                                     </label>
                                     <div className="relative">
                                         <select
@@ -142,7 +144,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                 sourceError ? 'border-red-300' : 'border-gray-200'
                                             }`}
                                         >
-                                            <option value="">Select achievement...</option>
+                                            <option value="">{m['developerPortal.credentialBuilder.associations.selectAchievement']()}</option>
                                             {achievements.map(a => (
                                                 <option key={a.id} value={a.id}>
                                                     {a.achievement.name.value || 'Untitled Achievement'}
@@ -184,7 +186,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                 {/* Target Achievement */}
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">
-                                        Target Achievement
+                                        {m['developerPortal.credentialBuilder.associations.targetAchievement']()}
                                     </label>
                                     <div className="relative">
                                         <select
@@ -198,7 +200,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                 targetError ? 'border-red-300' : 'border-gray-200'
                                             }`}
                                         >
-                                            <option value="">Select achievement...</option>
+                                            <option value="">{m['developerPortal.credentialBuilder.associations.selectAchievement']()}</option>
                                             {achievements.map(a => (
                                                 <option key={a.id} value={a.id}>
                                                     {a.achievement.name.value || 'Untitled Achievement'}
