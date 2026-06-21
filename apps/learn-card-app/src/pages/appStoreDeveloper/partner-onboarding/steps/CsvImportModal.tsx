@@ -3,6 +3,8 @@
  * Extracted from TemplateBuilderStep for lazy loading
  */
 
+import * as m from '../../../../paraglide/messages.js';
+
 import React from 'react';
 import {
     X,
@@ -36,6 +38,7 @@ interface CsvImportModalProps {
     handleImageSelect: () => void;
     onConfirm: () => void;
     onCancel: () => void;
+    integrationId?: string;
 }
 
 export const CsvImportModal: React.FC<CsvImportModalProps> = ({
@@ -132,12 +135,12 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                 {isUploadingImage ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Uploading...
+                                        {m['developerPortal.onboarding.templateBuilder.csvUploading']()}
                                     </>
                                 ) : (
                                     <>
                                         <Upload className="w-4 h-4" />
-                                        {defaultImage ? 'Change Image' : 'Upload Image'}
+                                        {defaultImage ? m['developerPortal.onboarding.templateBuilder.csvChangeImage']() : m['developerPortal.onboarding.templateBuilder.csvUploadImage']()}
                                     </>
                                 )}
                             </button>

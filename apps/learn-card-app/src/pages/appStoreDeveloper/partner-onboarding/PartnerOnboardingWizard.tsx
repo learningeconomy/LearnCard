@@ -5,6 +5,8 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-onboarding-wizard');
 
+import * as m from '../../../paraglide/messages.js';
+
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortal } from '../useDeveloperPortal';
@@ -60,6 +62,8 @@ interface StepIndicatorProps {
     onStepClick: (index: number) => void;
 }
 
+const STEP_TITLE_KEYS = ['developerPortal.onboarding.steps.step1','developerPortal.onboarding.steps.step2','developerPortal.onboarding.steps.step3','developerPortal.onboarding.steps.step4','developerPortal.onboarding.steps.step5','developerPortal.onboarding.steps.step6','developerPortal.onboarding.steps.step7','developerPortal.onboarding.steps.step8'];
+
 const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onStepClick }) => {
     return (
         <div className="flex items-center gap-1 overflow-x-auto pb-2">
@@ -94,7 +98,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                                 {isComplete ? <Check className="w-3.5 h-3.5" /> : index + 1}
                             </div>
 
-                            <span className="text-sm hidden sm:inline">{step.title}</span>
+                            <span className="text-sm hidden sm:inline">{(m as any)[STEP_TITLE_KEYS[index]]()}</span>
 
                             <Icon className="w-4 h-4 sm:hidden" />
                         </button>
@@ -360,7 +364,7 @@ const PartnerOnboardingWizard: React.FC = () => {
             history.push(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
             log.error('Failed to activate integration:', error);
-            presentToast('Failed to go live. Please try again.', {
+            presentToast(m['developerPortal.onboarding.wizard.failedToGoLive'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -498,7 +502,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="text-center">
                         <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                        <p className="text-sm text-gray-500 mt-3">Loading integration...</p>
+                        <p className="text-sm text-gray-500 mt-3">{m['developerPortal.onboarding.wizard.loadingIntegration']()}</p>
                     </div>
                 </div>
             ) : state.isLive && state.project && currentIntegration ? (
@@ -522,10 +526,10 @@ const PartnerOnboardingWizard: React.FC = () => {
                     {/* Step Header */}
                     <div className="mb-6">
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                            {currentStepInfo.title}
+                            {(() => { const idx = state.currentStep; const keys = ['developerPortal.onboarding.steps.step1','developerPortal.onboarding.steps.step2','developerPortal.onboarding.steps.step3','developerPortal.onboarding.steps.step4','developerPortal.onboarding.steps.step5','developerPortal.onboarding.steps.step6','developerPortal.onboarding.steps.step7','developerPortal.onboarding.steps.step8']; return (m as any)[keys[idx] + '.title'](); })()}
                         </h1>
 
-                        <p className="text-gray-600">{currentStepInfo.description}</p>
+                        <p className="text-gray-600">{(() => { const idx = state.currentStep; const keys = ['developerPortal.onboarding.steps.step1','developerPortal.onboarding.steps.step2','developerPortal.onboarding.steps.step3','developerPortal.onboarding.steps.step4','developerPortal.onboarding.steps.step5','developerPortal.onboarding.steps.step6','developerPortal.onboarding.steps.step7','developerPortal.onboarding.steps.step8']; return (m as any)[keys[idx] + '.description'](); })()}</p>
                     </div>
 
                     {/* Step Content */}
@@ -539,7 +543,7 @@ const PartnerOnboardingWizard: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title="Course Catalog Setup" rightContent={headerContent} />
+            <AppStoreHeader title={m['developerPortal.onboarding.wizard.title']()} rightContent={headerContent} />
 
             <IonContent>{wizardContent}</IonContent>
         </IonPage>
@@ -659,7 +663,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
                 }));
             } catch (err) {
                 log.error('Failed to load integration:', err);
-                presentToast('Failed to load integration', {
+                presentToast(m['developerPortal.onboarding.wizard.failedToLoad'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -785,7 +789,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
             history.push(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
             log.error('Failed to activate integration:', error);
-            presentToast('Failed to go live. Please try again.', {
+            presentToast(m['developerPortal.onboarding.wizard.failedToGoLive'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

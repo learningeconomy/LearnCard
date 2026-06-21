@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState } from 'react';
 import {
     Rocket,
@@ -157,7 +159,7 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                 disabled={isActivating}
                                 className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                             >
-                                Cancel
+                                {m['developerPortal.onboarding.production.confirmCancel']()}
                             </button>
 
                             <button
@@ -168,12 +170,12 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                 {isActivating ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Activating...
+                                        {m['developerPortal.onboarding.production.activating']()}
                                     </>
                                 ) : (
                                     <>
                                         <Rocket className="w-4 h-4" />
-                                        Go Live
+                                        {m['developerPortal.onboarding.production.goLive']()}
                                     </>
                                 )}
                             </button>

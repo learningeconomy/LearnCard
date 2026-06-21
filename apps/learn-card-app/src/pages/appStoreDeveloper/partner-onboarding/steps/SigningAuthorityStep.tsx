@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Shield, Loader2, CheckCircle2, AlertCircle } fro
 import { getLogger } from 'learn-card-base';
 const log = getLogger('signing-authority-step');
 
+import * as m from '../../../../paraglide/messages.js';
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
@@ -70,11 +71,11 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                 authority.name
             );
 
-            presentToast('Signing authority created!', { hasDismissButton: true });
+            presentToast(m['developerPortal.onboarding.signingAuthority.createdToast'](), { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', {
+            presentToast(m['developerPortal.onboarding.signingAuthority.failedToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

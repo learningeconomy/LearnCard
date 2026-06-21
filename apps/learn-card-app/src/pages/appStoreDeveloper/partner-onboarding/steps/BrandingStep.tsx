@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useEffect } from 'react';
 import {
     Palette,
@@ -27,6 +29,18 @@ interface BrandingStepProps {
     onComplete: (branding: BrandingConfig) => void;
     onBack: () => void;
 }
+
+const getColorLabel = (name: string) => {
+    const labels: Record<string, () => string> = {
+        Cyan: () => m['developerPortal.onboarding.branding.colorCyan'](),
+        Blue: () => m['developerPortal.onboarding.branding.colorBlue'](),
+        Violet: () => m['developerPortal.onboarding.branding.colorViolet'](),
+        Emerald: () => m['developerPortal.onboarding.branding.colorEmerald'](),
+        Rose: () => m['developerPortal.onboarding.branding.colorRose'](),
+        Amber: () => m['developerPortal.onboarding.branding.colorAmber'](),
+    };
+    return (labels[name] ?? (() => name))();
+};
 
 const DEFAULT_COLORS = [
     { name: 'Cyan', primary: '#06B6D4', accent: '#2DD4BF' },
@@ -163,7 +177,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
             await refetchCurrentUser();
 
-            presentToast('Profile updated successfully!', {
+            presentToast(m['developerPortal.onboarding.branding.savedToast'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -179,7 +193,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
             onComplete(config);
         } catch (err) {
             log.error('Failed to update profile:', err);
-            presentToast('Failed to update profile', {
+            presentToast(m['developerPortal.onboarding.branding.failedToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -346,7 +360,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                                 style={{ backgroundColor: color.primary }}
                             />
 
-                            <span className="text-xs text-gray-600">{color.name}</span>
+                            <span className="text-xs text-gray-600">{getColorLabel(color.name)}</span>
                         </button>
                     ))}
                 </div>
