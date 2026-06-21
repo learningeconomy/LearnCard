@@ -3407,5 +3407,135 @@
         "appLaunch": {
             "error": "Couldn't open this app. Please try again."
         }
+    },
+    "developerPortal": {
+        "shell": {
+            "title": "Developer Portal",
+            "loading": "Loading...",
+            "loadingProjects": "Loading projects...",
+            "loadingIntegration": "Loading integration...",
+            "loadingIntegrations": "Loading integrations...",
+            "betaTitle": "Developer Portal Beta",
+            "betaDescription": "Early access — features may change",
+            "betaBadge": "Beta",
+            "publishYourApp": "Publish Your App",
+            "emptyStateDescription": "Share your app with thousands of users. Create a project to get started.",
+            "nameYourProject": "Name your first project",
+            "projectNamePlaceholder": "e.g. My Awesome Project",
+            "getStarted": "Get Started",
+            "freeToPublish": "Free to publish • No coding required",
+            "yourProjects": "Your Projects",
+            "selectProject": "Select a project to manage its app listings",
+            "statusLive": "Live",
+            "statusInSetup": "In Setup",
+            "noGuideSelected": "No guide selected",
+            "newProjectPlaceholder": "New project name...",
+            "createProject": "Create Project",
+            "integrationNotFound": "Integration Not Found",
+            "integrationNotFoundDescription": "The integration you're looking for doesn't exist or you don't have access to it.",
+            "backToApps": "Back to Apps",
+            "backToProjects": "Back to Projects",
+            "integrationNotFoundSimple": "Integration not found",
+            "statusSetupRequired": "Setup Required",
+            "statusActive": "Active",
+            "statusPaused": "Paused",
+            "templates": "templates",
+            "issued": "issued",
+            "createdDate": "Created {{date}}",
+            "recentlyCreated": "Recently created",
+            "continueSetup": "Continue Setup",
+            "openDashboard": "Open Dashboard",
+            "idLabel": "ID:",
+            "myIntegrations": "My Integrations",
+            "newIntegration": "New Integration",
+            "createFirstIntegration": "Create Your First Integration",
+            "emptyIntegrationsDescription": "Set up an integration to start issuing verifiable credentials from your platform. We'll guide you through every step.",
+            "createIntegration": "Create Integration",
+            "integrationName": "Integration Name",
+            "integrationNamePlaceholder": "e.g., AARP Skills Builder",
+            "creating": "Creating...",
+            "yourIntegrations": "Your Integrations",
+            "integrationCount": "{{count}} integration",
+            "quickActions": "Quick Actions",
+            "integrationGuides": "Integration Guides",
+            "stepByStepTutorials": "Step-by-step tutorials",
+            "apiDocumentation": "API Documentation",
+            "fullReferenceDocs": "Full reference docs",
+            "createdProject": "Created \"{{name}}\"",
+            "failedCreateProject": "Failed to create project"
+        },
+        "guides": {
+            "page": {
+                "title": "Developer Portal",
+                "selectProject": {
+                    "title": "Select a Project",
+                    "description": "Choose a project from the dropdown above to continue with this guide.",
+                    "noProjects": "You don't have any projects yet. Create one from the dropdown above."
+                },
+                "notFound": {
+                    "title": "Guide Not Found",
+                    "description": "The guide you're looking for doesn't exist."
+                },
+                "backToGuides": "Back to Guides",
+                "allGuides": "All Guides"
+            },
+            "hub": {
+                "comingSoon": "Coming Soon",
+                "locked": "Locked",
+                "requestAccess": "Request Access",
+                "inProgress": "In Progress",
+                "getStarted": "Get Started",
+                "createProject": {
+                    "title": "Create Your First Project",
+                    "description": "Set up a project to start building your integration.",
+                    "nameLabel": "Name your project",
+                    "namePlaceholder": "e.g. My Awesome App"
+                },
+                "badge": "Integration Guides",
+                "heading": "Build Your Integration",
+                "selectDescription": "Select a project to get started, or browse the available guides below.",
+                "projectCount": "You have {{count}} projects",
+                "projectsChoose": "Choose a project to continue building.",
+                "notStarted": "Not started",
+                "mainDescription": "Choose what you want to build. We'll guide you through each step with ready-to-use code and live setup tools.",
+                "resources": {
+                    "title": "Additional Resources",
+                    "documentation": {
+                        "title": "Documentation",
+                        "description": "Full API reference"
+                    },
+                    "github": {
+                        "title": "GitHub",
+                        "description": "Open source SDKs"
+                    },
+                    "myApps": {
+                        "title": "My Apps",
+                        "description": "Manage listings"
+                    }
+                }
+            },
+            "goLive": {
+                "defaultTitle": "Ready to Go Live!",
+                "defaultDescription": "You've completed all the setup steps. Activate your integration to start using it in production.",
+                "successTitle": "You're Live!",
+                "successDescription": "Your integration is now active. Redirecting to your dashboard...",
+                "setupComplete": "Setup Complete",
+                "readyToActivate": "Ready to activate",
+                "goLive": "Go Live",
+                "activating": "Activating...",
+                "noIntegration": "Please select an integration from the header dropdown to continue.",
+                "noIntegrationToast": "No integration selected",
+                "failedToast": "Failed to activate integration. Please try again."
+            },
+            "stepProgress": {
+                "step": "Step {{current}} of {{total}}",
+                "completed": "{{count}} completed"
+            },
+            "codePanel": {
+                "title": "Code",
+                "copy": "Copy",
+                "copied": "Copied"
+            }
+        }
     }
 }

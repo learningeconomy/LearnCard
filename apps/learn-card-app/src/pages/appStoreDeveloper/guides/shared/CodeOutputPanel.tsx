@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
+import * as m from '../../../../paraglide/messages.js';
+
 type Language = 'typescript' | 'python' | 'curl';
 
 interface CodeOutputPanelProps {
@@ -85,7 +87,7 @@ const LANGUAGE_LABELS: Record<Language, string> = {
 
 export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
     snippets,
-    title = 'Code',
+    title,
     defaultLanguage = 'typescript',
     collapsible = false,
     defaultExpanded = true,
@@ -129,7 +131,7 @@ export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
                         </button>
                     )}
 
-                    <span className="text-sm font-medium text-gray-300">{title}</span>
+                    <span className="text-sm font-medium text-gray-300">{title ?? m['developerPortal.guides.codePanel.title']()}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -162,12 +164,12 @@ export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
                         {copied ? (
                             <>
                                 <Check className="w-3.5 h-3.5 text-green-400" />
-                                <span className="text-green-400">Copied</span>
+                                <span className="text-green-400">{m['developerPortal.guides.codePanel.copied']()}</span>
                             </>
                         ) : (
                             <>
                                 <Copy className="w-3.5 h-3.5" />
-                                <span>Copy</span>
+                                <span>{m['developerPortal.guides.codePanel.copy']()}</span>
                             </>
                         )}
                     </button>

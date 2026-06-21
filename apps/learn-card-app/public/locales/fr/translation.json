@@ -3407,5 +3407,135 @@
         "appLaunch": {
             "error": "Impossible d'ouvrir cette app. Veuillez réessayer."
         }
+    },
+    "developerPortal": {
+        "shell": {
+            "title": "Portail Développeur",
+            "loading": "Chargement...",
+            "loadingProjects": "Chargement des projets...",
+            "loadingIntegration": "Chargement de l'intégration...",
+            "loadingIntegrations": "Chargement des intégrations...",
+            "betaTitle": "Portail Développeur Bêta",
+            "betaDescription": "Accès anticipé — les fonctionnalités peuvent changer",
+            "betaBadge": "Bêta",
+            "publishYourApp": "Publiez votre Application",
+            "emptyStateDescription": "Partagez votre application avec des milliers d'utilisateurs. Créez un projet pour commencer.",
+            "nameYourProject": "Nommez votre premier projet",
+            "projectNamePlaceholder": "p.ex. Mon Super Projet",
+            "getStarted": "Commencer",
+            "freeToPublish": "Gratuit à publier • Aucun codage requis",
+            "yourProjects": "Vos Projets",
+            "selectProject": "Sélectionnez un projet pour gérer ses fiches d'application",
+            "statusLive": "En ligne",
+            "statusInSetup": "En Configuration",
+            "noGuideSelected": "Aucun guide sélectionné",
+            "newProjectPlaceholder": "Nom du nouveau projet...",
+            "createProject": "Créer un Projet",
+            "integrationNotFound": "Intégration Introuvable",
+            "integrationNotFoundDescription": "L'intégration que vous cherchez n'existe pas ou vous n'y avez pas accès.",
+            "backToApps": "Retour aux Applications",
+            "backToProjects": "Retour aux Projets",
+            "integrationNotFoundSimple": "Intégration introuvable",
+            "statusSetupRequired": "Configuration Requise",
+            "statusActive": "Actif",
+            "statusPaused": "En pause",
+            "templates": "modèles",
+            "issued": "émis",
+            "createdDate": "Créé le {{date}}",
+            "recentlyCreated": "Créé récemment",
+            "continueSetup": "Continuer la Configuration",
+            "openDashboard": "Ouvrir le Tableau de Bord",
+            "idLabel": "ID :",
+            "myIntegrations": "Mes Intégrations",
+            "newIntegration": "Nouvelle Intégration",
+            "createFirstIntegration": "Créez votre Première Intégration",
+            "emptyIntegrationsDescription": "Configurez une intégration pour commencer à émettre des certificats vérifiables depuis votre plateforme. Nous vous guiderons à chaque étape.",
+            "createIntegration": "Créer une Intégration",
+            "integrationName": "Nom de l'Intégration",
+            "integrationNamePlaceholder": "p.ex., AARP Skills Builder",
+            "creating": "Création...",
+            "yourIntegrations": "Vos Intégrations",
+            "integrationCount": "{{count}} intégration",
+            "quickActions": "Actions Rapides",
+            "integrationGuides": "Guides d'Intégration",
+            "stepByStepTutorials": "Tutoriels pas à pas",
+            "apiDocumentation": "Documentation API",
+            "fullReferenceDocs": "Documentation de référence complète",
+            "createdProject": "Créé \"{{name}}\"",
+            "failedCreateProject": "Échec de la création du projet"
+        },
+        "guides": {
+            "page": {
+                "title": "Portail Développeur",
+                "selectProject": {
+                    "title": "Sélectionner un Projet",
+                    "description": "Choisissez un projet dans le menu déroulant ci-dessus pour continuer avec ce guide.",
+                    "noProjects": "Vous n'avez pas encore de projet. Créez-en un depuis le menu déroulant ci-dessus."
+                },
+                "notFound": {
+                    "title": "Guide Introuvable",
+                    "description": "Le guide que vous recherchez n'existe pas."
+                },
+                "backToGuides": "Retour aux Guides",
+                "allGuides": "Tous les Guides"
+            },
+            "hub": {
+                "comingSoon": "Prochainement",
+                "locked": "Verrouillé",
+                "requestAccess": "Demander l'Accès",
+                "inProgress": "En Cours",
+                "getStarted": "Commencer",
+                "createProject": {
+                    "title": "Créez Votre Premier Projet",
+                    "description": "Configurez un projet pour commencer à construire votre intégration.",
+                    "nameLabel": "Nommez votre projet",
+                    "namePlaceholder": "ex. Mon App Géniale"
+                },
+                "badge": "Guides d'Intégration",
+                "heading": "Construisez Votre Intégration",
+                "selectDescription": "Sélectionnez un projet pour commencer, ou parcourez les guides disponibles ci-dessous.",
+                "projectCount": "Vous avez {{count}} projets",
+                "projectsChoose": "Choisissez un projet pour continuer à construire.",
+                "notStarted": "Pas commencé",
+                "mainDescription": "Choisissez ce que vous voulez construire. Nous vous guiderons à chaque étape avec du code prêt à l'emploi et des outils de configuration en direct.",
+                "resources": {
+                    "title": "Ressources Supplémentaires",
+                    "documentation": {
+                        "title": "Documentation",
+                        "description": "Référence API complète"
+                    },
+                    "github": {
+                        "title": "GitHub",
+                        "description": "SDKs open source"
+                    },
+                    "myApps": {
+                        "title": "Mes Apps",
+                        "description": "Gérer les annonces"
+                    }
+                }
+            },
+            "goLive": {
+                "defaultTitle": "Prêt à Être Mis en Ligne !",
+                "defaultDescription": "Vous avez terminé toutes les étapes de configuration. Activez votre intégration pour l'utiliser en production.",
+                "successTitle": "Vous Êtes en Ligne !",
+                "successDescription": "Votre intégration est maintenant active. Redirection vers votre tableau de bord...",
+                "setupComplete": "Configuration Terminée",
+                "readyToActivate": "Prêt à activer",
+                "goLive": "Mettre en Ligne",
+                "activating": "Activation...",
+                "noIntegration": "Veuillez sélectionner une intégration dans le menu déroulant ci-dessus pour continuer.",
+                "noIntegrationToast": "Aucune intégration sélectionnée",
+                "failedToast": "Échec de l'activation de l'intégration. Veuillez réessayer."
+            },
+            "stepProgress": {
+                "step": "Étape {{current}} sur {{total}}",
+                "completed": "{{count}} terminés"
+            },
+            "codePanel": {
+                "title": "Code",
+                "copy": "Copier",
+                "copied": "Copié"
+            }
+        }
     }
 }

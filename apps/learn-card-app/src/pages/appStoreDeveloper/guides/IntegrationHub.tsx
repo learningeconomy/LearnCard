@@ -23,6 +23,7 @@ import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 import { useBetaAccess } from '../components/BetaGate';
+import * as m from '../../../paraglide/messages.js';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -113,7 +114,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
                 <div className="flex items-center gap-1.5 mt-4 text-gray-400 font-medium text-sm">
                     <Lock className="w-4 h-4" />
-                    <span>Request Access</span>
+                    <span>{m['developerPortal.guides.hub.requestAccess']()}</span>
                 </div>
             </div>
         );
@@ -223,7 +224,7 @@ const IntegrationHub: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
+            <AppStoreHeader title={m['developerPortal.guides.page.title']()} rightContent={integrationSelector} />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
@@ -288,16 +289,15 @@ const IntegrationHub: React.FC = () => {
                             <div className="text-center mb-10">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
                                     <Sparkles className="w-4 h-4" />
-                                    <span>Integration Guides</span>
+                                    <span>{m['developerPortal.guides.hub.badge']()}</span>
                                 </div>
 
                                 <h1 className="text-3xl font-bold text-gray-800 mb-3">
-                                    Build Your Integration
+                                    {m['developerPortal.guides.hub.heading']()}
                                 </h1>
 
                                 <p className="text-gray-500 max-w-lg mx-auto text-lg">
-                                    Select a project to get started, or browse the available guides
-                                    below.
+                                    {m['developerPortal.guides.hub.selectDescription']()}
                                 </p>
                             </div>
 
@@ -339,12 +339,10 @@ const IntegrationHub: React.FC = () => {
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                                            {integrations.length === 1
-                                                ? 'You have 1 project'
-                                                : `You have ${integrations.length} projects`}
+                                            {m['developerPortal.guides.hub.projectCount']({ count: integrations.length })}
                                         </h3>
                                         <p className="text-gray-600">
-                                            Choose a project to continue building.
+                                            {m['developerPortal.guides.hub.projectsChoose']()}
                                         </p>
                                     </div>
                                 </div>
@@ -369,7 +367,7 @@ const IntegrationHub: React.FC = () => {
                                                         ? USE_CASES[
                                                               integration.guideType as UseCaseId
                                                           ]?.title
-                                                        : 'Not started'}
+                                                        : m['developerPortal.guides.hub.notStarted']()}
                                                 </p>
                                             </div>
                                             <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
@@ -387,16 +385,15 @@ const IntegrationHub: React.FC = () => {
                             <div className="text-center mb-10">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
                                     <Sparkles className="w-4 h-4" />
-                                    <span>Integration Guides</span>
+                                    <span>{m['developerPortal.guides.hub.badge']()}</span>
                                 </div>
 
                                 <h1 className="text-3xl font-bold text-gray-800 mb-3">
-                                    Build Your Integration
+                                    {m['developerPortal.guides.hub.heading']()}
                                 </h1>
 
                                 <p className="text-gray-500 max-w-lg mx-auto text-lg">
-                                    Choose what you want to build. We'll guide you through each step
-                                    with ready-to-use code and live setup tools.
+                                    {m['developerPortal.guides.hub.mainDescription']()}
                                 </p>
                             </div>
 
@@ -420,7 +417,7 @@ const IntegrationHub: React.FC = () => {
                         <div className="border-t border-gray-100 pt-10">
                             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                                 <BookOpen className="w-5 h-5 text-gray-400" />
-                                Additional Resources
+                                {m['developerPortal.guides.hub.resources.title']()}
                             </h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -433,8 +430,8 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 text-start">
-                                        <p className="font-medium text-gray-800">Documentation</p>
-                                        <p className="text-sm text-gray-500">Full API reference</p>
+                                        <p className="font-medium text-gray-800">{m['developerPortal.guides.hub.resources.documentation.title']()}</p>
+                                        <p className="text-sm text-gray-500">{m['developerPortal.guides.hub.resources.documentation.description']()}</p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
@@ -459,8 +456,8 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 text-start">
-                                        <p className="font-medium text-gray-800">GitHub</p>
-                                        <p className="text-sm text-gray-500">Open source SDKs</p>
+                                        <p className="font-medium text-gray-800">{m['developerPortal.guides.hub.resources.github.title']()}</p>
+                                        <p className="text-sm text-gray-500">{m['developerPortal.guides.hub.resources.github.description']()}</p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
@@ -475,8 +472,8 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-800">My Apps</p>
-                                        <p className="text-sm text-gray-500">Manage listings</p>
+                                        <p className="font-medium text-gray-800">{m['developerPortal.guides.hub.resources.myApps.title']()}</p>
+                                        <p className="text-sm text-gray-500">{m['developerPortal.guides.hub.resources.myApps.description']()}</p>
                                     </div>
 
                                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />

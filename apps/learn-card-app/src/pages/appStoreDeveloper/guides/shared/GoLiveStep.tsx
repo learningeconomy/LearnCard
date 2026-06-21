@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Rocket, ArrowLeft, CheckCircle2, Loader2, PartyPopper } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('go-live-step');
 
@@ -36,7 +37,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
     const handleGoLive = async () => {
         if (!integration) {
-            presentToast('No integration selected', {
+            presentToast(m['developerPortal.guides.goLive.noIntegrationToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -66,7 +67,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
             }, 1500);
         } catch (error) {
             log.error('Failed to activate integration:', error);
-            presentToast('Failed to activate integration. Please try again.', {
+            presentToast(m['developerPortal.guides.goLive.failedToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -168,7 +169,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
             {!integration && (
                 <p className="text-center text-sm text-amber-600">
-                    Please select an integration from the header dropdown to continue.
+                    {m['developerPortal.guides.goLive.noIntegration']()}
                 </p>
             )}
         </div>
