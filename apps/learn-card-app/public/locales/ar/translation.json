@@ -5390,6 +5390,141 @@
                 "templates": {
                     "footnote": "راجع علامة تبويب الكود للحصول على أمثلة إرسال تستخدم روابط القالب الخاصة بك."
                 }
+            },
+            "loading": "جارٍ التحميل...",
+            "loadingDashboard": "جارٍ تحميل لوحة البيانات...",
+            "refresh": "تحديث",
+            "appUpgraded": "تم ترقية التطبيق بنجاح!",
+            "appUpgradeFailed": "فشل ترقية التطبيق",
+            "errorLoadFailed": "فشل تحميل بيانات لوحة البيانات",
+            "nav": {
+                "overview": "نظرة عامة",
+                "templates": "القوالب",
+                "apiTokens": "رموز API",
+                "config": "الإعدادات",
+                "embedCode": "الكود المضمن",
+                "contracts": "العقود",
+                "connections": "الاتصالات",
+                "signing": "التوقيع",
+                "branding": "العلامة التجارية",
+                "appListings": "قوائم التطبيقات",
+                "partnerConnect": "Partner Connect",
+                "appConfig": "إعدادات التطبيق",
+                "code": "الكود",
+                "csvUpload": "رفع CSV",
+                "testing": "الاختبار"
+            },
+            "subtitle": {
+                "issueCredentials": "لوحة بيانات إصدار الشهادات",
+                "embed": "لوحة بيانات التكامل المضمن",
+                "consentFlow": "لوحة بيانات تدفق الموافقة",
+                "courseCatalog": "لوحة بيانات كتالوج الدورة",
+                "default": "لوحة بيانات التكامل"
+            },
+            "stats": {
+                "connections": "الاتصالات",
+                "contracts": "العقود",
+                "apiTokens": "رموز API",
+                "templates": "القوالب",
+                "credentialsSent": "الشهادات المرسلة",
+                "claimed": "تم المطالبة",
+                "pending": "قيد الانتظار",
+                "claimRate": "معدل المطالبة"
+            },
+            "status": {
+                "active": "نشط",
+                "inSetup": "قيد الإعداد"
+            },
+            "export": {
+                "title": "تنزيل CSV",
+                "description": "تصدير بيانات الشهادات",
+                "downloading": "جارٍ التنزيل...",
+                "result": "{{count}} نتيجة",
+                "results": "{{count}} نتائج",
+                "couldNotLoadCount": "تعذر تحميل العدد",
+                "loading": "جارٍ التحميل...",
+                "cancel": "إلغاء",
+                "exportCsv": "تصدير CSV",
+                "allEvents": "كل الأحداث",
+                "startDate": "تاريخ البداية",
+                "endDate": "تاريخ النهاية",
+                "dateRange": "نطاق التاريخ (اختياري)",
+                "eventType": "نوع الحدث",
+                "appListing": "قائمة التطبيق",
+                "allApps": "كل التطبيقات",
+                "exportFailed": "فشل التصدير"
+            },
+            "activity": {
+                "sent": "تم الإرسال",
+                "delivered": "تم التسليم",
+                "claimed": "تم المطالبة",
+                "expired": "منتهي الصلاحية",
+                "failed": "فشل",
+                "allEvents": "كل الأحداث",
+                "autoDelivered": "تسليم تلقائي",
+                "unknown": "غير معروف",
+                "credential": "شهادة",
+                "recipientUnknown": "غير معروف",
+                "justNow": "الآن للتو",
+                "minutesAgo": "منذ {{count}} د",
+                "hoursAgo": "منذ {{count}} س",
+                "daysAgo": "منذ {{count}} ي",
+                "fetchFailed": "فشل جلب النشاط",
+                "loadMoreFailed": "فشل تحميل المزيد من النشاط",
+                "source": {
+                    "apiSend": "إرسال API",
+                    "boostSend": "إرسال Boost",
+                    "credentialSend": "إرسال شهادة",
+                    "contract": "عقد",
+                    "claim": "مطالبة",
+                    "inbox": "صندوق الوارد",
+                    "claimLink": "رابط المطالبة",
+                    "acceptCredential": "قبول الشهادة",
+                    "appEvent": "حدث التطبيق",
+                    "unknown": "غير معروف"
+                },
+                "recipientType": {
+                    "email": "البريد الإلكتروني",
+                    "phone": "الهاتف",
+                    "profile": "الملف الشخصي"
+                },
+                "csvSaved": "تم حفظ CSV في المستندات: {{filename}}",
+                "csvStatus": {
+                    "claimed": "تم المطالبة",
+                    "failed": "فشل",
+                    "expired": "منتهي الصلاحية",
+                    "delivered": "تم التسليم",
+                    "sent": "تم الإرسال",
+                    "unknown": "غير معروف"
+                },
+                "deliveryMethod": {
+                    "email": "التسليم عبر البريد",
+                    "direct": "مباشر إلى الملف الشخصي"
+                }
+            },
+            "csv": {
+                "headers": {
+                    "credentialName": "اسم الشهادة",
+                    "credentialCategory": "فئة الشهادة",
+                    "recipientName": "اسم المستلم",
+                    "recipientId": "معرف المستلم",
+                    "recipientType": "نوع المستلم",
+                    "status": "الحالة",
+                    "deliveryMethod": "طريقة التسليم",
+                    "dateSent": "تاريخ الإرسال",
+                    "dateClaimed": "تاريخ المطالبة",
+                    "timeToClaim": "وقت المطالبة (ساعات)",
+                    "errorDetails": "تفاصيل الخطأ",
+                    "source": "المصدر",
+                    "activityId": "معرف النشاط"
+                }
+            },
+            "template": {
+                "untitled": "قالب بدون عنوان",
+                "errorCreateRequires": "مطلوب listingId أو integrationId لإنشاء القوالب",
+                "errorInvalidAlias": "اسم مستعار غير صالح",
+                "errorAliasInUse": "الاسم المستعار قيد الاستخدام بالفعل",
+                "errorFetchFailed": "فشل جلب القوالب"
             }
         }
     }

@@ -5390,6 +5390,141 @@
                 "templates": {
                     "footnote": "See the Code tab for send examples using your template URIs."
                 }
+            },
+            "loading": "Loading...",
+            "loadingDashboard": "Loading dashboard...",
+            "refresh": "Refresh",
+            "appUpgraded": "App upgraded successfully!",
+            "appUpgradeFailed": "Failed to upgrade app",
+            "errorLoadFailed": "Failed to load dashboard data",
+            "nav": {
+                "overview": "Overview",
+                "templates": "Templates",
+                "apiTokens": "API Tokens",
+                "config": "Config",
+                "embedCode": "Embed Code",
+                "contracts": "Contracts",
+                "connections": "Connections",
+                "signing": "Signing",
+                "branding": "Branding",
+                "appListings": "App Listings",
+                "partnerConnect": "Partner Connect",
+                "appConfig": "App Config",
+                "code": "Code",
+                "csvUpload": "CSV Upload",
+                "testing": "Testing"
+            },
+            "subtitle": {
+                "issueCredentials": "Issue Credentials Dashboard",
+                "embed": "Embed Integration Dashboard",
+                "consentFlow": "Consent Flow Dashboard",
+                "courseCatalog": "Course Catalog Dashboard",
+                "default": "Integration Dashboard"
+            },
+            "stats": {
+                "connections": "Connections",
+                "contracts": "Contracts",
+                "apiTokens": "API Tokens",
+                "templates": "Templates",
+                "credentialsSent": "Credentials Sent",
+                "claimed": "Claimed",
+                "pending": "Pending",
+                "claimRate": "Claim Rate"
+            },
+            "status": {
+                "active": "Active",
+                "inSetup": "In Setup"
+            },
+            "export": {
+                "title": "Download CSV",
+                "description": "Export Credential Data",
+                "downloading": "Downloading...",
+                "result": "{{count}} result",
+                "results": "{{count}} results",
+                "couldNotLoadCount": "Could not load count",
+                "loading": "Loading...",
+                "cancel": "Cancel",
+                "exportCsv": "Export CSV",
+                "allEvents": "All Events",
+                "startDate": "Start Date",
+                "endDate": "End Date",
+                "dateRange": "Date Range (Optional)",
+                "eventType": "Event Type",
+                "appListing": "App Listing",
+                "allApps": "All Apps",
+                "exportFailed": "Export failed"
+            },
+            "activity": {
+                "sent": "Sent",
+                "delivered": "Delivered",
+                "claimed": "Claimed",
+                "expired": "Expired",
+                "failed": "Failed",
+                "allEvents": "All Events",
+                "autoDelivered": "Auto-Delivered",
+                "unknown": "Unknown",
+                "credential": "Credential",
+                "recipientUnknown": "Unknown",
+                "justNow": "Just now",
+                "minutesAgo": "{{count}}m ago",
+                "hoursAgo": "{{count}}h ago",
+                "daysAgo": "{{count}}d ago",
+                "fetchFailed": "Failed to fetch activity",
+                "loadMoreFailed": "Failed to load more activity",
+                "source": {
+                    "apiSend": "API Send",
+                    "boostSend": "Boost Send",
+                    "credentialSend": "Credential Send",
+                    "contract": "Contract",
+                    "claim": "Claim",
+                    "inbox": "Inbox",
+                    "claimLink": "Claim Link",
+                    "acceptCredential": "Accept Credential",
+                    "appEvent": "App Event",
+                    "unknown": "Unknown"
+                },
+                "recipientType": {
+                    "email": "Email",
+                    "phone": "Phone",
+                    "profile": "Profile"
+                },
+                "csvSaved": "CSV saved to Documents: {{filename}}",
+                "csvStatus": {
+                    "claimed": "Claimed",
+                    "failed": "Failed",
+                    "expired": "Expired",
+                    "delivered": "Delivered",
+                    "sent": "Sent",
+                    "unknown": "Unknown"
+                },
+                "deliveryMethod": {
+                    "email": "Email Delivery",
+                    "direct": "Direct to Profile"
+                }
+            },
+            "csv": {
+                "headers": {
+                    "credentialName": "Credential Name",
+                    "credentialCategory": "Credential Category",
+                    "recipientName": "Recipient Name",
+                    "recipientId": "Recipient ID",
+                    "recipientType": "Recipient Type",
+                    "status": "Status",
+                    "deliveryMethod": "Delivery Method",
+                    "dateSent": "Date Sent",
+                    "dateClaimed": "Date Claimed",
+                    "timeToClaim": "Time to Claim (hours)",
+                    "errorDetails": "Error Details",
+                    "source": "Source",
+                    "activityId": "Activity ID"
+                }
+            },
+            "template": {
+                "untitled": "Untitled Template",
+                "errorCreateRequires": "Either listingId or integrationId is required to create templates",
+                "errorInvalidAlias": "Invalid alias",
+                "errorAliasInUse": "Alias already in use",
+                "errorFetchFailed": "Failed to fetch templates"
             }
         }
     }

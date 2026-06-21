@@ -5390,6 +5390,141 @@
                 "templates": {
                     "footnote": "Consultez l'onglet Code pour des exemples d'envoi utilisant vos URI de modèle."
                 }
+            },
+            "loading": "Chargement...",
+            "loadingDashboard": "Chargement du tableau de bord...",
+            "refresh": "Actualiser",
+            "appUpgraded": "Application mise à jour avec succès !",
+            "appUpgradeFailed": "Échec de la mise à jour de l'application",
+            "errorLoadFailed": "Échec du chargement des données du tableau de bord",
+            "nav": {
+                "overview": "Aperçu",
+                "templates": "Modèles",
+                "apiTokens": "Jetons API",
+                "config": "Configuration",
+                "embedCode": "Code Intégré",
+                "contracts": "Contrats",
+                "connections": "Connexions",
+                "signing": "Signature",
+                "branding": "Marque",
+                "appListings": "Annonces d'Apps",
+                "partnerConnect": "Partner Connect",
+                "appConfig": "Config. App",
+                "code": "Code",
+                "csvUpload": "Importer CSV",
+                "testing": "Tests"
+            },
+            "subtitle": {
+                "issueCredentials": "Tableau de bord d'émission de certificats",
+                "embed": "Tableau de bord d'intégration intégrée",
+                "consentFlow": "Tableau de bord du flux de consentement",
+                "courseCatalog": "Tableau de bord du catalogue de cours",
+                "default": "Tableau de bord d'intégration"
+            },
+            "stats": {
+                "connections": "Connexions",
+                "contracts": "Contrats",
+                "apiTokens": "Jetons API",
+                "templates": "Modèles",
+                "credentialsSent": "Certificats Envoyés",
+                "claimed": "Réclamés",
+                "pending": "En attente",
+                "claimRate": "Taux de réclamation"
+            },
+            "status": {
+                "active": "Actif",
+                "inSetup": "En Configuration"
+            },
+            "export": {
+                "title": "Télécharger CSV",
+                "description": "Exporter les données de certificats",
+                "downloading": "Téléchargement...",
+                "result": "{{count}} résultat",
+                "results": "{{count}} résultats",
+                "couldNotLoadCount": "Impossible de charger le comptage",
+                "loading": "Chargement...",
+                "cancel": "Annuler",
+                "exportCsv": "Exporter CSV",
+                "allEvents": "Tous les Événements",
+                "startDate": "Date de Début",
+                "endDate": "Date de Fin",
+                "dateRange": "Période (Optionnelle)",
+                "eventType": "Type d'Événement",
+                "appListing": "Annonce d'App",
+                "allApps": "Toutes les Apps",
+                "exportFailed": "Échec de l'exportation"
+            },
+            "activity": {
+                "sent": "Envoyé",
+                "delivered": "Livré",
+                "claimed": "Réclamé",
+                "expired": "Expiré",
+                "failed": "Échoué",
+                "allEvents": "Tous les Événements",
+                "autoDelivered": "Auto-Livré",
+                "unknown": "Inconnu",
+                "credential": "Certificat",
+                "recipientUnknown": "Inconnu",
+                "justNow": "À l'instant",
+                "minutesAgo": "il y a {{count}}m",
+                "hoursAgo": "il y a {{count}}h",
+                "daysAgo": "il y a {{count}}d",
+                "fetchFailed": "Échec de la récupération des activités",
+                "loadMoreFailed": "Échec du chargement de plus d'activités",
+                "source": {
+                    "apiSend": "Envoi API",
+                    "boostSend": "Envoi Boost",
+                    "credentialSend": "Envoi de Certificat",
+                    "contract": "Contrat",
+                    "claim": "Réclamation",
+                    "inbox": "Boîte de réception",
+                    "claimLink": "Lien de Réclamation",
+                    "acceptCredential": "Accepter le Certificat",
+                    "appEvent": "Événement App",
+                    "unknown": "Inconnu"
+                },
+                "recipientType": {
+                    "email": "E-mail",
+                    "phone": "Téléphone",
+                    "profile": "Profil"
+                },
+                "csvSaved": "CSV enregistré dans Documents : {{filename}}",
+                "csvStatus": {
+                    "claimed": "Réclamé",
+                    "failed": "Échoué",
+                    "expired": "Expiré",
+                    "delivered": "Livré",
+                    "sent": "Envoyé",
+                    "unknown": "Inconnu"
+                },
+                "deliveryMethod": {
+                    "email": "Livraison par E-mail",
+                    "direct": "Direct au Profil"
+                }
+            },
+            "csv": {
+                "headers": {
+                    "credentialName": "Nom du Certificat",
+                    "credentialCategory": "Catégorie du Certificat",
+                    "recipientName": "Nom du Destinataire",
+                    "recipientId": "ID du Destinataire",
+                    "recipientType": "Type de Destinataire",
+                    "status": "Statut",
+                    "deliveryMethod": "Mode de Livraison",
+                    "dateSent": "Date d'Envoi",
+                    "dateClaimed": "Date de Réclamation",
+                    "timeToClaim": "Délai de Réclamation (heures)",
+                    "errorDetails": "Détails de l'Erreur",
+                    "source": "Source",
+                    "activityId": "ID d'Activité"
+                }
+            },
+            "template": {
+                "untitled": "Modèle sans titre",
+                "errorCreateRequires": "listingId ou integrationId est requis pour créer des modèles",
+                "errorInvalidAlias": "Alias invalide",
+                "errorAliasInUse": "L'alias est déjà utilisé",
+                "errorFetchFailed": "Échec de la récupération des modèles"
             }
         }
     }

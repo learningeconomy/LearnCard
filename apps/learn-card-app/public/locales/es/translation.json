@@ -5390,6 +5390,141 @@
                 "templates": {
                     "footnote": "Mira la pestaña Código para ejemplos de envío usando tus URIs de plantilla."
                 }
+            },
+            "loading": "Cargando...",
+            "loadingDashboard": "Cargando panel...",
+            "refresh": "Actualizar",
+            "appUpgraded": "¡Aplicación actualizada exitosamente!",
+            "appUpgradeFailed": "Error al actualizar la aplicación",
+            "errorLoadFailed": "Error al cargar los datos del panel",
+            "nav": {
+                "overview": "Resumen",
+                "templates": "Plantillas",
+                "apiTokens": "Tokens de API",
+                "config": "Configuración",
+                "embedCode": "Código Incrustado",
+                "contracts": "Contratos",
+                "connections": "Conexiones",
+                "signing": "Firma",
+                "branding": "Marca",
+                "appListings": "Listados de Apps",
+                "partnerConnect": "Partner Connect",
+                "appConfig": "Config. de App",
+                "code": "Código",
+                "csvUpload": "Subir CSV",
+                "testing": "Pruebas"
+            },
+            "subtitle": {
+                "issueCredentials": "Panel de Emisión de Credenciales",
+                "embed": "Panel de Integración Incrustada",
+                "consentFlow": "Panel de Flujo de Consentimiento",
+                "courseCatalog": "Panel de Catálogo de Cursos",
+                "default": "Panel de Integración"
+            },
+            "stats": {
+                "connections": "Conexiones",
+                "contracts": "Contratos",
+                "apiTokens": "Tokens de API",
+                "templates": "Plantillas",
+                "credentialsSent": "Credenciales Enviadas",
+                "claimed": "Reclamadas",
+                "pending": "Pendientes",
+                "claimRate": "Tasa de Reclamo"
+            },
+            "status": {
+                "active": "Activo",
+                "inSetup": "En Configuración"
+            },
+            "export": {
+                "title": "Descargar CSV",
+                "description": "Exportar Datos de Credenciales",
+                "downloading": "Descargando...",
+                "result": "{{count}} resultado",
+                "results": "{{count}} resultados",
+                "couldNotLoadCount": "No se pudo cargar el conteo",
+                "loading": "Cargando...",
+                "cancel": "Cancelar",
+                "exportCsv": "Exportar CSV",
+                "allEvents": "Todos los Eventos",
+                "startDate": "Fecha de Inicio",
+                "endDate": "Fecha de Fin",
+                "dateRange": "Rango de Fechas (Opcional)",
+                "eventType": "Tipo de Evento",
+                "appListing": "Listado de App",
+                "allApps": "Todas las Apps",
+                "exportFailed": "Error al exportar"
+            },
+            "activity": {
+                "sent": "Enviado",
+                "delivered": "Entregado",
+                "claimed": "Reclamado",
+                "expired": "Expirado",
+                "failed": "Fallido",
+                "allEvents": "Todos los Eventos",
+                "autoDelivered": "Auto-Entregado",
+                "unknown": "Desconocido",
+                "credential": "Credencial",
+                "recipientUnknown": "Desconocido",
+                "justNow": "Justo ahora",
+                "minutesAgo": "hace {{count}}m",
+                "hoursAgo": "hace {{count}}h",
+                "daysAgo": "hace {{count}}d",
+                "fetchFailed": "Error al obtener actividad",
+                "loadMoreFailed": "Error al cargar más actividad",
+                "source": {
+                    "apiSend": "Envío API",
+                    "boostSend": "Envío Boost",
+                    "credentialSend": "Envío de Credencial",
+                    "contract": "Contrato",
+                    "claim": "Reclamo",
+                    "inbox": "Bandeja",
+                    "claimLink": "Enlace de Reclamo",
+                    "acceptCredential": "Aceptar Credencial",
+                    "appEvent": "Evento de App",
+                    "unknown": "Desconocido"
+                },
+                "recipientType": {
+                    "email": "Correo",
+                    "phone": "Teléfono",
+                    "profile": "Perfil"
+                },
+                "csvSaved": "CSV guardado en Documentos: {{filename}}",
+                "csvStatus": {
+                    "claimed": "Reclamado",
+                    "failed": "Fallido",
+                    "expired": "Expirado",
+                    "delivered": "Entregado",
+                    "sent": "Enviado",
+                    "unknown": "Desconocido"
+                },
+                "deliveryMethod": {
+                    "email": "Entrega por Correo",
+                    "direct": "Directo al Perfil"
+                }
+            },
+            "csv": {
+                "headers": {
+                    "credentialName": "Nombre de Credencial",
+                    "credentialCategory": "Categoría de Credencial",
+                    "recipientName": "Nombre del Destinatario",
+                    "recipientId": "ID del Destinatario",
+                    "recipientType": "Tipo de Destinatario",
+                    "status": "Estado",
+                    "deliveryMethod": "Método de Entrega",
+                    "dateSent": "Fecha de Envío",
+                    "dateClaimed": "Fecha de Reclamo",
+                    "timeToClaim": "Tiempo para Reclamar (horas)",
+                    "errorDetails": "Detalles del Error",
+                    "source": "Origen",
+                    "activityId": "ID de Actividad"
+                }
+            },
+            "template": {
+                "untitled": "Plantilla sin título",
+                "errorCreateRequires": "Se requiere listingId o integrationId para crear plantillas",
+                "errorInvalidAlias": "Alias inválido",
+                "errorAliasInUse": "El alias ya está en uso",
+                "errorFetchFailed": "Error al obtener plantillas"
             }
         }
     }
