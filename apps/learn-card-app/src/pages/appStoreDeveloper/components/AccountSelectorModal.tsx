@@ -2,6 +2,8 @@ import React from 'react';
 import { IonModal } from '@ionic/react';
 import { X } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { AccountSelector, AccountProfile, AccountSelectorProps } from './AccountSelector';
 
 export interface AccountSelectorModalProps extends Omit<AccountSelectorProps, 'compact'> {
@@ -27,7 +29,7 @@ export const AccountSelectorModal: React.FC<AccountSelectorModalProps> = ({
             <div className="flex flex-col h-full bg-white rounded-t-3xl">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">{title || m['developerPortal.components.accountSelectorModal.switchAccount']()}</h2>
 
                     <button
                         onClick={onClose}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import {
     AlertCircle,
     Code,
@@ -92,7 +93,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                Select the capabilities your app requires from the wallet
+                                {m['developerPortal.components.launchConfigStep.permissionsNeededDesc']()}
                             </p>
 
                             <div className="space-y-2">
@@ -137,7 +138,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
                                 Consent Flow Contract{' '}
-                                <span className="text-gray-400 font-normal">(Optional)</span>
+                                <span className="text-gray-400 font-normal">{m['developerPortal.components.createConsentContractModal.optional']()}</span>
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
@@ -222,12 +223,12 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             </p>
                         </div>
 
-                        {/* Skip Installation Toggle - only shown for Plugin category */}
+                        {/* {m['developerPortal.components.launchConfigStep.skipInstallation']()} Toggle - only shown for Plugin category */}
                         {data.category === 'plugin' && (
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex-1 pr-4">
                                     <p className="text-sm font-medium text-gray-700">
-                                        Skip Installation
+                                        {m['developerPortal.components.launchConfigStep.skipInstallation']()}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-0.5">
                                         When enabled, users can open the link directly without
@@ -239,7 +240,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     onIonChange={e =>
                                         updateConfig({ skipInstallation: e.detail.checked })
                                     }
-                                    aria-label="Skip Installation"
+                                    aria-label={m['developerPortal.components.launchConfigStep.skipInstallation']()}
                                 />
                             </div>
                         )}
@@ -487,13 +488,13 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
         <div className="space-y-6">
             <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2">
-                    <h2 className="text-xl font-semibold text-gray-700">Launch Configuration</h2>
+                    <h2 className="text-xl font-semibold text-gray-700">{m['developerPortal.components.launchConfigStep.title']()}</h2>
 
                     {data.launch_type && (
                         <button
                             onClick={() => setShowGuide(true)}
                             className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
-                            title="View integration guide"
+                            title={m['developerPortal.components.launchConfigStep.viewIntegrationGuide']()}
                         >
                             <HelpCircle className="w-5 h-5" />
                         </button>
@@ -501,7 +502,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 </div>
 
                 <p className="text-sm text-gray-500 mt-1">
-                    Configure the technical details for your integration
+                    {m['developerPortal.components.launchConfigStep.description']()}
                 </p>
             </div>
 
@@ -517,11 +518,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                     <div className="flex-1">
                         <h4 className="text-sm font-medium text-gray-800">
-                            Need help integrating?
+                            {m['developerPortal.components.launchConfigStep.needHelpIntegrating']()}
                         </h4>
 
                         <p className="text-xs text-gray-500 mt-0.5">
-                            View step-by-step developer guide with code examples
+                            {m['developerPortal.components.launchConfigStep.needHelpIntegratingDesc']()}
                         </p>
                     </div>
 
@@ -538,7 +539,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                     <Code className="w-4 h-4 text-gray-400" />
 
-                    <span className="text-sm font-medium text-gray-500">Configuration Preview</span>
+                    <span className="text-sm font-medium text-gray-500">{m['developerPortal.components.launchConfigStep.configPreview']()}</span>
                 </div>
 
                 <pre className="p-4 bg-gray-800 text-gray-100 rounded-xl text-xs overflow-x-auto">
@@ -552,7 +553,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                     <div className="flex items-center justify-between">
                         <div>
                             <h4 className="text-sm font-medium text-indigo-800">
-                                Test Your Integration
+                                {m['developerPortal.components.launchConfigStep.testYourIntegration']()}
                             </h4>
                             <p className="text-xs text-indigo-600 mt-0.5">
                                 Preview your app and validate partner-connect API calls
@@ -564,7 +565,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
                         >
                             <Play className="w-4 h-4" />
-                            Preview App
+                            {m['developerPortal.components.launchConfigStep.previewApp']()}
                         </button>
                     </div>
                 </div>

@@ -1,3 +1,5 @@
+import * as m from '../../../paraglide/messages.js';
+
 import { getLogger } from 'learn-card-base';
 const log = getLogger('template-list-manager');
 /**
@@ -328,7 +330,7 @@ if (result.credentialUri) {
         return (
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
                 <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
-                <span className="text-gray-600">Loading templates...</span>
+                <span className="text-gray-600">{m['developerPortal.components.templateListManager.loadingTemplates']()}</span>
             </div>
         );
     }
@@ -383,7 +385,7 @@ if (result.credentialUri) {
                                     {/* Alias - only for issue-credentials templates with a listing */}
                                     {featureType === 'issue-credentials' && listingId && (
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs text-gray-500">Alias:</span>
+                                            <span className="text-xs text-gray-500">{m['developerPortal.components.templateListManager.alias']()}</span>
 
                                             {editingAlias === template.boostUri ? (
                                                 <div className="flex items-center gap-1">
@@ -430,7 +432,7 @@ if (result.credentialUri) {
                                                     className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors"
                                                 >
                                                     <code>
-                                                        {template.templateAlias || 'No alias'}
+                                                        {template.templateAlias || m['developerPortal.components.templateListManager.noAlias']()}
                                                     </code>
                                                     {editable && (
                                                         <Pencil className="w-3 h-3 text-gray-400" />
@@ -467,7 +469,7 @@ if (result.credentialUri) {
                                                     ? 'bg-blue-100 text-blue-700'
                                                     : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
                                             }`}
-                                            title="Edit template"
+                                            title={m['developerPortal.components.templateListManager.editTemplate']()}
                                         >
                                             <Edit3 className="w-4 h-4" />
                                         </button>
@@ -482,7 +484,7 @@ if (result.credentialUri) {
                                                     ? 'bg-emerald-100 text-emerald-700'
                                                     : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                                             }`}
-                                            title="View code"
+                                            title={m['developerPortal.components.templateListManager.viewCode']()}
                                         >
                                             <Code className="w-4 h-4" />
                                         </button>
@@ -492,7 +494,7 @@ if (result.credentialUri) {
                                         <button
                                             onClick={() => handleDelete(template.boostUri!)}
                                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Remove"
+                                            title={m['developerPortal.components.templateListManager.remove']()}
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -529,12 +531,12 @@ if (result.credentialUri) {
                                     {editingTemplate ? (
                                         <>
                                             <Edit3 className="w-4 h-4" />
-                                            Editing: {editingTemplate.name}
+                                            {m['developerPortal.components.templateListManager.editingLabel']()}: {editingTemplate.name}
                                         </>
                                     ) : (
                                         <>
                                             <Sparkles className="w-4 h-4" />
-                                            Design Your Credential Template
+                                            {m['developerPortal.components.templateListManager.designYourTemplate']()}
                                         </>
                                     )}
                                 </h5>
@@ -629,17 +631,17 @@ if (result.credentialUri) {
                                         {isSaving ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                {editingTemplate ? 'Saving...' : 'Creating...'}
+                                                {editingTemplate ? m['developerPortal.components.templateListManager.saving']() : m['developerPortal.components.templateListManager.creating']()}
                                             </>
                                         ) : editingTemplate ? (
                                             <>
                                                 <Check className="w-4 h-4" />
-                                                Save Changes
+                                                {m['developerPortal.components.templateListManager.saveChanges']()}
                                             </>
                                         ) : (
                                             <>
                                                 <Plus className="w-4 h-4" />
-                                                Create Template
+                                                {m['developerPortal.components.templateListManager.createTemplate']()}
                                             </>
                                         )}
                                     </button>
@@ -659,8 +661,8 @@ if (result.credentialUri) {
                         >
                             <Plus className="w-5 h-5" />
                             {templates.length === 0
-                                ? 'Create Your First Template'
-                                : 'Add Another Template'}
+                                ? m['developerPortal.components.templateListManager.createFirstTemplate']()
+                                : m['developerPortal.components.templateListManager.addAnotherTemplate']()}
                         </button>
                     )}
                 </>
@@ -671,7 +673,7 @@ if (result.credentialUri) {
                 <div className="space-y-3">
                     {templates.length > 1 && (
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-gray-500">Select template:</span>
+                            <span className="text-sm text-gray-500">{m['developerPortal.components.templateListManager.selectTemplate']()}</span>
 
                             {templates.map(t => (
                                 <button
@@ -695,7 +697,7 @@ if (result.credentialUri) {
 
             {/* Empty state */}
             {templates.length === 0 && !showBuilder && !editable && (
-                <div className="p-6 text-center text-gray-500">No templates configured yet.</div>
+                <div className="p-6 text-center text-gray-500">{m['developerPortal.components.templateListManager.noTemplates']()}</div>
             )}
         </div>
     );

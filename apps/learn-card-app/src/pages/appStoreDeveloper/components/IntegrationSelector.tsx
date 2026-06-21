@@ -4,6 +4,8 @@ import type { LCNIntegration } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('integration-selector');
 
+import * as m from '../../../paraglide/messages.js';
+
 import { useDeveloperPortal } from '../useDeveloperPortal';
 
 interface IntegrationSelectorProps {
@@ -49,7 +51,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     return (
         <div className="bg-white rounded-xl border border-grayscale-200 p-4">
             <label className="block text-sm font-medium text-grayscale-700 mb-3">
-                Select Integration
+                {m['developerPortal.components.integrationSelector.selectIntegration']()}
             </label>
 
             {integrations.length > 0 ? (
@@ -84,7 +86,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                 </div>
             ) : (
                 <p className="text-grayscale-500 text-sm mb-4">
-                    No projects yet. Create one to get started.
+                    {m['developerPortal.components.integrationSelector.noProjectsYet']()}
                 </p>
             )}
 
@@ -115,7 +117,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                         {createMutation.isPending ? (
                             <IonSpinner name="crescent" className="w-5 h-5" />
                         ) : (
-                            'Create'
+                            m['developerPortal.components.integrationSelector.create']()
                         )}
                     </button>
 
@@ -126,7 +128,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                         }}
                         className="px-4 py-2 bg-grayscale-200 text-grayscale-700 rounded-lg font-medium hover:bg-grayscale-300 transition-colors"
                     >
-                        Cancel
+                        {m['developerPortal.components.integrationSelector.cancel']()}
                     </button>
                 </div>
             ) : (
@@ -142,7 +144,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                             d="M12 4v16m8-8H4"
                         />
                     </svg>
-                    Create New Integration
+                    {m['developerPortal.components.integrationSelector.createNewIntegration']()}
                 </button>
             )}
         </div>
