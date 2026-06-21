@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-connect-tab');
 /**
@@ -432,6 +433,12 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     );
 
     // Local selected listing state (can be overridden by external prop)
+    // Helper: localize category name by ID
+    const getCategoryName = (id: string): string => {
+        const key = `developerPortal.dashboards.tabs.partnerConnect.categories.${id}`;
+        try { return (m as any)[key](); } catch { return id; }
+    };
+
     const [localSelectedListing, setLocalSelectedListing] = useState<AppStoreListing | null>(
         externalSelectedListing || null
     );
@@ -1070,7 +1077,7 @@ async function launchWalletFeature(path: string, description?: string) {
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast('Copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied'](), { hasDismissButton: true });
     };
 
     const getCategoryColor = (category: string) => {
@@ -1103,9 +1110,9 @@ log.info('User:', identity.profile.displayName);`;
             {/* Header with App Selector */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.partnerConnect.title']()}</h2>
                     <p className="text-sm text-gray-500">
-                        Manage templates and generate integration code
+                        {m['developerPortal.dashboards.tabs.partnerConnect.description']()}
                     </p>
                 </div>
 
@@ -1136,7 +1143,7 @@ log.info('User:', identity.profile.displayName);`;
             {listingsLoading && (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
                     <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
-                    <span className="text-gray-600">Loading app listings...</span>
+                    <span className="text-gray-600">{m['developerPortal.dashboards.tabs.partnerConnect.loadingListings']()}</span>
                 </div>
             )}
 
@@ -1146,10 +1153,10 @@ log.info('User:', identity.profile.displayName);`;
                         <Info className="w-5 h-5 text-amber-600" />
                         <div>
                             <p className="text-sm text-amber-800 font-medium">
-                                No app listings found
+                                {m['developerPortal.dashboards.tabs.partnerConnect.noListingsTitle']()}
                             </p>
                             <p className="text-xs text-amber-700">
-                                Create an app listing in the &quot;App Listings&quot; tab first.
+                                {m['developerPortal.dashboards.tabs.partnerConnect.noListingsDesc']()}
                             </p>
                         </div>
                     </div>
@@ -1169,7 +1176,7 @@ log.info('User:', identity.profile.displayName);`;
                             }`}
                         >
                             <Award className="w-4 h-4" />
-                            Templates
+                            {m['developerPortal.dashboards.tabs.partnerConnect.tabTemplates']()}
                         </button>
 
                         <button
@@ -1181,7 +1188,7 @@ log.info('User:', identity.profile.displayName);`;
                             }`}
                         >
                             <Code className="w-4 h-4" />
-                            Code
+                            {m['developerPortal.dashboards.tabs.partnerConnect.tabCode']()}
                         </button>
 
                         <button
@@ -1193,7 +1200,7 @@ log.info('User:', identity.profile.displayName);`;
                             }`}
                         >
                             <Package className="w-4 h-4" />
-                            Setup
+                            {m['developerPortal.dashboards.tabs.partnerConnect.tabSetup']()}
                         </button>
                     </div>
 
@@ -1213,7 +1220,7 @@ log.info('User:', identity.profile.displayName);`;
                                     }`}
                                 >
                                     <Award className="w-4 h-4" />
-                                    Issue Credentials
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.templateType.issueCredentials']()}
                                 </button>
 
                                 <button
@@ -1225,7 +1232,7 @@ log.info('User:', identity.profile.displayName);`;
                                     }`}
                                 >
                                     <Send className="w-4 h-4" />
-                                    Peer Badges
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.templateType.peerBadges']()}
                                 </button>
                             </div>
 
@@ -1237,23 +1244,9 @@ log.info('User:', identity.profile.displayName);`;
                                         : 'bg-violet-50 border border-violet-200 text-violet-800'
                                 }`}
                             >
-                                {templateType === 'issue-credentials' ? (
-                                    <>
-                                        <strong>Issue Credentials:</strong> Templates for
-                                        credentials your app issues to users via{' '}
-                                        <code className="bg-emerald-100 px-1 rounded">
-                                            sendCredential()
-                                        </code>
-                                    </>
-                                ) : (
-                                    <>
-                                        <strong>Peer Badges:</strong> Templates users can send to
-                                        each other via{' '}
-                                        <code className="bg-violet-100 px-1 rounded">
-                                            initiateTemplateIssue()
-                                        </code>
-                                    </>
-                                )}
+                                {templateType === 'issue-credentials'
+                                    ? m['developerPortal.dashboards.tabs.partnerConnect.templateType.issueCredentialsDesc']()
+                                    : m['developerPortal.dashboards.tabs.partnerConnect.templateType.peerBadgesDesc']()}
                             </div>
 
                             {/* Template List Manager */}
@@ -1280,18 +1273,10 @@ log.info('User:', identity.profile.displayName);`;
                                         </div>
                                         <div>
                                             <h3 className="font-medium text-gray-800">
-                                                Your Integration Code
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.title']()}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                {issueCredentialsTemplates.length +
-                                                    peerBadgesTemplates.length}{' '}
-                                                template
-                                                {issueCredentialsTemplates.length +
-                                                    peerBadgesTemplates.length !==
-                                                1
-                                                    ? 's'
-                                                    : ''}{' '}
-                                                configured
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.templatesConfigured']({ count: issueCredentialsTemplates.length + peerBadgesTemplates.length })}
                                             </p>
                                         </div>
                                     </div>
@@ -1307,7 +1292,7 @@ log.info('User:', identity.profile.displayName);`;
                                         ) : (
                                             <Copy className="w-4 h-4" />
                                         )}
-                                        {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                                        {copied === 'personalized' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copyAll']()}
                                     </button>
                                 </div>
 
@@ -1319,13 +1304,7 @@ log.info('User:', identity.profile.displayName);`;
 
                                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                         <p className="text-sm text-amber-800">
-                                            <strong>💡 LLM-Ready:</strong> Copy this code and paste
-                                            it into an AI assistant (like ChatGPT or Claude) along
-                                            with your requirements. The{' '}
-                                            <code className="bg-amber-100 px-1 rounded">
-                                                @llm-config
-                                            </code>{' '}
-                                            section contains all your template URIs and settings.
+                                            {m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.llmReady']()}
                                         </p>
                                     </div>
                                 </div>
@@ -1345,10 +1324,10 @@ log.info('User:', identity.profile.displayName);`;
                                         <Package className="w-5 h-5 text-cyan-600" />
                                         <div>
                                             <h3 className="font-medium text-gray-800">
-                                                Installation & Setup
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.title']()}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                Install the SDK and initialize it in your app
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.desc']()}
                                             </p>
                                         </div>
                                     </div>
@@ -1358,7 +1337,7 @@ log.info('User:', identity.profile.displayName);`;
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-gray-700">
-                                                1. Install the SDK
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.stepInstall']()}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(installCode, 'install')}
@@ -1369,26 +1348,19 @@ log.info('User:', identity.profile.displayName);`;
                                                 ) : (
                                                     <Copy className="w-3 h-3" />
                                                 )}
-                                                {copied === 'install' ? 'Copied!' : 'Copy'}
+                                                {copied === 'install' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copy']()}
                                             </button>
                                         </div>
                                         <CodeBlock code={installCode} />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Also works with{' '}
-                                            <code className="bg-gray-100 px-1 rounded">
-                                                yarn add
-                                            </code>{' '}
-                                            or{' '}
-                                            <code className="bg-gray-100 px-1 rounded">
-                                                pnpm add
-                                            </code>
+                                            {m['developerPortal.dashboards.tabs.partnerConnect.installation.alsoWorksWith']()}
                                         </p>
                                     </div>
 
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-gray-700">
-                                                2. Initialize
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.stepInit']()}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(initCode, 'init')}
@@ -1399,7 +1371,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 ) : (
                                                     <Copy className="w-3 h-3" />
                                                 )}
-                                                {copied === 'init' ? 'Copied!' : 'Copy'}
+                                                {copied === 'init' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copy']()}
                                             </button>
                                         </div>
                                         <CodeBlock code={initCode} />
@@ -1407,12 +1379,7 @@ log.info('User:', identity.profile.displayName);`;
 
                                     <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                                         <p className="text-sm text-cyan-800">
-                                            <strong>That's it!</strong> Users are already logged in
-                                            when inside the wallet, so{' '}
-                                            <code className="bg-cyan-100 px-1 rounded">
-                                                requestIdentity()
-                                            </code>{' '}
-                                            returns instantly with their profile.
+                                            {m['developerPortal.dashboards.tabs.partnerConnect.installation.thatIsIt']()}
                                         </p>
                                     </div>
                                 </div>
@@ -1447,7 +1414,7 @@ log.info('User:', identity.profile.displayName);`;
                                                     <div key={category.id}>
                                                         <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                                             {category.icon}
-                                                            {category.name}
+                                                            {getCategoryName(category.id)}
                                                         </div>
 
                                                         <div className="space-y-1">
@@ -1567,7 +1534,7 @@ log.info('User:', identity.profile.displayName);`;
                                             <div>
                                                 <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
                                                     <ChevronRight className="w-4 h-4 text-gray-500" />
-                                                    Returns
+                                                    {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.returns']()}
                                                 </h5>
 
                                                 <div className="p-3 border border-gray-200 rounded-xl">
@@ -1608,7 +1575,7 @@ log.info('User:', identity.profile.displayName);`;
                                                         ) : (
                                                             <Copy className="w-3 h-3" />
                                                         )}
-                                                        {copied === 'example' ? 'Copied!' : 'Copy'}
+                                                        {copied === 'example' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copy']()}
                                                     </button>
                                                 </div>
 
@@ -1624,7 +1591,7 @@ log.info('User:', identity.profile.displayName);`;
                                                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                                         <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
                                                             <Zap className="w-4 h-4" />
-                                                            Pro Tips
+                                                            {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.proTips']()}
                                                         </h5>
                                                         <ul className="space-y-1">
                                                             {selectedMethod.tips.map((tip, idx) => (
@@ -1655,7 +1622,7 @@ log.info('User:', identity.profile.displayName);`;
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
                                     <FileText className="w-4 h-4" />
-                                    SDK Documentation
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.resources.sdkDocs']()}
                                     <ExternalLink className="w-3 h-3" />
                                 </button>
 
@@ -1668,7 +1635,7 @@ log.info('User:', identity.profile.displayName);`;
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
                                     <Code className="w-4 h-4" />
-                                    GitHub Examples
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.resources.githubExamples']()}
                                     <ExternalLink className="w-3 h-3" />
                                 </button>
                             </div>

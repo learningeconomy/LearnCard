@@ -4758,6 +4758,270 @@
                     "Try reverting to a template preset"
                 ]
             }
+        },
+        "dashboards": {
+            "tabs": {
+                "partnerConnect": {
+                    "title": "Partner Connect SDK",
+                    "description": "Manage templates and generate integration code",
+                    "loadingListings": "Loading app listings...",
+                    "noListingsTitle": "No app listings found",
+                    "noListingsDesc": "Create an app listing in the \"App Listings\" tab first.",
+                    "selectApp": "Select App",
+                    "tabTemplates": "Templates",
+                    "tabCode": "Code",
+                    "tabSetup": "Setup",
+                    "templateType": {
+                        "issueCredentials": "Issue Credentials",
+                        "peerBadges": "Peer Badges",
+                        "issueCredentialsDesc": "Issue Credentials: Templates for credentials your app issues to users via sendCredential()",
+                        "peerBadgesDesc": "Peer Badges: Templates users can send to each other via initiateTemplateIssue()"
+                    },
+                    "integrationCode": {
+                        "title": "Your Integration Code",
+                        "templatesConfigured": "template(s) configured",
+                        "llmReady": "LLM-Ready: Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The @llm-config section contains all your template URIs and settings.",
+                        "copied": "Copied!",
+                        "copyAll": "Copy All",
+                        "copy": "Copy"
+                    },
+                    "installation": {
+                        "title": "Installation & Setup",
+                        "desc": "Install the SDK and initialize it in your app",
+                        "stepInstall": "1. Install the SDK",
+                        "stepInit": "2. Initialize",
+                        "alsoWorksWith": "Also works with yarn add or pnpm add",
+                        "thatIsIt": "That's it! Users are already logged in when inside the wallet, so requestIdentity() returns instantly with their profile."
+                    },
+                    "apiReference": {
+                        "title": "API Reference",
+                        "desc": "Explore all available SDK methods",
+                        "parameters": "Parameters",
+                        "returns": "Returns",
+                        "example": "Example",
+                        "proTips": "Pro Tips",
+                        "required": "required"
+                    },
+                    "resources": {
+                        "sdkDocs": "SDK Documentation",
+                        "githubExamples": "GitHub Examples"
+                    },
+                    "features": {
+                        "issueCredentials": "Issue Credentials",
+                        "peerBadges": "Peer-to-Peer Badges",
+                        "requestCredentials": "Request Credentials",
+                        "requestDataConsent": "Request Data Consent",
+                        "launchFeature": "Launch Features"
+                    },
+                    "categories": {
+                        "auth": "Authentication",
+                        "credentials": "Credentials",
+                        "navigation": "Navigation",
+                        "consent": "Consent"
+                    }
+                },
+                "integrationCode": {
+                    "title": "Integration Code",
+                    "description": "Copy boost URIs and generate integration code",
+                    "noTemplatesTitle": "No templates yet",
+                    "noTemplatesDesc": "Create templates first to get integration code",
+                    "viewReference": "Boost URIs Reference",
+                    "viewExample": "Code Example",
+                    "referenceTitle": "Your Boost Template URIs",
+                    "referenceDesc": "Copy individual URIs or export all as a config file for your codebase.",
+                    "copyAllConfig": "Copy All as Config ({{count}} templates)",
+                    "copiedConfig": "Copied Config!",
+                    "noBoostUri": "Not saved yet",
+                    "otherTemplates": "Other Templates",
+                    "boosts": "boosts",
+                    "apiKeyTitle": "Your API Key",
+                    "apiKeyDesc": "Set <0>LEARNCARD_API_KEY</0> in your environment to: <1>{{key}}</1>",
+                    "exampleTitle": "Code Example Generator",
+                    "exampleDesc": "Select a template to generate example code. Use the Reference tab to get all URIs.",
+                    "selectTemplate": "Select Template for Example",
+                    "courseBoosts": "course boosts",
+                    "saved": "Saved",
+                    "noDescription": "No description",
+                    "courseDataPrefilledTitle": "Course data is pre-filled",
+                    "courseDataPrefilledDesc": "This boost has course-specific data (name, credits, etc.) already baked in. You only need to provide issuance data like recipient name and date.",
+                    "templateData": "Template Data",
+                    "fieldsCount": "field(s)",
+                    "templateDataDesc": "Enter example values for your credential. These will appear in the generated code.",
+                    "recipient": "Recipient",
+                    "recipientPlaceholder": "Profile ID or email address",
+                    "recipientDesc": "Enter a LearnCard Profile ID or an email address",
+                    "apiToken": "API Token",
+                    "noTokenSelected": "Select a token to fill the code below",
+                    "tokenSelected": "Token selected",
+                    "selectToken": "Select Token",
+                    "advancedOptions": "Advanced Options",
+                    "branding": "Branding",
+                    "downloadCsv": "Download CSV Template",
+                    "csvDownloaded": "CSV template downloaded!",
+                    "copyCode": "Copy Code",
+                    "codeCopied": "Code copied!",
+                    "copy": "Copy",
+                    "copied": "Copied!",
+                    "copyUri": "Copy URI",
+                    "copyConfig": "Copy Config",
+                    "loadingTemplates": "Loading..."
+                },
+                "appConfig": {
+                    "title": "App Configuration",
+                    "description": "Configure your embedded app's URL and permissions",
+                    "selectApp": "Select App",
+                    "noListingsTitle": "No app listings found",
+                    "noListingsDesc": "Create an app listing in the App Listings tab first.",
+                    "appUrl": "App URL",
+                    "appUrlPlaceholder": "https://your-app.com",
+                    "appUrlDesc": "The URL of your app that will be embedded in LearnCard",
+                    "checkButton": "Check",
+                    "checking": "Checking...",
+                    "checkResults": {
+                        "https": "HTTPS Protocol",
+                        "valid": "Valid URL Format",
+                        "iframe": "Iframe Embedding",
+                        "checking": "Checking your URL...",
+                        "allPassed": "Looking good!",
+                        "issuesFound": "Some issues found",
+                        "httpsPass": "Using secure HTTPS",
+                        "httpLocalhost": "HTTP okay for localhost",
+                        "httpsRequired": "HTTPS required for production",
+                        "mustBeHttps": "Must be HTTP or HTTPS",
+                        "invalidUrl": "Invalid URL",
+                        "invalidFormat": "Invalid URL format",
+                        "cannotCheck": "Cannot check",
+                        "urlValid": "URL is valid",
+                        "usePreview": "Use Preview to test embedding",
+                        "fixIssues": "Fix the issues above before going live. See header examples below.",
+                        "passedChecks": "Your URL passed basic checks. You may still need to configure iframe headers (X-Frame-Options).",
+                        "resultsTitle": "URL Check Results"
+                    },
+                    "requiredHeaders": {
+                        "title": "Required Response Headers",
+                        "desc": "Configure your server to allow iframe embedding"
+                    },
+                    "permissions": {
+                        "title": "Permissions",
+                        "desc": "Select what your app can access from the wallet",
+                        "fromGuide": "From Guide",
+                        "fromGuideCount": "{{count}} from guide setup",
+                        "required": "Required",
+                        "items": {
+                            "identity": {
+                                "name": "User Identity",
+                                "desc": "Access user DID and profile information"
+                            },
+                            "issueCredentials": {
+                                "name": "Issue Credentials",
+                                "desc": "Send credentials to the user's wallet"
+                            },
+                            "requestCredentials": {
+                                "name": "Request Credentials",
+                                "desc": "Search and request user credentials"
+                            },
+                            "consent": {
+                                "name": "Data Consent",
+                                "desc": "Request ongoing data access via consent contracts"
+                            },
+                            "navigation": {
+                                "name": "Wallet Navigation",
+                                "desc": "Navigate to wallet features from your app"
+                            }
+                        }
+                    },
+                    "commonIssues": {
+                        "title": "Common Issues",
+                        "blankIframe": "<strong>Blank iframe?</strong> — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN",
+                        "mixedContent": "<strong>Mixed content error?</strong> — Make sure your app uses HTTPS",
+                        "corsErrors": "<strong>CORS errors?</strong> — Add Access-Control-Allow-Origin header"
+                    },
+                    "previewButton": "Preview App",
+                    "saveButton": "Save Configuration",
+                    "saving": "Saving...",
+                    "saveSuccess": "Configuration saved!",
+                    "saveError": "Failed to save configuration",
+                    "copy": "Copy",
+                    "copied": "Copied!"
+                },
+                "consentFlowCode": {
+                    "title": "Integration Code",
+                    "description": "Code snippets and configuration for your consent flow integration",
+                    "consentUrl": {
+                        "title": "Consent Redirect URL",
+                        "desc": "The URL to redirect users to for granting consent",
+                        "liveUrl": "Live URL from your configuration:",
+                        "testButton": "Test Consent Flow",
+                        "notConfigured": "Not configured: Complete the Build guide to set your contract URI and callback URL.",
+                        "copyUrl": "Copy URL"
+                    },
+                    "callbackHandler": {
+                        "title": "Callback Handler",
+                        "desc": "Handle the redirect back from LearnCard after consent",
+                        "info": "After consent, LearnCard redirects to your returnTo URL with did and vp query parameters."
+                    },
+                    "sendCredentials": {
+                        "title": "Send Credentials",
+                        "desc": "Issue credentials to users who have consented"
+                    },
+                    "queryData": {
+                        "title": "Query Consent Data",
+                        "desc": "Retrieve consent records and connected users"
+                    },
+                    "settings": {
+                        "title": "Settings",
+                        "desc": "View and edit your integration configuration",
+                        "integrationId": "Integration ID",
+                        "contractUri": "Contract URI",
+                        "callbackUrl": "Callback URL (returnTo)",
+                        "templates": "Templates",
+                        "templatesCount": "{{count}} saved",
+                        "edit": "Edit",
+                        "save": "Save",
+                        "saving": "Saving...",
+                        "cancel": "Cancel",
+                        "notSet": "(not set)",
+                        "updateSuccess": "Callback URL updated",
+                        "updateError": "Failed to update callback URL"
+                    },
+                    "copy": "Copy",
+                    "copied": "Copied!",
+                    "copyUri": "Copy URI",
+                    "yourTemplateUris": "Your Template URIs:"
+                },
+                "embedCode": {
+                    "title": "Embed Code",
+                    "description": "Copy and paste into your website to add a claim button",
+                    "publishableKey": "Your Publishable Key",
+                    "selectTemplate": "Select Template",
+                    "htmlSnippet": "HTML Snippet",
+                    "reactSnippet": "React / npm",
+                    "sdkReference": "SDK Reference — InitOptions",
+                    "sdkReferenceDesc": "Reference for all available initialization options",
+                    "copy": "Copy",
+                    "copied": "Copied!"
+                },
+                "connections": {
+                    "title": "Connected Users",
+                    "description": "Users who have consented to share data with you",
+                    "recordCount": "{{count}} consent record(s)",
+                    "noContractTitle": "No contract configured",
+                    "noContractDesc": "Complete the Build guide to create a consent flow contract first. Consent records will appear here once users start granting consent.",
+                    "errorTitle": "Failed to load consent data",
+                    "errorUnknown": "Unknown error",
+                    "errorRetry": "Retry",
+                    "refresh": "Refresh",
+                    "contractUri": "Contract URI",
+                    "noRecordsTitle": "No consent records yet",
+                    "noRecordsDesc": "Users who grant consent via your redirect flow will appear here. Try the consent flow from the Testing tab first.",
+                    "sharedPersonalData": "Shared Personal Data",
+                    "sharedCategories": "Shared Credential Categories",
+                    "noDataShared": "Consent granted with no additional data shared",
+                    "queryApi": "Query via API",
+                    "consentRecord": "Consent Record #{{number}}",
+                    "fieldsShared": "{{count}} field(s) shared"
+                }
+            }
         }
     }
 }

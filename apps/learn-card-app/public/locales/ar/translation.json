@@ -4758,6 +4758,270 @@
                     "حاول العودة إلى قالب مسبق"
                 ]
             }
+        },
+        "dashboards": {
+            "tabs": {
+                "partnerConnect": {
+                    "title": "SDK Partner Connect",
+                    "description": "إدارة القوالب وإنشاء كود التكامل",
+                    "loadingListings": "جاري تحميل قوائم التطبيقات...",
+                    "noListingsTitle": "لم يتم العثور على قوائم التطبيقات",
+                    "noListingsDesc": "قم بإنشاء قائمة تطبيق في علامة تبويب \"قوائم التطبيقات\" أولاً.",
+                    "selectApp": "اختيار التطبيق",
+                    "tabTemplates": "القوالب",
+                    "tabCode": "الكود",
+                    "tabSetup": "الإعداد",
+                    "templateType": {
+                        "issueCredentials": "إصدار المؤهلات",
+                        "peerBadges": "الشارات بين الأقران",
+                        "issueCredentialsDesc": "إصدار المؤهلات: قوالب للمؤهلات التي يصدرها تطبيقك للمستخدمين عبر sendCredential()",
+                        "peerBadgesDesc": "الشارات بين الأقران: قوالب يمكن للمستخدمين إرسالها لبعضهم البعض عبر initiateTemplateIssue()"
+                    },
+                    "integrationCode": {
+                        "title": "كود التكامل الخاص بك",
+                        "templatesConfigured": "قالب (قوالب) تم تكوينها",
+                        "llmReady": "جاهز لـ LLM: انسخ هذا الكود والصقه في مساعد ذكاء اصطناعي (مثل ChatGPT أو Claude) مع متطلباتك. يحتوي قسم @llm-config على جميع روابط القوالب والإعدادات الخاصة بك.",
+                        "copied": "تم النسخ!",
+                        "copyAll": "نسخ الكل",
+                        "copy": "نسخ"
+                    },
+                    "installation": {
+                        "title": "التثبيت والإعداد",
+                        "desc": "قم بتثبيت SDK وتهيئته في تطبيقك",
+                        "stepInstall": "1. تثبيت SDK",
+                        "stepInit": "2. التهيئة",
+                        "alsoWorksWith": "يعمل أيضًا مع yarn add أو pnpm add",
+                        "thatIsIt": "هذا كل شيء! المستخدمون مسجلون الدخول بالفعل داخل المحفظة، لذا requestIdentity() يعيد ملفهم الشخصي فورًا."
+                    },
+                    "apiReference": {
+                        "title": "مرجع API",
+                        "desc": "استكشف جميع طرق SDK المتاحة",
+                        "parameters": "المعلمات",
+                        "returns": "الإرجاع",
+                        "example": "مثال",
+                        "proTips": "نصائح احترافية",
+                        "required": "مطلوب"
+                    },
+                    "resources": {
+                        "sdkDocs": "توثيق SDK",
+                        "githubExamples": "أمثلة GitHub"
+                    },
+                    "features": {
+                        "issueCredentials": "إصدار المؤهلات",
+                        "peerBadges": "الشارات بين الأقران",
+                        "requestCredentials": "طلب المؤهلات",
+                        "requestDataConsent": "طلب الموافقة على البيانات",
+                        "launchFeature": "تشغيل الميزات"
+                    },
+                    "categories": {
+                        "auth": "المصادقة",
+                        "credentials": "المؤهلات",
+                        "navigation": "التنقل",
+                        "consent": "الموافقة"
+                    }
+                },
+                "integrationCode": {
+                    "title": "كود التكامل",
+                    "description": "انسخ روابط Boost وأنشئ كود التكامل",
+                    "noTemplatesTitle": "لا توجد قوالب بعد",
+                    "noTemplatesDesc": "أنشئ قوالب أولاً للحصول على كود التكامل",
+                    "viewReference": "مرجع روابط Boost",
+                    "viewExample": "مثال كود",
+                    "referenceTitle": "روابط قوالب Boost الخاصة بك",
+                    "referenceDesc": "انسخ الروابط الفردية أو صدّر الكل كملف إعدادات لقاعدة الكود الخاصة بك.",
+                    "copyAllConfig": "نسخ الكل كإعدادات ({{count}} قالب)",
+                    "copiedConfig": "تم نسخ الإعدادات!",
+                    "noBoostUri": "لم يتم الحفظ بعد",
+                    "otherTemplates": "قوالب أخرى",
+                    "boosts": "boost",
+                    "apiKeyTitle": "مفتاح API الخاص بك",
+                    "apiKeyDesc": "عيّن <0>LEARNCARD_API_KEY</0> في بيئتك إلى: <1>{{key}}</1>",
+                    "exampleTitle": "مولد أمثلة الكود",
+                    "exampleDesc": "اختر قالبًا لإنشاء مثال كود. استخدم علامة تبويب المرجع للحصول على جميع الروابط.",
+                    "selectTemplate": "اختيار قالب للمثال",
+                    "courseBoosts": "boosts الدورة",
+                    "saved": "تم الحفظ",
+                    "noDescription": "لا يوجد وصف",
+                    "courseDataPrefilledTitle": "بيانات الدورة معبأة مسبقًا",
+                    "courseDataPrefilledDesc": "يحتوي هذا boost على بيانات خاصة بالدورة (الاسم والساعات المعتمدة إلخ) مضمنة بالفعل. تحتاج فقط إلى توفير بيانات الإصدار مثل اسم المستلم والتاريخ.",
+                    "templateData": "بيانات القالب",
+                    "fieldsCount": "حقل (حقول)",
+                    "templateDataDesc": "أدخل قيمًا مثاليه لمؤهلك. ستظهر في الكود المُنشأ.",
+                    "recipient": "المستلم",
+                    "recipientPlaceholder": "معرف الملف الشخصي أو البريد الإلكتروني",
+                    "recipientDesc": "أدخل معرف ملف شخصي لـ LearnCard أو عنوان بريد إلكتروني",
+                    "apiToken": "رمز API",
+                    "noTokenSelected": "اختر رمزًا لملء الكود أدناه",
+                    "tokenSelected": "تم اختيار الرمز",
+                    "selectToken": "اختيار الرمز",
+                    "advancedOptions": "خيارات متقدمة",
+                    "branding": "العلامة التجارية",
+                    "downloadCsv": "تنزيل قالب CSV",
+                    "csvDownloaded": "تم تنزيل قالب CSV!",
+                    "copyCode": "نسخ الكود",
+                    "codeCopied": "تم نسخ الكود!",
+                    "copy": "نسخ",
+                    "copied": "تم النسخ!",
+                    "copyUri": "نسخ الرابط",
+                    "copyConfig": "نسخ الإعدادات",
+                    "loadingTemplates": "جاري التحميل..."
+                },
+                "appConfig": {
+                    "title": "إعدادات التطبيق",
+                    "description": "تكوين رابط التطبيق المضمن والأذونات",
+                    "selectApp": "اختيار التطبيق",
+                    "noListingsTitle": "لم يتم العثور على قوائم التطبيقات",
+                    "noListingsDesc": "أنشئ قائمة تطبيق في علامة تبويب قوائم التطبيقات أولاً.",
+                    "appUrl": "رابط التطبيق",
+                    "appUrlPlaceholder": "https://your-app.com",
+                    "appUrlDesc": "رابط تطبيقك الذي سيتم تضمينه في LearnCard",
+                    "checkButton": "تحقق",
+                    "checking": "جاري التحقق...",
+                    "checkResults": {
+                        "https": "بروتوكول HTTPS",
+                        "valid": "تنسيق رابط صالح",
+                        "iframe": "تضمين Iframe",
+                        "checking": "جاري التحقق من الرابط...",
+                        "allPassed": "يبدو جيدًا!",
+                        "issuesFound": "تم العثور على بعض المشكلات",
+                        "httpsPass": "استخدام HTTPS آمن",
+                        "httpLocalhost": "HTTP مقبول لـ localhost",
+                        "httpsRequired": "HTTPS مطلوب للإنتاج",
+                        "mustBeHttps": "يجب أن يكون HTTP أو HTTPS",
+                        "invalidUrl": "رابط غير صالح",
+                        "invalidFormat": "تنسيق رابط غير صالح",
+                        "cannotCheck": "لا يمكن التحقق",
+                        "urlValid": "الرابط صالح",
+                        "usePreview": "استخدم المعاينة لاختبار التضمين",
+                        "fixIssues": "أصلح المشكلات أعلاه قبل النشر. انظر أمثلة الرؤوس أدناه.",
+                        "passedChecks": "اجتاز الرابط الفحوصات الأساسية. قد لا تزال بحاجة إلى تكوين رؤوس iframe (X-Frame-Options).",
+                        "resultsTitle": "نتائج فحص الرابط"
+                    },
+                    "requiredHeaders": {
+                        "title": "رؤوس الاستجابة المطلوبة",
+                        "desc": "قم بتكوين الخادم الخاص بك للسماح بتضمين iframe"
+                    },
+                    "permissions": {
+                        "title": "الأذونات",
+                        "desc": "اختر ما يمكن لتطبيقك الوصول إليه من المحفظة",
+                        "fromGuide": "من الدليل",
+                        "fromGuideCount": "{{count}} من إعداد الدليل",
+                        "required": "مطلوب",
+                        "items": {
+                            "identity": {
+                                "name": "هوية المستخدم",
+                                "desc": "الوصول إلى DID المستخدم ومعلومات الملف الشخصي"
+                            },
+                            "issueCredentials": {
+                                "name": "إصدار المؤهلات",
+                                "desc": "إرسال المؤهلات إلى محفظة المستخدم"
+                            },
+                            "requestCredentials": {
+                                "name": "طلب المؤهلات",
+                                "desc": "البحث وطلب مؤهلات المستخدم"
+                            },
+                            "consent": {
+                                "name": "الموافقة على البيانات",
+                                "desc": "طلب الوصول المستمر إلى البيانات عبر عقود الموافقة"
+                            },
+                            "navigation": {
+                                "name": "التنقل في المحفظة",
+                                "desc": "التنقل إلى ميزات المحفظة من تطبيقك"
+                            }
+                        }
+                    },
+                    "commonIssues": {
+                        "title": "المشكلات الشائعة",
+                        "blankIframe": "<strong>إطار iframe فارغ؟</strong> — تحقق من أن رأس X-Frame-Options الخاص بك ليس مضبوطًا على DENY أو SAMEORIGIN",
+                        "mixedContent": "<strong>خطأ في المحتوى المختلط؟</strong> — تأكد من أن تطبيقك يستخدم HTTPS",
+                        "corsErrors": "<strong>أخطاء CORS؟</strong> — أضف رأس Access-Control-Allow-Origin"
+                    },
+                    "previewButton": "معاينة التطبيق",
+                    "saveButton": "حفظ الإعدادات",
+                    "saving": "جاري الحفظ...",
+                    "saveSuccess": "تم حفظ الإعدادات!",
+                    "saveError": "فشل حفظ الإعدادات",
+                    "copy": "نسخ",
+                    "copied": "تم النسخ!"
+                },
+                "consentFlowCode": {
+                    "title": "كود التكامل",
+                    "description": "مقتطفات الكود والإعدادات لتكامل تدفق الموافقة الخاص بك",
+                    "consentUrl": {
+                        "title": "رابط إعادة توجيه الموافقة",
+                        "desc": "الرابط لإعادة توجيه المستخدمين لمنح الموافقة",
+                        "liveUrl": "الرابط النشط من إعداداتك:",
+                        "testButton": "اختبار تدفق الموافقة",
+                        "notConfigured": "غير مهيأ: أكمل دليل البناء لتعيين رابط العقد ورابط الاستدعاء الخاص بك.",
+                        "copyUrl": "نسخ الرابط"
+                    },
+                    "callbackHandler": {
+                        "title": "معالج الاستدعاء",
+                        "desc": "معالجة إعادة التوجيه من LearnCard بعد الموافقة",
+                        "info": "بعد الموافقة، يعيد LearnCard التوجيه إلى رابط returnTo الخاص بك مع معلمات الاستعلام did و vp."
+                    },
+                    "sendCredentials": {
+                        "title": "إرسال المؤهلات",
+                        "desc": "إصدار المؤهلات للمستخدمين الذين وافقوا"
+                    },
+                    "queryData": {
+                        "title": "الاستعلام عن بيانات الموافقة",
+                        "desc": "استرجاع سجلات الموافقة والمستخدمين المتصلين"
+                    },
+                    "settings": {
+                        "title": "الإعدادات",
+                        "desc": "عرض وتحرير إعدادات التكامل الخاصة بك",
+                        "integrationId": "معرف التكامل",
+                        "contractUri": "رابط العقد",
+                        "callbackUrl": "رابط الاستدعاء (returnTo)",
+                        "templates": "القوالب",
+                        "templatesCount": "{{count}} تم الحفظ",
+                        "edit": "تعديل",
+                        "save": "حفظ",
+                        "saving": "جاري الحفظ...",
+                        "cancel": "إلغاء",
+                        "notSet": "(غير محدد)",
+                        "updateSuccess": "تم تحديث رابط الاستدعاء",
+                        "updateError": "فشل تحديث رابط الاستدعاء"
+                    },
+                    "copy": "نسخ",
+                    "copied": "تم النسخ!",
+                    "copyUri": "نسخ الرابط",
+                    "yourTemplateUris": "روابط القوالب الخاصة بك:"
+                },
+                "embedCode": {
+                    "title": "كود التضمين",
+                    "description": "انسخ والصق في موقع الويب الخاص بك لإضافة زر المطالبة",
+                    "publishableKey": "مفتاحك القابل للنشر",
+                    "selectTemplate": "اختيار قالب",
+                    "htmlSnippet": "مقتطف HTML",
+                    "reactSnippet": "React / npm",
+                    "sdkReference": "مرجع SDK — InitOptions",
+                    "sdkReferenceDesc": "مرجع لجميع خيارات التهيئة المتاحة",
+                    "copy": "نسخ",
+                    "copied": "تم النسخ!"
+                },
+                "connections": {
+                    "title": "المستخدمون المتصلون",
+                    "description": "المستخدمون الذين وافقوا على مشاركة البيانات معك",
+                    "recordCount": "{{count}} سجل موافقة",
+                    "noContractTitle": "لم يتم تكوين عقد",
+                    "noContractDesc": "أكمل دليل البناء لإنشاء عقد تدفق الموافقة أولاً. ستظهر سجلات الموافقة هنا بمجرد أن يبدأ المستخدمون في منح الموافقة.",
+                    "errorTitle": "فشل تحميل بيانات الموافقة",
+                    "errorUnknown": "خطأ غير معروف",
+                    "errorRetry": "إعادة المحاولة",
+                    "refresh": "تحديث",
+                    "contractUri": "رابط العقد",
+                    "noRecordsTitle": "لا توجد سجلات موافقة بعد",
+                    "noRecordsDesc": "سيظهر المستخدمون الذين يمنحون الموافقة عبر تدفق إعادة التوجيه الخاص بك هنا. جرب تدفق الموافقة من علامة تبويب الاختبار أولاً.",
+                    "sharedPersonalData": "البيانات الشخصية المشتركة",
+                    "sharedCategories": "فئات المؤهلات المشتركة",
+                    "noDataShared": "تم منح الموافقة دون مشاركة بيانات إضافية",
+                    "queryApi": "الاستعلام عبر API",
+                    "consentRecord": "سجل موافقة #{{number}}",
+                    "fieldsShared": "{{count}} حقل (حقول) مشترك"
+                }
+            }
         }
     }
 }

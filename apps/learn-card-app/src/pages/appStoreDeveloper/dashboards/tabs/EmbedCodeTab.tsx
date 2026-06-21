@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award, ChevronDown } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -302,8 +303,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             <details className="group rounded-xl border border-gray-200 bg-gray-50">
                 <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-gray-700 select-none [&::-webkit-details-marker]:hidden list-none">
                     <span>
-                        SDK Reference &mdash;{' '}
-                        <code className="text-xs font-normal text-gray-500">InitOptions</code>
+                        {m['developerPortal.dashboards.tabs.embedCode.sdkReference']()}
                     </span>
                     <ChevronDown className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" />
                 </summary>

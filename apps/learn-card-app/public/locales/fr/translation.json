@@ -4758,6 +4758,270 @@
                     "Essayez de revenir à un modèle prédéfini"
                 ]
             }
+        },
+        "dashboards": {
+            "tabs": {
+                "partnerConnect": {
+                    "title": "SDK Partner Connect",
+                    "description": "Gérez les modèles et générez du code d'intégration",
+                    "loadingListings": "Chargement des listes d'applications...",
+                    "noListingsTitle": "Aucune liste d'application trouvée",
+                    "noListingsDesc": "Créez d'abord une liste d'application dans l'onglet \"Listes d'Apps\".",
+                    "selectApp": "Sélectionner l'App",
+                    "tabTemplates": "Modèles",
+                    "tabCode": "Code",
+                    "tabSetup": "Configuration",
+                    "templateType": {
+                        "issueCredentials": "Émission de Justificatifs",
+                        "peerBadges": "Badges entre Pairs",
+                        "issueCredentialsDesc": "Émission de Justificatifs : Modèles pour les justificatifs que votre app émet aux utilisateurs via sendCredential()",
+                        "peerBadgesDesc": "Badges entre Pairs : Modèles que les utilisateurs peuvent s'envoyer via initiateTemplateIssue()"
+                    },
+                    "integrationCode": {
+                        "title": "Votre Code d'Intégration",
+                        "templatesConfigured": "modèle(s) configuré(s)",
+                        "llmReady": "Prêt pour LLM : Copiez ce code et collez-le dans un assistant IA (comme ChatGPT ou Claude) avec vos besoins. La section @llm-config contient tous vos URI de modèles et paramètres.",
+                        "copied": "Copié !",
+                        "copyAll": "Tout Copier",
+                        "copy": "Copier"
+                    },
+                    "installation": {
+                        "title": "Installation et Configuration",
+                        "desc": "Installez le SDK et initialisez-le dans votre application",
+                        "stepInstall": "1. Installer le SDK",
+                        "stepInit": "2. Initialiser",
+                        "alsoWorksWith": "Fonctionne aussi avec yarn add ou pnpm add",
+                        "thatIsIt": "Et voilà ! Les utilisateurs sont déjà connectés dans le portefeuille, donc requestIdentity() retourne instantanément leur profil."
+                    },
+                    "apiReference": {
+                        "title": "Référence API",
+                        "desc": "Explorez toutes les méthodes SDK disponibles",
+                        "parameters": "Paramètres",
+                        "returns": "Retourne",
+                        "example": "Exemple",
+                        "proTips": "Conseils Pros",
+                        "required": "obligatoire"
+                    },
+                    "resources": {
+                        "sdkDocs": "Documentation du SDK",
+                        "githubExamples": "Exemples GitHub"
+                    },
+                    "features": {
+                        "issueCredentials": "Émission de Justificatifs",
+                        "peerBadges": "Badges entre Pairs",
+                        "requestCredentials": "Demander des Justificatifs",
+                        "requestDataConsent": "Demander le Consentement des Données",
+                        "launchFeature": "Lancer des Fonctionnalités"
+                    },
+                    "categories": {
+                        "auth": "Authentification",
+                        "credentials": "Justificatifs",
+                        "navigation": "Navigation",
+                        "consent": "Consentement"
+                    }
+                },
+                "integrationCode": {
+                    "title": "Code d'Intégration",
+                    "description": "Copiez les URI Boost et générez du code d'intégration",
+                    "noTemplatesTitle": "Pas encore de modèles",
+                    "noTemplatesDesc": "Créez d'abord des modèles pour obtenir le code d'intégration",
+                    "viewReference": "Référence des URI Boost",
+                    "viewExample": "Exemple de Code",
+                    "referenceTitle": "Vos URI de Modèles Boost",
+                    "referenceDesc": "Copiez des URI individuels ou exportez tout en fichier de configuration pour votre code.",
+                    "copyAllConfig": "Tout Copier en Config ({{count}} modèles)",
+                    "copiedConfig": "Configuration Copiée !",
+                    "noBoostUri": "Pas encore sauvegardé",
+                    "otherTemplates": "Autres Modèles",
+                    "boosts": "boosts",
+                    "apiKeyTitle": "Votre Clé API",
+                    "apiKeyDesc": "Définissez <0>LEARNCARD_API_KEY</0> dans votre environnement sur : <1>{{key}}</1>",
+                    "exampleTitle": "Générateur d'Exemple de Code",
+                    "exampleDesc": "Sélectionnez un modèle pour générer un exemple de code. Utilisez l'onglet Référence pour obtenir tous les URI.",
+                    "selectTemplate": "Sélectionner le Modèle pour l'Exemple",
+                    "courseBoosts": "boosts de cours",
+                    "saved": "Sauvegardé",
+                    "noDescription": "Aucune description",
+                    "courseDataPrefilledTitle": "Les données du cours sont pré-remplies",
+                    "courseDataPrefilledDesc": "Ce boost contient déjà des données spécifiques au cours (nom, crédits, etc.). Vous n'avez besoin que de fournir les données d'émission comme le nom du destinataire et la date.",
+                    "templateData": "Données du Modèle",
+                    "fieldsCount": "champ(s)",
+                    "templateDataDesc": "Saisissez des valeurs d'exemple pour votre justificatif. Elles apparaîtront dans le code généré.",
+                    "recipient": "Destinataire",
+                    "recipientPlaceholder": "ID de profil ou adresse e-mail",
+                    "recipientDesc": "Saisissez un ID de Profil LearnCard ou une adresse e-mail",
+                    "apiToken": "Jeton API",
+                    "noTokenSelected": "Sélectionnez un jeton pour remplir le code ci-dessous",
+                    "tokenSelected": "Jeton sélectionné",
+                    "selectToken": "Sélectionner le Jeton",
+                    "advancedOptions": "Options Avancées",
+                    "branding": "Image de Marque",
+                    "downloadCsv": "Télécharger le Modèle CSV",
+                    "csvDownloaded": "Modèle CSV téléchargé !",
+                    "copyCode": "Copier le Code",
+                    "codeCopied": "Code copié !",
+                    "copy": "Copier",
+                    "copied": "Copié !",
+                    "copyUri": "Copier l'URI",
+                    "copyConfig": "Copier la Configuration",
+                    "loadingTemplates": "Chargement..."
+                },
+                "appConfig": {
+                    "title": "Configuration de l'App",
+                    "description": "Configurez l'URL et les permissions de votre application embarquée",
+                    "selectApp": "Sélectionner l'App",
+                    "noListingsTitle": "Aucune liste d'application trouvée",
+                    "noListingsDesc": "Créez d'abord une liste d'application dans l'onglet Listes d'Apps.",
+                    "appUrl": "URL de l'App",
+                    "appUrlPlaceholder": "https://votre-app.com",
+                    "appUrlDesc": "L'URL de votre application qui sera intégrée dans LearnCard",
+                    "checkButton": "Vérifier",
+                    "checking": "Vérification...",
+                    "checkResults": {
+                        "https": "Protocole HTTPS",
+                        "valid": "Format d'URL Valide",
+                        "iframe": "Intégration Iframe",
+                        "checking": "Vérification de votre URL...",
+                        "allPassed": "Ça a l'air bon !",
+                        "issuesFound": "Quelques problèmes trouvés",
+                        "httpsPass": "Utilisation HTTPS sécurisé",
+                        "httpLocalhost": "HTTP OK pour localhost",
+                        "httpsRequired": "HTTPS requis pour la production",
+                        "mustBeHttps": "Doit être HTTP ou HTTPS",
+                        "invalidUrl": "URL invalide",
+                        "invalidFormat": "Format d'URL invalide",
+                        "cannotCheck": "Impossible de vérifier",
+                        "urlValid": "L'URL est valide",
+                        "usePreview": "Utilisez Aperçu pour tester l'intégration",
+                        "fixIssues": "Corrigez les problèmes ci-dessus avant la mise en ligne. Voir les exemples d'en-têtes ci-dessous.",
+                        "passedChecks": "Votre URL a passé les vérifications de base. Vous devrez peut-être encore configurer les en-têtes iframe (X-Frame-Options).",
+                        "resultsTitle": "Résultats de Vérification d'URL"
+                    },
+                    "requiredHeaders": {
+                        "title": "En-têtes de Réponse Requis",
+                        "desc": "Configurez votre serveur pour autoriser l'intégration iframe"
+                    },
+                    "permissions": {
+                        "title": "Permissions",
+                        "desc": "Sélectionnez ce que votre app peut accéder depuis le portefeuille",
+                        "fromGuide": "Depuis le Guide",
+                        "fromGuideCount": "{{count}} de la configuration du guide",
+                        "required": "Requis",
+                        "items": {
+                            "identity": {
+                                "name": "Identité Utilisateur",
+                                "desc": "Accéder au DID et aux informations de profil de l'utilisateur"
+                            },
+                            "issueCredentials": {
+                                "name": "Émettre des Justificatifs",
+                                "desc": "Envoyer des justificatifs au portefeuille de l'utilisateur"
+                            },
+                            "requestCredentials": {
+                                "name": "Demander des Justificatifs",
+                                "desc": "Rechercher et demander des justificatifs utilisateur"
+                            },
+                            "consent": {
+                                "name": "Consentement des Données",
+                                "desc": "Demander un accès continu aux données via des contrats de consentement"
+                            },
+                            "navigation": {
+                                "name": "Navigation du Portefeuille",
+                                "desc": "Naviguer vers les fonctionnalités du portefeuille depuis votre app"
+                            }
+                        }
+                    },
+                    "commonIssues": {
+                        "title": "Problèmes Courants",
+                        "blankIframe": "<strong>Iframe vide ?</strong> — Vérifiez que votre en-tête X-Frame-Options n'est pas défini sur DENY ou SAMEORIGIN",
+                        "mixedContent": "<strong>Erreur de contenu mixte ?</strong> — Assurez-vous que votre app utilise HTTPS",
+                        "corsErrors": "<strong>Erreurs CORS ?</strong> — Ajoutez l'en-tête Access-Control-Allow-Origin"
+                    },
+                    "previewButton": "Aperçu de l'App",
+                    "saveButton": "Sauvegarder la Configuration",
+                    "saving": "Sauvegarde...",
+                    "saveSuccess": "Configuration sauvegardée !",
+                    "saveError": "Échec de la sauvegarde de la configuration",
+                    "copy": "Copier",
+                    "copied": "Copié !"
+                },
+                "consentFlowCode": {
+                    "title": "Code d'Intégration",
+                    "description": "Extraits de code et configuration pour votre intégration de flux de consentement",
+                    "consentUrl": {
+                        "title": "URL de Redirection de Consentement",
+                        "desc": "L'URL vers laquelle rediriger les utilisateurs pour donner leur consentement",
+                        "liveUrl": "URL active depuis votre configuration :",
+                        "testButton": "Tester le Flux de Consentement",
+                        "notConfigured": "Non configuré : Complétez le guide Build pour définir votre URI de contrat et votre URL de rappel.",
+                        "copyUrl": "Copier l'URL"
+                    },
+                    "callbackHandler": {
+                        "title": "Gestionnaire de Rappel",
+                        "desc": "Gérez la redirection de retour depuis LearnCard après le consentement",
+                        "info": "Après consentement, LearnCard redirige vers votre URL returnTo avec les paramètres de requête did et vp."
+                    },
+                    "sendCredentials": {
+                        "title": "Envoyer des Justificatifs",
+                        "desc": "Émettez des justificatifs aux utilisateurs qui ont consenti"
+                    },
+                    "queryData": {
+                        "title": "Interroger les Données de Consentement",
+                        "desc": "Récupérez les enregistrements de consentement et les utilisateurs connectés"
+                    },
+                    "settings": {
+                        "title": "Paramètres",
+                        "desc": "Voir et modifier la configuration de votre intégration",
+                        "integrationId": "ID d'Intégration",
+                        "contractUri": "URI du Contrat",
+                        "callbackUrl": "URL de Rappel (returnTo)",
+                        "templates": "Modèles",
+                        "templatesCount": "{{count}} sauvegardé(s)",
+                        "edit": "Modifier",
+                        "save": "Sauvegarder",
+                        "saving": "Sauvegarde...",
+                        "cancel": "Annuler",
+                        "notSet": "(non défini)",
+                        "updateSuccess": "URL de rappel mise à jour",
+                        "updateError": "Échec de la mise à jour de l'URL de rappel"
+                    },
+                    "copy": "Copier",
+                    "copied": "Copié !",
+                    "copyUri": "Copier l'URI",
+                    "yourTemplateUris": "Vos URI de Modèles :"
+                },
+                "embedCode": {
+                    "title": "Code d'Intégration",
+                    "description": "Copiez et collez dans votre site web pour ajouter un bouton de réclamation",
+                    "publishableKey": "Votre Clé Publiable",
+                    "selectTemplate": "Sélectionner le Modèle",
+                    "htmlSnippet": "Extrait HTML",
+                    "reactSnippet": "React / npm",
+                    "sdkReference": "Référence SDK — InitOptions",
+                    "sdkReferenceDesc": "Référence pour toutes les options d'initialisation disponibles",
+                    "copy": "Copier",
+                    "copied": "Copié !"
+                },
+                "connections": {
+                    "title": "Utilisateurs Connectés",
+                    "description": "Utilisateurs qui ont consenti à partager leurs données avec vous",
+                    "recordCount": "{{count}} enregistrement(s) de consentement",
+                    "noContractTitle": "Aucun contrat configuré",
+                    "noContractDesc": "Complétez le guide Build pour créer d'abord un contrat de flux de consentement. Les enregistrements de consentement apparaîtront ici une fois que les utilisateurs commenceront à donner leur consentement.",
+                    "errorTitle": "Échec du chargement des données de consentement",
+                    "errorUnknown": "Erreur inconnue",
+                    "errorRetry": "Réessayer",
+                    "refresh": "Actualiser",
+                    "contractUri": "URI du Contrat",
+                    "noRecordsTitle": "Pas encore d'enregistrements de consentement",
+                    "noRecordsDesc": "Les utilisateurs qui accordent leur consentement via votre flux de redirection apparaîtront ici. Essayez d'abord le flux de consentement depuis l'onglet Test.",
+                    "sharedPersonalData": "Données Personnelles Partagées",
+                    "sharedCategories": "Catégories de Justificatifs Partagées",
+                    "noDataShared": "Consentement accordé sans partage de données supplémentaires",
+                    "queryApi": "Interroger via l'API",
+                    "consentRecord": "Enregistrement de Consentement #{{number}}",
+                    "fieldsShared": "{{count}} champ(s) partagé(s)"
+                }
+            }
         }
     }
 }

@@ -4758,6 +4758,270 @@
                     "Intenta revertir a una plantilla predefinida"
                 ]
             }
+        },
+        "dashboards": {
+            "tabs": {
+                "partnerConnect": {
+                    "title": "SDK de Partner Connect",
+                    "description": "Administra plantillas y genera código de integración",
+                    "loadingListings": "Cargando listados de aplicaciones...",
+                    "noListingsTitle": "No se encontraron listados de aplicaciones",
+                    "noListingsDesc": "Crea un listado de aplicación en la pestaña \"Listados de Apps\" primero.",
+                    "selectApp": "Seleccionar App",
+                    "tabTemplates": "Plantillas",
+                    "tabCode": "Código",
+                    "tabSetup": "Configuración",
+                    "templateType": {
+                        "issueCredentials": "Emisión de Credenciales",
+                        "peerBadges": "Insignias entre Pares",
+                        "issueCredentialsDesc": "Emisión de Credenciales: Plantillas para credenciales que tu app emite a usuarios mediante sendCredential()",
+                        "peerBadgesDesc": "Insignias entre Pares: Plantillas que los usuarios pueden enviarse entre sí mediante initiateTemplateIssue()"
+                    },
+                    "integrationCode": {
+                        "title": "Tu Código de Integración",
+                        "templatesConfigured": "plantilla(s) configurada(s)",
+                        "llmReady": "Listo para LLM: Copia este código y pégalo en un asistente de IA (como ChatGPT o Claude) junto con tus requisitos. La sección @llm-config contiene todos los URI de tus plantillas y configuraciones.",
+                        "copied": "¡Copiado!",
+                        "copyAll": "Copiar Todo",
+                        "copy": "Copiar"
+                    },
+                    "installation": {
+                        "title": "Instalación y Configuración",
+                        "desc": "Instala el SDK e inicialízalo en tu aplicación",
+                        "stepInstall": "1. Instalar el SDK",
+                        "stepInit": "2. Inicializar",
+                        "alsoWorksWith": "También funciona con yarn add o pnpm add",
+                        "thatIsIt": "¡Eso es todo! Los usuarios ya han iniciado sesión dentro de la billetera, por lo que requestIdentity() devuelve instantáneamente su perfil."
+                    },
+                    "apiReference": {
+                        "title": "Referencia de la API",
+                        "desc": "Explora todos los métodos disponibles del SDK",
+                        "parameters": "Parámetros",
+                        "returns": "Devuelve",
+                        "example": "Ejemplo",
+                        "proTips": "Consejos Profesionales",
+                        "required": "obligatorio"
+                    },
+                    "resources": {
+                        "sdkDocs": "Documentación del SDK",
+                        "githubExamples": "Ejemplos de GitHub"
+                    },
+                    "features": {
+                        "issueCredentials": "Emisión de Credenciales",
+                        "peerBadges": "Insignias entre Pares",
+                        "requestCredentials": "Solicitar Credenciales",
+                        "requestDataConsent": "Solicitar Consentimiento de Datos",
+                        "launchFeature": "Lanzar Funcionalidades"
+                    },
+                    "categories": {
+                        "auth": "Autenticación",
+                        "credentials": "Credenciales",
+                        "navigation": "Navegación",
+                        "consent": "Consentimiento"
+                    }
+                },
+                "integrationCode": {
+                    "title": "Código de Integración",
+                    "description": "Copia los URI de Boost y genera código de integración",
+                    "noTemplatesTitle": "Aún no hay plantillas",
+                    "noTemplatesDesc": "Crea plantillas primero para obtener el código de integración",
+                    "viewReference": "Referencia de URI de Boost",
+                    "viewExample": "Ejemplo de Código",
+                    "referenceTitle": "Tus URI de Plantillas Boost",
+                    "referenceDesc": "Copia URI individuales o exporta todo como un archivo de configuración para tu código.",
+                    "copyAllConfig": "Copiar Todo como Configuración ({{count}} plantillas)",
+                    "copiedConfig": "¡Configuración Copiada!",
+                    "noBoostUri": "Aún no guardado",
+                    "otherTemplates": "Otras Plantillas",
+                    "boosts": "boosts",
+                    "apiKeyTitle": "Tu Clave de API",
+                    "apiKeyDesc": "Establece <0>LEARNCARD_API_KEY</0> en tu entorno a: <1>{{key}}</1>",
+                    "exampleTitle": "Generador de Ejemplos de Código",
+                    "exampleDesc": "Selecciona una plantilla para generar código de ejemplo. Usa la pestaña Referencia para obtener todos los URI.",
+                    "selectTemplate": "Seleccionar Plantilla para el Ejemplo",
+                    "courseBoosts": "boosts de curso",
+                    "saved": "Guardado",
+                    "noDescription": "Sin descripción",
+                    "courseDataPrefilledTitle": "Los datos del curso están predefinidos",
+                    "courseDataPrefilledDesc": "Este boost tiene datos específicos del curso (nombre, créditos, etc.) ya incorporados. Solo necesitas proporcionar datos de emisión como nombre del destinatario y fecha.",
+                    "templateData": "Datos de la Plantilla",
+                    "fieldsCount": "campo(s)",
+                    "templateDataDesc": "Ingresa valores de ejemplo para tu credencial. Aparecerán en el código generado.",
+                    "recipient": "Destinatario",
+                    "recipientPlaceholder": "ID de perfil o dirección de correo",
+                    "recipientDesc": "Ingresa un ID de Perfil de LearnCard o una dirección de correo electrónico",
+                    "apiToken": "Token de API",
+                    "noTokenSelected": "Selecciona un token para completar el código abajo",
+                    "tokenSelected": "Token seleccionado",
+                    "selectToken": "Seleccionar Token",
+                    "advancedOptions": "Opciones Avanzadas",
+                    "branding": "Marca",
+                    "downloadCsv": "Descargar Plantilla CSV",
+                    "csvDownloaded": "¡Plantilla CSV descargada!",
+                    "copyCode": "Copiar Código",
+                    "codeCopied": "¡Código copiado!",
+                    "copy": "Copiar",
+                    "copied": "¡Copiado!",
+                    "copyUri": "Copiar URI",
+                    "copyConfig": "Copiar Configuración",
+                    "loadingTemplates": "Cargando..."
+                },
+                "appConfig": {
+                    "title": "Configuración de la App",
+                    "description": "Configura la URL y los permisos de tu aplicación embebida",
+                    "selectApp": "Seleccionar App",
+                    "noListingsTitle": "No se encontraron listados de aplicaciones",
+                    "noListingsDesc": "Crea un listado de aplicación en la pestaña Listados de Apps primero.",
+                    "appUrl": "URL de la App",
+                    "appUrlPlaceholder": "https://tu-app.com",
+                    "appUrlDesc": "La URL de tu aplicación que se incrustará en LearnCard",
+                    "checkButton": "Verificar",
+                    "checking": "Verificando...",
+                    "checkResults": {
+                        "https": "Protocolo HTTPS",
+                        "valid": "Formato de URL Válido",
+                        "iframe": "Incrustación en Iframe",
+                        "checking": "Verificando tu URL...",
+                        "allPassed": "¡Se ve bien!",
+                        "issuesFound": "Se encontraron algunos problemas",
+                        "httpsPass": "Usando HTTPS seguro",
+                        "httpLocalhost": "HTTP está bien para localhost",
+                        "httpsRequired": "Se requiere HTTPS para producción",
+                        "mustBeHttps": "Debe ser HTTP o HTTPS",
+                        "invalidUrl": "URL inválida",
+                        "invalidFormat": "Formato de URL inválido",
+                        "cannotCheck": "No se puede verificar",
+                        "urlValid": "La URL es válida",
+                        "usePreview": "Usa Vista Previa para probar la incrustación",
+                        "fixIssues": "Corrige los problemas anteriores antes de publicar. Ve los ejemplos de encabezados abajo.",
+                        "passedChecks": "Tu URL pasó las verificaciones básicas. Es posible que aún necesites configurar los encabezados de iframe (X-Frame-Options).",
+                        "resultsTitle": "Resultados de Verificación de URL"
+                    },
+                    "requiredHeaders": {
+                        "title": "Encabezados de Respuesta Requeridos",
+                        "desc": "Configura tu servidor para permitir la incrustación en iframe"
+                    },
+                    "permissions": {
+                        "title": "Permisos",
+                        "desc": "Selecciona lo que tu app puede acceder desde la billetera",
+                        "fromGuide": "Desde la Guía",
+                        "fromGuideCount": "{{count}} de la configuración de la guía",
+                        "required": "Requerido",
+                        "items": {
+                            "identity": {
+                                "name": "Identidad del Usuario",
+                                "desc": "Accede al DID del usuario e información del perfil"
+                            },
+                            "issueCredentials": {
+                                "name": "Emisión de Credenciales",
+                                "desc": "Envía credenciales a la billetera del usuario"
+                            },
+                            "requestCredentials": {
+                                "name": "Solicitar Credenciales",
+                                "desc": "Busca y solicita credenciales del usuario"
+                            },
+                            "consent": {
+                                "name": "Consentimiento de Datos",
+                                "desc": "Solicita acceso continuo a datos mediante contratos de consentimiento"
+                            },
+                            "navigation": {
+                                "name": "Navegación de Billetera",
+                                "desc": "Navega a las funciones de la billetera desde tu app"
+                            }
+                        }
+                    },
+                    "commonIssues": {
+                        "title": "Problemas Comunes",
+                        "blankIframe": "<strong>¿Iframe en blanco?</strong> — Verifica que tu encabezado X-Frame-Options no esté configurado como DENY o SAMEORIGIN",
+                        "mixedContent": "<strong>¿Error de contenido mixto?</strong> — Asegúrate de que tu app use HTTPS",
+                        "corsErrors": "<strong>¿Errores CORS?</strong> — Agrega el encabezado Access-Control-Allow-Origin"
+                    },
+                    "previewButton": "Vista Previa de la App",
+                    "saveButton": "Guardar Configuración",
+                    "saving": "Guardando...",
+                    "saveSuccess": "¡Configuración guardada!",
+                    "saveError": "Error al guardar la configuración",
+                    "copy": "Copiar",
+                    "copied": "¡Copiado!"
+                },
+                "consentFlowCode": {
+                    "title": "Código de Integración",
+                    "description": "Fragmentos de código y configuración para tu integración de flujo de consentimiento",
+                    "consentUrl": {
+                        "title": "URL de Redirección de Consentimiento",
+                        "desc": "La URL para redirigir a los usuarios para otorgar consentimiento",
+                        "liveUrl": "URL activa desde tu configuración:",
+                        "testButton": "Probar Flujo de Consentimiento",
+                        "notConfigured": "No configurado: Completa la guía de Build para establecer tu URI de contrato y URL de devolución de llamada.",
+                        "copyUrl": "Copiar URL"
+                    },
+                    "callbackHandler": {
+                        "title": "Manejador de Devolución de Llamada",
+                        "desc": "Maneja la redirección de vuelta desde LearnCard después del consentimiento",
+                        "info": "Después del consentimiento, LearnCard redirige a tu URL returnTo con los parámetros de consulta did y vp."
+                    },
+                    "sendCredentials": {
+                        "title": "Enviar Credenciales",
+                        "desc": "Emite credenciales a usuarios que han dado su consentimiento"
+                    },
+                    "queryData": {
+                        "title": "Consultar Datos de Consentimiento",
+                        "desc": "Recupera registros de consentimiento y usuarios conectados"
+                    },
+                    "settings": {
+                        "title": "Configuración",
+                        "desc": "Ver y editar la configuración de tu integración",
+                        "integrationId": "ID de Integración",
+                        "contractUri": "URI del Contrato",
+                        "callbackUrl": "URL de Devolución de Llamada (returnTo)",
+                        "templates": "Plantillas",
+                        "templatesCount": "{{count}} guardada(s)",
+                        "edit": "Editar",
+                        "save": "Guardar",
+                        "saving": "Guardando...",
+                        "cancel": "Cancelar",
+                        "notSet": "(no establecido)",
+                        "updateSuccess": "URL de devolución de llamada actualizada",
+                        "updateError": "Error al actualizar la URL de devolución de llamada"
+                    },
+                    "copy": "Copiar",
+                    "copied": "¡Copiado!",
+                    "copyUri": "Copiar URI",
+                    "yourTemplateUris": "Tus URI de Plantillas:"
+                },
+                "embedCode": {
+                    "title": "Código de Incrustación",
+                    "description": "Copia y pega en tu sitio web para agregar un botón de reclamo",
+                    "publishableKey": "Tu Clave Publicable",
+                    "selectTemplate": "Seleccionar Plantilla",
+                    "htmlSnippet": "Fragmento HTML",
+                    "reactSnippet": "React / npm",
+                    "sdkReference": "Referencia del SDK — InitOptions",
+                    "sdkReferenceDesc": "Referencia para todas las opciones de inicialización disponibles",
+                    "copy": "Copiar",
+                    "copied": "¡Copiado!"
+                },
+                "connections": {
+                    "title": "Usuarios Conectados",
+                    "description": "Usuarios que han consentido compartir datos contigo",
+                    "recordCount": "{{count}} registro(s) de consentimiento",
+                    "noContractTitle": "No hay contrato configurado",
+                    "noContractDesc": "Completa la guía de Build para crear primero un contrato de flujo de consentimiento. Los registros de consentimiento aparecerán aquí una vez que los usuarios comiencen a otorgar consentimiento.",
+                    "errorTitle": "Error al cargar datos de consentimiento",
+                    "errorUnknown": "Error desconocido",
+                    "errorRetry": "Reintentar",
+                    "refresh": "Actualizar",
+                    "contractUri": "URI del Contrato",
+                    "noRecordsTitle": "Aún no hay registros de consentimiento",
+                    "noRecordsDesc": "Los usuarios que otorguen consentimiento a través de tu flujo de redirección aparecerán aquí. Prueba el flujo de consentimiento desde la pestaña de Pruebas primero.",
+                    "sharedPersonalData": "Datos Personales Compartidos",
+                    "sharedCategories": "Categorías de Credenciales Compartidas",
+                    "noDataShared": "Consentimiento otorgado sin datos adicionales compartidos",
+                    "queryApi": "Consultar mediante API",
+                    "consentRecord": "Registro de Consentimiento #{{number}}",
+                    "fieldsShared": "{{count}} campo(s) compartido(s)"
+                }
+            }
         }
     }
 }
