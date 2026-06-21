@@ -5527,5 +5527,92 @@
                 "errorFetchFailed": "فشل جلب القوالب"
             }
         }
+    },
+    "appStoreAdmin": {
+        "dashboard": {
+            "title": "لوحة تحكم المشرف",
+            "accessDenied": "تم رفض الوصول",
+            "noPermissions": "ليست لديك صلاحيات المشرف.",
+            "selectApp": "اختر تطبيقًا للمراجعة",
+            "chooseFromSidebar": "اختر قائمة من الشريط الجانبي"
+        },
+        "sidebar": {
+            "searchPlaceholder": "البحث عن التطبيقات...",
+            "refresh": "تحديث",
+            "backToListings": "العودة إلى القوائم",
+            "noListingsFound": "لم يتم العثور على قوائم",
+            "filterPending": "قيد المراجعة",
+            "filterAll": "الكل",
+            "filterListed": "منشورة",
+            "filterDraft": "مسودة",
+            "filterArchived": "مؤرشفة"
+        },
+        "listing": {
+            "submittedBy": "مقدم من:",
+            "submitted": "تاريخ التقديم:",
+            "unknownDate": "تاريخ غير معروف",
+            "emailSubject": "بخصوص تطبيقك: {{name}}",
+            "description": "الوصف",
+            "highlights": "أبرز النقاط",
+            "minimumAge": "الحد الأدنى للعمر",
+            "screenshots": "لقطات الشاشة ({{count}})",
+            "launchConfig": "إعدادات الإطلاق",
+            "requestedPermissions": "الأذونات المطلوبة",
+            "externalLinks": "روابط خارجية",
+            "applicationUrl": "رابط التطبيق",
+            "promoVideo": "فيديو ترويجي",
+            "privacyPolicy": "سياسة الخصوصية",
+            "termsOfService": "شروط الخدمة",
+            "nativeAppLinks": "روابط التطبيقات الأصلية",
+            "iosAppStore": "iOS App Store ({{id}})",
+            "googlePlayStore": "Google Play Store ({{id}})",
+            "screenshotAlt": "لقطة شاشة {{count}}",
+            "previewModal": "معاينة نافذة منبثقة",
+            "previewPage": "معاينة الصفحة",
+            "testEmbed": "اختبار التضمين",
+            "contractTitle": "عقد تدفق الموافقة",
+            "previewContract": "معاينة العقد",
+            "loadingContract": "جاري تحميل العقد...",
+            "contractNotAvailable": "تفاصيل العقد غير متوفرة",
+            "readAccess": "صلاحية القراءة",
+            "writeAccess": "صلاحية الكتابة",
+            "promotionTitle": "مستوى الترويج",
+            "age": "العمر {{rating}}",
+            "actions": {
+                "unlist": "إزالة من القائمة",
+                "reject": "رفض",
+                "approve": "موافقة",
+                "sendToDraft": "إعادة إلى المسودة",
+                "rejectedMsg": "تم رفض هذه القائمة. أعد إرسالها كمسودة للمراجعة."
+            },
+            "launchType": {
+                "embeddedIframe": "Iframe مضمّن",
+                "secondScreen": "شاشة ثانية",
+                "directLink": "رابط مباشر",
+                "consentRedirect": "تدفق الموافقة",
+                "serverHeadless": "خادم مستقل",
+                "aiTutor": "مدرس ذكاء اصطناعي"
+            },
+            "category": {
+                "ai": "ذكاء اصطناعي",
+                "learning": "تعلم",
+                "games": "ألعاب",
+                "tools": "أدوات",
+                "employment": "توظيف",
+                "credentials": "شهادات",
+                "plugin": "إضافة",
+                "other": "أخرى"
+            },
+            "promotion": {
+                "featuredCarousel": "عرض دوار مميز",
+                "featuredCarouselDesc": "يظهر بشكل بارز في قسم المميزات",
+                "curatedList": "قائمة مختارة",
+                "curatedListDesc": "مُدرج في مجموعات مختارة",
+                "standard": "قياسي",
+                "standardDesc": "ظهور عادي في البحث والتصفح",
+                "demoted": "مخفض",
+                "demotedDesc": "ظهور مخفض في القوائم"
+            }
+        }
     }
 }

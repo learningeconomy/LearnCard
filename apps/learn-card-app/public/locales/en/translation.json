@@ -5527,5 +5527,92 @@
                 "errorFetchFailed": "Failed to fetch templates"
             }
         }
+    },
+    "appStoreAdmin": {
+        "dashboard": {
+            "title": "Admin Dashboard",
+            "accessDenied": "Access Denied",
+            "noPermissions": "You don't have admin permissions.",
+            "selectApp": "Select an app to review",
+            "chooseFromSidebar": "Choose a listing from the sidebar"
+        },
+        "sidebar": {
+            "searchPlaceholder": "Search apps...",
+            "refresh": "Refresh",
+            "backToListings": "Back to listings",
+            "noListingsFound": "No listings found",
+            "filterPending": "Pending",
+            "filterAll": "All",
+            "filterListed": "Listed",
+            "filterDraft": "Draft",
+            "filterArchived": "Archived"
+        },
+        "listing": {
+            "submittedBy": "Submitted by:",
+            "submitted": "Submitted:",
+            "unknownDate": "Unknown Date",
+            "emailSubject": "Regarding your app: {{name}}",
+            "description": "Description",
+            "highlights": "Highlights",
+            "minimumAge": "Minimum Age",
+            "screenshots": "Screenshots ({{count}})",
+            "launchConfig": "Launch Configuration",
+            "requestedPermissions": "Requested Permissions",
+            "externalLinks": "External Links",
+            "applicationUrl": "Application URL",
+            "promoVideo": "Promo Video",
+            "privacyPolicy": "Privacy Policy",
+            "termsOfService": "Terms of Service",
+            "nativeAppLinks": "Native App Links",
+            "iosAppStore": "iOS App Store ({{id}})",
+            "googlePlayStore": "Google Play Store ({{id}})",
+            "screenshotAlt": "Screenshot {{count}}",
+            "previewModal": "Preview Modal",
+            "previewPage": "Preview Page",
+            "testEmbed": "Test Embed",
+            "contractTitle": "Consent Flow Contract",
+            "previewContract": "Preview Contract",
+            "loadingContract": "Loading contract...",
+            "contractNotAvailable": "Contract details not available",
+            "readAccess": "Read Access",
+            "writeAccess": "Write Access",
+            "promotionTitle": "Promotion Level",
+            "age": "Age {{rating}}",
+            "actions": {
+                "unlist": "Unlist App",
+                "reject": "Reject",
+                "approve": "Approve",
+                "sendToDraft": "Send Back to Draft",
+                "rejectedMsg": "This listing was rejected. Send it back as a draft for revision."
+            },
+            "launchType": {
+                "embeddedIframe": "Embedded Iframe",
+                "secondScreen": "Second Screen",
+                "directLink": "Direct Link",
+                "consentRedirect": "Consent Flow",
+                "serverHeadless": "Server Headless",
+                "aiTutor": "AI Tutor"
+            },
+            "category": {
+                "ai": "AI",
+                "learning": "Learning",
+                "games": "Games",
+                "tools": "Tools",
+                "employment": "Employment",
+                "credentials": "Credentials",
+                "plugin": "Plugin",
+                "other": "Other"
+            },
+            "promotion": {
+                "featuredCarousel": "Featured Carousel",
+                "featuredCarouselDesc": "Prominently displayed in the featured section",
+                "curatedList": "Curated List",
+                "curatedListDesc": "Included in curated collections",
+                "standard": "Standard",
+                "standardDesc": "Normal visibility in search and browse",
+                "demoted": "Demoted",
+                "demotedDesc": "Reduced visibility in listings"
+            }
+        }
     }
 }

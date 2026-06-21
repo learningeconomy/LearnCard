@@ -5527,5 +5527,92 @@
                 "errorFetchFailed": "Échec de la récupération des modèles"
             }
         }
+    },
+    "appStoreAdmin": {
+        "dashboard": {
+            "title": "Tableau de Bord Administrateur",
+            "accessDenied": "Accès Refusé",
+            "noPermissions": "Vous n'avez pas les permissions d'administrateur.",
+            "selectApp": "Sélectionnez une application à examiner",
+            "chooseFromSidebar": "Choisissez une annonce dans la barre latérale"
+        },
+        "sidebar": {
+            "searchPlaceholder": "Rechercher des apps...",
+            "refresh": "Actualiser",
+            "backToListings": "Retour aux annonces",
+            "noListingsFound": "Aucune annonce trouvée",
+            "filterPending": "En attente",
+            "filterAll": "Toutes",
+            "filterListed": "Publiées",
+            "filterDraft": "Brouillon",
+            "filterArchived": "Archivées"
+        },
+        "listing": {
+            "submittedBy": "Soumis par :",
+            "submitted": "Soumis le :",
+            "unknownDate": "Date Inconnue",
+            "emailSubject": "À propos de votre appli : {{name}}",
+            "description": "Description",
+            "highlights": "Points forts",
+            "minimumAge": "Âge Minimum",
+            "screenshots": "Captures d'écran ({{count}})",
+            "launchConfig": "Configuration de Lancement",
+            "requestedPermissions": "Permissions Demandées",
+            "externalLinks": "Liens Externes",
+            "applicationUrl": "URL de l'Application",
+            "promoVideo": "Vidéo Promo",
+            "privacyPolicy": "Politique de Confidentialité",
+            "termsOfService": "Conditions d'Utilisation",
+            "nativeAppLinks": "Liens d'Apps Natives",
+            "iosAppStore": "iOS App Store ({{id}})",
+            "googlePlayStore": "Google Play Store ({{id}})",
+            "screenshotAlt": "Capture {{count}}",
+            "previewModal": "Aperçu Modal",
+            "previewPage": "Aperçu de la Page",
+            "testEmbed": "Tester l'Intégration",
+            "contractTitle": "Contrat de Flux de Consentement",
+            "previewContract": "Aperçu du Contrat",
+            "loadingContract": "Chargement du contrat...",
+            "contractNotAvailable": "Détails du contrat non disponibles",
+            "readAccess": "Accès en Lecture",
+            "writeAccess": "Accès en Écriture",
+            "promotionTitle": "Niveau de Promotion",
+            "age": "Âge {{rating}}",
+            "actions": {
+                "unlist": "Retirer de la Liste",
+                "reject": "Rejeter",
+                "approve": "Approuver",
+                "sendToDraft": "Remettre en Brouillon",
+                "rejectedMsg": "Cette annonce a été rejetée. Renvoyez-la comme brouillon pour révision."
+            },
+            "launchType": {
+                "embeddedIframe": "Iframe Intégré",
+                "secondScreen": "Deuxième Écran",
+                "directLink": "Lien Direct",
+                "consentRedirect": "Flux de Consentement",
+                "serverHeadless": "Serveur Autonome",
+                "aiTutor": "Tuteur IA"
+            },
+            "category": {
+                "ai": "IA",
+                "learning": "Apprentissage",
+                "games": "Jeux",
+                "tools": "Outils",
+                "employment": "Emploi",
+                "credentials": "Certificats",
+                "plugin": "Plugin",
+                "other": "Autre"
+            },
+            "promotion": {
+                "featuredCarousel": "Carrousel Vedette",
+                "featuredCarouselDesc": "Affiché en évidence dans la section en vedette",
+                "curatedList": "Liste Sélectionnée",
+                "curatedListDesc": "Inclus dans les collections sélectionnées",
+                "standard": "Standard",
+                "standardDesc": "Visibilité normale dans la recherche et la navigation",
+                "demoted": "Rétrogradé",
+                "demotedDesc": "Visibilité réduite dans les annonces"
+            }
+        }
     }
 }

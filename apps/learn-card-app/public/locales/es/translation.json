@@ -5527,5 +5527,92 @@
                 "errorFetchFailed": "Error al obtener plantillas"
             }
         }
+    },
+    "appStoreAdmin": {
+        "dashboard": {
+            "title": "Panel de Administración",
+            "accessDenied": "Acceso Denegado",
+            "noPermissions": "No tienes permisos de administrador.",
+            "selectApp": "Selecciona una app para revisar",
+            "chooseFromSidebar": "Elige un listado de la barra lateral"
+        },
+        "sidebar": {
+            "searchPlaceholder": "Buscar apps...",
+            "refresh": "Actualizar",
+            "backToListings": "Volver a listados",
+            "noListingsFound": "No se encontraron listados",
+            "filterPending": "Pendiente",
+            "filterAll": "Todas",
+            "filterListed": "Publicadas",
+            "filterDraft": "Borrador",
+            "filterArchived": "Archivadas"
+        },
+        "listing": {
+            "submittedBy": "Enviado por:",
+            "submitted": "Enviado:",
+            "unknownDate": "Fecha Desconocida",
+            "emailSubject": "Sobre tu app: {{name}}",
+            "description": "Descripción",
+            "highlights": "Aspectos destacados",
+            "minimumAge": "Edad Mínima",
+            "screenshots": "Capturas ({{count}})",
+            "launchConfig": "Configuración de Lanzamiento",
+            "requestedPermissions": "Permisos Solicitados",
+            "externalLinks": "Enlaces Externos",
+            "applicationUrl": "URL de la Aplicación",
+            "promoVideo": "Video Promocional",
+            "privacyPolicy": "Política de Privacidad",
+            "termsOfService": "Términos del Servicio",
+            "nativeAppLinks": "Enlaces de Apps Nativas",
+            "iosAppStore": "iOS App Store ({{id}})",
+            "googlePlayStore": "Google Play Store ({{id}})",
+            "screenshotAlt": "Captura {{count}}",
+            "previewModal": "Vista Previa Modal",
+            "previewPage": "Vista Previa de Página",
+            "testEmbed": "Probar Integración",
+            "contractTitle": "Contrato de Flujo de Consentimiento",
+            "previewContract": "Vista Previa del Contrato",
+            "loadingContract": "Cargando contrato...",
+            "contractNotAvailable": "Detalles del contrato no disponibles",
+            "readAccess": "Acceso de Lectura",
+            "writeAccess": "Acceso de Escritura",
+            "promotionTitle": "Nivel de Promoción",
+            "age": "Edad {{rating}}",
+            "actions": {
+                "unlist": "Eliminar de la Lista",
+                "reject": "Rechazar",
+                "approve": "Aprobar",
+                "sendToDraft": "Volver a Borrador",
+                "rejectedMsg": "Este listado fue rechazado. Envíalo de vuelta como borrador para revisión."
+            },
+            "launchType": {
+                "embeddedIframe": "Iframe Integrado",
+                "secondScreen": "Segunda Pantalla",
+                "directLink": "Enlace Directo",
+                "consentRedirect": "Flujo de Consentimiento",
+                "serverHeadless": "Servidor Autónomo",
+                "aiTutor": "Tutor IA"
+            },
+            "category": {
+                "ai": "IA",
+                "learning": "Aprendizaje",
+                "games": "Juegos",
+                "tools": "Herramientas",
+                "employment": "Empleo",
+                "credentials": "Credenciales",
+                "plugin": "Plugin",
+                "other": "Otro"
+            },
+            "promotion": {
+                "featuredCarousel": "Carrusel Destacado",
+                "featuredCarouselDesc": "Mostrado de forma destacada en la sección principal",
+                "curatedList": "Lista Seleccionada",
+                "curatedListDesc": "Incluido en colecciones seleccionadas",
+                "standard": "Estándar",
+                "standardDesc": "Visibilidad normal en búsqueda y navegación",
+                "demoted": "Degradado",
+                "demotedDesc": "Visibilidad reducida en los listados"
+            }
+        }
     }
 }
