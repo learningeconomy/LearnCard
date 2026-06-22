@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';

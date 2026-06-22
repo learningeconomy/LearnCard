@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { X, Save, Play, Loader2 } from 'lucide-react';
 
 interface PreviewConfirmDialogProps {

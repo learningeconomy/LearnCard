@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonHeader, IonToolbar } from '@ionic/react';
 import { Shield, Code2, Hammer } from 'lucide-react';

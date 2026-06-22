@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { X, Save, Trash2, Loader2 } from 'lucide-react';
 
 interface ExitConfirmDialogProps {

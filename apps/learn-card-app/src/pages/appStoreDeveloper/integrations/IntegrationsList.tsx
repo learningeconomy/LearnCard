@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import {
