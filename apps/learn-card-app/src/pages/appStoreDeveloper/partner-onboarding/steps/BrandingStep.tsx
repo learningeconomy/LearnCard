@@ -16,7 +16,7 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('branding-step');
 
-import { useFilestack, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
+import { useImageUpload, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -104,7 +104,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
     }, [currentLCNUser, branding]);
 
     const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setImage(data?.url || '');
@@ -112,7 +112,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
         });
 
     const { handleFileSelect: handleBackgroundUpload, isLoading: backgroundUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setDisplay(prev => ({ ...prev, backgroundImage: data?.url || '' }));
@@ -120,7 +120,7 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
         });
 
     const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));

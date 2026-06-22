@@ -5,7 +5,7 @@ import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 
-import { UploadRes, useFilestack } from 'learn-card-base';
+import { UploadRes, useImageUpload } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { DEFAULT_FAMILY_THUMBNAIL, FamilyCMSState } from '../familyCMSState';
 
@@ -40,7 +40,7 @@ export const FamilyCMSThumbnailSelect: React.FC<{
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

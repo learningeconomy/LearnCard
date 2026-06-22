@@ -20,7 +20,7 @@ import {
     BoostCMSAppearanceDisplayTypeEnum,
     useModal,
     ModalTypes,
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCMSMediaState,
     useBoostCMSMediaState,
@@ -232,7 +232,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         setShowCloseButtonState?.(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -256,7 +256,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         setShowCloseButtonState?.(false);
     };
 
-    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useFilestack({
+    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload({
         fileType: VIEWER_MIME_TYPES,
         onUpload: (_url, _file, data) => onDocumentUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

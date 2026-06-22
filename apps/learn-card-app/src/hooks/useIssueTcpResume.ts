@@ -1,5 +1,5 @@
 import { VC } from '@learncard/types';
-import { CredentialCategoryEnum, useCurrentUser, useFilestack, useWallet } from 'learn-card-base';
+import { CredentialCategoryEnum, useCurrentUser, useImageUpload, useWallet } from 'learn-card-base';
 import { resumeBuilderStore } from '../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from '../components/resume-builder/resume-builder.helpers';
 import { getResumeBuilderSnapshot } from '../components/resume-builder/resume-builder-history.helpers';
@@ -523,7 +523,7 @@ export const useIssueTcpResume = () => {
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
-    const { singleImageUpload } = useFilestack({
+    const { singleImageUpload } = useImageUpload({
         fileType: 'application/pdf',
         onUpload: () => undefined,
     });

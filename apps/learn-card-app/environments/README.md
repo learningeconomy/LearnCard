@@ -161,6 +161,7 @@ The config is a partial `TenantConfig` object. Fields are deep-merged onto
 | `domain`       | Production domain (e.g. `vetpass.app`)        |
 | `apis`         | API endpoint URLs                            |
 | `auth`         | Firebase project, SSS server, sign-in methods |
+| `storage`      | Image upload provider and CDN settings       |
 | `branding`     | App name, colors, category labels            |
 | `features`     | Feature toggles                              |
 | `native`       | Bundle ID, deep link domains, Capgo channel  |
@@ -171,6 +172,31 @@ version). When the schema version changes, stale localStorage caches are
 automatically invalidated.
 
 See `tenantConfigSchema.ts` for the full schema with defaults.
+
+### Image storage
+
+Omitting `storage` keeps the LearnCard default Filestack provider.
+
+```json
+{
+    "storage": {
+        "provider": "filestack",
+        "apiKey": "...",
+        "cdnDomain": "cdn.filestackcontent.com"
+    }
+}
+```
+
+```json
+{
+    "storage": {
+        "provider": "s3",
+        "uploadEndpoint": "https://uploads.example.com/images",
+        "cdnDomain": "cdn.mytenant.app",
+        "bucket": "mytenant-images"
+    }
+}
+```
 
 ### Email branding
 

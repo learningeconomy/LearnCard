@@ -1,7 +1,7 @@
 import React from 'react';
 import { Upload, Loader2, X, Image as ImageIcon } from 'lucide-react';
 
-import { useFilestack } from 'learn-card-base';
+import { useImageUpload } from 'learn-card-base';
 
 interface ImageUploadProps {
     value?: string;
@@ -20,7 +20,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     className = '',
     previewClassName = 'w-24 h-24',
 }) => {
-    const { handleFileSelect, isLoading } = useFilestack({
+    const { handleFileSelect, isLoading } = useImageUpload({
         onUpload: (url: string) => {
             onChange(url);
         },
@@ -94,7 +94,7 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
     onRemove,
     index,
 }) => {
-    const { handleFileSelect, isLoading } = useFilestack({
+    const { handleFileSelect, isLoading } = useImageUpload({
         onUpload: (url: string) => {
             onChange(url);
         },

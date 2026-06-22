@@ -13,7 +13,7 @@ import {
     useConfirmation,
     useCreateBoost,
     useGetProfile,
-    useFilestack,
+    useImageUpload,
     useGetBoost,
     useModal,
     useToast,
@@ -129,7 +129,7 @@ const BulkBoostImportPage: React.FC = () => {
     const { data: networkBoost } = useGetBoost(parentUri);
     const networkName = networkBoost?.meta?.edits?.name ?? networkBoost?.name;
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });

@@ -1,38 +1,32 @@
 import React, { MouseEvent, useEffect, useState, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { client, UploadOptions } from './ReactFileStackClient';
+import type { ImageUploadOptions, UploadRes } from './types';
+import { getImageUploadProvider } from './config';
+import useResizePhoto from '../../filestack/useResizePhoto';
+import { getLogger } from '../../logging/logger';
 
-import useResizePhoto from './useResizePhoto';
-import { getLogger } from '../logging/logger';
-const log = getLogger('use-filestack');
+const log = getLogger('use-image-upload');
 
-const API_KEY = 'A7RsW3VzfSNO2TCsFJ6Eiz';
+export type { UploadRes } from './types';
 
-export const filestack = client.init(API_KEY, { sessionCache: false });
 
-export type UploadRes = {
-    filename: string;
-    handle: string;
-    mimetype: string;
-    size: number;
-    status: string;
-    url: string;
-};
-
-type UseFileStack = (args: {
+type UseImageUpload = (args: {
     onUpload: (url: string, file: File, res: UploadRes) => void;
     onFileSelected?: (file: File) => void;
     onPhotoResized?: (file: File) => void;
     fileType?: string | string[];
-    options?: UploadOptions;
+    options?: ImageUploadOptions;
     resizeBeforeUploading?: boolean;
 }) => {
     fileSelector: HTMLInputElement | null;
-    handleFileSelect: (e?: MouseEvent) => void;
+    fileSelectorRef: React.MutableRefObject<HTMLInputElement | undefined>;
+    handleFileSelect: (e?: MouseEvent) => Promise<void>;
     isLoading: boolean;
-    error: any;
-    directUploadFile: (file: File) => void;
+    error: unknown;
+    directUploadFile: (file: File) => Promise<void>;
+    uploadImageFromUrl: (url: string) => Promise<string | null>;
+    singleImageUpload: (file: File) => Promise<string>;
 };
 
 // Helper function to convert data URL to File
@@ -42,7 +36,7 @@ const dataUrlToFile = async (dataUrl: string, filename: string): Promise<File> =
     return new File([blob], filename, { type: blob.type });
 };
 
-export const useFilestack: UseFileStack = ({
+export const useImageUpload: UseImageUpload = ({
     onUpload,
     onFileSelected,
     onPhotoResized,
@@ -50,59 +44,57 @@ export const useFilestack: UseFileStack = ({
     options = {},
     resizeBeforeUploading = false,
 }) => {
+    const provider = getImageUploadProvider();
     const resizePhoto = useResizePhoto();
     const [fileSelector, setFileSelector] = useState<HTMLInputElement | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<unknown>(null);
 
     const fileSelectorRef = useRef<HTMLInputElement>();
 
-    const getFileToUpload = async (file: File) => {
-        if (!resizeBeforeUploading) return file;
+    const getFileToUpload = async (
+        file: File
+    ): Promise<{ file: File; resized: boolean } | false> => {
+        if (!resizeBeforeUploading) return { file, resized: false };
 
         try {
-            if (file.length > 1) {
-                return file;
-            }
-
-            return await resizePhoto(file);
+            return { file: await resizePhoto(file), resized: true };
         } catch (e) {
-            log.debug('filestack::getFileToUpload::error', e);
+            log.debug('image-upload::getFileToUpload::error', e);
             setError(e);
             return false;
         }
     };
 
-    const singleImageUpload = (file: File) => {
-        return new Promise((resolve, reject) => {
-            filestack // single image upload
-                .upload(file, options)
-                .then((res: UploadRes) => {
-                    onUpload(res.url, file, res);
-                    resolve(res.url); // return the url if you await singleImageUpload
-                })
-                .catch(e => {
-                    log.debug('filestack::singleImageUpload::error', e);
-                    setError(e);
-                    reject(e);
-                })
-                .finally(() => setIsLoading(false));
-        });
+    const singleImageUpload = async (file: File): Promise<string> => {
+        try {
+            const res = await provider.upload(file, options);
+
+            onUpload(res.url, file, res);
+
+            return res.url;
+        } catch (e) {
+            log.debug('image-upload::singleImageUpload::error', e);
+            setError(e);
+            throw e;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const directUploadFile = async (file: File) => {
+    const directUploadFile = async (file: File): Promise<void> => {
         setIsLoading(true);
 
-        const fileToUpload = await getFileToUpload(file);
+        const uploadTarget = await getFileToUpload(file);
 
-        if (!fileToUpload) {
+        if (!uploadTarget) {
             setIsLoading(false);
             return;
         }
 
-        if (resizeBeforeUploading) onPhotoResized?.(fileToUpload);
+        if (uploadTarget.resized) onPhotoResized?.(uploadTarget.file);
 
-        singleImageUpload(fileToUpload);
+        await singleImageUpload(uploadTarget.file);
     };
 
     // handles camera on native platforms
@@ -131,58 +123,53 @@ export const useFilestack: UseFileStack = ({
 
             onFileSelected?.(file);
 
-            const fileToUpload = await getFileToUpload(file);
-            if (!fileToUpload) {
+            const uploadTarget = await getFileToUpload(file);
+
+            if (!uploadTarget) {
                 setIsLoading(false);
                 return;
             }
 
-            if (resizeBeforeUploading) onPhotoResized?.(fileToUpload);
+            if (uploadTarget.resized) onPhotoResized?.(uploadTarget.file);
 
-            await singleImageUpload(fileToUpload);
+            await singleImageUpload(uploadTarget.file);
         } catch (e) {
-            log.debug('filestack::handleCapacitorCamera::error', e);
+            log.debug('image-upload::handleCapacitorCamera::error', e);
             setError(e);
             setIsLoading(false);
         }
     };
 
     const uploadFile: GlobalEventHandlers['onchange'] = async event => {
-        let file;
+        const files = (event.target as HTMLInputElement).files;
 
-        if ((<HTMLInputElement>event.target).files?.length > 1) {
-            file = (<HTMLInputElement>event.target).files;
-        } else {
-            file = (<HTMLInputElement>event.target).files?.[0];
-        }
+        if (!files?.length) return;
 
-        if (!file) return;
+        const firstFile = files.item(0);
 
-        onFileSelected?.(file);
+        if (!firstFile) return;
 
-        setIsLoading(true);
+        if (files.length > 1) {
+            onFileSelected?.(firstFile);
+            setIsLoading(true);
 
-        const fileToUpload = await getFileToUpload(file);
-
-        if (!fileToUpload) {
-            setIsLoading(false);
-            return;
-        }
-
-        if (resizeBeforeUploading) onPhotoResized?.(fileToUpload);
-
-        if (file.length > 1) {
-            filestack // multi image upload
-                .multiupload(fileToUpload, options)
-                .then((res: UploadRes) => onUpload(res.url, fileToUpload, res))
+            provider
+                .multiupload(files, options)
+                .then((res: UploadRes) => onUpload(res.url, firstFile, res))
                 .catch(e => {
-                    log.debug('filestack::uploadFile::error', e);
+                    log.debug('image-upload::uploadFile::error', e);
                     setError(e);
                 })
                 .finally(() => setIsLoading(false));
-        } else {
-            singleImageUpload(fileToUpload);
+
+            return;
         }
+
+        const file = firstFile;
+
+        onFileSelected?.(file);
+
+        await directUploadFile(file);
     };
 
     const handleFileSelect = async (e?: MouseEvent) => {
@@ -220,7 +207,7 @@ export const useFilestack: UseFileStack = ({
             // Call the singleImageUpload function with the created File
             return await singleImageUpload(file);
         } catch (error) {
-            log.debug('filestack::uploadImageFromUrl::error', error);
+            log.debug('image-upload::uploadImageFromUrl::error', error);
             return null;
         }
     };
@@ -253,4 +240,4 @@ export const useFilestack: UseFileStack = ({
     };
 };
 
-export default useFilestack;
+export default useImageUpload;

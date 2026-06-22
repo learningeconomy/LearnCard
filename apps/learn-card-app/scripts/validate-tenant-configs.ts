@@ -73,6 +73,7 @@ const TENANT_UNIQUE_FIELDS: UniqueFieldCheck[] = [
     { path: 'observability.userflowToken', label: 'Userflow Token' },
     { path: 'links.appStoreUrl', label: 'App Store URL' },
     { path: 'links.playStoreUrl', label: 'Play Store URL' },
+    { path: 'storage.apiKey', label: 'Filestack API Key' },
 ];
 
 const getNestedValue = (obj: Record<string, unknown>, path: string): unknown =>

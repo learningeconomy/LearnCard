@@ -38,7 +38,7 @@ import {
     Image as ImageIcon,
 } from 'lucide-react';
 
-import { useWallet, useFilestack } from 'learn-card-base';
+import { useWallet, useImageUpload } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import type { UnsignedVC } from '@learncard/types';
@@ -156,8 +156,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [defaultImage, setDefaultImage] = useState<string>('');
     const csvInputRef = useRef<HTMLInputElement>(null);
 
-    // Filestack for default image upload
-    const { handleFileSelect: handleImageSelect, isLoading: isUploadingImage } = useFilestack({
+    // Image upload for default image
+    const { handleFileSelect: handleImageSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: (url: string) => setDefaultImage(url),
         fileType: 'image/*',
     });
