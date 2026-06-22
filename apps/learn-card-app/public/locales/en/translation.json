@@ -6447,6 +6447,129 @@
                     "completedItems4": "Tested consent flow integration"
                 },
                 "noIntegration": "Please select an integration from the header dropdown to continue."
+            },
+            "serverWebhooks": {
+                "steps": {
+                    "apiToken": "API Token",
+                    "createEndpoint": "Create Endpoint",
+                    "handleEvents": "Handle Events",
+                    "testIt": "Test It"
+                },
+                "apiTokenStep": {
+                    "title": "Create an API Token",
+                    "description": "You'll need an API token to authenticate webhook requests and make API calls from your server.",
+                    "statusChecking": "Checking...",
+                    "statusReady": "{{count}} token ready",
+                    "statusReady_plural": "{{count}} tokens ready",
+                    "statusWarning": "No tokens found",
+                    "statusReadyHint": "Copy a token to use",
+                    "statusWarningHint": "Create one to continue",
+                    "tokenNameLabel": "Token Name",
+                    "tokenNamePlaceholder": "e.g., Webhook Server",
+                    "creatingButton": "Creating...",
+                    "createNewButton": "Create New Token",
+                    "continueButton": "Continue",
+                    "copyButton": "Copy",
+                    "createdLabel": "Created {{date}}"
+                },
+                "webhookEndpointStep": {
+                    "title": "Create Your Webhook Endpoint",
+                    "description": "Create an HTTPS endpoint on your server that can receive POST requests from LearnCard.",
+                    "yourWebhookUrl": "Your Webhook URL",
+                    "webhookUrlPlaceholder": "https://your-server.com/webhooks/learncard",
+                    "codePanelTitle": "Endpoint Setup",
+                    "requirementsTitle": "Requirements",
+                    "reqHttps": "Must be HTTPS (not HTTP)",
+                    "reqResponseTime": "Respond within 30 seconds",
+                    "reqStatus2xx": "Return 2xx status code on success",
+                    "reqSignature": "Verify the signature header"
+                },
+                "handleEventsStep": {
+                    "title": "Handle Events",
+                    "description": "LearnCard sends different event types. Handle each one based on your needs.",
+                    "eventReceived": "A credential was sent to a user",
+                    "eventAccepted": "User accepted a credential",
+                    "eventConsentGranted": "User granted consent to a contract",
+                    "eventConsentRevoked": "User revoked consent",
+                    "eventConnectionCreated": "New connection established",
+                    "codePanelTitle": "Event Handler"
+                },
+                "testStep": {
+                    "title": "Test Your Webhook",
+                    "description": "Make sure your webhook endpoint is working correctly before going live.",
+                    "preflightTitle": "Pre-flight checklist",
+                    "tokenCreated": "API token created",
+                    "webhookConfigured": "Webhook URL configured",
+                    "httpsEnabled": "HTTPS enabled",
+                    "sendTestTitle": "Send Test Event",
+                    "noWebhookUrl": "No webhook URL set",
+                    "sendingButton": "Sending...",
+                    "sendTestButton": "Send Test",
+                    "enterUrlError": "Please enter a webhook URL",
+                    "testSuccess": "Test event sent! Check your server logs.",
+                    "testFailed": "Failed to send test event",
+                    "readyTitle": "Webhooks ready!",
+                    "readyDescription": "Your server can now receive real-time events from LearnCard.",
+                    "fullDocs": "Full Documentation"
+                }
+            },
+            "verifyCredentials": {
+                "steps": {
+                    "understandVCs": "Understand VCs",
+                    "requestCredentials": "Request Credentials",
+                    "verifyValidate": "Verify & Validate",
+                    "testIt": "Test It"
+                },
+                "understandStep": {
+                    "title": "Understanding Verifiable Credentials",
+                    "description": "Verifiable Credentials (VCs) are digital documents that prove something about a person — like a badge, certificate, or ID — that can be cryptographically verified.",
+                    "whatYouCanVerify": "What you can verify",
+                    "verifyBullet1": "The credential hasn't been tampered with",
+                    "verifyBullet2": "It was issued by who it claims",
+                    "verifyBullet3": "It hasn't expired",
+                    "verifyBullet4": "It hasn't been revoked",
+                    "commonUseCases": "Common use cases",
+                    "useCaseBullet1": "Verify course completions",
+                    "useCaseBullet2": "Check professional certifications",
+                    "useCaseBullet3": "Validate identity documents",
+                    "useCaseBullet4": "Confirm memberships",
+                    "exampleStructure": "Example Credential Structure"
+                },
+                "requestStep": {
+                    "title": "Requesting Credentials",
+                    "description": "You can request credentials from users in different ways depending on your integration type.",
+                    "option1Embedded": "Option 1: Embedded App (Partner Connect)",
+                    "option2Direct": "Option 2: Direct Presentation",
+                    "option2Desc": "Accept credentials posted directly to your API endpoint.",
+                    "requestViaSdk": "Request via SDK",
+                    "apiEndpoint": "API Endpoint"
+                },
+                "verifyStep": {
+                    "title": "Verifying Credentials",
+                    "description": "Use the LearnCard SDK to cryptographically verify credentials. No API key required for verification.",
+                    "codePanelTitle": "Verification Code",
+                    "whatGetsChecked": "What Gets Checked"
+                },
+                "testStep": {
+                    "title": "Test Verification",
+                    "description": "Try verifying a credential right here. Paste a credential JSON below.",
+                    "credentialInput": "Credential Input",
+                    "useSample": "Use Sample",
+                    "credentialPlaceholder": "{\"@context\": [...], \"type\": [...], ...}",
+                    "verifyButton": "Verify Credential",
+                    "verifyingButton": "Verifying...",
+                    "validResult": "Credential is valid!",
+                    "failedResult": "Verification failed",
+                    "checksPassed": "Checks passed:",
+                    "errors": "Errors:",
+                    "invalidJson": "Invalid JSON or credential format",
+                    "readyTitle": "Ready to verify!",
+                    "readyDescription": "You can now accept and verify credentials from users.",
+                    "fullDocs": "Full Documentation"
+                }
+            },
+            "courseCatalog": {
+                "noIntegration": "Please select an integration from the header dropdown to continue."
             }
         }
     },
