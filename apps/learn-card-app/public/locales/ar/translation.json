@@ -6189,7 +6189,8 @@
                     "backButton": "رجوع",
                     "continueButton": "متابعة",
                     "builderOpenWarning": "احفظ أو ألغ القالب الذي تقوم بتحريره قبل المتابعة.",
-                    "uploadImageTitle": "رفع صورة"
+                    "uploadImageTitle": "رفع صورة",
+                    "logoPreviewAlt": "معاينة الشعار"
                 },
                 "testStep": {
                     "title": "Test Your Integration",
@@ -6486,9 +6487,9 @@
                     "createdLabel": "Created {{date}}"
                 },
                 "webhookEndpointStep": {
-                    "title": "Create Your Webhook Endpoint",
+                    "title": "أنشئ نقطة نهاية الويب هوك الخاصة بك",
                     "description": "Create an HTTPS endpoint on your server that can receive POST requests from LearnCard.",
-                    "yourWebhookUrl": "Your Webhook URL",
+                    "yourWebhookUrl": "رابط الويب هوك الخاص بك",
                     "webhookUrlPlaceholder": "https://your-server.com/webhooks/learncard",
                     "codePanelTitle": "Endpoint Setup",
                     "requirementsTitle": "Requirements",

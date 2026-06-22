@@ -6189,7 +6189,8 @@
                     "backButton": "Back",
                     "continueButton": "Continue",
                     "builderOpenWarning": "Save or cancel the template you're editing before continuing.",
-                    "uploadImageTitle": "Upload image"
+                    "uploadImageTitle": "Upload image",
+                    "logoPreviewAlt": "Logo preview"
                 },
                 "testStep": {
                     "title": "Test Your Integration",

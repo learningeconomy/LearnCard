@@ -6189,7 +6189,8 @@
                     "backButton": "Atrás",
                     "continueButton": "Continuar",
                     "builderOpenWarning": "Guarda o cancela la plantilla que estás editando antes de continuar.",
-                    "uploadImageTitle": "Subir imagen"
+                    "uploadImageTitle": "Subir imagen",
+                    "logoPreviewAlt": "Vista previa del logotipo"
                 },
                 "testStep": {
                     "title": "Test Your Integration",
@@ -6486,9 +6487,9 @@
                     "createdLabel": "Created {{date}}"
                 },
                 "webhookEndpointStep": {
-                    "title": "Create Your Webhook Endpoint",
+                    "title": "Crea tu Endpoint de Webhook",
                     "description": "Create an HTTPS endpoint on your server that can receive POST requests from LearnCard.",
-                    "yourWebhookUrl": "Your Webhook URL",
+                    "yourWebhookUrl": "Tu URL de Webhook",
                     "webhookUrlPlaceholder": "https://your-server.com/webhooks/learncard",
                     "codePanelTitle": "Endpoint Setup",
                     "requirementsTitle": "Requirements",

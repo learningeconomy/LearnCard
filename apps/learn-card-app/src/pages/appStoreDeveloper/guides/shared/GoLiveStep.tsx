@@ -24,8 +24,8 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
     guideType,
     onBack,
     completedItems = [],
-    title = 'Ready to Go Live!',
-    description = "You've completed all the setup steps. Activate your integration to start using it in production.",
+    title,
+    description,
 }) => {
     const history = useHistory();
     const { presentToast } = useToast();
@@ -34,6 +34,9 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
     const [isActivating, setIsActivating] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
+
+    const resolvedTitle = title ?? m['developerPortal.guides.goLive.defaultTitle']();
+    const resolvedDescription = description ?? m['developerPortal.guides.goLive.defaultDescription']();
 
     const handleGoLive = async () => {
         if (!integration) {
@@ -82,10 +85,10 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                     <PartyPopper className="w-10 h-10 text-emerald-600" />
                 </div>
 
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">You're Live!</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{m['developerPortal.guides.goLive.successTitle']()}</h2>
 
                 <p className="text-gray-500 mb-6">
-                    Your integration is now active. Redirecting to your dashboard...
+                    {m['developerPortal.guides.goLive.successDescription']()}
                 </p>
 
                 <Loader2 className="w-6 h-6 text-emerald-500 mx-auto animate-spin" />
@@ -100,15 +103,15 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                     <Rocket className="w-8 h-8 text-white" />
                 </div>
 
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{resolvedTitle}</h2>
 
-                <p className="text-gray-500 max-w-md mx-auto">{description}</p>
+                <p className="text-gray-500 max-w-md mx-auto">{resolvedDescription}</p>
             </div>
 
             {/* Completed Items Checklist */}
             {completedItems.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="font-medium text-gray-800 mb-4">Setup Complete</h3>
+                    <h3 className="font-medium text-gray-800 mb-4">{m['developerPortal.guides.goLive.setupComplete']()}</h3>
 
                     <div className="space-y-3">
                         {completedItems.map((item, index) => (
@@ -131,7 +134,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
                         <div>
                             <p className="font-medium text-gray-800">{integration.name}</p>
-                            <p className="text-sm text-cyan-700">Ready to activate</p>
+                            <p className="text-sm text-cyan-700">{m['developerPortal.guides.goLive.readyToActivate']()}</p>
                         </div>
                     </div>
                 </div>
@@ -161,7 +164,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                     ) : (
                         <>
                             <Rocket className="w-5 h-5" />
-                            Go Live
+                            {m['developerPortal.guides.goLive.goLive']()}
                         </>
                     )}
                 </button>
