@@ -37,6 +37,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('data-mapping-step');
 
 import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 
 import { Clipboard } from '@capacitor/clipboard';
 
@@ -1226,10 +1227,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
                                 <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.apiBoostUrisInfo']()}</p>
-                                <p>
-                                    Copy individual URIs or export all as a config file for your
-                                    codebase.
-                                </p>
+                                <p>{m['developerPortal.onboarding.dataMapping.apiBoostUrisDesc']()}</p>
                             </div>
                         </div>
 
@@ -1246,8 +1244,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             ) : (
                                 <>
                                     <Download className="w-4 h-4" />
-                                    Copy All as Config (
-                                    {issuableTemplates.filter(t => t.boostUri).length} templates)
+                                    {m['developerPortal.onboarding.dataMapping.apiCopyConfig']({count: issuableTemplates.filter(t => t.boostUri).length})}
                                 </>
                             )}
                         </button>
@@ -1265,8 +1262,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             {master.name}
                                         </span>
                                         <span className="text-xs text-gray-500">
-                                            {master.childTemplates?.filter(c => c.boostUri).length}{' '}
-                                            boosts
+                                            {m['developerPortal.onboarding.dataMapping.apiBoosts']({count: master.childTemplates?.filter(c => c.boostUri).length || 0})}
                                         </span>
                                     </div>
 
@@ -1384,14 +1380,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <div className="text-sm">
                                     <p className="font-medium text-amber-800">{m['developerPortal.onboarding.dataMapping.yourApiKey']()}</p>
                                     <p className="text-xs text-amber-700 mt-0.5">
-                                        Set{' '}
-                                        <code className="bg-amber-100 px-1 rounded">
-                                            LEARNCARD_API_KEY
-                                        </code>{' '}
-                                        in your environment to:
-                                        <code className="bg-amber-100 px-1 rounded ml-1 font-mono">
-                                            {project.apiKey.slice(0, 12)}...
-                                        </code>
+                                        <TransP m={m['developerPortal.onboarding.dataMapping.setApiKeyInEnv']} values={{apiKeyPreview: project.apiKey.slice(0, 12) + '...'}} components={[<code className="bg-amber-100 px-1 rounded" />, <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />]} />
                                     </p>
                                 </div>
                             </div>
@@ -1407,8 +1396,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="text-sm text-violet-800">
                                 <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.codeExampleGenerator']()}</p>
                                 <p>
-                                    Select a template to generate example code. Use the Reference
-                                    tab to get all URIs.
+                                    {m['developerPortal.onboarding.dataMapping.codeExampleGeneratorDesc']()}
                                 </p>
                             </div>
                         </div>
@@ -1433,7 +1421,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     {master.name}
                                                 </p>
                                                 <p className="text-xs text-violet-600">
-                                                    {master.childTemplates?.length} course boosts
+                                                    {m['developerPortal.onboarding.dataMapping.courseBoostsCount']({count: master.childTemplates?.length || 0})}
                                                 </p>
                                             </div>
                                         </div>
@@ -1471,7 +1459,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                                     {child.boostUri && (
                                                         <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                            Saved
+                                                            {m['developerPortal.onboarding.dataMapping.saved']()}
                                                         </span>
                                                     )}
 
@@ -1534,14 +1522,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             {template.name}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
-                                                            {template.description ||
-                                                                'No description'}
+                                                            {template.description || m['developerPortal.onboarding.dataMapping.noDescription']()}
                                                         </p>
                                                     </div>
 
                                                     {template.boostUri && (
                                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
-                                                            Saved
+                                                            {m['developerPortal.onboarding.dataMapping.saved']()}
                                                         </span>
                                                     )}
 
@@ -1562,9 +1549,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <div className="text-sm text-emerald-800">
                                     <p className="font-medium">{m['developerPortal.onboarding.dataMapping.courseDataPreFilled']()}</p>
                                     <p className="text-xs text-emerald-700 mt-0.5">
-                                        This boost has course-specific data (name, credits, etc.)
-                                        already baked in. You only need to provide issuance data
-                                        like recipient name and date.
+                                        {m['developerPortal.onboarding.dataMapping.courseDataPreFilledDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -1579,14 +1564,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     </label>
 
                                     <span className="text-xs text-gray-500">
-                                        {apiTemplateVariables.length} field
-                                        {apiTemplateVariables.length !== 1 ? 's' : ''} to provide
+                                        {apiTemplateVariables.length === 1 ? m['developerPortal.onboarding.dataMapping.fieldsToProvide']({count: 1}) : m['developerPortal.onboarding.dataMapping.fieldsToProvidePlural']({count: apiTemplateVariables.length})}
                                     </span>
                                 </div>
 
                                 <p className="text-xs text-gray-500">
-                                    Enter example values for your credential. These will appear in
-                                    the generated code.
+                                    {m['developerPortal.onboarding.dataMapping.enterExampleValues']()}
                                 </p>
 
                                 <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -1642,7 +1625,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* Recipient Input */}
                         <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">
-                                Recipient
+                                {m['developerPortal.onboarding.dataMapping.recipient']()}
                             </label>
 
                             <input
@@ -1665,14 +1648,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <div className="text-sm">
                                     <p className="font-medium text-amber-800">{m['developerPortal.onboarding.dataMapping.yourApiKey']()}</p>
                                     <p className="text-xs text-amber-700 mt-0.5">
-                                        Set{' '}
-                                        <code className="bg-amber-100 px-1 rounded">
-                                            LEARNCARD_API_KEY
-                                        </code>{' '}
-                                        in your environment to:
-                                        <code className="bg-amber-100 px-1 rounded ml-1 font-mono">
-                                            {project.apiKey.slice(0, 12)}...
-                                        </code>
+                                        <TransP m={m['developerPortal.onboarding.dataMapping.setApiKeyInEnv']} values={{apiKeyPreview: project.apiKey.slice(0, 12) + '...'}} components={[<code className="bg-amber-100 px-1 rounded" />, <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />]} />
                                     </p>
                                 </div>
                             </div>
@@ -1691,7 +1667,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             {apiShowAdvanced ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']() : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                             {apiHasAdvancedOptions && (
                                 <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
-                                    Active
+                                    {m['developerPortal.onboarding.dataMapping.active']()}
                                 </span>
                             )}
                         </button>
@@ -1818,8 +1794,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         </div>
                                     </label>
                                     <p className="text-xs text-gray-500 ml-7">
-                                        Don't send an email — get the claim URL to use in your own
-                                        system.
+                                        {m['developerPortal.onboarding.dataMapping.suppressDeliveryDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -1846,8 +1821,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         {m['developerPortal.onboarding.dataMapping.verifyYourCodeWorked']()}
                                     </h4>
                                     <p className="text-sm text-gray-600 mb-3">
-                                        Run your code, then click below to verify the credential was
-                                        sent successfully.
+                                        {m['developerPortal.onboarding.dataMapping.verifyTestDesc']()}
                                     </p>
 
                                     {!apiIsPolling && !apiPollResult?.success && (
@@ -1964,8 +1938,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="text-sm text-amber-800">
                         <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.csvBatchUpload']()}</p>
                         <p>
-                            Issue credentials in bulk by uploading a CSV spreadsheet. Download the
-                            template below to get started with the correct format.
+                            {m['developerPortal.onboarding.dataMapping.csvBatchUploadDesc']()}
                         </p>
                     </div>
                 </div>
@@ -1990,11 +1963,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <p className="text-xs font-medium text-gray-600">{m['developerPortal.onboarding.dataMapping.templateColumns']()}</p>
                         <div className="flex flex-wrap gap-2">
                             <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                Recipient *
+                                {m['developerPortal.onboarding.dataMapping.recipientColumn']()}
                             </span>
                             {hasMasterTemplates && (
                                 <span className="px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs font-medium">
-                                    Course ID *
+                                    {m['developerPortal.onboarding.dataMapping.courseIdColumn']()}
                                 </span>
                             )}
                             {targetFields.map(v => (
@@ -2009,8 +1982,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {hasMasterTemplates && (
                             <p className="text-xs text-gray-500">
-                                You have {totalChildTemplates} course templates. The CSV can include
-                                rows for different courses.
+                                {m['developerPortal.onboarding.dataMapping.csvCourseCount']({count: totalChildTemplates})}
                             </p>
                         )}
                     </div>
@@ -2040,7 +2012,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="grid gap-3">
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-cyan-700">1</span>
+                                {/* eslint-disable-next-line i18next/no-literal-string */}
+                            <span className="text-xs font-bold text-cyan-700" aria-hidden="true">1</span>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">
@@ -2054,7 +2027,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-cyan-700">2</span>
+                                {/* eslint-disable-next-line i18next/no-literal-string */}
+                            <span className="text-xs font-bold text-cyan-700" aria-hidden="true">2</span>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">
@@ -2068,7 +2042,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-cyan-700">3</span>
+                                {/* eslint-disable-next-line i18next/no-literal-string */}
+                            <span className="text-xs font-bold text-cyan-700" aria-hidden="true">3</span>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">{m['developerPortal.onboarding.dataMapping.uploadAndSend']()}</p>
@@ -2163,8 +2138,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         ) : (
                             <div className="space-y-3">
                                 <p className="text-sm text-gray-600">
-                                    Send a test "course completed" event from your LMS, or click
-                                    below to simulate one.
+                                    {m['developerPortal.onboarding.dataMapping.simulateEventDesc']()}
                                 </p>
 
                                 <button
@@ -2204,12 +2178,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div>
                             <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.courseBoostSelection']()}</h3>
                             <p className="text-sm text-gray-500">
-                                You have{' '}
-                                {masterTemplates.reduce(
-                                    (sum, m) => sum + (m.childTemplates?.length || 0),
-                                    0
-                                )}{' '}
-                                course boosts. Specify which field identifies the course.
+                                {m['developerPortal.onboarding.dataMapping.courseBoostSelectionDesc']({count: masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0)})}
                             </p>
                         </div>
                     </div>
@@ -2254,8 +2223,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             {m['developerPortal.onboarding.dataMapping.matchByCourseId']()}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            Store a unique ID in each boost and match exactly
-                                            (recommended)
+                                            {m['developerPortal.onboarding.dataMapping.matchByIdDesc']()}
                                         </p>
                                     </div>
                                 </label>
@@ -2274,8 +2242,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             {m['developerPortal.onboarding.dataMapping.matchByCourseName']()}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            Find boost where name contains the course title
-                                            (fallback)
+                                            {m['developerPortal.onboarding.dataMapping.matchByNameDesc']()}
                                         </p>
                                     </div>
                                 </label>
@@ -2286,15 +2253,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <p className="text-xs text-emerald-800">
-                                    Will use{' '}
-                                    <code className="bg-emerald-100 px-1 rounded">
-                                        {boostSelectorField}
-                                    </code>{' '}
-                                    to find the right course boost by{' '}
-                                    {boostSelectorMatchType === 'id'
-                                        ? 'exact ID match'
-                                        : 'name matching'}
-                                    .
+                                    <TransP m={m['developerPortal.onboarding.dataMapping.boostMatcherConfirmation']} values={{field: boostSelectorField, matchType: boostSelectorMatchType === 'id' ? m['developerPortal.onboarding.dataMapping.exactIdMatch']() : m['developerPortal.onboarding.dataMapping.nameMatching']()}} components={[<code className="bg-emerald-100 px-1 rounded" />]} />
                                 </p>
                             </div>
                         )}
@@ -2314,8 +2273,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.mapIssuanceFields']()}</h3>
                             <p className="text-sm text-gray-500">
                                 {masterTemplates.length > 0
-                                    ? 'Map recipient data to credential fields (course data is already baked in)'
-                                    : 'Connect your data to credential fields'}
+                                    ? m['developerPortal.onboarding.dataMapping.mapWithCourseData']()
+                                    : m['developerPortal.onboarding.dataMapping.connectYourData']()}
                             </p>
                         </div>
                     </div>
@@ -2355,8 +2314,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <button
                                         onClick={() => handleRemoveMapping(idx)}
                                         className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded"
+                                        aria-label={m['developerPortal.onboarding.dataMapping.removeMapping']()}
                                     >
-                                        ×
+                                        <span aria-hidden="true">{'\u00D7'}</span>
                                     </button>
                                 </div>
                             ))}
@@ -2367,9 +2327,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
                         <p className="text-xs text-blue-800">
-                            <strong>{m['developerPortal.onboarding.dataMapping.howToMap']()}</strong> Click a source field on the left, then
-                            click a target field on the right to connect them. You can select them
-                            in any order.
+                            <TransP m={m['developerPortal.onboarding.dataMapping.howToMapInstructions']} components={[<strong />]} />
                         </p>
                     </div>
 
@@ -2377,7 +2335,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Source Fields (Your Data)
+                                {m['developerPortal.onboarding.dataMapping.sourceFields']()}
                                 {selectedSource && (
                                     <span className="ml-2 text-cyan-600">{m['developerPortal.onboarding.dataMapping.selectTarget']()}</span>
                                 )}
@@ -2420,7 +2378,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Target Fields (Credential)
+                                {m['developerPortal.onboarding.dataMapping.targetFields']()}
                                 {selectedTarget && (
                                     <span className="ml-2 text-cyan-600">{m['developerPortal.onboarding.dataMapping.selectSource']()}</span>
                                 )}
@@ -2501,7 +2459,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             f => !mappings.some(m => m.targetField === f)
                                         ).length
                                     }{' '}
-                                    credential field(s) still need to be mapped.
+                                    {m['developerPortal.onboarding.dataMapping.unmappedFieldsWarning']({count: targetFields.filter(f => !mappings.some(m => m.targetField === f)).length})}
                                 </p>
                             </div>
                         )}
@@ -2517,9 +2475,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                Based on your mappings, here's the{' '}
-                                <code className="bg-gray-100 px-1 rounded">templateData</code>{' '}
-                                object you'll pass when sending credentials:
+                                <TransP m={m['developerPortal.onboarding.dataMapping.templateDataPreviewDesc']} components={[<code className="bg-gray-100 px-1 rounded" />]} />
                             </p>
 
                             <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">

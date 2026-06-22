@@ -531,7 +531,7 @@ if (result.credentialUri) {
                                     {editingTemplate ? (
                                         <>
                                             <Edit3 className="w-4 h-4" />
-                                            {m['developerPortal.components.templateListManager.editingLabel']()}: {editingTemplate.name}
+                                            {m['developerPortal.components.templateListManager.editingLabelFormat']({name: editingTemplate.name})}
                                         </>
                                     ) : (
                                         <>
@@ -549,7 +549,7 @@ if (result.credentialUri) {
                                             : 'text-emerald-600 hover:text-emerald-800'
                                     }`}
                                 >
-                                    Cancel
+                                    {m['developerPortal.components.templateListManager.cancel']()}
                                 </button>
                             </div>
 
@@ -605,8 +605,7 @@ if (result.credentialUri) {
                                         <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
                                             <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                                             <p className="text-xs text-red-700">
-                                                Template has validation errors. Fix the issues shown
-                                                above before saving.
+                                                {m['developerPortal.components.templateListManager.validationErrors']()}
                                             </p>
                                         </div>
                                     )}
@@ -616,7 +615,7 @@ if (result.credentialUri) {
                                         onClick={handleCancelBuilder}
                                         className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
                                     >
-                                        Cancel
+                                        {m['developerPortal.components.templateListManager.cancel']()}
                                     </button>
 
                                     <button
