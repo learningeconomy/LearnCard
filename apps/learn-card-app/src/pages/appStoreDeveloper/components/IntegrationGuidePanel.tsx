@@ -858,9 +858,7 @@ await learnCard.invoke.send({
             />
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                 <p className="text-sm text-indigo-800">
-                    Use the Consent Redirect flow to collect user consent and credentials from your
-                    external application. Users will be redirected to LearnCard to grant
-                    permissions, then back to your app with their credentials.
+                    {m['developerPortal.integrationGuide.consent.intro']()}
                 </p>
             </div>
 
@@ -870,14 +868,13 @@ await learnCard.invoke.send({
                 icon={<Globe className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    First, create or select a Consent Flow Contract that defines what permissions
-                    your app needs. You can do this in the Developer Portal or via the API.
+                    {m['developerPortal.integrationGuide.consent.step1Desc']()}
                 </p>
 
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
                     <p className="text-xs text-amber-800">
-                        <strong>Important:</strong> Copy and save your Contract URI — you'll need it
-                        to send credentials later.
+                        <strong>{m['developerPortal.integrationGuide.common.important']()}:</strong>{' '}
+                        {m['developerPortal.integrationGuide.consent.step1Important']()}
                     </p>
                 </div>
 

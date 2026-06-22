@@ -864,8 +864,7 @@ module.exports = nextConfig;`;
                         <div>
                             <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.blankIframe']()}</strong>
                             <span className="text-gray-600">
-                                {' '}
-                                — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN
+                                {m['developerPortal.dashboards.tabs.appConfig.commonIssues.blankIframeDesc']()}
                             </span>
                         </div>
                     </div>
@@ -874,7 +873,9 @@ module.exports = nextConfig;`;
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
                             <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.mixedContentError']()}</strong>
-                            <span className="text-gray-600"> — Make sure your app uses HTTPS</span>
+                            <span className="text-gray-600">
+                                {m['developerPortal.dashboards.tabs.appConfig.commonIssues.mixedContentDesc']()}
+                            </span>
                         </div>
                     </div>
 
@@ -883,8 +884,7 @@ module.exports = nextConfig;`;
                         <div>
                             <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.corsErrors']()}</strong>
                             <span className="text-gray-600">
-                                {' '}
-                                — Add Access-Control-Allow-Origin header
+                                {m['developerPortal.dashboards.tabs.appConfig.commonIssues.corsErrorsDesc']()}
                             </span>
                         </div>
                     </div>

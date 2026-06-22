@@ -5227,7 +5227,10 @@
                         "title": "Problèmes Courants",
                         "blankIframe": "<strong>Iframe vide ?</strong> — Vérifiez que votre en-tête X-Frame-Options n'est pas défini sur DENY ou SAMEORIGIN",
                         "mixedContent": "<strong>Erreur de contenu mixte ?</strong> — Assurez-vous que votre app utilise HTTPS",
-                        "corsErrors": "<strong>Erreurs CORS ?</strong> — Ajoutez l'en-tête Access-Control-Allow-Origin"
+                        "corsErrors": "<strong>Erreurs CORS ?</strong> — Ajoutez l'en-tête Access-Control-Allow-Origin",
+                        "blankIframeDesc": "— Vérifiez que votre en-tête X-Frame-Options n’est pas défini sur DENY ou SAMEORIGIN",
+                        "mixedContentDesc": "— Assurez-vous que votre application utilise HTTPS",
+                        "corsErrorsDesc": "— Ajoutez un en-tête Access-Control-Allow-Origin"
                     },
                     "previewButton": "Aperçu de l'App",
                     "saveButton": "Sauvegarder la Configuration",

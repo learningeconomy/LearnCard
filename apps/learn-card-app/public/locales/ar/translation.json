@@ -5227,7 +5227,10 @@
                         "title": "المشكلات الشائعة",
                         "blankIframe": "<strong>إطار iframe فارغ؟</strong> — تحقق من أن رأس X-Frame-Options الخاص بك ليس مضبوطًا على DENY أو SAMEORIGIN",
                         "mixedContent": "<strong>خطأ في المحتوى المختلط؟</strong> — تأكد من أن تطبيقك يستخدم HTTPS",
-                        "corsErrors": "<strong>أخطاء CORS؟</strong> — أضف رأس Access-Control-Allow-Origin"
+                        "corsErrors": "<strong>أخطاء CORS؟</strong> — أضف رأس Access-Control-Allow-Origin",
+                        "blankIframeDesc": "— تأكد من أن عنوان X-Frame-Options الخاص بك غير مضبوط على DENY أو SAMEORIGIN",
+                        "mixedContentDesc": "— تأكد من أن تطبيقك يستخدم HTTPS",
+                        "corsErrorsDesc": "— أضف عنوان Access-Control-Allow-Origin"
                     },
                     "previewButton": "معاينة التطبيق",
                     "saveButton": "حفظ الإعدادات",

@@ -5227,7 +5227,10 @@
                         "title": "Common Issues",
                         "blankIframe": "<strong>Blank iframe?</strong> — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN",
                         "mixedContent": "<strong>Mixed content error?</strong> — Make sure your app uses HTTPS",
-                        "corsErrors": "<strong>CORS errors?</strong> — Add Access-Control-Allow-Origin header"
+                        "corsErrors": "<strong>CORS errors?</strong> — Add Access-Control-Allow-Origin header",
+                        "blankIframeDesc": "— Check your X-Frame-Options header isn’t set to DENY or SAMEORIGIN",
+                        "mixedContentDesc": "— Make sure your app uses HTTPS",
+                        "corsErrorsDesc": "— Add Access-Control-Allow-Origin header"
                     },
                     "previewButton": "Preview App",
                     "saveButton": "Save Configuration",
