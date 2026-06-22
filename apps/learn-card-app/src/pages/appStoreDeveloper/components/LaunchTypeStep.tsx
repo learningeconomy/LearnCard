@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 import {
     Layout,
     ExternalLink,
@@ -36,10 +37,10 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
     return (
         <div className="space-y-6">
             <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-700">Launch Type</h2>
+                <h2 className="text-xl font-semibold text-gray-700">{m['developerPortal.components.launchTypeStep.title']()}</h2>
 
                 <p className="text-sm text-gray-500 mt-1">
-                    Choose how your app will integrate with the LearnCard wallet
+                    {m['developerPortal.components.launchTypeStep.description']()}
                 </p>
             </div>
 
@@ -95,7 +96,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                         {isComingSoon && (
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
                                                 <Clock className="w-3 h-3" />
-                                                Coming Soon
+                                                {m['developerPortal.components.launchTypeStep.comingSoon']()}
                                             </span>
                                         )}
                                     </div>
@@ -122,22 +123,22 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                 <div className="p-4 bg-gray-100 rounded-xl">
                     <p className="text-sm text-gray-600">
                         {data.launch_type === 'EMBEDDED_IFRAME' &&
-                            "You'll need to configure iframe dimensions and security settings in the next step."}
+                            m['developerPortal.components.launchTypeStep.hintEmbeddedIframe']()}
 
                         {data.launch_type === 'SECOND_SCREEN' &&
-                            "You'll provide the URL that opens in a new window alongside the wallet."}
+                            m['developerPortal.components.launchTypeStep.hintSecondScreen']()}
 
                         {data.launch_type === 'DIRECT_LINK' &&
-                            "You'll provide a simple redirect URL for your application."}
+                            m['developerPortal.components.launchTypeStep.hintDirectLink']()}
 
                         {data.launch_type === 'CONSENT_REDIRECT' &&
-                            "You'll configure the consent flow contract URI and callback URL."}
+                            m['developerPortal.components.launchTypeStep.hintConsentRedirect']()}
 
                         {data.launch_type === 'SERVER_HEADLESS' &&
-                            "You'll configure webhook endpoints for server-to-server integration."}
+                            m['developerPortal.components.launchTypeStep.hintServerHeadless']()}
 
                         {data.launch_type === 'AI_TUTOR' &&
-                            "You'll provide your AI tutor URL. Users will select a topic and launch to your app with their DID and topic."}
+                            m['developerPortal.components.launchTypeStep.hintAiTutor']()}
                     </p>
                 </div>
             )}

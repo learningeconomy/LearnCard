@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
@@ -35,14 +37,14 @@ const IntegrationDashboardPage: React.FC = () => {
     if (isLoadingIntegrations) {
         return (
             <IonPage>
-                <AppStoreHeader title="Developer Portal" rightContent={headerContent} />
+                <AppStoreHeader title={m['developerPortal.shell.title']()} rightContent={headerContent} />
 
                 <IonContent className="ion-padding">
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center">
                                 <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                                <p className="text-sm text-gray-500 mt-3">Loading integration...</p>
+                                <p className="text-sm text-gray-500 mt-3">{m['developerPortal.shell.loadingIntegration']()}</p>
                             </div>
                         </div>
                     </div>
@@ -54,26 +56,25 @@ const IntegrationDashboardPage: React.FC = () => {
     if (!currentIntegration) {
         return (
             <IonPage>
-                <AppStoreHeader title="Developer Portal" rightContent={headerContent} />
+                <AppStoreHeader title={m['developerPortal.shell.title']()} rightContent={headerContent} />
 
                 <IonContent className="ion-padding">
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center max-w-md">
                                 <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                                    Integration Not Found
+                                    {m['developerPortal.shell.integrationNotFound']()}
                                 </h2>
 
                                 <p className="text-gray-500 mb-6">
-                                    The integration you're looking for doesn't exist or you don't
-                                    have access to it.
+                                    {m['developerPortal.shell.integrationNotFoundDescription']()}
                                 </p>
 
                                 <button
                                     onClick={handleBack}
                                     className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                                 >
-                                    Back to Apps
+                                    {m['developerPortal.shell.backToApps']()}
                                 </button>
                             </div>
                         </div>
@@ -85,7 +86,7 @@ const IntegrationDashboardPage: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title="Developer Portal" rightContent={headerContent} />
+            <AppStoreHeader title={m['developerPortal.shell.title']()} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
@@ -95,7 +96,7 @@ const IntegrationDashboardPage: React.FC = () => {
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">Back to Projects</span>
+                        <span className="text-sm font-medium">{m['developerPortal.shell.backToProjects']()}</span>
                     </button>
 
                     <UnifiedIntegrationDashboard integration={currentIntegration} />

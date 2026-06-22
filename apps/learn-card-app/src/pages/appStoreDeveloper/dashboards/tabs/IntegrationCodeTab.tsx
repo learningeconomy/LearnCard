@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('integration-code-tab');
 /**
@@ -292,7 +293,7 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
         await Clipboard.write({ string: uri });
         setCopiedUri(uri);
         setTimeout(() => setCopiedUri(null), 2000);
-        presentToast('Copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.copied'](), { hasDismissButton: true });
     };
 
     // Generate boost config for export
@@ -583,7 +584,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         await Clipboard.write({ string: code });
         setApiCopied(true);
         setTimeout(() => setApiCopied(false), 2000);
-        presentToast('Code copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.codeCopied'](), { hasDismissButton: true });
     };
 
     // Download CSV template for selected template
@@ -627,7 +628,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         a.click();
         URL.revokeObjectURL(url);
 
-        presentToast('CSV template downloaded!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.csvDownloaded'](), { hasDismissButton: true });
     };
 
     const hasAdvancedOptions =
@@ -643,9 +644,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         return (
             <div className="text-center py-12">
                 <FileStack className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500 font-medium">No templates yet</p>
+                <p className="text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.integrationCode.noTemplatesTitle']()}</p>
                 <p className="text-sm text-gray-400 mt-1">
-                    Create templates first to get integration code
+                    {m['developerPortal.dashboards.tabs.integrationCode.noTemplatesDesc']()}
                 </p>
             </div>
         );
@@ -663,9 +664,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Integration Code</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.integrationCode.title']()}</h2>
                 <p className="text-sm text-gray-500">
-                    Copy boost URIs and generate integration code
+                    {m['developerPortal.dashboards.tabs.integrationCode.description']()}
                 </p>
             </div>
 
@@ -702,10 +703,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                         <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
-                            <p className="font-medium mb-1">Your Boost Template URIs</p>
+                            <p className="font-medium mb-1">{m['developerPortal.dashboards.tabs.integrationCode.referenceTitle']()}</p>
                             <p>
-                                Copy individual URIs or export all as a config file for your
-                                codebase.
+                                {m['developerPortal.dashboards.tabs.integrationCode.referenceDesc']()}
                             </p>
                         </div>
                     </div>
@@ -719,12 +719,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             {copiedConfig ? (
                                 <>
                                     <Check className="w-4 h-4" />
-                                    Copied Config!
+                                    {m['developerPortal.dashboards.tabs.integrationCode.copiedConfig']()}
                                 </>
                             ) : (
                                 <>
                                     <Download className="w-4 h-4" />
-                                    Copy All as Config ({savedTemplateCount} templates)
+                                    {m['developerPortal.dashboards.tabs.integrationCode.copyAllConfig']({ count: savedTemplateCount })}
                                 </>
                             )}
                         </button>
@@ -743,7 +743,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <span className="font-medium text-gray-700">{master.name}</span>
                                     <span className="text-xs text-gray-500">
                                         {master.childTemplates?.filter(c => c.boostUri).length}{' '}
-                                        boosts
+                                        {m['developerPortal.dashboards.tabs.integrationCode.boosts']()}
                                     </span>
                                 </div>
 
@@ -761,7 +761,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         </code>
                                                     ) : (
                                                         <span className="text-xs text-amber-600">
-                                                            Not saved yet
+                                                            {m['developerPortal.dashboards.tabs.integrationCode.noBoostUri']()}
                                                         </span>
                                                     )}
                                                 </div>
@@ -796,7 +796,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                         <Award className="w-4 h-4 text-gray-500" />
                                         <span className="font-medium text-gray-700">
-                                            Other Templates
+                                            {m['developerPortal.dashboards.tabs.integrationCode.otherTemplates']()}
                                         </span>
                                     </div>
                                 )}
@@ -819,7 +819,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             </code>
                                                         ) : (
                                                             <span className="text-xs text-amber-600">
-                                                                Not saved yet
+                                                                {m['developerPortal.dashboards.tabs.integrationCode.noBoostUri']()}
                                                             </span>
                                                         )}
                                                     </div>
@@ -851,7 +851,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                             <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm">
-                                <p className="font-medium text-amber-800">Your API Key</p>
+                                <p className="font-medium text-amber-800">{m['developerPortal.dashboards.tabs.integrationCode.apiKeyTitle']()}</p>
                                 <p className="text-xs text-amber-700 mt-0.5">
                                     Set{' '}
                                     <code className="bg-amber-100 px-1 rounded">
@@ -874,10 +874,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                         <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
-                            <p className="font-medium mb-1">Code Example Generator</p>
+                            <p className="font-medium mb-1">{m['developerPortal.dashboards.tabs.integrationCode.exampleTitle']()}</p>
                             <p>
-                                Select a template to generate example code. Use the Reference tab to
-                                get all URIs.
+                                {m['developerPortal.dashboards.tabs.integrationCode.exampleDesc']()}
                             </p>
                         </div>
                     </div>
@@ -885,7 +884,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {/* Template Selector */}
                     <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-700">
-                            Select Template for Example
+                            {m['developerPortal.dashboards.tabs.integrationCode.selectTemplate']()}
                         </label>
 
                         {/* Master Templates with Children */}
@@ -899,7 +898,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="flex-1">
                                         <p className="font-medium text-violet-800">{master.name}</p>
                                         <p className="text-xs text-violet-600">
-                                            {master.childTemplates?.length} course boosts
+                                            {master.childTemplates?.length} course {m['developerPortal.dashboards.tabs.integrationCode.boosts']()}
                                         </p>
                                     </div>
                                 </div>
@@ -937,7 +936,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                             {child.boostUri && (
                                                 <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                    Saved
+                                                    {m['developerPortal.dashboards.tabs.integrationCode.saved']()}
                                                 </span>
                                             )}
 
@@ -957,7 +956,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-2">
                                 {masterTemplates.length > 0 && (
                                     <p className="text-xs text-gray-500 font-medium pt-2">
-                                        Other Templates
+                                        {m['developerPortal.dashboards.tabs.integrationCode.otherTemplates']()}
                                     </p>
                                 )}
 
@@ -994,13 +993,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     {template.name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {template.description || 'No description'}
+                                                    {template.description || m['developerPortal.dashboards.tabs.integrationCode.noDescription']()}
                                                 </p>
                                             </div>
 
                                             {template.boostUri && (
                                                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
-                                                    Saved
+                                                    {m['developerPortal.dashboards.tabs.integrationCode.saved']()}
                                                 </span>
                                             )}
 
@@ -1018,11 +1017,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                             <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-emerald-800">
-                                <p className="font-medium">Course data is pre-filled</p>
+                                <p className="font-medium">{m['developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledTitle']()}</p>
                                 <p className="text-xs text-emerald-700 mt-0.5">
-                                    This boost has course-specific data (name, credits, etc.)
-                                    already baked in. You only need to provide issuance data like
-                                    recipient name and date.
+                                    {m['developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledDesc']()}
                                 </p>
                             </div>
                         </div>
@@ -1033,17 +1030,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <label className="block text-sm font-medium text-gray-700">
-                                    Template Data
+                                    {m['developerPortal.dashboards.tabs.integrationCode.templateData']()}
                                 </label>
                                 <span className="text-xs text-gray-500">
-                                    {templateVariables.length} field
-                                    {templateVariables.length !== 1 ? 's' : ''}
+                                    {m['developerPortal.dashboards.tabs.integrationCode.fieldsCount']({ count: templateVariables.length })}
+                                    
                                 </span>
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                Enter example values for your credential. These will appear in the
-                                generated code.
+                                {m['developerPortal.dashboards.tabs.integrationCode.templateDataDesc']()}
                             </p>
 
                             <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -1082,18 +1078,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Recipient Input */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Recipient</label>
+                        <label className="block text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.integrationCode.recipient']()}</label>
 
                         <input
                             type="text"
                             value={apiRecipientEmail}
                             onChange={e => setApiRecipientEmail(e.target.value)}
-                            placeholder="Profile ID or email address"
+                            placeholder={m['developerPortal.dashboards.tabs.integrationCode.recipientPlaceholder']()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         />
 
                         <p className="text-xs text-gray-500">
-                            Enter a LearnCard Profile ID or an email address
+                            {m['developerPortal.dashboards.tabs.integrationCode.recipientDesc']()}
                         </p>
                     </div>
 
@@ -1106,16 +1102,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </div>
 
                                 <div>
-                                    <p className="text-sm font-medium text-gray-700">API Token</p>
+                                    <p className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.integrationCode.apiToken']()}</p>
                                     <p className="text-xs text-gray-500">
                                         {apiToken ? (
                                             <span className="text-emerald-600 flex items-center gap-1">
                                                 <CheckCircle2 className="w-3 h-3" />
-                                                {displayTokenName}
+                                                {m['developerPortal.dashboards.tabs.integrationCode.tokenSelected']()}
                                             </span>
                                         ) : (
                                             <span className="text-amber-600">
-                                                Select a token to fill the code below
+                                                {m['developerPortal.dashboards.tabs.integrationCode.noTokenSelected']()}
                                             </span>
                                         )}
                                     </p>

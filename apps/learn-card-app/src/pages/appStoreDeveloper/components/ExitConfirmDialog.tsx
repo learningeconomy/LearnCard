@@ -55,12 +55,11 @@ export const ExitConfirmDialog: React.FC<ExitConfirmDialogProps> = ({
                     </button>
 
                     <h2 className="text-lg font-semibold text-gray-700 mb-2">
-                        Save your progress?
+                        {m['developerPortal.components.exitConfirmDialog.saveYourProgress']()}
                     </h2>
 
                     <p className="text-sm text-gray-500 mb-6">
-                        You have unsaved changes. Would you like to save your listing as a draft
-                        before leaving?
+                        {m['developerPortal.components.exitConfirmDialog.unsavedChanges']()}
                     </p>
 
                     <div className="flex flex-col gap-3">
@@ -72,12 +71,12 @@ export const ExitConfirmDialog: React.FC<ExitConfirmDialogProps> = ({
                             {isSaving ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Saving...
+                                    {m['developerPortal.components.exitConfirmDialog.saving']()}
                                 </>
                             ) : (
                                 <>
                                     <Save className="w-4 h-4" />
-                                    Save as Draft
+                                    {m['developerPortal.components.exitConfirmDialog.saveAsDraft']()}
                                 </>
                             )}
                         </button>
@@ -88,7 +87,7 @@ export const ExitConfirmDialog: React.FC<ExitConfirmDialogProps> = ({
                             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-red-500 bg-white border border-gray-200 rounded-xl font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
                         >
                             <Trash2 className="w-4 h-4" />
-                            Discard Changes
+                            {m['developerPortal.components.exitConfirmDialog.discardChanges']()}
                         </button>
 
                         <button
@@ -96,7 +95,7 @@ export const ExitConfirmDialog: React.FC<ExitConfirmDialogProps> = ({
                             disabled={isSaving}
                             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                         >
-                            Continue Editing
+                            {m['developerPortal.components.exitConfirmDialog.continueEditing']()}
                         </button>
                     </div>
                 </div>

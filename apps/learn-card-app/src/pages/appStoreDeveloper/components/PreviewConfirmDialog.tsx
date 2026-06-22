@@ -104,14 +104,14 @@ export const PreviewConfirmDialog: React.FC<PreviewConfirmDialogProps> = ({
                                     disabled={isSaving}
                                     className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                                 >
-                                    Cancel
+                                    {m['developerPortal.components.previewConfirmDialog.cancel']()}
                                 </button>
                             </div>
                         </>
                     ) : (
                         <>
                             <p className="text-sm text-gray-500 mb-6">
-                                Preview your app to test how it works within LearnCard. The diagnostics panel will show all partner-connect API calls.
+                                {m['developerPortal.components.previewConfirmDialog.previewDesc']()}
                             </p>
 
                             <div className="flex flex-col gap-3">
@@ -127,7 +127,7 @@ export const PreviewConfirmDialog: React.FC<PreviewConfirmDialogProps> = ({
                                     onClick={onCancel}
                                     className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                                 >
-                                    Cancel
+                                    {m['developerPortal.components.previewConfirmDialog.cancel']()}
                                 </button>
                             </div>
                         </>

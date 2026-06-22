@@ -4,6 +4,8 @@ import { cloneDeep } from 'lodash-es';
 import { useQueryClient } from '@tanstack/react-query';
 import { Building, Plus, Check, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import {
     useWallet,
     useToast,
@@ -460,7 +462,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
             onAccountSwitch?.(newOrgProfile);
 
-            presentToast(`Organization "${orgName}" created successfully!`);
+            presentToast(m['developerPortal.components.accountSelector.organizationCreated']({ name: orgName }));
             setMode('select');
 
             // Reset form
@@ -469,7 +471,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             setImage(undefined);
             setShowAdvanced(false);
         } catch (e: any) {
-            presentToast(`Failed to create organization: ${e?.message}`, {
+            presentToast(m['developerPortal.components.accountSelector.failedToCreateOrganization']({ message: e?.message }), {
                 type: ToastTypeEnum.Error,
             });
             log.error('Error creating organization:', e);
@@ -484,7 +486,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
         return (
             <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mb-4" />
-                <p className="text-gray-500">Loading accounts...</p>
+                <p className="text-gray-500">{m['developerPortal.components.accountSelector.loadingAccounts']()}</p>
             </div>
         );
     }
@@ -496,10 +498,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-blue-800">
-                        <p className="font-medium mb-1">Select Account</p>
+                        <p className="font-medium mb-1">{m['developerPortal.components.accountSelector.selectAccount']()}</p>
                         <p>
-                            Choose which account to use. This determines the DID, API keys, and
-                            branding.
+                            {m['developerPortal.components.accountSelector.selectAccountDescription']()}
                         </p>
                     </div>
                 </div>
@@ -509,7 +510,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                 <>
                     {/* Current Account Option */}
                     <div className="space-y-3">
-                        <h3 className="font-medium text-gray-800 text-sm">Current Account</h3>
+                        <h3 className="font-medium text-gray-800 text-sm">{m['developerPortal.components.accountSelector.currentAccount']()}</h3>
 
                         <button
                             onClick={handleUseCurrentAccount}
@@ -630,7 +631,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                                         {profile.displayName}
                                                     </p>
                                                     <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                                        Organization
+                                                        {m['developerPortal.components.accountSelector.organization']()}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-gray-500">
@@ -685,13 +686,13 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                         onClick={() => setMode('select')}
                         className="text-sm text-gray-500 hover:text-gray-700"
                     >
-                        ← Back to selection
+                        {m['developerPortal.components.accountSelector.backToSelection']()}
                     </button>
 
                     {/* Organization Name */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            Organization Name <span className="text-red-500">*</span>
+                            {m['developerPortal.components.accountSelector.organizationName']()} <span className="text-red-500">*</span>
                         </label>
 
                         <input
@@ -701,7 +702,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 setOrgName(e.target.value);
                                 setNameError('');
                             }}
-                            placeholder="e.g., Ascend Learning"
+                            placeholder={m['developerPortal.components.accountSelector.organizationNamePlaceholder']()}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm text-gray-800"
                         />
 
@@ -716,7 +717,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {/* Logo Upload */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            Organization Logo
+                            {m['developerPortal.components.accountSelector.organizationLogo']()}
                         </label>
 
                         <div className="flex items-center gap-4">
@@ -740,7 +741,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 {imageUploading ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                    'Upload Logo'
+                                    m['developerPortal.components.accountSelector.uploadLogo']()
                                 )}
                             </button>
                         </div>
@@ -830,12 +831,12 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                         {isCreating ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Creating...
+                                {m['developerPortal.components.accountSelector.creating']()}
                             </>
                         ) : (
                             <>
                                 <Building className="w-4 h-4" />
-                                Create Organization
+                                {m['developerPortal.components.accountSelector.createOrganization']()}
                             </>
                         )}
                     </button>

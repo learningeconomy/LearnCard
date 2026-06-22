@@ -2,6 +2,8 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import {
     useGetCurrentLCNUser,
     useModal,
@@ -40,7 +42,7 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
         newModal(
             <div className="bg-white rounded-2xl w-full max-w-md mx-auto overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800">Switch Account</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.components.accountSwitcher.switchAccount']()}</h2>
 
                     <button
                         onClick={closeModal}

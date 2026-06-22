@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useMemo } from 'react';
 import {
     TestTube2,
@@ -150,7 +152,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
     const integrationMethodDisplay = {
         api: { icon: Code, label: 'API Integration', color: 'violet' },
         csv: { icon: FileSpreadsheet, label: 'CSV Upload', color: 'amber' },
-        webhook: { icon: Webhook, label: 'Webhook', color: 'emerald' },
+        webhook: { icon: Webhook, label: m['developerPortal.onboarding.integrationMethod.webhook']() + ' (' + m['developerPortal.onboarding.integrationMethod.realtimeAutomated']() + ')', color: 'emerald' },
     }[integrationMethod];
 
     const handleSendTest = async () => {
@@ -201,7 +203,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : 'Failed to send test credential',
+                error: err instanceof Error ? err.message : m['developerPortal.onboarding.sandboxTest.failedTitle'](),
             });
         }
     };
@@ -396,7 +398,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                 </p>
 
                                 <p className="text-sm text-gray-600 mb-3">
-                                    Issued by {branding.displayName || 'Your Organization'}
+                                    {m['developerPortal.onboarding.sandboxTest.issuedBy']({ name: branding.displayName || m['developerPortal.onboarding.sandboxTest.notSet']() })}
                                 </p>
 
                                 <div className="flex flex-wrap gap-2">

@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-config-tab');
 /**
@@ -106,9 +107,9 @@ const PERMISSIONS: Permission[] = [
  */
 const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     const results: UrlCheckResult[] = [
-        { id: 'https', label: 'HTTPS Protocol', status: 'pending' },
-        { id: 'valid', label: 'Valid URL Format', status: 'pending' },
-        { id: 'iframe', label: 'Iframe Embedding', status: 'pending' },
+        { id: 'https', label: m['developerPortal.dashboards.tabs.appConfig.checkResults.https'](), status: 'pending' },
+        { id: 'valid', label: m['developerPortal.dashboards.tabs.appConfig.checkResults.valid'](), status: 'pending' },
+        { id: 'iframe', label: m['developerPortal.dashboards.tabs.appConfig.checkResults.iframe'](), status: 'pending' },
     ];
 
     // Check URL format
@@ -149,7 +150,7 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     results[2] = {
         ...results[2],
         status: 'warn',
-        message: 'Use Preview to test embedding',
+        message: m['developerPortal.dashboards.tabs.appConfig.checkResults.usePreview'](),
     };
 
     return results;
@@ -180,6 +181,18 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     const [checkResults, setCheckResults] = useState<UrlCheckResult[] | null>(null);
     const [showHeaderExamples, setShowHeaderExamples] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
+
+    // Helper: localize permission name by ID
+    const getPermissionName = (id: string): string => {
+        const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.name`;
+        try { return (m as any)[key](); } catch { return id; }
+    };
+
+    // Helper: localize permission description by ID
+    const getPermissionDesc = (id: string): string => {
+        const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.desc`;
+        try { return (m as any)[key](); } catch { return id; }
+    };
 
     // ============================================================
     // EXTRACT GUIDE SELECTIONS FOR REFERENCE
@@ -336,13 +349,13 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
                 },
             });
 
-            presentToast('Configuration saved!', {
+            presentToast(m['developerPortal.dashboards.tabs.appConfig.saveSuccess'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
             log.error('Failed to save config:', err);
-            presentToast('Failed to save configuration', {
+            presentToast(m['developerPortal.dashboards.tabs.appConfig.saveError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -353,7 +366,7 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast('Copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.appConfig.copied'](), { hasDismissButton: true });
     };
 
     const handlePreview = () => {
@@ -447,9 +460,9 @@ module.exports = nextConfig;`;
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">App Configuration</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.appConfig.title']()}</h2>
                 <p className="text-sm text-gray-500">
-                    Configure your embedded app's URL and permissions
+                    {m['developerPortal.dashboards.tabs.appConfig.description']()}
                 </p>
             </div>
 
@@ -457,7 +470,7 @@ module.exports = nextConfig;`;
             {listings && listings.length > 0 && (
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select App
+                        {m['developerPortal.dashboards.tabs.appConfig.selectApp']()}
                     </label>
                     <select
                         value={selectedListing?.listing_id || ''}
@@ -490,9 +503,9 @@ module.exports = nextConfig;`;
             {/* No Listings Warning */}
             {(!listings || listings.length === 0) && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-amber-800 font-medium">No app listings found</p>
+                    <p className="text-amber-800 font-medium">{m['developerPortal.dashboards.tabs.appConfig.noListingsTitle']()}</p>
                     <p className="text-sm text-amber-700 mt-1">
-                        Create an app listing in the App Listings tab first.
+                        {m['developerPortal.dashboards.tabs.appConfig.noListingsDesc']()}
                     </p>
                 </div>
             )}
@@ -575,12 +588,12 @@ module.exports = nextConfig;`;
                                     }`}
                                 >
                                     {isChecking
-                                        ? 'Checking your URL...'
+                                        ? m['developerPortal.dashboards.tabs.appConfig.checkResults.checking']()
                                         : allPassed
-                                        ? 'Looking good!'
+                                        ? m['developerPortal.dashboards.tabs.appConfig.checkResults.allPassed']()
                                         : hasFailed
-                                        ? 'Some issues found'
-                                        : 'URL Check Results'}
+                                        ? m['developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound']()
+                                        : m['developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle']()}
                                 </h4>
                             </div>
 
@@ -624,15 +637,13 @@ module.exports = nextConfig;`;
 
                             {!isChecking && hasFailed && (
                                 <p className="mt-3 text-xs text-red-600">
-                                    Fix the issues above before going live. See header examples
-                                    below.
+                                    {m['developerPortal.dashboards.tabs.appConfig.checkResults.fixIssues']()}
                                 </p>
                             )}
 
                             {!isChecking && allPassed && (
                                 <p className="mt-3 text-xs text-emerald-600">
-                                    Your URL passed basic checks. You may still need to configure
-                                    iframe headers (X-Frame-Options).
+                                    {m['developerPortal.dashboards.tabs.appConfig.checkResults.passedChecks']()}
                                 </p>
                             )}
                         </div>
@@ -730,16 +741,16 @@ module.exports = nextConfig;`;
                         <div className="flex items-center justify-between">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
-                                    Permissions
+                                    {m['developerPortal.dashboards.tabs.appConfig.permissions.title']()}
                                 </label>
                                 <p className="text-xs text-gray-500">
-                                    Select what your app can access from the wallet
+                                    {m['developerPortal.dashboards.tabs.appConfig.permissions.desc']()}
                                 </p>
                             </div>
 
                             {guideSelections.selectedFeatures.length > 0 && (
                                 <div className="text-xs text-cyan-600 bg-cyan-50 px-2 py-1 rounded-lg">
-                                    {guidePermissions.length} from guide setup
+                                    {m['developerPortal.dashboards.tabs.appConfig.permissions.fromGuideCount']({ count: guidePermissions.length })}
                                 </div>
                             )}
                         </div>
@@ -779,21 +790,21 @@ module.exports = nextConfig;`;
                                                             : 'text-gray-700'
                                                     }`}
                                                 >
-                                                    {perm.name}
+                                                    {getPermissionName(perm.id)}
                                                 </span>
                                                 {perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
-                                                        Required
+                                                        {m['developerPortal.dashboards.tabs.appConfig.permissions.required']()}
                                                     </span>
                                                 )}
                                                 {isFromGuide && !perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-600 text-xs rounded">
-                                                        From Guide
+                                                        {m['developerPortal.dashboards.tabs.appConfig.permissions.fromGuide']()}
                                                     </span>
                                                 )}
                                             </div>
                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                {perm.description}
+                                                {getPermissionDesc(perm.id)}
                                             </p>
                                         </div>
 

@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-testing-tab');
 /**
@@ -332,7 +333,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 <Send className="w-4 h-4" />
-                                Send Test Credential
+                                {m['developerPortal.dashboards.tabs.consentFlowTesting.sendTestCredential']()}
                             </button>
                         )}
 

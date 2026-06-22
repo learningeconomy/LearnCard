@@ -9,6 +9,8 @@
 import React, { useState } from 'react';
 import { List, Plus, X, ChevronDown, ChevronRight, Trophy, Save, BarChart2, GripVertical } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import {
     OBv3CredentialTemplate,
     AchievementEntryTemplate,
@@ -217,7 +219,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
         if (name.isDynamic && name.variableName) {
             return `[${name.variableName.replace(/_/g, ' ')}]`;
         }
-        return 'Untitled Achievement';
+        return m['developerPortal.credentialBuilder.achievementsList.summaryDefault']();
     };
 
     const getEntryTypeBadge = (entry: AchievementEntryTemplate): string | undefined => {
@@ -226,31 +228,30 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
 
     return (
         <CollapsibleSection
-            title="Achievements"
+            title={m['developerPortal.credentialBuilder.sectionTitles.achievements']()}
             icon={<List className="w-4 h-4 text-indigo-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
             badge={
                 achievements.length > 0
-                    ? `${achievements.length} achievement${achievements.length > 1 ? 's' : ''}`
+                    ? `${achievements.length} ${m['developerPortal.credentialBuilder.achievement.name']().toLowerCase()}${achievements.length > 1 ? 's' : ''}`
                     : undefined
             }
         >
             {hasErrors && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg mb-3">
                     <span className="text-xs text-red-600">
-                        Some achievements have validation errors
+                        {m['developerPortal.credentialBuilder.achievementsList.someErrors']()}
                     </span>
                 </div>
             )}
 
             <p className="text-xs text-gray-500 mb-3">
-                Add multiple achievements to this CLR credential. Each achievement represents a
-                distinct learning outcome or competency.
+                {m['developerPortal.credentialBuilder.achievementsList.description']()}
             </p>
 
             {achievements.length === 0 ? (
-                <p className="text-xs text-gray-400 italic mb-3">No achievements added</p>
+                <p className="text-xs text-gray-400 italic mb-3">{m['developerPortal.credentialBuilder.achievementsList.noAchievements']()}</p>
             ) : (
                 <div className="space-y-3">
                     {achievements.map((entry, index) => {
@@ -293,7 +294,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                     {isDraggable && (
                                         <span
                                             className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0"
-                                            title="Drag to reorder"
+                                            title={m['developerPortal.credentialBuilder.achievementsList.dragReorder']()}
                                         >
                                             <GripVertical className="w-4 h-4" />
                                         </span>
@@ -320,7 +321,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                         type="button"
                                         onClick={() => removeAchievement(entry.id)}
                                         className="p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
-                                        title="Remove achievement"
+                                        title={m['developerPortal.credentialBuilder.achievementsList.removeAchievement']()}
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
@@ -329,7 +330,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                         type="button"
                                         onClick={() => toggleEntry(entry.id)}
                                         className="p-1 text-gray-400 hover:text-gray-600 rounded flex-shrink-0"
-                                        title={entryExpanded ? 'Collapse' : 'Edit'}
+                                        title={entryExpanded ? m['developerPortal.credentialBuilder.achievementsList.collapse']() : m['developerPortal.credentialBuilder.achievementsList.edit']()}
                                     >
                                         {entryExpanded ? (
                                             <ChevronDown className="w-4 h-4" />
@@ -358,12 +359,12 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                         {/* Per-entry fields */}
                                         <div className="mt-4 pt-4 border-t border-gray-100">
                                             <h4 className="text-sm font-medium text-gray-700 mb-3">
-                                                Entry Details
+                                                {m['developerPortal.credentialBuilder.achievementsList.entryDetails']()}
                                             </h4>
 
                                             <div className="space-y-3 pl-3 border-l-2 border-indigo-200">
                                                 <FieldEditor
-                                                    label="Credits Earned"
+                                                    label={m['developerPortal.credentialBuilder.achievementsList.creditsEarned']()}
                                                     field={
                                                         entry.creditsEarned || staticField('')
                                                     }
@@ -374,8 +375,8 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                             f
                                                         )
                                                     }
-                                                    placeholder="e.g., 3"
-                                                    helpText="Number of credits earned for this achievement"
+                                                    placeholder={m['developerPortal.credentialBuilder.achievementsList.creditsEarnedPlaceholder']()}
+                                                    helpText={m['developerPortal.credentialBuilder.achievementsList.creditsEarnedHelp']()}
                                                     showDynamicToggle={!disableDynamicFields}
                                                     error={saveAttempted.has(entry.id) ? getFieldError(
                                                         validationErrors,
@@ -385,7 +386,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
 
                                                 <div className="grid grid-cols-2 gap-3 xs:flex xs:flex-col">
                                                     <FieldEditor
-                                                        label="Activity Start Date"
+                                                        label={m['developerPortal.credentialBuilder.achievementsList.activityStartDate']()}
                                                         field={
                                                             entry.activityStartDate ||
                                                             staticField('')
@@ -397,8 +398,8 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                                 f
                                                             )
                                                         }
-                                                        placeholder="e.g., 2024-01-15"
-                                                        helpText="When the activity began"
+                                                        placeholder={m['developerPortal.credentialBuilder.achievementsList.activityStartDatePlaceholder']()}
+                                                        helpText={m['developerPortal.credentialBuilder.achievementsList.activityStartDateHelp']()}
                                                         showDynamicToggle={!disableDynamicFields}
                                                         error={saveAttempted.has(entry.id) ? getFieldError(
                                                             validationErrors,
@@ -407,7 +408,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                     />
 
                                                     <FieldEditor
-                                                        label="Activity End Date"
+                                                        label={m['developerPortal.credentialBuilder.achievementsList.activityEndDate']()}
                                                         field={
                                                             entry.activityEndDate ||
                                                             staticField('')
@@ -419,8 +420,8 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                                 f
                                                             )
                                                         }
-                                                        placeholder="e.g., 2024-05-30"
-                                                        helpText="When the activity ended"
+                                                        placeholder={m['developerPortal.credentialBuilder.achievementsList.activityEndDatePlaceholder']()}
+                                                        helpText={m['developerPortal.credentialBuilder.achievementsList.activityEndDateHelp']()}
                                                         showDynamicToggle={!disableDynamicFields}
                                                         error={saveAttempted.has(entry.id) ? getFieldError(
                                                             validationErrors,
@@ -437,7 +438,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                 <div className="flex items-center gap-1.5">
                                                     <BarChart2 className="w-3.5 h-3.5 text-indigo-500" />
                                                     <h4 className="text-sm font-medium text-gray-700">
-                                                        Results
+                                                        {m['developerPortal.credentialBuilder.achievementsList.results']()}
                                                     </h4>
                                                 </div>
                                                 <button
@@ -446,16 +447,16 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                     className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 transition-colors"
                                                 >
                                                     <Plus className="w-3 h-3" />
-                                                    Add Result
+                                                    {m['developerPortal.credentialBuilder.achievementsList.addResult']()}
                                                 </button>
                                             </div>
                                             <p className="text-xs text-gray-400 mb-3">
-                                                Achieved outcomes for this entry — e.g., a letter grade (A), score (95%), or proficiency level.
+                                                {m['developerPortal.credentialBuilder.achievementsList.resultsDescription']()}
                                             </p>
 
                                             {(entry.result || []).length === 0 ? (
                                                 <p className="text-xs text-gray-400 italic pl-3">
-                                                    No results added
+                                                    {m['developerPortal.credentialBuilder.achievementsList.noResults']()}
                                                 </p>
                                             ) : (
                                                 <div className="space-y-3 pl-3 border-l-2 border-indigo-200">
@@ -466,23 +467,23 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                         >
                                                             <div className="flex-1 grid grid-cols-2 gap-2">
                                                                 <FieldEditor
-                                                                    label={`Result ${resultIndex + 1} Value`}
+                                                                    label={m['developerPortal.credentialBuilder.achievementsList.resultValue']({ n: resultIndex + 1 })}
                                                                     field={result.value || staticField('')}
                                                                     onChange={f =>
                                                                         updateResultField(index, result.id, 'value', f)
                                                                     }
-                                                                    placeholder="e.g., A, 95%, 3.8 GPA"
-                                                                    helpText="The achieved value"
+                                                                    placeholder={m['developerPortal.credentialBuilder.achievementsList.resultValuePlaceholder']()}
+                                                                    helpText={m['developerPortal.credentialBuilder.achievementsList.resultValueHelp']()}
                                                                     showDynamicToggle={!disableDynamicFields}
                                                                 />
                                                                 <FieldEditor
-                                                                    label="Status"
+                                                                    label={m['developerPortal.credentialBuilder.achievementsList.status']()}
                                                                     field={result.status || staticField('')}
                                                                     onChange={f =>
                                                                         updateResultField(index, result.id, 'status', f)
                                                                     }
-                                                                    placeholder="e.g., Completed"
-                                                                    helpText="Completion status"
+                                                                    placeholder={m['developerPortal.credentialBuilder.achievementsList.statusPlaceholder']()}
+                                                                    helpText={m['developerPortal.credentialBuilder.achievementsList.statusHelp']()}
                                                                     showDynamicToggle={!disableDynamicFields}
                                                                 />
                                                             </div>
@@ -490,7 +491,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                                 type="button"
                                                                 onClick={() => removeResult(index, result.id)}
                                                                 className="mt-6 p-1 text-gray-400 hover:text-red-500 rounded flex-shrink-0"
-                                                                title="Remove result"
+                                                                title={m['developerPortal.credentialBuilder.achievementsList.removeResult']()}
                                                             >
                                                                 <X className="w-3.5 h-3.5" />
                                                             </button>
@@ -504,7 +505,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                         <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col items-end gap-1.5">
                                             {entryHasErrors && (
                                                 <p className="text-xs text-red-500">
-                                                    Fix the errors above before saving.
+                                                    {m['developerPortal.credentialBuilder.achievementsList.fixErrorsBeforeSave']()}
                                                 </p>
                                             )}
                                             <button
@@ -517,7 +518,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                                 }`}
                                             >
                                                 <Save className="w-3.5 h-3.5" />
-                                                Save Achievement
+                                                {m['developerPortal.credentialBuilder.achievementsList.saveAchievement']()}
                                             </button>
                                         </div>
                                     </div>
@@ -535,7 +536,7 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                 className="flex items-center gap-1 px-3 py-2 text-sm bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors mt-3"
             >
                 <Plus className="w-4 h-4" />
-                Add Achievement
+                {m['developerPortal.credentialBuilder.achievementsList.addAchievement']()}
             </button>
         </CollapsibleSection>
     );

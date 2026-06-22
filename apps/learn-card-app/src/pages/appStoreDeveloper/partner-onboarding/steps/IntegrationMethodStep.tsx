@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState } from 'react';
 import {
     Webhook,
@@ -22,12 +24,15 @@ interface IntegrationMethodStepProps {
 interface MethodOption {
     id: IntegrationMethod;
     title: string;
-    subtitle: string;
+    titleKey: string;
+    subtitleKey: string;
+    descriptionKey: string;
     description: string;
     icon: React.FC<{ className?: string }>;
     color: string;
     bgColor: string;
     features: string[];
+    featureKeys: string[];
     recommended?: boolean;
     comingSoon?: boolean;
 }
@@ -36,11 +41,14 @@ const METHODS: MethodOption[] = [
     {
         id: 'api',
         title: 'REST API',
-        subtitle: 'Full control',
+        titleKey: 'restApi',
+        subtitleKey: 'fullControl',
+        descriptionKey: 'restApiDesc',
         description: 'Call our API directly from your backend code when you want to issue credentials.',
         icon: Code,
         color: 'text-violet-600',
         bgColor: 'bg-violet-100',
+        featureKeys: ['featureProgrammatic','featureCustomLogic','featureBatchOps','featureSdkAvailable'],
         features: [
             'Complete programmatic control',
             'Custom business logic',
@@ -52,11 +60,14 @@ const METHODS: MethodOption[] = [
     {
         id: 'csv',
         title: 'CSV Upload',
-        subtitle: 'Simple batch import',
+        titleKey: 'csvUpload',
+        subtitleKey: 'simpleBatch',
+        descriptionKey: 'csvUploadDesc',
         description: 'Upload a spreadsheet of completions and we\'ll issue credentials in bulk.',
         icon: FileSpreadsheet,
         color: 'text-amber-600',
         bgColor: 'bg-amber-100',
+        featureKeys: ['featureNoIntegration','featureMigration','featureTemplateDownload'],
         features: [
             'No technical integration needed',
             'Great for initial migration',
@@ -66,11 +77,14 @@ const METHODS: MethodOption[] = [
     {
         id: 'webhook',
         title: 'Webhook Integration',
-        subtitle: 'Real-time, automated',
+        titleKey: 'webhook',
+        subtitleKey: 'realtimeAutomated',
+        descriptionKey: 'webhookDesc',
         description: 'Your external system sends events to LearnCard when courses are completed. Credentials are issued automatically.',
         icon: Webhook,
         color: 'text-gray-400',
         bgColor: 'bg-gray-100',
+        featureKeys: ['featureRealtime','featureNoManual','featureCrossPlatform','featureVisualMapping'],
         features: [
             'Real-time credential issuance',
             'No manual intervention needed',
@@ -87,6 +101,8 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
     onBack,
 }) => {
     const [selected, setSelected] = useState<IntegrationMethod | null>(selectedMethod);
+    const mKey = (suffix: string) => `developerPortal.onboarding.integrationMethod.${suffix}`;
+    const t = (suffix: string) => (m as any)[mKey(suffix)]();
 
     return (
         <div className="space-y-6">
@@ -95,10 +111,9 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                 <Zap className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Choose Your Integration Method</p>
+                    <p className="font-medium mb-1">{t('title')}</p>
                     <p>
-                        How will your system communicate with LearnCard? We recommend the REST API for 
-                        full programmatic control over credential issuance.
+                        {t('description')}
                     </p>
                 </div>
             </div>
@@ -129,24 +144,24 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h3 className={`font-semibold ${method.comingSoon ? 'text-gray-500' : 'text-gray-800'}`}>{method.title}</h3>
+                                        <h3 className={`font-semibold ${method.comingSoon ? 'text-gray-500' : 'text-gray-800'}`}>{t(method.titleKey)}</h3>
 
                                         {method.recommended && (
                                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
-                                                Recommended
+                                                {t('recommended')}
                                             </span>
                                         )}
 
                                         {method.comingSoon && (
                                             <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
-                                                Coming Soon
+                                                {t('comingSoon')}
                                             </span>
                                         )}
                                     </div>
 
-                                    <p className="text-sm text-gray-500 mb-2">{method.subtitle}</p>
+                                    <p className="text-sm text-gray-500 mb-2">{t(method.subtitleKey)}</p>
 
-                                    <p className={`text-sm mb-3 ${method.comingSoon ? 'text-gray-400' : 'text-gray-600'}`}>{method.description}</p>
+                                    <p className={`text-sm mb-3 ${method.comingSoon ? 'text-gray-400' : 'text-gray-600'}`}>{t(method.descriptionKey)}</p>
 
                                     <div className="flex flex-wrap gap-2">
                                         {method.features.map((feature, idx) => (
@@ -155,7 +170,7 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                                                 className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md"
                                             >
                                                 <Check className="w-3 h-3" />
-                                                {feature}
+                                                {t(method.featureKeys[idx])}
                                             </span>
                                         ))}
                                     </div>
@@ -177,26 +192,23 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
             {/* Selected Method Details */}
             {selected && (
                 <div className="p-4 bg-gray-50 rounded-xl">
-                    <h4 className="font-medium text-gray-800 mb-2">Next Steps</h4>
+                    <h4 className="font-medium text-gray-800 mb-2">{t('nextSteps')}</h4>
 
                     {selected === 'webhook' && (
                         <p className="text-sm text-gray-600">
-                            We'll provide you with a webhook URL to configure in your external system. When a course is completed, 
-                            your external system will send an event to this URL, and we'll map the data to your credential template.
+                            {t('webhookNext')}
                         </p>
                     )}
 
                     {selected === 'api' && (
                         <p className="text-sm text-gray-600">
-                            You'll receive API documentation and code samples for calling our credential issuance endpoint. 
-                            Use your API key from Step 1 to authenticate requests.
+                            {t('apiNext')}
                         </p>
                     )}
 
                     {selected === 'csv' && (
                         <p className="text-sm text-gray-600">
-                            We'll provide a CSV template with the fields from your credential templates. 
-                            Upload completed spreadsheets to issue credentials in bulk.
+                            {t('csvNext')}
                         </p>
                     )}
                 </div>
@@ -209,7 +221,7 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {t('back')}
                 </button>
 
                 <button
@@ -217,7 +229,7 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                     disabled={!selected}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Data Mapping
+                    {t('continueToDataMapping')}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>

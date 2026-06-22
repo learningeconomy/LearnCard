@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Building2,
@@ -335,7 +337,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         type="text"
                                         value={projectName}
                                         onChange={e => setProjectName(e.target.value)}
-                                        placeholder="e.g., AARP Skills Builder"
+                                        placeholder={m['developerPortal.onboarding.projectSetup.projectNamePlaceholder']()}
                                         className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                     />
 

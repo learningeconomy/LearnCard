@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState, useEffect } from 'react';
 import {
     Palette,
@@ -271,7 +272,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             ) : (
                                 <>
                                     <Upload className="w-6 h-6" />
-                                    <span className="text-xs">Upload</span>
+                                    <span className="text-xs">{m['developerPortal.dashboards.tabs.branding.upload']()}</span>
                                 </>
                             )}
                         </button>

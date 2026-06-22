@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Loader2, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 
 import type { AppListingStatus } from '../../appStoreDeveloper/types';
+import * as m from '../../../paraglide/messages.js';
 
 interface ListingActionsProps {
     status: AppListingStatus;
@@ -78,7 +79,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                         ) : (
                             <XCircle className="w-4 h-4" />
                         )}
-                        Reject
+                        {m['appStoreAdmin.listing.actions.reject']()}
                     </button>
 
                     <button
@@ -91,7 +92,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                         ) : (
                             <CheckCircle className="w-4 h-4" />
                         )}
-                        Approve
+                        {m['appStoreAdmin.listing.actions.approve']()}
                     </button>
                 </div>
             </div>

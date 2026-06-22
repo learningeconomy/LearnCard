@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import {
     FileEdit,
     Clock,
@@ -165,11 +166,10 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <Rocket className="w-8 h-8 text-white" />
                     </div>
 
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">Publish Your App</h2>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">{m['developerPortal.components.partnerDashboard.publishYourApp']()}</h2>
 
                     <p className="text-gray-500 max-w-md mx-auto">
-                        Share your app with thousands of users. It only takes a few minutes to get
-                        started.
+                        {m['developerPortal.components.partnerDashboard.publishDesc']()}
                     </p>
                 </div>
 

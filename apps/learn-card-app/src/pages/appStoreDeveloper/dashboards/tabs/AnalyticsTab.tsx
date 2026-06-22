@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React from 'react';
 import {
     BarChart3,
@@ -208,9 +209,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
                                 <ArrowUpRight className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-amber-800">Improve Claim Rate</p>
+                                    <p className="text-sm font-medium text-amber-800">{m['developerPortal.dashboards.tabs.analytics.tipImproveClaimRate']()}</p>
                                     <p className="text-xs text-amber-700 mt-1">
-                                        Send reminder emails to recipients with unclaimed credentials.
+                                        {m['developerPortal.dashboards.tabs.analytics.tipImproveClaimRateDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -220,9 +221,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-violet-50 rounded-lg">
                                 <Award className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-violet-800">Create Templates</p>
+                                    <p className="text-sm font-medium text-violet-800">{m['developerPortal.dashboards.tabs.analytics.tipCreateTemplates']()}</p>
                                     <p className="text-xs text-violet-700 mt-1">
-                                        Add credential templates to start issuing.
+                                        {m['developerPortal.dashboards.tabs.analytics.tipCreateTemplatesDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -232,9 +233,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-cyan-50 rounded-lg">
                                 <Zap className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-cyan-800">Start Issuing</p>
+                                    <p className="text-sm font-medium text-cyan-800">{m['developerPortal.dashboards.tabs.analytics.tipStartIssuing']()}</p>
                                     <p className="text-xs text-cyan-700 mt-1">
-                                        Use the API or embed SDK to issue your first credential.
+                                        {m['developerPortal.dashboards.tabs.analytics.tipStartIssuingDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -244,9 +245,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-emerald-50 rounded-lg">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-emerald-800">Great Performance!</p>
+                                    <p className="text-sm font-medium text-emerald-800">{m['developerPortal.dashboards.tabs.analytics.tipGreatPerformance']()}</p>
                                     <p className="text-xs text-emerald-700 mt-1">
-                                        Your claim rate is excellent. Keep up the good work!
+                                        {m['developerPortal.dashboards.tabs.analytics.tipGreatPerformanceDesc']()}
                                     </p>
                                 </div>
                             </div>

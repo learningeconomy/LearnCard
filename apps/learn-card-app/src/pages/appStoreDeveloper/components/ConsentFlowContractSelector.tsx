@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FileText, Plus, ChevronDown, Check, Eye } from 'lucide-react';
 import { IonSpinner } from '@ionic/react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { useModal, useGetContracts, ModalTypes } from 'learn-card-base';
 import type { ConsentFlowContractDetails } from '@learncard/types';
 
@@ -80,7 +82,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
 
     return (
         <div className="relative">
-            <label className="block text-sm font-medium text-gray-600 mb-1">Contract URI</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.consentFlowContractSelector.contractUri']()}</label>
 
             <div className="flex gap-2">
                 {/* Custom dropdown trigger */}
@@ -95,7 +97,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {isLoadingContracts ? (
                         <>
                             <IonSpinner name="crescent" className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm text-gray-400">Loading contracts...</span>
+                            <span className="text-sm text-gray-400">{m['developerPortal.components.consentFlowContractSelector.loadingContracts']()}</span>
                         </>
                     ) : selectedContract ? (
                         <>
@@ -132,7 +134,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                         <>
                             <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
                             <span className="text-sm text-gray-400">
-                                Select or create a contract...
+                                {m['developerPortal.components.consentFlowContractSelector.selectOrCreate']()}
                             </span>
                         </>
                     )}
@@ -151,10 +153,10 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     onClick={handlePreview}
                     disabled={!selectedContract}
                     className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Preview contract"
+                    title={m['developerPortal.components.consentFlowContractSelector.previewContract']()}
                 >
                     <Eye className="w-4 h-4" />
-                    <span className="hidden sm:inline">Preview</span>
+                    <span className="hidden sm:inline">{m['developerPortal.components.consentFlowContractSelector.preview']()}</span>
                 </button>
             </div>
 
@@ -175,11 +177,11 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
 
                         <div>
                             <p className="text-sm font-medium text-emerald-700">
-                                Create New Contract
+                                {m['developerPortal.components.consentFlowContractSelector.createNewContract']()}
                             </p>
 
                             <p className="text-xs text-gray-400">
-                                Set up a new consent flow contract
+                                {m['developerPortal.components.consentFlowContractSelector.createNewContractDesc']()}
                             </p>
                         </div>
                     </button>
@@ -187,14 +189,14 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {/* Manual entry option */}
                     <div className="px-4 py-3 border-b border-gray-100">
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                            Or enter URI manually
+                            {m['developerPortal.components.consentFlowContractSelector.orEnterUri']()}
                         </label>
 
                         <input
                             type="text"
                             value={value}
                             onChange={e => onChange(e.target.value)}
-                            placeholder="lc:network:contract:..."
+                            placeholder={m['developerPortal.components.consentFlowContractSelector.uriPlaceholder']()}
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             onClick={e => e.stopPropagation()}
                         />
@@ -204,7 +206,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {contracts.length > 0 && (
                         <div className="py-1">
                             <p className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Your Contracts
+                                {m['developerPortal.components.consentFlowContractSelector.yourContracts']()}
                             </p>
 
                             {contracts.map(contract => (
@@ -249,9 +251,9 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {contracts.length === 0 && !isLoadingContracts && (
                         <div className="px-4 py-6 text-center">
                             <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-400">No contracts found</p>
+                            <p className="text-sm text-gray-400">{m['developerPortal.components.consentFlowContractSelector.noContractsFound']()}</p>
                             <p className="text-xs text-gray-400 mt-1">
-                                Create one above to get started
+                                {m['developerPortal.components.consentFlowContractSelector.noContractsFoundDesc']()}
                             </p>
                         </div>
                     )}

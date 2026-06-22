@@ -106,7 +106,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         return (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                <span className="text-sm text-gray-500">Loading...</span>
+                <span className="text-sm text-gray-500">{m['developerPortal.components.headerIntegrationSelector.loading']()}</span>
             </div>
         );
     }
@@ -214,7 +214,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                 className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
                 <span className="text-sm font-medium text-gray-700 max-w-[140px] truncate">
-                    {selectedIntegration?.name || 'Select Project'}
+                    {selectedIntegration?.name || m['developerPortal.components.headerIntegrationSelector.selectProject']()}
                 </span>
 
                 <ChevronDown
