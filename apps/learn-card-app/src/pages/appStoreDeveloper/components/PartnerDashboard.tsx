@@ -497,7 +497,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        Preview
+                                        {m['developerPortal.components.partnerDashboard.previewButton']()}
                                     </button>
 
                                     <button
@@ -534,7 +534,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                     >
                                         <Pencil className="w-4 h-4" />
-                                        Edit
+                                        {m['developerPortal.components.partnerDashboard.editButton']()}
                                     </button>
 
                                     <button
@@ -542,7 +542,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        Preview
+                                        {m['developerPortal.components.partnerDashboard.previewButton']()}
                                     </button>
 
                                     <button
@@ -555,7 +555,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         ) : (
                                             <RefreshCw className="w-4 h-4" />
                                         )}
-                                        Unsubmit
+                                        {m['developerPortal.components.partnerDashboard.unsubmitButton']()}
                                     </button>
 
                                     <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg flex-1">
@@ -573,7 +573,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        Preview
+                                        {m['developerPortal.components.partnerDashboard.previewButton']()}
                                     </button>
 
                                     <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg flex-1">

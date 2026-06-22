@@ -56,16 +56,20 @@ interface ApiMethod {
     icon: React.ReactNode;
     shortDescription: string;
     description: string;
+    shortDescKey?: string;
+    descriptionKey?: string;
     parameters: Array<{
         name: string;
         type: string;
         required: boolean;
         description: string;
+        descKey?: string;
     }>;
     returns: {
         type: string;
         description: string;
         example: string;
+        descKey?: string;
     };
     code: string;
     tips?: string[];
@@ -89,19 +93,21 @@ interface BoostTemplate {
 }
 
 const FEATURES = [
-    { id: 'issue-credentials', title: 'Issue Credentials', icon: <Award className="w-4 h-4" /> },
-    { id: 'peer-badges', title: 'Peer-to-Peer Badges', icon: <Send className="w-4 h-4" /> },
+    { id: 'issue-credentials', title: '', titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.issueCredentials', icon: <Award className="w-4 h-4" /> },
+    { id: 'peer-badges', title: '', titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.peerBadges', icon: <Send className="w-4 h-4" /> },
     {
         id: 'request-credentials',
-        title: 'Request Credentials',
+        title: '',
+        titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.requestCredentials',
         icon: <FileSearch className="w-4 h-4" />,
     },
     {
         id: 'request-data-consent',
-        title: 'Request Data Consent',
+        title: '',
+        titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.requestDataConsent',
         icon: <ClipboardCheck className="w-4 h-4" />,
     },
-    { id: 'launch-feature', title: 'Launch Features', icon: <Navigation className="w-4 h-4" /> },
+    { id: 'launch-feature', title: '', titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.launchFeature', icon: <Navigation className="w-4 h-4" /> },
 ];
 
 const METHODS: ApiMethod[] = [
@@ -111,12 +117,15 @@ const METHODS: ApiMethod[] = [
         category: 'auth',
         icon: <User className="w-4 h-4" />,
         shortDescription: 'SSO authentication',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestIdentity.shortDesc',
         description:
             "Request the user's identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.",
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestIdentity.description',
         parameters: [],
         returns: {
             type: 'Promise<Identity>',
             description: 'User identity object with DID and profile',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestIdentity.returns.desc',
             example: `{
   "did": "did:web:network.learncard.com:users:abc123",
   "profile": {
@@ -152,8 +161,10 @@ const userId = identity.did;`,
         category: 'credentials',
         icon: <Send className="w-4 h-4" />,
         shortDescription: 'Issue a credential',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.shortDesc',
         description:
             "Issue a credential to the user's wallet using a pre-configured template. Create templates in the Templates tab, then reference them by alias. The credential is automatically signed and issued.",
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.description',
         parameters: [
             {
                 name: 'templateAlias',
@@ -161,17 +172,20 @@ const userId = identity.did;`,
                 required: true,
                 description:
                     'The alias of the credential template to use (configured in Templates tab)',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.params.templateAlias.desc',
             },
             {
                 name: 'templateData',
                 type: 'Record<string, string>',
                 required: false,
                 description: 'Values for template variables (e.g., recipient_name, course_name)',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.params.templateData.desc',
             },
         ],
         returns: {
             type: 'Promise<{ credentialUri?: string }>',
             description: 'The URI of the issued credential if successful',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.returns.desc',
             example: `{ "credentialUri": "urn:lc:credential:abc123" }`,
         },
         code: `// Issue a credential using a template alias
@@ -209,19 +223,23 @@ if (resultWithData.credentialUri) {
         category: 'credentials',
         icon: <FileSearch className="w-4 h-4" />,
         shortDescription: 'Query user credentials',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.shortDesc',
         description:
             "Request access to search the user's credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.",
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.description',
         parameters: [
             {
                 name: 'query',
                 type: 'CredentialQuery',
                 required: false,
                 description: 'Optional filter criteria for credential types',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.params.query.desc',
             },
         ],
         returns: {
             type: 'Promise<{ credentials: VerifiableCredential[] }>',
             description: 'Array of credentials the user chose to share',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.returns.desc',
             example: `{
   "credentials": [
     {
@@ -262,25 +280,30 @@ if (result.credentials.length > 0) {
         category: 'credentials',
         icon: <FileText className="w-4 h-4" />,
         shortDescription: 'Issue from template',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.shortDesc',
         description:
             'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.description',
         parameters: [
             {
                 name: 'templateUri',
                 type: 'string',
                 required: true,
                 description: 'The URI of the boost/template to issue from',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.params.templateUri.desc',
             },
             {
                 name: 'recipientDid',
                 type: 'string',
                 required: false,
                 description: 'DID of the recipient (defaults to current user)',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.params.recipientDid.desc',
             },
         ],
         returns: {
             type: 'Promise<{ success: boolean, credentialId?: string }>',
             description: 'Result of the issuance',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.returns.desc',
             example: `{
   "success": true,
   "credentialId": "urn:uuid:new-cred-123..."
@@ -311,25 +334,30 @@ if (result.success) {
         category: 'navigation',
         icon: <Navigation className="w-4 h-4" />,
         shortDescription: 'Navigate host app',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.shortDesc',
         description:
             'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.description',
         parameters: [
             {
                 name: 'path',
                 type: 'string',
                 required: true,
                 description: 'The wallet path to navigate to',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.params.path.desc',
             },
             {
                 name: 'description',
                 type: 'string',
                 required: false,
                 description: 'Optional description shown during navigation',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.params.description.desc',
             },
         ],
         returns: {
             type: 'Promise<void>',
             description: 'Resolves when navigation completes',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.returns.desc',
             example: `// No return value`,
         },
         code: `// Navigate to the user's credential wallet
@@ -362,25 +390,30 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
         category: 'consent',
         icon: <ClipboardCheck className="w-4 h-4" />,
         shortDescription: 'Request permissions',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.shortDesc',
         description:
             'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.description',
         parameters: [
             {
                 name: 'contractUri',
                 type: 'string',
                 required: true,
                 description: 'The URI of the consent contract',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.params.contractUri.desc',
             },
             {
                 name: 'options',
                 type: 'ConsentOptions',
                 required: false,
                 description: 'Additional options like scope and duration',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.params.options.desc',
             },
         ],
         returns: {
             type: 'Promise<{ granted: boolean, consentId?: string }>',
             description: 'Whether consent was granted',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.returns.desc',
             example: `{
   "granted": true,
   "consentId": "consent:abc123..."
@@ -682,7 +715,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
  * ${
      selectedFeatures.length > 0
          ? selectedFeatures
-               .map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`)
+               .map(id => `  - ${FEATURES.find(f => f.id === id)?.titleKey ? m[FEATURES.find(f => f.id === id)!.titleKey]() : id}`)
                .join('\n * ')
          : '  - None selected (complete the setup wizard first)'
  }
@@ -1447,8 +1480,8 @@ log.info('User:', identity.profile.displayName);`;
                                                                         </div>
                                                                         <div className="text-xs text-gray-500 truncate">
                                                                             {
-                                                                                method.shortDescription
-                                                                            }
+                                                                            method.shortDescKey ? m[method.shortDescKey]() : method.shortDescription
+                                                                        }
                                                                         </div>
                                                                     </div>
 
@@ -1482,7 +1515,7 @@ log.info('User:', identity.profile.displayName);`;
                                                             learnCard.{selectedMethod.name}()
                                                         </h4>
                                                         <p className="mt-2 text-gray-600 text-sm leading-relaxed">
-                                                            {selectedMethod.description}
+                                                            {selectedMethod.descriptionKey ? m[selectedMethod.descriptionKey]() : selectedMethod.description}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1521,7 +1554,7 @@ log.info('User:', identity.profile.displayName);`;
                                                                         )}
                                                                     </div>
                                                                     <p className="mt-1 text-sm text-gray-600">
-                                                                        {param.description}
+                                                                        {param.descKey ? m[param.descKey]() : param.description}
                                                                     </p>
                                                                 </div>
                                                             )
@@ -1542,7 +1575,7 @@ log.info('User:', identity.profile.displayName);`;
                                                         {selectedMethod.returns.type}
                                                     </code>
                                                     <p className="mt-1 text-sm text-gray-600">
-                                                        {selectedMethod.returns.description}
+                                                        {selectedMethod.returns.descKey ? m[selectedMethod.returns.descKey]() : selectedMethod.returns.description}
                                                     </p>
 
                                                     <div className="mt-2">

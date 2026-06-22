@@ -28,7 +28,7 @@ import {
     isAutoDelivery,
     getRecipientDisplayName,
     getActivityName,
-    EVENT_TYPE_FILTER_OPTIONS,
+    getEventTypeFilterOptions,
 } from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
 import { ExportDialog } from 'src/pages/appStoreDeveloper/dashboards/components/ExportDialog';
 import { IssuanceDetailModal } from 'src/components/issuances/IssuanceDetailModal';
@@ -147,7 +147,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                            text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
                                            focus:border-transparent cursor-pointer transition-colors"
                             >
-                                {EVENT_TYPE_FILTER_OPTIONS.map(option => (
+                                {getEventTypeFilterOptions().map(option => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>

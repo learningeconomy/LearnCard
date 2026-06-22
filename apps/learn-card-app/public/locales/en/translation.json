@@ -3585,7 +3585,8 @@
                 "openAppUrl": "Open App URL",
                 "loadingApp": "Loading {{name}}...",
                 "pleaseWait": "Please wait",
-                "invalidEmbedUrl": "Invalid embed URL: {{url}}"
+                "invalidEmbedUrl": "Invalid embed URL: {{url}}",
+                "unknownError": "Unknown error"
             },
             "appStoreHeader": {
                 "title": "App Store Portal",
@@ -3819,7 +3820,18 @@
                 "selectListing": "Select a listing to view details",
                 "deleteConfirm": "Are you sure you want to delete this listing?",
                 "unsubmitConfirm": "Are you sure you want to withdraw this submission? You can resubmit after making changes.",
-                "backToListings": "Back to listings"
+                "backToListings": "Back to listings",
+                "noDraftsTitle": "No draft listings",
+                "noDraftsDesc": "Create a new listing to get started",
+                "noPendingTitle": "No pending listings",
+                "noPendingDesc": "Submit drafts for review to see them here",
+                "noPublishedTitle": "No published listings",
+                "noPublishedDesc": "Your approved apps will appear here",
+                "noRejectedTitle": "No rejected listings",
+                "noRejectedDesc": "Rejected apps will appear here for review",
+                "previewButton": "Preview",
+                "editButton": "Edit",
+                "unsubmitButton": "Unsubmit"
             },
             "previewConfirmDialog": {
                 "previewApp": "Preview App",
@@ -4924,6 +4936,87 @@
                         "credentials": "Credentials",
                         "navigation": "Navigation",
                         "consent": "Consent"
+                    },
+                    "methods": {
+                        "requestIdentity": {
+                            "shortDesc": "SSO authentication",
+                            "description": "Request the user's identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.",
+                            "returns": {
+                                "desc": "User identity object with DID and profile"
+                            }
+                        },
+                        "sendCredential": {
+                            "shortDesc": "Issue a credential",
+                            "description": "Issue a credential to the user's wallet using a pre-configured template. Create templates in the Templates tab, then reference them by alias. The credential is automatically signed and issued.",
+                            "params": {
+                                "templateAlias": {
+                                    "desc": "The alias of the credential template to use (configured in Templates tab)"
+                                },
+                                "templateData": {
+                                    "desc": "Values for template variables (e.g., recipient_name, course_name)"
+                                }
+                            },
+                            "returns": {
+                                "desc": "The URI of the issued credential if successful"
+                            }
+                        },
+                        "askCredentialSearch": {
+                            "shortDesc": "Query user credentials",
+                            "description": "Request access to search the user's credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.",
+                            "params": {
+                                "query": {
+                                    "desc": "Optional filter criteria for credential types"
+                                }
+                            },
+                            "returns": {
+                                "desc": "Array of credentials the user chose to share"
+                            }
+                        },
+                        "initiateTemplateIssue": {
+                            "shortDesc": "Issue from template",
+                            "description": "Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.",
+                            "params": {
+                                "templateUri": {
+                                    "desc": "The URI of the boost/template to issue from"
+                                },
+                                "recipientDid": {
+                                    "desc": "DID of the recipient (defaults to current user)"
+                                }
+                            },
+                            "returns": {
+                                "desc": "Result of the issuance"
+                            }
+                        },
+                        "launchFeature": {
+                            "shortDesc": "Navigate host app",
+                            "description": "Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.",
+                            "params": {
+                                "path": {
+                                    "desc": "The wallet path to navigate to"
+                                },
+                                "description": {
+                                    "desc": "Optional description shown during navigation"
+                                }
+                            },
+                            "returns": {
+                                "desc": "Resolves when navigation completes"
+                            }
+                        },
+                        "requestConsent": {
+                            "shortDesc": "Request permissions",
+                            "description": "Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.",
+                            "params": {
+                                "contractUri": {
+                                    "desc": "The URI of the consent contract"
+                                },
+                                "options": {
+                                    "desc": "Additional options like scope and duration"
+                                }
+                            },
+                            "returns": {
+                                "desc": "Whether consent was granted"
+                            }
+                        }
                     }
                 },
                 "integrationCode": {
@@ -5063,7 +5156,8 @@
                     "blankIframe": "Blank iframe?",
                     "mixedContentError": "Mixed content error?",
                     "corsErrors": "CORS errors?",
-                    "urlCheck": "Check"
+                    "urlCheck": "Check",
+                    "saveConfiguration": "Save Configuration"
                 },
                 "consentFlowCode": {
                     "title": "Integration Code",
@@ -5127,7 +5221,8 @@
                     "copy": "Copy",
                     "copied": "Copied!",
                     "sdkTargetDesc": "CSS selector or DOM element to render the claim button into.",
-                    "sdkPartnerNameDesc": "Displayed in the claim modal header."
+                    "sdkPartnerNameDesc": "Displayed in the claim modal header.",
+                    "myCredential": "My Credential"
                 },
                 "connections": {
                     "title": "Connected Users",
@@ -5307,7 +5402,8 @@
                     "testSentSuccess": "Test credential sent successfully!",
                     "testSentError": "Failed to send test credential",
                     "noTemplatesToTest": "No templates to test",
-                    "noTemplatesToTestDesc": "Create and save templates first to test credential issuance"
+                    "noTemplatesToTestDesc": "Create and save templates first to test credential issuance",
+                    "sendFailedFallback": "Failed to send test credential"
                 },
                 "branding": {
                     "title": "Branding",
@@ -5338,7 +5434,15 @@
                     "organizationTagline": "Organization tagline",
                     "saveSuccess": "Branding updated successfully!",
                     "saveError": "Failed to update branding",
-                    "profile": "Profile"
+                    "profile": "Profile",
+                    "colors": {
+                        "cyan": "Cyan",
+                        "blue": "Blue",
+                        "violet": "Violet",
+                        "emerald": "Emerald",
+                        "rose": "Rose",
+                        "amber": "Amber"
+                    }
                 },
                 "consentFlowTesting": {
                     "title": "Test Consent Flow",
@@ -5378,7 +5482,8 @@
                     "tipCallbackDid": "Copy the <0>did</0> from your callback logs and paste it above",
                     "tipConnections": "Check the Connections tab after testing to verify the consent was recorded",
                     "enterDidAndTemplate": "Please enter a DID and select a template",
-                    "credentialSentSuccess": "Test credential sent!"
+                    "credentialSentSuccess": "Test credential sent!",
+                    "sendFailedFallback": "Failed to send credential"
                 },
                 "embedConfig": {
                     "title": "Embed Configuration",
@@ -5521,7 +5626,8 @@
                     "infoText": "A signing authority cryptographically signs your credentials, making them verifiable. This proves the credentials actually came from you."
                 },
                 "templates": {
-                    "footnote": "See the Code tab for send examples using your template URIs."
+                    "footnote": "See the Code tab for send examples using your template URIs.",
+                    "projectName": "Integration"
                 }
             },
             "loading": "Loading...",
@@ -6713,7 +6819,27 @@
             "viewMyListings": "View My Listings",
             "submissionReceived": "Submission Received!",
             "submitAnotherApp": "Submit Another App",
-            "backToDashboard": "Back to Dashboard"
+            "backToDashboard": "Back to Dashboard",
+            "steps": {
+                "appDetails": {
+                    "title": "App Details",
+                    "description": "Basic information about your app"
+                },
+                "launchType": {
+                    "title": "Launch Type",
+                    "description": "How your app integrates"
+                },
+                "configuration": {
+                    "title": "Configuration",
+                    "description": "Technical settings"
+                },
+                "review": {
+                    "title": "Review",
+                    "description": "Submit for approval"
+                }
+            },
+            "failedToSaveDraft": "Failed to save draft",
+            "failedToSubmit": "Failed to submit listing"
         }
     },
     "appStoreAdmin": {

@@ -48,7 +48,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: 'Created from Integration Dashboard',
+                description: m['developerPortal.dashboards.tabs.apiTokens.tokenCreatedFrom'](),
                 scope: selectedScope,
             });
 

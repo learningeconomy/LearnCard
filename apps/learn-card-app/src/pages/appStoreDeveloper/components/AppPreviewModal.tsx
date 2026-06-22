@@ -153,7 +153,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 } catch (error) {
                     updateDiagnosticEvent(eventId, {
                         status: 'error',
-                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        errorMessage: error instanceof Error ? error.message : m['developerPortal.components.appPreviewModal.unknownError'](),
                     });
                     throw error;
                 }

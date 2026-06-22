@@ -123,7 +123,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : 'Failed to send credential',
+                error: err instanceof Error ? err.message : m['developerPortal.dashboards.tabs.consentFlowTesting.sendFailedFallback'](),
             });
         }
     };

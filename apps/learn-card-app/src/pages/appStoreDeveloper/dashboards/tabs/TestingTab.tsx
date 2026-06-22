@@ -213,7 +213,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : 'Failed to send test credential',
+                error: err instanceof Error ? err.message : m['developerPortal.dashboards.tabs.testing.sendFailedFallback'](),
             });
         }
     };

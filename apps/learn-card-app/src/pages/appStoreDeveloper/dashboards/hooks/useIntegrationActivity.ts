@@ -50,15 +50,17 @@ interface CredentialActivityStats {
 
 export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
 
-/** Filter options for event type dropdown */
-export const EVENT_TYPE_FILTER_OPTIONS: { value: CredentialEventType | 'ALL'; label: string }[] = [
-    { value: 'ALL', label: 'All Events' },
-    { value: 'CREATED', label: 'Sent' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CLAIMED', label: 'Claimed' },
-    { value: 'FAILED', label: 'Failed' },
-    { value: 'EXPIRED', label: 'Expired' },
-];
+/** Get filter options for event type dropdown (resolved at render for i18n) */
+export function getEventTypeFilterOptions(): { value: CredentialEventType | 'ALL'; label: string }[] {
+    return [
+        { value: 'ALL', label: m['developerPortal.dashboards.activity.allEvents']() },
+        { value: 'CREATED', label: m['developerPortal.dashboards.activity.sent']() },
+        { value: 'DELIVERED', label: m['developerPortal.dashboards.activity.delivered']() },
+        { value: 'CLAIMED', label: m['developerPortal.dashboards.activity.claimed']() },
+        { value: 'FAILED', label: m['developerPortal.dashboards.activity.failed']() },
+        { value: 'EXPIRED', label: m['developerPortal.dashboards.activity.expired']() },
+    ];
+}
 
 /**
  * Get display label for event type

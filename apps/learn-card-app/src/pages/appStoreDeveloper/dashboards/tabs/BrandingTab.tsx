@@ -41,12 +41,12 @@ interface BrandingTabProps {
 }
 
 const DEFAULT_COLORS = [
-    { name: 'Cyan', primary: '#06B6D4', accent: '#2DD4BF' },
-    { name: 'Blue', primary: '#3B82F6', accent: '#60A5FA' },
-    { name: 'Violet', primary: '#8B5CF6', accent: '#A78BFA' },
-    { name: 'Emerald', primary: '#10B981', accent: '#34D399' },
-    { name: 'Rose', primary: '#F43F5E', accent: '#FB7185' },
-    { name: 'Amber', primary: '#F59E0B', accent: '#FBBF24' },
+    { name: 'Cyan', nameKey: 'developerPortal.dashboards.tabs.branding.colors.cyan', primary: '#06B6D4', accent: '#2DD4BF' },
+    { name: 'Blue', nameKey: 'developerPortal.dashboards.tabs.branding.colors.blue', primary: '#3B82F6', accent: '#60A5FA' },
+    { name: 'Violet', nameKey: 'developerPortal.dashboards.tabs.branding.colors.violet', primary: '#8B5CF6', accent: '#A78BFA' },
+    { name: 'Emerald', nameKey: 'developerPortal.dashboards.tabs.branding.colors.emerald', primary: '#10B981', accent: '#34D399' },
+    { name: 'Rose', nameKey: 'developerPortal.dashboards.tabs.branding.colors.rose', primary: '#F43F5E', accent: '#FB7185' },
+    { name: 'Amber', nameKey: 'developerPortal.dashboards.tabs.branding.colors.amber', primary: '#F59E0B', accent: '#FBBF24' },
 ];
 
 const DEFAULT_WALLPAPERS = [
@@ -384,7 +384,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 style={{ backgroundColor: color.primary }}
                             />
 
-                            <span className="text-xs text-gray-600">{color.name}</span>
+                            <span className="text-xs text-gray-600">{m[color.nameKey]()}</span>
                         </button>
                     ))}
                 </div>
