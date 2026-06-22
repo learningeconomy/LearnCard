@@ -3,6 +3,7 @@ import React from 'react';
 import AiSessionLoader from '../new-ai-session/AiSessionLoader';
 import AiAssessmentContainer from './AiAssessment/AiAssessmentContainer';
 import FinishedAiSessionAssessmentPreview from './FinishedAiSessionAssessmentPreview';
+import * as m from '../../paraglide/messages.js';
 
 import { VC } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
@@ -41,7 +42,7 @@ export const AiSessionAssessmentPreviewContainer: React.FC<{
     if (isLoading) {
         return (
             <div className="h-[100vh] w-full flex items-center justify-center bg-grayscale-200">
-                <AiSessionLoader overrideText="Loading Session Summary..." />
+                <AiSessionLoader overrideText={m['common.loadingSessionSummary']()} />
             </div>
         );
     }

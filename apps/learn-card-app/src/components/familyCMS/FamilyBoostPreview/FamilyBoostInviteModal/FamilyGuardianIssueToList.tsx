@@ -132,7 +132,7 @@ const FamilyGuardianIssueToList: React.FC<{
                                 disabled={state?.issueTo?.length === 0}
                             >
                                 {' '}
-                                {isLoading ? 'Loading...' : 'Invite'}
+                                {isLoading ? m['common.loading']() : 'Invite'}
                             </button>
                         </div>
                     </IonRow>

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { Lock, ShieldAlert, Check } from 'lucide-react';
 
 import {
@@ -394,7 +395,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                         <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
                             <span className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mt-0.5 shrink-0" />
                             <span className="text-xs text-emerald-800 leading-relaxed">
-                                Loading claims to share…
+                                {m['common.loadingClaimsToShare']()}
                             </span>
                         </div>
                     )}
@@ -405,7 +406,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             disabled={!canShare}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {pendingSdJwtRows > 0 ? 'Loading claims…' : 'Share'}
+                            {pendingSdJwtRows > 0 ? m['common.loadingClaims']() : m['common.share']()}
                         </button>
 
                         <button

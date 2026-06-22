@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 
@@ -71,7 +72,7 @@ export const BoostPreviewFooter: React.FC<{
                         <>
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
-                                Loading...
+                                {m['common.loading']()}
                             </p>
                         </>
                     ) : (

@@ -465,7 +465,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal disabled:opacity-70"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Loading...' : "Let's Go!"}
+                            {isLoading ? m['common.loading']() : "Let's Go!"}
                         </button>
                     </IonRow>
                 </div>

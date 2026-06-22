@@ -3,6 +3,7 @@ import { useGetConsentFlowData, useModal } from 'learn-card-base';
 
 import Share from '../../components/svgs/Share';
 import ShareContractModal from './ShareContractModal';
+import * as m from '../../paraglide/messages.js';
 import { IonSpinner } from '@ionic/react';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
@@ -55,7 +56,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({ contract 
             {isLoading && (
                 <div className="w-[500px] h-[200px] flex flex-col gap-[5px] items-center justify-center">
                     <IonSpinner color="dark" />
-                    <span>Loading...</span>
+                    <span>{m['common.loading']()}</span>
                 </div>
             )}
         </section>

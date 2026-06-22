@@ -55,7 +55,17 @@
         "tagline": "Universal Learning & Work Portfolio",
         "gotIt": "Got it.",
         "edit": "Edit",
-        "clear": "Clear"
+        "clear": "Clear",
+        "loadingSessionSummary": "Loading Session Summary...",
+        "loadingSkills": "Loading Skills...",
+        "loadingVerifiableData": "Loading verifiable data...",
+        "loadingSharedData": "Loading shared data…",
+        "loadingVerifiableCredentials": "Loading verifiable credentials...",
+        "loadingClaims": "Loading claims…",
+        "loadingConfiguration": "Loading configuration settings…",
+        "loadingDataTruck": "Loading the data truck…",
+        "loadingContracts": "Loading Contracts...",
+        "loadingClaimsToShare": "Loading claims to share…"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",

@@ -55,7 +55,17 @@
         "tagline": "محفظة التعلّم والعمل الشاملة",
         "gotIt": "حسنًا.",
         "edit": "تعديل",
-        "clear": "مسح"
+        "clear": "مسح",
+        "loadingSessionSummary": "جاري تحميل ملخص الجلسة...",
+        "loadingSkills": "جاري تحميل المهارات...",
+        "loadingVerifiableData": "جاري تحميل البيانات القابلة للتحقق...",
+        "loadingSharedData": "جاري تحميل البيانات المشتركة…",
+        "loadingVerifiableCredentials": "جاري تحميل بيانات الاعتماد القابلة للتحقق...",
+        "loadingClaims": "جاري تحميل المطالبات…",
+        "loadingConfiguration": "جاري تحميل إعدادات التكوين…",
+        "loadingDataTruck": "جاري تحميل شاحنة البيانات…",
+        "loadingContracts": "جاري تحميل العقود...",
+        "loadingClaimsToShare": "جاري تحميل المطالبات للمشاركة…"
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",

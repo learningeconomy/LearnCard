@@ -55,7 +55,17 @@
         "tagline": "Portafolio universal de aprendizaje y trabajo",
         "gotIt": "Entendido.",
         "edit": "Editar",
-        "clear": "Borrar"
+        "clear": "Borrar",
+        "loadingSessionSummary": "Cargando resumen de la sesión...",
+        "loadingSkills": "Cargando habilidades...",
+        "loadingVerifiableData": "Cargando datos verificables...",
+        "loadingSharedData": "Cargando datos compartidos…",
+        "loadingVerifiableCredentials": "Cargando credenciales verificables...",
+        "loadingClaims": "Cargando reclamaciones…",
+        "loadingConfiguration": "Cargando configuración…",
+        "loadingDataTruck": "Cargando el camión de datos…",
+        "loadingContracts": "Cargando contratos...",
+        "loadingClaimsToShare": "Cargando reclamaciones para compartir…"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",

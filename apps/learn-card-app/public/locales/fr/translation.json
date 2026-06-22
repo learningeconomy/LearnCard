@@ -55,7 +55,17 @@
         "tagline": "Portfolio universel d'apprentissage et de travail",
         "gotIt": "Compris.",
         "edit": "Modifier",
-        "clear": "Effacer"
+        "clear": "Effacer",
+        "loadingSessionSummary": "Chargement du résumé de la session...",
+        "loadingSkills": "Chargement des compétences...",
+        "loadingVerifiableData": "Chargement des données vérifiables...",
+        "loadingSharedData": "Chargement des données partagées…",
+        "loadingVerifiableCredentials": "Chargement des justificatifs vérifiables...",
+        "loadingClaims": "Chargement des réclamations…",
+        "loadingConfiguration": "Chargement des paramètres de configuration…",
+        "loadingDataTruck": "Chargement du camion de données…",
+        "loadingContracts": "Chargement des contrats...",
+        "loadingClaimsToShare": "Chargement des réclamations à partager…"
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",

@@ -5,6 +5,7 @@ import _ from 'lodash-es';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('admin-tools-network');
 
+import * as m from '../../../paraglide/messages.js';
 import GenericLoader from '../../../components/generic/GenericLoader';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
@@ -42,7 +43,7 @@ export const networkOptionsList: NetworkOption[] = [
     { label: 'Custom', endpoint: '', type: NetworkOptionsEnum.custom },
 ];
 
-export const networkSwitchMessages = [
+export const getNetworkSwitchMessages = () => [
     'Dialing into the new network…',
     'Calibrating data streams…',
     'Authenticating secure connection…',
@@ -51,7 +52,7 @@ export const networkSwitchMessages = [
     'Syncing with updated storage cluster…',
     'Optimizing transfer protocols…',
     'Verifying network credentials…',
-    'Loading configuration settings…',
+    m['common.loadingConfiguration'](),
     'Finalizing secure link…',
 ];
 
@@ -94,7 +95,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchNetwork = async (switchStorage: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(networkSwitchMessages)} />,
+                <GenericLoader overrideText={_.shuffle(getNetworkSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },
