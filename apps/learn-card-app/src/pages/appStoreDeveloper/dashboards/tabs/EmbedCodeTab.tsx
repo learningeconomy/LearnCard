@@ -147,16 +147,16 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
 
         return [
             {
-                name: 'My Credential',
+                name: m['developerPortal.dashboards.tabs.embedCode.myCredential'](),
                 htmlCode: buildHtmlSnippet(
-                    'My Credential',
+                    m['developerPortal.dashboards.tabs.embedCode.myCredential'](),
                     publishableKey,
                     partnerName,
                     branding,
                     requestBackgroundIssuance
                 ),
                 reactCode: buildReactSnippet(
-                    'My Credential',
+                    m['developerPortal.dashboards.tabs.embedCode.myCredential'](),
                     publishableKey,
                     partnerName,
                     branding,

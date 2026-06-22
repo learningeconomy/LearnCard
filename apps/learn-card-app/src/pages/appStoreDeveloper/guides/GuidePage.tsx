@@ -180,7 +180,7 @@ const GuidePage: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={useCaseConfig.title} rightContent={headerContent} />
+            <AppStoreHeader title={m[useCaseConfig.titleKey]()} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
                 {isUnlocked ? (
@@ -189,7 +189,7 @@ const GuidePage: React.FC = () => {
                         setSelectedIntegration={handleSetSelectedIntegration}
                     />
                 ) : (
-                    <LockedGuideOverlay guideName={useCaseConfig.title} />
+                    <LockedGuideOverlay guideName={m[useCaseConfig.titleKey]()} />
                 )}
             </IonContent>
         </IonPage>

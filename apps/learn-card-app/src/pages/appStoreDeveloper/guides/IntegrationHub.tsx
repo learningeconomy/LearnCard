@@ -364,9 +364,13 @@ const IntegrationHub: React.FC = () => {
                                                 <p className="text-sm text-gray-500">
                                                     {integration.guideType &&
                                                     integration.guideType in USE_CASES
-                                                        ? USE_CASES[
+                                                        ? (USE_CASES[
                                                               integration.guideType as UseCaseId
-                                                          ]?.title
+                                                          ]?.titleKey
+                                                            ? m[USE_CASES[integration.guideType as UseCaseId]?.titleKey!]()
+                                                            : USE_CASES[
+                                                                  integration.guideType as UseCaseId
+                                                              ]?.title)
                                                         : m['developerPortal.guides.hub.notStarted']()}
                                                 </p>
                                             </div>

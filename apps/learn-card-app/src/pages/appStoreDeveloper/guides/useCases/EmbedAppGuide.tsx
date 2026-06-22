@@ -6471,11 +6471,17 @@ initializeApp();`);
                 from:
                     existingPermissions.length > 0
                         ? existingPermissions
-                              .map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p)
+                              .map(p => {
+                                  const opt = PERMISSION_OPTIONS.find(o => o.value === p);
+                                  return opt ? (m as any)[opt.labelKey]() : p;
+                              })
                               .join(', ')
                         : m['developerPortal.guides.embedApp.yourApp.none'](),
                 to: newPerms
-                    .map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p)
+                    .map(p => {
+                        const opt = PERMISSION_OPTIONS.find(o => o.value === p);
+                        return opt ? (m as any)[opt.labelKey]() : p;
+                    })
                     .join(', '),
             });
         }
@@ -6732,7 +6738,7 @@ initializeApp();`);
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium text-gray-700">
-                                                        {permission.label}
+                                                        {(m as any)[permission.labelKey]()}
                                                     </span>
 
                                                     {isRequired && (
@@ -6743,7 +6749,7 @@ initializeApp();`);
                                                 </div>
 
                                                 <p className="text-xs text-gray-500 mt-0.5">
-                                                    {permission.description}
+                                                    {(m as any)[permission.descriptionKey]()}
                                                 </p>
                                             </div>
                                         </label>

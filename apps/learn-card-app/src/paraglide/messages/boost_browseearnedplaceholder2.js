@@ -1,0 +1,40 @@
+/* eslint-disable */
+import { getLocale, experimentalStaticLocale } from '../runtime.js';
+
+/** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+
+/** @typedef {{}} Boost_Browseearnedplaceholder2Inputs */
+
+const en_boost_browseearnedplaceholder2 = /** @type {(inputs: Boost_Browseearnedplaceholder2Inputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Browse earned...`)
+};
+
+const es_boost_browseearnedplaceholder2 = /** @type {(inputs: Boost_Browseearnedplaceholder2Inputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Explorar obtenidos...`)
+};
+
+const fr_boost_browseearnedplaceholder2 = /** @type {(inputs: Boost_Browseearnedplaceholder2Inputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Parcourir les obtenus...`)
+};
+
+const ar_boost_browseearnedplaceholder2 = /** @type {(inputs: Boost_Browseearnedplaceholder2Inputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`تصفّح المكتسبة...`)
+};
+
+/**
+* | output |
+* | --- |
+* | "Browse earned..." |
+*
+* @param {Boost_Browseearnedplaceholder2Inputs} inputs
+* @param {{ locale?: "en" | "es" | "fr" | "ar" }} options
+* @returns {LocalizedString}
+*/
+const boost_browseearnedplaceholder2 = /** @type {((inputs?: Boost_Browseearnedplaceholder2Inputs, options?: { locale?: "en" | "es" | "fr" | "ar" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Boost_Browseearnedplaceholder2Inputs, { locale?: "en" | "es" | "fr" | "ar" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "en") return en_boost_browseearnedplaceholder2(inputs)
+	if (locale === "es") return es_boost_browseearnedplaceholder2(inputs)
+	if (locale === "fr") return fr_boost_browseearnedplaceholder2(inputs)
+	return ar_boost_browseearnedplaceholder2(inputs)
+});
+export { boost_browseearnedplaceholder2 as "boost.browseEarnedPlaceholder" }

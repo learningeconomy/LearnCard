@@ -45,7 +45,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
 
     const project = useMemo(() => ({
         id: integrationId,
-        name: 'Integration',
+        name: m['developerPortal.dashboards.tabs.templates.projectName'](),
     }), [integrationId]);
 
     const handleComplete = () => {

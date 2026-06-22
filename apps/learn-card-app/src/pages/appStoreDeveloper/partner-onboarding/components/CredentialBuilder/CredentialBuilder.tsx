@@ -325,7 +325,7 @@ const diffTemplates = (
         if (oldAchievements.length !== newAchievements.length) {
             changes.push({
                 path: 'clrSubject.achievements.count',
-                label: 'Number of Achievements',
+                label: m['developerPortal.credentialBuilder.labels.numberOfAchievements'](),
                 oldValue: String(oldAchievements.length),
                 newValue: String(newAchievements.length),
             });
@@ -348,7 +348,7 @@ const diffTemplates = (
         if (oldAssocCount !== newAssocCount) {
             changes.push({
                 path: 'clrSubject.associations.count',
-                label: 'Number of Associations',
+                label: m['developerPortal.credentialBuilder.labels.numberOfAssociations'](),
                 oldValue: String(oldAssocCount),
                 newValue: String(newAssocCount),
             });

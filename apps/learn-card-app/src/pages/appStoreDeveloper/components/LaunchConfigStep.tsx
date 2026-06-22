@@ -123,11 +123,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                                         <div>
                                             <span className="text-sm font-medium text-gray-700">
-                                                {permission.label}
+                                                {(m as any)[permission.labelKey]()}
                                             </span>
 
                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                {permission.description}
+                                                {(m as any)[permission.descriptionKey]()}
                                             </p>
                                         </div>
                                     </label>

@@ -90,7 +90,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                                         : 'text-gray-700'
                                                 }`}
                                         >
-                                            {info.label}
+                                            {(m as any)[info.labelKey]()}
                                         </h3>
 
                                         {isComingSoon && (
@@ -105,7 +105,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                         className={`text-xs mt-0.5 ${isComingSoon ? 'text-gray-400' : 'text-gray-500'
                                             }`}
                                     >
-                                        {info.description}
+                                        {(m as any)[info.descriptionKey]()}
                                     </p>
                                 </div>
 

@@ -49,6 +49,7 @@ interface UrlCheckResult {
     label: string;
     status: 'pending' | 'checking' | 'pass' | 'fail' | 'warn';
     message?: string;
+    messageKey?: string;
 }
 
 interface Permission {
@@ -62,33 +63,33 @@ interface Permission {
 const PERMISSIONS: Permission[] = [
     {
         id: 'identity',
-        name: 'User Identity',
-        description: 'Access user DID and profile information',
+        name: '',
+        description: '',
         icon: <User className="w-4 h-4" />,
         required: true,
     },
     {
         id: 'issue-credentials',
-        name: 'Issue Credentials',
-        description: "Send credentials to the user's wallet",
+        name: '',
+        description: '',
         icon: <Award className="w-4 h-4" />,
     },
     {
         id: 'request-credentials',
-        name: 'Request Credentials',
-        description: 'Search and request user credentials',
+        name: '',
+        description: '',
         icon: <FileSearch className="w-4 h-4" />,
     },
     {
         id: 'consent',
-        name: 'Data Consent',
-        description: 'Request ongoing data access via consent contracts',
+        name: '',
+        description: '',
         icon: <ClipboardCheck className="w-4 h-4" />,
     },
     {
         id: 'navigation',
-        name: 'Wallet Navigation',
-        description: 'Navigate to wallet features from your app',
+        name: '',
+        description: '',
         icon: <Play className="w-4 h-4" />,
     },
 ];
@@ -107,9 +108,9 @@ const PERMISSIONS: Permission[] = [
  */
 const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     const results: UrlCheckResult[] = [
-        { id: 'https', label: m['developerPortal.dashboards.tabs.appConfig.checkResults.https'](), status: 'pending' },
-        { id: 'valid', label: m['developerPortal.dashboards.tabs.appConfig.checkResults.valid'](), status: 'pending' },
-        { id: 'iframe', label: m['developerPortal.dashboards.tabs.appConfig.checkResults.iframe'](), status: 'pending' },
+        { id: 'https', label: '', status: 'pending', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.https' },
+        { id: 'valid', label: '', status: 'pending', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.valid' },
+        { id: 'iframe', label: '', status: 'pending', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.iframe' },
     ];
 
     // Check URL format
@@ -117,29 +118,29 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
 
     try {
         parsed = new URL(url);
-        results[1] = { ...results[1], status: 'pass', message: 'URL is valid' };
+        results[1] = { ...results[1], status: 'pass', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.urlValid' };
     } catch {
-        results[0] = { ...results[0], status: 'fail', message: 'Invalid URL' };
-        results[1] = { ...results[1], status: 'fail', message: 'Invalid URL format' };
-        results[2] = { ...results[2], status: 'fail', message: 'Cannot check' };
+        results[0] = { ...results[0], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidUrl' };
+        results[1] = { ...results[1], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidFormat' };
+        results[2] = { ...results[2], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.cannotCheck' };
         return results;
     }
 
     // Check HTTPS
     if (parsed.protocol === 'https:') {
-        results[0] = { ...results[0], status: 'pass', message: 'Using secure HTTPS' };
+        results[0] = { ...results[0], status: 'pass', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpsPass' };
     } else if (parsed.protocol === 'http:') {
         if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-            results[0] = { ...results[0], status: 'warn', message: 'HTTP okay for localhost' };
+            results[0] = { ...results[0], status: 'warn', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpLocalhost' };
         } else {
             results[0] = {
                 ...results[0],
                 status: 'fail',
-                message: 'HTTPS required for production',
+                messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpsRequired',
             };
         }
     } else {
-        results[0] = { ...results[0], status: 'fail', message: 'Must be HTTP or HTTPS' };
+        results[0] = { ...results[0], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.mustBeHttps' };
     }
 
     // For iframe embedding, we can't reliably check X-Frame-Options from the browser
@@ -150,7 +151,7 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     results[2] = {
         ...results[2],
         status: 'warn',
-        message: m['developerPortal.dashboards.tabs.appConfig.checkResults.usePreview'](),
+        messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.usePreview',
     };
 
     return results;
@@ -604,12 +605,12 @@ module.exports = nextConfig;`;
 
                                         <div className="flex-1">
                                             <span className="text-sm font-medium text-gray-700">
-                                                {result.label}
+                                                {result.messageKey ? m[result.messageKey]() : result.label}
                                             </span>
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            {result.message && (
+                                            {(result.message || result.messageKey) && (
                                                 <span
                                                     className={`text-xs ${
                                                         result.status === 'pass'
@@ -621,7 +622,7 @@ module.exports = nextConfig;`;
                                                             : 'text-gray-500'
                                                     }`}
                                                 >
-                                                    {result.message}
+                                                    {result.messageKey ? m[result.messageKey]() : result.message}
                                                 </span>
                                             )}
 
@@ -844,7 +845,7 @@ module.exports = nextConfig;`;
                             ) : (
                                 <Check className="w-4 h-4" />
                             )}
-                            Save Configuration
+                            {m['developerPortal.dashboards.tabs.appConfig.saveConfiguration']()}
                         </button>
                     </div>
                 </>

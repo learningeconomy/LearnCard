@@ -210,7 +210,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
                     {visibleCategoryOptions.map(cat => (
                         <option key={cat.value} value={cat.value}>
-                            {cat.label}
+                            {(m as any)[cat.labelKey]()}
                         </option>
                     ))}
                 </select>

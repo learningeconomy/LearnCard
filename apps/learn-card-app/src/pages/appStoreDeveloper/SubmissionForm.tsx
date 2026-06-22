@@ -20,10 +20,26 @@ import { AppPreviewModal } from './components/AppPreviewModal';
 import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
 
 const STEPS = [
-    { id: 1, title: 'App Details', description: 'Basic information about your app' },
-    { id: 2, title: 'Launch Type', description: 'How your app integrates' },
-    { id: 3, title: 'Configuration', description: 'Technical settings' },
-    { id: 4, title: 'Review', description: 'Submit for approval' },
+    {
+        id: 1,
+        titleKey: 'developerPortal.submissionForm.steps.appDetails.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.appDetails.description',
+    },
+    {
+        id: 2,
+        titleKey: 'developerPortal.submissionForm.steps.launchType.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.launchType.description',
+    },
+    {
+        id: 3,
+        titleKey: 'developerPortal.submissionForm.steps.configuration.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.configuration.description',
+    },
+    {
+        id: 4,
+        titleKey: 'developerPortal.submissionForm.steps.review.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.review.description',
+    },
 ];
 
 interface LocationState {
@@ -45,6 +61,16 @@ const SubmissionForm: React.FC = () => {
 
     // Get listing from route state (passed from DeveloperPortal) or fetch if not available
     const listingFromState = location.state?.listing;
+
+    const resolvedSteps = useMemo(
+        () =>
+            STEPS.map(s => ({
+                id: s.id,
+                title: m[s.titleKey](),
+                description: m[s.descriptionKey](),
+            })),
+        []
+    );
 
     const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =
         useDeveloperPortal();
@@ -310,7 +336,9 @@ const SubmissionForm: React.FC = () => {
             setIsDraftSaved(true);
             return true;
         } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to save draft');
+            setSubmitError(
+                error instanceof Error ? error.message : m['developerPortal.submissionForm.failedToSaveDraft']()
+            );
             setIsSavingDraft(false);
             return false;
         }
@@ -368,7 +396,9 @@ const SubmissionForm: React.FC = () => {
             setIsSubmitting(false);
             setIsSubmitted(true);
         } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to submit listing');
+            setSubmitError(
+                error instanceof Error ? error.message : m['developerPortal.submissionForm.failedToSubmit']()
+            );
             setIsSubmitting(false);
         }
     };
@@ -475,7 +505,7 @@ const SubmissionForm: React.FC = () => {
                         {m['developerPortal.submissionForm.backToDashboard']()}
                     </button>
                     <div className="mb-8">
-                        <StepIndicator steps={STEPS} currentStep={currentStep} />
+                        <StepIndicator steps={resolvedSteps} currentStep={currentStep} />
                     </div>
                     {submitError && (
                         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
