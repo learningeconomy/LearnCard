@@ -44,7 +44,8 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
 }) => {
     const getPermissionLabel = (permission: AppPermission | null): string => {
         if (!permission) return m['common.unknown']();
-        return PERMISSION_OPTIONS.find(p => p.value === permission)?.label || permission;
+        const opt = PERMISSION_OPTIONS.find(p => p.value === permission);
+        return opt ? (m as any)[opt.labelKey]() : permission;
     };
 
     const unauthorizedCount = events.filter(e => !e.authorized && e.permission).length;

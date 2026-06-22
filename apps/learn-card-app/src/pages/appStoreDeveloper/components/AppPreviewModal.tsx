@@ -229,7 +229,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 <p className="text-gray-500 mb-4">
                                     <TransP
                                         m={m['developerPortal.components.appPreviewModal.previewNotAvailableDesc']}
-                                        values={{ type: LAUNCH_TYPE_INFO[listing.launch_type]?.label }}
+                                        values={{ type: (m as any)[LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey]() }}
                                         components={[<strong />]}
                                     />
                                 </p>

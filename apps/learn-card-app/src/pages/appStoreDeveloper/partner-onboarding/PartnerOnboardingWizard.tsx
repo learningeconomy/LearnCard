@@ -923,9 +923,9 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             {/* Step Header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentStepInfo.title}</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">{(m as any)[currentStepInfo.titleKey]()}</h1>
 
-                <p className="text-gray-600">{currentStepInfo.description}</p>
+                <p className="text-gray-600">{(m as any)[currentStepInfo.descriptionKey]()}</p>
             </div>
 
             {/* Step Content */}

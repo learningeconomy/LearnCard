@@ -11,7 +11,8 @@ interface ReviewStepProps {
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
     const getCategoryLabel = (value?: string) => {
-        return CATEGORY_OPTIONS.find(c => c.value === value)?.label || value || m['developerPortal.components.reviewStep.notSpecified']();
+        const cat = CATEGORY_OPTIONS.find(c => c.value === value);
+        return cat ? (m as any)[cat.labelKey]() : value || m['developerPortal.components.reviewStep.notSpecified']();
     };
 
     const launchTypeInfo = data.launch_type ? LAUNCH_TYPE_INFO[data.launch_type] : null;
@@ -71,7 +72,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                             {launchTypeInfo && (
                                 <span className="px-2 py-0.5 bg-cyan-100 rounded-full text-xs font-medium text-cyan-700">
-                                    {launchTypeInfo.label}
+                                    {(m as any)[launchTypeInfo.labelKey]()}
                                 </span>
                             )}
                             {data.age_rating && (
@@ -133,7 +134,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                             <span className="text-sm text-gray-500">{m['developerPortal.components.reviewStep.launchType']()}</span>
 
                             <span className="text-sm font-medium text-gray-600">
-                                {launchTypeInfo?.label || m['developerPortal.components.reviewStep.notSelected']()}
+                                {launchTypeInfo ? (m as any)[launchTypeInfo.labelKey]() : m['developerPortal.components.reviewStep.notSelected']()}
                             </span>
                         </div>
 
