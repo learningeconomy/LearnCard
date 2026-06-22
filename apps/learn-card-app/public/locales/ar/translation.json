@@ -4283,7 +4283,8 @@
                 "childFixValidation": "أصلح أخطاء التحقق قبل الحفظ",
                 "validationErrors": "قالب لديه أخطاء التحقق. أصلح المشكلات الموضحة أعلاه قبل الحفظ.",
                 "templateStats": "{{boosts}} دورات • {{fields}} حقول ديناميكية",
-                "csvHeaderStats": "{{courses}} دورة تم العثور عليها • {{columns}} أعمدة"
+                "csvHeaderStats": "{{courses}} دورة تم العثور عليها • {{columns}} أعمدة",
+                "csvDynamicFieldsCount": "+ {count} حقلاً ديناميكياً"
             },
             "integrationMethod": {
                 "title": "اختر طريقة التكامل الخاصة بك",
@@ -6985,7 +6986,21 @@
                 }
             },
             "failedToSaveDraft": "[Failed to save draft]",
-            "failedToSubmit": "[Failed to submit listing]"
+            "failedToSubmit": "[Failed to submit listing]",
+            "changesSaved": "!تم حفظ التغييرات",
+            "draftUpdated": "تم تحديث المسودة",
+            "draftSaved": "تم حفظ المسودة",
+            "appUpdated": "تم تحديث تطبيقك \"{appName}\".",
+            "appSavedAsDraft": "تم حفظ تطبيقك \"{appName}\" كمسودة.",
+            "appSubmittedForReview": "تم إرسال تطبيقك \"{appName}\" للمراجعة.",
+            "error": "خطأ",
+            "back": "رجوع",
+            "savingDraft": "جاري الحفظ...",
+            "continue": "متابعة",
+            "submitting": "جاري الإرسال...",
+            "saveChanges": "حفظ التغييرات",
+            "updateDraft": "تحديث المسودة",
+            "saveDraft": "حفظ المسودة"
         },
         "permissions": {
             "requestIdentity": {

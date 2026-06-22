@@ -434,14 +434,15 @@ const SubmissionForm: React.FC = () => {
                         </div>
                         <h2 className="text-xl font-semibold text-gray-700 mb-2">
                             {isPendingReview
-                                ? 'Changes Saved!'
+                                ? m['developerPortal.submissionForm.changesSaved']()
                                 : isEditMode
-                                ? 'Draft Updated!'
-                                : 'Draft Saved!'}
+                                ? m['developerPortal.submissionForm.draftUpdated']()
+                                : m['developerPortal.submissionForm.draftSaved']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
-                            Your app "{formData.display_name}" has been{' '}
-                            {isEditMode ? 'updated' : 'saved as a draft'}.
+                            {isEditMode
+                                ? m['developerPortal.submissionForm.appUpdated']({ appName: formData.display_name })
+                                : m['developerPortal.submissionForm.appSavedAsDraft']({ appName: formData.display_name })}
                         </p>
                         <button
                             onClick={navigateToDashboard}
@@ -467,7 +468,7 @@ const SubmissionForm: React.FC = () => {
                             {m['developerPortal.submissionForm.submissionReceived']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
-                            Your app "{formData.display_name}" has been submitted for review.
+                            {m['developerPortal.submissionForm.appSubmittedForReview']({ appName: formData.display_name })}
                         </p>
                         <div className="flex gap-3 justify-center">
                             <button
@@ -511,7 +512,7 @@ const SubmissionForm: React.FC = () => {
                         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="text-sm font-medium text-red-800">Error</p>
+                                <p className="text-sm font-medium text-red-800">{m['developerPortal.submissionForm.error']()}</p>
                                 <p className="text-sm text-red-700 mt-0.5">{submitError}</p>
                             </div>
                         </div>
@@ -546,7 +547,7 @@ const SubmissionForm: React.FC = () => {
                             }`}
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Back
+                            {m['developerPortal.submissionForm.back']()}
                         </button>
                         <div className="flex gap-3">
                             {hasMinimumDataForDraft() && (
@@ -562,16 +563,16 @@ const SubmissionForm: React.FC = () => {
                                     {isSavingDraft ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Saving...
+                                            {m['developerPortal.submissionForm.savingDraft']()}
                                         </>
                                     ) : (
                                         <>
                                             <Save className="w-4 h-4" />
                                             {isPendingReview
-                                                ? 'Save Changes'
+                                                ? m['developerPortal.submissionForm.saveChanges']()
                                                 : isEditMode
-                                                ? 'Update Draft'
-                                                : 'Save Draft'}
+                                                ? m['developerPortal.submissionForm.updateDraft']()
+                                                : m['developerPortal.submissionForm.saveDraft']()}
                                         </>
                                     )}
                                 </button>
@@ -582,7 +583,7 @@ const SubmissionForm: React.FC = () => {
                                     disabled={currentStep === 2 && !formData.launch_type}
                                     className="flex items-center gap-2 px-5 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50"
                                 >
-                                    Continue
+                                    {m['developerPortal.submissionForm.continue']()}
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             ) : (
@@ -595,7 +596,7 @@ const SubmissionForm: React.FC = () => {
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Submitting...
+                                                {m['developerPortal.submissionForm.submitting']()}
                                             </>
                                         ) : (
                                             <>

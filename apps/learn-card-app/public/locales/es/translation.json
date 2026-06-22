@@ -4283,7 +4283,8 @@
                 "childFixValidation": "Corrige los errores de validación antes de guardar",
                 "validationErrors": "La plantilla tiene errores de validación. Corrije los problemas mostrados arriba antes de guardar.",
                 "templateStats": "{{boosts}} cursos • {{fields}} campos dinámicos",
-                "csvHeaderStats": "{{courses}} cursos encontrados • {{columns}} columnas"
+                "csvHeaderStats": "{{courses}} cursos encontrados • {{columns}} columnas",
+                "csvDynamicFieldsCount": "+ {count} campos dinámicos"
             },
             "integrationMethod": {
                 "title": "Elige tu Método de Integración",
@@ -6985,7 +6986,21 @@
                 }
             },
             "failedToSaveDraft": "[Failed to save draft]",
-            "failedToSubmit": "[Failed to submit listing]"
+            "failedToSubmit": "[Failed to submit listing]",
+            "changesSaved": "¡Cambios guardados!",
+            "draftUpdated": "Borrador actualizado",
+            "draftSaved": "Borrador guardado",
+            "appUpdated": "Su aplicación \"{appName}\" ha sido actualizada.",
+            "appSavedAsDraft": "Su aplicación \"{appName}\" ha sido guardada como borrador.",
+            "appSubmittedForReview": "Su aplicación \"{appName}\" ha sido enviada para revisión.",
+            "error": "Error",
+            "back": "Atrás",
+            "savingDraft": "Guardando...",
+            "continue": "Continuar",
+            "submitting": "Enviando...",
+            "saveChanges": "Guardar cambios",
+            "updateDraft": "Actualizar borrador",
+            "saveDraft": "Guardar borrador"
         },
         "permissions": {
             "requestIdentity": {

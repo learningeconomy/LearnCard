@@ -4283,7 +4283,8 @@
                 "childFixValidation": "Fix validation errors before saving",
                 "validationErrors": "Template has validation errors. Fix the issues shown above before saving.",
                 "templateStats": "{{boosts}} course boosts • {{fields}} dynamic fields",
-                "csvHeaderStats": "{{courses}} courses found • {{columns}} columns"
+                "csvHeaderStats": "{{courses}} courses found • {{columns}} columns",
+                "csvDynamicFieldsCount": "+ {count} dynamic fields"
             },
             "integrationMethod": {
                 "title": "Choose Your Integration Method",
@@ -6985,7 +6986,21 @@
                 }
             },
             "failedToSaveDraft": "Failed to save draft",
-            "failedToSubmit": "Failed to submit listing"
+            "failedToSubmit": "Failed to submit listing",
+            "changesSaved": "Changes Saved!",
+            "draftUpdated": "Draft Updated!",
+            "draftSaved": "Draft Saved!",
+            "appUpdated": "Your app \"{appName}\" has been updated.",
+            "appSavedAsDraft": "Your app \"{appName}\" has been saved as a draft.",
+            "appSubmittedForReview": "Your app \"{appName}\" has been submitted for review.",
+            "error": "Error",
+            "back": "Back",
+            "savingDraft": "Saving...",
+            "continue": "Continue",
+            "submitting": "Submitting...",
+            "saveChanges": "Save Changes",
+            "updateDraft": "Update Draft",
+            "saveDraft": "Save Draft"
         },
         "permissions": {
             "requestIdentity": {

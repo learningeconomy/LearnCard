@@ -259,7 +259,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                             }}
                             className="text-sm text-emerald-600 hover:text-emerald-800 font-medium"
                         >
-                            Change
+                            {m['developerPortal.onboarding.projectSetup.change']()}
                         </button>
                     </div>
                 )}
@@ -288,7 +288,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                                         {integration.name}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
-                                                        ID: {integration.id.slice(0, 12)}...
+                                                        {m['developerPortal.onboarding.projectSetup.idLabel']({ id: integration.id.slice(0, 12) + '...' })}
                                                     </p>
                                                 </div>
                                             </button>
@@ -301,7 +301,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         </div>
                                         <div className="relative flex justify-center">
                                             <span className="px-2 bg-white text-xs text-gray-500">
-                                                or
+                                                {m['developerPortal.onboarding.projectSetup.or']()}
                                             </span>
                                         </div>
                                     </div>
@@ -328,7 +328,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                             onClick={() => setShowCreateNew(false)}
                                             className="text-sm text-gray-500 hover:text-gray-700"
                                         >
-                                            ← Back to existing projects
+                                            ← {m['developerPortal.onboarding.projectSetup.backToExisting']()}
                                         </button>
                                     )}
 
@@ -349,7 +349,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         {isCreating ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Creating...
+                                                {m['developerPortal.onboarding.projectSetup.creating']()}
                                             </>
                                         ) : (
                                             'Create'
@@ -501,10 +501,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                                                 {grant.name}
                                                             </p>
                                                             <p className="text-xs text-gray-500">
-                                                                Created{' '}
-                                                                {new Date(
-                                                                    grant.createdAt!
-                                                                ).toLocaleDateString()}
+                                                                {m['developerPortal.onboarding.projectSetup.created']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                                             </p>
                                                         </div>
                                                     </button>
@@ -517,7 +514,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                                 </div>
                                                 <div className="relative flex justify-center">
                                                     <span className="px-2 bg-white text-xs text-gray-500">
-                                                        or
+                                                        {m['developerPortal.onboarding.projectSetup.or']()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -547,7 +544,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m['developerPortal.onboarding.projectSetup.back']()}
                     </button>
                 )}
 

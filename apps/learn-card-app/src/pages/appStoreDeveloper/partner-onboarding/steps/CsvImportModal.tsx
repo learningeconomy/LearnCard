@@ -317,7 +317,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                         <Award className="w-4 h-4 text-cyan-500" />
                                         <span className="font-medium text-gray-800">{m['developerPortal.onboarding.templateBuilder.csvCompletion']({ name })}</span>
                                         <span className="text-xs text-gray-500">
-                                            + {Object.values(issuanceFieldsIncluded).filter(Boolean).length} dynamic fields
+                                            {m['developerPortal.onboarding.templateBuilder.csvDynamicFieldsCount']({ count: Object.values(issuanceFieldsIncluded).filter(Boolean).length })}
                                         </span>
                                     </div>
                                 );

@@ -4283,7 +4283,8 @@
                 "childFixValidation": "Corrigez les erreurs de validation avant d'enregistrer",
                 "validationErrors": "Le modèle comporte des erreurs de validation. Corrigez les problèmes ci-dessus avant d'enregistrer.",
                 "templateStats": "{{boosts}} cours • {{fields}} champs dynamiques",
-                "csvHeaderStats": "{{courses}} cours trouvés • {{columns}} colonnes"
+                "csvHeaderStats": "{{courses}} cours trouvés • {{columns}} colonnes",
+                "csvDynamicFieldsCount": "+ {count} champs dynamiques"
             },
             "integrationMethod": {
                 "title": "Choisissez votre Méthode d'Intégration",
@@ -6985,7 +6986,21 @@
                 }
             },
             "failedToSaveDraft": "[Failed to save draft]",
-            "failedToSubmit": "[Failed to submit listing]"
+            "failedToSubmit": "[Failed to submit listing]",
+            "changesSaved": "Modifications enregistrées !",
+            "draftUpdated": "Brouillon mis à jour",
+            "draftSaved": "Brouillon enregistré",
+            "appUpdated": "Votre application \"{appName}\" a été mise à jour.",
+            "appSavedAsDraft": "Votre application \"{appName}\" a été enregistrée comme brouillon.",
+            "appSubmittedForReview": "Votre application \"{appName}\" a été soumise pour examen.",
+            "error": "Erreur",
+            "back": "Retour",
+            "savingDraft": "Enregistrement...",
+            "continue": "Continuer",
+            "submitting": "Soumission...",
+            "saveChanges": "Enregistrer les modifications",
+            "updateDraft": "Mettre à jour le brouillon",
+            "saveDraft": "Enregistrer le brouillon"
         },
         "permissions": {
             "requestIdentity": {
