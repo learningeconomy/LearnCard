@@ -4239,6 +4239,7 @@
                 "csvHowItWorks": "Nous allons créer {{count}} boosts distincts — un pour chaque cours. Les données du cours (nom, crédits, etc.) sont intégrées. Les données du destinataire (nom, date) restent dynamiques pour l'émission.",
                 "csvDefaultImage": "Image de Credential par Défaut",
                 "csvDefaultImageDesc": "Cette image sera utilisée pour tous les credentials sauf si une colonne CSV la remplace",
+                "csvDefaultImageAlt": "Credential par défaut",
                 "csvUploadImage": "Télécharger une Image",
                 "csvChangeImage": "Changer d'Image",
                 "csvUploading": "Téléchargement...",
@@ -4262,6 +4263,7 @@
                 "childValidated": "Credential validé avec succès",
                 "childSave": "Enregistrer les Modifications",
                 "childCancel": "Annuler",
+                "childFixValidation": "Corrigez les erreurs de validation avant d'enregistrer",
                 "validationErrors": "Le modèle comporte des erreurs de validation. Corrigez les problèmes ci-dessus avant d'enregistrer."
             },
             "integrationMethod": {

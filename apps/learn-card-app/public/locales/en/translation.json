@@ -4239,6 +4239,7 @@
                 "csvHowItWorks": "We'll create {{count}} separate boosts — one for each course. Course data (name, credits, etc.) will be baked in. Recipient data (name, date) stays dynamic for issuance.",
                 "csvDefaultImage": "Default Credential Image",
                 "csvDefaultImageDesc": "This image will be used for all credentials unless overridden by a CSV column",
+                "csvDefaultImageAlt": "Default credential",
                 "csvUploadImage": "Upload Image",
                 "csvChangeImage": "Change Image",
                 "csvUploading": "Uploading...",
@@ -4262,6 +4263,7 @@
                 "childValidated": "Credential validated successfully",
                 "childSave": "Save Changes",
                 "childCancel": "Cancel",
+                "childFixValidation": "Fix validation errors before saving",
                 "validationErrors": "Template has validation errors. Fix the issues shown above before saving."
             },
             "integrationMethod": {
