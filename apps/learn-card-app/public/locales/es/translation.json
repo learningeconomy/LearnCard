@@ -4279,7 +4279,9 @@
                 "childSave": "Guardar Cambios",
                 "childCancel": "Cancelar",
                 "childFixValidation": "Corrige los errores de validación antes de guardar",
-                "validationErrors": "La plantilla tiene errores de validación. Corrije los problemas mostrados arriba antes de guardar."
+                "validationErrors": "La plantilla tiene errores de validación. Corrije los problemas mostrados arriba antes de guardar.",
+                "templateStats": "{{boosts}} cursos • {{fields}} campos dinámicos",
+                "csvHeaderStats": "{{courses}} cursos encontrados • {{columns}} columnas"
             },
             "integrationMethod": {
                 "title": "Elige tu Método de Integración",
@@ -4743,7 +4745,8 @@
                     "id-ID": "Indonesian",
                     "he-IL": "Hebrew"
                 },
-                "languageHelp": "Language of this achievement"
+                "languageHelp": "Language of this achievement",
+                "walletFolderLabel": "{{label}} → carpeta {{folder}}"
             },
             "achievementsList": {
                 "someErrors": "Algunos logros tienen errores de validación",

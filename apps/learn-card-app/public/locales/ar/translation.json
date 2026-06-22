@@ -4279,7 +4279,9 @@
                 "childSave": "حفظ التغييرات",
                 "childCancel": "إلغاء",
                 "childFixValidation": "أصلح أخطاء التحقق قبل الحفظ",
-                "validationErrors": "قالب لديه أخطاء التحقق. أصلح المشكلات الموضحة أعلاه قبل الحفظ."
+                "validationErrors": "قالب لديه أخطاء التحقق. أصلح المشكلات الموضحة أعلاه قبل الحفظ.",
+                "templateStats": "{{boosts}} دورات • {{fields}} حقول ديناميكية",
+                "csvHeaderStats": "{{courses}} دورة تم العثور عليها • {{columns}} أعمدة"
             },
             "integrationMethod": {
                 "title": "اختر طريقة التكامل الخاصة بك",
@@ -4743,7 +4745,8 @@
                     "id-ID": "Indonesian",
                     "he-IL": "Hebrew"
                 },
-                "languageHelp": "Language of this achievement"
+                "languageHelp": "Language of this achievement",
+                "walletFolderLabel": "{{label}} ← مجلد {{folder}}"
             },
             "achievementsList": {
                 "someErrors": "بعض الإنجازات بها أخطاء تحقق",

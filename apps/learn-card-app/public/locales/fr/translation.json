@@ -4279,7 +4279,9 @@
                 "childSave": "Enregistrer les Modifications",
                 "childCancel": "Annuler",
                 "childFixValidation": "Corrigez les erreurs de validation avant d'enregistrer",
-                "validationErrors": "Le modèle comporte des erreurs de validation. Corrigez les problèmes ci-dessus avant d'enregistrer."
+                "validationErrors": "Le modèle comporte des erreurs de validation. Corrigez les problèmes ci-dessus avant d'enregistrer.",
+                "templateStats": "{{boosts}} cours • {{fields}} champs dynamiques",
+                "csvHeaderStats": "{{courses}} cours trouvés • {{columns}} colonnes"
             },
             "integrationMethod": {
                 "title": "Choisissez votre Méthode d'Intégration",
@@ -4743,7 +4745,8 @@
                     "id-ID": "Indonesian",
                     "he-IL": "Hebrew"
                 },
-                "languageHelp": "Language of this achievement"
+                "languageHelp": "Language of this achievement",
+                "walletFolderLabel": "{{label}} → dossier {{folder}}"
             },
             "achievementsList": {
                 "someErrors": "Certaines réalisations ont des erreurs de validation",

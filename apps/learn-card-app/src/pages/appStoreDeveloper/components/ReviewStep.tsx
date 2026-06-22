@@ -77,7 +77,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                             )}
                             {data.age_rating && (
                                 <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
-                                    Age {data.age_rating}
+                                    {m['appStoreAdmin.listing.age']({ rating: data.age_rating })}
                                 </span>
                             )}
                         </div>
@@ -92,7 +92,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <div className="flex items-center gap-2 mb-2">
                         <FileText className="w-4 h-4 text-gray-400" />
 
-                        <h4 className="font-medium text-gray-600 text-sm">Description</h4>
+                        <h4 className="font-medium text-gray-600 text-sm">{m['developerPortal.components.reviewStep.description']()}</h4>
                     </div>
 
                     <p className="text-sm text-gray-500 whitespace-pre-wrap">
@@ -220,7 +220,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    iOS App Store ({data.ios_app_store_id})
+                                    {m['appStoreAdmin.listing.iosAppStore']({ id: data.ios_app_store_id })}
                                 </a>
                             )}
 
@@ -232,7 +232,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    Google Play Store ({data.android_app_store_id})
+                                    {m['appStoreAdmin.listing.googlePlayStore']({ id: data.android_app_store_id })}
                                 </a>
                             )}
                         </div>

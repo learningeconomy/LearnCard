@@ -203,7 +203,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                 >
                                     {walletCategories.map(cat => (
                                         <option key={cat.value} value={cat.value}>
-                                            {cat.label} → {cat.walletFolder} folder
+                                            {m['developerPortal.credentialBuilder.achievement.walletFolderLabel']({ label: cat.label, folder: cat.walletFolder })}
                                         </option>
                                     ))}
                                 </select>

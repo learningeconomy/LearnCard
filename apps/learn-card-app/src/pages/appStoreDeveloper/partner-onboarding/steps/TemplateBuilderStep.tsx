@@ -1008,13 +1008,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 {template.name}
                                             </span>
                                             <span className="px-2 py-0.5 bg-violet-200 text-violet-700 text-xs font-medium rounded-full">
-                                                Master Template
+                                                {m['developerPortal.onboarding.templateBuilder.masterBadge']()}
                                             </span>
                                         </div>
 
                                         <p className="text-sm text-gray-500">
-                                            {template.childTemplates?.length || 0} course boosts •{' '}
-                                            {template.fields?.length || 0} dynamic fields
+                                            {m['developerPortal.onboarding.templateBuilder.templateStats']({ boosts: template.childTemplates?.length || 0, fields: template.fields?.length || 0 })}
                                         </p>
                                     </div>
 
@@ -1094,8 +1093,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                                                 <span className="font-medium">
-                                                    Course Boosts ({template.childTemplates?.length}
-                                                    )
+                                                    {m['developerPortal.onboarding.templateBuilder.courseBoosts']({ count: template.childTemplates?.length || 0 })}
                                                 </span>
                                             </div>
 
@@ -1116,13 +1114,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 {child.name}
                                                             </p>
                                                             <p className="text-xs text-gray-500 truncate">
-                                                                {child.description ||
-                                                                    'No description'}
+                                                                {child.description || m['developerPortal.onboarding.templateBuilder.noDescription']()}
                                                             </p>
                                                         </div>
 
                                                         <span className="text-xs text-gray-400">
-                                                            {child.fields?.length || 0} fields
+                                                            {m['developerPortal.onboarding.templateBuilder.fields']({ count: child.fields?.length || 0 })}
                                                         </span>
 
                                                         <button
@@ -1135,7 +1132,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 );
                                                             }}
                                                             className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                                            title="Customize this boost"
+                                                            title={m['developerPortal.onboarding.templateBuilder.customizeBoost']()}
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
@@ -1151,7 +1148,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                                Delete Master Template & All Course Boosts
+                                                {m['developerPortal.onboarding.templateBuilder.deleteMasterAndChildren']()}
                                             </button>
                                         </div>
                                     </div>
@@ -1223,7 +1220,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Back
+                            {m['developerPortal.onboarding.templateBuilder.back']()}
                         </button>
 
                         <button
@@ -1231,7 +1228,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             disabled={!canProceed}
                             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            Continue
+                            {m['developerPortal.onboarding.templateBuilder.continue']()}
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
@@ -1260,8 +1257,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         {m['developerPortal.onboarding.templateBuilder.csvImportTitle']()}
                                     </h3>
                                     <p className="text-sm text-gray-500">
-                                        {csvAllRows.length} courses found • {csvColumns.length}{' '}
-                                        columns
+                                        {m['developerPortal.onboarding.templateBuilder.csvHeaderStats']({ courses: csvAllRows.length, columns: csvColumns.length })}
                                     </p>
                                 </div>
                             </div>
@@ -1291,8 +1287,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         {m['developerPortal.onboarding.templateBuilder.csvDefaultImage']()}
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        This image will be used for all credentials unless
-                                        overridden by a CSV column
+                                        {m['developerPortal.onboarding.templateBuilder.csvDefaultImageDesc']()}
                                     </p>
                                 </div>
 
@@ -1326,12 +1321,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         {isUploadingImage ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Uploading...
+                                                {m['developerPortal.onboarding.templateBuilder.csvUploading']()}
                                             </>
                                         ) : (
                                             <>
                                                 <Upload className="w-4 h-4" />
-                                                {defaultImage ? 'Change Image' : 'Upload Image'}
+                                                {defaultImage ? m['developerPortal.onboarding.templateBuilder.csvChangeImage']() : m['developerPortal.onboarding.templateBuilder.csvUploadImage']()}
                                             </>
                                         )}
                                     </button>
@@ -1355,7 +1350,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             Object.values(columnMappings).filter(v => v !== 'skip')
                                                 .length
                                         }{' '}
-                                        mapped
+                                        {m['developerPortal.onboarding.templateBuilder.csvMapped']({ count: Object.values(columnMappings).filter(v => v !== 'skip').length })}
                                     </span>
                                 </div>
 
@@ -1380,7 +1375,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                                     {sampleValue && (
                                                         <div className="text-xs text-gray-500 truncate">
-                                                            e.g., "{sampleValue}"
+                                                            {m['developerPortal.onboarding.templateBuilder.csvExampleValue']({ value: sampleValue })}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1409,7 +1404,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 >
                                                     {/* Skip option */}
                                                     <option value="skip">
-                                                        — Skip this column —
+                                                        {m['developerPortal.onboarding.templateBuilder.csvSkipColumn']()}
                                                     </option>
 
                                                     {/* Group options by category */}
@@ -1493,7 +1488,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 {field.label}
                                                             </span>
                                                             <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
-                                                                Dynamic
+                                                                {m['developerPortal.onboarding.templateBuilder.csvDynamic']()}
                                                             </span>
                                                         </div>
                                                         <div className="text-xs text-gray-500">
@@ -1516,7 +1511,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
-                                            System
+                                            {m['developerPortal.onboarding.templateBuilder.csvSystem']()}
                                         </span>
                                         <span className="text-xs text-cyan-700 font-medium">
                                             {m['developerPortal.onboarding.templateBuilder.csvAutoInjected']()}
@@ -1563,16 +1558,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             >
                                                 <Award className="w-4 h-4 text-cyan-500" />
                                                 <span className="font-medium text-gray-800">
-                                                    {name} Completion
+                                                    {m['developerPortal.onboarding.templateBuilder.csvCompletion']({ name })}
                                                 </span>
                                                 <span className="text-xs text-gray-500">
-                                                    +{' '}
-                                                    {
-                                                        Object.values(
-                                                            issuanceFieldsIncluded
-                                                        ).filter(Boolean).length
-                                                    }{' '}
-                                                    dynamic fields
+                                                    {m['developerPortal.onboarding.templateBuilder.dynamicFields']({ count: Object.values(issuanceFieldsIncluded).filter(Boolean).length })}
                                                 </span>
                                             </div>
                                         );
@@ -1580,7 +1569,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                     {csvAllRows.length > 3 && (
                                         <div className="text-xs text-gray-500 text-center py-1">
-                                            ...and {csvAllRows.length - 3} more
+                                            {m['developerPortal.onboarding.templateBuilder.csvAndMore']({ count: csvAllRows.length - 3 })}
                                         </div>
                                     )}
                                 </div>
@@ -1598,7 +1587,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     onClick={handleImportCancel}
                                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                                 >
-                                    Cancel
+                                    {m['developerPortal.onboarding.templateBuilder.cancel']()}
                                 </button>
 
                                 <button
@@ -1609,7 +1598,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Check className="w-4 h-4" />
-                                    Create {csvAllRows.length} Boosts
+                                    {m['developerPortal.onboarding.templateBuilder.csvCreateBoosts']({ count: csvAllRows.length })}
                                 </button>
                             </div>
                         </div>
@@ -1671,7 +1660,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                         <span>
-                                            Click "Validate" in the builder to verify before saving
+                                            {m['developerPortal.onboarding.templateBuilder.childValidateHint']()}
                                         </span>
                                     </div>
                                 )}
@@ -1688,7 +1677,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     onClick={handleCancelChildEdit}
                                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                                 >
-                                    Cancel
+                                    {m['developerPortal.onboarding.templateBuilder.childCancel']()}
                                 </button>
 
                                 <button
@@ -1697,7 +1686,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     title={
                                         childValidationStatus === 'invalid'
-                                            ? 'Fix validation errors before saving'
+                                            ? m['developerPortal.onboarding.templateBuilder.childFixValidation']()
                                             : undefined
                                     }
                                 >

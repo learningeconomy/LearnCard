@@ -151,7 +151,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Permissions
+                            {m['developerPortal.dashboards.tabs.apiTokens.permissions']()}
                         </label>
                         <select
                             value={selectedScope}
@@ -255,7 +255,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                                     <div>
                                         <h3 className="font-medium text-gray-800">{grant.name}</h3>
                                         <p className="text-xs text-gray-500">
-                                            Created {new Date(grant.createdAt).toLocaleDateString()}
+                                            {m['developerPortal.dashboards.tabs.apiTokens.createdDate']({ date: new Date(grant.createdAt).toLocaleDateString() })}
                                         </p>
                                     </div>
                                 </div>

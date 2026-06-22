@@ -4279,7 +4279,9 @@
                 "childSave": "Save Changes",
                 "childCancel": "Cancel",
                 "childFixValidation": "Fix validation errors before saving",
-                "validationErrors": "Template has validation errors. Fix the issues shown above before saving."
+                "validationErrors": "Template has validation errors. Fix the issues shown above before saving.",
+                "templateStats": "{{boosts}} course boosts • {{fields}} dynamic fields",
+                "csvHeaderStats": "{{courses}} courses found • {{columns}} columns"
             },
             "integrationMethod": {
                 "title": "Choose Your Integration Method",
@@ -4743,7 +4745,8 @@
                     "id-ID": "Indonesian",
                     "he-IL": "Hebrew"
                 },
-                "languageHelp": "Language of this achievement"
+                "languageHelp": "Language of this achievement",
+                "walletFolderLabel": "{{label}} → {{folder}} folder"
             },
             "achievementsList": {
                 "someErrors": "Some achievements have validation errors",
