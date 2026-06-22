@@ -90,7 +90,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Signing Authority
+                    {m['developerPortal.onboarding.signingAuthority.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -165,7 +165,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m['developerPortal.onboarding.signingAuthority.createButton']()}
                         </>
                     )}
                 </button>
@@ -173,7 +173,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+                <h4 className="font-medium text-blue-800 mb-2">{m['developerPortal.onboarding.signingAuthority.whatDoesThisDo']()}</h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
                     <li>• Creates a cryptographic key pair for signing</li>

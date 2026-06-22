@@ -4445,7 +4445,8 @@
                 "failedTitle": "فشل الاختبار",
                 "tryAgain": "حاول مرة أخرى",
                 "back": "رجوع",
-                "continueToGoLive": "المتابعة إلى النشر"
+                "continueToGoLive": "المتابعة إلى النشر",
+                "logo": "Logo"
             },
             "production": {
                 "readyTitle": "جاهز للنشر!",

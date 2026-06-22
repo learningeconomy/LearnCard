@@ -4445,7 +4445,8 @@
                 "failedTitle": "Prueba Fallida",
                 "tryAgain": "Intentar de Nuevo",
                 "back": "Atrás",
-                "continueToGoLive": "Continuar a Publicar"
+                "continueToGoLive": "Continuar a Publicar",
+                "logo": "Logo"
             },
             "production": {
                 "readyTitle": "¡Listo para Publicar!",

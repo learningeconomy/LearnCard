@@ -4445,7 +4445,8 @@
                 "failedTitle": "Test Failed",
                 "tryAgain": "Try Again",
                 "back": "Back",
-                "continueToGoLive": "Continue to Go Live"
+                "continueToGoLive": "Continue to Go Live",
+                "logo": "Logo"
             },
             "production": {
                 "readyTitle": "Ready to Go Live!",

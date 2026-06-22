@@ -4445,7 +4445,8 @@
                 "failedTitle": "Test Échoué",
                 "tryAgain": "Réessayer",
                 "back": "Retour",
-                "continueToGoLive": "Continuer vers la Mise en Ligne"
+                "continueToGoLive": "Continuer vers la Mise en Ligne",
+                "logo": "Logo"
             },
             "production": {
                 "readyTitle": "Prêt pour la Mise en Ligne !",
