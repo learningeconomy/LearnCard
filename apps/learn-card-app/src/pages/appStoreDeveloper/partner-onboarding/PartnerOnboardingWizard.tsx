@@ -62,7 +62,7 @@ interface StepIndicatorProps {
     onStepClick: (index: number) => void;
 }
 
-const STEP_TITLE_KEYS = ['developerPortal.onboarding.steps.step1','developerPortal.onboarding.steps.step2','developerPortal.onboarding.steps.step3','developerPortal.onboarding.steps.step4','developerPortal.onboarding.steps.step5','developerPortal.onboarding.steps.step6','developerPortal.onboarding.steps.step7','developerPortal.onboarding.steps.step8'];
+const STEP_TITLE_KEYS = ['developerPortal.onboarding.steps.step1.title','developerPortal.onboarding.steps.step2.title','developerPortal.onboarding.steps.step3.title','developerPortal.onboarding.steps.step4.title','developerPortal.onboarding.steps.step5.title','developerPortal.onboarding.steps.step6.title','developerPortal.onboarding.steps.step7.title','developerPortal.onboarding.steps.step8.title'];
 
 const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onStepClick }) => {
     return (
