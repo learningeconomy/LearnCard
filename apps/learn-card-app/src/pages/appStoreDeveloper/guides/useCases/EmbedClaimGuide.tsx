@@ -503,7 +503,7 @@ const ConfigureStep: React.FC<{
                         <div className="flex items-center gap-2">
                             <Key className="w-4 h-4 text-indigo-600" />
                             <label className="text-sm font-medium text-indigo-800">
-                                Publishable Key
+                                {m['developerPortal.guides.embedClaim.configureStep.keyLabel']()}
                             </label>
                         </div>
 
@@ -545,7 +545,7 @@ const ConfigureStep: React.FC<{
                     </div>
 
                     <p className="text-xs text-indigo-600 mt-2">
-                        Change your project using the dropdown in the header.
+                        {m['developerPortal.guides.embedClaim.configureStep.keyHint']()}
                     </p>
                 </div>
             ) : (
@@ -556,7 +556,7 @@ const ConfigureStep: React.FC<{
                         </div>
 
                         <div className="flex-1">
-                            <h4 className="font-medium text-amber-800 mb-1">No Project Selected</h4>
+                            <h4 className="font-medium text-amber-800 mb-1">{m['developerPortal.guides.embedClaim.configureStep.noProjectTitle']()}</h4>
 
                             <p className="text-sm text-amber-700">
                                 Select or create a project using the dropdown in the header to
@@ -656,7 +656,7 @@ const ConfigureStep: React.FC<{
                             type="text"
                             value={partnerName}
                             onChange={e => setPartnerName(e.target.value)}
-                            placeholder="Your company name"
+                            placeholder={m['developerPortal.guides.embedClaim.configureStep.partnerNamePlaceholder']()}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ colorScheme: 'light' }}
                         />
@@ -705,7 +705,7 @@ const ConfigureStep: React.FC<{
                         {branding.partnerLogoUrl && (
                             <img
                                 src={branding.partnerLogoUrl}
-                                alt="Logo preview"
+                                alt={m['developerPortal.guides.embedClaim.configureStep.logoPreviewAlt']()}
                                 className="mt-2 h-12 object-contain rounded border border-gray-200"
                                 onError={e => {
                                     (e.target as HTMLImageElement).style.display = 'none';
@@ -719,7 +719,7 @@ const ConfigureStep: React.FC<{
                 <div className="space-y-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Settings className="w-4 h-4 text-emerald-500" />
-                        Advanced Settings
+                        {m['developerPortal.guides.embedClaim.configureStep.advancedSettings']()}
                     </div>
 
                     <label className="flex items-start gap-3 cursor-pointer">
@@ -732,7 +732,7 @@ const ConfigureStep: React.FC<{
 
                         <div>
                             <span className="text-sm font-medium text-gray-700">
-                                Request Background Issuance Consent
+                                {m['developerPortal.guides.embedClaim.configureStep.backgroundIssuanceLabel']()}
                             </span>
 
                             <p className="text-xs text-gray-500 mt-0.5">
@@ -974,7 +974,7 @@ const TestStep: React.FC<{
                         htmlFor="template-select"
                         className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                        Select template to preview
+                        {m['developerPortal.guides.embedClaim.testStep.selectTemplate']()}
                     </label>
                     <select
                         id="template-select"

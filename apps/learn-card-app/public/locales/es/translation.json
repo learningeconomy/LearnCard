@@ -5821,7 +5821,8 @@
                     "issueCorsDesc": "Add Access-Control-Allow-Origin header",
                     "serverHeaders": "Server Headers",
                     "back": "Atrás",
-                    "continue": "Continuar"
+                    "continue": "Continuar",
+                    "configureHeadersOnServer": "Configurar cabeceras en tu servidor"
                 },
                 "installSdkStep": {
                     "title": "Instalar el SDK",
@@ -6104,7 +6105,9 @@
                         "featuresConfigured": "{{count}} feature configured",
                         "featuresConfigured_plural": "{{count}} features configured",
                         "codeGenerated": "Integration code generated"
-                    }
+                    },
+                    "title": "¡Listo para Salir a Producción!",
+                    "description": "La integración de tu aplicación embebida está completa. Actívala para empezar a usarla en producción."
                 },
                 "appListingRequiredDesc": "Selecciona una aplicación en el Paso 1 para crear plantillas de credenciales."
             },
@@ -6186,7 +6189,8 @@
                     "backButton": "Atrás",
                     "continueButton": "Continuar",
                     "builderOpenWarning": "Guarda o cancela la plantilla que estás editando antes de continuar.",
-                    "uploadImageTitle": "Subir imagen"
+                    "uploadImageTitle": "Subir imagen",
+                    "logoPreviewAlt": "Vista previa del logotipo"
                 },
                 "testStep": {
                     "title": "Test Your Integration",
@@ -6362,7 +6366,7 @@
                     "step1Desc": "Crea un botón que redirija a los usuarios al flujo de consentimiento:",
                     "step2Title": "Manejar la Devolución",
                     "step2Desc": "Crea un endpoint para manejar la redirección. El DID del usuario y un VP JWT (que contiene una credencial delegada) se incluirán en los parámetros de la URL.",
-                    "step2Hint": "Almacena el did y vp (un VP JWT que contiene una credencial delegada) para identificar y enviar credenciales a este usuario más tarde.",
+                    "step2Hint": "Almacena el <0>did</0> y <1>vp</1> (un VP JWT que contiene una credencial delegada) para identificar y enviar credenciales a este usuario más tarde.",
                     "flowSummary": "Resumen del Flujo",
                     "flowStep1": "El usuario hace clic en \"Conectar con LearnCard\" en tu aplicación",
                     "flowStep2": "El usuario es redirigido a LearnCard para otorgar consentimiento",
@@ -6414,7 +6418,7 @@
                     "title": "Create Credential Templates",
                     "description": "Crea plantillas de credenciales que emitirás a los usuarios que se conecten con tu aplicación. Las plantillas se guardan y son reutilizables en múltiples emisiones.",
                     "step2Title": "Enviar Credenciales mediante API",
-                    "step2Desc": "Usa el método send para emitir credenciales a usuarios que se han conectado con tu aplicación:",
+                    "step2Desc": "Usa el método <0>send</0> para emitir credenciales a usuarios que se han conectado con tu aplicación:",
                     "step2Info": "Lo que hace: Emite la credencial de tu plantilla al usuario y la escribe en tu contrato de flujo de consentimiento — todo en una sola llamada.",
                     "step3Title": "Consultar Datos de Consentimiento (Opcional)",
                     "step3Desc": "Como propietario del contrato, puedes consultar datos y transacciones de consentimiento:",
@@ -6422,7 +6426,7 @@
                     "step3Sub2": "Obtener datos de consentimiento para un usuario específico:",
                     "tipsTitle": "Consejos de Integración",
                     "tip1": "Guarda las claves de API en variables de entorno, nunca en código",
-                    "tip2": "Usa templateUri para referenciar plantillas guardadas en lugar de credenciales en línea",
+                    "tip2": "Usa <0>templateUri</0> para referenciar plantillas guardadas en lugar de credenciales en línea",
                     "tip3": "Almacena los DIDs de los usuarios de forma segura con sus datos de cuenta",
                     "backButton": "Atrás",
                     "continueButton": "Continuar para Probar"
@@ -6483,9 +6487,9 @@
                     "createdLabel": "Created {{date}}"
                 },
                 "webhookEndpointStep": {
-                    "title": "Create Your Webhook Endpoint",
+                    "title": "Crea tu Endpoint de Webhook",
                     "description": "Create an HTTPS endpoint on your server that can receive POST requests from LearnCard.",
-                    "yourWebhookUrl": "Your Webhook URL",
+                    "yourWebhookUrl": "Tu URL de Webhook",
                     "webhookUrlPlaceholder": "https://your-server.com/webhooks/learncard",
                     "codePanelTitle": "Endpoint Setup",
                     "requirementsTitle": "Requirements",

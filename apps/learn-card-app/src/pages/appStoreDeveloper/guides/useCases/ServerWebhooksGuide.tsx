@@ -246,7 +246,7 @@ const WebhookEndpointStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Create Your Webhook Endpoint
+                    {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -257,7 +257,7 @@ const WebhookEndpointStep: React.FC<{
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Webhook URL
+                    {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.yourWebhookUrl']()}
                 </label>
 
                 <input

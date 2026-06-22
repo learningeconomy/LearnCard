@@ -304,7 +304,7 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
 
             {!isChecking && hasFailed && (
                 <p className="mt-3 text-xs text-red-600">
-                    Fix the issues above before continuing. See the header examples below.
+                    {m['developerPortal.guides.embedApp.urlCheck.fixIssues']()}
                 </p>
             )}
 
@@ -1211,18 +1211,17 @@ const SetupWebsiteStep: React.FC<{
         return (
             <div className="space-y-6">
                 <div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Your App</h3>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.setupWebsiteStep.createYourApp']()}</h3>
 
                     <p className="text-gray-600">
-                        Choose a framework and we'll give you the commands to get started with a
-                        pre-configured setup.
+                        {m['developerPortal.guides.embedApp.setupWebsiteStep.description']()}
                     </p>
                 </div>
 
                 {/* Framework selector */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Choose a framework
+                        {m['developerPortal.guides.embedApp.setupWebsiteStep.chooseFramework']()}
                     </label>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1310,13 +1309,11 @@ export default defineConfig({
                         {(selectedFramework === 'react' || selectedFramework === 'vue') && (
                             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                                 <h4 className="font-medium text-amber-800 mb-2">
-                                    Configure headers on your server
+                                    {m['developerPortal.guides.embedApp.setupWebsiteStep.configureHeadersOnServer']()}
                                 </h4>
 
                                 <p className="text-sm text-amber-700">
-                                    When you deploy, you'll need to configure your hosting provider
-                                    to add these headers. Most providers (Vercel, Netlify, etc.)
-                                    support this in their config files.
+                                    {m['developerPortal.guides.embedApp.setupWebsiteStep.reactVueInfo']()}
                                 </p>
                             </div>
                         )}
@@ -1326,14 +1323,14 @@ export default defineConfig({
                 {/* {m['developerPortal.guides.embedApp.apiReference.appName']()} input */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        App Name (for reference)
+                        {m['developerPortal.guides.embedApp.setupWebsiteStep.appName']()}
                     </label>
 
                     <input
                         type="text"
                         value={appUrl}
                         onChange={e => setAppUrl(e.target.value)}
-                        placeholder="My LearnCard App"
+                        placeholder={m['developerPortal.guides.embedApp.setupWebsiteStep.appNamePlaceholder']()}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
                 </div>
@@ -1395,18 +1392,17 @@ export default defineConfig({
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Configure Your Existing App
+                    {m['developerPortal.guides.embedApp.setupWebsiteStep.configureExistingApp']()}
                 </h3>
 
                 <p className="text-gray-600">
-                    Your app will run inside an iframe in the LearnCard wallet. Enter your URL and
-                    we'll check if it's ready for embedding.
+                    {m['developerPortal.guides.embedApp.setupWebsiteStep.existingAppDesc']()}
                 </p>
             </div>
 
             {/* URL input with check button */}
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your App URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{m['developerPortal.guides.embedApp.setupWebsiteStep.yourAppUrl']()}</label>
 
                 <div className="flex gap-2">
                     <input
@@ -1437,7 +1433,7 @@ export default defineConfig({
                 </div>
 
                 <p className="text-xs text-gray-500 mt-1">
-                    Enter your URL and click Check to verify requirements
+                    {m['developerPortal.guides.embedApp.setupWebsiteStep.urlHint']()}
                 </p>
             </div>
 
@@ -1446,14 +1442,14 @@ export default defineConfig({
 
             {/* Required headers */}
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <h4 className="font-medium text-amber-800 mb-2">Required Response Headers</h4>
+                <h4 className="font-medium text-amber-800 mb-2">{m['developerPortal.guides.embedApp.setupWebsiteStep.requiredHeaders']()}</h4>
 
                 <p className="text-sm text-amber-700 mb-3">
-                    Your server must return these headers to allow iframe embedding:
+                    {m['developerPortal.guides.embedApp.setupWebsiteStep.requiredHeadersDesc']()}
                 </p>
 
                 <CodeOutputPanel
-                    title="Server Headers"
+                    title={m['developerPortal.guides.embedApp.setupWebsiteStep.serverHeaders']()}
                     snippets={{
                         typescript: `// Express.js example
 app.use((req, res, next) => {
@@ -1493,13 +1489,13 @@ def add_headers(response):
 
             {/* Common issues */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">Common Issues</h4>
+                <h4 className="font-medium text-gray-800 mb-2">{m['developerPortal.guides.embedApp.setupWebsiteStep.commonIssues']()}</h4>
 
                 <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">Blank iframe?</strong>
+                            <strong className="text-gray-700">{m['developerPortal.guides.embedApp.setupWebsiteStep.issueBlankIframe']()}</strong>
                             <span className="text-gray-600">
                                 {' '}
                                 — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN
@@ -1510,7 +1506,7 @@ def add_headers(response):
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">Mixed content error?</strong>
+                            <strong className="text-gray-700">{m['developerPortal.guides.embedApp.setupWebsiteStep.issueMixedContent']()}</strong>
                             <span className="text-gray-600"> — Make sure your app uses HTTPS</span>
                         </div>
                     </div>
@@ -1518,7 +1514,7 @@ def add_headers(response):
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">CORS errors?</strong>
+                            <strong className="text-gray-700">{m['developerPortal.guides.embedApp.setupWebsiteStep.issueCors']()}</strong>
                             <span className="text-gray-600">
                                 {' '}
                                 — Add Access-Control-Allow-Origin header
@@ -1566,7 +1562,7 @@ const InstallSdkStep: React.FC<{
             </div>
 
             <CodeOutputPanel
-                title="Installation"
+                title={m['developerPortal.guides.embedApp.installSdkStep.installation']()}
                 snippets={{
                     typescript: `# npm
 npm install @learncard/partner-connect
@@ -2061,7 +2057,7 @@ log.info('Available templates:', templates);`;
                         onClick={refreshTemplates}
                         disabled={isLoading}
                         className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Refresh"
+                        title={m['developerPortal.guides.embedApp.templateManager.refresh']()}
                     >
                         <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </button>
@@ -2152,7 +2148,7 @@ log.info('Available templates:', templates);`;
                                     <button
                                         onClick={() => handleCopyUri(template.uri)}
                                         className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                                        title="Copy URI"
+                                        title={m['developerPortal.guides.embedApp.templateManager.copyUri']()}
                                     >
                                         {copiedUri === template.uri ? (
                                             <Check className="w-4 h-4 text-emerald-500" />
@@ -2165,7 +2161,7 @@ log.info('Available templates:', templates);`;
                                         onClick={() => handleDeleteTemplate(template.uri)}
                                         disabled={deletingUri === template.uri}
                                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Delete"
+                                        title={m['developerPortal.guides.embedApp.templateManager.delete']()}
                                     >
                                         {deletingUri === template.uri ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -2228,7 +2224,7 @@ log.info('Available templates:', templates);`;
                             <div>
                                 <div className="mb-2">
                                     <span className="text-xs font-medium text-gray-500">
-                                        Server-side code (Node.js/TypeScript):
+                                        {m['developerPortal.guides.embedApp.templateManager.serverSideCode']()}
                                     </span>
                                 </div>
 
@@ -3206,13 +3202,11 @@ if (result.granted) {
 
                     <div className="flex-1">
                         <h4 className="text-lg font-semibold text-gray-800 mb-1">
-                            Ready to build!
+                            {m['developerPortal.guides.embedApp.apiReference.readyToBuild']()}
                         </h4>
 
                         <p className="text-gray-600 text-sm mb-4">
-                            You now have everything you need to build a powerful embedded LearnCard
-                            app. Check out the full documentation for advanced features and best
-                            practices.
+                            {m['developerPortal.guides.embedApp.apiReference.readyToBuildDesc']()}
                         </p>
 
                         <div className="flex flex-wrap gap-3">
@@ -3715,19 +3709,10 @@ log.info('Credential synced:', result);`;
                         <Info className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
 
                         <div className="text-sm text-emerald-700">
-                            <p className="font-medium mb-1">How Template-Based Issuance Works</p>
+                            <p className="font-medium mb-1">{m['developerPortal.guides.embedApp.issueCredentialsSetup.howTemplateWorks']()}</p>
 
                             <p>
-                                Create credential templates here, and we&apos;ll automatically
-                                generate a{' '}
-                                <code className="px-1 py-0.5 bg-emerald-100 rounded text-xs">
-                                    templateAlias
-                                </code>{' '}
-                                for each one. Then use{' '}
-                                <code className="px-1 py-0.5 bg-emerald-100 rounded text-xs">
-                                    sendCredential({'{'} templateAlias {'}'})
-                                </code>{' '}
-                                in your app to issue credentials.
+                                {m['developerPortal.guides.embedApp.issueCredentialsSetup.howTemplateWorksDesc']()}
                             </p>
                         </div>
                     </div>
@@ -3740,12 +3725,11 @@ log.info('Credential synced:', result);`;
 
                                 <div>
                                     <h4 className="font-medium text-amber-800 mb-1">
-                                        App Listing Required
+                                        {m['developerPortal.guides.embedApp.issueCredentialsSetup.appListingRequired']()}
                                     </h4>
 
                                     <p className="text-sm text-amber-700">
-                                        Please select an app listing in Step 1 (Getting Started)
-                                        before creating templates.
+                                        {m['developerPortal.guides.embedApp.issueCredentialsSetup.appListingRequiredDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -3872,12 +3856,12 @@ log.info('Credential synced:', result);`;
                                         {signingAuthorityCreating ? (
                                             <>
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                Recreating...
+                                                {m['developerPortal.guides.embedApp.signingAuthority.recreating']()}
                                             </>
                                         ) : (
                                             <>
                                                 <RefreshCw className="w-3.5 h-3.5" />
-                                                Recreate {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthority']()}
+                                                {m['developerPortal.guides.embedApp.issueCredentialsSetup.recreateSigningAuthority']()}
                                             </>
                                         )}
                                     </button>
@@ -3886,8 +3870,7 @@ log.info('Credential synced:', result);`;
                                 <div className="space-y-3">
                                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                                         <p className="text-sm text-amber-800 mb-3">
-                                            A signing authority is needed to cryptographically sign
-                                            credentials.
+                                            {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthorityNeeded']()}
                                         </p>
 
                                         <button
@@ -3898,7 +3881,7 @@ log.info('Credential synced:', result);`;
                                             {signingAuthorityCreating ? (
                                                 <>
                                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                                    Creating...
+                                                    {m['developerPortal.guides.embedApp.issueCredentialsSetup.creating']()}
                                                 </>
                                             ) : (
                                                 <>
@@ -3924,8 +3907,7 @@ log.info('Credential synced:', result);`;
 
                         <div className="ml-10 space-y-3">
                             <p className="text-sm text-gray-600">
-                                Create a consent contract that requests &apos;write&apos; permission
-                                to sync credentials to the user&apos;s wallet.
+                                {m['developerPortal.guides.embedApp.issueCredentialsSetup.consentFlowDescription']()}
                             </p>
 
                             <ConsentFlowContractSelector
@@ -4006,7 +3988,7 @@ log.info('Credential synced:', result);`;
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    {isLastFeature ? m['developerPortal.guides.embedApp.featureSetup.seeYourCode']() : m['developerPortal.guides.embedApp.featureSetup.nextFeature']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -4188,7 +4170,7 @@ try {
                         <div className="ml-10 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    What credential are you looking for?
+                                    {m['developerPortal.guides.embedApp.requestCredentialsSetup.searchLabel']()}
                                 </label>
 
                                 <input
@@ -4200,13 +4182,13 @@ try {
                                 />
 
                                 <p className="text-xs text-gray-500 mt-1">
-                                    This searches credential titles for matches
+                                    {m['developerPortal.guides.embedApp.requestCredentialsSetup.searchHint']()}
                                 </p>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Why do you need it? (shown to user)
+                                    {m['developerPortal.guides.embedApp.requestCredentialsSetup.reasonLabel']()}
                                 </label>
 
                                 <input
@@ -4218,7 +4200,7 @@ try {
                                 />
 
                                 <p className="text-xs text-gray-500 mt-1">
-                                    A clear reason builds trust and improves sharing rates
+                                    {m['developerPortal.guides.embedApp.requestCredentialsSetup.reasonHint']()}
                                 </p>
                             </div>
                         </div>
@@ -4244,18 +4226,16 @@ try {
 
                         <ol className="text-sm text-amber-700 space-y-1">
                             <li>
-                                <strong>1.</strong> Your app requests credentials matching the title
+                                <strong>1.</strong> {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorksStep1']()}
                             </li>
                             <li>
-                                <strong>2.</strong> User sees which credentials match and selects
-                                which to share
+                                <strong>2.</strong> {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorksStep2']()}
                             </li>
                             <li>
-                                <strong>3.</strong> You receive a signed Verifiable Presentation
-                                with the credentials
+                                <strong>3.</strong> {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorksStep3']()}
                             </li>
                             <li>
-                                <strong>4.</strong> Verify the presentation to confirm authenticity
+                                <strong>4.</strong> {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorksStep4']()}
                             </li>
                         </ol>
                     </div>
@@ -4276,30 +4256,26 @@ try {
 
                         <div className="ml-10 p-4 bg-gray-50 border border-gray-200 rounded-xl">
                             <p className="text-sm text-gray-700 mb-3">
-                                Request a specific credential when you already know its ID from a
-                                previous interaction:
+                                {m['developerPortal.guides.embedApp.requestCredentialsSetup.howToUseDesc']()}
                             </p>
 
                             <ul className="text-sm text-gray-600 space-y-2">
                                 <li className="flex items-start gap-2">
                                     <span className="font-medium text-orange-600">•</span>
                                     <span>
-                                        <strong>Re-verification:</strong> Ask for the same
-                                        credential again
+                                        {m['developerPortal.guides.embedApp.requestCredentialsSetup.reverification']()}
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="font-medium text-orange-600">•</span>
                                     <span>
-                                        <strong>Saved reference:</strong> You stored the ID when
-                                        they first shared it
+                                        {m['developerPortal.guides.embedApp.requestCredentialsSetup.savedReference']()}
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="font-medium text-orange-600">•</span>
                                     <span>
-                                        <strong>Deep linking:</strong> They clicked a link with a
-                                        specific credential
+                                        {m['developerPortal.guides.embedApp.requestCredentialsSetup.deepLinking']()}
                                     </span>
                                 </li>
                             </ul>
@@ -4350,7 +4326,7 @@ try {
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    {isLastFeature ? m['developerPortal.guides.embedApp.featureSetup.seeYourCode']() : m['developerPortal.guides.embedApp.featureSetup.nextFeature']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -4473,7 +4449,7 @@ log.info('Credential sent:', result);`;
 
                 <div className="ml-10">
                     <p className="text-sm text-gray-600 mb-3">
-                        Use the Partner SDK to prompt the user for consent in your embedded app.
+                        {m['developerPortal.guides.embedApp.requestDataConsentSetup.requestConsentClientDesc']()}
                     </p>
 
                     <CodeBlock code={clientCode} maxHeight="max-h-64" />
@@ -4492,8 +4468,7 @@ log.info('Credential sent:', result);`;
 
                 <div className="ml-10">
                     <p className="text-sm text-gray-600 mb-3">
-                        On your server, initialize with your API key to read shared credentials and
-                        send new ones.
+                        {m['developerPortal.guides.embedApp.requestDataConsentSetup.readWriteDataDesc']()}
                     </p>
 
                     <CodeBlock code={serverCode} maxHeight="max-h-96" />
@@ -4506,17 +4481,16 @@ log.info('Credential sent:', result);`;
 
                 <ol className="text-sm text-emerald-700 space-y-1">
                     <li>
-                        <strong>1.</strong> You define a contract specifying what data you need
-                        access to
+                        <strong>1.</strong> {m['developerPortal.guides.embedApp.requestDataConsentSetup.howStep1']()}
                     </li>
                     <li>
-                        <strong>2.</strong> User reviews and approves (or declines) the request
+                        <strong>2.</strong> {m['developerPortal.guides.embedApp.requestDataConsentSetup.howStep2']()}
                     </li>
                     <li>
-                        <strong>3.</strong> You receive a consent ID for future data operations
+                        <strong>3.</strong> {m['developerPortal.guides.embedApp.requestDataConsentSetup.howStep3']()}
                     </li>
                     <li>
-                        <strong>4.</strong> Use the consent ID to read/write data per contract terms
+                        <strong>4.</strong> {m['developerPortal.guides.embedApp.requestDataConsentSetup.howStep4']()}
                     </li>
                 </ol>
             </div>
@@ -4535,7 +4509,7 @@ log.info('Credential sent:', result);`;
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    {isLastFeature ? m['developerPortal.guides.embedApp.featureSetup.seeYourCode']() : m['developerPortal.guides.embedApp.featureSetup.nextFeature']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -5275,7 +5249,7 @@ await learnCard.launchFeature('${path}');`;
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    {isLastFeature ? m['developerPortal.guides.embedApp.featureSetup.seeYourCode']() : m['developerPortal.guides.embedApp.featureSetup.nextFeature']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -5341,7 +5315,7 @@ const PeerBadgesSetup: React.FC<{
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-violet-600">3.</span>
-                        <span>Users pick a recipient and send the badge — you control the UX!</span>
+                        <span>{m['developerPortal.guides.embedApp.peerBadgesSetup.howStep3']()}</span>
                     </li>
                 </ol>
             </div>
@@ -5379,7 +5353,7 @@ const PeerBadgesSetup: React.FC<{
                     disabled={!selectedListing}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
                 >
-                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    {isLastFeature ? m['developerPortal.guides.embedApp.featureSetup.seeYourCode']() : m['developerPortal.guides.embedApp.featureSetup.nextFeature']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -6704,7 +6678,7 @@ initializeApp();`);
                             />
 
                             <p className="text-xs text-gray-400 mt-1">
-                                The URL that will be loaded in the iframe when users open your app
+                                {m['developerPortal.guides.embedApp.yourApp.embedUrlHint']()}
                             </p>
 
                             {urlRequiredError && (
@@ -6714,7 +6688,7 @@ initializeApp();`);
                                     role="alert"
                                 >
                                     <AlertCircle className="w-4 h-4" />
-                                    Please enter your embed URL before continuing
+                                    {m['developerPortal.guides.embedApp.yourApp.embedUrlRequired']()}
                                 </p>
                             )}
                         </div>
@@ -6805,7 +6779,7 @@ initializeApp();`);
                         {/* Save Button */}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                             <p className="text-xs text-gray-500">
-                                Changes will be saved to your app listing
+                                {m['developerPortal.guides.embedApp.yourApp.configSaved']()}
                             </p>
 
                             <button
@@ -6835,7 +6809,7 @@ initializeApp();`);
                             </h4>
 
                             <p className="text-xs text-indigo-600 mt-0.5">
-                                Preview your app and validate partner-connect API calls
+                                {m['developerPortal.guides.embedApp.yourApp.testIntegrationDesc']()}
                             </p>
                         </div>
 
@@ -7215,16 +7189,14 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     guideType="embed-app"
                     onBack={handleBack}
                     completedItems={[
-                        'SDK installed and configured',
-                        'Signing authority configured',
-                        'App listing created',
-                        `${selectedFeatures.length} feature${
-                            selectedFeatures.length !== 1 ? 's' : ''
-                        } configured`,
-                        'Integration code generated',
+                        m['developerPortal.guides.embedApp.goLive.completedItems.sdkInstalled'](),
+                        m['developerPortal.guides.embedApp.goLive.completedItems.signingConfigured'](),
+                        m['developerPortal.guides.embedApp.goLive.completedItems.appListingCreated'](),
+                        m['developerPortal.guides.embedApp.goLive.completedItems.featuresConfigured']({ count: selectedFeatures.length, context: selectedFeatures.length !== 1 ? 'plural' : '' }),
+                        m['developerPortal.guides.embedApp.goLive.completedItems.codeGenerated'](),
                     ]}
-                    title="Ready to Go Live!"
-                    description="Your embedded app integration is complete. Activate it to start using it in production."
+                    title={m['developerPortal.guides.embedApp.goLive.title']()}
+                    description={m['developerPortal.guides.embedApp.goLive.description']()}
                 />
             </div>
         </div>

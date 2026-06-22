@@ -78,7 +78,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                     </div>
 
                     <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium">
-                        Coming Soon
+                        {m['developerPortal.guides.hub.comingSoon']()}
                     </span>
                 </div>
 
@@ -136,7 +136,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
                 {isActive && (
                     <span className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs font-medium">
-                        In Progress
+                        {m['developerPortal.guides.hub.inProgress']()}
                     </span>
                 )}
             </div>
@@ -237,17 +237,17 @@ const IntegrationHub: React.FC = () => {
                                 </div>
 
                                 <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                                    Create Your First Project
+                                    {m['developerPortal.guides.hub.createProject.title']()}
                                 </h2>
 
                                 <p className="text-gray-500">
-                                    Set up a project to start building your integration.
+                                    {m['developerPortal.guides.hub.createProject.description']()}
                                 </p>
                             </div>
 
                             <div className="max-w-md mx-auto">
                                 <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                                    Name your project
+                                    {m['developerPortal.guides.hub.createProject.nameLabel']()}
                                 </label>
 
                                 <div className="flex gap-2">
