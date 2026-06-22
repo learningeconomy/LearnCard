@@ -107,23 +107,23 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Embed Configuration</h2>
-                <p className="text-sm text-gray-500">Configure branding, preview, and domain settings for your embed</p>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.embedConfig.title']()}</h2>
+                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.tabs.embedConfig.description']()}</p>
             </div>
 
             {/* Live Preview */}
             {publishableKey && templates.length > 0 && (
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-                    <h3 className="text-sm font-medium text-indigo-800 mb-3">Live Preview</h3>
+                    <h3 className="text-sm font-medium text-indigo-800 mb-3">{m['developerPortal.dashboards.tabs.embedConfig.livePreview']()}</h3>
 
                     <p className="text-xs text-indigo-600 mb-4">
-                        This is the actual claim button your users will see. Click it to test the full flow.
+                        {m['developerPortal.dashboards.tabs.embedConfig.livePreviewDesc']()}
                     </p>
 
                     {/* Template selector for preview */}
                     {templates.length > 1 && (
                         <div className="mb-4">
-                            <label className="text-xs font-medium text-indigo-700 mb-1.5 block">Preview Template</label>
+                            <label className="text-xs font-medium text-indigo-700 mb-1.5 block">{m['developerPortal.dashboards.tabs.embedConfig.previewTemplate']()}</label>
                             <div className="flex flex-wrap gap-2">
                                 {templates.map((t, idx) => (
                                     <button
@@ -162,12 +162,12 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                 <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Palette className="w-4 h-4 text-indigo-500" />
-                        Modal Branding
+                        {m['developerPortal.dashboards.tabs.embedConfig.modalBranding']()}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Primary Color</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.primaryColor']()}</label>
                             <div className="flex gap-2">
                                 <input
                                     type="color"
@@ -186,7 +186,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Accent Color</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.accentColor']()}</label>
                             <div className="flex gap-2">
                                 <input
                                     type="color"
@@ -207,23 +207,23 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
 
                     {/* Partner Name */}
                     <div className="pt-3 border-t border-gray-100">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Partner Name <span className="text-gray-400 font-normal">(Optional)</span></label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.partnerName']()} <span className="text-gray-400 font-normal">{m['developerPortal.dashboards.tabs.embedConfig.partnerNameOptional']()}</span></label>
                         <input
                             type="text"
                             value={partnerName}
                             onChange={(e) => setPartnerName(e.target.value)}
-                            placeholder="Your company name"
+                            placeholder={m['developerPortal.dashboards.tabs.embedConfig.partnerNamePlaceholder']()}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ colorScheme: 'light' }}
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                            Shown alongside your logo in the claim modal. Not included on the issued credential.
+                            {m['developerPortal.dashboards.tabs.embedConfig.partnerNameDesc']()}
                         </p>
                     </div>
 
                     {/* Partner Logo */}
                     <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Partner Logo <span className="text-gray-400 font-normal">(Optional)</span></label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.partnerLogo']()} <span className="text-gray-400 font-normal">{m['developerPortal.dashboards.tabs.embedConfig.partnerLogoOptional']()}</span></label>
                         <div className="flex gap-2">
                             <input
                                 type="url"
@@ -239,7 +239,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                                 onClick={() => handleLogoUpload()}
                                 disabled={isUploadingLogo}
                                 className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                title="Upload image"
+                                title={m['developerPortal.credentialBuilder.fieldEditor.uploadImage']()}
                             >
                                 {isUploadingLogo ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -251,7 +251,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                         {branding.partnerLogoUrl && (
                             <img
                                 src={branding.partnerLogoUrl}
-                                alt="Logo preview"
+                                alt={m['developerPortal.components.accountSelector.logoPreview']()}
                                 className="mt-2 h-12 object-contain rounded border border-gray-200"
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
@@ -263,7 +263,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                 <div className="space-y-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Settings className="w-4 h-4 text-emerald-500" />
-                        Advanced Settings
+                        {m['developerPortal.dashboards.tabs.embedConfig.advancedSettings']()}
                     </div>
 
                     <label className="flex items-start gap-3 cursor-pointer">
@@ -274,9 +274,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                             className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
                         />
                         <div>
-                            <span className="text-sm font-medium text-gray-700">Request Background Issuance Consent</span>
+                            <span className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.embedConfig.requestBackgroundIssuance']()}</span>
                             <p className="text-xs text-gray-500 mt-0.5">
-                                Ask the user for permission to issue future credentials without requiring email verification each time.
+                                {m['developerPortal.dashboards.tabs.embedConfig.requestBackgroundIssuanceDesc']()}
                             </p>
                         </div>
                     </label>
@@ -287,11 +287,11 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                     <Globe className="w-4 h-4 text-gray-500" />
-                    <label className="text-sm font-medium text-gray-700">Whitelisted Domains</label>
+                    <label className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.embedConfig.whitelistedDomains']()}</label>
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
-                    Add the domains where you'll embed this claim button.
+                    {m['developerPortal.dashboards.tabs.embedConfig.whitelistedDomainsDesc']()}
                 </p>
 
                 <div className="flex gap-2 mb-3">
@@ -336,7 +336,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                     </div>
                 ) : (
                     <p className="text-xs text-amber-600">
-                        No domains whitelisted yet. The embed will not work until you add at least one domain.
+                        {m['developerPortal.dashboards.tabs.embedConfig.noDomains']()}
                     </p>
                 )}
             </div>

@@ -4886,7 +4886,16 @@
                     "copied": "Copié !",
                     "copyUri": "Copier l'URI",
                     "copyConfig": "Copier la Configuration",
-                    "loadingTemplates": "Chargement..."
+                    "loadingTemplates": "Chargement...",
+                    "advancedOptionsDesc": "Personnalisez la marque, les webhooks et les options de livraison.",
+                    "emailBranding": "Image de Marque par E-mail",
+                    "logoUrl": "URL du Logo",
+                    "webhookNotification": "Notification Webhook",
+                    "webhookDesc": "Recevez une requête POST lorsque la certification est réclamée.",
+                    "suppressDelivery": "Supprimer la Livraison par E-mail",
+                    "johnDoe": "Jean Dupont",
+                    "loadingTokens": "Chargement des jetons...",
+                    "noApiTokens": "Aucun jeton trouvé. Créez-en un dans l'onglet <0>Jetons API</0>."
                 },
                 "appConfig": {
                     "title": "Configuration de l'App",
@@ -5212,7 +5221,9 @@
                     "enterEmail": "Veuillez entrer un email et sélectionner un modèle avec un boost sauvegardé",
                     "enterUserId": "Veuillez entrer un ID utilisateur et sélectionner un modèle avec un boost sauvegardé",
                     "testSentSuccess": "Credential de test envoyé avec succès !",
-                    "testSentError": "Échec de l'envoi du credential de test"
+                    "testSentError": "Échec de l'envoi du credential de test",
+                    "noTemplatesToTest": "Aucun modèle à tester",
+                    "noTemplatesToTestDesc": "Créez et enregistrez d'abord des modèles pour tester l'émission de certifications"
                 },
                 "branding": {
                     "title": "Image de Marque",

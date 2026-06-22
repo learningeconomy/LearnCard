@@ -4886,7 +4886,16 @@
                     "copied": "Copied!",
                     "copyUri": "Copy URI",
                     "copyConfig": "Copy Config",
-                    "loadingTemplates": "Loading..."
+                    "loadingTemplates": "Loading...",
+                    "advancedOptionsDesc": "Customize branding, webhooks, and delivery options.",
+                    "emailBranding": "Email Branding",
+                    "logoUrl": "Logo URL",
+                    "webhookNotification": "Webhook Notification",
+                    "webhookDesc": "Receive a POST request when the credential is claimed.",
+                    "suppressDelivery": "Suppress Email Delivery",
+                    "johnDoe": "John Doe",
+                    "loadingTokens": "Loading tokens...",
+                    "noApiTokens": "No API tokens found. Create one in the <0>API Tokens</0> tab."
                 },
                 "appConfig": {
                     "title": "App Configuration",
@@ -5212,7 +5221,9 @@
                     "enterEmail": "Please enter an email and select a template with a saved boost",
                     "enterUserId": "Please enter a user ID and select a template with a saved boost",
                     "testSentSuccess": "Test credential sent successfully!",
-                    "testSentError": "Failed to send test credential"
+                    "testSentError": "Failed to send test credential",
+                    "noTemplatesToTest": "No templates to test",
+                    "noTemplatesToTestDesc": "Create and save templates first to test credential issuance"
                 },
                 "branding": {
                     "title": "Branding",

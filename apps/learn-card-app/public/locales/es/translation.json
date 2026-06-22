@@ -4886,7 +4886,16 @@
                     "copied": "¡Copiado!",
                     "copyUri": "Copiar URI",
                     "copyConfig": "Copiar Configuración",
-                    "loadingTemplates": "Cargando..."
+                    "loadingTemplates": "Cargando...",
+                    "advancedOptionsDesc": "Personaliza la marca, los webhooks y las opciones de entrega.",
+                    "emailBranding": "Marca de Correo Electrónico",
+                    "logoUrl": "URL del Logotipo",
+                    "webhookNotification": "Notificación Webhook",
+                    "webhookDesc": "Recibe una solicitud POST cuando se reclame la credencial.",
+                    "suppressDelivery": "Suprimir Entrega por Correo",
+                    "johnDoe": "Juan Pérez",
+                    "loadingTokens": "Cargando tokens...",
+                    "noApiTokens": "No se encontraron tokens. Crea uno en la pestaña <0>Tokens de API</0>."
                 },
                 "appConfig": {
                     "title": "Configuración de la App",
@@ -5212,7 +5221,9 @@
                     "enterEmail": "Por favor ingresa un correo y selecciona una plantilla con un boost guardado",
                     "enterUserId": "Por favor ingresa un ID de usuario y selecciona una plantilla con un boost guardado",
                     "testSentSuccess": "¡Credencial de prueba enviada con éxito!",
-                    "testSentError": "Error al enviar la credencial de prueba"
+                    "testSentError": "Error al enviar la credencial de prueba",
+                    "noTemplatesToTest": "No hay plantillas para probar",
+                    "noTemplatesToTestDesc": "Crea y guarda plantillas primero para probar la emisión de credenciales"
                 },
                 "branding": {
                     "title": "Marca",

@@ -391,7 +391,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
 
                 {/* Tags */}
                 <div className="mt-3">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Tags</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.credentialBuilder.achievement.tags']()}</label>
                     <div className="flex flex-wrap gap-2 mb-2">
                         {(achievement.tag || []).map((tag, index) => (
                             <span
@@ -415,7 +415,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                     </div>
                     <input
                         type="text"
-                        placeholder="Add tag and press Enter"
+                        placeholder={m['developerPortal.credentialBuilder.achievement.tagsPlaceholder']()}
                         className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500"
                         onKeyDown={e => {
                             if (e.key === 'Enter') {
@@ -432,27 +432,27 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                             }
                         }}
                     />
-                    <p className="text-xs text-gray-400 mt-1">Keywords for categorization</p>
+                    <p className="text-xs text-gray-400 mt-1">{m['developerPortal.credentialBuilder.achievement.tagsHelp']()}</p>
                 </div>
             </div>
 
             {/* Criteria Sub-section */}
             <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Criteria</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.credentialBuilder.achievement.criteria']()}</h4>
 
                 <div className="space-y-3 pl-3 border-l-2 border-amber-200">
                     <FieldEditor
-                        label="Criteria Narrative"
+                        label={m['developerPortal.credentialBuilder.achievement.criteriaNarrative']()}
                         field={achievement.criteria?.narrative || staticField('')}
                         onChange={f => updateCriteria('narrative', f)}
-                        placeholder="Describe what was required to earn this achievement..."
+                        placeholder={m['developerPortal.credentialBuilder.achievement.criteriaNarrativePlaceholder']()}
                         helpText="Human-readable description of the criteria"
                         type="textarea"
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label="Criteria ID"
+                        label={m['developerPortal.credentialBuilder.achievement.criteriaId']()}
                         field={achievement.criteria?.id || staticField('')}
                         onChange={f => updateCriteria('id', f)}
                         placeholder="https://example.com/criteria/..."
@@ -467,7 +467,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
             {/* Alignment Sub-section */}
             <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-700">Alignment</h4>
+                    <h4 className="text-sm font-medium text-gray-700">{m['developerPortal.credentialBuilder.achievement.alignment']()}</h4>
 
                     <button
                         type="button"
@@ -475,7 +475,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors"
                     >
                         <Plus className="w-3 h-3" />
-                        Add Alignment
+                        {m['developerPortal.credentialBuilder.achievement.addAlignment']()}
                     </button>
                 </div>
 

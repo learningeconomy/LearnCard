@@ -1392,10 +1392,10 @@ log.info('User:', identity.profile.displayName);`;
                                         <Code className="w-5 h-5 text-gray-600" />
                                         <div>
                                             <h3 className="font-medium text-gray-800">
-                                                API Reference
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.title']()}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                Explore all available SDK methods
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.desc']()}
                                             </p>
                                         </div>
                                     </div>
