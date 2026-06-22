@@ -3,6 +3,8 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { useModal, ModalTypes } from 'learn-card-base';
 
 import { useDeveloperPortal } from './useDeveloperPortal';
@@ -415,7 +417,7 @@ const SubmissionForm: React.FC = () => {
                             onClick={navigateToDashboard}
                             className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                         >
-                            View My Listings
+                            {m['developerPortal.submissionForm.viewMyListings']()}
                         </button>
                     </div>
                 </IonContent>
@@ -425,14 +427,14 @@ const SubmissionForm: React.FC = () => {
     if (isSubmitted)
         return (
             <IonPage>
-                <AppStoreHeader title="Submission Received" />
+                <AppStoreHeader title={m['developerPortal.submissionForm.submissionReceived']()} />
                 <IonContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div className="w-16 h-16 mx-auto mb-5 bg-emerald-100 rounded-full flex items-center justify-center">
                             <Send className="w-8 h-8 text-emerald-600" />
                         </div>
                         <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                            Submission Received!
+                            {m['developerPortal.submissionForm.submissionReceived']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
                             Your app "{formData.display_name}" has been submitted for review.
@@ -442,7 +444,7 @@ const SubmissionForm: React.FC = () => {
                                 onClick={navigateToDashboard}
                                 className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                             >
-                                View My Listings
+                                {m['developerPortal.submissionForm.viewMyListings']()}
                             </button>
                             <button
                                 onClick={() => {
@@ -452,7 +454,7 @@ const SubmissionForm: React.FC = () => {
                                 }}
                                 className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                             >
-                                Submit Another App
+                                {m['developerPortal.submissionForm.submitAnotherApp']()}
                             </button>
                         </div>
                     </div>
@@ -470,7 +472,7 @@ const SubmissionForm: React.FC = () => {
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-5 text-sm"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back to Dashboard
+                        {m['developerPortal.submissionForm.backToDashboard']()}
                     </button>
                     <div className="mb-8">
                         <StepIndicator steps={STEPS} currentStep={currentStep} />
@@ -567,7 +569,7 @@ const SubmissionForm: React.FC = () => {
                                             </>
                                         ) : (
                                             <>
-                                                Submit for Review
+                                                {m['developerPortal.components.partnerDashboard.submitForReview']()}
                                                 <Send className="w-4 h-4" />
                                             </>
                                         )}

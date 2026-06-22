@@ -3496,7 +3496,9 @@
                 "createOrganization": "Crear Organización",
                 "organizationCreated": "¡Organización \"{{name}}\" creada exitosamente!",
                 "failedToCreateOrganization": "Error al crear organización: {{message}}",
-                "creating": "Creando..."
+                "creating": "Creando...",
+                "lettersNumbersDashesOnly": "Solo letras, números y guiones",
+                "logoPreview": "Vista previa del logotipo"
             },
             "accountSelectorModal": {
                 "switchAccount": "Cambiar Cuenta"
@@ -3573,7 +3575,8 @@
                 "upgradeFailed": "Error en la actualización. Inténtalo de nuevo.",
                 "unexpectedError": "Ocurrió un error inesperado",
                 "noSlugAssigned": "Sin slug asignado",
-                "slugLabel": "Slug: {{slug}}"
+                "slugLabel": "Slug: {{slug}}",
+                "closeDialog": "Cerrar diálogo"
             },
             "appPreviewModal": {
                 "previewMode": "Modo de Vista Previa",
@@ -3667,7 +3670,8 @@
                 "failedToCreate": "Failed to create contract: {{message}}",
                 "required": "requerido",
                 "optional": "opcional",
-                "customFieldName": "Nombre de campo personalizado..."
+                "customFieldName": "Nombre de campo personalizado...",
+                "contractLabel": "Contrato"
             },
             "diagnosticsPanel": {
                 "title": "Diagnósticos de Partner Connect",
@@ -3703,7 +3707,8 @@
             },
             "imageUpload": {
                 "clickToUpload": "Haz clic para subir imagen",
-                "uploading": "Subiendo..."
+                "uploading": "Subiendo...",
+                "uploaded": "Subido"
             },
             "integrationSelector": {
                 "selectIntegration": "Seleccionar Integración",
@@ -3871,7 +3876,14 @@
                 "failedToRemove": "Error al eliminar plantilla",
                 "aliasUpdated": "¡Alias actualizado!",
                 "failedToUpdateAlias": "Error al actualizar alias",
-                "editingLabel": "Editando"
+                "editingLabel": "Editando",
+                "failedToSave": "Error al guardar la plantilla"
+            },
+            "integrationGuide": {
+                "consent": {
+                    "step1SelectContractDesc": "Selecciona un contrato de consentimiento arriba para ver tu URI aquí.",
+                    "step4InitDesc": "Luego inicializa con tu clave de API:"
+                }
             }
         },
         "integrationGuide": {
@@ -6585,6 +6597,12 @@
             "courseCatalog": {
                 "noIntegration": "Please select an integration from the header dropdown to continue."
             }
+        },
+        "submissionForm": {
+            "viewMyListings": "Ver Mis Listados",
+            "submissionReceived": "¡Recibido!",
+            "submitAnotherApp": "Enviar Otra App",
+            "backToDashboard": "Volver al Panel"
         }
     },
     "appStoreAdmin": {

@@ -80,7 +80,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                 onKeyDown={e => e.key === 'Escape' && onDismiss()}
                 role="button"
                 tabIndex={0}
-                aria-label="Close dialog"
+                aria-label={m['developerPortal.components.appDidUpgradeDialog.closeDialog']()}
             />
 
             <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 animate-fade-in">
@@ -178,7 +178,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             ) : (
                                 <>
                                     <ArrowUpCircle className="w-4 h-4" />
-                                    Upgrade Now
+                                    {m['developerPortal.components.appDidUpgradeDialog.upgradeNow']()}
                                 </>
                             )}
                         </button>
@@ -189,7 +189,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             disabled={isUpgrading}
                             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                         >
-                            Remind Me Later
+                            {m['developerPortal.components.appDidUpgradeDialog.remindMeLater']()}
                         </button>
                     </div>
                 </div>

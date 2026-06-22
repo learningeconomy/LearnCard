@@ -3496,7 +3496,9 @@
                 "createOrganization": "Create Organization",
                 "organizationCreated": "Organization \"{{name}}\" created successfully!",
                 "failedToCreateOrganization": "Failed to create organization: {{message}}",
-                "creating": "Creating..."
+                "creating": "Creating...",
+                "lettersNumbersDashesOnly": "Letters, numbers, dashes only",
+                "logoPreview": "Logo preview"
             },
             "accountSelectorModal": {
                 "switchAccount": "Switch Account"
@@ -3573,7 +3575,8 @@
                 "upgradeFailed": "Upgrade failed. Please try again.",
                 "unexpectedError": "An unexpected error occurred",
                 "noSlugAssigned": "No slug assigned",
-                "slugLabel": "Slug: {{slug}}"
+                "slugLabel": "Slug: {{slug}}",
+                "closeDialog": "Close dialog"
             },
             "appPreviewModal": {
                 "previewMode": "Preview Mode",
@@ -3667,7 +3670,8 @@
                 "failedToCreate": "Failed to create contract: {{message}}",
                 "required": "required",
                 "optional": "optional",
-                "customFieldName": "Custom field name..."
+                "customFieldName": "Custom field name...",
+                "contractLabel": "Contract"
             },
             "diagnosticsPanel": {
                 "title": "Partner Connect Diagnostics",
@@ -3703,7 +3707,8 @@
             },
             "imageUpload": {
                 "clickToUpload": "Click to upload image",
-                "uploading": "Uploading..."
+                "uploading": "Uploading...",
+                "uploaded": "Uploaded"
             },
             "integrationSelector": {
                 "selectIntegration": "Select Integration",
@@ -3871,7 +3876,14 @@
                 "failedToRemove": "Failed to remove template",
                 "aliasUpdated": "Alias updated!",
                 "failedToUpdateAlias": "Failed to update alias",
-                "editingLabel": "Editing"
+                "editingLabel": "Editing",
+                "failedToSave": "Failed to save template"
+            },
+            "integrationGuide": {
+                "consent": {
+                    "step1SelectContractDesc": "Select a consent flow contract above to see your URI here.",
+                    "step4InitDesc": "Then initialize with your API key:"
+                }
             }
         },
         "integrationGuide": {
@@ -6585,6 +6597,12 @@
             "courseCatalog": {
                 "noIntegration": "Please select an integration from the header dropdown to continue."
             }
+        },
+        "submissionForm": {
+            "viewMyListings": "View My Listings",
+            "submissionReceived": "Submission Received!",
+            "submitAnotherApp": "Submit Another App",
+            "backToDashboard": "Back to Dashboard"
         }
     },
     "appStoreAdmin": {

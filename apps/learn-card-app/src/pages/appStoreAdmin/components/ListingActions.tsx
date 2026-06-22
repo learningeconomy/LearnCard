@@ -103,7 +103,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
         return (
             <div className="p-5 border-t border-gray-200 bg-gray-50">
                 <p className="text-sm text-gray-500 text-center mb-3">
-                    This listing was rejected. Send it back as a draft for revision.
+                    {m['appStoreAdmin.listing.actions.rejectedMsg']()}
                 </p>
 
                 <button

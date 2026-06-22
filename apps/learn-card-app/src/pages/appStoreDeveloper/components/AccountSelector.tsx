@@ -554,7 +554,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {/* Root Personal Account Option (when on a service profile) */}
                     {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
                         <div className="space-y-3">
-                            <h3 className="font-medium text-gray-800 text-sm">Personal Account</h3>
+                            <h3 className="font-medium text-gray-800 text-sm">{m['developerPortal.components.accountSelector.personalAccount']()}</h3>
 
                             <button
                                 onClick={handleUseParentAccount}
@@ -578,7 +578,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                         </span>
                                     </div>
 
-                                    <p className="text-xs text-gray-500">Your root account</p>
+                                    <p className="text-xs text-gray-500">{m['developerPortal.components.accountSelector.yourRootAccount']()}</p>
                                 </div>
 
                                 {isSwitching && selectedProfile?.did === parentUserDid ? (
@@ -596,7 +596,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {serviceProfiles.length > 0 && (
                         <div className="space-y-3">
                             <h3 className="font-medium text-gray-800 text-sm">
-                                Organization Accounts
+                                {m['developerPortal.components.accountSelector.organizationAccounts']()}
                             </h3>
 
                             <div className="space-y-2">
@@ -661,7 +661,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors text-sm"
                             >
                                 <Plus className="w-4 h-4" />
-                                Create New Organization
+                                {m['developerPortal.components.accountSelector.createNewOrganization']()}
                             </button>
                         </div>
                     )}
@@ -724,7 +724,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                             {image ? (
                                 <img
                                     src={image}
-                                    alt="Logo preview"
+                                    alt={m['developerPortal.components.accountSelector.logoPreview']()}
                                     className="w-14 h-14 rounded-xl object-cover"
                                 />
                             ) : (
@@ -763,7 +763,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {showAdvanced && (
                         <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
                             <label className="block text-sm font-medium text-gray-700">
-                                Profile ID <span className="text-red-500">*</span>
+                                {m['developerPortal.components.accountSelector.profileId']()} <span className="text-red-500">*</span>
                             </label>
 
                             <div className="flex items-center gap-2">
@@ -794,7 +794,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                             : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
-                                    Letters, numbers, dashes only
+                                    {m['developerPortal.components.accountSelector.lettersNumbersDashesOnly']()}
                                 </span>
                                 <span
                                     className={`text-xs px-2 py-1 rounded ${

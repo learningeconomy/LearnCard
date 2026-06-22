@@ -229,7 +229,7 @@ const InlineAPITokenManager: React.FC = () => {
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-medium hover:bg-indigo-600 transition-colors"
                     >
                         <Plus className="w-3 h-3" />
-                        New Token
+                        {m['developerPortal.integrationGuide.apiTokens.newToken']()}
                     </button>
                 )}
             </div>
@@ -893,7 +893,7 @@ await learnCard.invoke.send({
                 ) : (
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
                         <p className="text-xs text-gray-600">
-                            Select a consent flow contract above to see your URI here.
+                            {m['developerPortal.components.integrationGuide.consent.step1SelectContractDesc']()}
                         </p>
                     </div>
                 )}
@@ -960,7 +960,7 @@ app.get('/api/learncard/callback', async (req, res) => {
                 <CodeBlock code={`npm install @learncard/init`} />
 
                 <p className="text-xs text-gray-500 mt-3 mb-3">
-                    Then initialize with your API key:
+                    {m['developerPortal.components.integrationGuide.consent.step4InitDesc']()}
                 </p>
 
                 <CodeBlock

@@ -77,7 +77,7 @@ const AppsLandingPage: React.FC = () => {
     if (integrations.length === 0) {
         return (
             <IonPage>
-                <AppStoreHeader title="Developer Portal" />
+                <AppStoreHeader title={m['developerPortal.shell.title']()} />
 
                 <IonContent className="ion-padding">
                     <div className="max-w-2xl mx-auto py-8">

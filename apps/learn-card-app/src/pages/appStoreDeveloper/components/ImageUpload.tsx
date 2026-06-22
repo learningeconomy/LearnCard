@@ -57,7 +57,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     <>
                         <img
                             src={value}
-                            alt="Uploaded"
+                            alt={m['developerPortal.components.imageUpload.uploaded']()}
                             className="w-full h-full object-cover"
                         />
 

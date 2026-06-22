@@ -3496,7 +3496,9 @@
                 "createOrganization": "إنشاء مؤسسة",
                 "organizationCreated": "تم إنشاء المؤسسة \"{{name}}\" بنجاح!",
                 "failedToCreateOrganization": "فشل في إنشاء المؤسسة: {{message}}",
-                "creating": "جارٍ الإنشاء..."
+                "creating": "جارٍ الإنشاء...",
+                "lettersNumbersDashesOnly": "أحرف وأرقام وشرطات فقط",
+                "logoPreview": "معاينة الشعار"
             },
             "accountSelectorModal": {
                 "switchAccount": "تبديل الحساب"
@@ -3573,7 +3575,8 @@
                 "upgradeFailed": "فشلت الترقية. حاول مرة أخرى.",
                 "unexpectedError": "حدث خطأ غير متوقع",
                 "noSlugAssigned": "لم يتم تعيين slug",
-                "slugLabel": "Slug: {{slug}}"
+                "slugLabel": "Slug: {{slug}}",
+                "closeDialog": "إغلاق الحوار"
             },
             "appPreviewModal": {
                 "previewMode": "وضع المعاينة",
@@ -3667,7 +3670,8 @@
                 "failedToCreate": "Failed to create contract: {{message}}",
                 "required": "مطلوب",
                 "optional": "اختياري",
-                "customFieldName": "اسم حقل مخصص..."
+                "customFieldName": "اسم حقل مخصص...",
+                "contractLabel": "عقد"
             },
             "diagnosticsPanel": {
                 "title": "تشخيصات Partner Connect",
@@ -3703,7 +3707,8 @@
             },
             "imageUpload": {
                 "clickToUpload": "انقر لرفع الصورة",
-                "uploading": "جاري الرفع..."
+                "uploading": "جاري الرفع...",
+                "uploaded": "تم الرفع"
             },
             "integrationSelector": {
                 "selectIntegration": "اختيار التكامل",
@@ -3871,7 +3876,14 @@
                 "failedToRemove": "فشل إزالة القالب",
                 "aliasUpdated": "تم تحديث الاسم المستعار!",
                 "failedToUpdateAlias": "فشل تحديث الاسم المستعار",
-                "editingLabel": "جارٍ التعديل"
+                "editingLabel": "جارٍ التعديل",
+                "failedToSave": "فشل حفظ القالب"
+            },
+            "integrationGuide": {
+                "consent": {
+                    "step1SelectContractDesc": "اختر عقد تدفق الموافقة أعلاه لرؤية رابط URI الخاص بك هنا.",
+                    "step4InitDesc": "ثم قم بالتهيئة باستخدام مفتاح API الخاص بك:"
+                }
             }
         },
         "integrationGuide": {
@@ -6585,6 +6597,12 @@
             "courseCatalog": {
                 "noIntegration": "Please select an integration from the header dropdown to continue."
             }
+        },
+        "submissionForm": {
+            "viewMyListings": "عرض قوائمي",
+            "submissionReceived": "تم استلام الطلب!",
+            "submitAnotherApp": "تقديم تطبيق آخر",
+            "backToDashboard": "العودة إلى لوحة التحكم"
         }
     },
     "appStoreAdmin": {
