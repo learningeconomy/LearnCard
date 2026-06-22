@@ -20,18 +20,22 @@ import { join, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const APP_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const GUIDES = join(APP_ROOT, 'src', 'pages', 'appStoreDeveloper', 'guides');
 
 const asJson = process.argv.includes('--json');
 const strict = process.argv.includes('--strict');
 
-const walk = dir => {
+// Scope: positional args (paths relative to the app root — files or dirs).
+// Default = the developer guides dir (backward compatible).
+const posArgs = process.argv.slice(2).filter(a => !a.startsWith('--'));
+const SCOPES = (posArgs.length
+    ? posArgs
+    : ['src/pages/appStoreDeveloper/guides']
+).map(p => join(APP_ROOT, p));
+
+const walk = path => {
+    if (!statSync(path).isDirectory()) return /\.tsx$/.test(path) ? [path] : [];
     const out = [];
-    for (const e of readdirSync(dir)) {
-        const p = join(dir, e);
-        if (statSync(p).isDirectory()) out.push(...walk(p));
-        else if (/\.tsx$/.test(e)) out.push(p);
-    }
+    for (const e of readdirSync(path)) out.push(...walk(join(path, e)));
     return out;
 };
 
@@ -59,7 +63,8 @@ const scan = file => {
 
 const report = {};
 let total = 0;
-for (const file of walk(GUIDES)) {
+const files = [...new Set(SCOPES.flatMap(walk))];
+for (const file of files) {
     const hits = scan(file);
     if (hits.length) {
         report[relative(APP_ROOT, file)] = hits;
