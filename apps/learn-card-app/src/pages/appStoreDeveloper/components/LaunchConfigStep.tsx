@@ -69,7 +69,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                     <div className="space-y-5">
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Embed URL
+                                {m['developerPortal.components.launchConfigStep.embedUrl']()}
                             </label>
 
                             <input
@@ -89,7 +89,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Permissions Needed
+                                {m['developerPortal.components.launchConfigStep.permissionsNeeded']()}
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
@@ -157,12 +157,12 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             {selectedContract && (
                                 <div className="mt-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg">
                                     <p className="text-xs text-cyan-700">
-                                        <strong>On Install:</strong> User will be prompted to
+                                        <strong>{m['developerPortal.components.launchConfigStep.onInstall']()}</strong> User will be prompted to
                                         consent to the selected contract's permissions.
                                     </p>
 
                                     <p className="text-xs text-cyan-700 mt-1">
-                                        <strong>On Uninstall:</strong> Consent will be automatically
+                                        <strong>{m['developerPortal.components.launchConfigStep.onUninstall']()}</strong> Consent will be automatically
                                         withdrawn.
                                     </p>
                                 </div>
@@ -175,7 +175,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 return (
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">
-                            Application URL
+                            {m['developerPortal.components.launchConfigStep.appUrl']()}
                         </label>
 
                         <input
@@ -191,7 +191,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         {errors.url && <p className="text-sm text-red-500 mt-1">{errors.url}</p>}
 
                         <p className="text-sm text-gray-400 mt-2">
-                            This URL will open in a new window when users launch your app.
+                            {m['developerPortal.components.launchConfigStep.appUrlDesc1']()}
                         </p>
                     </div>
                 );
@@ -201,7 +201,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                     <div className="space-y-5">
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Application URL
+                                {m['developerPortal.components.launchConfigStep.appUrl']()}
                             </label>
 
                             <input
@@ -219,7 +219,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             )}
 
                             <p className="text-sm text-gray-400 mt-2">
-                                Users will be redirected to this URL.
+                                {m['developerPortal.components.launchConfigStep.appUrlDesc2']()}
                             </p>
                         </div>
 
@@ -266,7 +266,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Redirect URI
+                                {m['developerPortal.components.launchConfigStep.redirectUri']()}
                             </label>
 
                             <input
@@ -293,7 +293,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         {selectedContract && (
                             <div className="space-y-4">
                                 <label className="block text-sm font-medium text-gray-600">
-                                    Contract Permissions
+                                    {m['developerPortal.components.launchConfigStep.contractPermissions']()}
                                 </label>
 
                                 {/* Read Permissions */}
@@ -301,7 +301,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <div className="flex items-center gap-2 mb-3">
                                         <BookOpen className="w-4 h-4 text-cyan-600" />
                                         <span className="text-sm font-medium text-cyan-700">
-                                            Read Access
+                                            {m['developerPortal.components.launchConfigStep.readAccess']()}
                                         </span>
                                     </div>
 
@@ -327,7 +327,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         </div>
                                     ) : (
                                         <p className="text-xs text-cyan-600 italic">
-                                            No read permissions requested
+                                            {m['developerPortal.components.launchConfigStep.noReadPermissions']()}
                                         </p>
                                     )}
                                 </div>
@@ -337,7 +337,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <div className="flex items-center gap-2 mb-3">
                                         <PenTool className="w-4 h-4 text-emerald-600" />
                                         <span className="text-sm font-medium text-emerald-700">
-                                            Write Access
+                                            {m['developerPortal.components.launchConfigStep.writeAccess']()}
                                         </span>
                                     </div>
 
@@ -363,7 +363,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         </div>
                                     ) : (
                                         <p className="text-xs text-emerald-600 italic">
-                                            No write permissions requested
+                                            {m['developerPortal.components.launchConfigStep.noWritePermissions']()}
                                         </p>
                                     )}
                                 </div>
@@ -373,7 +373,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         {!selectedContract && config.contractUri && (
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <p className="text-sm text-gray-500 italic">
-                                    Select a contract to view its permissions
+                                    {m['developerPortal.components.launchConfigStep.selectContractToView']()}
                                 </p>
                             </div>
                         )}
@@ -388,7 +388,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 <Server className="w-5 h-5 text-emerald-600 flex-shrink-0" />
 
                                 <div className="text-sm text-emerald-800">
-                                    <p className="font-medium">Server-to-Server Integration</p>
+                                    <p className="font-medium">{m['developerPortal.components.launchConfigStep.serverToServer']()}</p>
 
                                     <p className="mt-1">
                                         Use the Universal Inbox API to issue credentials directly
@@ -409,7 +409,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 <Sparkles className="w-5 h-5 text-violet-600 flex-shrink-0" />
 
                                 <div className="text-sm text-violet-800">
-                                    <p className="font-medium">AI Tutor Integration</p>
+                                    <p className="font-medium">{m['developerPortal.components.launchConfigStep.aiTutorIntegration']()}</p>
 
                                     <p className="mt-1">
                                         AI Tutor apps let users select or create learning topics,
@@ -422,7 +422,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                AI Tutor URL <span className="text-red-500">*</span>
+                                {m['developerPortal.components.launchConfigStep.aiTutorUrl']()} <span className="text-red-500">*</span>
                             </label>
 
                             <input
@@ -460,12 +460,12 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
 
                                 <div className="text-sm text-gray-600">
-                                    <p className="font-medium">How AI Tutor Launch Works</p>
+                                    <p className="font-medium">{m['developerPortal.components.launchConfigStep.howAiTutorWorks']()}</p>
 
                                     <ol className="mt-2 space-y-1 list-decimal list-inside text-xs">
                                         <li>User clicks "Open" on your AI Tutor app</li>
                                         <li>They select "New Topic" or "Revisit Topic"</li>
-                                        <li>User enters or selects a learning topic</li>
+                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep3']()}</li>
                                         <li>
                                             App opens with{' '}
                                             <code className="bg-white px-1 py-0.5 rounded">
@@ -556,7 +556,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 {m['developerPortal.components.launchConfigStep.testYourIntegration']()}
                             </h4>
                             <p className="text-xs text-indigo-600 mt-0.5">
-                                Preview your app and validate partner-connect API calls
+                                {m['developerPortal.components.launchConfigStep.testYourIntegrationDesc']()}
                             </p>
                         </div>
 

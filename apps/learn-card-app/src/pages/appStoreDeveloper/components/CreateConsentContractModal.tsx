@@ -178,7 +178,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             ) : contract.image ? (
                                 <img
                                     src={contract.image}
-                                    alt="Contract"
+                                    alt={m['developerPortal.components.createConsentContractModal.contractLabel']()}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -226,7 +226,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     <textarea
                         value={contract.description || ''}
                         onChange={e => updateSlice('description', e.target.value)}
-                        placeholder="Describe what your app does and why it needs access..."
+                        placeholder={m['developerPortal.components.createConsentContractModal.descriptionPlaceholder']()}
                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[80px] resize-none"
                     />
                 </div>
@@ -300,7 +300,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     {/* Personal Data Fields */}
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <p className="text-xs text-gray-500 mb-3">
-                            Which personal data fields do you want to request from users?
+                            {m['developerPortal.components.createConsentContractModal.personalDataFieldsDesc']()}
                         </p>
 
                         {/* Quick-add common fields */}
@@ -410,11 +410,11 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
                             W
                         </span>
-                        Write Access
+                        {m['developerPortal.components.createConsentContractModal.writeAccess']()}
                     </h3>
 
                     <p className="text-xs text-gray-500 mb-3">
-                        What credential categories do you want permission to send to users?
+                        {m['developerPortal.components.createConsentContractModal.writeAccessDesc']()}
                     </p>
 
                     <ContractCategoryMultiSelect
@@ -432,7 +432,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         onClick={() => setShowAdvanced(!showAdvanced)}
                         className="w-full px-4 py-3 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
                     >
-                        <span className="text-sm font-medium text-gray-600">Advanced Options</span>
+                        <span className="text-sm font-medium text-gray-600">{m['developerPortal.components.createConsentContractModal.advancedOptions']()}</span>
 
                         {showAdvanced ? (
                             <ChevronUp className="w-4 h-4 text-gray-400" />
@@ -446,7 +446,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             {/* Redirect URL */}
                             <div className="pt-4">
                                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                                    Redirect URL
+                                    {m['developerPortal.components.createConsentContractModal.redirectUrl']()}
                                 </label>
 
                                 <input
@@ -458,7 +458,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                 />
 
                                 <p className="text-xs text-gray-400 mt-1">
-                                    Where users will be redirected after consenting
+                                    {m['developerPortal.components.createConsentContractModal.redirectUrlDesc']()}
                                 </p>
                             </div>
 
@@ -466,11 +466,11 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             <div className="flex items-center justify-between py-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600">
-                                        Guardian Consent Flow
+                                        {m['developerPortal.components.createConsentContractModal.guardianConsentFlow']()}
                                     </label>
 
                                     <p className="text-xs text-gray-400">
-                                        Require guardian approval for minors
+                                        {m['developerPortal.components.createConsentContractModal.guardianConsentFlowDesc']()}
                                     </p>
                                 </div>
 

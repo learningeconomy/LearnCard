@@ -483,7 +483,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">All Guides</span>
+                <span className="hidden sm:inline">{m['developerPortal.onboarding.wizard.allGuides']()}</span>
             </button>
 
             <HeaderIntegrationSelector
@@ -893,7 +893,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                    <p className="text-sm text-gray-500 mt-3">Loading integration...</p>
+                    <p className="text-sm text-gray-500 mt-3">{m['developerPortal.shell.loadingIntegration']()}</p>
                 </div>
             </div>
         );

@@ -17,6 +17,9 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('organization-setup-step');
 
+import * as m from '../../../../paraglide/messages.js';
+
+
 import {
     useWallet,
     useToast,
@@ -415,7 +418,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
         return (
             <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mb-4" />
-                <p className="text-gray-500">Loading profiles...</p>
+                <p className="text-gray-500">{m['developerPortal.onboarding.organizationSetup.loadingProfiles']()}</p>
             </div>
         );
     }
@@ -427,7 +430,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Organization Account</p>
+                    <p className="font-medium mb-1">{m['developerPortal.onboarding.organizationSetup.organizationAccount']()}</p>
                     <p>
                         Choose or create an organization account that will be used as the issuer for
                         your credentials. This determines the DID, API keys, and branding for your
@@ -440,7 +443,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 <>
                     {/* Current Account Option */}
                     <div className="space-y-4">
-                        <h3 className="font-medium text-gray-800">Use Current Account</h3>
+                        <h3 className="font-medium text-gray-800">{m['developerPortal.onboarding.organizationSetup.useCurrentAccount']()}</h3>
 
                         <button
                             onClick={handleUseCurrentAccount}
@@ -487,7 +490,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     {/* Root Personal Account Option (when on a service profile) */}
                     {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
                         <div className="space-y-4">
-                            <h3 className="font-medium text-gray-800">Or Use Personal Account</h3>
+                            <h3 className="font-medium text-gray-800">{m['developerPortal.onboarding.organizationSetup.orUsePersonalAccount']()}</h3>
 
                             <button
                                 onClick={handleUseParentAccount}
@@ -518,7 +521,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                     </div>
 
                                     <p className="text-sm text-gray-500">
-                                        Your root personal account
+                                        {m['developerPortal.onboarding.organizationSetup.yourRootPersonalAccount']()}
                                     </p>
                                 </div>
 
@@ -537,7 +540,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     {serviceProfiles.length > 0 && (
                         <div className="space-y-4">
                             <h3 className="font-medium text-gray-800">
-                                Or Switch to Organization Account
+                                {m['developerPortal.onboarding.organizationSetup.orSwitchToOrganizationAccount']()}
                             </h3>
 
                             <div className="space-y-2">
@@ -604,7 +607,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                             className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
                         >
                             <Plus className="w-5 h-5" />
-                            Create New Organization Account
+                            {m['developerPortal.onboarding.organizationSetup.createNewOrganizationAccount']()}
                         </button>
                     </div>
                 </>
@@ -621,7 +624,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     {/* Organization Name */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            Organization Name <span className="text-red-500">*</span>
+                            {m['developerPortal.onboarding.organizationSetup.organizationName']()} <span className="text-red-500">*</span>
                         </label>
 
                         <input
@@ -646,14 +649,14 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     {/* Logo Upload */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            Organization Logo
+                            {m['developerPortal.onboarding.organizationSetup.organizationLogo']()}
                         </label>
 
                         <div className="flex items-center gap-4">
                             {image ? (
                                 <img
                                     src={image}
-                                    alt="Logo preview"
+                                    alt={m['developerPortal.onboarding.organizationSetup.logoPreview']()}
                                     className="w-16 h-16 rounded-xl object-cover"
                                 />
                             ) : (
@@ -692,7 +695,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     {showAdvanced && (
                         <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
                             <label className="block text-sm font-medium text-gray-700">
-                                Profile ID <span className="text-red-500">*</span>
+                                {m['developerPortal.onboarding.organizationSetup.profileId']()} <span className="text-red-500">*</span>
                             </label>
 
                             <div className="flex items-center gap-2">
@@ -723,7 +726,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                             : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
-                                    Letters, numbers, dashes only
+                                    {m['developerPortal.onboarding.organizationSetup.lettersNumbersDashesOnly']()}
                                 </span>
                                 <span
                                     className={`text-xs px-2 py-1 rounded ${
@@ -760,12 +763,12 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                         {isCreating ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                Creating Organization...
+                                {m['developerPortal.onboarding.organizationSetup.creatingOrganization']()}
                             </>
                         ) : (
                             <>
                                 <Building className="w-5 h-5" />
-                                Create Organization Account
+                                {m['developerPortal.onboarding.organizationSetup.createOrganizationAccount']()}
                             </>
                         )}
                     </button>
@@ -780,7 +783,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                         disabled={!canProceed}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Continue to Project Setup
+                        {m['developerPortal.onboarding.organizationSetup.continueToProjectSetup']()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>

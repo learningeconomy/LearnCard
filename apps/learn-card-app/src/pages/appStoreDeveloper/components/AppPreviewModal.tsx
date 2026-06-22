@@ -223,7 +223,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 </div>
 
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                    Preview Not Available
+                                    {m['developerPortal.components.appPreviewModal.previewNotAvailable']()}
                                 </h3>
 
                                 <p className="text-gray-500 mb-4">

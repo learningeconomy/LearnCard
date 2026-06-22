@@ -180,15 +180,15 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast('Code copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.embedCode.copied'](), { hasDismissButton: true });
     };
 
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Embed Code</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.embedCode.title']()}</h2>
                 <p className="text-sm text-gray-500">
-                    Copy and paste into your website to add a claim button
+                    {m['developerPortal.dashboards.tabs.embedCode.description']()}
                 </p>
             </div>
 
@@ -196,7 +196,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             <div className="p-4 bg-pink-50 border border-pink-200 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-pink-800">
-                        Your Publishable Key
+                        {m['developerPortal.dashboards.tabs.embedCode.publishableKey']()}
                     </label>
                     <button
                         onClick={() => copyCode(publishableKey, 'key')}
@@ -207,7 +207,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ) : (
                             <Copy className="w-3 h-3" />
                         )}
-                        {copied === 'key' ? 'Copied!' : 'Copy'}
+                        {copied === 'key' ? m['developerPortal.dashboards.tabs.embedCode.copied']() : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <div className="px-3 py-2 bg-white border border-pink-200 rounded-lg font-mono text-sm text-gray-700 break-all">
@@ -219,7 +219,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             {snippets.length > 1 && (
                 <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Select Template
+                        {m['developerPortal.dashboards.tabs.embedCode.selectTemplate']()}
                     </label>
                     <div className="flex flex-wrap gap-2">
                         {snippets.map((snippet, idx) => (
@@ -244,7 +244,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-800">
-                        HTML Snippet
+                        {m['developerPortal.dashboards.tabs.embedCode.htmlSnippet']()}
                         {snippets.length > 1 && (
                             <span className="text-sm font-normal text-gray-500 ml-2">
                                 ({currentSnippet.name})
@@ -260,7 +260,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ) : (
                             <Copy className="w-3 h-3" />
                         )}
-                        {copied === 'html' ? 'Copied!' : 'Copy'}
+                        {copied === 'html' ? m['developerPortal.dashboards.tabs.embedCode.copied']() : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
@@ -272,7 +272,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-800">
-                        React / npm
+                        {m['developerPortal.dashboards.tabs.embedCode.reactSnippet']()}
                         {snippets.length > 1 && (
                             <span className="text-sm font-normal text-gray-500 ml-2">
                                 ({currentSnippet.name})
@@ -288,7 +288,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ) : (
                             <Copy className="w-3 h-3" />
                         )}
-                        {copied === 'react' ? 'Copied!' : 'Copy'}
+                        {copied === 'react' ? m['developerPortal.dashboards.tabs.embedCode.copied']() : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <div className="mb-2">
@@ -325,7 +325,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                     string | HTMLElement
                                 </td>
                                 <td className="py-1.5">
-                                    CSS selector or DOM element to render the claim button into.
+                                    {m['developerPortal.dashboards.tabs.embedCode.sdkTargetDesc']()}
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
@@ -346,7 +346,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">partnerName</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Displayed in the claim modal header.</td>
+                                <td className="py-1.5">{m['developerPortal.dashboards.tabs.embedCode.sdkPartnerNameDesc']()}</td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">branding</td>

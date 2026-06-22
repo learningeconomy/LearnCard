@@ -573,7 +573,7 @@ if (result.credentialUri) {
                                         <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-red-800">
-                                                Failed to save template
+                                                {m['developerPortal.components.templateListManager.failedToSave']()}
                                             </p>
                                             <p className="text-xs text-red-600 mt-1 break-words">
                                                 {saveError}

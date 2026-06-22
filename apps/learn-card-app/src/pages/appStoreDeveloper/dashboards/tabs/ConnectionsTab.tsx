@@ -304,7 +304,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         {personalKeys.length === 0 &&
                                             credCategories.length === 0 && (
                                                 <p className="mt-3 text-xs text-gray-400 italic">
-                                                    Consent granted with no additional data shared
+                                                    {m['developerPortal.dashboards.tabs.connections.noDataShared']()}
                                                 </p>
                                             )}
                                     </div>
@@ -319,7 +319,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
             <div className="border border-gray-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Query via API</span>
+                    <span className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.connections.queryApi']()}</span>
                 </div>
 
                 <CodeOutputPanel

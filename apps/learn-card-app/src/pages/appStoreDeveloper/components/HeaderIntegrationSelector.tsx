@@ -169,7 +169,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                     type="text"
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
-                                    placeholder="Integration name..."
+                                    placeholder={m['developerPortal.components.headerIntegrationSelector.integrationNamePlaceholder']()}
                                     className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') handleCreate();
@@ -199,7 +199,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                             className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-cyan-600 hover:bg-cyan-50 transition-colors"
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="text-sm font-medium">New Project</span>
+                            <span className="text-sm font-medium">{m['developerPortal.components.headerIntegrationSelector.newProject']()}</span>
                         </button>
                     )}
                 </div>

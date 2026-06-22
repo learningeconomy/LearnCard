@@ -3496,7 +3496,9 @@
                 "createOrganization": "Create Organization",
                 "organizationCreated": "Organization \"{{name}}\" created successfully!",
                 "failedToCreateOrganization": "Failed to create organization: {{message}}",
-                "creating": "Creating..."
+                "creating": "Creating...",
+                "lettersNumbersDashesOnly": "Letters, numbers, dashes only",
+                "logoPreview": "Logo preview"
             },
             "accountSelectorModal": {
                 "switchAccount": "Switch Account"
@@ -3573,7 +3575,8 @@
                 "upgradeFailed": "Upgrade failed. Please try again.",
                 "unexpectedError": "An unexpected error occurred",
                 "noSlugAssigned": "No slug assigned",
-                "slugLabel": "Slug: {{slug}}"
+                "slugLabel": "Slug: {{slug}}",
+                "closeDialog": "Close dialog"
             },
             "appPreviewModal": {
                 "previewMode": "Preview Mode",
@@ -3667,7 +3670,8 @@
                 "failedToCreate": "Failed to create contract: {{message}}",
                 "required": "required",
                 "optional": "optional",
-                "customFieldName": "Custom field name..."
+                "customFieldName": "Custom field name...",
+                "contractLabel": "Contract"
             },
             "diagnosticsPanel": {
                 "title": "Partner Connect Diagnostics",
@@ -3703,7 +3707,8 @@
             },
             "imageUpload": {
                 "clickToUpload": "Click to upload image",
-                "uploading": "Uploading..."
+                "uploading": "Uploading...",
+                "uploaded": "Uploaded"
             },
             "integrationSelector": {
                 "selectIntegration": "Select Integration",
@@ -3871,7 +3876,14 @@
                 "failedToRemove": "Failed to remove template",
                 "aliasUpdated": "Alias updated!",
                 "failedToUpdateAlias": "Failed to update alias",
-                "editingLabel": "Editing"
+                "editingLabel": "Editing",
+                "failedToSave": "Failed to save template"
+            },
+            "integrationGuide": {
+                "consent": {
+                    "step1SelectContractDesc": "Select a consent flow contract above to see your URI here.",
+                    "step4InitDesc": "Then initialize with your API key:"
+                }
             }
         },
         "integrationGuide": {
@@ -4227,6 +4239,7 @@
                 "csvHowItWorks": "We'll create {{count}} separate boosts — one for each course. Course data (name, credits, etc.) will be baked in. Recipient data (name, date) stays dynamic for issuance.",
                 "csvDefaultImage": "Default Credential Image",
                 "csvDefaultImageDesc": "This image will be used for all credentials unless overridden by a CSV column",
+                "csvDefaultImageAlt": "Default credential",
                 "csvUploadImage": "Upload Image",
                 "csvChangeImage": "Change Image",
                 "csvUploading": "Uploading...",
@@ -4250,6 +4263,7 @@
                 "childValidated": "Credential validated successfully",
                 "childSave": "Save Changes",
                 "childCancel": "Cancel",
+                "childFixValidation": "Fix validation errors before saving",
                 "validationErrors": "Template has validation errors. Fix the issues shown above before saving."
             },
             "integrationMethod": {
@@ -4331,7 +4345,71 @@
                 "credentialNotFound": "No new credentials detected",
                 "credentialNotFoundDesc": "Make sure you ran your code.",
                 "failedCheck": "Failed to check credentials. Please try again.",
-                "credentialFailed": "Credential send failed: {{error}}"
+                "credentialFailed": "Credential send failed: {{error}}",
+                "otherTemplates": "Other Templates",
+                "yourApiKey": "Your API Key",
+                "codeExampleGenerator": "Code Example Generator",
+                "selectTemplateForExample": "Select Template for Example",
+                "courseDataPreFilled": "Course data is pre-filled",
+                "templateData": "Template Data",
+                "autoInjectedAtIssuance": "Auto-injected at issuance",
+                "enterProfileIdOrEmail": "Enter a LearnCard Profile ID or an email address",
+                "customizeBrandingWebhooks": "Customize branding, webhooks, and delivery options.",
+                "emailBranding": "Email Branding",
+                "issuerName": "Issuer Name",
+                "logoUrl": "Logo URL",
+                "recipientName": "Recipient Name",
+                "webhookNotification": "Webhook Notification",
+                "webhookUrl": "Webhook URL",
+                "receivePostRequest": "Receive a POST request when the credential is claimed.",
+                "suppressEmailDelivery": "Suppress Email Delivery",
+                "verifyYourCodeWorked": "Verify Your Code Worked",
+                "checkForSentCredentials": "Check for Sent Credentials",
+                "waitingForNewCredentials": "Waiting for new credentials...",
+                "runCodeNowDetect": "Run your code now. We'll detect when it's sent.",
+                "tryAgain": "Try Again",
+                "continueToTesting": "Continue to Testing",
+                "csvBatchUpload": "CSV Batch Upload",
+                "csvTemplate": "CSV Template",
+                "downloadPreFormattedTemplate": "Download a pre-formatted template with the correct columns",
+                "templateColumns": "Template columns:",
+                "howItWorks": "How It Works",
+                "simple3StepProcess": "Simple 3-step process",
+                "downloadTemplate": "Download Template",
+                "getCsvWithHeaders": "Get the CSV with the correct column headers",
+                "fillInYourData": "Fill In Your Data",
+                "addRecipientInfo": "Add recipient info and credential data for each row",
+                "uploadAndSend": "Upload & Send",
+                "goToCsvUploadTab": "Go to the CSV Upload tab in your dashboard to upload and process",
+                "yourWebhookUrl": "Your Webhook URL",
+                "configureInLms": "Configure this in your LMS settings",
+                "captureSampleEvent": "Capture Sample Event",
+                "sendTestEventOrSimulate": "Send a test event from your LMS or simulate one",
+                "waitingForWebhookEvent": "Waiting for webhook event...",
+                "simulateTestEvent": "Simulate Test Event",
+                "eventCapturedSuccessfully": "Event captured successfully!",
+                "courseBoostSelection": "Course Boost Selection",
+                "whichFieldIdentifiesCourse": "Which field identifies the course?",
+                "selectField": "Select a field...",
+                "howShouldWeMatchCourses": "How should we match courses?",
+                "matchByCourseId": "Match by Course ID",
+                "matchByCourseName": "Match by Course Name",
+                "mapIssuanceFields": "Map Issuance Fields",
+                "howToMap": "How to map:",
+                "allSourceFieldsMapped": "All source fields mapped",
+                "allTargetFieldsMapped": "All target fields mapped",
+                "generatedTemplateData": "Generated templateData",
+                "profileIdOrEmail": "Profile ID or email address",
+                "yourOrganization": "Your Organization",
+                "johnDoe": "John Doe",
+                "yourCode": "Your Code",
+                "selectTarget": "→ Select target",
+                "selectSource": "← Select source",
+                "nowSelectTarget": "Now select a target field →",
+                "nowSelectSource": "← Now select a source field",
+                "cancel": "Cancel",
+                "showAdvancedOptions": "Show Advanced Options",
+                "hideAdvancedOptions": "Hide Advanced Options"
             },
             "sandboxTest": {
                 "title": "Sandbox Testing",
@@ -4367,7 +4445,8 @@
                 "failedTitle": "Test Failed",
                 "tryAgain": "Try Again",
                 "back": "Back",
-                "continueToGoLive": "Continue to Go Live"
+                "continueToGoLive": "Continue to Go Live",
+                "logo": "Logo"
             },
             "production": {
                 "readyTitle": "Ready to Go Live!",
@@ -4392,6 +4471,23 @@
                 "activating": "Activating...",
                 "goLive": "Go Live",
                 "backToTesting": "Back to Testing"
+            },
+            "organizationSetup": {
+                "loadingProfiles": "Loading profiles...",
+                "organizationAccount": "Organization Account",
+                "useCurrentAccount": "Use Current Account",
+                "orUsePersonalAccount": "Or Use Personal Account",
+                "yourRootPersonalAccount": "Your root personal account",
+                "orSwitchToOrganizationAccount": "Or Switch to Organization Account",
+                "createNewOrganizationAccount": "Create New Organization Account",
+                "organizationName": "Organization Name",
+                "organizationLogo": "Organization Logo",
+                "profileId": "Profile ID",
+                "lettersNumbersDashesOnly": "Letters, numbers, dashes only",
+                "creatingOrganization": "Creating Organization...",
+                "createOrganizationAccount": "Create Organization Account",
+                "continueToProjectSetup": "Continue to Project Setup",
+                "logoPreview": "Logo preview"
             }
         },
         "credentialBuilder": {
@@ -4874,7 +4970,16 @@
                     "copied": "Copied!",
                     "copyUri": "Copy URI",
                     "copyConfig": "Copy Config",
-                    "loadingTemplates": "Loading..."
+                    "loadingTemplates": "Loading...",
+                    "advancedOptionsDesc": "Customize branding, webhooks, and delivery options.",
+                    "emailBranding": "Email Branding",
+                    "logoUrl": "Logo URL",
+                    "webhookNotification": "Webhook Notification",
+                    "webhookDesc": "Receive a POST request when the credential is claimed.",
+                    "suppressDelivery": "Suppress Email Delivery",
+                    "johnDoe": "John Doe",
+                    "loadingTokens": "Loading tokens...",
+                    "noApiTokens": "No API tokens found. Create one in the <0>API Tokens</0> tab."
                 },
                 "appConfig": {
                     "title": "App Configuration",
@@ -4952,7 +5057,13 @@
                     "saveSuccess": "Configuration saved!",
                     "saveError": "Failed to save configuration",
                     "copy": "Copy",
-                    "copied": "Copied!"
+                    "copied": "Copied!",
+                    "requiredHeadersDesc": "Configure your server to allow iframe embedding",
+                    "previewApp": "Preview App",
+                    "blankIframe": "Blank iframe?",
+                    "mixedContentError": "Mixed content error?",
+                    "corsErrors": "CORS errors?",
+                    "urlCheck": "Check"
                 },
                 "consentFlowCode": {
                     "title": "Integration Code",
@@ -4997,7 +5108,12 @@
                     "copy": "Copy",
                     "copied": "Copied!",
                     "copyUri": "Copy URI",
-                    "yourTemplateUris": "Your Template URIs:"
+                    "yourTemplateUris": "Your Template URIs:",
+                    "buildConsentUrl": "Build the consent URL",
+                    "expressCallbackHandler": "Express callback handler",
+                    "sendCredentialAfterConsent": "Send a credential after consent",
+                    "getAllConsentRecords": "Get all consent records for your contract",
+                    "getConsentDataForUser": "Get consent data for a specific user"
                 },
                 "embedCode": {
                     "title": "Embed Code",
@@ -5009,7 +5125,9 @@
                     "sdkReference": "SDK Reference — InitOptions",
                     "sdkReferenceDesc": "Reference for all available initialization options",
                     "copy": "Copy",
-                    "copied": "Copied!"
+                    "copied": "Copied!",
+                    "sdkTargetDesc": "CSS selector or DOM element to render the claim button into.",
+                    "sdkPartnerNameDesc": "Displayed in the claim modal header."
                 },
                 "connections": {
                     "title": "Connected Users",
@@ -5111,7 +5229,7 @@
                 },
                 "appListings": {
                     "title": "App Listings",
-                    "description": "Description",
+                    "description": "Manage your apps in the LearnCard app store",
                     "newApp": "New App",
                     "createApp": "Create App",
                     "createAppSuccess": "App listing created!",
@@ -5143,7 +5261,9 @@
                     "draft": "Draft",
                     "selectedApp": "Selected: {{name}}",
                     "selectedAppHint": "Use the Partner Connect tab to get integration code for this app.",
-                    "copied": "Copied!"
+                    "copied": "Copied!",
+                    "descriptionLabel": "Description",
+                    "iconAlt": "Icon"
                 },
                 "testing": {
                     "title": "Test Credential Issuance",
@@ -5185,7 +5305,9 @@
                     "enterEmail": "Please enter an email and select a template with a saved boost",
                     "enterUserId": "Please enter a user ID and select a template with a saved boost",
                     "testSentSuccess": "Test credential sent successfully!",
-                    "testSentError": "Failed to send test credential"
+                    "testSentError": "Failed to send test credential",
+                    "noTemplatesToTest": "No templates to test",
+                    "noTemplatesToTestDesc": "Create and save templates first to test credential issuance"
                 },
                 "branding": {
                     "title": "Branding",
@@ -5215,7 +5337,8 @@
                     "yourOrganization": "Your Organization",
                     "organizationTagline": "Organization tagline",
                     "saveSuccess": "Branding updated successfully!",
-                    "saveError": "Failed to update branding"
+                    "saveError": "Failed to update branding",
+                    "profile": "Profile"
                 },
                 "consentFlowTesting": {
                     "title": "Test Consent Flow",
@@ -6585,6 +6708,12 @@
             "courseCatalog": {
                 "noIntegration": "Please select an integration from the header dropdown to continue."
             }
+        },
+        "submissionForm": {
+            "viewMyListings": "View My Listings",
+            "submissionReceived": "Submission Received!",
+            "submitAnotherApp": "Submit Another App",
+            "backToDashboard": "Back to Dashboard"
         }
     },
     "appStoreAdmin": {

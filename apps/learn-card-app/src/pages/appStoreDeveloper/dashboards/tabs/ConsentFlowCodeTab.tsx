@@ -164,9 +164,9 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Integration Code</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.consentFlowCode.title']()}</h2>
                 <p className="text-sm text-gray-500">
-                    Code snippets and configuration for your consent flow integration
+                    {m['developerPortal.dashboards.tabs.consentFlowCode.description']()}
                 </p>
             </div>
 
@@ -174,14 +174,14 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
             <Section
                 icon={Link2}
                 iconColor="text-cyan-600"
-                title="Consent Redirect URL"
-                description="The URL to redirect users to for granting consent"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.desc']()}
             >
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <p className="text-xs text-gray-500 font-medium">
-                                Live URL from your configuration:
+                                {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.liveUrl']()}
                             </p>
                             <CopyButton text={consentUrl} id="consent-url" />
                         </div>
@@ -209,7 +209,7 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                 )}
 
                 <CodeOutputPanel
-                    title="Build the consent URL"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.buildConsentUrl']()}
                     snippets={{
                         typescript: `// Redirect the user to LearnCard's consent screen
 const consentUrl = new URL('${getAppBaseUrl()}/consent-flow');
@@ -234,8 +234,8 @@ ${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
             <Section
                 icon={Webhook}
                 iconColor="text-violet-600"
-                title="Callback Handler"
-                description="Handle the redirect back from LearnCard after consent"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.desc']()}
             >
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
                     <div className="flex gap-2">
@@ -247,7 +247,7 @@ ${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
                 </div>
 
                 <CodeOutputPanel
-                    title="Express callback handler"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.expressCallbackHandler']()}
                     snippets={{
                         typescript: `import { initLearnCard } from '@learncard/init';
 
@@ -313,11 +313,11 @@ def learncard_callback():
             <Section
                 icon={Send}
                 iconColor="text-emerald-600"
-                title="Send Credentials"
-                description="Issue credentials to users who have consented"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.desc']()}
             >
                 <CodeOutputPanel
-                    title="Send a credential after consent"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentialAfterConsent']()}
                     snippets={{
                         typescript: `// Get the user's DID (stored from the consent callback)
 const userDID = await getUserLearnCardDID(userId);
@@ -349,7 +349,7 @@ log.info('Credential sent:', result.credentialUri);`,
 
                 {templates.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-xs text-gray-500 font-medium">Your Template URIs:</p>
+                        <p className="text-xs text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.consentFlowCode.yourTemplateUris']()}</p>
                         {templates
                             .filter(t => t.boostUri)
                             .map(t => (
@@ -368,7 +368,7 @@ log.info('Credential sent:', result.credentialUri);`,
                                     <CopyButton
                                         text={t.boostUri!}
                                         id={`uri-${t.id}`}
-                                        label="Copy URI"
+                                        label={m['developerPortal.dashboards.tabs.consentFlowCode.copyUri']()}
                                     />
                                 </div>
                             ))}
@@ -380,12 +380,12 @@ log.info('Credential sent:', result.credentialUri);`,
             <Section
                 icon={Database}
                 iconColor="text-blue-600"
-                title="Query Consent Data"
-                description="Retrieve consent records and connected users"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.queryData.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.queryData.desc']()}
                 defaultOpen={false}
             >
                 <CodeOutputPanel
-                    title="Get all consent records for your contract"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.getAllConsentRecords']()}
                     snippets={{
                         typescript: `// Query all consent records
 const consentData = await learnCard.invoke.getConsentFlowData(
@@ -402,7 +402,7 @@ consentData.records.forEach(record => {
                 />
 
                 <CodeOutputPanel
-                    title="Get consent data for a specific user"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.getConsentDataForUser']()}
                     snippets={{
                         typescript: `// Query consent data for a specific DID
 const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
@@ -419,8 +419,8 @@ log.info('User consent records:', userConsentData.records);`,
             <Section
                 icon={Settings}
                 iconColor="text-gray-600"
-                title="Settings"
-                description="View and edit your integration configuration"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.settings.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.settings.desc']()}
             >
                 <div className="space-y-3">
                     {/* Integration ID (read-only) */}

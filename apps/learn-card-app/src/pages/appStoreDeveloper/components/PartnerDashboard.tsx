@@ -210,7 +210,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl text-base font-medium hover:bg-cyan-600 transition-colors shadow-lg shadow-cyan-200"
                     >
                         <Plus className="w-5 h-5" />
-                        Create Your First Listing
+                        {m['developerPortal.components.partnerDashboard.createFirstListing']()}
                     </button>
 
                     <p className="text-xs text-gray-400 mt-4">
@@ -225,7 +225,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
         <div className="space-y-5">
             {/* Header with Create button */}
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-700">Your App Listings</h2>
+                <h2 className="text-lg font-semibold text-gray-700">{m['developerPortal.components.partnerDashboard.yourAppListings']()}</h2>
 
                 <div className="flex items-center gap-2">
                     <button
@@ -241,7 +241,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        New Listing
+                        {m['developerPortal.components.partnerDashboard.newListing']()}
                     </button>
                 </div>
             </div>
@@ -288,7 +288,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <div className="text-center py-12">
                             <Loader2 className="w-8 h-8 text-cyan-500 mx-auto animate-spin" />
 
-                            <p className="text-sm text-gray-500 mt-3">Loading listings...</p>
+                            <p className="text-sm text-gray-500 mt-3">{m['developerPortal.components.partnerDashboard.loadingListings']()}</p>
                         </div>
                     ) : filteredListings.length === 0 ? (
                         <div className="bg-white rounded-xl border border-gray-200 text-center py-12 px-4">
@@ -379,7 +379,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             className="md:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 -mt-1"
                         >
                             <ChevronLeft className="w-4 h-4" />
-                            Back to listings
+                            {m['developerPortal.components.partnerDashboard.backToListings']()}
                         </button>
                         <div className="flex items-start gap-4 mb-5">
                             <img
@@ -423,7 +423,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                        Launch Type
+                                        {m['developerPortal.components.partnerDashboard.launchType']()}
                                     </label>
 
                                     <p className="text-sm text-gray-600 mt-1">
@@ -448,7 +448,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 {selectedListing.age_rating && (
                                     <div>
                                         <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                            Age Rating
+                                            {m['developerPortal.components.partnerDashboard.ageRating']()}
                                         </label>
 
                                         <p className="text-sm text-gray-600 mt-1">
@@ -459,7 +459,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 {selectedListing.min_age && (
                                     <div>
                                         <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                            Minimum Age
+                                            {m['developerPortal.components.partnerDashboard.minimumAge']()}
                                         </label>
 
                                         <p className="text-sm text-gray-600 mt-1">
@@ -471,7 +471,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
 
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                    Listing ID
+                                    {m['developerPortal.components.partnerDashboard.listingId']()}
                                 </label>
 
                                 <p className="text-xs text-gray-500 mt-1 font-mono">
@@ -489,7 +489,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                     >
                                         <Pencil className="w-4 h-4" />
-                                        Edit Draft
+                                        {m['developerPortal.components.partnerDashboard.editDraft']()}
                                     </button>
 
                                     <button
@@ -512,7 +512,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         ) : (
                                             <>
                                                 <Send className="w-4 h-4" />
-                                                Submit for Review
+                                                {m['developerPortal.components.partnerDashboard.submitForReview']()}
                                             </>
                                         )}
                                     </button>
@@ -561,7 +561,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg flex-1">
                                         <Clock className="w-4 h-4" />
 
-                                        <span className="text-sm">Waiting for admin approval</span>
+                                        <span className="text-sm">{m['developerPortal.components.partnerDashboard.waitingForApproval']()}</span>
                                     </div>
                                 </>
                             )}
@@ -580,7 +580,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         <CheckCircle2 className="w-4 h-4" />
 
                                         <span className="text-sm">
-                                            Your app is live in the App Store
+                                            {m['developerPortal.components.partnerDashboard.appIsLive']()}
                                         </span>
                                     </div>
                                 </>
@@ -591,7 +591,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     <Archive className="w-4 h-4" />
 
                                     <span className="text-sm">
-                                        This app was rejected. Contact an admin for revision.
+                                        {m['developerPortal.components.partnerDashboard.appRejected']()}
                                     </span>
                                 </div>
                             )}
@@ -603,7 +603,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             <Eye className="w-10 h-10 text-gray-300 mx-auto mb-2" />
 
                             <p className="text-sm text-gray-500">
-                                Select a listing to view details
+                                {m['developerPortal.components.partnerDashboard.selectListing']()}
                             </p>
                         </div>
                     </div>

@@ -3496,7 +3496,9 @@
                 "createOrganization": "Crear Organización",
                 "organizationCreated": "¡Organización \"{{name}}\" creada exitosamente!",
                 "failedToCreateOrganization": "Error al crear organización: {{message}}",
-                "creating": "Creando..."
+                "creating": "Creando...",
+                "lettersNumbersDashesOnly": "Solo letras, números y guiones",
+                "logoPreview": "Vista previa del logotipo"
             },
             "accountSelectorModal": {
                 "switchAccount": "Cambiar Cuenta"
@@ -3573,7 +3575,8 @@
                 "upgradeFailed": "Error en la actualización. Inténtalo de nuevo.",
                 "unexpectedError": "Ocurrió un error inesperado",
                 "noSlugAssigned": "Sin slug asignado",
-                "slugLabel": "Slug: {{slug}}"
+                "slugLabel": "Slug: {{slug}}",
+                "closeDialog": "Cerrar diálogo"
             },
             "appPreviewModal": {
                 "previewMode": "Modo de Vista Previa",
@@ -3667,7 +3670,8 @@
                 "failedToCreate": "Failed to create contract: {{message}}",
                 "required": "requerido",
                 "optional": "opcional",
-                "customFieldName": "Nombre de campo personalizado..."
+                "customFieldName": "Nombre de campo personalizado...",
+                "contractLabel": "Contrato"
             },
             "diagnosticsPanel": {
                 "title": "Diagnósticos de Partner Connect",
@@ -3703,7 +3707,8 @@
             },
             "imageUpload": {
                 "clickToUpload": "Haz clic para subir imagen",
-                "uploading": "Subiendo..."
+                "uploading": "Subiendo...",
+                "uploaded": "Subido"
             },
             "integrationSelector": {
                 "selectIntegration": "Seleccionar Integración",
@@ -3871,7 +3876,14 @@
                 "failedToRemove": "Error al eliminar plantilla",
                 "aliasUpdated": "¡Alias actualizado!",
                 "failedToUpdateAlias": "Error al actualizar alias",
-                "editingLabel": "Editando"
+                "editingLabel": "Editando",
+                "failedToSave": "Error al guardar la plantilla"
+            },
+            "integrationGuide": {
+                "consent": {
+                    "step1SelectContractDesc": "Selecciona un contrato de consentimiento arriba para ver tu URI aquí.",
+                    "step4InitDesc": "Luego inicializa con tu clave de API:"
+                }
             }
         },
         "integrationGuide": {
@@ -4227,6 +4239,7 @@
                 "csvHowItWorks": "Crearemos {{count}} boosts separados — uno por cada curso. Los datos del curso (nombre, créditos, etc.) se incorporarán. Los datos del destinatario (nombre, fecha) se mantienen dinámicos para la emisión.",
                 "csvDefaultImage": "Imagen de Credencial Predeterminada",
                 "csvDefaultImageDesc": "Esta imagen se usará para todas las credenciales a menos que una columna CSV la anule",
+                "csvDefaultImageAlt": "Credencial predeterminada",
                 "csvUploadImage": "Subir Imagen",
                 "csvChangeImage": "Cambiar Imagen",
                 "csvUploading": "Subiendo...",
@@ -4250,6 +4263,7 @@
                 "childValidated": "Credencial validada exitosamente",
                 "childSave": "Guardar Cambios",
                 "childCancel": "Cancelar",
+                "childFixValidation": "Corrige los errores de validación antes de guardar",
                 "validationErrors": "La plantilla tiene errores de validación. Corrije los problemas mostrados arriba antes de guardar."
             },
             "integrationMethod": {
@@ -4331,7 +4345,71 @@
                 "credentialNotFound": "No se detectaron nuevas credenciales",
                 "credentialNotFoundDesc": "Asegúrate de haber ejecutado tu código.",
                 "failedCheck": "Error al verificar las credenciales. Inténtalo de nuevo.",
-                "credentialFailed": "Error al enviar la credencial: {{error}}"
+                "credentialFailed": "Error al enviar la credencial: {{error}}",
+                "otherTemplates": "Other Templates",
+                "yourApiKey": "Your API Key",
+                "codeExampleGenerator": "Code Example Generator",
+                "selectTemplateForExample": "Select Template for Example",
+                "courseDataPreFilled": "Course data is pre-filled",
+                "templateData": "Template Data",
+                "autoInjectedAtIssuance": "Auto-injected at issuance",
+                "enterProfileIdOrEmail": "Enter a LearnCard Profile ID or an email address",
+                "customizeBrandingWebhooks": "Customize branding, webhooks, and delivery options.",
+                "emailBranding": "Email Branding",
+                "issuerName": "Issuer Name",
+                "logoUrl": "Logo URL",
+                "recipientName": "Recipient Name",
+                "webhookNotification": "Webhook Notification",
+                "webhookUrl": "Webhook URL",
+                "receivePostRequest": "Receive a POST request when the credential is claimed.",
+                "suppressEmailDelivery": "Suppress Email Delivery",
+                "verifyYourCodeWorked": "Verify Your Code Worked",
+                "checkForSentCredentials": "Check for Sent Credentials",
+                "waitingForNewCredentials": "Waiting for new credentials...",
+                "runCodeNowDetect": "Run your code now. We'll detect when it's sent.",
+                "tryAgain": "Try Again",
+                "continueToTesting": "Continue to Testing",
+                "csvBatchUpload": "CSV Batch Upload",
+                "csvTemplate": "CSV Template",
+                "downloadPreFormattedTemplate": "Download a pre-formatted template with the correct columns",
+                "templateColumns": "Template columns:",
+                "howItWorks": "How It Works",
+                "simple3StepProcess": "Simple 3-step process",
+                "downloadTemplate": "Download Template",
+                "getCsvWithHeaders": "Get the CSV with the correct column headers",
+                "fillInYourData": "Fill In Your Data",
+                "addRecipientInfo": "Add recipient info and credential data for each row",
+                "uploadAndSend": "Upload & Send",
+                "goToCsvUploadTab": "Go to the CSV Upload tab in your dashboard to upload and process",
+                "yourWebhookUrl": "Your Webhook URL",
+                "configureInLms": "Configure this in your LMS settings",
+                "captureSampleEvent": "Capture Sample Event",
+                "sendTestEventOrSimulate": "Send a test event from your LMS or simulate one",
+                "waitingForWebhookEvent": "Waiting for webhook event...",
+                "simulateTestEvent": "Simulate Test Event",
+                "eventCapturedSuccessfully": "Event captured successfully!",
+                "courseBoostSelection": "Course Boost Selection",
+                "whichFieldIdentifiesCourse": "Which field identifies the course?",
+                "selectField": "Select a field...",
+                "howShouldWeMatchCourses": "How should we match courses?",
+                "matchByCourseId": "Match by Course ID",
+                "matchByCourseName": "Match by Course Name",
+                "mapIssuanceFields": "Map Issuance Fields",
+                "howToMap": "How to map:",
+                "allSourceFieldsMapped": "All source fields mapped",
+                "allTargetFieldsMapped": "All target fields mapped",
+                "generatedTemplateData": "Generated templateData",
+                "profileIdOrEmail": "Profile ID or email address",
+                "yourOrganization": "Your Organization",
+                "johnDoe": "John Doe",
+                "yourCode": "Your Code",
+                "selectTarget": "→ Select target",
+                "selectSource": "← Select source",
+                "nowSelectTarget": "Now select a target field →",
+                "nowSelectSource": "← Now select a source field",
+                "cancel": "Cancel",
+                "showAdvancedOptions": "Show Advanced Options",
+                "hideAdvancedOptions": "Hide Advanced Options"
             },
             "sandboxTest": {
                 "title": "Pruebas en Sandbox",
@@ -4367,7 +4445,8 @@
                 "failedTitle": "Prueba Fallida",
                 "tryAgain": "Intentar de Nuevo",
                 "back": "Atrás",
-                "continueToGoLive": "Continuar a Publicar"
+                "continueToGoLive": "Continuar a Publicar",
+                "logo": "Logo"
             },
             "production": {
                 "readyTitle": "¡Listo para Publicar!",
@@ -4392,6 +4471,23 @@
                 "activating": "Activando...",
                 "goLive": "Publicar",
                 "backToTesting": "Volver a Pruebas"
+            },
+            "organizationSetup": {
+                "loadingProfiles": "Loading profiles...",
+                "organizationAccount": "Organization Account",
+                "useCurrentAccount": "Use Current Account",
+                "orUsePersonalAccount": "Or Use Personal Account",
+                "yourRootPersonalAccount": "Your root personal account",
+                "orSwitchToOrganizationAccount": "Or Switch to Organization Account",
+                "createNewOrganizationAccount": "Create New Organization Account",
+                "organizationName": "Organization Name",
+                "organizationLogo": "Organization Logo",
+                "profileId": "Profile ID",
+                "lettersNumbersDashesOnly": "Letters, numbers, dashes only",
+                "creatingOrganization": "Creating Organization...",
+                "createOrganizationAccount": "Create Organization Account",
+                "continueToProjectSetup": "Continue to Project Setup",
+                "logoPreview": "Logo preview"
             }
         },
         "credentialBuilder": {
@@ -4874,7 +4970,16 @@
                     "copied": "¡Copiado!",
                     "copyUri": "Copiar URI",
                     "copyConfig": "Copiar Configuración",
-                    "loadingTemplates": "Cargando..."
+                    "loadingTemplates": "Cargando...",
+                    "advancedOptionsDesc": "Personaliza la marca, los webhooks y las opciones de entrega.",
+                    "emailBranding": "Marca de Correo Electrónico",
+                    "logoUrl": "URL del Logotipo",
+                    "webhookNotification": "Notificación Webhook",
+                    "webhookDesc": "Recibe una solicitud POST cuando se reclame la credencial.",
+                    "suppressDelivery": "Suprimir Entrega por Correo",
+                    "johnDoe": "Juan Pérez",
+                    "loadingTokens": "Cargando tokens...",
+                    "noApiTokens": "No se encontraron tokens. Crea uno en la pestaña <0>Tokens de API</0>."
                 },
                 "appConfig": {
                     "title": "Configuración de la App",
@@ -4952,7 +5057,13 @@
                     "saveSuccess": "¡Configuración guardada!",
                     "saveError": "Error al guardar la configuración",
                     "copy": "Copiar",
-                    "copied": "¡Copiado!"
+                    "copied": "¡Copiado!",
+                    "requiredHeadersDesc": "Configura tu servidor para permitir la incrustación en iframe",
+                    "previewApp": "Vista previa",
+                    "blankIframe": "¿Iframe en blanco?",
+                    "mixedContentError": "¿Error de contenido mixto?",
+                    "corsErrors": "¿Errores CORS?",
+                    "urlCheck": "Verificar"
                 },
                 "consentFlowCode": {
                     "title": "Código de Integración",
@@ -4997,7 +5108,12 @@
                     "copy": "Copiar",
                     "copied": "¡Copiado!",
                     "copyUri": "Copiar URI",
-                    "yourTemplateUris": "Tus URI de Plantillas:"
+                    "yourTemplateUris": "Tus URI de Plantillas:",
+                    "buildConsentUrl": "Crear la URL de consentimiento",
+                    "expressCallbackHandler": "Manejador de devolución de llamada Express",
+                    "sendCredentialAfterConsent": "Enviar una credencial después del consentimiento",
+                    "getAllConsentRecords": "Obtener todos los registros de consentimiento de su contrato",
+                    "getConsentDataForUser": "Obtener datos de consentimiento para un usuario específico"
                 },
                 "embedCode": {
                     "title": "Código de Incrustación",
@@ -5009,7 +5125,9 @@
                     "sdkReference": "Referencia del SDK — InitOptions",
                     "sdkReferenceDesc": "Referencia para todas las opciones de inicialización disponibles",
                     "copy": "Copiar",
-                    "copied": "¡Copiado!"
+                    "copied": "¡Copiado!",
+                    "sdkTargetDesc": "Selector CSS o elemento DOM donde se renderizará el botón de reclamo.",
+                    "sdkPartnerNameDesc": "Se muestra en el encabezado del modal de reclamo."
                 },
                 "connections": {
                     "title": "Usuarios Conectados",
@@ -5111,7 +5229,7 @@
                 },
                 "appListings": {
                     "title": "Listados de Apps",
-                    "description": "Descripción",
+                    "description": "Administra tus aplicaciones en la tienda de aplicaciones de LearnCard",
                     "newApp": "Nueva App",
                     "createApp": "Crear App",
                     "createAppSuccess": "¡Listado de app creado!",
@@ -5143,7 +5261,9 @@
                     "draft": "Borrador",
                     "selectedApp": "Seleccionada: {{name}}",
                     "selectedAppHint": "Usa la pestaña Partner Connect para obtener el código de integración para esta app.",
-                    "copied": "¡Copiado!"
+                    "copied": "¡Copiado!",
+                    "descriptionLabel": "Descripción",
+                    "iconAlt": "Icono"
                 },
                 "testing": {
                     "title": "Probar Emisión de Credenciales",
@@ -5185,7 +5305,9 @@
                     "enterEmail": "Por favor ingresa un correo y selecciona una plantilla con un boost guardado",
                     "enterUserId": "Por favor ingresa un ID de usuario y selecciona una plantilla con un boost guardado",
                     "testSentSuccess": "¡Credencial de prueba enviada con éxito!",
-                    "testSentError": "Error al enviar la credencial de prueba"
+                    "testSentError": "Error al enviar la credencial de prueba",
+                    "noTemplatesToTest": "No hay plantillas para probar",
+                    "noTemplatesToTestDesc": "Crea y guarda plantillas primero para probar la emisión de credenciales"
                 },
                 "branding": {
                     "title": "Marca",
@@ -5215,7 +5337,8 @@
                     "yourOrganization": "Tu Organización",
                     "organizationTagline": "Eslogan de la organización",
                     "saveSuccess": "¡Marca actualizada con éxito!",
-                    "saveError": "Error al actualizar la marca"
+                    "saveError": "Error al actualizar la marca",
+                    "profile": "Perfil"
                 },
                 "consentFlowTesting": {
                     "title": "Probar Flujo de Consentimiento",
@@ -6585,6 +6708,12 @@
             "courseCatalog": {
                 "noIntegration": "Please select an integration from the header dropdown to continue."
             }
+        },
+        "submissionForm": {
+            "viewMyListings": "Ver Mis Listados",
+            "submissionReceived": "¡Recibido!",
+            "submitAnotherApp": "Enviar Otra App",
+            "backToDashboard": "Volver al Panel"
         }
     },
     "appStoreAdmin": {

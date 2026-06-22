@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import { getLogger } from 'learn-card-base';
 const log = getLogger('template-builder-step');
 /**
@@ -963,10 +965,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 <FileStack className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Create Credential Templates</p>
+                    <p className="font-medium mb-1">{m['developerPortal.onboarding.templateBuilder.title']()}</p>
                     <p>
-                        Templates define the structure of credentials you'll issue. Each template is
-                        saved as a reusable boost that can be issued to recipients.
+                        {m['developerPortal.onboarding.templateBuilder.description']()}
                     </p>
                 </div>
             </div>
@@ -976,8 +977,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span>
-                        Fill in your template details, then click <strong>"Create Template"</strong>{' '}
-                        to save it.
+                        {m['developerPortal.onboarding.templateBuilder.editingHint']()}
                     </span>
                 </div>
             )}
@@ -1058,7 +1058,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         {dynamicVars.length > 0 && (
                                                             <p className="text-sm text-violet-800">
                                                                 <strong>
-                                                                    User-provided at issuance:
+                                                                    {m['developerPortal.onboarding.templateBuilder.userProvided']()}
                                                                 </strong>{' '}
                                                                 {dynamicVars
                                                                     .map(
@@ -1070,7 +1070,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                                         {systemVars.length > 0 && (
                                                             <p className="text-sm text-violet-600">
-                                                                <strong>Auto-injected:</strong>{' '}
+                                                                <strong>{m['developerPortal.onboarding.templateBuilder.autoInjected']()}</strong>{' '}
                                                                 {systemVars
                                                                     .map(
                                                                         f => `{{${f.variableName}}}`
@@ -1082,7 +1082,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         {dynamicVars.length === 0 &&
                                                             systemVars.length === 0 && (
                                                                 <p className="text-sm text-violet-600">
-                                                                    No dynamic variables
+                                                                    {m['developerPortal.onboarding.templateBuilder.noDynamicVars']()}
                                                                 </p>
                                                             )}
                                                     </>
@@ -1193,12 +1193,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         className="flex-1 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors disabled:opacity-50"
                     >
                         <Plus className="w-5 h-5" />
-                        Add Blank Template
+                        {m['developerPortal.onboarding.templateBuilder.addBlank']()}
                     </button>
 
                     <label className="flex-1 flex items-center justify-center gap-2 p-4 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50 transition-colors cursor-pointer">
                         <Upload className="w-5 h-5" />
-                        Import from Catalog
+                        {m['developerPortal.onboarding.templateBuilder.importFromCatalog']()}
                         <input
                             ref={csvInputRef}
                             type="file"
@@ -1210,7 +1210,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 </div>
 
                 <p className="text-xs text-center text-gray-500">
-                    Upload a CSV of your courses to auto-generate a template with dynamic fields
+                    {m['developerPortal.onboarding.templateBuilder.csvHint']()}
                 </p>
             </div>
 
@@ -1238,7 +1238,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                     {hasUnsavedNewTemplates && (
                         <p className="text-xs text-amber-600 text-center">
-                            Save or cancel the template you're editing before continuing.
+                            {m['developerPortal.onboarding.templateBuilder.unsavedWarning']()}
                         </p>
                     )}
                 </>
@@ -1257,7 +1257,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                 <div>
                                     <h3 className="font-semibold text-gray-800">
-                                        Import Course Catalog
+                                        {m['developerPortal.onboarding.templateBuilder.csvImportTitle']()}
                                     </h3>
                                     <p className="text-sm text-gray-500">
                                         {csvAllRows.length} courses found • {csvColumns.length}{' '}
@@ -1278,13 +1278,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         <div className="flex-1 overflow-auto p-4 space-y-6">
                             {/* Explanation */}
                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-                                <p className="font-medium mb-1">How this works:</p>
+                                <p className="font-medium mb-1">{m['developerPortal.onboarding.templateBuilder.csvHowItWorksTitle']()}</p>
                                 <p>
-                                    We'll create{' '}
-                                    <strong>{csvAllRows.length} separate boosts</strong> — one for
-                                    each course. Course data (name, credits, etc.) will be{' '}
-                                    <strong>baked in</strong>. Recipient data (name, date) stays{' '}
-                                    <strong>dynamic</strong> for issuance.
+                                    {m['developerPortal.onboarding.templateBuilder.csvHowItWorks']({ count: csvAllRows.length })}
                                 </p>
                             </div>
 
@@ -1292,7 +1288,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div>
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Default Credential Image
+                                        {m['developerPortal.onboarding.templateBuilder.csvDefaultImage']()}
                                     </label>
                                     <p className="text-xs text-gray-500">
                                         This image will be used for all credentials unless
@@ -1305,7 +1301,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         <div className="relative group">
                                             <img
                                                 src={defaultImage}
-                                                alt="Default credential"
+                                                alt={m['developerPortal.onboarding.templateBuilder.csvDefaultImageAlt']()}
                                                 className="w-20 h-20 rounded-xl object-cover border border-gray-200"
                                             />
 
@@ -1347,10 +1343,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
-                                            Catalog Fields (Baked into each boost)
+                                            {m['developerPortal.onboarding.templateBuilder.csvCatalogFields']()}
                                         </label>
                                         <p className="text-xs text-gray-500">
-                                            These values come from your CSV
+                                            {m['developerPortal.onboarding.templateBuilder.csvCatalogFieldsDesc']()}
                                         </p>
                                     </div>
 
@@ -1455,11 +1451,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div>
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Issuance Fields
+                                        {m['developerPortal.onboarding.templateBuilder.csvIssuanceFields']()}
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        <span className="text-violet-600 font-medium">Dynamic</span>{' '}
-                                        = you provide at issuance time
+                                        {m['developerPortal.onboarding.templateBuilder.csvIssuanceFieldsDesc']()}
                                     </p>
                                 </div>
 
@@ -1524,7 +1519,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             System
                                         </span>
                                         <span className="text-xs text-cyan-700 font-medium">
-                                            Auto-injected at issuance
+                                            {m['developerPortal.onboarding.templateBuilder.csvAutoInjected']()}
                                         </span>
                                     </div>
                                     <div className="space-y-1">
@@ -1551,7 +1546,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             {/* Preview */}
                             <div className="p-4 bg-gray-50 rounded-xl">
                                 <h4 className="text-sm font-medium text-gray-700 mb-2">
-                                    Preview: First 3 Boosts to Create
+                                    {m['developerPortal.onboarding.templateBuilder.csvPreview']()}
                                 </h4>
 
                                 <div className="space-y-2">
@@ -1595,7 +1590,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         {/* Modal Footer */}
                         <div className="flex items-center justify-between p-4 border-t border-gray-200">
                             <div className="text-sm text-gray-600">
-                                Will create <strong>{csvAllRows.length}</strong> course boosts
+                                {m['developerPortal.onboarding.templateBuilder.csvWillCreate']({ count: csvAllRows.length })}
                             </div>
 
                             <div className="flex items-center gap-3">
@@ -1634,7 +1629,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 </div>
 
                                 <div>
-                                    <h3 className="font-semibold text-gray-800">Customize Boost</h3>
+                                    <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.templateBuilder.childEditTitle']()}</h3>
                                     <p className="text-sm text-gray-500">
                                         {editingChild.template.name?.value || 'Untitled'}
                                     </p>
@@ -1683,7 +1678,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 {childValidationStatus === 'valid' && (
                                     <div className="flex items-center gap-2 text-sm text-emerald-600">
                                         <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                        <span>Credential validated successfully</span>
+                                        <span>{m['developerPortal.onboarding.templateBuilder.childValidated']()}</span>
                                     </div>
                                 )}
                             </div>
@@ -1707,7 +1702,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     }
                                 >
                                     <Save className="w-4 h-4" />
-                                    Save Changes
+                                    {m['developerPortal.onboarding.templateBuilder.childSave']()}
                                 </button>
                             </div>
                         </div>

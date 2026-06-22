@@ -36,6 +36,8 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('data-mapping-step');
 
+import * as m from '../../../../paraglide/messages.js';
+
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet } from 'learn-card-base';
@@ -1201,7 +1203,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         }`}
                     >
                         <FileStack className="w-4 h-4" />
-                        Boost URIs Reference
+                        {m['developerPortal.onboarding.dataMapping.apiViewReference']()}
                     </button>
 
                     <button
@@ -1213,7 +1215,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         }`}
                     >
                         <Code className="w-4 h-4" />
-                        Code Example
+                        {m['developerPortal.onboarding.dataMapping.apiViewExample']()}
                     </button>
                 </div>
 
@@ -1223,7 +1225,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
-                                <p className="font-medium mb-1">Your Boost Template URIs</p>
+                                <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.apiBoostUrisInfo']()}</p>
                                 <p>
                                     Copy individual URIs or export all as a config file for your
                                     codebase.
@@ -1239,7 +1241,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             {apiCopiedConfig ? (
                                 <>
                                     <Check className="w-4 h-4" />
-                                    Copied Config!
+                                    {m['developerPortal.onboarding.dataMapping.apiCopied']()}
                                 </>
                             ) : (
                                 <>
@@ -1282,7 +1284,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             </code>
                                                         ) : (
                                                             <span className="text-xs text-amber-600">
-                                                                Not saved yet
+                                                                {m['developerPortal.onboarding.dataMapping.apiNotSaved']()}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1317,7 +1319,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                             <Award className="w-4 h-4 text-gray-500" />
                                             <span className="font-medium text-gray-700">
-                                                Other Templates
+                                                {m['developerPortal.onboarding.dataMapping.otherTemplates']()}
                                             </span>
                                         </div>
                                     )}
@@ -1345,7 +1347,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                                 </code>
                                                             ) : (
                                                                 <span className="text-xs text-amber-600">
-                                                                    Not saved yet
+                                                                    {m['developerPortal.onboarding.dataMapping.apiNotSaved']()}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1380,7 +1382,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-medium text-amber-800">Your API Key</p>
+                                    <p className="font-medium text-amber-800">{m['developerPortal.onboarding.dataMapping.yourApiKey']()}</p>
                                     <p className="text-xs text-amber-700 mt-0.5">
                                         Set{' '}
                                         <code className="bg-amber-100 px-1 rounded">
@@ -1403,7 +1405,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
-                                <p className="font-medium mb-1">Code Example Generator</p>
+                                <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.codeExampleGenerator']()}</p>
                                 <p>
                                     Select a template to generate example code. Use the Reference
                                     tab to get all URIs.
@@ -1415,7 +1417,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {issuableTemplates.length > 0 && (
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium text-gray-700">
-                                    Select Template for Example
+                                    {m['developerPortal.onboarding.dataMapping.selectTemplateForExample']()}
                                 </label>
 
                                 {/* Master Templates with Children */}
@@ -1489,7 +1491,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="space-y-2">
                                         {masterTemplates.length > 0 && (
                                             <p className="text-xs text-gray-500 font-medium pt-2">
-                                                Other Templates
+                                                {m['developerPortal.onboarding.dataMapping.otherTemplates']()}
                                             </p>
                                         )}
 
@@ -1558,7 +1560,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                                 <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm text-emerald-800">
-                                    <p className="font-medium">Course data is pre-filled</p>
+                                    <p className="font-medium">{m['developerPortal.onboarding.dataMapping.courseDataPreFilled']()}</p>
                                     <p className="text-xs text-emerald-700 mt-0.5">
                                         This boost has course-specific data (name, credits, etc.)
                                         already baked in. You only need to provide issuance data
@@ -1573,7 +1575,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Template Data
+                                        {m['developerPortal.onboarding.dataMapping.templateData']()}
                                     </label>
 
                                     <span className="text-xs text-gray-500">
@@ -1628,7 +1630,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <Zap className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-medium text-cyan-800">
-                                        Auto-injected at issuance
+                                        {m['developerPortal.onboarding.dataMapping.autoInjectedAtIssuance']()}
                                     </p>
                                     <p className="text-xs text-cyan-700 mt-0.5">
                                         {apiSystemVariables.map(v => `{{${v}}}`).join(', ')}
@@ -1647,12 +1649,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 type="text"
                                 value={apiRecipientEmail}
                                 onChange={e => setApiRecipientEmail(e.target.value)}
-                                placeholder="Profile ID or email address"
+                                placeholder={m['developerPortal.onboarding.dataMapping.profileIdOrEmail']()}
                                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
 
                             <p className="text-xs text-gray-500">
-                                Enter a LearnCard Profile ID or an email address
+                                {m['developerPortal.onboarding.dataMapping.enterProfileIdOrEmail']()}
                             </p>
                         </div>
 
@@ -1661,7 +1663,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-medium text-amber-800">Your API Key</p>
+                                    <p className="font-medium text-amber-800">{m['developerPortal.onboarding.dataMapping.yourApiKey']()}</p>
                                     <p className="text-xs text-amber-700 mt-0.5">
                                         Set{' '}
                                         <code className="bg-amber-100 px-1 rounded">
@@ -1686,7 +1688,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             ) : (
                                 <ChevronDown className="w-4 h-4" />
                             )}
-                            {apiShowAdvanced ? 'Hide' : 'Show'} Advanced Options
+                            {apiShowAdvanced ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']() : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                             {apiHasAdvancedOptions && (
                                 <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
                                     Active
@@ -1698,20 +1700,20 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {apiShowAdvanced && (
                             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
                                 <p className="text-sm text-gray-600">
-                                    Customize branding, webhooks, and delivery options.
+                                    {m['developerPortal.onboarding.dataMapping.customizeBrandingWebhooks']()}
                                 </p>
 
                                 {/* Branding Section */}
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <Building2 className="w-4 h-4 text-indigo-500" />
-                                        Email Branding
+                                        {m['developerPortal.onboarding.dataMapping.emailBranding']()}
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                Issuer Name
+                                                {m['developerPortal.onboarding.dataMapping.issuerName']()}
                                             </label>
                                             <input
                                                 type="text"
@@ -1722,14 +1724,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         issuerName: e.target.value,
                                                     }))
                                                 }
-                                                placeholder="Your Organization"
+                                                placeholder={m['developerPortal.onboarding.dataMapping.yourOrganization']()}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                Logo URL
+                                                {m['developerPortal.onboarding.dataMapping.logoUrl']()}
                                             </label>
                                             <input
                                                 type="url"
@@ -1747,7 +1749,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                Recipient Name
+                                                {m['developerPortal.onboarding.dataMapping.recipientName']()}
                                             </label>
                                             <input
                                                 type="text"
@@ -1758,7 +1760,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         recipientName: e.target.value,
                                                     }))
                                                 }
-                                                placeholder="John Doe"
+                                                placeholder={m['developerPortal.onboarding.dataMapping.johnDoe']()}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
@@ -1769,12 +1771,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <div className="space-y-3 pt-3 border-t border-gray-200">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <Webhook className="w-4 h-4 text-emerald-500" />
-                                        Webhook Notification
+                                        {m['developerPortal.onboarding.dataMapping.webhookNotification']()}
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Webhook URL
+                                            {m['developerPortal.onboarding.dataMapping.webhookUrl']()}
                                         </label>
                                         <input
                                             type="url"
@@ -1789,7 +1791,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Receive a POST request when the credential is claimed.
+                                            {m['developerPortal.onboarding.dataMapping.receivePostRequest']()}
                                         </p>
                                     </div>
                                 </div>
@@ -1811,7 +1813,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         <div className="flex items-center gap-2">
                                             <BellOff className="w-4 h-4 text-amber-500" />
                                             <span className="text-sm font-medium text-gray-700">
-                                                Suppress Email Delivery
+                                                {m['developerPortal.onboarding.dataMapping.suppressEmailDelivery']()}
                                             </span>
                                         </div>
                                     </label>
@@ -1825,7 +1827,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {/* Code Output */}
                         <CodeOutputPanel
-                            title="Your Code"
+                            title={m['developerPortal.onboarding.dataMapping.yourCode']()}
                             snippets={{
                                 typescript: generateApiCodeSnippet(),
                                 curl: generateCurlCodeSnippet(),
@@ -1841,7 +1843,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                 <div className="flex-1">
                                     <h4 className="font-medium text-gray-800 mb-1">
-                                        Verify Your Code Worked
+                                        {m['developerPortal.onboarding.dataMapping.verifyYourCodeWorked']()}
                                     </h4>
                                     <p className="text-sm text-gray-600 mb-3">
                                         Run your code, then click below to verify the credential was
@@ -1854,7 +1856,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors"
                                         >
                                             <RefreshCw className="w-4 h-4" />
-                                            Check for Sent Credentials
+                                            {m['developerPortal.onboarding.dataMapping.checkForSentCredentials']()}
                                         </button>
                                     )}
 
@@ -1863,17 +1865,17 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
                                             <div>
                                                 <p className="text-sm font-medium text-gray-700">
-                                                    Waiting for new credentials...
+                                                    {m['developerPortal.onboarding.dataMapping.waitingForNewCredentials']()}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    Run your code now. We'll detect when it's sent.
+                                                    {m['developerPortal.onboarding.dataMapping.runCodeNowDetect']()}
                                                 </p>
                                             </div>
                                             <button
                                                 onClick={() => setApiIsPolling(false)}
                                                 className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
                                             >
-                                                Cancel
+                                                {m['developerPortal.onboarding.dataMapping.cancel']()}
                                             </button>
                                         </div>
                                     )}
@@ -1909,7 +1911,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     onClick={handleApiStartPolling}
                                                     className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
                                                 >
-                                                    Try Again
+                                                    {m['developerPortal.onboarding.dataMapping.tryAgain']()}
                                                 </button>
                                             )}
                                         </div>
@@ -1927,7 +1929,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m['developerPortal.onboarding.dataMapping.back']()}
                     </button>
 
                     <button
@@ -1936,7 +1938,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         }
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
-                        Continue to Testing
+                        {m['developerPortal.onboarding.dataMapping.continueToTesting']()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -1960,7 +1962,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium mb-1">CSV Batch Upload</p>
+                        <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.csvBatchUpload']()}</p>
                         <p>
                             Issue credentials in bulk by uploading a CSV spreadsheet. Download the
                             template below to get started with the correct format.
@@ -1976,16 +1978,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">CSV Template</h3>
+                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.csvTemplate']()}</h3>
                             <p className="text-sm text-gray-500">
-                                Download a pre-formatted template with the correct columns
+                                {m['developerPortal.onboarding.dataMapping.downloadPreFormattedTemplate']()}
                             </p>
                         </div>
                     </div>
 
                     {/* Template columns preview */}
                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                        <p className="text-xs font-medium text-gray-600">Template columns:</p>
+                        <p className="text-xs font-medium text-gray-600">{m['developerPortal.onboarding.dataMapping.templateColumns']()}</p>
                         <div className="flex flex-wrap gap-2">
                             <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
                                 Recipient *
@@ -2018,7 +2020,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Download className="w-4 h-4" />
-                        Download CSV Template
+                        {m['developerPortal.onboarding.dataMapping.csvDownloadTemplate']()}
                     </button>
                 </div>
 
@@ -2030,8 +2032,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">How It Works</h3>
-                            <p className="text-sm text-gray-500">Simple 3-step process</p>
+                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.howItWorks']()}</h3>
+                            <p className="text-sm text-gray-500">{m['developerPortal.onboarding.dataMapping.simple3StepProcess']()}</p>
                         </div>
                     </div>
 
@@ -2042,10 +2044,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">
-                                    Download Template
+                                    {m['developerPortal.onboarding.dataMapping.downloadTemplate']()}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    Get the CSV with the correct column headers
+                                    {m['developerPortal.onboarding.dataMapping.getCsvWithHeaders']()}
                                 </p>
                             </div>
                         </div>
@@ -2056,10 +2058,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">
-                                    Fill In Your Data
+                                    {m['developerPortal.onboarding.dataMapping.fillInYourData']()}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    Add recipient info and credential data for each row
+                                    {m['developerPortal.onboarding.dataMapping.addRecipientInfo']()}
                                 </p>
                             </div>
                         </div>
@@ -2069,9 +2071,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <span className="text-xs font-bold text-cyan-700">3</span>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-800">Upload & Send</p>
+                                <p className="text-sm font-medium text-gray-800">{m['developerPortal.onboarding.dataMapping.uploadAndSend']()}</p>
                                 <p className="text-xs text-gray-500">
-                                    Go to the CSV Upload tab in your dashboard to upload and process
+                                    {m['developerPortal.onboarding.dataMapping.goToCsvUploadTab']()}
                                 </p>
                             </div>
                         </div>
@@ -2085,14 +2087,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m['developerPortal.onboarding.dataMapping.back']()}
                     </button>
 
                     <button
                         onClick={() => onComplete({ mappings: [] }, templates)}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
-                        Continue to Testing
+                        {m['developerPortal.onboarding.dataMapping.continueToTesting']()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -2111,8 +2113,8 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Your Webhook URL</h3>
-                        <p className="text-sm text-gray-500">Configure this in your LMS settings</p>
+                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.yourWebhookUrl']()}</h3>
+                        <p className="text-sm text-gray-500">{m['developerPortal.onboarding.dataMapping.configureInLms']()}</p>
                     </div>
                 </div>
 
@@ -2142,9 +2144,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Capture Sample Event</h3>
+                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.captureSampleEvent']()}</h3>
                         <p className="text-sm text-gray-500">
-                            Send a test event from your LMS or simulate one
+                            {m['developerPortal.onboarding.dataMapping.sendTestEventOrSimulate']()}
                         </p>
                     </div>
                 </div>
@@ -2155,7 +2157,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-3">
                                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
                                 <p className="text-sm text-gray-600">
-                                    Waiting for webhook event...
+                                    {m['developerPortal.onboarding.dataMapping.waitingForWebhookEvent']()}
                                 </p>
                             </div>
                         ) : (
@@ -2170,7 +2172,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    Simulate Test Event
+                                    {m['developerPortal.onboarding.dataMapping.simulateTestEvent']()}
                                 </button>
                             </div>
                         )}
@@ -2179,7 +2181,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm text-emerald-600">
                             <Check className="w-4 h-4" />
-                            Event captured successfully!
+                            {m['developerPortal.onboarding.dataMapping.eventCapturedSuccessfully']()}
                         </div>
 
                         <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
@@ -2200,7 +2202,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">Course Boost Selection</h3>
+                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.courseBoostSelection']()}</h3>
                             <p className="text-sm text-gray-500">
                                 You have{' '}
                                 {masterTemplates.reduce(
@@ -2215,7 +2217,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
-                                Which field identifies the course?
+                                {m['developerPortal.onboarding.dataMapping.whichFieldIdentifiesCourse']()}
                             </label>
 
                             <select
@@ -2223,7 +2225,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 onChange={e => setBoostSelectorField(e.target.value)}
                                 className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                             >
-                                <option value="">Select a field...</option>
+                                <option value="">{m['developerPortal.onboarding.dataMapping.selectField']()}</option>
                                 {sourceFields.map(field => (
                                     <option key={field} value={field}>
                                         {field}
@@ -2234,7 +2236,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
-                                How should we match courses?
+                                {m['developerPortal.onboarding.dataMapping.howShouldWeMatchCourses']()}
                             </label>
 
                             <div className="space-y-2">
@@ -2249,7 +2251,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     />
                                     <div>
                                         <p className="font-medium text-gray-800">
-                                            Match by Course ID
+                                            {m['developerPortal.onboarding.dataMapping.matchByCourseId']()}
                                         </p>
                                         <p className="text-xs text-gray-500">
                                             Store a unique ID in each boost and match exactly
@@ -2269,7 +2271,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     />
                                     <div>
                                         <p className="font-medium text-gray-800">
-                                            Match by Course Name
+                                            {m['developerPortal.onboarding.dataMapping.matchByCourseName']()}
                                         </p>
                                         <p className="text-xs text-gray-500">
                                             Find boost where name contains the course title
@@ -2309,7 +2311,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">Map Issuance Fields</h3>
+                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.mapIssuanceFields']()}</h3>
                             <p className="text-sm text-gray-500">
                                 {masterTemplates.length > 0
                                     ? 'Map recipient data to credential fields (course data is already baked in)'
@@ -2365,7 +2367,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
                         <p className="text-xs text-blue-800">
-                            <strong>How to map:</strong> Click a source field on the left, then
+                            <strong>{m['developerPortal.onboarding.dataMapping.howToMap']()}</strong> Click a source field on the left, then
                             click a target field on the right to connect them. You can select them
                             in any order.
                         </p>
@@ -2377,7 +2379,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <label className="block text-xs font-medium text-gray-600 mb-2">
                                 Source Fields (Your Data)
                                 {selectedSource && (
-                                    <span className="ml-2 text-cyan-600">→ Select target</span>
+                                    <span className="ml-2 text-cyan-600">{m['developerPortal.onboarding.dataMapping.selectTarget']()}</span>
                                 )}
                             </label>
 
@@ -2410,7 +2412,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {sourceFields.filter(f => !mappings.some(m => m.sourceField === f))
                                     .length === 0 && (
                                     <p className="text-xs text-gray-400 text-center py-2">
-                                        All source fields mapped
+                                        {m['developerPortal.onboarding.dataMapping.allSourceFieldsMapped']()}
                                     </p>
                                 )}
                             </div>
@@ -2420,7 +2422,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <label className="block text-xs font-medium text-gray-600 mb-2">
                                 Target Fields (Credential)
                                 {selectedTarget && (
-                                    <span className="ml-2 text-cyan-600">← Select source</span>
+                                    <span className="ml-2 text-cyan-600">{m['developerPortal.onboarding.dataMapping.selectSource']()}</span>
                                 )}
                             </label>
 
@@ -2455,7 +2457,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {targetFields.filter(f => !mappings.some(m => m.targetField === f))
                                     .length === 0 && (
                                     <p className="text-xs text-gray-400 text-center py-2">
-                                        All target fields mapped
+                                        {m['developerPortal.onboarding.dataMapping.allTargetFieldsMapped']()}
                                     </p>
                                 )}
                             </div>
@@ -2479,10 +2481,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </code>
                             )}
                             {selectedSource && !selectedTarget && (
-                                <span>Now select a target field →</span>
+                                <span>{m['developerPortal.onboarding.dataMapping.nowSelectTarget']()}</span>
                             )}
                             {selectedTarget && !selectedSource && (
-                                <span>← Now select a source field</span>
+                                <span>{m['developerPortal.onboarding.dataMapping.nowSelectSource']()}</span>
                             )}
                         </div>
                     )}
@@ -2510,7 +2512,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-center gap-2">
                                 <Code className="w-4 h-4 text-violet-600" />
                                 <span className="text-sm font-medium text-gray-700">
-                                    Generated templateData
+                                    {m['developerPortal.onboarding.dataMapping.generatedTemplateData']()}
                                 </span>
                             </div>
 
@@ -2563,7 +2565,7 @@ const result = await learnCard.invoke.send({
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.onboarding.dataMapping.back']()}
                 </button>
 
                 <button
@@ -2574,12 +2576,12 @@ const result = await learnCard.invoke.send({
                     {isSaving ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Saving...
+                            {m['developerPortal.onboarding.branding.saving']()}
                         </>
                     ) : (
                         <>
                             <Save className="w-4 h-4" />
-                            Save & Continue
+                            {m['developerPortal.onboarding.dataMapping.saveAndContinue']()}
                             <ArrowRight className="w-4 h-4" />
                         </>
                     )}
