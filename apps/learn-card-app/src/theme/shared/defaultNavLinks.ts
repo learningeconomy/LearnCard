@@ -8,11 +8,17 @@ import type { SideMenuLink, NavbarLink } from '../validators/theme.validators';
  * Themes can override to show/hide specific root items.
  */
 export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
+    // Dashboard is gated by `useDashboardAsHome` in SideMenuRootLinks — hidden
+    // unless the tenant `features.dashboardHome` config AND the
+    // `enableDashboardHome` LaunchDarkly flag are both on, so the nav entry and
+    // the `/` landing route in Routes.tsx can never drift.
+    { id: SideMenuLinksEnum.dashboard, label: 'Dashboard', path: '/dashboard' },
     { id: SideMenuLinksEnum.launchPad, label: 'Apps', path: '/launchpad' },
     { id: SideMenuLinksEnum.contacts, label: 'Contacts', path: '/contacts' },
     { id: SideMenuLinksEnum.alerts, label: 'Alerts', path: '/notifications' },
     { id: SideMenuLinksEnum.myAssistant, label: 'My Assistant', path: '/ai/assistant' },
-    { id: SideMenuLinksEnum.personalize, label: 'Personalize', path: '/personalize' },
+    // Disable personalize as default side menu link for now
+    // { id: SideMenuLinksEnum.personalize, label: 'Personalize', path: '/personalize' },
     { id: SideMenuLinksEnum.adminTools, label: 'Admin Tools', path: '/admin-tools' },
 ];
 
@@ -23,8 +29,8 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
 export const DEFAULT_SIDE_MENU_SECONDARY_LINKS: SideMenuLink[] = [
     { id: SideMenuLinksEnum.wallet, label: 'Passport', path: '/passport' },
     { id: SideMenuLinksEnum.aiTopics, label: 'AI Sessions', path: '/ai/topics' },
-    { id: SideMenuLinksEnum.aiInsights, label: 'AI Insights', path: '/ai/insights' },
-    { id: SideMenuLinksEnum.aiPathways, label: 'AI Pathways', path: '/ai/pathways' },
+    { id: SideMenuLinksEnum.aiInsights, label: 'Insights', path: '/ai/insights' },
+    { id: SideMenuLinksEnum.aiPathways, label: 'Pathways', path: '/ai/pathways' },
     // Pathways v2 \u2014 currently labelled "Journeys" to avoid
     // clashing with the legacy `AI Pathways` entry above. Once the
     // legacy feature is retired we can reclaim the "Pathways" label

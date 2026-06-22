@@ -85,6 +85,9 @@ const {
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
     CompassTwoTonedIcon,
+    DashboardTwoTonedIcon,
+    DashboardColorfulIcon,
+    DashboardFormalIcon,
 } = ColorfulSideNavIcons;
 
 const {
@@ -268,6 +271,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // sub-header and AI session plan.
             pathways: CompassTwoTonedIcon,
             myAssistant: AiSessionsTwoTonedIcon,
+            dashboard: DashboardColorfulIcon,
         },
 
         navbar: {
@@ -328,6 +332,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // rollout.
             pathways: CompassTwoTonedIcon,
             myAssistant: AiSessionFormalIcon,
+            dashboard: DashboardFormalIcon,
         },
 
         navbar: {

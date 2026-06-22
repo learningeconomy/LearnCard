@@ -27,6 +27,7 @@ import {
     getInitialAgentUrl,
     normalizeAgentUrl,
 } from '../../pages/my-assistant/learnCardAssistant.api';
+import { useDashboardAsHome } from '../../pages/dashboard/hooks/useDashboardAsHome';
 
 type SideMenuRootLinksProps = {
     activeTab: string;
@@ -46,6 +47,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         import.meta.env.DEV || Boolean(flags.enableLearnCardAssistant);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
+    // Same two-layer gate as the `/` landing redirect in Routes.tsx, so the
+    // Dashboard nav entry and the home route can never drift.
+    const dashboardAsHome = useDashboardAsHome();
 
     const { newModal } = useModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -119,6 +123,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     rootLinks = walletLink?.map(link => {
         if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
         if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
+        if (link.path === '/dashboard' && !dashboardAsHome) return null;
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
         const linkPath = link.path;

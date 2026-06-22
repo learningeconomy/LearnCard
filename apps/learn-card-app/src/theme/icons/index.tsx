@@ -37,6 +37,7 @@ export type SideMenuIcons = {
     // `learn-card-base/components/sidemenu/sidemenuHelpers`.
     pathways: React.FC<{ className?: string }>;
     myAssistant: React.FC<{ className?: string }>;
+    dashboard: React.FC<{ className?: string }>;
 };
 
 export type NavbarIcons = {
