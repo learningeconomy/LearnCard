@@ -29,6 +29,7 @@ import {
 } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
+import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
@@ -39,12 +40,12 @@ import type { GuideProps } from '../GuidePage';
 import { getResolvedTenantConfig, getLCNApiUrl } from '../../../../config/bootstrapTenantConfig';
 
 const STEPS = [
-    { id: 'publishable-key', title: 'Get Publishable Key' },
-    { id: 'add-target', title: 'Add HTML Target' },
-    { id: 'load-sdk', title: 'Load SDK' },
-    { id: 'configure', title: 'Configure' },
-    { id: 'test', title: 'Test It' },
-    { id: 'go-live', title: 'Go Live' },
+    { id: 'publishable-key', title: m['developerPortal.guides.embedClaim.steps.publishableKey']() },
+    { id: 'add-target', title: m['developerPortal.guides.embedClaim.steps.addTarget']() },
+    { id: 'load-sdk', title: m['developerPortal.guides.embedClaim.steps.loadSdk']() },
+    { id: 'configure', title: m['developerPortal.guides.embedClaim.steps.configure']() },
+    { id: 'test', title: m['developerPortal.guides.embedClaim.steps.test']() },
+    { id: 'go-live', title: m['developerPortal.guides.embedClaim.steps.goLive']() },
 ];
 
 // Step 1: Publishable Key (shows key from selected integration)
@@ -65,9 +66,9 @@ const PublishableKeyStep: React.FC<{
             await Clipboard.write({ string: publishableKey });
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-            presentToast('Key copied!', { hasDismissButton: true });
+            presentToast(m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'](), { hasDismissButton: true });
         } catch {
-            presentToast('Failed to copy key.', {
+            presentToast(m['developerPortal.guides.embedClaim.genericFailedToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -77,7 +78,7 @@ const PublishableKeyStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Publishable Key</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.publishableKeyStep.title']()}</h3>
 
                 <p className="text-gray-600">
                     Use this publishable key to authenticate credential claims from your website.
@@ -90,13 +91,13 @@ const PublishableKeyStep: React.FC<{
                 status={selectedIntegration ? 'ready' : 'warning'}
                 label={
                     selectedIntegration
-                        ? `Using "${selectedIntegration.name}"`
-                        : 'No project selected'
+                        ? m['developerPortal.guides.embedClaim.publishableKeyStep.statusReadyLabel']({ name: selectedIntegration.name })
+                        : m['developerPortal.guides.embedClaim.publishableKeyStep.statusWarningLabel']()
                 }
                 description={
                     selectedIntegration
-                        ? 'Your publishable key is ready to use'
-                        : 'Select a project from the header dropdown'
+                        ? m['developerPortal.guides.embedClaim.publishableKeyStep.statusReadyDesc']()
+                        : m['developerPortal.guides.embedClaim.publishableKeyStep.statusWarningDesc']()
                 }
             />
 
@@ -105,7 +106,7 @@ const PublishableKeyStep: React.FC<{
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-medium text-emerald-800">
-                            Publishable Key
+                            {m['developerPortal.guides.embedClaim.publishableKeyStep.keyLabel']()}
                         </label>
 
                         <button
@@ -113,7 +114,7 @@ const PublishableKeyStep: React.FC<{
                             className="text-xs text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
                         >
                             {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                            {copied ? 'Copied!' : 'Copy'}
+                            {copied ? m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton']() : m['developerPortal.guides.embedClaim.publishableKeyStep.copyButton']()}
                         </button>
                     </div>
 
@@ -130,10 +131,10 @@ const PublishableKeyStep: React.FC<{
                 <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
                     <Building2 className="w-10 h-10 text-amber-400 mx-auto mb-3" />
 
-                    <p className="text-amber-800 font-medium mb-1">No Project Selected</p>
+                    <p className="text-amber-800 font-medium mb-1">{m['developerPortal.guides.embedClaim.publishableKeyStep.noProjectTitle']()}</p>
 
                     <p className="text-sm text-amber-700">
-                        Select or create a project using the dropdown in the header to continue.
+                        {m['developerPortal.guides.embedClaim.publishableKeyStep.noProjectDesc']()}
                     </p>
                 </div>
             )}
@@ -147,7 +148,7 @@ const PublishableKeyStep: React.FC<{
                     <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                     <>
-                        Continue
+                        {m['developerPortal.guides.embedClaim.publishableKeyStep.continueButton']()}
                         <ArrowRight className="w-4 h-4" />
                     </>
                 )}
@@ -166,7 +167,7 @@ const AddTargetStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Add HTML Target Element
+                    {m['developerPortal.guides.embedClaim.addTargetStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -193,7 +194,7 @@ const AddTargetStep: React.FC<{
             />
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">What gets rendered</h4>
+                <h4 className="font-medium text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.addTargetStep.whatGetsRendered']()}</h4>
 
                 <p className="text-sm text-gray-600 mb-3">
                     The SDK replaces the target element with a styled button. When clicked, it opens
@@ -205,7 +206,7 @@ const AddTargetStep: React.FC<{
                         Claim "Course Completion"
                     </div>
 
-                    <span className="text-xs text-gray-500">← Example button</span>
+                    <span className="text-xs text-gray-500">{m['developerPortal.guides.embedClaim.addTargetStep.exampleLabel']()}</span>
                 </div>
             </div>
 
@@ -248,9 +249,9 @@ const LoadSdkStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Load the Embed SDK</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.loadSdkStep.title']()}</h3>
 
-                <p className="text-gray-600">Choose how to load the SDK in your project.</p>
+                <p className="text-gray-600">{m['developerPortal.guides.embedClaim.loadSdkStep.description']()}</p>
             </div>
 
             <div className="flex gap-2">
@@ -262,7 +263,7 @@ const LoadSdkStep: React.FC<{
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
-                    CDN (Easiest)
+                    {m['developerPortal.guides.embedClaim.loadSdkStep.cdnOption']()}
                 </button>
 
                 <button
@@ -273,13 +274,13 @@ const LoadSdkStep: React.FC<{
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                 >
-                    npm Package
+                    {m['developerPortal.guides.embedClaim.loadSdkStep.npmOption']()}
                 </button>
             </div>
 
             {method === 'cdn' ? (
                 <CodeOutputPanel
-                    title="CDN Script Tag"
+                    title={m["developerPortal.guides.embedClaim.loadSdkStep.cdnScriptTagTitle"]()}
                     snippets={{
                         typescript: `<!-- Add before closing </body> tag -->
 <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js" defer></script>
@@ -296,7 +297,7 @@ const LoadSdkStep: React.FC<{
                 />
             ) : (
                 <CodeOutputPanel
-                    title="npm Installation"
+                    title={m["developerPortal.guides.embedClaim.loadSdkStep.npmInstallationTitle"]()}
                     snippets={{
                         typescript: `# Install the package
 npm install @learncard/embed-sdk
@@ -313,7 +314,7 @@ init({
             )}
 
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <h4 className="font-medium text-emerald-800 mb-2">Zero dependencies</h4>
+                <h4 className="font-medium text-emerald-800 mb-2">{m['developerPortal.guides.embedClaim.loadSdkStep.zeroDepsTitle']()}</h4>
 
                 <p className="text-sm text-emerald-700">
                     The SDK is a single optimized file (~15KB gzipped) with no external
@@ -486,7 +487,7 @@ const ConfigureStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Configure the SDK</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.configureStep.title']()}</h3>
 
                 <p className="text-gray-600">
                     Create your credential templates and customize branding for the claim
@@ -512,9 +513,9 @@ const ConfigureStep: React.FC<{
                                     await Clipboard.write({ string: publishableKey });
                                     setKeyCopied(true);
                                     setTimeout(() => setKeyCopied(false), 2000);
-                                    presentToast('Key copied!', { hasDismissButton: true });
+                                    presentToast(m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'](), { hasDismissButton: true });
                                 } catch {
-                                    presentToast('Failed to copy key.', {
+                                    presentToast(m['developerPortal.guides.embedClaim.genericFailedToast'](), {
                                         type: ToastTypeEnum.Error,
                                         hasDismissButton: true,
                                     });
@@ -585,13 +586,13 @@ const ConfigureStep: React.FC<{
                 <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <Palette className="w-4 h-4 text-indigo-500" />
-                        Modal Branding
+                        {m['developerPortal.guides.embedClaim.configureStep.modalBranding']()}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Primary Color
+                                {m['developerPortal.guides.embedClaim.configureStep.primaryColor']()}
                             </label>
 
                             <div className="flex gap-2">
@@ -618,7 +619,7 @@ const ConfigureStep: React.FC<{
 
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Accent Color
+                                {m['developerPortal.guides.embedClaim.configureStep.accentColor']()}
                             </label>
 
                             <div className="flex gap-2">
@@ -647,7 +648,7 @@ const ConfigureStep: React.FC<{
                     {/* Partner Name */}
                     <div className="pt-3 border-t border-gray-100">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Partner Name{' '}
+                            {m['developerPortal.guides.embedClaim.configureStep.partnerName']()}{' '}
                             <span className="text-gray-400 font-normal">(Optional)</span>
                         </label>
 
@@ -669,7 +670,7 @@ const ConfigureStep: React.FC<{
                     {/* Partner Logo */}
                     <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Partner Logo{' '}
+                            {m['developerPortal.guides.embedClaim.configureStep.partnerLogo']()}{' '}
                             <span className="text-gray-400 font-normal">(Optional)</span>
                         </label>
 
@@ -691,7 +692,7 @@ const ConfigureStep: React.FC<{
                                 onClick={() => handleLogoUpload()}
                                 disabled={isUploadingLogo}
                                 className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                title="Upload image"
+                                title={m["developerPortal.guides.embedClaim.configureStep.uploadImageTitle"]()}
                             >
                                 {isUploadingLogo ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -746,7 +747,7 @@ const ConfigureStep: React.FC<{
             {/* Whitelisted Domains */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Whitelisted Domains
+                    {m['developerPortal.guides.embedClaim.configureStep.whitelistedDomains']()}
                 </label>
 
                 <p className="text-xs text-gray-500 mb-2">
@@ -820,10 +821,10 @@ const ConfigureStep: React.FC<{
                 )}
             </div>
 
-            <CodeOutputPanel title="Full Configuration" snippets={{ typescript: getCode() }} />
+            <CodeOutputPanel title={m['developerPortal.guides.embedClaim.configureStep.fullConfig']()} snippets={{ typescript: getCode() }} />
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <h4 className="font-medium text-amber-800 mb-2">Important Options</h4>
+                <h4 className="font-medium text-amber-800 mb-2">{m['developerPortal.guides.embedClaim.configureStep.importantOptions']()}</h4>
 
                 <ul className="text-sm text-amber-700 space-y-1">
                     <li>
@@ -939,16 +940,16 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Test Your Integration</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.testStep.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Verify your configuration and preview the claim button your users will see.
+                    {m['developerPortal.guides.embedClaim.testStep.description']()}
                 </p>
             </div>
 
             {/* Dynamic pre-flight checklist */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-3">Pre-flight checklist</h4>
+                <h4 className="font-medium text-gray-800 mb-3">{m['developerPortal.guides.embedClaim.testStep.preflightChecklist']()}</h4>
 
                 <div className="space-y-2">
                     {checks.map(check => (
@@ -1013,7 +1014,7 @@ const TestStep: React.FC<{
 
             {/* User flow */}
             <div className="p-4 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-3">User Experience Flow</h4>
+                <h4 className="font-medium text-gray-800 mb-3">{m['developerPortal.guides.embedClaim.testStep.userFlow']()}</h4>
 
                 <div className="space-y-3">
                     <div className="flex items-start gap-3">
@@ -1023,9 +1024,9 @@ const TestStep: React.FC<{
 
                         <div>
                             <p className="font-medium text-gray-800">
-                                User clicks the claim button
+                                m['developerPortal.guides.embedClaim.testStep.userFlowStep1']()
                             </p>
-                            <p className="text-sm text-gray-500">Opens a branded modal</p>
+                            <p className="text-sm text-gray-500">m['developerPortal.guides.embedClaim.testStep.userFlowStep1Desc']()</p>
                         </div>
                     </div>
 
@@ -1035,9 +1036,9 @@ const TestStep: React.FC<{
                         </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">User enters their email</p>
+                            <p className="font-medium text-gray-800">m['developerPortal.guides.embedClaim.testStep.userFlowStep2']()</p>
                             <p className="text-sm text-gray-500">
-                                A 6-digit code is sent to verify
+                                m['developerPortal.guides.embedClaim.testStep.userFlowStep2Desc']()
                             </p>
                         </div>
                     </div>
@@ -1048,9 +1049,9 @@ const TestStep: React.FC<{
                         </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">User enters the OTP code</p>
+                            <p className="font-medium text-gray-800">m['developerPortal.guides.embedClaim.testStep.userFlowStep3']()</p>
                             <p className="text-sm text-gray-500">
-                                Credential is issued to their wallet
+                                m['developerPortal.guides.embedClaim.testStep.userFlowStep3Desc']()
                             </p>
                         </div>
                     </div>
@@ -1061,9 +1062,9 @@ const TestStep: React.FC<{
                         </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">Success!</p>
+                            <p className="font-medium text-gray-800">m['developerPortal.guides.embedClaim.testStep.userFlowStep4']()</p>
                             <p className="text-sm text-gray-500">
-                                LearnCard wallet opens, <code>onSuccess</code> is called
+                                
                             </p>
                         </div>
                     </div>
@@ -1072,7 +1073,7 @@ const TestStep: React.FC<{
 
             {/* Returning users */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">Returning Users</h4>
+                <h4 className="font-medium text-blue-800 mb-2">m['developerPortal.guides.embedClaim.testStep.returningUsers']()</h4>
 
                 <p className="text-sm text-blue-700">
                     The SDK remembers logged-in users via localStorage. On their next visit, they'll
@@ -1086,10 +1087,10 @@ const TestStep: React.FC<{
                     <Play className="w-8 h-8 text-emerald-600" />
                 </div>
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">Ready to go live!</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">m['developerPortal.guides.embedClaim.testStep.readyToGoLive']()</h4>
 
                 <p className="text-gray-600 mb-4">
-                    Users can now claim credentials directly from your website.
+                    m['developerPortal.guides.embedClaim.testStep.readyToGoLiveDesc']()
                 </p>
 
                 <a
@@ -1098,7 +1099,7 @@ const TestStep: React.FC<{
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800"
                 >
-                    View full example on GitHub
+                    m['developerPortal.guides.embedClaim.testStep.viewOnGithub']()
                     <ExternalLink className="w-3.5 h-3.5" />
                 </a>
             </div>
@@ -1121,7 +1122,7 @@ const TestStep: React.FC<{
                         <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                         <>
-                            Continue to Go Live
+                            {m['developerPortal.guides.embedClaim.testStep.continueButton']()}
                             <ArrowRight className="w-4 h-4" />
                         </>
                     )}
@@ -1286,7 +1287,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">
-                    Please select an integration from the header dropdown to continue.
+                    {m['developerPortal.guides.embedClaim.noIntegration']()}
                 </p>
             </div>
         );
@@ -1387,14 +1388,14 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     guideType="embed-claim"
                     onBack={handleBack}
                     completedItems={[
-                        'Retrieved publishable key',
-                        'Added HTML target element',
-                        'Loaded the SDK',
-                        'Configured claim settings',
-                        'Tested the embed flow',
+                        m['developerPortal.guides.embedClaim.goLive.completedItems0'](),
+                        m['developerPortal.guides.embedClaim.goLive.completedItems1'](),
+                        m['developerPortal.guides.embedClaim.goLive.completedItems2'](),
+                        m['developerPortal.guides.embedClaim.goLive.completedItems3'](),
+                        m['developerPortal.guides.embedClaim.goLive.completedItems4'](),
                     ]}
-                    title="Ready to Embed!"
-                    description="You've set up everything needed to embed claim buttons on your website. Activate your integration to start accepting claims in production."
+                    title={m['developerPortal.guides.embedClaim.goLive.title']()}
+                    description={m['developerPortal.guides.embedClaim.goLive.description']()}
                 />
             </div>
         </div>

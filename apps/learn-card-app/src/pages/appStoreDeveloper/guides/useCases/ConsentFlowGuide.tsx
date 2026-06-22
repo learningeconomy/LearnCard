@@ -19,6 +19,7 @@ import {
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 
+import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
@@ -40,21 +41,21 @@ type AuthGrant = {
 };
 
 const SCOPE_OPTIONS = [
-    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+    { label: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccess'](), value: '*:*', description: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccessDesc']() },
     {
-        label: 'Credentials Only',
+        label: m['developerPortal.guides.consentFlow.apiSetupStep.credentialsOnly'](),
         value: 'credential:* presentation:*',
-        description: 'Issue and manage credentials',
+        description: m['developerPortal.guides.consentFlow.apiSetupStep.credentialsOnlyDesc'](),
     },
 ];
 
 const STEPS = [
-    { id: 'create-contract', title: 'Create Contract' },
-    { id: 'redirect-handler', title: 'Redirect Handler' },
-    { id: 'api-setup', title: 'API Setup' },
-    { id: 'send-credentials', title: 'Send Credentials' },
-    { id: 'test', title: 'Test It' },
-    { id: 'go-live', title: 'Go Live' },
+    { id: 'create-contract', title: m['developerPortal.guides.consentFlow.steps.createContract']() },
+    { id: 'redirect-handler', title: m['developerPortal.guides.consentFlow.steps.redirectHandler']() },
+    { id: 'api-setup', title: m['developerPortal.guides.consentFlow.steps.apiSetup']() },
+    { id: 'send-credentials', title: m['developerPortal.guides.consentFlow.steps.sendCredentials']() },
+    { id: 'test', title: m['developerPortal.guides.consentFlow.steps.test']() },
+    { id: 'go-live', title: m['developerPortal.guides.consentFlow.steps.goLive']() },
 ];
 
 import { getLogger } from 'learn-card-base';
@@ -113,9 +114,7 @@ const CreateContractStep: React.FC<{
 
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                 <p className="text-sm text-indigo-800">
-                    <strong>Consent Redirect Flow:</strong> Collect user consent and credentials
-                    from your external application. Users will be redirected to LearnCard to grant
-                    permissions, then back to your app with their credentials.
+                    {m['developerPortal.guides.consentFlow.createContractStep.redirectFlowDescription']()}
                 </p>
             </div>
 
@@ -149,8 +148,7 @@ const CreateContractStep: React.FC<{
 
                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Important:</strong> Save this Contract URI — you'll need it to
-                            send credentials later.
+                            {m['developerPortal.guides.consentFlow.createContractStep.saveContractWarning']()}
                         </p>
                     </div>
                 </div>
@@ -217,7 +215,7 @@ const RedirectHandlerStep: React.FC<{
 
             <StepCard
                 step={1}
-                title="Generate Consent URL"
+                title={m['developerPortal.guides.consentFlow.redirectHandlerStep.step1Title']()}
                 icon={<Link2 className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -240,7 +238,7 @@ window.location.href = consentUrl;`,
 
             <StepCard
                 step={2}
-                title="Handle the Callback"
+                title={m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Title']()}
                 icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -280,11 +278,11 @@ app.get('/api/learncard/callback', async (req, res) => {
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
 
                 <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
-                    <li>User clicks "Connect with LearnCard" in your app</li>
-                    <li>User is redirected to LearnCard to grant consent</li>
-                    <li>LearnCard redirects back to your app with their DID</li>
-                    <li>Your backend stores the user's DID</li>
-                    <li>When ready, your backend issues credentials to that DID</li>
+                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep1']()}</li>
+                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep2']()}</li>
+                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep3']()}</li>
+                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep4']()}</li>
+                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep5']()}</li>
                 </ol>
             </div>
 
@@ -357,7 +355,7 @@ const APISetupStep: React.FC<{
             const wallet = await initWallet();
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: 'Created from Connect Website Guide',
+                description: m['developerPortal.guides.consentFlow.apiSetupStep.createdFromGuide'](),
                 scope: selectedScope,
             });
             presentToast('API Token created!', { hasDismissButton: true });
@@ -550,7 +548,7 @@ const APISetupStep: React.FC<{
                                     <p className="font-medium text-gray-800">{grant.name}</p>
 
                                     <p className="text-sm text-gray-500">
-                                        Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                        {m['developerPortal.guides.consentFlow.apiSetupStep.createdLabel']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                     </p>
                                 </div>
                             </div>
@@ -612,14 +610,13 @@ const APISetupStep: React.FC<{
             {/* Security warning */}
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-sm text-red-800">
-                    <strong>Security:</strong> Never expose your API token in client-side code or
-                    commit it to version control.
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.securityWarning']()}
                 </p>
             </div>
 
             <StepCard
                 step={1}
-                title="Install LearnCard SDK"
+                title={m['developerPortal.guides.consentFlow.apiSetupStep.step1Title']()}
                 icon={<Package className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -631,7 +628,7 @@ const APISetupStep: React.FC<{
 
             <StepCard
                 step={2}
-                title="Initialize LearnCard"
+                title={m['developerPortal.guides.consentFlow.apiSetupStep.step2Title']()}
                 icon={<Zap className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">Initialize with your API token:</p>
@@ -651,8 +648,7 @@ log.info('LearnCard DID:', learnCard.id.did());`,
 
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-xs text-amber-800">
-                        <strong>Security:</strong> Store your API token in environment variables,
-                        never commit it to code.
+                        {m['developerPortal.guides.consentFlow.apiSetupStep.step2Security']()}
                     </p>
                 </div>
             </StepCard>
@@ -722,7 +718,7 @@ const SendCredentialsStep: React.FC<{
 
             <StepCard
                 step={2}
-                title="Send Credentials via API"
+                title={m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Title']()}
                 icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -758,15 +754,14 @@ await learnCard.invoke.send({
 
                 <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
                     <p className="text-xs text-cyan-800">
-                        <strong>What this does:</strong> Issues the credential from your template to
-                        the user and writes it to your consent flow contract — all in one call.
+                        {m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Info']()}
                     </p>
                 </div>
             </StepCard>
 
             <StepCard
                 step={3}
-                title="Query Consent Data (Optional)"
+                title={m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Title']()}
                 icon={<Database className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -887,7 +882,7 @@ const TestStep: React.FC<{
 
             <StepCard
                 step={1}
-                title="Test the Consent Redirect"
+                title={m["developerPortal.guides.consentFlow.testStep.step1Title"]()}
                 icon={<ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -919,8 +914,7 @@ const TestStep: React.FC<{
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Missing configuration:</strong> Go back and ensure you&apos;ve
-                            set both a contract URI (Step 1) and callback URL (Step 2).
+                            {m['developerPortal.guides.consentFlow.testStep.missingConfigDesc']()}
                         </p>
                     </div>
                 )}
@@ -928,7 +922,7 @@ const TestStep: React.FC<{
 
             <StepCard
                 step={2}
-                title="Verify Callback Parameters"
+                title={m["developerPortal.guides.consentFlow.testStep.step2Title"]()}
                 icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -981,7 +975,7 @@ const TestStep: React.FC<{
 
             <StepCard
                 step={3}
-                title="Test Credential Delivery"
+                title={m["developerPortal.guides.consentFlow.testStep.step3Title"]()}
                 icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -1008,8 +1002,7 @@ log.info('Credential sent successfully!');`,
 
                 <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                     <p className="text-xs text-emerald-800">
-                        <strong>Verify:</strong> The recipient should see the credential in their
-                        LearnCard wallet. Check the dashboard Connections tab to confirm delivery.
+                        {m['developerPortal.guides.consentFlow.testStep.step3Verify']()}
                     </p>
                 </div>
             </StepCard>
@@ -1148,7 +1141,7 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">
-                    Please select an integration from the header dropdown to continue.
+                    {m['developerPortal.guides.consentFlow.noIntegration']()}
                 </p>
             </div>
         );
@@ -1235,13 +1228,13 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
                     guideType="consent-flow"
                     onBack={handleBack}
                     completedItems={[
-                        'Created consent flow contract',
-                        'Set up redirect handler',
-                        'Configured API access',
-                        'Created credential templates',
-                        'Tested consent flow integration',
+                        m['developerPortal.guides.consentFlow.goLive.completedItems0'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems1'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems2'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems3'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems4'](),
                     ]}
-                    title="Ready to Connect!"
+                    title={m['developerPortal.guides.consentFlow.goLive.title']()}
                     description="You've set up everything needed for consent-based data sharing. Activate your integration to start connecting with users."
                 />
             </div>

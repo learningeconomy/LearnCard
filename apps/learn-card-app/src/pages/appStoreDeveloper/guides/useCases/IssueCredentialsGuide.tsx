@@ -24,6 +24,7 @@ import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { Clipboard } from '@capacitor/clipboard';
 
+import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { TemplateListManager } from '../../components/TemplateListManager';
@@ -41,19 +42,19 @@ type AuthGrant = {
 };
 
 const STEPS = [
-    { id: 'api-token', title: 'Create API Token' },
-    { id: 'signing-authority', title: 'Set Up Signing' },
-    { id: 'create-templates', title: 'Create Templates' },
-    { id: 'issue', title: 'Issue & Verify' },
-    { id: 'go-live', title: 'Go Live' },
+    { id: 'api-token', title: m['developerPortal.guides.issueCredentials.steps.apiToken']() },
+    { id: 'signing-authority', title: m['developerPortal.guides.issueCredentials.steps.signingAuthority']() },
+    { id: 'create-templates', title: m['developerPortal.guides.issueCredentials.steps.createTemplates']() },
+    { id: 'issue', title: m['developerPortal.guides.issueCredentials.steps.issue']() },
+    { id: 'go-live', title: m['developerPortal.guides.issueCredentials.steps.goLive']() },
 ];
 
 const SCOPE_OPTIONS = [
-    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+    { label: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccess'](), value: '*:*', description: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccessDesc']() },
     {
-        label: 'Credentials Only',
+        label: m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnly'](),
         value: 'credential:* presentation:*',
-        description: 'Issue and manage credentials',
+        description: m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnlyDesc'](),
     },
 ];
 
@@ -100,7 +101,7 @@ const ApiTokenStep: React.FC<{
 
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: 'Created from Integration Guide',
+                description: m['developerPortal.guides.issueCredentials.apiTokenStep.createdFromGuide'](),
                 scope: selectedScope,
             });
 
@@ -268,7 +269,7 @@ const ApiTokenStep: React.FC<{
                                 <p className="font-medium text-gray-800">{grant.name}</p>
 
                                 <p className="text-sm text-gray-500">
-                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                    {m['developerPortal.guides.issueCredentials.apiTokenStep.createdLabel']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                 </p>
                             </div>
 
@@ -311,8 +312,7 @@ const ApiTokenStep: React.FC<{
             {/* Security warning */}
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-sm text-red-800">
-                    <strong>Security:</strong> Never expose your API token in client-side code or
-                    commit it to version control.
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.securityWarning']()}
                 </p>
             </div>
 
@@ -1049,7 +1049,7 @@ else:
 
             {/* Code output */}
             <CodeOutputPanel
-                title="Your Code"
+                title={m["developerPortal.guides.issueCredentials.issueVerifyStep.yourCode"]()}
                 snippets={{
                     typescript: codeSnippet,
                     python: pythonSnippet,
@@ -1228,7 +1228,7 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">
-                    Please select an integration from the header dropdown to continue.
+                    {m['developerPortal.guides.issueCredentials.noIntegration']()}
                 </p>
             </div>
         );
@@ -1291,12 +1291,12 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                     guideType="issue-credentials"
                     onBack={guideState.prevStep}
                     completedItems={[
-                        'Created API token for server-side access',
-                        'Configured signing authority',
-                        'Created credential templates',
-                        'Tested issuing and verification',
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems0'](),
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems1'](),
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems2'](),
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems3'](),
                     ]}
-                    title="Ready to Issue Credentials!"
+                    title={m['developerPortal.guides.issueCredentials.goLive.title']()}
                     description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
                 />
             </div>
