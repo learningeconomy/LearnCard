@@ -185,6 +185,14 @@ export const tenantFeatureConfigSchema = z
         pathways: z.boolean().default(false),
 
         /**
+         * Dashboard home — makes `/dashboard` the post-login landing route and the
+         * first side-menu entry instead of the Passport (`/wallet`) home. Default
+         * off. Paired with the `enableDashboardHome` LaunchDarkly flag; both must
+         * be on. See `apps/learn-card-app/src/pages/dashboard/hooks/useDashboardAsHome.ts`.
+         */
+        dashboardHome: z.boolean().default(false),
+
+        /**
          * Fetch global skill frameworks from the backend's seeded fixtures instead
          * of LaunchDarkly flags. Only seeded backends (local + staging) host them,
          * so this MUST track `apis.brainService`: keep `false` for production configs,

@@ -77,7 +77,7 @@ export const RequestInsightsFromUserModal: React.FC<{
         });
         closeModal();
 
-        presentToast('AI Insights request sent!');
+        presentToast('Insights request sent!');
 
         onSuccessCallback?.();
     };

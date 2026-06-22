@@ -63,11 +63,17 @@ export enum SideMenuLinksEnum {
     ids = CredentialCategoryEnum.id,
 
     // Feature-flagged routes (not backed by a credential category).
-    // Pathways v2 \u2014 the new dynamic-pathways feature, gated by the
+    // Pathways v2 — the new dynamic-pathways feature, gated by the
     // `features.pathways` tenant config + the `enableJourneys`
     // LaunchDarkly flag. Displays as "Journey" in the side menu while
     // the legacy `aiPathways` link still owns the "Pathways" label.
     pathways = 'pathways',
+
+    // Returning-user home surface. Top-of-list above Passport — shows
+    // a welcome header, last credential activity, and the learner's
+    // current Pathway goal when one is active. See
+    // `apps/learn-card-app/src/pages/dashboard/DashboardPage.tsx`.
+    dashboard = 'dashboard',
 }
 
 export type SideMenuLinks = {
