@@ -114,20 +114,20 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     };
 
     const tabs = [
-        { id: 'DRAFT' as Tab, label: 'Drafts', icon: FileEdit, count: draftListings.length },
+        { id: 'DRAFT' as Tab, label: m['developerPortal.components.partnerDashboard.drafts'](), icon: FileEdit, count: draftListings.length },
         {
             id: 'PENDING_REVIEW' as Tab,
-            label: 'Pending',
+            label: m['developerPortal.components.partnerDashboard.pending'](),
             icon: Clock,
             count: pendingListings.length,
         },
         {
             id: 'LISTED' as Tab,
-            label: 'Published',
+            label: m['developerPortal.components.partnerDashboard.published'](),
             icon: CheckCircle2,
             count: listedListings.length,
         },
-        { id: 'ARCHIVED' as Tab, label: 'Rejected', icon: Archive, count: archivedListings.length },
+        { id: 'ARCHIVED' as Tab, label: m['developerPortal.components.partnerDashboard.rejected'](), icon: Archive, count: archivedListings.length },
     ];
 
     // Show welcome/onboarding view when no listings exist
@@ -135,25 +135,22 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
         const steps = [
             {
                 number: 1,
-                title: 'Create',
-                description:
-                    'Build your app listing with details, icon, screenshots, and integration settings.',
+                title: m['developerPortal.components.partnerDashboard.step1Title'](),
+                description: m['developerPortal.components.partnerDashboard.step1Desc'](),
                 icon: Sparkles,
                 color: 'bg-violet-100 text-violet-600',
             },
             {
                 number: 2,
-                title: 'Submit',
-                description:
-                    'Submit your listing for review. Our team will verify it meets our guidelines.',
+                title: m['developerPortal.components.partnerDashboard.step2Title'](),
+                description: m['developerPortal.components.partnerDashboard.step2Desc'](),
                 icon: Send,
                 color: 'bg-amber-100 text-amber-600',
             },
             {
                 number: 3,
-                title: 'Publish',
-                description:
-                    'Once approved, your app goes live in the App Store for users to discover.',
+                title: m['developerPortal.components.partnerDashboard.step3Title'](),
+                description: m['developerPortal.components.partnerDashboard.step3Desc'](),
                 icon: Rocket,
                 color: 'bg-emerald-100 text-emerald-600',
             },

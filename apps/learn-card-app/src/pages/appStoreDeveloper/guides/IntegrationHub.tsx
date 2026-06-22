@@ -321,10 +321,10 @@ const IntegrationHub: React.FC = () => {
 
                                             <div>
                                                 <h3 className="font-medium text-gray-800">
-                                                    {useCase.title}
+                                                    {(m as any)[useCase.titleKey]()}
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
-                                                    {useCase.subtitle}
+                                                    {(m as any)[useCase.subtitleKey]()}
                                                 </p>
                                             </div>
                                         </div>
