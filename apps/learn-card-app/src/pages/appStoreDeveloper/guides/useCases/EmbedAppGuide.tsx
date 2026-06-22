@@ -84,6 +84,7 @@ import type {
     TemplateMetadata,
 } from '../types';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
+import * as m from 'src/paraglide/messages.js';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -95,9 +96,9 @@ interface UrlCheckResult {
 
 const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     const results: UrlCheckResult[] = [
-        { id: 'https', label: 'HTTPS', status: 'pending' },
-        { id: 'reachable', label: 'Reachable', status: 'pending' },
-        { id: 'cors', label: 'CORS Headers', status: 'pending' },
+        { id: 'https', label: m['developerPortal.guides.embedApp.urlCheck.https'](), status: 'pending' },
+        { id: 'reachable', label: m['developerPortal.guides.embedApp.urlCheck.reachable'](), status: 'pending' },
+        { id: 'cors', label: m['developerPortal.guides.embedApp.urlCheck.cors'](), status: 'pending' },
     ];
 
     // Check 1: HTTPS
@@ -254,12 +255,12 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
                     }`}
                 >
                     {isChecking
-                        ? 'Checking your URL...'
+                        ? m['developerPortal.guides.embedApp.urlCheck.checking']()
                         : allPassed
-                        ? 'Looking good!'
+                        ? m['developerPortal.guides.embedApp.urlCheck.lookingGood']()
                         : hasFailed
-                        ? 'Some issues found'
-                        : 'URL Check Results'}
+                        ? m['developerPortal.guides.embedApp.urlCheck.someIssues']()
+                        : m['developerPortal.guides.embedApp.urlCheck.urlCheckResults']()}
                 </h4>
             </div>
 
@@ -334,85 +335,78 @@ interface Feature {
 const FEATURES: Feature[] = [
     {
         id: 'issue-credentials',
-        title: 'Issue Credentials',
-        description:
-            'Award badges, certificates, or achievements to your users when they complete actions in your app.',
+        title: m['developerPortal.guides.embedApp.features.issueCredentials'](),
+        description: m['developerPortal.guides.embedApp.features.issueCredentialsDesc'](),
         icon: <Award className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Create Templates, Consent Flow',
+        setupDescription: m['developerPortal.guides.embedApp.features.issueCredentials'](),
         color: 'cyan',
     },
     {
         id: 'peer-badges',
-        title: 'Peer-to-Peer Badges',
-        description:
-            'Let users send badges to each other within your app using your credential templates.',
+        title: m['developerPortal.guides.embedApp.features.peerBadges'](),
+        description: m['developerPortal.guides.embedApp.features.peerBadgesDesc'](),
         icon: <Send className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Create Boost Templates',
+        setupDescription: m['developerPortal.guides.embedApp.features.peerBadges'](),
         color: 'violet',
     },
     {
         id: 'request-credentials',
-        title: 'Request Credentials',
-        description:
-            'Ask users to share credentials with your app for verification or gated access.',
+        title: m['developerPortal.guides.embedApp.features.requestCredentials'](),
+        description: m['developerPortal.guides.embedApp.features.requestCredentialsDesc'](),
         icon: <FileSearch className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Configure Search Query',
+        setupDescription: m['developerPortal.guides.embedApp.features.requestCredentials'](),
         color: 'amber',
     },
     {
         id: 'request-data-consent',
-        title: 'Request Data Consent',
-        description:
-            'Ask users for permission to access specific data fields or write data back to their profile via a ConsentFlow contract.',
+        title: m['developerPortal.guides.embedApp.features.requestDataConsent'](),
+        description: m['developerPortal.guides.embedApp.features.requestDataConsentDesc'](),
         icon: <ShieldCheck className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Define Consent Contract',
+        setupDescription: m['developerPortal.guides.embedApp.features.requestDataConsent'](),
         color: 'emerald',
     },
     {
         id: 'launch-feature',
-        title: 'Launch Feature',
-        description:
-            'Trigger native LearnCard tools directly from your app. Open the QR scanner, start an AI session, or display the profile card.',
+        title: m['developerPortal.guides.embedApp.features.launchFeature'](),
+        description: m['developerPortal.guides.embedApp.features.launchFeatureDesc'](),
         icon: <Play className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Configure Feature Settings',
+        setupDescription: m['developerPortal.guides.embedApp.features.launchFeature'](),
         color: 'purple',
     },
     {
         id: 'display-pathways',
-        title: 'Display Pathways',
-        description:
-            "Visualize a user's journey. Show completed steps and what credentials they need to reach a goal.",
+        title: m['developerPortal.guides.embedApp.features.displayPathways'](),
+        description: m['developerPortal.guides.embedApp.features.displayPathwaysDesc'](),
         icon: <Map className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Define Pathway/Map Structure',
+        setupDescription: m['developerPortal.guides.embedApp.features.displayPathways'](),
         color: 'rose',
         comingSoon: true,
     },
     {
         id: 'launch-ai-assistant',
-        title: 'Launch AI Assistant',
-        description:
-            'Embed a custom AI chat or tutor experience. Configure preset prompts and context for "Math Tutor" or "Career Coach" style interactions.',
+        title: m['developerPortal.guides.embedApp.features.launchAiAssistant'](),
+        description: m['developerPortal.guides.embedApp.features.launchAiAssistantDesc'](),
         icon: <Bot className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Define AI Prompt & Context',
+        setupDescription: m['developerPortal.guides.embedApp.features.launchAiAssistant'](),
         color: 'indigo',
         comingSoon: true,
     },
 ];
 
 const STEPS = [
-    { id: 'getting-started', title: 'Getting Started' },
-    { id: 'signing-authority', title: 'Set Up Signing' },
-    { id: 'choose-features', title: 'Choose Features' },
-    { id: 'feature-setup', title: 'Feature Setup' },
-    { id: 'your-app', title: 'Your App' },
-    { id: 'go-live', title: 'Go Live' },
+    { id: 'getting-started', title: m['developerPortal.guides.embedApp.steps.gettingStarted']() },
+    { id: 'signing-authority', title: m['developerPortal.guides.embedApp.steps.signingAuthority']() },
+    { id: 'choose-features', title: m['developerPortal.guides.embedApp.steps.chooseFeatures']() },
+    { id: 'feature-setup', title: m['developerPortal.guides.embedApp.steps.featureSetup']() },
+    { id: 'your-app', title: m['developerPortal.guides.embedApp.steps.yourApp']() },
+    { id: 'go-live', title: m['developerPortal.guides.embedApp.steps.goLive']() },
 ];
 
 // Step 0: Getting Started (combined setup step - single scrollable page)
@@ -492,10 +486,10 @@ log.info('User:', identity.profile.displayName);`;
     return (
         <div className="space-y-8">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Getting Started</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.gettingStarted.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Set up the Partner Connect SDK in your web app. This takes about 2 minutes.
+                    {m['developerPortal.guides.embedApp.gettingStarted.description']()}
                 </p>
             </div>
 
@@ -506,18 +500,18 @@ log.info('User:', identity.profile.displayName);`;
                         1
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Select or Create Your App</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.gettingStarted.selectOrCreateApp']()}</h4>
                 </div>
 
                 <div className="ml-11 space-y-3">
                     <p className="text-sm text-gray-500">
-                        Your app listing is what users see in the LearnCard app store.
+                        {m['developerPortal.guides.embedApp.gettingStarted.listingDescription']()}
                     </p>
 
                     {!selectedIntegration ? (
                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                             <p className="text-sm text-amber-700">
-                                Select a project from the header dropdown first.
+                                {m['developerPortal.guides.embedApp.gettingStarted.selectProjectFirst']()}
                             </p>
                         </div>
                     ) : isLoadingListings ? (
@@ -577,7 +571,7 @@ log.info('User:', identity.profile.displayName);`;
                                                     </p>
 
                                                     <p className="text-xs text-gray-500 truncate">
-                                                        {listing.tagline || 'No tagline set'}
+                                                        {listing.tagline || m['developerPortal.guides.embedApp.gettingStarted.noTagline']()}
                                                     </p>
 
                                                     <div className="flex items-center gap-2 mt-1">
@@ -593,11 +587,11 @@ log.info('User:', identity.profile.displayName);`;
                                                             }`}
                                                         >
                                                             {listing.app_listing_status === 'LISTED'
-                                                                ? 'Live'
+                                                                ? m['developerPortal.guides.embedApp.gettingStarted.live']()
                                                                 : listing.app_listing_status ===
                                                                   'PENDING_REVIEW'
-                                                                ? 'In Review'
-                                                                : 'Draft'}
+                                                                ? m['developerPortal.guides.embedApp.gettingStarted.inReview']()
+                                                                : m['developerPortal.guides.embedApp.gettingStarted.draft']()}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -625,10 +619,10 @@ log.info('User:', identity.profile.displayName);`;
                                 <div className="p-6 bg-gray-50 border border-gray-200 rounded-xl text-center">
                                     <Layout className="w-10 h-10 text-gray-300 mx-auto mb-3" />
 
-                                    <p className="text-gray-600 font-medium mb-1">No apps yet</p>
+                                    <p className="text-gray-600 font-medium mb-1">{m['developerPortal.guides.embedApp.gettingStarted.noApps']()}</p>
 
                                     <p className="text-sm text-gray-500">
-                                        Create your first app to get started
+                                        {m['developerPortal.guides.embedApp.gettingStarted.createFirstApp']()}
                                     </p>
                                 </div>
                             )}
@@ -638,14 +632,14 @@ log.info('User:', identity.profile.displayName);`;
                                 <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            App Name
+                                            {m['developerPortal.guides.embedApp.gettingStarted.appName']()}
                                         </label>
 
                                         <input
                                             type="text"
                                             value={newListingName}
                                             onChange={e => setNewListingName(e.target.value)}
-                                            placeholder="My Awesome App"
+                                            placeholder={m['developerPortal.guides.embedApp.gettingStarted.appNamePlaceholder']()}
                                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             autoFocus
                                             onKeyDown={e => {
@@ -669,7 +663,7 @@ log.info('User:', identity.profile.displayName);`;
                                             ) : (
                                                 <>
                                                     <Plus className="w-4 h-4" />
-                                                    Create App
+                                                    {m['developerPortal.guides.embedApp.gettingStarted.createApp']()}
                                                 </>
                                             )}
                                         </button>
@@ -681,7 +675,7 @@ log.info('User:', identity.profile.displayName);`;
                                             }}
                                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                                         >
-                                            Cancel
+                                            {m['developerPortal.guides.embedApp.gettingStarted.cancel']()}
                                         </button>
                                     </div>
                                 </div>
@@ -691,7 +685,7 @@ log.info('User:', identity.profile.displayName);`;
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-cyan-400 hover:text-cyan-600 hover:bg-cyan-50/50 transition-colors font-medium"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    Create New App
+                                    {m['developerPortal.guides.embedApp.gettingStarted.createNewApp']()}
                                 </button>
                             )}
                         </div>
@@ -706,14 +700,14 @@ log.info('User:', identity.profile.displayName);`;
                         2
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Install the SDK</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.gettingStarted.installSdk']()}</h4>
                 </div>
 
                 <div className="ml-11 space-y-3">
                     <CodeBlock code={installCode} />
 
                     <p className="text-xs text-gray-500">
-                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code>{' '}
+                        {/* Originally: Also works with */} <code className="bg-gray-100 px-1 rounded">yarn add</code>{' '}
                         or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
                     </p>
                 </div>
@@ -726,7 +720,7 @@ log.info('User:', identity.profile.displayName);`;
                         3
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Initialize</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.gettingStarted.initialize']()}</h4>
                 </div>
 
                 <div className="ml-11 space-y-3">
@@ -734,7 +728,7 @@ log.info('User:', identity.profile.displayName);`;
 
                     <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                         <p className="text-sm text-cyan-800">
-                            <strong>That's it!</strong> Users are already logged in when inside the
+                            <strong>{m['developerPortal.guides.embedApp.gettingStarted.thatIsIt']()}</strong> Users are already logged in when inside the
                             wallet, so{' '}
                             <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code>{' '}
                             returns instantly with their profile.
@@ -751,18 +745,18 @@ log.info('User:', identity.profile.displayName);`;
             >
                 {isReady ? (
                     <>
-                        Choose What to Build
+                        {m['developerPortal.guides.embedApp.gettingStarted.chooseWhatToBuild']()}
                         <ArrowRight className="w-4 h-4" />
                     </>
                 ) : (
-                    'Select an app above to continue'
+                    m['developerPortal.guides.embedApp.gettingStarted.selectAppToContinue']()
                 )}
             </button>
         </div>
     );
 };
 
-// Step 1: Signing Authority
+// Step 1: {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthority']()}
 const SigningAuthorityStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
@@ -844,19 +838,16 @@ const SigningAuthorityStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Signing Authority
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.signingAuthority.title']()}</h3>
 
                 <p className="text-gray-600">
-                    A signing authority cryptographically signs your credentials, making them
-                    verifiable. This proves the credentials actually came from you.
+                    {m['developerPortal.guides.embedApp.signingAuthority.description']()}
                 </p>
             </div>
 
             {issuerDid && (
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                    <p className="text-xs text-slate-500">App issuer DID</p>
+                    <p className="text-xs text-slate-500">{m['developerPortal.guides.embedApp.signingAuthority.appIssuerDid']()}</p>
                     <code className="text-xs text-slate-700 break-all">{issuerDid}</code>
                 </div>
             )}
@@ -866,15 +857,15 @@ const SigningAuthorityStep: React.FC<{
                 status={loading ? 'loading' : hasSigningAuthority ? 'ready' : 'warning'}
                 label={
                     loading
-                        ? 'Checking...'
+                        ? m['developerPortal.guides.embedApp.signingAuthority.checking']()
                         : hasSigningAuthority
-                        ? 'Signing authority configured'
-                        : 'No signing authority found'
+                        ? m['developerPortal.guides.embedApp.signingAuthority.configured']()
+                        : m['developerPortal.guides.embedApp.signingAuthority.notFound']()
                 }
                 description={
                     hasSigningAuthority
-                        ? `Using: ${primarySA?.name}`
-                        : 'Create one to sign credentials'
+                        ? m['developerPortal.guides.embedApp.signingAuthority.using']({ name: primarySA?.name || '' })
+                        : m['developerPortal.guides.embedApp.signingAuthority.createDescription']()
                 }
             />
 
@@ -888,12 +879,12 @@ const SigningAuthorityStep: React.FC<{
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Creating...
+                            {m['developerPortal.guides.embedApp.signingAuthority.creating']()}
                         </>
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m['developerPortal.guides.embedApp.signingAuthority.createSigningAuthority']()}
                         </>
                     )}
                 </button>
@@ -909,12 +900,12 @@ const SigningAuthorityStep: React.FC<{
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Recreating...
+                            {m['developerPortal.guides.embedApp.signingAuthority.recreating']()}
                         </>
                     ) : (
                         <>
                             <RefreshCw className="w-4 h-4" />
-                            Recreate Signing Authority
+                            {m['developerPortal.guides.embedApp.signingAuthority.recreateSigningAuthority']()}
                         </>
                     )}
                 </button>
@@ -922,16 +913,16 @@ const SigningAuthorityStep: React.FC<{
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+                <h4 className="font-medium text-blue-800 mb-2">{m['developerPortal.guides.embedApp.signingAuthority.whatDoesThisDo']()}</h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Creates a cryptographic key pair for signing</li>
-                    <li>• Registers the key with LearnCard's verification network</li>
-                    <li>• Allows anyone to verify credentials you issue</li>
+                    <li>• {m['developerPortal.guides.embedApp.signingAuthority.bulletKeyPair']()}</li>
+                    <li>• {m['developerPortal.guides.embedApp.signingAuthority.bulletRegister']()}</li>
+                    <li>• {m['developerPortal.guides.embedApp.signingAuthority.bulletVerify']()}</li>
                 </ul>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -1034,12 +1025,10 @@ const ChooseFeaturesStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    What do you want to build?
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.chooseFeatures.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Select the features you want to add to your app. You can always add more later.
+                    {m['developerPortal.guides.embedApp.chooseFeatures.description']()}
                 </p>
             </div>
 
@@ -1070,7 +1059,7 @@ const ChooseFeaturesStep: React.FC<{
 
                                 {isComingSoon ? (
                                     <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
-                                        Coming Soon
+                                        {m['developerPortal.guides.embedApp.chooseFeatures.comingSoon']()}
                                     </span>
                                 ) : (
                                     <div
@@ -1105,7 +1094,7 @@ const ChooseFeaturesStep: React.FC<{
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Layers className="w-3.5 h-3.5 text-gray-400" />
                                     <span className="text-xs text-gray-500">
-                                        Requires: {feature.setupDescription}
+                                        {m['developerPortal.guides.embedApp.chooseFeatures.requires']({ description: feature.setupDescription || '' })}
                                     </span>
                                 </div>
                             )}
@@ -1114,7 +1103,7 @@ const ChooseFeaturesStep: React.FC<{
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Zap className="w-3.5 h-3.5 text-emerald-500" />
                                     <span className="text-xs text-emerald-600 font-medium">
-                                        Ready to use
+                                        {m['developerPortal.guides.embedApp.chooseFeatures.readyToUse']()}
                                     </span>
                                 </div>
                             )}
@@ -1123,7 +1112,7 @@ const ChooseFeaturesStep: React.FC<{
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Sparkles className="w-3.5 h-3.5 text-gray-400" />
                                     <span className="text-xs text-gray-400">
-                                        Requires: {feature.setupDescription}
+                                        {m['developerPortal.guides.embedApp.chooseFeatures.requires']({ description: feature.setupDescription || '' })}
                                     </span>
                                 </div>
                             )}
@@ -1136,8 +1125,7 @@ const ChooseFeaturesStep: React.FC<{
             {selectedFeatures.length > 0 && (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                     <h4 className="font-medium text-gray-800 mb-2">
-                        Selected: {selectedFeatures.length} feature
-                        {selectedFeatures.length !== 1 ? 's' : ''}
+                        {m['developerPortal.guides.embedApp.chooseFeatures.selected']({ count: selectedFeatures.length, n: selectedFeatures.length, context: selectedFeatures.length !== 1 ? 'plural' : '' })}
                     </h4>
 
                     <div className="flex flex-wrap gap-2">
@@ -1157,13 +1145,13 @@ const ChooseFeaturesStep: React.FC<{
 
                     {hasFeatureWithSetup && (
                         <p className="mt-3 text-sm text-gray-500">
-                            Some features require additional setup. We'll guide you through it.
+                            {m['developerPortal.guides.embedApp.chooseFeatures.someRequireSetup']()}
                         </p>
                     )}
                 </div>
             )}
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -1178,7 +1166,7 @@ const ChooseFeaturesStep: React.FC<{
                     disabled={selectedFeatures.length === 0}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    {hasFeatureWithSetup ? 'Continue to Setup' : 'See Your Code'}
+                    {hasFeatureWithSetup ? m['developerPortal.guides.embedApp.chooseFeatures.continueToSetup']() : m['developerPortal.guides.embedApp.chooseFeatures.seeYourCode']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -1335,7 +1323,7 @@ export default defineConfig({
                     </div>
                 )}
 
-                {/* App name input */}
+                {/* {m['developerPortal.guides.embedApp.apiReference.appName']()} input */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         App Name (for reference)
@@ -1350,7 +1338,7 @@ export default defineConfig({
                     />
                 </div>
 
-                {/* Navigation */}
+                {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
                 <div className="flex gap-3">
                     <button
                         onClick={onBack}
@@ -1382,9 +1370,9 @@ export default defineConfig({
 
         setIsChecking(true);
         setCheckResults([
-            { id: 'https', label: 'HTTPS', status: 'pending' },
-            { id: 'reachable', label: 'Reachable', status: 'pending' },
-            { id: 'cors', label: 'CORS Headers', status: 'pending' },
+            { id: 'https', label: m['developerPortal.guides.embedApp.urlCheck.https'](), status: 'pending' },
+            { id: 'reachable', label: m['developerPortal.guides.embedApp.urlCheck.reachable'](), status: 'pending' },
+            { id: 'cors', label: m['developerPortal.guides.embedApp.urlCheck.cors'](), status: 'pending' },
         ]);
 
         const results = await checkUrl(appUrl.trim());
@@ -1540,7 +1528,7 @@ def add_headers(response):
                 </div>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -1570,11 +1558,10 @@ const InstallSdkStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Install the SDK</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.installSdkStep.title']()}</h3>
 
                 <p className="text-gray-600">
-                    The Partner Connect SDK lets your embedded app communicate with the LearnCard
-                    wallet.
+                    {m['developerPortal.guides.embedApp.installSdkStep.description']()}
                 </p>
             </div>
 
@@ -1594,44 +1581,44 @@ pnpm add @learncard/partner-connect`,
 
             {/* What you get */}
             <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
-                <h4 className="font-medium text-cyan-800 mb-3">What's included</h4>
+                <h4 className="font-medium text-cyan-800 mb-3">{m['developerPortal.guides.embedApp.installSdkStep.whatsIncluded']()}</h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5" />
                         <div>
-                            <p className="text-sm font-medium text-cyan-800">Single Sign-On</p>
-                            <p className="text-xs text-cyan-600">Get user identity instantly</p>
+                            <p className="text-sm font-medium text-cyan-800">{m['developerPortal.guides.embedApp.installSdkStep.sso']()}</p>
+                            <p className="text-xs text-cyan-600">{m['developerPortal.guides.embedApp.installSdkStep.ssoDesc']()}</p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5" />
                         <div>
-                            <p className="text-sm font-medium text-cyan-800">Send Credentials</p>
-                            <p className="text-xs text-cyan-600">Issue VCs to the wallet</p>
+                            <p className="text-sm font-medium text-cyan-800">{m['developerPortal.guides.embedApp.installSdkStep.sendCredentials']()}</p>
+                            <p className="text-xs text-cyan-600">{m['developerPortal.guides.embedApp.installSdkStep.sendCredentialsDesc']()}</p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5" />
                         <div>
-                            <p className="text-sm font-medium text-cyan-800">Request Credentials</p>
-                            <p className="text-xs text-cyan-600">Search user's wallet</p>
+                            <p className="text-sm font-medium text-cyan-800">{m['developerPortal.guides.embedApp.installSdkStep.requestCredentials']()}</p>
+                            <p className="text-xs text-cyan-600">{m['developerPortal.guides.embedApp.installSdkStep.requestCredentialsDesc']()}</p>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5" />
                         <div>
-                            <p className="text-sm font-medium text-cyan-800">Navigation</p>
-                            <p className="text-xs text-cyan-600">Launch wallet features</p>
+                            <p className="text-sm font-medium text-cyan-800">{m['developerPortal.guides.embedApp.installSdkStep.navigation']()}</p>
+                            <p className="text-xs text-cyan-600">{m['developerPortal.guides.embedApp.installSdkStep.navigationDesc']()}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -1673,19 +1660,18 @@ log.info('User Profile:', identity.profile);
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Initialize the SDK</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.initializeStep.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Set up the SDK when your app loads. You can immediately request the user's
-                    identity — no login required since they're already in the wallet.
+                    {m['developerPortal.guides.embedApp.initializeStep.description']()}
                 </p>
             </div>
 
-            <CodeOutputPanel title="Initialization Code" snippets={{ typescript: initCode }} />
+            <CodeOutputPanel title={m['developerPortal.guides.embedApp.initializeStep.initializationCode']()} snippets={{ typescript: initCode }} />
 
             {/* Identity response example */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">Example Response</h4>
+                <h4 className="font-medium text-gray-800 mb-2">{m['developerPortal.guides.embedApp.initializeStep.exampleResponse']()}</h4>
 
                 <CodeBlock
                     code={`{
@@ -1699,7 +1685,7 @@ log.info('User Profile:', identity.profile);
                 />
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -1981,7 +1967,7 @@ if (result.success) {
             2
         );
 
-    // Copy JSON summary
+    // {m['developerPortal.guides.embedApp.templateManager.copyJson']()} summary
     const handleCopyJson = async () => {
         await navigator.clipboard.writeText(getJsonSummary());
         setCopiedJson(true);
@@ -2027,11 +2013,10 @@ log.info('Available templates:', templates);`;
                     <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                     <div>
-                        <h4 className="font-medium text-amber-800 mb-1">App Listing Required</h4>
+                        <h4 className="font-medium text-amber-800 mb-1">{m['developerPortal.guides.embedApp.templateManager.appListingRequired']()}</h4>
 
                         <p className="text-sm text-amber-700">
-                            To create and manage boost templates, select an integration and app
-                            listing above.
+                            {m['developerPortal.guides.embedApp.templateManager.appListingRequiredDesc']()}
                         </p>
                     </div>
                 </div>
@@ -2044,10 +2029,10 @@ log.info('Available templates:', templates);`;
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h4 className="font-semibold text-gray-800">Your Boost Templates</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.templateManager.title']()}</h4>
 
                     <p className="text-sm text-gray-500">
-                        Create credential templates that your embedded app can issue to users
+                        {m['developerPortal.guides.embedApp.templateManager.description']()}
                     </p>
                 </div>
 
@@ -2056,17 +2041,17 @@ log.info('Available templates:', templates);`;
                         <button
                             onClick={handleCopyJson}
                             className="flex items-center gap-1.5 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg text-sm transition-colors"
-                            title="Copy JSON summary of all templates"
+                            title={m['developerPortal.guides.embedApp.templateManager.copyJson']() + ' summary of all templates'}
                         >
                             {copiedJson ? (
                                 <>
                                     <Check className="w-4 h-4 text-emerald-500" />
-                                    <span className="text-emerald-600">Copied!</span>
+                                    <span className="text-emerald-600">{m['developerPortal.guides.embedApp.templateManager.copied']()}</span>
                                 </>
                             ) : (
                                 <>
                                     <FileJson className="w-4 h-4" />
-                                    <span>Copy JSON</span>
+                                    <span>{m['developerPortal.guides.embedApp.templateManager.copyJson']()}</span>
                                 </>
                             )}
                         </button>
@@ -2086,7 +2071,7 @@ log.info('Available templates:', templates);`;
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        New Template
+                        {m['developerPortal.guides.embedApp.templateManager.newTemplate']()}
                     </button>
                 </div>
             </div>
@@ -2105,10 +2090,10 @@ log.info('Available templates:', templates);`;
                         <FileText className="w-6 h-6 text-gray-400" />
                     </div>
 
-                    <h4 className="font-medium text-gray-700 mb-1">No templates yet</h4>
+                    <h4 className="font-medium text-gray-700 mb-1">{m['developerPortal.guides.embedApp.templateManager.noTemplates']()}</h4>
 
                     <p className="text-sm text-gray-500 mb-4">
-                        Create your first boost template to start issuing credentials from your app
+                        {m['developerPortal.guides.embedApp.templateManager.noTemplatesDesc']()}
                     </p>
 
                     <button
@@ -2116,7 +2101,7 @@ log.info('Available templates:', templates);`;
                         className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Create Template
+                        {m['developerPortal.guides.embedApp.templateManager.createTemplate']()}
                     </button>
                 </div>
             )}
@@ -2195,7 +2180,7 @@ log.info('Available templates:', templates);`;
                             <div className="mt-3 pt-3 border-t border-gray-100">
                                 <div className="mb-2">
                                     <span className="text-xs font-medium text-gray-500">
-                                        Use in your app:
+                                        {m['developerPortal.guides.embedApp.templateManager.useInYourApp']()}
                                     </span>
                                 </div>
 
@@ -2217,10 +2202,10 @@ log.info('Available templates:', templates);`;
                             <Server className="w-5 h-5 text-gray-500" />
                             <div className="text-left">
                                 <h5 className="font-medium text-gray-700">
-                                    Advanced: Server-Side Integration
+                                    {m['developerPortal.guides.embedApp.templateManager.advancedServerTitle']()}
                                 </h5>
                                 <p className="text-xs text-gray-500">
-                                    Retrieve templates programmatically from your backend
+                                    {m['developerPortal.guides.embedApp.templateManager.advancedServerDesc']()}
                                 </p>
                             </div>
                         </div>
@@ -2266,7 +2251,7 @@ log.info('Available templates:', templates);`;
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                     <div className="bg-white rounded-xl p-6 flex items-center gap-3">
                         <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
-                        <span className="text-gray-700">Creating template...</span>
+                        <span className="text-gray-700">{m['developerPortal.guides.embedApp.templateManager.creatingTemplate']()}</span>
                     </div>
                 </div>
             )}
@@ -2376,7 +2361,7 @@ const UseApiStep: React.FC<{
     const categories = [
         { id: 'auth', name: 'Authentication', icon: <User className="w-4 h-4" /> },
         { id: 'credentials', name: 'Credentials', icon: <Award className="w-4 h-4" /> },
-        { id: 'navigation', name: 'Navigation', icon: <Navigation className="w-4 h-4" /> },
+        { id: 'navigation', name: m['developerPortal.guides.embedApp.installSdkStep.navigation'](), icon: <Navigation className="w-4 h-4" /> },
         { id: 'consent', name: 'Consent', icon: <ClipboardCheck className="w-4 h-4" /> },
     ];
 
@@ -2631,7 +2616,7 @@ if (result.success) {
                 'Great for gamification with pre-defined achievements',
             ],
         },
-        // Navigation
+        // {m['developerPortal.guides.embedApp.installSdkStep.navigation']()}
         {
             id: 'launchFeature',
             name: 'launchFeature',
@@ -2680,7 +2665,7 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
             tips: [
                 "Use this to complement your app's features with wallet features",
                 'The description appears as a toast or transition message',
-                'Navigation happens within the wallet, not your iframe',
+                m['developerPortal.guides.embedApp.apiReference.methods.launchFeature.tip3'](),
             ],
         },
         // Consent
@@ -2762,7 +2747,7 @@ if (result.granted) {
             {/* Header */}
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Partner Connect API Reference
+                    {m['developerPortal.guides.embedApp.apiReference.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -2923,12 +2908,12 @@ if (result.granted) {
                         <CodeBlock code={selectedMethod.code} />
                     </div>
 
-                    {/* Tips */}
+                    {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()} */}
                     {selectedMethod.tips && selectedMethod.tips.length > 0 && (
                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                             <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
                                 <Zap className="w-4 h-4" />
-                                Pro Tips
+                                Pro {m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()}
                             </h5>
 
                             <ul className="space-y-1.5">
@@ -2952,11 +2937,11 @@ if (result.granted) {
                                 <div>
                                     <h5 className="font-semibold text-gray-800 flex items-center gap-2">
                                         <Sparkles className="w-4 h-4 text-cyan-600" />
-                                        Template Builder
+                                        {m['developerPortal.guides.embedApp.apiReference.templateBuilder']()}
                                     </h5>
 
                                     <p className="text-sm text-gray-600 mt-1">
-                                        Create and manage credential templates for your embedded app
+                                        {m['developerPortal.guides.embedApp.apiReference.templateBuilderDesc']()}
                                     </p>
                                 </div>
 
@@ -2968,7 +2953,7 @@ if (result.granted) {
                                             : 'bg-cyan-500 text-white hover:bg-cyan-600'
                                     }`}
                                 >
-                                    {showTemplateManager ? 'Hide Builder' : 'Open Builder'}
+                                    {showTemplateManager ? m['developerPortal.guides.embedApp.apiReference.hideBuilder']() : m['developerPortal.guides.embedApp.apiReference.openBuilder']()}
                                 </button>
                             </div>
 
@@ -2978,7 +2963,7 @@ if (result.granted) {
                                     <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <label className="text-sm font-medium text-gray-700">
-                                                1. Select Integration
+                                                1. {m['developerPortal.guides.embedApp.apiReference.selectIntegration']()}
                                             </label>
                                             <button
                                                 onClick={() => refetchIntegrations()}
@@ -2997,7 +2982,7 @@ if (result.granted) {
                                             <div className="flex items-center gap-2 text-gray-500">
                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                                 <span className="text-sm">
-                                                    Loading integrations...
+                                                    {m['developerPortal.guides.embedApp.apiReference.loadingIntegrations']()}
                                                 </span>
                                             </div>
                                         ) : integrations && integrations.length > 0 ? (
@@ -3022,7 +3007,7 @@ if (result.granted) {
                                             </div>
                                         ) : (
                                             <p className="text-sm text-gray-500">
-                                                No integrations found
+                                                {m['developerPortal.guides.embedApp.apiReference.noIntegrations']()}
                                             </p>
                                         )}
 
@@ -3035,7 +3020,7 @@ if (result.granted) {
                                                     onChange={e =>
                                                         setNewIntegrationName(e.target.value)
                                                     }
-                                                    placeholder="Integration name"
+                                                    placeholder={m['developerPortal.guides.embedApp.apiReference.integrationName']()}
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                                     onKeyDown={e => {
                                                         if (e.key === 'Enter')
@@ -3072,7 +3057,7 @@ if (result.granted) {
                                                 className="text-sm text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
-                                                New Integration
+                                                {m['developerPortal.guides.embedApp.apiReference.newIntegration']()}
                                             </button>
                                         )}
                                     </div>
@@ -3082,7 +3067,7 @@ if (result.granted) {
                                         <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <label className="text-sm font-medium text-gray-700">
-                                                    2. Select App Listing
+                                                    2. {m['developerPortal.guides.embedApp.apiReference.selectAppListing']()}
                                                 </label>
                                                 <button
                                                     onClick={() => refetchListings()}
@@ -3101,7 +3086,7 @@ if (result.granted) {
                                                 <div className="flex items-center gap-2 text-gray-500">
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                     <span className="text-sm">
-                                                        Loading app listings...
+                                                        {m['developerPortal.guides.embedApp.apiReference.loadingAppListings']()}
                                                     </span>
                                                 </div>
                                             ) : listings && listings.length > 0 ? (
@@ -3132,7 +3117,7 @@ if (result.granted) {
                                                 </div>
                                             ) : (
                                                 <p className="text-sm text-gray-500">
-                                                    No app listings for this integration
+                                                    {m['developerPortal.guides.embedApp.apiReference.noAppListings']()}
                                                 </p>
                                             )}
 
@@ -3145,7 +3130,7 @@ if (result.granted) {
                                                         onChange={e =>
                                                             setNewListingName(e.target.value)
                                                         }
-                                                        placeholder="App name"
+                                                        placeholder={m['developerPortal.guides.embedApp.apiReference.appName']()}
                                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                                         onKeyDown={e => {
                                                             if (e.key === 'Enter')
@@ -3182,7 +3167,7 @@ if (result.granted) {
                                                     className="text-sm text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
                                                 >
                                                     <Plus className="w-3.5 h-3.5" />
-                                                    New App Listing
+                                                    {m['developerPortal.guides.embedApp.apiReference.newAppListing']()}
                                                 </button>
                                             )}
                                         </div>
@@ -3238,7 +3223,7 @@ if (result.granted) {
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                             >
                                 <Package className="w-4 h-4" />
-                                NPM Package
+                                {m['developerPortal.guides.embedApp.apiReference.npmPackage']()}
                                 <ExternalLink className="w-3 h-3" />
                             </a>
 
@@ -3249,7 +3234,7 @@ if (result.granted) {
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
                             >
                                 <FileText className="w-4 h-4" />
-                                Full Documentation
+                                {m['developerPortal.guides.embedApp.apiReference.fullDocumentation']()}
                                 <ExternalLink className="w-3 h-3" />
                             </a>
                         </div>
@@ -3257,7 +3242,7 @@ if (result.granted) {
                 </div>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -3648,10 +3633,10 @@ log.info('Credential synced:', result);`;
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Issue Credentials</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.issueCredentialsSetup.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Choose how you want to deliver credentials to users in your embedded app.
+                    {m['developerPortal.guides.embedApp.issueCredentialsSetup.description']()}
                 </p>
             </div>
 
@@ -3666,18 +3651,18 @@ log.info('Credential synced:', result);`;
                     }`}
                 >
                     <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full">
-                        Recommended
+                        {m['developerPortal.guides.embedApp.issueCredentialsSetup.recommended']()}
                     </div>
 
                     <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-5 h-5 text-emerald-600" />
-                        <span className="font-semibold text-gray-800">Use Templates</span>
+                        <span className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.useTemplates']()}</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Easiest to set up</li>
-                        <li>• Simple SDK integration</li>
-                        <li>• Auto-generated aliases</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.useTemplatesBullet1']()}</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.useTemplatesBullet2']()}</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.useTemplatesBullet3']()}</li>
                     </ul>
                 </button>
 
@@ -3691,13 +3676,13 @@ log.info('Credential synced:', result);`;
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <Send className="w-5 h-5 text-cyan-600" />
-                        <span className="font-semibold text-gray-800">Manual Build</span>
+                        <span className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.manualBuild']()}</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Full control over VC</li>
-                        <li>• Build credentials in code</li>
-                        <li>• More complex setup</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.manualBuildBullet1']()}</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.manualBuildBullet2']()}</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.manualBuildBullet3']()}</li>
                     </ul>
                 </button>
 
@@ -3711,18 +3696,18 @@ log.info('Credential synced:', result);`;
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <RefreshCw className="w-5 h-5 text-violet-600" />
-                        <span className="font-semibold text-gray-800">Sync to Wallet</span>
+                        <span className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.syncToWallet']()}</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Consent flow required</li>
-                        <li>• Seamless sync</li>
-                        <li>• Full analytics</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.syncToWalletBullet1']()}</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.syncToWalletBullet2']()}</li>
+                        <li>• {m['developerPortal.guides.embedApp.issueCredentialsSetup.syncToWalletBullet3']()}</li>
                     </ul>
                 </button>
             </div>
 
-            {/* Prompt to Claim Template Mode (Recommended) */}
+            {/* Prompt to Claim Template Mode ({m['developerPortal.guides.embedApp.issueCredentialsSetup.recommended']()}) */}
             {mode === 'prompt-claim-template' && (
                 <div className="space-y-6">
                     {/* Info Banner */}
@@ -3786,7 +3771,7 @@ log.info('Credential synced:', result);`;
                             <div className="w-7 h-7 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 1
                             </div>
-                            <h4 className="font-semibold text-gray-800">Build Your Credential</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.buildYourCredential']()}</h4>
                         </div>
 
                         <div className="ml-10">
@@ -3797,7 +3782,7 @@ log.info('Credential synced:', result);`;
                                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                                             <span className="font-medium text-emerald-800">
                                                 {((credential as Record<string, unknown>)
-                                                    .name as string) || 'Credential Ready'}
+                                                    .name as string) || m['developerPortal.guides.embedApp.issueCredentialsSetup.credentialReady']()}
                                             </span>
                                         </div>
 
@@ -3805,7 +3790,7 @@ log.info('Credential synced:', result);`;
                                             onClick={() => setShowCredentialBuilder(true)}
                                             className="text-sm text-emerald-700 hover:text-emerald-800"
                                         >
-                                            Edit
+                                            {m['developerPortal.guides.embedApp.issueCredentialsSetup.edit']()}
                                         </button>
                                     </div>
                                 </div>
@@ -3815,19 +3800,19 @@ log.info('Credential synced:', result);`;
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-cyan-300 text-cyan-600 rounded-xl hover:bg-cyan-50 transition-colors"
                                 >
                                     <Award className="w-5 h-5" />
-                                    Design Your Credential
+                                    {m['developerPortal.guides.embedApp.issueCredentialsSetup.designYourCredential']()}
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    {/* Step 2: Integration Code */}
+                    {/* Step 2: {m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()} */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-7 h-7 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 2
                             </div>
-                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()}</h4>
                         </div>
 
                         <div className="ml-10 space-y-3">
@@ -3835,7 +3820,7 @@ log.info('Credential synced:', result);`;
 
                             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <p className="text-sm text-amber-800">
-                                    <strong>Important:</strong> Step 3 (issuing) must happen on your
+                                    <strong>{m['developerPortal.guides.embedApp.issueCredentialsSetup.importantNote']()}</strong> Step 3 (issuing) must happen on your
                                     server with your API key to sign the credential properly.
                                 </p>
                             </div>
@@ -3847,13 +3832,13 @@ log.info('Credential synced:', result);`;
             {/* Sync to Wallet Mode */}
             {mode === 'sync-wallet' && (
                 <div className="space-y-6">
-                    {/* Step 1: Signing Authority */}
+                    {/* Step 1: {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthority']()} */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 1
                             </div>
-                            <h4 className="font-semibold text-gray-800">Signing Authority</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthority']()}</h4>
                         </div>
 
                         <div className="ml-10">
@@ -3861,7 +3846,7 @@ log.info('Credential synced:', result);`;
                                 <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl">
                                     <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
                                     <span className="text-sm text-gray-500">
-                                        Checking signing authority...
+                                        {m['developerPortal.guides.embedApp.issueCredentialsSetup.checking']()}
                                     </span>
                                 </div>
                             ) : primarySA ? (
@@ -3871,7 +3856,7 @@ log.info('Credential synced:', result);`;
                                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                                             <div>
                                                 <p className="font-medium text-emerald-800">
-                                                    Signing authority ready
+                                                    {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthorityReady']()}
                                                 </p>
                                                 <p className="text-xs text-emerald-600">
                                                     Using: {primarySA.name}
@@ -3892,7 +3877,7 @@ log.info('Credential synced:', result);`;
                                         ) : (
                                             <>
                                                 <RefreshCw className="w-3.5 h-3.5" />
-                                                Recreate Signing Authority
+                                                Recreate {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthority']()}
                                             </>
                                         )}
                                     </button>
@@ -3918,7 +3903,7 @@ log.info('Credential synced:', result);`;
                                             ) : (
                                                 <>
                                                     <Shield className="w-4 h-4" />
-                                                    Create Signing Authority
+                                                    Create {m['developerPortal.guides.embedApp.issueCredentialsSetup.signingAuthority']()}
                                                 </>
                                             )}
                                         </button>
@@ -3928,13 +3913,13 @@ log.info('Credential synced:', result);`;
                         </div>
                     </div>
 
-                    {/* Step 2: Consent Flow Contract */}
+                    {/* Step 2: {m['developerPortal.guides.embedApp.issueCredentialsSetup.consentFlowContract']()} */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 2
                             </div>
-                            <h4 className="font-semibold text-gray-800">Consent Flow Contract</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.consentFlowContract']()}</h4>
                         </div>
 
                         <div className="ml-10 space-y-3">
@@ -3953,7 +3938,7 @@ log.info('Credential synced:', result);`;
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                         <span className="text-sm text-emerald-800">
-                                            Contract selected
+                                            {m['developerPortal.guides.embedApp.issueCredentialsSetup.contractSelected']()}
                                         </span>
                                     </div>
                                 </div>
@@ -3968,7 +3953,7 @@ log.info('Credential synced:', result);`;
                                 3
                             </div>
                             <h4 className="font-semibold text-gray-800">
-                                Credential Templates (Boosts)
+                                {m['developerPortal.guides.embedApp.issueCredentialsSetup.credentialTemplates']()}
                             </h4>
                         </div>
 
@@ -3984,20 +3969,20 @@ log.info('Credential synced:', result);`;
                             ) : (
                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                                     <p className="text-sm text-amber-800">
-                                        Select an app in Step 1 to create credential templates.
+                                        {m['developerPortal.guides.embedApp.appListingRequiredDesc']()}
                                     </p>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Step 4: Integration Code */}
+                    {/* Step 4: {m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()} */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 4
                             </div>
-                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()}</h4>
                         </div>
 
                         <div className="ml-10">
@@ -4007,7 +3992,7 @@ log.info('Credential synced:', result);`;
                 </div>
             )}
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -4037,7 +4022,7 @@ log.info('Credential synced:', result);`;
     );
 };
 
-// Request Credentials Setup - Two modes: Query vs Specific
+// {m['developerPortal.guides.embedApp.installSdkStep.requestCredentials']()} Setup - Two modes: Query vs Specific
 type RequestMode = 'query' | 'specific';
 
 const RequestCredentialsSetup: React.FC<{
@@ -4138,10 +4123,10 @@ try {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Request Credentials</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.requestCredentialsSetup.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Choose how you want to request credentials from users in your app.
+                    {m['developerPortal.guides.embedApp.requestCredentialsSetup.description']()}
                 </p>
             </div>
 
@@ -4157,7 +4142,7 @@ try {
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <FileSearch className="w-5 h-5 text-amber-600" />
-                        <span className="font-semibold text-gray-800">Search Credentials</span>
+                        <span className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.requestCredentialsSetup.searchCredentials']()}</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
@@ -4177,7 +4162,7 @@ try {
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <Key className="w-5 h-5 text-orange-600" />
-                        <span className="font-semibold text-gray-800">Request by ID</span>
+                        <span className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.requestCredentialsSetup.requestById']()}</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
@@ -4197,7 +4182,7 @@ try {
                             <div className="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 1
                             </div>
-                            <h4 className="font-semibold text-gray-800">Configure Your Search</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.requestCredentialsSetup.configureSearch']()}</h4>
                         </div>
 
                         <div className="ml-10 space-y-4">
@@ -4239,13 +4224,13 @@ try {
                         </div>
                     </div>
 
-                    {/* Step 2: Integration Code */}
+                    {/* Step 2: {m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()} */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 2
                             </div>
-                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()}</h4>
                         </div>
 
                         <div className="ml-10">
@@ -4253,9 +4238,9 @@ try {
                         </div>
                     </div>
 
-                    {/* How it works */}
+                    {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()} */}
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                        <h4 className="font-medium text-amber-800 mb-2">How it works</h4>
+                        <h4 className="font-medium text-amber-800 mb-2">{m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()}</h4>
 
                         <ol className="text-sm text-amber-700 space-y-1">
                             <li>
@@ -4286,7 +4271,7 @@ try {
                             <div className="w-7 h-7 bg-orange-100 text-orange-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 1
                             </div>
-                            <h4 className="font-semibold text-gray-800">How to Use</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.requestCredentialsSetup.howToUse']()}</h4>
                         </div>
 
                         <div className="ml-10 p-4 bg-gray-50 border border-gray-200 rounded-xl">
@@ -4321,13 +4306,13 @@ try {
                         </div>
                     </div>
 
-                    {/* Integration Code */}
+                    {/* {m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()} */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-7 h-7 bg-orange-100 text-orange-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 2
                             </div>
-                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                            <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()}</h4>
                         </div>
 
                         <div className="ml-10">
@@ -4335,9 +4320,9 @@ try {
                         </div>
                     </div>
 
-                    {/* Tips */}
+                    {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()} */}
                     <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                        <h4 className="font-medium text-orange-800 mb-2">Tips</h4>
+                        <h4 className="font-medium text-orange-800 mb-2">{m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()}</h4>
 
                         <ul className="text-sm text-orange-700 space-y-1">
                             <li>• Store credential IDs securely when users first share them</li>
@@ -4351,7 +4336,7 @@ try {
                 </div>
             )}
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -4452,11 +4437,10 @@ log.info('Credential sent:', result);`;
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Request Data Consent</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.requestDataConsentSetup.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Ask users for permission to access specific data fields or write data back to
-                    their profile via a ConsentFlow contract.
+                    {m['developerPortal.guides.embedApp.requestDataConsentSetup.description']()}
                 </p>
             </div>
 
@@ -4468,7 +4452,7 @@ log.info('Credential sent:', result);`;
                     </div>
 
                     <h4 className="font-semibold text-gray-800">
-                        Select or Create a Consent Contract
+                        {m['developerPortal.guides.embedApp.requestDataConsentSetup.selectContract']()}
                     </h4>
                 </div>
 
@@ -4484,7 +4468,7 @@ log.info('Credential sent:', result);`;
                         2
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Request Consent (Client-Side)</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.requestDataConsentSetup.requestConsentClient']()}</h4>
                 </div>
 
                 <div className="ml-10">
@@ -4503,7 +4487,7 @@ log.info('Credential sent:', result);`;
                         3
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Read & Write Data (Server-Side)</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.requestDataConsentSetup.readWriteData']()}</h4>
                 </div>
 
                 <div className="ml-10">
@@ -4516,9 +4500,9 @@ log.info('Credential sent:', result);`;
                 </div>
             </div>
 
-            {/* How it works */}
+            {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()} */}
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <h4 className="font-medium text-emerald-800 mb-2">How ConsentFlow Works</h4>
+                <h4 className="font-medium text-emerald-800 mb-2">{m['developerPortal.guides.embedApp.requestDataConsentSetup.howConsentFlowWorks']()}</h4>
 
                 <ol className="text-sm text-emerald-700 space-y-1">
                     <li>
@@ -4537,7 +4521,7 @@ log.info('Credential sent:', result);`;
                 </ol>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -5017,11 +5001,10 @@ await learnCard.launchFeature('${path}');`;
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Launch Native Features</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.launchFeatureSetup.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Navigate users to any LearnCard screen directly from your app. Select a category
-                    and feature to configure.
+                    {m['developerPortal.guides.embedApp.launchFeatureSetup.description']()}
                 </p>
             </div>
 
@@ -5033,7 +5016,7 @@ await learnCard.launchFeature('${path}');`;
                             1
                         </div>
 
-                        <h4 className="font-semibold text-gray-800">Select Features</h4>
+                        <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.launchFeatureSetup.selectFeatures']()}</h4>
                     </div>
 
                     {selectedFeatureIds.length > 0 && (
@@ -5178,7 +5161,7 @@ await learnCard.launchFeature('${path}');`;
                 </div>
             </div>
 
-            {/* Step 2: Configure Parameters for selected features with params */}
+            {/* Step 2: {m['developerPortal.guides.embedApp.launchFeatureSetup.configureParameters']()} for selected features with params */}
             {selectedFeatures.some(f => f.params && f.params.length > 0) && (
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -5186,7 +5169,7 @@ await learnCard.launchFeature('${path}');`;
                             2
                         </div>
 
-                        <h4 className="font-semibold text-gray-800">Configure Parameters</h4>
+                        <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.launchFeatureSetup.configureParameters']()}</h4>
                     </div>
 
                     <div className="ml-10 space-y-4">
@@ -5234,14 +5217,14 @@ await learnCard.launchFeature('${path}');`;
                 </div>
             )}
 
-            {/* Step 3: Integration Code */}
+            {/* Step 3: {m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()} */}
             <div className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                         {selectedFeatures.some(f => f.params?.length) ? '3' : '2'}
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                    <h4 className="font-semibold text-gray-800">{m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()}</h4>
                 </div>
 
                 <div className="ml-10">
@@ -5263,22 +5246,22 @@ await learnCard.launchFeature('${path}');`;
                 </div>
             </div>
 
-            {/* Tips */}
+            {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()} */}
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                <h4 className="font-medium text-purple-800 mb-2">Tips</h4>
+                <h4 className="font-medium text-purple-800 mb-2">{m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()}</h4>
 
                 <ul className="text-sm text-purple-700 space-y-1">
                     <li>
                         • <code className="bg-purple-100 px-1 rounded">launchFeature</code>{' '}
                         navigates users to any LearnCard screen
                     </li>
-                    <li>• Parameters are passed as URL params or path segments</li>
-                    <li>• Admin tools are only accessible to users with admin permissions</li>
-                    <li>• Results indicate success/failure of the navigation</li>
+                    <li>• {m['developerPortal.guides.embedApp.launchFeatureSetup.tip2']()}</li>
+                    <li>• {m['developerPortal.guides.embedApp.launchFeatureSetup.tip3']()}</li>
+                    <li>• {m['developerPortal.guides.embedApp.launchFeatureSetup.tip4']()}</li>
                 </ul>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -5311,9 +5294,7 @@ const PeerBadgesSetup: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Peer-to-Peer Badges
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.peerBadgesSetup.title']()}</h3>
 
                 <p className="text-gray-600">
                     Create badge templates that users can send to each other using{' '}
@@ -5328,19 +5309,19 @@ const PeerBadgesSetup: React.FC<{
                         <CheckCircle2 className="w-5 h-5 text-violet-600" />
                         <div>
                             <p className="text-sm font-medium text-violet-800">
-                                Creating templates for: {selectedListing.display_name}
+                                {m['developerPortal.guides.embedApp.peerBadgesSetup.creatingTemplatesFor']({ name: selectedListing.display_name })}
                             </p>
                             <p className="text-xs text-violet-600">
-                                You selected this app in Step 1
+                                {m['developerPortal.guides.embedApp.peerBadgesSetup.appSelected']()}
                             </p>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* How it works */}
+            {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()} */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">How Peer-to-Peer Badges Work</h4>
+                <h4 className="font-medium text-gray-800 mb-2">{m['developerPortal.guides.embedApp.peerBadgesSetup.howItWorks']()}</h4>
 
                 <ol className="space-y-2 text-sm text-gray-600">
                     <li className="flex items-start gap-2">
@@ -5378,12 +5359,12 @@ const PeerBadgesSetup: React.FC<{
                 <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
                     <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
                     <p className="text-amber-800">
-                        Please go back to Step 1 and select an app listing first.
+                        {m['developerPortal.guides.embedApp.peerBadgesSetup.selectAppFirst']()}
                     </p>
                 </div>
             )}
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex gap-3">
                 <button
                     onClick={onBack}
@@ -5874,7 +5855,7 @@ ${JSON.stringify(llmMetadata, null, 2)
  * ${
      peerBadgeTemplates.length > 0
          ? `Peer Badge Templates: ${peerBadgeTemplates.length} available`
-         : 'Peer Badge Templates: None configured'
+         : `Peer Badge Templates: ${m['developerPortal.guides.embedApp.yourApp.none']()} configured`
  }
  * ${
      dataConsentContractUri
@@ -5954,7 +5935,7 @@ async function getUserIdentity() {
 // ============================================================
 // Mode: Build a credential and prompt user to claim it
 // 
-// How it works:
+// {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()}:
 //   1. Get the user's DID to include in the credential
 //   2. Build the credential with their DID as the subject
 //   3. Issue the credential server-side (with your signing authority)
@@ -6166,7 +6147,7 @@ function findPeerBadgeTemplate(query: string) {
 // ============================================================
 // Let users send badges to each other within your app
 // 
-// How it works:
+// {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()}:
 //   1. Your app calls initiateTemplateIssue with a template URI
 //   2. User selects a recipient from their contacts
 //   3. Badge is sent from your app on behalf of the user
@@ -6219,7 +6200,7 @@ async function sendPeerBadgeByName(searchQuery: string) {
 // ============================================================
 // REQUEST CREDENTIALS - Search by Title
 // ============================================================
-// Search user's wallet for credentials matching a title
+// {m['developerPortal.guides.embedApp.installSdkStep.requestCredentialsDesc']()} for credentials matching a title
 // User selects which credential(s) to share
 //
 // Configure your search:
@@ -6269,7 +6250,7 @@ async function requestCredentialsBySearch() {
             } else {
                 sections.push(`
 // ============================================================
-// REQUEST CREDENTIALS - Request by ID
+// REQUEST CREDENTIALS - {m['developerPortal.guides.embedApp.requestCredentialsSetup.requestById']()}
 // ============================================================
 // Request a specific credential by its ID
 // User accepts or declines sharing that exact credential
@@ -6322,7 +6303,7 @@ async function requestCredentialById(credentialId: string) {
 //
 // Contract URI: ${contractUri || 'NOT_CONFIGURED - Create one in Admin Tools'}
 //
-// How it works:
+// {m['developerPortal.guides.embedApp.requestCredentialsSetup.howItWorks']()}:
 //   1. Client requests consent from user
 //   2. User reviews and grants/denies permissions
 //   3. Your server can then read/write data per contract terms
@@ -6512,13 +6493,13 @@ initializeApp();`);
         if (newPerms.length > 0) {
             differences.push({
                 type: 'permissions_added',
-                label: 'New permissions required',
+                label: m['developerPortal.guides.embedApp.yourApp.newPermissions'](),
                 from:
                     existingPermissions.length > 0
                         ? existingPermissions
                               .map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p)
                               .join(', ')
-                        : 'None',
+                        : m['developerPortal.guides.embedApp.yourApp.none'](),
                 to: newPerms
                     .map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p)
                     .join(', '),
@@ -6531,8 +6512,8 @@ initializeApp();`);
         if (newContractUri !== existingContractUri && newContractUri) {
             differences.push({
                 type: 'contract',
-                label: 'Consent contract',
-                from: existingContractUri || 'Not set',
+                label: m['developerPortal.guides.embedApp.yourApp.consentContract'](),
+                from: existingContractUri || m['developerPortal.guides.embedApp.yourApp.notSet'](),
                 to: newContractUri,
             });
         }
@@ -6553,7 +6534,7 @@ initializeApp();`);
 
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-800">
-                                    Update App Configuration?
+                                    Update {m['developerPortal.guides.embedApp.yourApp.appConfiguration']()}?
                                 </h3>
 
                                 <p className="text-sm text-gray-600 mt-1">
@@ -6565,7 +6546,7 @@ initializeApp();`);
 
                         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                Changes needed:
+                                {m['developerPortal.guides.embedApp.yourApp.changesNeeded']()}
                             </p>
 
                             {configDifferences.map((diff, idx) => (
@@ -6590,7 +6571,7 @@ initializeApp();`);
                                 onClick={() => setShowConfigMismatchPrompt(false)}
                                 className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                             >
-                                Keep Current
+                                {m['developerPortal.guides.embedApp.yourApp.keepCurrent']()}
                             </button>
 
                             <button
@@ -6603,7 +6584,7 @@ initializeApp();`);
                                 ) : (
                                     <Check className="w-4 h-4" />
                                 )}
-                                Update Config
+                                {m['developerPortal.guides.embedApp.yourApp.updateConfig']()}
                             </button>
                         </div>
                     </div>
@@ -6611,7 +6592,7 @@ initializeApp();`);
             )}
 
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Integration Code</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedApp.yourApp.title']()}</h3>
 
                 <p className="text-gray-600">
                     Here&apos;s your complete integration code with {selectedFeatures.length}{' '}
@@ -6620,7 +6601,7 @@ initializeApp();`);
                 </p>
             </div>
 
-            {/* App Summary */}
+            {/* {m['developerPortal.guides.embedApp.yourApp.appSummary']()} */}
             {selectedListing && (
                 <div className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-xl">
                     <div className="flex items-center gap-3">
@@ -6650,7 +6631,7 @@ initializeApp();`);
 
             {/* Selected features summary */}
             <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Configured Features</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">{m['developerPortal.guides.embedApp.yourApp.configuredFeatures']()}</p>
 
                 <div className="flex flex-wrap gap-2">
                     {selectedFeatures.map(id => {
@@ -6669,7 +6650,7 @@ initializeApp();`);
                 </div>
             </div>
 
-            {/* App Configuration Section */}
+            {/* {m['developerPortal.guides.embedApp.yourApp.appConfiguration']()} Section */}
             <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <button
                     onClick={() => setShowConfigEditor(!showConfigEditor)}
@@ -6681,7 +6662,7 @@ initializeApp();`);
                         </div>
 
                         <div className="text-left">
-                            <p className="font-medium text-gray-800">App Configuration</p>
+                            <p className="font-medium text-gray-800">{m['developerPortal.guides.embedApp.yourApp.appConfiguration']()}</p>
                             <p className="text-xs text-gray-500">
                                 {embedUrl ? 'Configured' : 'Set embed URL, permissions & consent'}
                             </p>
@@ -6697,10 +6678,10 @@ initializeApp();`);
 
                 {showConfigEditor && (
                     <div className="p-4 border-t border-gray-200 space-y-5">
-                        {/* Embed URL */}
+                        {/* {m['developerPortal.guides.embedApp.yourApp.embedUrl']()} */}
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Embed URL
+                                {m['developerPortal.guides.embedApp.yourApp.embedUrl']()}
                             </label>
 
                             <input
@@ -6741,7 +6722,7 @@ initializeApp();`);
                         {/* Permissions */}
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Permissions Needed
+                                {m['developerPortal.guides.embedApp.yourApp.permissionsNeeded']()}
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
@@ -6782,7 +6763,7 @@ initializeApp();`);
 
                                                     {isRequired && (
                                                         <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium">
-                                                            Required
+                                                            {m['developerPortal.guides.embedApp.yourApp.required']()}
                                                         </span>
                                                     )}
                                                 </div>
@@ -6797,11 +6778,11 @@ initializeApp();`);
                             </div>
                         </div>
 
-                        {/* Consent Flow Contract */}
+                        {/* {m['developerPortal.guides.embedApp.issueCredentialsSetup.consentFlowContract']()} */}
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Consent Flow Contract{' '}
-                                <span className="text-gray-400 font-normal">(Optional)</span>
+                                {m['developerPortal.guides.embedApp.issueCredentialsSetup.consentFlowContract']()}{' '}
+                                <span className="text-gray-400 font-normal">{m['developerPortal.guides.embedApp.yourApp.optional']()}</span>
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
@@ -6837,20 +6818,20 @@ initializeApp();`);
                                 ) : (
                                     <Check className="w-4 h-4" />
                                 )}
-                                Save Configuration
+                                {m['developerPortal.guides.embedApp.yourApp.saveConfig']()}
                             </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Preview App Button */}
+            {/* {m['developerPortal.guides.embedApp.yourApp.previewApp']()} Button */}
             {selectedListing && embedUrl && (
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                     <div className="flex items-center justify-between">
                         <div>
                             <h4 className="text-sm font-medium text-indigo-800">
-                                Test Your Integration
+                                {m['developerPortal.guides.embedApp.yourApp.testIntegration']()}
                             </h4>
 
                             <p className="text-xs text-indigo-600 mt-0.5">
@@ -6863,7 +6844,7 @@ initializeApp();`);
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
                         >
                             <Play className="w-4 h-4" />
-                            Preview App
+                            {m['developerPortal.guides.embedApp.yourApp.previewApp']()}
                         </button>
                     </div>
                 </div>
@@ -6873,7 +6854,7 @@ initializeApp();`);
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700">
-                        Complete Integration Code
+                        Complete {m['developerPortal.guides.embedApp.issueCredentialsSetup.integrationCode']()}
                     </span>
 
                     <button
@@ -6883,12 +6864,12 @@ initializeApp();`);
                         {copiedCode ? (
                             <>
                                 <Check className="w-4 h-4 text-emerald-500" />
-                                <span className="text-emerald-600">Copied!</span>
+                                <span className="text-emerald-600">{m['developerPortal.guides.embedApp.templateManager.copied']()}</span>
                             </>
                         ) : (
                             <>
                                 <Copy className="w-4 h-4" />
-                                Copy All
+                                {m['developerPortal.guides.embedApp.yourApp.copyAll']()}
                             </>
                         )}
                     </button>
@@ -6897,11 +6878,11 @@ initializeApp();`);
                 <CodeBlock code={code} maxHeight="max-h-[500px]" />
             </div>
 
-            {/* Tips */}
+            {/* {m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()} */}
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                 <h4 className="font-medium text-amber-800 mb-2 flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Integration Tips
+                    Integration {m['developerPortal.guides.embedApp.requestCredentialsSetup.tips']()}
                 </h4>
 
                 <ul className="space-y-1 text-sm text-amber-700">
@@ -6913,8 +6894,8 @@ initializeApp();`);
                         • Server-side code (in comments) should run on YOUR server, not in the
                         embedded app
                     </li>
-                    <li>• Store sensitive values (seeds, API keys) in environment variables</li>
-                    <li>• Test in the LearnCard sandbox before going live</li>
+                    <li>• {m['developerPortal.guides.embedApp.yourApp.tip3']()}</li>
+                    <li>• {m['developerPortal.guides.embedApp.yourApp.tip4']()}</li>
                 </ul>
             </div>
 
@@ -6927,7 +6908,7 @@ initializeApp();`);
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <FileText className="w-4 h-4" />
-                    SDK Documentation
+                    {m['developerPortal.guides.embedApp.yourApp.sdkDocumentation']()}
                     <ExternalLink className="w-3 h-3" />
                 </button>
 
@@ -6936,12 +6917,12 @@ initializeApp();`);
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <Code className="w-4 h-4" />
-                    GitHub Examples
+                    {m['developerPortal.guides.embedApp.yourApp.githubExamples']()}
                     <ExternalLink className="w-3 h-3" />
                 </button>
             </div>
 
-            {/* Navigation */}
+            {/* {m['developerPortal.guides.embedApp.installSdkStep.navigation']()} */}
             <div className="flex justify-between gap-3">
                 <button
                     onClick={onBack}
@@ -6991,7 +6972,7 @@ initializeApp();`);
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-200"
                 >
                     <Rocket className="w-5 h-5" />
-                    Continue to Go Live
+                    {m['developerPortal.guides.embedApp.yourApp.continueToGoLive']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
