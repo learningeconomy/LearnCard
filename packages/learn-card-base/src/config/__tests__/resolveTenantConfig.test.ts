@@ -143,6 +143,7 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(result.apis.brainService).toBe(DEFAULT_LEARNCARD_TENANT_CONFIG.apis.brainService);
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
+        expect(result.storage.provider).toBe('filestack');
         expect(result.features.aiFeatures).toBe(true);
     });
 

@@ -4,7 +4,7 @@ import { useHistory } from 'react-router-dom';
 import {
     useModal,
     useToast,
-    useFilestack,
+    useImageUpload,
     useGetProfile,
     useCreateBoost,
     useConfirmation,
@@ -125,7 +125,7 @@ const BulkBoostImportPage: React.FC = () => {
     //   row index -> image status
     const [imageTracking, setImageTracking] = useState<ImageTrackingType>(new Map());
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });

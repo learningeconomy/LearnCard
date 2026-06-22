@@ -1,9 +1,9 @@
 import localForage from 'localforage';
-import _ from 'lodash';
 
 import { ImageMetadata, DefaultMetadata, getUrlsFromSrcSet } from './images.helpers';
 import { getLogger } from '../../logging/logger';
-const log = getLogger('filestack.helpers');
+
+const log = getLogger('filestack-helpers');
 
 /**
  * Creates an array of Filestack URL Parameters
@@ -12,7 +12,7 @@ const log = getLogger('filestack.helpers');
  *
  * @return Filestack URL Parameters
  */
-export const getUrlParams = (url: string): string[] => url.split('.com/')[1].split('/');
+export const getUrlParams = (url: string): string[] => url.split('.com/')[1]?.split('/') ?? [];
 
 /**
  * Converts an array of Filestack URL Parameters to a valid Filestack URL
@@ -34,7 +34,7 @@ export const getUrlFromUrlParams = (urlParams: string[]): string =>
 export const getFilestackHandle = (url: string): string => {
     const urlParams = getUrlParams(url);
 
-    return urlParams[urlParams.length - 1];
+    return urlParams[urlParams.length - 1] ?? '';
 };
 
 /**
@@ -51,9 +51,8 @@ export const getFilestackHandle = (url: string): string => {
  */
 export const getMetadata = async (url: string): Promise<ImageMetadata> => {
     const handle = getFilestackHandle(url);
-
     const localForageKey = 'ImageMetadata';
-    const memoizedResult: { [key: string]: ImageMetadata } =
+    const memoizedResult: Record<string, ImageMetadata> =
         (await localForage.getItem(localForageKey)) ?? {};
 
     if (memoizedResult[handle]) return memoizedResult[handle];
@@ -67,11 +66,12 @@ export const getMetadata = async (url: string): Promise<ImageMetadata> => {
         ]);
 
         const metadata: ImageMetadata = { ...data[0], ...data[1] };
+        const memoizedResultKeys = Object.keys(memoizedResult);
 
-        const memoizedResultLength = Object.keys(memoizedResult).length;
-
-        if (memoizedResultLength >= 200) {
-            delete memoizedResult[Object.keys(memoizedResult)[_.random(memoizedResultLength - 1)]];
+        if (memoizedResultKeys.length >= 200) {
+            delete memoizedResult[
+                memoizedResultKeys[Math.floor(Math.random() * memoizedResultKeys.length)]
+            ];
         }
 
         localForage.setItem(localForageKey, { ...memoizedResult, [handle]: metadata });
@@ -79,6 +79,7 @@ export const getMetadata = async (url: string): Promise<ImageMetadata> => {
         return metadata;
     } catch (e) {
         log.debug('filestack::getMetadata::error', e);
+
         return DefaultMetadata;
     }
 };
@@ -87,11 +88,7 @@ export const getFileType = (url: string): Promise<string> => {
     const handle = getFilestackHandle(url);
 
     return fetch(`https://www.filestackapi.com/api/file/${handle}/metadata`)
-        .then(res => {
-            return res.json().then(data => {
-                return data.mimetype;
-            });
-        })
+        .then(res => res.json().then(data => String(data.mimetype ?? '')))
         .catch(error => {
             log.debug('filestack::getFileType::error', error);
 
@@ -119,7 +116,6 @@ export const fileTypeSupportsPreview = (fileType: string): boolean => {
  * @return fixed URL
  */
 export const fixUrl = (url: string, mimetype?: string, webp = false): string => {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     if (url.split(' ').length > 1) return fixSrcSetString(url, mimetype, webp);
 
     const urlParams = getUrlParams(url).filter(param => param !== 'rotate=deg:exif');
@@ -135,7 +131,7 @@ export const fixUrl = (url: string, mimetype?: string, webp = false): string => 
 /**
  * Fixes image rotation based on EXIF data and uses auto_image on a given srcset string
  *
- * @param srcSetString srcset string to fix
+ * @param srcSetString srcSet string to fix
  * @param mimetype MIME type (e.g. image/gif)
  * @param webp flag to indicate whether we should manually specify conversion to webp
  *
@@ -235,14 +231,11 @@ export const generateSrcSet = (
  * For example I want to resize a default filestack url with these resize and quality aprams "resize=width:100/quality=value:75/
  * woudl result in something like https://cdn.filestackcontent.com/resize=width:100/quality=value:75/Dss4qWaQ3GKkbFXVU7lJ
  */
-
 export const insertParamsToFilestackUrl = (filestackUrl: string | undefined, insertion: string) => {
-    if (filestackUrl) {
-        const modified_url = filestackUrl?.replace?.(
-            'https://cdn.filestackcontent.com/',
-            'https://cdn.filestackcontent.com/' + insertion
-        );
-        return modified_url;
-    }
-    return filestackUrl;
+    if (!filestackUrl) return filestackUrl;
+
+    return filestackUrl.replace(
+        'https://cdn.filestackcontent.com/',
+        `https://cdn.filestackcontent.com/${insertion}`
+    );
 };

@@ -9,7 +9,7 @@ import {
     useModal,
     useToast,
     useWallet,
-    useFilestack,
+    useImageUpload,
     ToastTypeEnum,
 } from 'learn-card-base';
 import { ConsentFlowContract } from '@learncard/types';
@@ -93,7 +93,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
         });
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
             updateSlice('image', data?.url);

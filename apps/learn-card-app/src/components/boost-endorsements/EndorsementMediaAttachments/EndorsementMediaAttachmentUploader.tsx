@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import EndorsementMediaAttachmentButtons from './EndorsementMediaAttachmentButtons';
 import EndorsementMediaTypeForm from './EndorsementMediaTypeForm';
 
-import { getAttachmentFileInfo, useFilestack, UploadRes } from 'learn-card-base';
+import { getAttachmentFileInfo, useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import {
     EndorsementMediaOptionsEnum,
@@ -22,13 +22,13 @@ export const EndorsementMediaAttachmentUploader: React.FC<{
 
     const [uploadProgress, setUploadProgress] = useState<number | boolean>(false);
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onImageUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useFilestack({
+    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload({
         fileType: VIEWER_MIME_TYPES,
         onUpload: (_url, _file, data) => onDocumentUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

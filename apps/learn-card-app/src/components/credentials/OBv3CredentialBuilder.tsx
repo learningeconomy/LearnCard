@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 import {
-    useFilestack,
+    useImageUpload,
     BoostCategoryOptionsEnum,
     BoostPageViewMode,
     useWallet,
@@ -314,8 +314,8 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         if (isOpen) fetchDid();
     }, [isOpen, initWallet]);
 
-    // Filestack for image upload
-    const { handleFileSelect, isLoading: isUploading } = useFilestack({
+    // Image upload for credential image
+    const { handleFileSelect, isLoading: isUploading } = useImageUpload({
         onUpload: (url: string) => {
             updateField('achievementImage', url);
         },

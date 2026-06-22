@@ -1,0 +1,22 @@
+import type { TenantConfig, TenantStorageConfig } from '../../config/tenantConfig';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../config/tenantDefaults';
+import { resolveImageUploadProvider } from './providerRegistry';
+import type { ImageUploadProvider } from './types';
+
+let activeStorageConfig = DEFAULT_LEARNCARD_TENANT_CONFIG.storage;
+let activeProvider: ImageUploadProvider | undefined;
+
+export const setImageUploadConfigFromTenant = (tenant: TenantConfig): void => {
+    activeStorageConfig = tenant.storage ?? DEFAULT_LEARNCARD_TENANT_CONFIG.storage;
+    activeProvider = undefined;
+};
+
+export const getImageUploadProvider = (
+    storageConfig?: TenantStorageConfig
+): ImageUploadProvider => {
+    if (storageConfig) return resolveImageUploadProvider(storageConfig);
+
+    activeProvider ??= resolveImageUploadProvider(activeStorageConfig);
+
+    return activeProvider;
+};

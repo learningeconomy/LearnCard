@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Globe, X, Plus, Palette, Settings, Upload, Loader2, Award } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast, useFilestack, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
+import { useToast, useImageUpload, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 import { EmbedPreview } from '../../components/EmbedPreview';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { useGuideState } from '../../guides/shared/useGuideState';
@@ -53,7 +53,7 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     }, [partnerName, branding, requestBackgroundIssuance]);
 
     // Logo upload
-    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useFilestack({
+    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useImageUpload({
         onUpload: (url: string) => {
             setBranding({ ...branding, partnerLogoUrl: url });
         },

@@ -23,7 +23,7 @@ import X from 'learn-card-base/svgs/X';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import {
     authStore,
@@ -230,7 +230,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

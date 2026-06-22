@@ -20,7 +20,7 @@ import X from '../../../svgs/X';
 import {
     ModalTypes,
     UploadRes,
-    useFilestack,
+    useImageUpload,
     useModal,
     UserProfilePicture,
     useDeviceTypeByWidth,
@@ -106,7 +106,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

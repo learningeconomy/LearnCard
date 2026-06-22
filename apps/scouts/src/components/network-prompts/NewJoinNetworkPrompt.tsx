@@ -25,7 +25,7 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import ModalLayout from '../../layout/ModalLayout';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import Pencil from '../svgs/Pencil';
 import ErrorLogout from './ErrorLogout';
@@ -133,7 +133,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

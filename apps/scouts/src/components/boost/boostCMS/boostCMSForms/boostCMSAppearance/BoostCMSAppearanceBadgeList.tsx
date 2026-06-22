@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { useFilestack, UploadRes, LCAStylesPackRegistryEntry, useModal, ModalTypes } from 'learn-card-base';
+import { useImageUpload, UploadRes, LCAStylesPackRegistryEntry, useModal, ModalTypes } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -128,7 +128,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
