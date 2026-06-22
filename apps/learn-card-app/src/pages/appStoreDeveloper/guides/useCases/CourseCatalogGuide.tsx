@@ -7,6 +7,7 @@
 import React, { useEffect } from 'react';
 import type { LCNIntegration } from '@learncard/types';
 
+import * as m from '../../../../paraglide/messages.js';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import type { GuideProps } from '../GuidePage';
 
@@ -30,7 +31,7 @@ const CourseCatalogGuide: React.FC<GuideProps> = ({ selectedIntegration, setSele
     if (!selectedIntegration) {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500">Please select an integration from the header dropdown to continue.</p>
+                <p className="text-gray-500">{m['developerPortal.guides.courseCatalog.noIntegration']()}</p>
             </div>
         );
     }

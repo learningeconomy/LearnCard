@@ -305,7 +305,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                 {isLoadingMore ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Loading...
+                                        {m['common.loading']()}
                                     </>
                                 ) : (
                                     getActivityStat(eventTypeFilter, activityStats)
