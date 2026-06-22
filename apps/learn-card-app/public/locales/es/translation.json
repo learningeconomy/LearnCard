@@ -5015,7 +5015,12 @@
                     "copy": "Copiar",
                     "copied": "¡Copiado!",
                     "copyUri": "Copiar URI",
-                    "yourTemplateUris": "Tus URI de Plantillas:"
+                    "yourTemplateUris": "Tus URI de Plantillas:",
+                    "buildConsentUrl": "Crear la URL de consentimiento",
+                    "expressCallbackHandler": "Manejador de devolución de llamada Express",
+                    "sendCredentialAfterConsent": "Enviar una credencial después del consentimiento",
+                    "getAllConsentRecords": "Obtener todos los registros de consentimiento de su contrato",
+                    "getConsentDataForUser": "Obtener datos de consentimiento para un usuario específico"
                 },
                 "embedCode": {
                     "title": "Código de Incrustación",
@@ -5027,7 +5032,9 @@
                     "sdkReference": "Referencia del SDK — InitOptions",
                     "sdkReferenceDesc": "Referencia para todas las opciones de inicialización disponibles",
                     "copy": "Copiar",
-                    "copied": "¡Copiado!"
+                    "copied": "¡Copiado!",
+                    "sdkTargetDesc": "Selector CSS o elemento DOM donde se renderizará el botón de reclamo.",
+                    "sdkPartnerNameDesc": "Se muestra en el encabezado del modal de reclamo."
                 },
                 "connections": {
                     "title": "Usuarios Conectados",

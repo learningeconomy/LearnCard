@@ -5015,7 +5015,12 @@
                     "copy": "Copy",
                     "copied": "Copied!",
                     "copyUri": "Copy URI",
-                    "yourTemplateUris": "Your Template URIs:"
+                    "yourTemplateUris": "Your Template URIs:",
+                    "buildConsentUrl": "Build the consent URL",
+                    "expressCallbackHandler": "Express callback handler",
+                    "sendCredentialAfterConsent": "Send a credential after consent",
+                    "getAllConsentRecords": "Get all consent records for your contract",
+                    "getConsentDataForUser": "Get consent data for a specific user"
                 },
                 "embedCode": {
                     "title": "Embed Code",
@@ -5027,7 +5032,9 @@
                     "sdkReference": "SDK Reference — InitOptions",
                     "sdkReferenceDesc": "Reference for all available initialization options",
                     "copy": "Copy",
-                    "copied": "Copied!"
+                    "copied": "Copied!",
+                    "sdkTargetDesc": "CSS selector or DOM element to render the claim button into.",
+                    "sdkPartnerNameDesc": "Displayed in the claim modal header."
                 },
                 "connections": {
                     "title": "Connected Users",

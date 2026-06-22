@@ -5015,7 +5015,12 @@
                     "copy": "Copier",
                     "copied": "Copié !",
                     "copyUri": "Copier l'URI",
-                    "yourTemplateUris": "Vos URI de Modèles :"
+                    "yourTemplateUris": "Vos URI de Modèles :",
+                    "buildConsentUrl": "Construire l'URL de consentement",
+                    "expressCallbackHandler": "Gestionnaire de rappel Express",
+                    "sendCredentialAfterConsent": "Envoyer un justificatif après consentement",
+                    "getAllConsentRecords": "Obtenir tous les enregistrements de consentement pour votre contrat",
+                    "getConsentDataForUser": "Obtenir les données de consentement pour un utilisateur spécifique"
                 },
                 "embedCode": {
                     "title": "Code d'Intégration",
@@ -5027,7 +5032,9 @@
                     "sdkReference": "Référence SDK — InitOptions",
                     "sdkReferenceDesc": "Référence pour toutes les options d'initialisation disponibles",
                     "copy": "Copier",
-                    "copied": "Copié !"
+                    "copied": "Copié !",
+                    "sdkTargetDesc": "Sélecteur CSS ou élément DOM pour afficher le bouton de réclamation.",
+                    "sdkPartnerNameDesc": "Affiché dans l'en-tête du modal de réclamation."
                 },
                 "connections": {
                     "title": "Utilisateurs Connectés",

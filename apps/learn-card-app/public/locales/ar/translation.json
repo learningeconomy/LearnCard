@@ -5015,7 +5015,12 @@
                     "copy": "نسخ",
                     "copied": "تم النسخ!",
                     "copyUri": "نسخ الرابط",
-                    "yourTemplateUris": "روابط القوالب الخاصة بك:"
+                    "yourTemplateUris": "روابط القوالب الخاصة بك:",
+                    "buildConsentUrl": "بناء رابط الموافقة",
+                    "expressCallbackHandler": "معالج رد الاتصال Express",
+                    "sendCredentialAfterConsent": "إرسال مؤهل بعد الموافقة",
+                    "getAllConsentRecords": "الحصول على جميع سجلات الموافقة لعقدك",
+                    "getConsentDataForUser": "الحصول على بيانات الموافقة لمستخدم معين"
                 },
                 "embedCode": {
                     "title": "كود التضمين",
@@ -5027,7 +5032,9 @@
                     "sdkReference": "مرجع SDK — InitOptions",
                     "sdkReferenceDesc": "مرجع لجميع خيارات التهيئة المتاحة",
                     "copy": "نسخ",
-                    "copied": "تم النسخ!"
+                    "copied": "تم النسخ!",
+                    "sdkTargetDesc": "مُحدد CSS أو عنصر DOM لتقديم زر المطالبة فيه.",
+                    "sdkPartnerNameDesc": "معروض في رأس نافذة المطالبة."
                 },
                 "connections": {
                     "title": "المستخدمون المتصلون",
