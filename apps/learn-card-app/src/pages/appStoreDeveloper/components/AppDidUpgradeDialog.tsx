@@ -173,7 +173,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             {isUpgrading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Upgrading...
+                                    {m['developerPortal.components.appDidUpgradeDialog.upgrading']()}
                                 </>
                             ) : (
                                 <>

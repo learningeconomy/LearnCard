@@ -307,7 +307,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                             }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m['developerPortal.dashboards.tabs.appListings.cancel']()}
                         </button>
                     </div>
                 </div>
@@ -587,8 +587,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 />
                                             </div>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                The URL of your app that will be embedded in
-                                                LearnCard
+                                                {m['developerPortal.dashboards.tabs.appListings.launchUrlHint']()}
                                             </p>
                                         </div>
 
@@ -642,7 +641,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 onClick={() => setEditingListing(null)}
                                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                                             >
-                                                Cancel
+                                                {m['developerPortal.dashboards.tabs.appListings.cancel']()}
                                             </button>
 
                                             <button
@@ -655,7 +654,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 ) : (
                                                     <Check className="w-4 h-4" />
                                                 )}
-                                                Save Changes
+                                                {m['developerPortal.dashboards.tabs.appListings.saveChanges']()}
                                             </button>
                                         </div>
                                     </div>

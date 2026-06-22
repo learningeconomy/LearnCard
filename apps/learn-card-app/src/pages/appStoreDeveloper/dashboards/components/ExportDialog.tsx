@@ -143,7 +143,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                 <p className="font-medium text-cyan-900">{m['developerPortal.dashboards.export.downloading']()}</p>
                                 {state.progress && (
                                     <p className="text-sm text-cyan-700">
-                                        {state.progress.fetched.toLocaleString()} /{' '}
+                                        {state.progress.fetched.toLocaleString()}
+                                        {/* eslint-disable-next-line i18next/no-literal-string -- counter separator SKIP */}
+                                        <span aria-hidden="true"> / </span>
                                         {state.progress.total.toLocaleString()}
                                     </p>
                                 )}

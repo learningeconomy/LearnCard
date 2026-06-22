@@ -81,7 +81,7 @@ export const PreviewConfirmDialog: React.FC<PreviewConfirmDialogProps> = ({
                                     {isSaving ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Saving...
+                                            {m['developerPortal.components.previewConfirmDialog.saving']()}
                                         </>
                                     ) : (
                                         <>

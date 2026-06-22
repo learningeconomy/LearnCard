@@ -432,9 +432,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">{m['developerPortal.onboarding.organizationSetup.organizationAccount']()}</p>
                     <p>
-                        Choose or create an organization account that will be used as the issuer for
-                        your credentials. This determines the DID, API keys, and branding for your
-                        integration.
+                        {m['developerPortal.onboarding.organizationSetup.description']()}
                     </p>
                 </div>
             </div>
@@ -469,7 +467,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
 
                                     {isCurrentUserServiceProfile && (
                                         <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                            Organization
+                                            {m['developerPortal.components.accountSelector.organization']()}
                                         </span>
                                     )}
                                 </div>
@@ -516,7 +514,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                         </p>
 
                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                                            Personal
+                                            {m['developerPortal.components.accountSelector.personal']()}
                                         </span>
                                     </div>
 
@@ -578,7 +576,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                                         {profile.displayName}
                                                     </p>
                                                     <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                                        Organization
+                                                        {m['developerPortal.components.accountSelector.organization']()}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm text-gray-500">
@@ -618,7 +616,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                         onClick={() => setMode('select')}
                         className="text-sm text-gray-500 hover:text-gray-700"
                     >
-                        ← Back to selection
+                        {m['developerPortal.components.accountSelector.backToSelection']()}
                     </button>
 
                     {/* Organization Name */}
@@ -689,7 +687,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                         ) : (
                             <ChevronDown className="w-4 h-4" />
                         )}
-                        Advanced Settings
+                        {m['developerPortal.components.accountSelector.advancedSettings']()}
                     </button>
 
                     {showAdvanced && (
@@ -717,7 +715,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                             : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
-                                    3-25 characters
+                                    {m['developerPortal.components.accountSelector.charCount']()}
                                 </span>
                                 <span
                                     className={`text-xs px-2 py-1 rounded ${

@@ -137,14 +137,12 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Consent Flow Contract{' '}
+                                {m['developerPortal.components.launchConfigStep.consentFlowContract']()}{' '}
                                 <span className="text-gray-400 font-normal">{m['developerPortal.components.createConsentContractModal.optional']()}</span>
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                Select a consent flow contract to request data sharing permissions
-                                when users install your app. Consent is automatically withdrawn when
-                                users uninstall.
+                                {m['developerPortal.components.launchConfigStep.consentFlowContractDesc']()}
                             </p>
 
                             <ConsentFlowContractSelector
@@ -157,13 +155,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             {selectedContract && (
                                 <div className="mt-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg">
                                     <p className="text-xs text-cyan-700">
-                                        <strong>{m['developerPortal.components.launchConfigStep.onInstall']()}</strong> User will be prompted to
-                                        consent to the selected contract's permissions.
+                                        <strong>{m['developerPortal.components.launchConfigStep.onInstall']()}</strong> {m['developerPortal.components.launchConfigStep.onInstallDesc']()}
                                     </p>
 
                                     <p className="text-xs text-cyan-700 mt-1">
-                                        <strong>{m['developerPortal.components.launchConfigStep.onUninstall']()}</strong> Consent will be automatically
-                                        withdrawn.
+                                        <strong>{m['developerPortal.components.launchConfigStep.onUninstall']()}</strong> {m['developerPortal.components.launchConfigStep.onUninstallDesc']()}
                                     </p>
                                 </div>
                             )}
@@ -231,8 +227,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         {m['developerPortal.components.launchConfigStep.skipInstallation']()}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        When enabled, users can open the link directly without
-                                        installing.
+                                        {m['developerPortal.components.launchConfigStep.skipInstallationDesc']()}
                                     </p>
                                 </div>
                                 <IonToggle
@@ -284,8 +279,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             )}
 
                             <p className="text-sm text-gray-400 mt-1">
-                                Where users will be redirected after granting consent. This can
-                                override the contract's redirect URL.
+                                {m['developerPortal.components.launchConfigStep.redirectUriDesc']()}
                             </p>
                         </div>
 
@@ -391,9 +385,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <p className="font-medium">{m['developerPortal.components.launchConfigStep.serverToServer']()}</p>
 
                                     <p className="mt-1">
-                                        Use the Universal Inbox API to issue credentials directly
-                                        from your server. No additional configuration needed — see
-                                        the integration guide for setup steps.
+                                        {m['developerPortal.components.launchConfigStep.serverToServerDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -412,9 +404,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <p className="font-medium">{m['developerPortal.components.launchConfigStep.aiTutorIntegration']()}</p>
 
                                     <p className="mt-1">
-                                        AI Tutor apps let users select or create learning topics,
-                                        then launch your tutor app with the topic and user DID for
-                                        personalized sessions.
+                                        {m['developerPortal.components.launchConfigStep.aiTutorIntegrationDesc']()}
                                     </p>
                                 </div>
                             </div>
@@ -440,7 +430,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             )}
 
                             <p className="text-sm text-gray-400 mt-1">
-                                Users will be redirected to{' '}
+                                {m['developerPortal.components.launchConfigStep.aiTutorUrlDesc']()}{' '}
                                 <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
                                     {config.aiTutorUrl || 'https://yourtutor.com'}
                                     /chats?did=...&topic=...
@@ -463,15 +453,10 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <p className="font-medium">{m['developerPortal.components.launchConfigStep.howAiTutorWorks']()}</p>
 
                                     <ol className="mt-2 space-y-1 list-decimal list-inside text-xs">
-                                        <li>User clicks "Open" on your AI Tutor app</li>
-                                        <li>They select "New Topic" or "Revisit Topic"</li>
+                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep1']()}</li>
+                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep2']()}</li>
                                         <li>{m['developerPortal.components.launchConfigStep.aiTutorStep3']()}</li>
-                                        <li>
-                                            App opens with{' '}
-                                            <code className="bg-white px-1 py-0.5 rounded">
-                                                ?did=...&topic=...
-                                            </code>
-                                        </li>
+                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep4']()}</li>
                                     </ol>
                                 </div>
                             </div>

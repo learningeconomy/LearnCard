@@ -324,7 +324,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                                         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
                                         <span className="text-gray-700">
-                                            {guideNames[guideId] || guideId} guide
+                                            {guideNames[guideId] || guideId} {m['developerPortal.components.betaGate.guideLabel']()}
                                         </span>
                                     </div>
                                 ))}

@@ -225,7 +225,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     ) : (
                         <Save className="w-4 h-4" />
                     )}
-                    Save Changes
+                    {m['developerPortal.dashboards.tabs.branding.saveChanges']()}
                 </button>
             </div>
 

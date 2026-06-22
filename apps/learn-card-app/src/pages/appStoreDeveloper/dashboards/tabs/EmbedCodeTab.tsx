@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award, ChevronDown } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -311,9 +312,9 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                     <table className="w-full text-xs border-collapse">
                         <thead>
                             <tr className="border-b border-gray-200 text-left text-gray-500">
-                                <th className="py-1.5 pr-2 font-medium">Prop</th>
-                                <th className="py-1.5 pr-2 font-medium">Type</th>
-                                <th className="py-1.5 font-medium">Description</th>
+                                <th className="py-1.5 pr-2 font-medium">{m['developerPortal.dashboards.tabs.embedCode.propHeader']()}</th>
+                                <th className="py-1.5 pr-2 font-medium">{m['developerPortal.dashboards.tabs.embedCode.typeHeader']()}</th>
+                                <th className="py-1.5 font-medium">{m['developerPortal.dashboards.tabs.embedCode.descHeader']()}</th>
                             </tr>
                         </thead>
                         <tbody className="text-gray-700">
@@ -334,14 +335,13 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`{ name: string }`}</td>
                                 <td className="py-1.5">
-                                    Credential template to issue. Use the template name — the server
-                                    resolves it.
+                                    {m['developerPortal.dashboards.tabs.embedCode.sdkCredentialDesc']()}
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">publishableKey</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Your integration&apos;s publishable key.</td>
+                                <td className="py-1.5">{m['developerPortal.dashboards.tabs.embedCode.sdkPublishableKeyDesc']()}</td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">partnerName</td>
@@ -354,9 +354,10 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                     BrandingTokens
                                 </td>
                                 <td className="py-1.5">
-                                    <code>primaryColor</code>, <code>accentColor</code>,{' '}
-                                    <code>partnerLogoUrl</code>, <code>logoUrl</code>,{' '}
-                                    <code>walletUrl</code>.
+                                    <TransP
+                                        m={m['developerPortal.dashboards.tabs.embedCode.sdkBrandingDesc']}
+                                        components={[<code />, <code />, <code />, <code />, <code />]}
+                                    />
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
@@ -365,32 +366,35 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">boolean</td>
                                 <td className="py-1.5">
-                                    If true, asks user for consent to issue future credentials
-                                    without email verification.
+                                    {m['developerPortal.dashboards.tabs.embedCode.sdkBackgroundIssuanceDesc']()}
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">onSuccess</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`(details) => void`}</td>
                                 <td className="py-1.5">
-                                    Called after a successful claim. Receives{' '}
-                                    <code>credentialId</code>, <code>consentGiven</code>, and{' '}
-                                    <code>handoffUrl</code>.
+                                    <TransP
+                                        m={m['developerPortal.dashboards.tabs.embedCode.sdkOnSuccessDesc']}
+                                        components={[<code />, <code />, <code />]}
+                                    />
                                 </td>
                             </tr>
                             <tr>
                                 <td className="py-1.5 pr-2 font-mono">apiBaseUrl</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
                                 <td className="py-1.5">
-                                    Override the API endpoint. Defaults to{' '}
-                                    <code>{getResolvedTenantConfig().apis.brainServiceApi}</code>.
+                                    <TransP
+                                        m={m['developerPortal.dashboards.tabs.embedCode.sdkApiBaseUrlDesc']}
+                                        values={{ url: getResolvedTenantConfig().apis.brainServiceApi }}
+                                        components={[<code />]}
+                                    />
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                     <p className="mt-2 text-xs text-gray-400">
-                        <span className="text-red-500">*</span> Required. All other props are
-                        optional.
+                        <span className="text-red-500">*</span>{' '}
+                        {m['developerPortal.dashboards.tabs.embedCode.requiredNote']()}
                     </p>
                 </div>
             </details>

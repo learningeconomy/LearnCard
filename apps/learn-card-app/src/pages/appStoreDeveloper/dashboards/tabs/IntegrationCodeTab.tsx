@@ -854,14 +854,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="text-sm">
                                 <p className="font-medium text-amber-800">{m['developerPortal.dashboards.tabs.integrationCode.apiKeyTitle']()}</p>
                                 <p className="text-xs text-amber-700 mt-0.5">
-                                    Set{' '}
-                                    <code className="bg-amber-100 px-1 rounded">
-                                        LEARNCARD_API_KEY
-                                    </code>{' '}
-                                    in your environment to:
-                                    <code className="bg-amber-100 px-1 rounded ml-1 font-mono">
-                                        {integration.publishableKey.slice(0, 12)}...
-                                    </code>
+                                    <TransP
+                                        m={m['developerPortal.dashboards.tabs.integrationCode.apiKeyDesc']}
+                                        values={{ key: integration.publishableKey.slice(0, 12) + '...' }}
+                                        components={[
+                                            <code className="bg-amber-100 px-1 rounded" />,
+                                            <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                        ]}
+                                    />
                                 </p>
                             </div>
                         </div>
@@ -899,7 +899,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="flex-1">
                                         <p className="font-medium text-violet-800">{master.name}</p>
                                         <p className="text-xs text-violet-600">
-                                            {master.childTemplates?.length} course {m['developerPortal.dashboards.tabs.integrationCode.boosts']()}
+                                            {master.childTemplates?.length} {m['developerPortal.dashboards.tabs.integrationCode.courseBoosts']()}
                                         </p>
                                     </div>
                                 </div>
@@ -1123,7 +1123,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 onClick={() => setShowTokenSelector(!showTokenSelector)}
                                 className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                             >
-                                {showTokenSelector ? 'Hide' : 'Select'}
+                                {showTokenSelector ? m['developerPortal.guides.issueCredentials.issueVerifyStep.hideButton']() : m['developerPortal.dashboards.tabs.integrationCode.select']()}
                                 {showTokenSelector ? (
                                     <ChevronUp className="w-4 h-4" />
                                 ) : (
@@ -1163,10 +1163,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         {grant.name}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
-                                                        Created{' '}
-                                                        {new Date(
-                                                            grant.createdAt
-                                                        ).toLocaleDateString()}
+                                                        {m['developerPortal.dashboards.tabs.integrationCode.createdLabel']({ date: new Date(grant.createdAt).toLocaleDateString() })}
                                                     </p>
                                                 </div>
 
@@ -1188,7 +1185,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                             <FileSpreadsheet className="w-4 h-4" />
-                            Download CSV Template for {selectedTemplate.name}
+                            {m['developerPortal.dashboards.tabs.integrationCode.downloadCsvFor']({ name: selectedTemplate.name })}
                         </button>
                     )}
 
@@ -1202,10 +1199,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         ) : (
                             <ChevronDown className="w-4 h-4" />
                         )}
-                        {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+                        {showAdvanced ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']() : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                         {hasAdvancedOptions && (
                             <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
-                                Active
+                                {m['developerPortal.shell.statusActive']()}
                             </span>
                         )}
                     </button>
@@ -1332,8 +1329,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     </div>
                                 </label>
                                 <p className="text-xs text-gray-500 ml-7">
-                                    Don't send an email — get the claim URL to use in your own
-                                    system.
+                                    {m['developerPortal.onboarding.dataMapping.suppressDeliveryDesc']()}
                                 </p>
                             </div>
                         </div>

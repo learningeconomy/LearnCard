@@ -241,7 +241,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         type="text"
                         value={contract.reasonForAccessing || ''}
                         onChange={e => updateSlice('reasonForAccessing', e.target.value)}
-                        placeholder="e.g., To verify your credentials"
+                        placeholder={m['developerPortal.components.createConsentContractModal.reasonPlaceholder']()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>

@@ -637,7 +637,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                    recipient *
+                                    {m['developerPortal.dashboards.tabs.csvUpload.recipient']()} {m['developerPortal.dashboards.tabs.csvUpload.required']()}
                                 </span>
                                 {templateVariables.map(v => (
                                     <span
@@ -698,16 +698,16 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                     {csvFileName}
                                 </p>
                                 <p className="text-xs text-emerald-600">
-                                    {csvRows.length} rows, {csvHeaders.length} columns
+                                    {m['developerPortal.dashboards.tabs.csvUpload.rowsColumns']({ rows: csvRows.length, columns: csvHeaders.length })}
                                     {(recipientColumn || boostSelectorColumn) &&
-                                        ' • Auto-detected columns'}
+                                        ' • ' + m['developerPortal.dashboards.tabs.csvUpload.autoDetectedColumns']()}
                                 </p>
                             </div>
                             <button
                                 onClick={handleClearCsv}
                                 className="text-xs text-gray-500 hover:text-gray-700"
                             >
-                                Clear
+                                {m['developerPortal.dashboards.tabs.csvUpload.clear']()}
                             </button>
                         </div>
 

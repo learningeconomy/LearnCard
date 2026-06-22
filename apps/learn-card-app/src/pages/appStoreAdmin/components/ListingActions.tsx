@@ -59,7 +59,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                     ) : (
                         <XCircle className="w-4 h-4" />
                     )}
-                    Unlist App
+                    {m['appStoreAdmin.listing.actions.unlist']()}
                 </button>
             </div>
         );
@@ -116,7 +116,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                     ) : (
                         <RotateCcw className="w-4 h-4" />
                     )}
-                    Send Back to Draft
+                    {m['appStoreAdmin.listing.actions.sendToDraft']()}
                 </button>
             </div>
         );
