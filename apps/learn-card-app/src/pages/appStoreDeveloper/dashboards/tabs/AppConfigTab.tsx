@@ -514,7 +514,7 @@ module.exports = nextConfig;`;
                 <>
                     {/* URL Configuration */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">App URL</label>
+                        <label className="block text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.appUrl']()}</label>
 
                         <div className="flex gap-2">
                             <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-cyan-500">
@@ -543,12 +543,12 @@ module.exports = nextConfig;`;
                                 ) : (
                                     <Search className="w-4 h-4" />
                                 )}
-                                Check
+                                {m['developerPortal.dashboards.tabs.appConfig.checkButton']()}
                             </button>
                         </div>
 
                         <p className="text-xs text-gray-500">
-                            The URL of your app that will be embedded in LearnCard
+                            {m['developerPortal.dashboards.tabs.appConfig.appUrlDesc']()}
                         </p>
                     </div>
 
@@ -659,10 +659,10 @@ module.exports = nextConfig;`;
                                 <Shield className="w-5 h-5 text-amber-600" />
                                 <div className="text-left">
                                     <h3 className="font-medium text-gray-800">
-                                        Required Response Headers
+                                        {m['developerPortal.dashboards.tabs.appConfig.requiredHeaders.title']()}
                                     </h3>
                                     <p className="text-xs text-gray-500">
-                                        Configure your server to allow iframe embedding
+                                        {m['developerPortal.dashboards.tabs.appConfig.requiredHeaders.desc']()}
                                     </p>
                                 </div>
                             </div>
@@ -831,7 +831,7 @@ module.exports = nextConfig;`;
                             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                         >
                             <Play className="w-4 h-4" />
-                            Preview App
+                            {m['developerPortal.dashboards.tabs.appConfig.previewApp']()}
                         </button>
 
                         <button
@@ -854,14 +854,14 @@ module.exports = nextConfig;`;
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Common Issues
+                    {m['developerPortal.dashboards.tabs.appConfig.commonIssues.title']()}
                 </h4>
 
                 <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">Blank iframe?</strong>
+                            <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.blankIframe']()}</strong>
                             <span className="text-gray-600">
                                 {' '}
                                 — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN
@@ -872,7 +872,7 @@ module.exports = nextConfig;`;
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">Mixed content error?</strong>
+                            <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.mixedContentError']()}</strong>
                             <span className="text-gray-600"> — Make sure your app uses HTTPS</span>
                         </div>
                     </div>
@@ -880,7 +880,7 @@ module.exports = nextConfig;`;
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">CORS errors?</strong>
+                            <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.corsErrors']()}</strong>
                             <span className="text-gray-600">
                                 {' '}
                                 — Add Access-Control-Allow-Origin header

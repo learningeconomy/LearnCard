@@ -4964,7 +4964,13 @@
                     "saveSuccess": "تم حفظ الإعدادات!",
                     "saveError": "فشل حفظ الإعدادات",
                     "copy": "نسخ",
-                    "copied": "تم النسخ!"
+                    "copied": "تم النسخ!",
+                    "requiredHeadersDesc": "قم بتكوين خادمك للسماح بالتضمين في iframe",
+                    "previewApp": "معاينة التطبيق",
+                    "blankIframe": "iframe فارغ؟",
+                    "mixedContentError": "خطأ في المحتوى المختلط؟",
+                    "corsErrors": "أخطاء CORS؟",
+                    "urlCheck": "تحقق"
                 },
                 "consentFlowCode": {
                     "title": "كود التكامل",
@@ -5123,7 +5129,7 @@
                 },
                 "appListings": {
                     "title": "قوائم التطبيقات",
-                    "description": "الوصف",
+                    "description": "إدارة تطبيقاتك في متجر تطبيقات LearnCard",
                     "newApp": "تطبيق جديد",
                     "createApp": "إنشاء تطبيق",
                     "createAppSuccess": "تم إنشاء قائمة التطبيق!",
@@ -5155,7 +5161,9 @@
                     "draft": "مسودة",
                     "selectedApp": "المحدد: {{name}}",
                     "selectedAppHint": "استخدم علامة تبويب Partner Connect للحصول على كود التكامل لهذا التطبيق.",
-                    "copied": "تم النسخ!"
+                    "copied": "تم النسخ!",
+                    "descriptionLabel": "الوصف",
+                    "iconAlt": "أيقونة"
                 },
                 "testing": {
                     "title": "اختبار إصدار بيانات الاعتماد",
@@ -5227,7 +5235,8 @@
                     "yourOrganization": "مؤسستك",
                     "organizationTagline": "شعار المؤسسة",
                     "saveSuccess": "تم تحديث العلامة التجارية بنجاح!",
-                    "saveError": "فشل تحديث العلامة التجارية"
+                    "saveError": "فشل تحديث العلامة التجارية",
+                    "profile": "الملف الشخصي"
                 },
                 "consentFlowTesting": {
                     "title": "اختبار تدفق الموافقة",

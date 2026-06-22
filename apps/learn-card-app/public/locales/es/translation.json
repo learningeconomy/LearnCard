@@ -4964,7 +4964,13 @@
                     "saveSuccess": "¡Configuración guardada!",
                     "saveError": "Error al guardar la configuración",
                     "copy": "Copiar",
-                    "copied": "¡Copiado!"
+                    "copied": "¡Copiado!",
+                    "requiredHeadersDesc": "Configura tu servidor para permitir la incrustación en iframe",
+                    "previewApp": "Vista previa",
+                    "blankIframe": "¿Iframe en blanco?",
+                    "mixedContentError": "¿Error de contenido mixto?",
+                    "corsErrors": "¿Errores CORS?",
+                    "urlCheck": "Verificar"
                 },
                 "consentFlowCode": {
                     "title": "Código de Integración",
@@ -5123,7 +5129,7 @@
                 },
                 "appListings": {
                     "title": "Listados de Apps",
-                    "description": "Descripción",
+                    "description": "Administra tus aplicaciones en la tienda de aplicaciones de LearnCard",
                     "newApp": "Nueva App",
                     "createApp": "Crear App",
                     "createAppSuccess": "¡Listado de app creado!",
@@ -5155,7 +5161,9 @@
                     "draft": "Borrador",
                     "selectedApp": "Seleccionada: {{name}}",
                     "selectedAppHint": "Usa la pestaña Partner Connect para obtener el código de integración para esta app.",
-                    "copied": "¡Copiado!"
+                    "copied": "¡Copiado!",
+                    "descriptionLabel": "Descripción",
+                    "iconAlt": "Icono"
                 },
                 "testing": {
                     "title": "Probar Emisión de Credenciales",
@@ -5227,7 +5235,8 @@
                     "yourOrganization": "Tu Organización",
                     "organizationTagline": "Eslogan de la organización",
                     "saveSuccess": "¡Marca actualizada con éxito!",
-                    "saveError": "Error al actualizar la marca"
+                    "saveError": "Error al actualizar la marca",
+                    "profile": "Perfil"
                 },
                 "consentFlowTesting": {
                     "title": "Probar Flujo de Consentimiento",

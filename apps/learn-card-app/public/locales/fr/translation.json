@@ -4964,7 +4964,13 @@
                     "saveSuccess": "Configuration sauvegardée !",
                     "saveError": "Échec de la sauvegarde de la configuration",
                     "copy": "Copier",
-                    "copied": "Copié !"
+                    "copied": "Copié !",
+                    "requiredHeadersDesc": "Configurez votre serveur pour autoriser l'intégration iframe",
+                    "previewApp": "Aperçu",
+                    "blankIframe": "Iframe vide ?",
+                    "mixedContentError": "Erreur de contenu mixte ?",
+                    "corsErrors": "Erreurs CORS ?",
+                    "urlCheck": "Vérifier"
                 },
                 "consentFlowCode": {
                     "title": "Code d'Intégration",
@@ -5123,7 +5129,7 @@
                 },
                 "appListings": {
                     "title": "Fiches d'Applications",
-                    "description": "Description",
+                    "description": "Gérez vos applications dans la boutique d'applications LearnCard",
                     "newApp": "Nouvelle App",
                     "createApp": "Créer une App",
                     "createAppSuccess": "Fiche d'application créée !",
@@ -5155,7 +5161,9 @@
                     "draft": "Brouillon",
                     "selectedApp": "Sélectionnée : {{name}}",
                     "selectedAppHint": "Utilisez l'onglet Partner Connect pour obtenir le code d'intégration pour cette application.",
-                    "copied": "Copié !"
+                    "copied": "Copié !",
+                    "descriptionLabel": "Description",
+                    "iconAlt": "Icône"
                 },
                 "testing": {
                     "title": "Tester l'Émission de Credentials",
@@ -5227,7 +5235,8 @@
                     "yourOrganization": "Votre Organisation",
                     "organizationTagline": "Slogan de l'organisation",
                     "saveSuccess": "Image de marque mise à jour avec succès !",
-                    "saveError": "Échec de la mise à jour de l'image de marque"
+                    "saveError": "Échec de la mise à jour de l'image de marque",
+                    "profile": "Profil"
                 },
                 "consentFlowTesting": {
                     "title": "Tester le Flux de Consentement",

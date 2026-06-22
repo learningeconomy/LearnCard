@@ -4964,7 +4964,13 @@
                     "saveSuccess": "Configuration saved!",
                     "saveError": "Failed to save configuration",
                     "copy": "Copy",
-                    "copied": "Copied!"
+                    "copied": "Copied!",
+                    "requiredHeadersDesc": "Configure your server to allow iframe embedding",
+                    "previewApp": "Preview App",
+                    "blankIframe": "Blank iframe?",
+                    "mixedContentError": "Mixed content error?",
+                    "corsErrors": "CORS errors?",
+                    "urlCheck": "Check"
                 },
                 "consentFlowCode": {
                     "title": "Integration Code",
@@ -5123,7 +5129,7 @@
                 },
                 "appListings": {
                     "title": "App Listings",
-                    "description": "Description",
+                    "description": "Manage your apps in the LearnCard app store",
                     "newApp": "New App",
                     "createApp": "Create App",
                     "createAppSuccess": "App listing created!",
@@ -5155,7 +5161,9 @@
                     "draft": "Draft",
                     "selectedApp": "Selected: {{name}}",
                     "selectedAppHint": "Use the Partner Connect tab to get integration code for this app.",
-                    "copied": "Copied!"
+                    "copied": "Copied!",
+                    "descriptionLabel": "Description",
+                    "iconAlt": "Icon"
                 },
                 "testing": {
                     "title": "Test Credential Issuance",
@@ -5227,7 +5235,8 @@
                     "yourOrganization": "Your Organization",
                     "organizationTagline": "Organization tagline",
                     "saveSuccess": "Branding updated successfully!",
-                    "saveError": "Failed to update branding"
+                    "saveError": "Failed to update branding",
+                    "profile": "Profile"
                 },
                 "consentFlowTesting": {
                     "title": "Test Consent Flow",
