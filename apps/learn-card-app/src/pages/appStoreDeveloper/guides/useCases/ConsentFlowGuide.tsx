@@ -20,6 +20,8 @@ import {
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 
 import * as m from '../../../../paraglide/messages.js';
+
+import { TransP } from '../../../../i18n/TransP';
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
@@ -103,7 +105,7 @@ const CreateContractStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Create a Consent Flow Contract
+                    {m['developerPortal.guides.consentFlow.createContractStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -128,7 +130,7 @@ const CreateContractStep: React.FC<{
 
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-emerald-800">
-                                    Contract Selected
+                                    {m['developerPortal.guides.consentFlow.createContractStep.contractSelectedTitle']()}
                                 </p>
 
                                 <p className="text-xs text-emerald-600 font-mono truncate mt-1">
@@ -185,7 +187,7 @@ const RedirectHandlerStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Your Redirect Handler
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -197,7 +199,7 @@ const RedirectHandlerStep: React.FC<{
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Callback URL
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.callbackUrlLabel']()}
                 </label>
 
                 <input
@@ -209,7 +211,7 @@ const RedirectHandlerStep: React.FC<{
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                    Users will be redirected here after granting consent
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.callbackUrlHint']()}
                 </p>
             </div>
 
@@ -219,7 +221,7 @@ const RedirectHandlerStep: React.FC<{
                 icon={<Link2 className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Create a button that redirects users to the consent flow:
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.step1Desc']()}
                 </p>
 
                 <CodeOutputPanel
@@ -267,15 +269,18 @@ app.get('/api/learncard/callback', async (req, res) => {
                 />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">vp</code> (a VP JWT
-                    containing a delegate credential) to identify and send credentials to this user
-                    later.
+                    <TransP
+                        m={m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Hint']}
+                        components={[
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded" />,
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded" />,
+                        ]}
+                    />
                 </p>
             </StepCard>
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowSummary']()}</h4>
 
                 <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
                     <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep1']()}</li>
@@ -420,7 +425,7 @@ const APISetupStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Your Backend</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.consentFlow.apiSetupStep.title']()}</h3>
 
                 <p className="text-gray-600">
                     Initialize the LearnCard SDK on your backend to send credentials and query
@@ -464,7 +469,7 @@ const APISetupStep: React.FC<{
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Token Name
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.tokenNameLabel']()}
                         </label>
 
                         <input
@@ -571,7 +576,7 @@ const APISetupStep: React.FC<{
             {apiToken && selectedGrantId && (
                 <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-medium text-indigo-700">Your API Token</p>
+                        <p className="text-xs font-medium text-indigo-700">{m['developerPortal.guides.consentFlow.apiSetupStep.yourApiToken']()}</p>
 
                         <button
                             onClick={async () => {
@@ -603,7 +608,7 @@ const APISetupStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 rounded-xl w-full justify-center font-medium transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Create New Token
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.createNewButton']()}
                 </button>
             )}
 
@@ -620,7 +625,7 @@ const APISetupStep: React.FC<{
                 icon={<Package className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Install the LearnCard SDK in your backend application:
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.step1Desc']()}
                 </p>
 
                 <CodeOutputPanel snippets={{ curl: 'npm install @learncard/init' }} />
@@ -631,7 +636,7 @@ const APISetupStep: React.FC<{
                 title={m['developerPortal.guides.consentFlow.apiSetupStep.step2Title']()}
                 icon={<Zap className="w-4 h-4 text-gray-400 ml-auto" />}
             >
-                <p className="text-sm text-gray-600 mb-3">Initialize with your API token:</p>
+                <p className="text-sm text-gray-600 mb-3">{m['developerPortal.guides.consentFlow.apiSetupStep.step2Desc']()}</p>
 
                 <CodeOutputPanel
                     snippets={{
@@ -699,7 +704,7 @@ const SendCredentialsStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Create Credential Templates
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -722,8 +727,10 @@ const SendCredentialsStep: React.FC<{
                 icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Use the <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">send</code>{' '}
-                    method to issue credentials to users who have connected with your app:
+                    <TransP
+                        m={m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Desc']}
+                        components={[<code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs" />]}
+                    />
                 </p>
 
                 <CodeOutputPanel
@@ -765,13 +772,13 @@ await learnCard.invoke.send({
                 icon={<Database className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    As the contract owner, you can query consent data and transactions:
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Desc']()}
                 </p>
 
                 <div className="space-y-4">
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
-                            Get all consented data for your contract:
+                            {m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub1']()}
                         </p>
 
                         <CodeOutputPanel
@@ -791,7 +798,7 @@ log.info('Consented records:', consentData.records);`,
 
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
-                            Get consent data for a specific user:
+                            {m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub2']()}
                         </p>
 
                         <CodeOutputPanel
@@ -814,15 +821,17 @@ log.info('User consent records:', userConsentData.records);`,
                     <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
 
                     <div>
-                        <h4 className="text-sm font-medium text-amber-800">Integration Tips</h4>
+                        <h4 className="text-sm font-medium text-amber-800">{m['developerPortal.guides.consentFlow.sendCredentialsStep.tipsTitle']()}</h4>
 
                         <ul className="text-xs text-amber-700 mt-1 space-y-1">
-                            <li>• Store API keys in environment variables, never in code</li>
+                            <li>• {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip1']()}</li>
                             <li>
-                                • Use <code className="bg-amber-100 px-1 rounded">templateUri</code>{' '}
-                                to reference saved templates instead of inline credentials
+                                • <TransP
+                                    m={m['developerPortal.guides.consentFlow.sendCredentialsStep.tip2']}
+                                    components={[<code className="bg-amber-100 px-1 rounded" />]}
+                                />
                             </li>
-                            <li>• Store user DIDs securely with their account data</li>
+                            <li>• {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip3']()}</li>
                         </ul>
                     </div>
                 </div>
@@ -842,7 +851,7 @@ log.info('User consent records:', userConsentData.records);`,
                     disabled={templates.length === 0}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Testing
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -873,10 +882,10 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Test Your Integration</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.consentFlow.testStep.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Verify your consent flow works end-to-end before going live.
+                    {m['developerPortal.guides.consentFlow.testStep.description']()}
                 </p>
             </div>
 
@@ -894,7 +903,7 @@ const TestStep: React.FC<{
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1 font-medium">Consent URL:</p>
+                            <p className="text-xs text-gray-500 mb-1 font-medium">{m['developerPortal.guides.consentFlow.testStep.consentUrlLabel']()}</p>
 
                             <p className="text-xs text-gray-700 font-mono break-all">
                                 {consentUrl}
@@ -908,7 +917,7 @@ const TestStep: React.FC<{
                             className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
                         >
                             <ExternalLink className="w-4 h-4" />
-                            Open Consent Flow
+                            {m['developerPortal.guides.consentFlow.testStep.openConsentFlow']()}
                         </a>
                     </div>
                 ) : (
@@ -960,7 +969,7 @@ const TestStep: React.FC<{
 
                 <div className="mt-3">
                     <p className="text-xs text-gray-500 mb-2 font-medium">
-                        Example callback URL your server will receive:
+                        {m['developerPortal.guides.consentFlow.testStep.exampleCallback']()}
                     </p>
 
                     <CodeOutputPanel
@@ -1020,7 +1029,7 @@ log.info('Credential sent successfully!');`,
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors"
                 >
-                    Continue to Go Live
+                    {m['developerPortal.guides.consentFlow.testStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -1235,7 +1244,7 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
                         m['developerPortal.guides.consentFlow.goLive.completedItems4'](),
                     ]}
                     title={m['developerPortal.guides.consentFlow.goLive.title']()}
-                    description="You've set up everything needed for consent-based data sharing. Activate your integration to start connecting with users."
+                    description={m['developerPortal.guides.consentFlow.goLive.description']()}
                 />
             </div>
         </div>

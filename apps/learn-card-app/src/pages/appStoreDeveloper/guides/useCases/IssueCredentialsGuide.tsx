@@ -173,7 +173,7 @@ const ApiTokenStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create an API Token</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.issueCredentials.apiTokenStep.title']()}</h3>
 
                 <p className="text-gray-600">
                     Your server needs an API token to authenticate with LearnCard. This token should
@@ -201,7 +201,7 @@ const ApiTokenStep: React.FC<{
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Token Name
+                            {m['developerPortal.guides.issueCredentials.apiTokenStep.tokenNameLabel']()}
                         </label>
 
                         <input
@@ -305,7 +305,7 @@ const ApiTokenStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 rounded-xl w-full justify-center font-medium transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Create New Token
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.createNewButton']()}
                 </button>
             )}
 
@@ -409,7 +409,7 @@ const SigningAuthorityStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Signing Authority
+                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
@@ -450,7 +450,7 @@ const SigningAuthorityStep: React.FC<{
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m['developerPortal.guides.issueCredentials.signingAuthorityStep.createButton']()}
                         </>
                     )}
                 </button>
@@ -471,7 +471,7 @@ const SigningAuthorityStep: React.FC<{
                     ) : (
                         <>
                             <RefreshCw className="w-4 h-4" />
-                            Recreate Signing Authority
+                            {m['developerPortal.guides.issueCredentials.signingAuthorityStep.recreateButton']()}
                         </>
                     )}
                 </button>
@@ -479,7 +479,7 @@ const SigningAuthorityStep: React.FC<{
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+                <h4 className="font-medium text-blue-800 mb-2">{m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoTitle']()}</h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
                     <li>• Creates a cryptographic key pair for signing</li>
@@ -524,7 +524,7 @@ const CreateTemplatesStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Templates</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.issueCredentials.createTemplatesStep.title']()}</h3>
 
                 <p className="text-gray-600">
                     Design your credential templates using the visual builder. Each template becomes
@@ -837,7 +837,7 @@ else:
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Issue & Verify</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.issueCredentials.issueVerifyStep.title']()}</h3>
 
                 <p className="text-gray-600">
                     Use your template to issue credentials via API. Select a template and recipient,
@@ -856,7 +856,7 @@ else:
 
                             <div>
                                 <p className="text-sm font-medium text-gray-700">
-                                    Credential Template
+                                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.credentialTemplate']()}
                                 </p>
 
                                 <p className="text-xs text-cyan-700 font-medium">
@@ -931,7 +931,7 @@ else:
                                 onClick={onBack}
                                 className="text-cyan-600 hover:underline font-medium"
                             >
-                                Go back to create one
+                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate']()}
                             </button>
                             .
                         </p>
@@ -948,7 +948,7 @@ else:
                         </div>
 
                         <div>
-                            <p className="text-sm font-medium text-gray-700">API Token</p>
+                            <p className="text-sm font-medium text-gray-700">{m['developerPortal.guides.issueCredentials.issueVerifyStep.apiTokenLabel']()}</p>
 
                             <p className="text-xs text-gray-500">
                                 {apiToken ? (
@@ -957,7 +957,7 @@ else:
                                         {displayTokenName}
                                     </span>
                                 ) : (
-                                    <span className="text-amber-600">Select a token to use</span>
+                                    <span className="text-amber-600">{m['developerPortal.guides.issueCredentials.issueVerifyStep.selectTokenHint']()}</span>
                                 )}
                             </p>
                         </div>
@@ -981,13 +981,13 @@ else:
                         {loadingGrants ? (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Loading tokens...
+                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.loadingTokens']()}
                             </div>
                         ) : authGrants.length === 0 ? (
                             <p className="text-sm text-gray-500">
                                 No API tokens found.{' '}
                                 <button onClick={onBack} className="text-cyan-600 hover:underline">
-                                    Go back to create one
+                                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate']()}
                                 </button>
                                 .
                             </p>
@@ -1066,7 +1066,7 @@ else:
 
                     <div className="flex-1">
                         <h4 className="font-medium text-gray-800 mb-1">
-                            Check for Sent Credentials
+                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentials']()}
                         </h4>
 
                         <p className="text-sm text-gray-600 mb-3">
@@ -1081,7 +1081,7 @@ else:
                                 className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
-                                Check for Sent Credentials
+                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkButton']()}
                             </button>
                         )}
 
@@ -1090,7 +1090,7 @@ else:
                                 <div className="flex items-center gap-2 text-indigo-600">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     <span className="text-sm font-medium">
-                                        Checking for new credentials...
+                                        {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkingLabel']()}
                                     </span>
                                 </div>
 
@@ -1131,7 +1131,7 @@ else:
                                             onClick={startPolling}
                                             className="text-sm text-indigo-600 hover:underline mt-1"
                                         >
-                                            Try again
+                                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.tryAgain']()}
                                         </button>
                                     )}
                                 </div>
@@ -1161,7 +1161,7 @@ else:
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue to Go Live
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -1297,7 +1297,7 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                         m['developerPortal.guides.issueCredentials.goLive.completedItems3'](),
                     ]}
                     title={m['developerPortal.guides.issueCredentials.goLive.title']()}
-                    description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
+                    description={m['developerPortal.guides.issueCredentials.goLive.description']()}
                 />
             </div>
         </div>
