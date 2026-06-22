@@ -5821,7 +5821,8 @@
                     "issueCorsDesc": "Add Access-Control-Allow-Origin header",
                     "serverHeaders": "Server Headers",
                     "back": "رجوع",
-                    "continue": "متابعة"
+                    "continue": "متابعة",
+                    "configureHeadersOnServer": "تكوين الرؤوس على الخادم الخاص بك"
                 },
                 "installSdkStep": {
                     "title": "تثبيت SDK",
@@ -6104,7 +6105,9 @@
                         "featuresConfigured": "{{count}} feature configured",
                         "featuresConfigured_plural": "{{count}} features configured",
                         "codeGenerated": "Integration code generated"
-                    }
+                    },
+                    "title": "جاهز للتشغيل المباشر!",
+                    "description": "اكتمل تكامل تطبيقك المضمن. قم بتنشيطه لبدء استخدامه في الإنتاج."
                 },
                 "appListingRequiredDesc": "اختر تطبيقًا في الخطوة 1 لإنشاء قوالب الشهادات."
             },

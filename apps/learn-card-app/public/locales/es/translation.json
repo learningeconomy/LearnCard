@@ -5821,7 +5821,8 @@
                     "issueCorsDesc": "Add Access-Control-Allow-Origin header",
                     "serverHeaders": "Server Headers",
                     "back": "Atrás",
-                    "continue": "Continuar"
+                    "continue": "Continuar",
+                    "configureHeadersOnServer": "Configurar cabeceras en tu servidor"
                 },
                 "installSdkStep": {
                     "title": "Instalar el SDK",
@@ -6104,7 +6105,9 @@
                         "featuresConfigured": "{{count}} feature configured",
                         "featuresConfigured_plural": "{{count}} features configured",
                         "codeGenerated": "Integration code generated"
-                    }
+                    },
+                    "title": "¡Listo para Salir a Producción!",
+                    "description": "La integración de tu aplicación embebida está completa. Actívala para empezar a usarla en producción."
                 },
                 "appListingRequiredDesc": "Selecciona una aplicación en el Paso 1 para crear plantillas de credenciales."
             },

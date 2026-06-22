@@ -5821,7 +5821,8 @@
                     "issueCorsDesc": "Add Access-Control-Allow-Origin header",
                     "serverHeaders": "Server Headers",
                     "back": "Retour",
-                    "continue": "Continuer"
+                    "continue": "Continuer",
+                    "configureHeadersOnServer": "Configurer les en-têtes sur votre serveur"
                 },
                 "installSdkStep": {
                     "title": "Installer le SDK",
@@ -6104,7 +6105,9 @@
                         "featuresConfigured": "{{count}} feature configured",
                         "featuresConfigured_plural": "{{count}} features configured",
                         "codeGenerated": "Integration code generated"
-                    }
+                    },
+                    "title": "Prêt à être Mis en Ligne !",
+                    "description": "L'intégration de votre application embarquée est terminée. Activez-la pour commencer à l'utiliser en production."
                 },
                 "appListingRequiredDesc": "Sélectionnez une application à l'étape 1 pour créer des modèles de titres."
             },

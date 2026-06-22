@@ -5821,7 +5821,8 @@
                     "issueCorsDesc": "Add Access-Control-Allow-Origin header",
                     "serverHeaders": "Server Headers",
                     "back": "Back",
-                    "continue": "Continue"
+                    "continue": "Continue",
+                    "configureHeadersOnServer": "Configure headers on your server"
                 },
                 "installSdkStep": {
                     "title": "Install the SDK",
@@ -6104,7 +6105,9 @@
                         "featuresConfigured": "{{count}} feature configured",
                         "featuresConfigured_plural": "{{count}} features configured",
                         "codeGenerated": "Integration code generated"
-                    }
+                    },
+                    "title": "Ready to Go Live!",
+                    "description": "Your embedded app integration is complete. Activate it to start using it in production."
                 },
                 "appListingRequiredDesc": "Select an app in Step 1 to create credential templates."
             },
