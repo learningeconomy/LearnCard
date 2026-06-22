@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
