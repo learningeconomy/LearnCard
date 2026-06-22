@@ -49,10 +49,10 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
     // Setup checklist - things completed in previous steps
     const setupChecklist = [
-        { icon: Shield, label: 'Signing authority configured', done: true },
-        { icon: Palette, label: 'Branding & profile set up', done: true },
-        { icon: FileStack, label: 'Credential templates created', done: true },
-        { icon: Code2, label: 'Integration code configured', done: true },
+        { icon: Shield, label: m['developerPortal.onboarding.production.checklistSigning'](), done: true },
+        { icon: Palette, label: m['developerPortal.onboarding.production.checklistBranding'](), done: true },
+        { icon: FileStack, label: m['developerPortal.onboarding.production.checklistTemplates'](), done: true },
+        { icon: Code2, label: m['developerPortal.onboarding.production.checklistIntegration'](), done: true },
     ];
 
     return (

@@ -4354,7 +4354,7 @@
                 "checkCredential": "Verificar Credencial Emitida",
                 "checking": "Verificando...",
                 "credentialFound": "¡Credencial emitida exitosamente!",
-                "credentialNotFound": "No se detectaron nuevas credenciales",
+                "credentialNotFound": "No new credentials detected. Make sure you ran your code.",
                 "credentialNotFoundDesc": "Asegúrate de haber ejecutado tu código.",
                 "failedCheck": "Error al verificar las credenciales. Inténtalo de nuevo.",
                 "credentialFailed": "Error al enviar la credencial: {{error}}",
@@ -4458,7 +4458,9 @@
                 "tryAgain": "Intentar de Nuevo",
                 "back": "Atrás",
                 "continueToGoLive": "Continuar a Publicar",
-                "logo": "Logo"
+                "logo": "Logo",
+                "apiIntegration": "API Integration",
+                "csvUpload": "CSV Upload"
             },
             "production": {
                 "readyTitle": "¡Listo para Publicar!",
@@ -4670,7 +4672,44 @@
                 "targetFrameworkHelp": "Nombre del marco",
                 "targetCode": "Código del Objetivo",
                 "targetCodePlaceholder": "ej., 1.a",
-                "targetCodeHelp": "Código dentro del marco"
+                "targetCodeHelp": "Código dentro del marco",
+                "walletCategories": {
+                    "achievement": "Achievement",
+                    "learningHistory": "Learning History",
+                    "workHistory": "Work History",
+                    "socialBadge": "Social Badge",
+                    "id": "ID",
+                    "membership": "Membership",
+                    "accommodation": "Accommodation"
+                },
+                "languages": {
+                    "en-US": "English (US)",
+                    "en-GB": "English (UK)",
+                    "es-ES": "Spanish (Spain)",
+                    "es-MX": "Spanish (Mexico)",
+                    "fr-FR": "French (France)",
+                    "fr-CA": "French (Canada)",
+                    "de-DE": "German",
+                    "pt-BR": "Portuguese (Brazil)",
+                    "pt-PT": "Portuguese (Portugal)",
+                    "zh-CN": "Chinese (Simplified)",
+                    "zh-TW": "Chinese (Traditional)",
+                    "ja-JP": "Japanese",
+                    "ko-KR": "Korean",
+                    "ar-SA": "Arabic",
+                    "hi-IN": "Hindi",
+                    "it-IT": "Italian",
+                    "nl-NL": "Dutch",
+                    "ru-RU": "Russian",
+                    "sv-SE": "Swedish",
+                    "pl-PL": "Polish",
+                    "tr-TR": "Turkish",
+                    "vi-VN": "Vietnamese",
+                    "th-TH": "Thai",
+                    "id-ID": "Indonesian",
+                    "he-IL": "Hebrew"
+                },
+                "languageHelp": "Language of this achievement"
             },
             "achievementsList": {
                 "someErrors": "Algunos logros tienen errores de validación",
@@ -4875,6 +4914,18 @@
                     "Verifica la pestaña JSON para datos malformados",
                     "Intenta revertir a una plantilla predefinida"
                 ]
+            },
+            "labels": {
+                "numberOfAchievements": "Number of Achievements",
+                "numberOfAssociations": "Number of Associations"
+            },
+            "validation": {
+                "invalidUrl": "Must be a valid URL (e.g., https://example.com)",
+                "invalidCtid": "Invalid CTID format. Must be ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "atLeastOneAchievement": "At least one achievement or embedded credential is required",
+                "sourceAchievementNotFound": "Source achievement not found",
+                "targetAchievementNotFound": "Target achievement not found",
+                "achievementNameRequired": "Achievement name is required"
             }
         },
         "dashboards": {
@@ -6813,6 +6864,43 @@
             },
             "courseCatalog": {
                 "noIntegration": "Please select an integration from the header dropdown to continue."
+            },
+            "useCases": {
+                "issueCredentials": {
+                    "title": "Issue Credentials",
+                    "subtitle": "Give badges to users",
+                    "description": "Issue verifiable credentials like badges, certificates, or achievements to your users."
+                },
+                "embedClaim": {
+                    "title": "Embed Claim Button",
+                    "subtitle": "Issue from your site",
+                    "description": "Add a \"Claim Credential\" button to your website so users can claim badges without leaving your page."
+                },
+                "embedApp": {
+                    "title": "Embed Your App",
+                    "subtitle": "Run inside LearnCard",
+                    "description": "Build an app that runs inside the LearnCard wallet with access to user identity and credentials."
+                },
+                "consentFlow": {
+                    "title": "Connect Website",
+                    "subtitle": "Connect your website to LearnCard",
+                    "description": "Set up a consent flow to send and access user data and credentials with their permission."
+                },
+                "courseCatalog": {
+                    "title": "Connect Course Catalog",
+                    "subtitle": "Enterprise LMS integration",
+                    "description": "Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance."
+                },
+                "verifyCredentials": {
+                    "title": "Verify Credentials",
+                    "subtitle": "Accept VCs from users",
+                    "description": "Accept and verify credentials presented by users to prove their achievements or identity."
+                },
+                "serverWebhooks": {
+                    "title": "Server Webhooks",
+                    "subtitle": "Backend events",
+                    "description": "Receive real-time notifications when events happen in LearnCard via webhooks."
+                }
             }
         },
         "submissionForm": {

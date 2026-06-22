@@ -150,8 +150,8 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
     // Integration method display
     const integrationMethodDisplay = {
-        api: { icon: Code, label: 'API Integration', color: 'violet' },
-        csv: { icon: FileSpreadsheet, label: 'CSV Upload', color: 'amber' },
+        api: { icon: Code, label: m['developerPortal.onboarding.sandboxTest.apiIntegration'](), color: 'violet' },
+        csv: { icon: FileSpreadsheet, label: m['developerPortal.onboarding.sandboxTest.csvUpload'](), color: 'amber' },
         webhook: { icon: Webhook, label: m['developerPortal.onboarding.integrationMethod.webhook']() + ' (' + m['developerPortal.onboarding.integrationMethod.realtimeAutomated']() + ')', color: 'emerald' },
     }[integrationMethod];
 

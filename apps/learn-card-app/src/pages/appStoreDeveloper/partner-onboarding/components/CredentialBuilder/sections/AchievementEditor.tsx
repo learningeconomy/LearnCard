@@ -114,13 +114,13 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
     // Categories available for custom types (user-friendly subset)
     const walletCategories = useMemo(
         () => [
-            { value: 'Achievement', label: 'Achievement', walletFolder: 'Achievements' },
-            { value: 'Learning History', label: 'Learning History', walletFolder: 'Studies' },
-            { value: 'Work History', label: 'Work History', walletFolder: 'Experiences' },
-            { value: 'Social Badge', label: 'Social Badge', walletFolder: 'Boosts' },
-            { value: 'ID', label: 'ID', walletFolder: 'IDs' },
-            { value: 'Membership', label: 'Membership', walletFolder: 'Memberships' },
-            { value: 'Accommodation', label: 'Accommodation', walletFolder: 'Assistance' },
+            { value: 'Achievement', label: m['developerPortal.credentialBuilder.achievement.walletCategories.achievement'](), walletFolder: 'Achievements' },
+            { value: 'Learning History', label: m['developerPortal.credentialBuilder.achievement.walletCategories.learningHistory'](), walletFolder: 'Studies' },
+            { value: 'Work History', label: m['developerPortal.credentialBuilder.achievement.walletCategories.workHistory'](), walletFolder: 'Experiences' },
+            { value: 'Social Badge', label: m['developerPortal.credentialBuilder.achievement.walletCategories.socialBadge'](), walletFolder: 'Boosts' },
+            { value: 'ID', label: m['developerPortal.credentialBuilder.achievement.walletCategories.id'](), walletFolder: 'IDs' },
+            { value: 'Membership', label: m['developerPortal.credentialBuilder.achievement.walletCategories.membership'](), walletFolder: 'Memberships' },
+            { value: 'Accommodation', label: m['developerPortal.credentialBuilder.achievement.walletCategories.accommodation'](), walletFolder: 'Assistance' },
         ],
         []
     );
@@ -384,7 +384,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                             { value: 'id-ID', label: 'Indonesian' },
                             { value: 'he-IL', label: 'Hebrew' },
                         ]}
-                        helpText="Language of this achievement"
+                        helpText={m['developerPortal.credentialBuilder.achievement.languageHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
                 </div>

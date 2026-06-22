@@ -37,22 +37,25 @@ interface IntegrationCardProps {
 
 const STATUS_CONFIG: Record<
     IntegrationStatus,
-    { label: string; color: string; bgColor: string; icon: React.ElementType }
+    { label: string; labelKey: string; color: string; bgColor: string; icon: React.ElementType }
 > = {
     setup: {
         label: 'Setup Required',
+        labelKey: 'developerPortal.shell.statusSetupRequired',
         color: 'text-amber-700',
         bgColor: 'bg-amber-50 border-amber-200',
         icon: AlertCircle,
     },
     active: {
         label: 'Active',
+        labelKey: 'developerPortal.shell.statusActive',
         color: 'text-emerald-700',
         bgColor: 'bg-emerald-50 border-emerald-200',
         icon: CheckCircle2,
     },
     paused: {
         label: 'Paused',
+        labelKey: 'developerPortal.shell.statusPaused',
         color: 'text-gray-600',
         bgColor: 'bg-gray-50 border-gray-200',
         icon: Clock,
@@ -101,7 +104,7 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({
                     <StatusIcon className={`w-3.5 h-3.5 ${statusConfig.color}`} />
 
                     <span className={`text-xs font-medium ${statusConfig.color}`}>
-                        {statusConfig.label}
+                        {statusConfig.labelKey ? m[statusConfig.labelKey]() : statusConfig.label}
                     </span>
                 </div>
             </div>

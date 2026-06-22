@@ -1131,7 +1131,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     setApiIsPolling(false);
                     setApiPollResult({
                         success: false,
-                        message: 'No new credentials detected. Make sure you ran your code.',
+                        message: m['developerPortal.onboarding.dataMapping.credentialNotFound'](),
                     });
                     return;
                 }
@@ -1183,7 +1183,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
             setApiIsPolling(false);
             setApiPollResult({
                 success: false,
-                message: 'Failed to check credentials. Please try again.',
+                message: m['developerPortal.onboarding.dataMapping.failedCheck'](),
             });
         }
     };
