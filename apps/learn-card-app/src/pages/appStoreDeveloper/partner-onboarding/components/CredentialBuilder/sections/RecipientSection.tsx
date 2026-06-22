@@ -172,7 +172,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                             <div key={result.id} className="pl-3 border-l-2 border-emerald-200 space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-emerald-700">
-                                        Result {index + 1}
+                                        {m['developerPortal.credentialBuilder.recipient.resultCount']({ count: index + 1 })}
                                     </span>
 
                                     <button

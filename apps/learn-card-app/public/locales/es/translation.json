@@ -3498,7 +3498,8 @@
                 "failedToCreateOrganization": "Error al crear organización: {{message}}",
                 "creating": "Creando...",
                 "lettersNumbersDashesOnly": "Solo letras, números y guiones",
-                "logoPreview": "Vista previa del logotipo"
+                "logoPreview": "Vista previa del logotipo",
+                "charCount": "3-25 caracteres"
             },
             "accountSelectorModal": {
                 "switchAccount": "Cambiar Cuenta"
@@ -3622,7 +3623,8 @@
                 "guideLockedDesc": "This guide is not available with your current beta access. Contact us to request expanded access.",
                 "requestAccess": "Solicitar Acceso",
                 "locked": "bloqueada",
-                "guideNotAvailable": "Esta guía no está disponible con tu acceso beta actual."
+                "guideNotAvailable": "Esta guía no está disponible con tu acceso beta actual.",
+                "guideLabel": "guía"
             },
             "codeBlock": {
                 "copyCode": "Copiar código",
@@ -4537,7 +4539,8 @@
                 "creatingOrganization": "Creating Organization...",
                 "createOrganizationAccount": "Create Organization Account",
                 "continueToProjectSetup": "Continue to Project Setup",
-                "logoPreview": "Logo preview"
+                "logoPreview": "Logo preview",
+                "description": "Elija o cree una cuenta de organización que se utilizará como el emisor de sus credenciales. Esto determina el DID, las claves API y la marca de su integración."
             }
         },
         "credentialBuilder": {
@@ -4603,7 +4606,8 @@
                 "dynamicPlaceholder": "Dynamic: {{{{{{var}}}}}}",
                 "removeSection": "Eliminar Sección",
                 "makeStatic": "Haz clic para hacer estático",
-                "makeDynamic": "Haz clic para hacer dinámico"
+                "makeDynamic": "Haz clic para hacer dinámico",
+                "selectOption": "Seleccionar..."
             },
             "sectionTitles": {
                 "credentialInfo": "Información de la Credencial",
@@ -4865,7 +4869,8 @@
                 "resultStatus": "Estado",
                 "resultStatusPlaceholder": "ej., Completado, Aprobado",
                 "resultStatusHelp": "Estado del resultado",
-                "removeResult": "Eliminar resultado"
+                "removeResult": "Eliminar resultado",
+                "resultCount": "Resultado {{count}}"
             },
             "customFields": {
                 "description": "Añade campos personalizados para almacenar datos adicionales en las extensiones de la credencial. Aparecerán en {{code}}.",
@@ -5160,7 +5165,10 @@
                     "suppressDelivery": "Suprimir Entrega por Correo",
                     "johnDoe": "Juan Pérez",
                     "loadingTokens": "Cargando tokens...",
-                    "noApiTokens": "No se encontraron tokens. Crea uno en la pestaña <0>Tokens de API</0>."
+                    "noApiTokens": "No se encontraron tokens. Crea uno en la pestaña <0>Tokens de API</0>.",
+                    "downloadCsvFor": "Descargar Plantilla CSV para {{name}}",
+                    "createdLabel": "Creado {{date}}",
+                    "select": "Seleccionar"
                 },
                 "appConfig": {
                     "title": "Configuración de la App",

@@ -1526,7 +1526,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 <div>
                                                     <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
                                                         <Code className="w-4 h-4 text-gray-500" />
-                                                        Parameters
+                                                        {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.parameters']()}
                                                     </h5>
 
                                                     <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -1549,7 +1549,7 @@ log.info('User:', identity.profile.displayName);`;
                                                                         </code>
                                                                         {param.required && (
                                                                             <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
-                                                                                required
+                                                                                {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.required']()}
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -1592,7 +1592,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 <div className="flex items-center justify-between mb-2">
                                                     <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                                                         <Terminal className="w-4 h-4 text-gray-500" />
-                                                        Example
+                                                        {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.example']()}
                                                     </h5>
                                                     <button
                                                         onClick={() =>

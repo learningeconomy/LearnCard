@@ -3498,7 +3498,8 @@
                 "failedToCreateOrganization": "فشل في إنشاء المؤسسة: {{message}}",
                 "creating": "جارٍ الإنشاء...",
                 "lettersNumbersDashesOnly": "أحرف وأرقام وشرطات فقط",
-                "logoPreview": "معاينة الشعار"
+                "logoPreview": "معاينة الشعار",
+                "charCount": "3-25 حرفًا"
             },
             "accountSelectorModal": {
                 "switchAccount": "تبديل الحساب"
@@ -3622,7 +3623,8 @@
                 "guideLockedDesc": "This guide is not available with your current beta access. Contact us to request expanded access.",
                 "requestAccess": "طلب وصول",
                 "locked": "مقفل",
-                "guideNotAvailable": "هذا الدليل غير متاح مع وصولك التجريبي الحالي."
+                "guideNotAvailable": "هذا الدليل غير متاح مع وصولك التجريبي الحالي.",
+                "guideLabel": "دليل"
             },
             "codeBlock": {
                 "copyCode": "نسخ الكود",
@@ -4537,7 +4539,8 @@
                 "creatingOrganization": "Creating Organization...",
                 "createOrganizationAccount": "Create Organization Account",
                 "continueToProjectSetup": "Continue to Project Setup",
-                "logoPreview": "Logo preview"
+                "logoPreview": "Logo preview",
+                "description": "اختر أو أنشئ حساب مؤسسة سيتم استخدامه كمُصدر لبيانات الاعتماد الخاصة بك. يحدد هذا المعرف اللامركزي (DID) ومفاتيح API والعلامة التجارية لتكاملتك."
             }
         },
         "credentialBuilder": {
@@ -4603,7 +4606,8 @@
                 "dynamicPlaceholder": "Dynamic: {{{{{{var}}}}}}",
                 "removeSection": "إزالة القسم",
                 "makeStatic": "انقر لجعله ثابتًا",
-                "makeDynamic": "انقر لجعله ديناميكيًا"
+                "makeDynamic": "انقر لجعله ديناميكيًا",
+                "selectOption": "اختيار..."
             },
             "sectionTitles": {
                 "credentialInfo": "معلومات الاعتماد",
@@ -4865,7 +4869,8 @@
                 "resultStatus": "الحالة",
                 "resultStatusPlaceholder": "مثال: مكتمل, ناجح",
                 "resultStatusHelp": "حالة النتيجة",
-                "removeResult": "إزالة النتيجة"
+                "removeResult": "إزالة النتيجة",
+                "resultCount": "النتيجة {{count}}"
             },
             "customFields": {
                 "description": "أضف حقولاً مخصصة لتخزين بيانات إضافية في ملحقات الاعتماد. ستظهر في {{code}}.",
@@ -5160,7 +5165,10 @@
                     "suppressDelivery": "تعطيل التسليم عبر البريد الإلكتروني",
                     "johnDoe": "جون دو",
                     "loadingTokens": "جاري تحميل الرموز...",
-                    "noApiTokens": "لم يتم العثور على رموز. قم بإنشاء واحد في علامة التبويب <0>رموز API</0>."
+                    "noApiTokens": "لم يتم العثور على رموز. قم بإنشاء واحد في علامة التبويب <0>رموز API</0>.",
+                    "downloadCsvFor": "تنزيل قالب CSV لـ {{name}}",
+                    "createdLabel": "تم الإنشاء {{date}}",
+                    "select": "اختيار"
                 },
                 "appConfig": {
                     "title": "إعدادات التطبيق",

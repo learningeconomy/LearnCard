@@ -200,8 +200,8 @@ const AppsLandingPage: React.FC = () => {
                                             {integration.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {isActive ? 'Live' : 'In Setup'} •{' '}
-                                            {integration.guideType || 'No guide selected'}
+                                            {isActive ? m['developerPortal.shell.statusLive']() : m['developerPortal.shell.statusInSetup']()} •{' '}
+                                            {integration.guideType || m['developerPortal.shell.noGuideSelected']()}
                                         </p>
                                     </div>
 

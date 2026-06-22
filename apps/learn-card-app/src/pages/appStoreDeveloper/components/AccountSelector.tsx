@@ -533,7 +533,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
                                     {isCurrentUserServiceProfile && (
                                         <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                            Organization
+                                            {m['developerPortal.components.accountSelector.organization']()}
                                         </span>
                                     )}
                                 </div>
@@ -574,7 +574,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                         </p>
 
                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                                            Personal
+                                            {m['developerPortal.components.accountSelector.personal']()}
                                         </span>
                                     </div>
 
@@ -757,7 +757,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                         ) : (
                             <ChevronDown className="w-4 h-4" />
                         )}
-                        Advanced Settings
+                        {m['developerPortal.components.accountSelector.advancedSettings']()}
                     </button>
 
                     {showAdvanced && (
@@ -785,7 +785,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                             : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
-                                    3-25 characters
+                                    {m['developerPortal.components.accountSelector.charCount']()}
                                 </span>
                                 <span
                                     className={`text-xs px-2 py-1 rounded ${

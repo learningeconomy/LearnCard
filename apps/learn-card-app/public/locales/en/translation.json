@@ -3498,7 +3498,8 @@
                 "failedToCreateOrganization": "Failed to create organization: {{message}}",
                 "creating": "Creating...",
                 "lettersNumbersDashesOnly": "Letters, numbers, dashes only",
-                "logoPreview": "Logo preview"
+                "logoPreview": "Logo preview",
+                "charCount": "3-25 characters"
             },
             "accountSelectorModal": {
                 "switchAccount": "Switch Account"
@@ -3622,7 +3623,8 @@
                 "guideLockedDesc": "This guide is not available with your current beta access. Contact us to request expanded access.",
                 "requestAccess": "Request Access",
                 "locked": "locked",
-                "guideNotAvailable": "This guide is not available with your current beta access."
+                "guideNotAvailable": "This guide is not available with your current beta access.",
+                "guideLabel": "guide"
             },
             "codeBlock": {
                 "copyCode": "Copy code",
@@ -4537,7 +4539,8 @@
                 "creatingOrganization": "Creating Organization...",
                 "createOrganizationAccount": "Create Organization Account",
                 "continueToProjectSetup": "Continue to Project Setup",
-                "logoPreview": "Logo preview"
+                "logoPreview": "Logo preview",
+                "description": "Choose or create an organization account that will be used as the issuer for your credentials. This determines the DID, API keys, and branding for your integration."
             }
         },
         "credentialBuilder": {
@@ -4603,7 +4606,8 @@
                 "dynamicPlaceholder": "Dynamic: {{{{{{var}}}}}}",
                 "removeSection": "Remove Section",
                 "makeStatic": "Click to make static",
-                "makeDynamic": "Click to make dynamic"
+                "makeDynamic": "Click to make dynamic",
+                "selectOption": "Select..."
             },
             "sectionTitles": {
                 "credentialInfo": "Credential Info",
@@ -4865,7 +4869,8 @@
                 "resultStatus": "Status",
                 "resultStatusPlaceholder": "e.g., Completed, Passed",
                 "resultStatusHelp": "Result status",
-                "removeResult": "Remove result"
+                "removeResult": "Remove result",
+                "resultCount": "Result {{count}}"
             },
             "customFields": {
                 "description": "Add custom fields to store additional data in the credential's extensions. These will appear in {{code}}.",
@@ -5160,7 +5165,10 @@
                     "suppressDelivery": "Suppress Email Delivery",
                     "johnDoe": "John Doe",
                     "loadingTokens": "Loading tokens...",
-                    "noApiTokens": "No API tokens found. Create one in the <0>API Tokens</0> tab."
+                    "noApiTokens": "No API tokens found. Create one in the <0>API Tokens</0> tab.",
+                    "downloadCsvFor": "Download CSV Template for {{name}}",
+                    "createdLabel": "Created {{date}}",
+                    "select": "Select"
                 },
                 "appConfig": {
                     "title": "App Configuration",

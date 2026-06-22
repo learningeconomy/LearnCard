@@ -3498,7 +3498,8 @@
                 "failedToCreateOrganization": "Échec de création de l'organisation : {{message}}",
                 "creating": "Création...",
                 "lettersNumbersDashesOnly": "Lettres, chiffres et tirets uniquement",
-                "logoPreview": "Aperçu du logo"
+                "logoPreview": "Aperçu du logo",
+                "charCount": "3-25 caractères"
             },
             "accountSelectorModal": {
                 "switchAccount": "Changer de Compte"
@@ -3622,7 +3623,8 @@
                 "guideLockedDesc": "This guide is not available with your current beta access. Contact us to request expanded access.",
                 "requestAccess": "Demander l'Accès",
                 "locked": "verrouillée",
-                "guideNotAvailable": "Ce guide n'est pas disponible avec votre accès beta actuel."
+                "guideNotAvailable": "Ce guide n'est pas disponible avec votre accès beta actuel.",
+                "guideLabel": "guide"
             },
             "codeBlock": {
                 "copyCode": "Copier le code",
@@ -4537,7 +4539,8 @@
                 "creatingOrganization": "Creating Organization...",
                 "createOrganizationAccount": "Create Organization Account",
                 "continueToProjectSetup": "Continue to Project Setup",
-                "logoPreview": "Logo preview"
+                "logoPreview": "Logo preview",
+                "description": "Choisissez ou créez un compte d'organisation qui sera utilisé comme émetteur pour vos credentials. Cela détermine le DID, les clés API et l'image de marque de votre intégration."
             }
         },
         "credentialBuilder": {
@@ -4603,7 +4606,8 @@
                 "dynamicPlaceholder": "Dynamic: {{{{{{var}}}}}}",
                 "removeSection": "Supprimer la Section",
                 "makeStatic": "Cliquez pour rendre statique",
-                "makeDynamic": "Cliquez pour rendre dynamique"
+                "makeDynamic": "Cliquez pour rendre dynamique",
+                "selectOption": "Sélectionner..."
             },
             "sectionTitles": {
                 "credentialInfo": "Informations du Crédential",
@@ -4865,7 +4869,8 @@
                 "resultStatus": "Statut",
                 "resultStatusPlaceholder": "ex., Terminé, Réussi",
                 "resultStatusHelp": "Statut du résultat",
-                "removeResult": "Supprimer le résultat"
+                "removeResult": "Supprimer le résultat",
+                "resultCount": "Résultat {{count}}"
             },
             "customFields": {
                 "description": "Ajoutez des champs personnalisés pour stocker des données supplémentaires dans les extensions du crédential. Ils apparaîtront dans {{code}}.",
@@ -5160,7 +5165,10 @@
                     "suppressDelivery": "Supprimer la Livraison par E-mail",
                     "johnDoe": "Jean Dupont",
                     "loadingTokens": "Chargement des jetons...",
-                    "noApiTokens": "Aucun jeton trouvé. Créez-en un dans l'onglet <0>Jetons API</0>."
+                    "noApiTokens": "Aucun jeton trouvé. Créez-en un dans l'onglet <0>Jetons API</0>.",
+                    "downloadCsvFor": "Télécharger le Modèle CSV pour {{name}}",
+                    "createdLabel": "Créé le {{date}}",
+                    "select": "Sélectionner"
                 },
                 "appConfig": {
                     "title": "Configuration de l'App",
