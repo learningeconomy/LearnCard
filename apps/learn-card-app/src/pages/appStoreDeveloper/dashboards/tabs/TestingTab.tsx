@@ -365,8 +365,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 {masterTemplateCount > 0 && (
                     <p className="text-xs text-gray-500 flex items-center gap-1">
                         <FileStack className="w-3 h-3" />
-                        {issuableTemplates.length} course boosts available from{' '}
-                        {masterTemplateCount} master template{masterTemplateCount !== 1 ? 's' : ''}
+                        {m['developerPortal.dashboards.tabs.testing.courseBoostsCount']({ count: issuableTemplates.length, masterCount: masterTemplateCount })}
                     </p>
                 )}
             </div>
@@ -444,8 +443,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             />
                         </div>
                         <p className="text-xs text-gray-500">
-                            We'll send a test credential to this email so you can verify the claim
-                            flow works.
+                            {m['developerPortal.dashboards.tabs.testing.emailDesc']()}
                         </p>
                     </>
                 ) : (
@@ -461,8 +459,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             />
                         </div>
                         <p className="text-xs text-gray-500">
-                            The credential will be sent directly to this user's wallet — no email
-                            required.
+                            {m['developerPortal.dashboards.tabs.testing.userIdDesc']()}
                         </p>
                     </>
                 )}
@@ -510,7 +507,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             </p>
                             {testResult.credentialId && (
                                 <p className="text-xs text-emerald-600 mt-2 font-mono">
-                                    ID: {testResult.credentialId}
+                                    {m['developerPortal.dashboards.tabs.testing.credentialId']({ id: testResult.credentialId })}
                                 </p>
                             )}
                         </div>

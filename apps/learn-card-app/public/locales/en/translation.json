@@ -3831,7 +3831,8 @@
                 "noRejectedDesc": "Rejected apps will appear here for review",
                 "previewButton": "Preview",
                 "editButton": "Edit",
-                "unsubmitButton": "Unsubmit"
+                "unsubmitButton": "Unsubmit",
+                "stepLabel": "Step {{number}}"
             },
             "previewConfirmDialog": {
                 "previewApp": "Preview App",
@@ -5306,7 +5307,17 @@
                     "copied": "Copied!",
                     "sdkTargetDesc": "CSS selector or DOM element to render the claim button into.",
                     "sdkPartnerNameDesc": "Displayed in the claim modal header.",
-                    "myCredential": "My Credential"
+                    "myCredential": "My Credential",
+                    "propHeader": "Prop",
+                    "typeHeader": "Type",
+                    "descHeader": "Description",
+                    "sdkCredentialDesc": "Credential template to issue. Use the template name — the server resolves it.",
+                    "sdkPublishableKeyDesc": "Your integration's publishable key.",
+                    "sdkBrandingDesc": "<0>primaryColor</0>, <1>accentColor</1>, <2>partnerLogoUrl</2>, <3>logoUrl</3>, <4>walletUrl</4>.",
+                    "sdkBackgroundIssuanceDesc": "If true, asks user for consent to issue future credentials without email verification.",
+                    "sdkOnSuccessDesc": "Called after a successful claim. Receives <0>credentialId</0>, <1>consentGiven</1>, and <2>handoffUrl</2>.",
+                    "sdkApiBaseUrlDesc": "Override the API endpoint. Defaults to <0>{{url}}</0>.",
+                    "requiredNote": "Required. All other props are optional."
                 },
                 "connections": {
                     "title": "Connected Users",

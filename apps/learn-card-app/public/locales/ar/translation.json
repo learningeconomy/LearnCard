@@ -3831,7 +3831,8 @@
                 "noRejectedDesc": "[Rejected apps will appear here for review]",
                 "previewButton": "[Preview]",
                 "editButton": "[Edit]",
-                "unsubmitButton": "[Unsubmit]"
+                "unsubmitButton": "[Unsubmit]",
+                "stepLabel": "الخطوة {{number}}"
             },
             "previewConfirmDialog": {
                 "previewApp": "معاينة التطبيق",
@@ -5306,7 +5307,17 @@
                     "copied": "تم النسخ!",
                     "sdkTargetDesc": "مُحدد CSS أو عنصر DOM لتقديم زر المطالبة فيه.",
                     "sdkPartnerNameDesc": "معروض في رأس نافذة المطالبة.",
-                    "myCredential": "[My Credential]"
+                    "myCredential": "[My Credential]",
+                    "propHeader": "خاصية",
+                    "typeHeader": "نوع",
+                    "descHeader": "وصف",
+                    "sdkCredentialDesc": "قالب الاعتماد الذي سيتم إصداره. استخدم اسم القالب — الخادم يقوم بحله.",
+                    "sdkPublishableKeyDesc": "المفتاح القابل للنشر لتكاملتك.",
+                    "sdkBrandingDesc": "<0>primaryColor</0>، <1>accentColor</1>، <2>partnerLogoUrl</2>، <3>logoUrl</3>، <4>walletUrl</4>.",
+                    "sdkBackgroundIssuanceDesc": "إذا كان صحيحًا، يطلب موافقة المستخدم لإصدار اعتمادات مستقبلية دون التحقق عبر البريد الإلكتروني.",
+                    "sdkOnSuccessDesc": "يتم استدعاؤه بعد مطالبة ناجحة. يستلم <0>credentialId</0> و <1>consentGiven</1> و <2>handoffUrl</2>.",
+                    "sdkApiBaseUrlDesc": "تجاوز نقطة نهاية API. الافتراضي <0>{{url}}</0>.",
+                    "requiredNote": "مطلوب. جميع الخصائص الأخرى اختيارية."
                 },
                 "connections": {
                     "title": "المستخدمون المتصلون",

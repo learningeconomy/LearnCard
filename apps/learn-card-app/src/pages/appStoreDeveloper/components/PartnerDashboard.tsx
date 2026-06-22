@@ -185,7 +185,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                        Step {step.number}
+                                        {m['developerPortal.components.partnerDashboard.stepLabel']({ number: step.number })}
                                     </span>
                                 </div>
 
@@ -211,7 +211,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                     </button>
 
                     <p className="text-xs text-gray-400 mt-4">
-                        Free to publish • No coding required
+                        {m['developerPortal.components.partnerDashboard.freeToPublish']()}
                     </p>
                 </div>
             </div>
@@ -409,7 +409,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <div className="space-y-4 mb-5">
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                    Description
+                                    {m['developerPortal.components.partnerDashboard.description']()}
                                 </label>
 
                                 <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap line-clamp-4">
@@ -431,7 +431,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 {selectedListing.category && (
                                     <div>
                                         <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                            Category
+                                            {m['developerPortal.components.partnerDashboard.category']()}
                                         </label>
 
                                         <p className="text-sm text-gray-600 mt-1">

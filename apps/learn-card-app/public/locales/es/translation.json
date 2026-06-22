@@ -3831,7 +3831,8 @@
                 "noRejectedDesc": "[Rejected apps will appear here for review]",
                 "previewButton": "[Preview]",
                 "editButton": "[Edit]",
-                "unsubmitButton": "[Unsubmit]"
+                "unsubmitButton": "[Unsubmit]",
+                "stepLabel": "Paso {{number}}"
             },
             "previewConfirmDialog": {
                 "previewApp": "Vista Previa de la App",
@@ -5306,7 +5307,17 @@
                     "copied": "¡Copiado!",
                     "sdkTargetDesc": "Selector CSS o elemento DOM donde se renderizará el botón de reclamo.",
                     "sdkPartnerNameDesc": "Se muestra en el encabezado del modal de reclamo.",
-                    "myCredential": "[My Credential]"
+                    "myCredential": "[My Credential]",
+                    "propHeader": "Propiedad",
+                    "typeHeader": "Tipo",
+                    "descHeader": "Descripción",
+                    "sdkCredentialDesc": "Plantilla de credencial a emitir. Usa el nombre de la plantilla — el servidor lo resuelve.",
+                    "sdkPublishableKeyDesc": "La clave pública de tu integración.",
+                    "sdkBrandingDesc": "<0>primaryColor</0>, <1>accentColor</1>, <2>partnerLogoUrl</2>, <3>logoUrl</3>, <4>walletUrl</4>.",
+                    "sdkBackgroundIssuanceDesc": "Si es verdadero, solicita consentimiento para emitir credenciales futuras sin verificación por correo.",
+                    "sdkOnSuccessDesc": "Se llama después de un reclamo exitoso. Recibe <0>credentialId</0>, <1>consentGiven</1> y <2>handoffUrl</2>.",
+                    "sdkApiBaseUrlDesc": "Anula el endpoint de la API. Por defecto <0>{{url}}</0>.",
+                    "requiredNote": "Obligatorio. Todas las demás propiedades son opcionales."
                 },
                 "connections": {
                     "title": "Usuarios Conectados",
