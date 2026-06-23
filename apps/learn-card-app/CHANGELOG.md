@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.96.1
+
+### Patch Changes
+
+-   [#1304](https://github.com/learningeconomy/LearnCard/pull/1304) [`263efddbd32b67786224d6fb69d3b460bc2d68b2`](https://github.com/learningeconomy/LearnCard/commit/263efddbd32b67786224d6fb69d3b460bc2d68b2) Thanks [@goblincore](https://github.com/goblincore)! - feat(learn-card-app): App Store category loading skeletons (LC-1907)
+
+-   [#1296](https://github.com/learningeconomy/LearnCard/pull/1296) [`d75873c16f6bb287ef4d1c3e3fcc665a0e00ffd5`](https://github.com/learningeconomy/LearnCard/commit/d75873c16f6bb287ef4d1c3e3fcc665a0e00ffd5) Thanks [@smurflo2](https://github.com/smurflo2)! - Drive seeded skill frameworks via a `features.useSeededSkillFrameworks` tenant config flag instead of a hardcoded production brain-service host allowlist
+
+-   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+
+-   [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
+
+-   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+
+-   [#1294](https://github.com/learningeconomy/LearnCard/pull/1294) [`fffb7b42fa224e1a96fba7f03c5333f5ac0121ec`](https://github.com/learningeconomy/LearnCard/commit/fffb7b42fa224e1a96fba7f03c5333f5ac0121ec) Thanks [@Custard7](https://github.com/Custard7)! - Add Dashboard home screen (flagged)
+
+-   [#1307](https://github.com/learningeconomy/LearnCard/pull/1307) [`d28f87ebf8c2272b19ee83c5e1f8ba8aa3b329ae`](https://github.com/learningeconomy/LearnCard/commit/d28f87ebf8c2272b19ee83c5e1f8ba8aa3b329ae) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1896] - Add "Become a Verified Issuer" CTA
+
+-   [#1308](https://github.com/learningeconomy/LearnCard/pull/1308) [`e2463e9fd905d9ed3101f9141b854e27532f7ef9`](https://github.com/learningeconomy/LearnCard/commit/e2463e9fd905d9ed3101f9141b854e27532f7ef9) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1897] - Add vision OCR fallback for scanned PDFs and image uploads (Mimetypes support)
+
+-   [#1310](https://github.com/learningeconomy/LearnCard/pull/1310) [`d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d`](https://github.com/learningeconomy/LearnCard/commit/d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d) Thanks [@smurflo2](https://github.com/smurflo2)! - New LearnCard AI contract that includes goals, skills, professional title, and work experience. Also seperate network consent contract from LearnCard AI contract
+
+-   Updated dependencies [[`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c), [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9), [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095), [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340)]:
+    -   @learncard/react@2.10.1
+    -   @learncard/credential-library@1.0.8
+    -   @learncard/lca-api-plugin@1.2.14
+
 ## 1.96.0
 
 ### Minor Changes

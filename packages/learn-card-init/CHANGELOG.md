@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.4.1
+
+### Patch Changes
+
+-   [#1297](https://github.com/learningeconomy/LearnCard/pull/1297) [`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6) Thanks [@Custard7](https://github.com/Custard7)! - fix: load init's CJS bundle via createRequire in Node ESM entry
+
+-   [#1317](https://github.com/learningeconomy/LearnCard/pull/1317) [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521) Thanks [@goblincore](https://github.com/goblincore)! - fix(lca-api): bundle @learncard/init from its ESM build in Lambda esbuild (staging 500s)
+
+-   Updated dependencies [[`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095)]:
+    -   @learncard/network-plugin@2.13.3
+
 ## 2.4.0
 
 ### Minor Changes

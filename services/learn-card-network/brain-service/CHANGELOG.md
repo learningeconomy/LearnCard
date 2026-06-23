@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.16.3
+
+### Patch Changes
+
+-   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+
 ## 3.16.2
 
 ### Patch Changes
