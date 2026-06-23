@@ -5980,7 +5980,8 @@
                     "live": "Activo",
                     "inReview": "En Revisión",
                     "draft": "Borrador",
-                    "noTagline": "Sin eslogan"
+                    "noTagline": "Sin eslogan",
+                    "alreadyLoggedIn": "Users are already logged in when inside the wallet, so requestIdentity() returns instantly with their profile."
                 },
                 "signingAuthority": {
                     "title": "Configurar Firma Authority",
@@ -6013,7 +6014,8 @@
                     "someRequireSetup": "Some features require additional setup. We'll guide you through it.",
                     "continueToSetup": "Continuar to Setup",
                     "seeYourCode": "Ver Tu Código",
-                    "back": "Atrás"
+                    "back": "Atrás",
+                    "continue": "Continue"
                 },
                 "features": {
                     "issueCredentials": "Emitir Credenciales",
@@ -6081,7 +6083,9 @@
                     "checking": "Verificaring signing authority...",
                     "signingAuthorityReady": "Signing authority ready",
                     "signingAuthorityNeeded": "A signing authority is needed to cryptographically sign credentials.",
-                    "recommended": "Recomendado"
+                    "recommended": "Recomendado",
+                    "importantNoteDesc": "Step 3 (issuing) must happen on your server with your API key to sign the credential properly.",
+                    "using": "Using: {{name}}"
                 },
                 "templateManager": {
                     "title": "Your Boost Templates",
@@ -6106,7 +6110,8 @@
                     "refresh": "Actualizar",
                     "copyUri": "Copiar URI",
                     "delete": "Eliminar",
-                    "noVariables": "No variables"
+                    "noVariables": "No variables",
+                    "advancedServerDescFull": "Use this server-side function to dynamically retrieve all boost templates for your app listing. This is useful for building template pickers or syncing templates to your database."
                 },
                 "urlCheck": {
                     "checking": "Verificaring your URL...",
@@ -6131,7 +6136,8 @@
                     "corsBlocked": "Blocked by CORS or unreachable",
                     "corsNotConfigured": "CORS not configured or blocking",
                     "corsHeader": "CORS: {{header}}",
-                    "corsNotVisible": "CORS header not visible (may still work)"
+                    "corsNotVisible": "CORS header not visible (may still work)",
+                    "allPassedDesc": "Your URL passed basic checks. You may still need to configure iframe headers (X-Frame-Options)."
                 },
                 "setupWebsiteStep": {
                     "createYourApp": "Crear Tu Aplicación",
@@ -6287,7 +6293,8 @@
                     "create": "Crear",
                     "cancel": "Cancelar",
                     "managingTemplates": "Gestionando plantillas para <0>{{name}}</0>",
-                    "back": "Atrás"
+                    "back": "Atrás",
+                    "refresh": "Refresh"
                 },
                 "requestCredentialsSetup": {
                     "title": "Solicitar Credenciales",
@@ -6324,7 +6331,16 @@
                     "tip3": "Provide a fallback to search if the specific credential isn't available",
                     "back": "Atrás",
                     "nextFeature": "Next Feature",
-                    "seeYourCode": "Ver Tu Código"
+                    "seeYourCode": "Ver Tu Código",
+                    "searchByTitle": "Find by title or type",
+                    "searchUserChooses": "User chooses which to share",
+                    "searchReturnsMultiple": "Returns multiple matches",
+                    "specificExact": "Request exact credential",
+                    "specificAccepts": "User accepts or declines",
+                    "specificReturnsSingle": "Returns single credential",
+                    "tipStoreIds": "Store credential IDs securely when users first share them",
+                    "tipHandleMissing": "Handle the case where the user no longer has the credential",
+                    "tipFallbackSearch": "Provide a fallback to search if the specific credential is not available"
                 },
                 "requestDataConsentSetup": {
                     "title": "Solicitar Consentimiento de Datos",
@@ -6434,7 +6450,11 @@
                     "consentContract": "Consent contract",
                     "notSet": "Not set",
                     "source": "Source",
-                    "optional": "(Opcional)"
+                    "optional": "(Opcional)",
+                    "updateConfigModalDesc": "Your selected features require different permissions than your app currently has configured.",
+                    "integrationTipsHeading": "Integration {{tips}}",
+                    "tipReplaceTodos": "Replace all TODO placeholders with your actual values",
+                    "tipServerSideCode": "Server-side code (in comments) should run on YOUR server, not in the embedded app"
                 },
                 "goLive": {
                     "completedItems": {
@@ -6448,7 +6468,15 @@
                     "title": "¡Listo para Salir a Producción!",
                     "description": "La integración de tu aplicación embebida está completa. Actívala para empezar a usarla en producción."
                 },
-                "appListingRequiredDesc": "Selecciona una aplicación en el Paso 1 para crear plantillas de credenciales."
+                "appListingRequiredDesc": "Selecciona una aplicación en el Paso 1 para crear plantillas de credenciales.",
+                "useApiStep": {
+                    "parameters": "Parameters",
+                    "required": "required",
+                    "returns": "Returns",
+                    "example": "Example",
+                    "proTips": "Pro {{tips}}",
+                    "description": "Complete API for communicating with the LearnCard wallet. Select a method to see detailed documentation and code examples."
+                }
             },
             "embedClaim": {
                 "steps": {

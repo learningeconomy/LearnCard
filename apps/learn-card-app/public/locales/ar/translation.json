@@ -5980,7 +5980,8 @@
                     "live": "نشط",
                     "inReview": "قيد المراجعة",
                     "draft": "مسودة",
-                    "noTagline": "No tagline set"
+                    "noTagline": "No tagline set",
+                    "alreadyLoggedIn": "Users are already logged in when inside the wallet, so requestIdentity() returns instantly with their profile."
                 },
                 "signingAuthority": {
                     "title": "إعداد التوقيع Authority",
@@ -6013,7 +6014,8 @@
                     "someRequireSetup": "Some features require additional setup. We'll guide you through it.",
                     "continueToSetup": "متابعة to Setup",
                     "seeYourCode": "عرض الكود الخاص بك",
-                    "back": "رجوع"
+                    "back": "رجوع",
+                    "continue": "Continue"
                 },
                 "features": {
                     "issueCredentials": "إصدار الشهادات",
@@ -6081,7 +6083,9 @@
                     "checking": "تحققing signing authority...",
                     "signingAuthorityReady": "Signing authority ready",
                     "signingAuthorityNeeded": "A signing authority is needed to cryptographically sign credentials.",
-                    "recommended": "موصى به"
+                    "recommended": "موصى به",
+                    "importantNoteDesc": "Step 3 (issuing) must happen on your server with your API key to sign the credential properly.",
+                    "using": "Using: {{name}}"
                 },
                 "templateManager": {
                     "title": "Your Boost Templates",
@@ -6106,7 +6110,8 @@
                     "refresh": "تحديث",
                     "copyUri": "نسخ URI",
                     "delete": "حذف",
-                    "noVariables": "No variables"
+                    "noVariables": "No variables",
+                    "advancedServerDescFull": "Use this server-side function to dynamically retrieve all boost templates for your app listing. This is useful for building template pickers or syncing templates to your database."
                 },
                 "urlCheck": {
                     "checking": "تحققing your URL...",
@@ -6131,7 +6136,8 @@
                     "corsBlocked": "Blocked by CORS or unreachable",
                     "corsNotConfigured": "CORS not configured or blocking",
                     "corsHeader": "CORS: {{header}}",
-                    "corsNotVisible": "CORS header not visible (may still work)"
+                    "corsNotVisible": "CORS header not visible (may still work)",
+                    "allPassedDesc": "Your URL passed basic checks. You may still need to configure iframe headers (X-Frame-Options)."
                 },
                 "setupWebsiteStep": {
                     "createYourApp": "إنشاء تطبيقك",
@@ -6287,7 +6293,8 @@
                     "create": "إنشاء",
                     "cancel": "إلغاء",
                     "managingTemplates": "Managing templates for <0>{{name}}</0>",
-                    "back": "رجوع"
+                    "back": "رجوع",
+                    "refresh": "Refresh"
                 },
                 "requestCredentialsSetup": {
                     "title": "طلب الشهادات",
@@ -6324,7 +6331,16 @@
                     "tip3": "Provide a fallback to search if the specific credential isn't available",
                     "back": "رجوع",
                     "nextFeature": "Next Feature",
-                    "seeYourCode": "عرض الكود الخاص بك"
+                    "seeYourCode": "عرض الكود الخاص بك",
+                    "searchByTitle": "Find by title or type",
+                    "searchUserChooses": "User chooses which to share",
+                    "searchReturnsMultiple": "Returns multiple matches",
+                    "specificExact": "Request exact credential",
+                    "specificAccepts": "User accepts or declines",
+                    "specificReturnsSingle": "Returns single credential",
+                    "tipStoreIds": "Store credential IDs securely when users first share them",
+                    "tipHandleMissing": "Handle the case where the user no longer has the credential",
+                    "tipFallbackSearch": "Provide a fallback to search if the specific credential is not available"
                 },
                 "requestDataConsentSetup": {
                     "title": "طلب الموافقة على البيانات",
@@ -6434,7 +6450,11 @@
                     "consentContract": "عقد الموافقة",
                     "notSet": "غير مضبوط",
                     "source": "Source",
-                    "optional": "(اختياري)"
+                    "optional": "(اختياري)",
+                    "updateConfigModalDesc": "Your selected features require different permissions than your app currently has configured.",
+                    "integrationTipsHeading": "Integration {{tips}}",
+                    "tipReplaceTodos": "Replace all TODO placeholders with your actual values",
+                    "tipServerSideCode": "Server-side code (in comments) should run on YOUR server, not in the embedded app"
                 },
                 "goLive": {
                     "completedItems": {
@@ -6448,7 +6468,15 @@
                     "title": "جاهز للتشغيل المباشر!",
                     "description": "اكتمل تكامل تطبيقك المضمن. قم بتنشيطه لبدء استخدامه في الإنتاج."
                 },
-                "appListingRequiredDesc": "اختر تطبيقًا في الخطوة 1 لإنشاء قوالب الشهادات."
+                "appListingRequiredDesc": "اختر تطبيقًا في الخطوة 1 لإنشاء قوالب الشهادات.",
+                "useApiStep": {
+                    "parameters": "Parameters",
+                    "required": "required",
+                    "returns": "Returns",
+                    "example": "Example",
+                    "proTips": "Pro {{tips}}",
+                    "description": "Complete API for communicating with the LearnCard wallet. Select a method to see detailed documentation and code examples."
+                }
             },
             "embedClaim": {
                 "steps": {
