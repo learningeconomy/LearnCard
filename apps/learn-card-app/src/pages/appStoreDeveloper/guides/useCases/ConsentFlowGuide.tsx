@@ -109,8 +109,7 @@ const CreateContractStep: React.FC<{
                 </h3>
 
                 <p className="text-gray-600">
-                    A consent contract defines what data you&apos;re requesting and why. Users must
-                    accept the contract before sharing their data.
+                    {m['developerPortal.guides.consentFlow.createContractStep.description']()}
                 </p>
             </div>
 
@@ -168,7 +167,7 @@ const consentFlowContractURI = '${contractUri || 'lc:contract:YOUR_CONTRACT_URI'
                 disabled={!contractUri}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                Continue
+                {m['developerPortal.guides.consentFlow.createContractStep.continueButton']()}
                 <ArrowRight className="w-4 h-4" />
             </button>
         </div>
@@ -191,9 +190,7 @@ const RedirectHandlerStep: React.FC<{
                 </h3>
 
                 <p className="text-gray-600">
-                    When users click "Connect with LearnCard" in your app, they'll be redirected to
-                    LearnCard to grant consent, then back to your app with their DID and
-                    credentials.
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.description']()}
                 </p>
             </div>
 
@@ -244,8 +241,7 @@ window.location.href = consentUrl;`,
                 icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Create an endpoint to handle the redirect. The user&apos;s DID and a VP JWT
-                    (containing a delegate credential) will be included in the URL parameters.
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Desc']()}
                 </p>
 
                 <CodeOutputPanel
@@ -297,14 +293,14 @@ app.get('/api/learncard/callback', async (req, res) => {
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.backButton']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -428,8 +424,7 @@ const APISetupStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.consentFlow.apiSetupStep.title']()}</h3>
 
                 <p className="text-gray-600">
-                    Initialize the LearnCard SDK on your backend to send credentials and query
-                    consent data.
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.description']()}
                 </p>
             </div>
 
@@ -483,7 +478,7 @@ const APISetupStep: React.FC<{
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Permissions
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.permissionsLabel']()}
                         </label>
 
                         <select
@@ -519,7 +514,7 @@ const APISetupStep: React.FC<{
                             }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.cancelButton']()}
                         </button>
                     </div>
                 </div>
@@ -664,14 +659,14 @@ log.info('LearnCard DID:', learnCard.id.did());`,
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.backButton']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -708,8 +703,7 @@ const SendCredentialsStep: React.FC<{
                 </h3>
 
                 <p className="text-gray-600">
-                    Create credential templates that you&apos;ll issue to users who connect with
-                    your app. Templates are saved and reusable across multiple issuances.
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.description']()}
                 </p>
             </div>
 
@@ -843,7 +837,7 @@ log.info('User consent records:', userConsentData.records);`,
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.backButton']()}
                 </button>
 
                 <button
@@ -895,9 +889,7 @@ const TestStep: React.FC<{
                 icon={<ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Click the button below to test the consent redirect with your actual contract
-                    and callback URL. You should be redirected to LearnCard to grant consent, then
-                    back to your callback URL.
+                    {m['developerPortal.guides.consentFlow.testStep.step1Desc']()}
                 </p>
 
                 {consentUrl ? (
@@ -935,8 +927,7 @@ const TestStep: React.FC<{
                 icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    After the user grants consent, LearnCard redirects them to your callback URL
-                    with these query parameters:
+                    {m['developerPortal.guides.consentFlow.testStep.step2Desc']()}
                 </p>
 
                 <div className="space-y-2">
@@ -947,8 +938,7 @@ const TestStep: React.FC<{
                             </code>
 
                             <p className="text-xs text-gray-600">
-                                The user&apos;s decentralized identifier (DID). Use this to send
-                                credentials to them.
+                                {m['developerPortal.guides.consentFlow.testStep.didDesc']()}
                             </p>
                         </div>
                     </div>
@@ -960,8 +950,7 @@ const TestStep: React.FC<{
                             </code>
 
                             <p className="text-xs text-gray-600">
-                                A VP JWT containing a delegate credential. This proves the user
-                                authorized your app to act on their behalf for this contract.
+                                {m['developerPortal.guides.consentFlow.testStep.vpDesc']()}
                             </p>
                         </div>
                     </div>
@@ -988,8 +977,7 @@ const TestStep: React.FC<{
                 icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    After receiving the callback, run the send command from your backend to issue a
-                    credential:
+                    {m['developerPortal.guides.consentFlow.testStep.step3Desc']()}
                 </p>
 
                 <CodeOutputPanel
@@ -1022,7 +1010,7 @@ log.info('Credential sent successfully!');`,
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.testStep.backButton']()}
                 </button>
 
                 <button

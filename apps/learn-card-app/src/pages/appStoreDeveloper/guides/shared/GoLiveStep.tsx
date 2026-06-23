@@ -148,7 +148,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                     className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <button
@@ -159,7 +159,7 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                     {isActivating ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Activating...
+                            {m['developerPortal.guides.goLive.activating']()}
                         </>
                     ) : (
                         <>

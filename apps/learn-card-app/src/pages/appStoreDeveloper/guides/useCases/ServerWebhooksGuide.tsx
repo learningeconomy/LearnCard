@@ -250,8 +250,7 @@ const WebhookEndpointStep: React.FC<{
                 </h3>
 
                 <p className="text-gray-600">
-                    Create an HTTPS endpoint on your server that can receive POST requests from
-                    LearnCard.
+                    {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.description']()}
                 </p>
             </div>
 
@@ -639,7 +638,7 @@ const TestStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <a

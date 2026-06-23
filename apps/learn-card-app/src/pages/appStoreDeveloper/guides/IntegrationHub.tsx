@@ -102,7 +102,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
                     <span className="px-2 py-1 bg-gray-200 text-gray-500 rounded-full text-xs font-medium flex items-center gap-1">
                         <Lock className="w-3 h-3" />
-                        Locked
+                        {m['developerPortal.guides.hub.locked']()}
                     </span>
                 </div>
 
@@ -272,7 +272,7 @@ const IntegrationHub: React.FC = () => {
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
                                             <>
-                                                Create
+                                                {m['common.create']()}
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
