@@ -105,7 +105,7 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        container_name: 'lcn-brain-service'
+        container_name: 'scouts-brain-service'
         expose:
             - 4000
         ports:
@@ -155,7 +155,7 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        container_name: 'lcn-cloud-service'
+        container_name: 'scouts-cloud-service'
         expose:
             - 4100
         ports:
@@ -191,7 +191,7 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        container_name: 'lcn-api-service'
+        container_name: 'scouts-api-service'
         expose:
             - 5100
         ports:
@@ -227,7 +227,7 @@ services:
 
     neo4j:
         image: neo4j:latest
-        container_name: 'lcn-neo4j'
+        container_name: 'scouts-neo4j'
         ports:
             - '7687:7687'
             - '7474:7474'
@@ -249,7 +249,7 @@ services:
 
     redis:
         image: redis:alpine
-        container_name: 'lcn-redis'
+        container_name: 'scouts-redis'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -260,7 +260,7 @@ services:
 
     redis2:
         image: redis:alpine
-        container_name: 'lcn-redis2'
+        container_name: 'scouts-redis2'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -271,7 +271,7 @@ services:
 
     redis3:
         image: redis:alpine
-        container_name: 'lcn-redis3'
+        container_name: 'scouts-redis3'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -292,7 +292,7 @@ services:
                 '--logpath',
                 '/var/log/mongodb/mongod.log',
             ]
-        container_name: 'lcn-mongodb'
+        container_name: 'scouts-mongodb'
         image: mongo:7.0
         expose:
             - 27017
@@ -313,7 +313,7 @@ services:
 
     elasticmq:
         image: softwaremill/elasticmq-native
-        container_name: 'lcn-elasticmq'
+        container_name: 'scouts-elasticmq'
         depends_on:
             - api
         expose:
