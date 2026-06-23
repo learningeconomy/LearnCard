@@ -260,44 +260,44 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
 
     return (
         <section className="text-grayscale-900 w-full px-[24px] py-[28px] min-h-[300px] space-y-5">
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
+            <div className="flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-3 min-w-0">
                     {image ? (
                         <img
                             src={image}
                             alt={`${name} icon`}
-                            className="h-[64px] w-[64px] rounded-full object-cover border border-grayscale-200 bg-white shrink-0"
+                            className="h-[64px] w-[64px] shrink-0 rounded-full border border-grayscale-200 bg-white object-cover"
                         />
                     ) : (
-                        <div className="h-[64px] w-[64px] rounded-full border border-grayscale-200 bg-grayscale-100 shrink-0" />
+                        <div className="h-[64px] w-[64px] shrink-0 rounded-full border border-grayscale-200 bg-grayscale-100" />
                     )}
 
-                    <div className="min-w-0 space-y-1">
-                        <h1 className="text-xl font-semibold text-grayscale-900 line-clamp-2">
-                            {name}
-                        </h1>
-                        {subtitle && <p className="text-sm text-grayscale-600">{subtitle}</p>}
+                    <div className="flex items-start justify-end gap-2 shrink-0">
+                        <button
+                            onClick={openCreateFromTemplateModal}
+                            className="flex items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-2 py-2.5 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
+                        >
+                            <CopyStack className="h-[18px] w-[18px] shrink-0 text-grayscale-700" />
+                            <span className="truncate">Use as template</span>
+                        </button>
+                        <button
+                            onClick={e => {
+                                e.stopPropagation();
+                                openShareContractModal(resolvedContract);
+                            }}
+                            className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[20px] border border-grayscale-300 bg-white transition-colors hover:bg-grayscale-10"
+                            aria-label="Share contract"
+                        >
+                            <Share className="h-[22px] w-[22px] text-grayscale-700" />
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
-                    <button
-                        onClick={openCreateFromTemplateModal}
-                        className="py-2.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center gap-2"
-                    >
-                        <CopyStack className="h-[18px] w-[18px] text-grayscale-700" />
-                        Use as template
-                    </button>
-                    <button
-                        onClick={e => {
-                            e.stopPropagation();
-                            openShareContractModal(resolvedContract);
-                        }}
-                        className="h-[40px] w-[40px] rounded-[20px] border border-grayscale-300 bg-white flex items-center justify-center hover:bg-grayscale-10 transition-colors"
-                        aria-label="Share contract"
-                    >
-                        <Share className="h-[22px] w-[22px] text-grayscale-700" />
-                    </button>
+                <div className="min-w-0 space-y-1">
+                    <h1 className="text-xl font-semibold text-grayscale-900 line-clamp-2">
+                        {name}
+                    </h1>
+                    {subtitle && <p className="text-sm text-grayscale-600">{subtitle}</p>}
                 </div>
             </div>
 
