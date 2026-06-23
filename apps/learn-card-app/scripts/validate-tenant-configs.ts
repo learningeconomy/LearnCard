@@ -95,6 +95,13 @@ const checkInheritedDefaults = (tenant: string, merged: Record<string, unknown>)
     const defaults = DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>;
 
     for (const field of TENANT_UNIQUE_FIELDS) {
+        if (
+            field.path === 'storage.apiKey' &&
+            getNestedValue(merged, 'storage.provider') !== 'filestack'
+        ) {
+            continue;
+        }
+
         const mergedVal = getNestedValue(merged, field.path);
         const defaultVal = getNestedValue(defaults, field.path);
 

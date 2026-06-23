@@ -554,14 +554,14 @@ export const useIssueTcpResume = () => {
             currentStep = 'resolveUploader';
             const uploader = singleImageUpload as undefined | ((file: File) => Promise<string>);
             if (!uploader) {
-                throw new Error('Filestack uploader is unavailable');
+                throw new Error('Image uploader is unavailable');
             }
 
             currentStep = 'uploadPdf';
             const file = new File([input.pdfBlob], input.fileName, { type: 'application/pdf' });
             const pdfUrl = await uploader(file);
             if (!pdfUrl) {
-                throw new Error('Failed to upload resume PDF to Filestack');
+                throw new Error('Failed to upload resume PDF');
             }
 
             const generatedAt = input.generatedAt ?? new Date().toISOString();

@@ -20,3 +20,19 @@ export const getImageUploadProvider = (
 
     return activeProvider;
 };
+
+const getUrlHost = (url?: string): string | undefined => {
+    if (!url) return;
+
+    try {
+        return new URL(url).host;
+    } catch {
+        return;
+    }
+};
+
+export const isKnownImageUploadUrl = (url?: string): boolean => {
+    if (getImageUploadProvider().ownsUrl(url)) return true;
+
+    return getUrlHost(url) === DEFAULT_LEARNCARD_TENANT_CONFIG.storage.cdnDomain;
+};

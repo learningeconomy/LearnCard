@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createFilestackProvider } from '../providers/filestackProvider';
 import { createS3Provider } from '../providers/s3Provider';
-import type { TenantFilestackStorageConfig, TenantS3StorageConfig } from '../../../config/tenantConfig';
+import type {
+    TenantFilestackStorageConfig,
+    TenantS3StorageConfig,
+} from '../../../config/tenantConfig';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../config/tenantDefaults';
+import { isKnownImageUploadUrl, setImageUploadConfigFromTenant } from '../config';
 
 vi.mock('../../../filestack/ReactFileStackClient', () => ({
     client: {
@@ -29,6 +34,7 @@ const s3Config: TenantS3StorageConfig = {
 
 describe('image upload providers', () => {
     afterEach(() => {
+        setImageUploadConfigFromTenant(DEFAULT_LEARNCARD_TENANT_CONFIG);
         vi.restoreAllMocks();
     });
 
@@ -82,5 +88,18 @@ describe('image upload providers', () => {
         expect(provider.generateSrcSet(url, [200, 400])).toBe(url);
         expect(provider.insertParams(url, 'resize=width:200/')).toBe(url);
         expect(provider.getPreviewUrl(url)).toBe(url);
+    });
+
+    it('recognizes active provider URLs and legacy Filestack CDN URLs', () => {
+        setImageUploadConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            storage: s3Config,
+        });
+
+        expect(isKnownImageUploadUrl('https://cdn.mytenant.app/avatars/a.png')).toBe(true);
+        expect(isKnownImageUploadUrl('https://cdn.filestackcontent.com/legacy')).toBe(true);
+        expect(isKnownImageUploadUrl('https://example.com/cdn.filestackcontent.com/legacy')).toBe(
+            false
+        );
     });
 });

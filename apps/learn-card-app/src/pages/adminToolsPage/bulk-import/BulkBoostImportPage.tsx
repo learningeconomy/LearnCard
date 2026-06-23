@@ -5,6 +5,7 @@ import {
     useModal,
     useToast,
     useImageUpload,
+    isKnownImageUploadUrl,
     useGetProfile,
     useCreateBoost,
     useConfirmation,
@@ -460,14 +461,14 @@ const BulkBoostImportPage: React.FC = () => {
             // Process batch using Promise.all for parallel processing
             await Promise.all(
                 csvData.map(async (data, index) => {
-                    // upload images if they're not already in filestack
+                    // upload images if they're not already in configured image storage
                     let badgeThumb = data[DataKeys.image];
-                    if (badgeThumb && !badgeThumb.includes('filestack')) {
+                    if (badgeThumb && !isKnownImageUploadUrl(badgeThumb)) {
                         badgeThumb = await uploadImageFromUrl(badgeThumb);
                     }
 
                     let bgImage = data[DataKeys.backgroundImage];
-                    if (bgImage && !bgImage.includes('filestack')) {
+                    if (bgImage && !isKnownImageUploadUrl(bgImage)) {
                         bgImage = await uploadImageFromUrl(bgImage);
                     }
 

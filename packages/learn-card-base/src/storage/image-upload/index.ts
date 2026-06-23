@@ -21,5 +21,9 @@ export {
 
 export type { ImageUploadProviderFactory } from './providerRegistry';
 
-export { getImageUploadProvider, setImageUploadConfigFromTenant } from './config';
+export {
+    getImageUploadProvider,
+    isKnownImageUploadUrl,
+    setImageUploadConfigFromTenant,
+} from './config';
 export { useImageUpload } from './useImageUpload';

@@ -6,13 +6,28 @@ import { getImageUploadProvider } from '../../storage/image-upload';
 
 
 const Providers = { filestack, unsplash };
+const getUrlHost = (url?: string): string | undefined => {
+    if (!url) return;
+
+    try {
+        return new URL(url).host;
+    } catch {
+        return;
+    }
+};
+
+const isFilestackCdnUrl = (url?: string): boolean =>
+    getUrlHost(url) === DEFAULT_LEARNCARD_TENANT_CONFIG.storage.cdnDomain;
+
+const isUnsplashUrl = (url: string): boolean => getUrlHost(url) === 'images.unsplash.com';
+
 
 const getImageProviderForUrl = (url?: string) => {
     const activeProvider = getImageUploadProvider();
 
     if (activeProvider.ownsUrl(url)) return activeProvider;
 
-    if (url?.includes('cdn.filestackcontent.com')) {
+    if (isFilestackCdnUrl(url)) {
         return getImageUploadProvider(DEFAULT_LEARNCARD_TENANT_CONFIG.storage);
     }
 
@@ -22,7 +37,7 @@ const getImageProviderForUrl = (url?: string) => {
 export const getProvider = (url?: string): keyof typeof Providers | null => {
     if (getImageProviderForUrl(url)) return 'filestack';
 
-    if (url?.includes('images.unsplash.com')) return 'unsplash';
+    if (url && isUnsplashUrl(url)) return 'unsplash';
 
     return null;
 };
@@ -32,7 +47,7 @@ export const changeQuality = (url: string, quality: number): string => {
 
     if (imageProvider) return imageProvider.changeQuality(url, quality);
 
-    if (url.includes('images.unsplash.com')) return unsplash.changeQuality(url, quality);
+    if (isUnsplashUrl(url)) return unsplash.changeQuality(url, quality);
 
     return url;
 };
@@ -42,7 +57,7 @@ export const fixUrl = (url: string, mimetype?: string, webp = false): string => 
 
     if (imageProvider) return imageProvider.fixUrl(url, mimetype, webp);
 
-    if (url.includes('images.unsplash.com')) return unsplash.fixUrl(url, mimetype, webp);
+    if (isUnsplashUrl(url)) return unsplash.fixUrl(url, mimetype, webp);
 
     return url;
 };
@@ -56,7 +71,7 @@ export const generateSrcSet = (
 
     if (imageProvider) return imageProvider.generateSrcSet(url, resolutions, options);
 
-    if (url.includes('images.unsplash.com')) return unsplash.generateSrcSet(url, resolutions, options);
+    if (isUnsplashUrl(url)) return unsplash.generateSrcSet(url, resolutions, options);
 
     return url;
 };
@@ -71,7 +86,7 @@ export const resizeAndChangeQuality = (
 
     if (imageProvider) return imageProvider.resizeAndChangeQuality(url, size, quality, options);
 
-    if (url.includes('images.unsplash.com')) {
+    if (isUnsplashUrl(url)) {
         return unsplash.resizeAndChangeQuality(url, size, quality, options);
     }
 
@@ -103,7 +118,7 @@ export const getMetadata = async (url: string): Promise<ImageMetadata> => {
 
     if (imageProvider) return imageProvider.getMetadata(url);
 
-    if (url.includes('images.unsplash.com')) return unsplash.getMetadata(url);
+    if (isUnsplashUrl(url)) return unsplash.getMetadata(url);
 
     return DefaultMetadata;
 };

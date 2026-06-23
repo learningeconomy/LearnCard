@@ -1,13 +1,12 @@
 import { getCoverImageUrl, isYoutubeUrl } from './youtube.helpers';
-import { getImageUploadProvider } from '../storage/image-upload';
+import { isKnownImageUploadUrl } from '../storage/image-upload';
+import { getMetadata } from '../filestack/images/images.helpers';
 
 
 export const getFileMetadata = async (url: string) => {
-    const provider = getImageUploadProvider();
+    if (!isKnownImageUploadUrl(url)) return;
 
-    if (!provider.ownsUrl(url) && !url.includes('filestack')) return;
-
-    const metadata = await provider.getMetadata(url);
+    const metadata = await getMetadata(url);
     const fileExtension = metadata.filename ? metadata.filename.split('.')[1] : undefined;
 
     return {
