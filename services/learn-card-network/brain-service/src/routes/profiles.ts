@@ -118,9 +118,12 @@ const UpdateProfileInputValidator = z.object({
     // time (see resolveCatalogLocale in helpers/notificationMessages.ts).
     locale: z
         .string()
-        .refine(value => ['en', 'es', 'fr', 'ar'].includes(value.toLowerCase().split('-')[0] ?? ''), {
-            message: 'Unsupported locale (expected one of en, es, fr, ar)',
-        })
+        .refine(
+            value => ['en', 'es', 'fr', 'ar'].includes(value.toLowerCase().split('-')[0] ?? ''),
+            {
+                message: 'Unsupported locale (expected one of en, es, fr, ar)',
+            }
+        )
         .optional(),
     highlightedCredentials: z.array(z.string()).optional(),
     approved: z.boolean().optional(),
