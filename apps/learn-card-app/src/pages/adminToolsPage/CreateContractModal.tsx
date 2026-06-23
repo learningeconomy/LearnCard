@@ -177,7 +177,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
         setContractType(getContractTypeForTemplate(templateContract));
         setAutoBoostUris(templateContract?.autoBoosts ?? []);
         setContract(getInitialContractState(templateContract));
-    }, [setContract, templateContract]);
+    }, [setContract, templateContract?.uri]);
 
     useEffect(() => {
         // rebuild issuers when selected autoboosts change
