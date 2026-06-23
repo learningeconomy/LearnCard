@@ -356,6 +356,23 @@ export interface LearnerContextRawData {
     personalData?: Record<string, unknown>;
 }
 
+export type LearnerContextCacheStatus =
+    | 'browser-hit'
+    | 'browser-miss'
+    | 'backend-hit'
+    | 'backend-miss'
+    | 'structured';
+
+export interface LearnerContextTimingBreakdown {
+    totalMs: number;
+    sdkRoundTripMs?: number;
+    appEventMs?: number;
+    credentialReadMs?: number;
+    promptizerMs?: number;
+    cacheLookupMs?: number;
+    prewarmAgeMs?: number;
+}
+
 /**
  * Response from REQUEST_LEARNER_CONTEXT action
  */
@@ -371,6 +388,13 @@ export interface LearnerContextResponse {
 
     /** User's display name if available */
     displayName?: string;
+
+    /** Optional metadata for cache and timing diagnostics */
+    metadata?: {
+        cacheStatus?: LearnerContextCacheStatus;
+        timings?: LearnerContextTimingBreakdown;
+        backendMetadata?: Record<string, unknown>;
+    };
 }
 
 /**
