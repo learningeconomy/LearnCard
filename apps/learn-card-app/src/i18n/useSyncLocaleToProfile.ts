@@ -29,12 +29,15 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { getLogger, useGetProfile, useIsLoggedIn, useWallet } from 'learn-card-base';
 
-import { useLocale } from './index';
+import { useLocale, useChangeLocale, SUPPORTED_LANGUAGES } from './index';
+import type { SupportedLanguage } from './index';
+import { decideLocaleSync } from './localeSync';
 
 const log = getLogger('i18n.sync-locale-to-profile');
 
 export const useSyncLocaleToProfile = (): void => {
     const locale = useLocale();
+    const changeLocale = useChangeLocale();
     const { data: profile, isFetched } = useGetProfile();
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
@@ -49,64 +52,79 @@ export const useSyncLocaleToProfile = (): void => {
     // `locale`. useGetProfile() (no profileId) returns the current user's OWN
     // profile, which is always the full LCNProfile shape on the wire, but the
     // static type widens to the union. Read the optional field defensively.
-    const profileLocale = (profile as { locale?: string } | null | undefined)?.locale;
+    // Raw persisted profile locale, normalized to a supported base tag (or
+    // undefined when absent/unsupported). `QueriedProfile` is a union; only the
+    // full `LCNProfile` variant carries `locale`, so read it defensively.
+    const rawProfileLocale = (profile as { locale?: string } | null | undefined)?.locale;
+    const profileLocale = ((): SupportedLanguage | undefined => {
+        const base = rawProfileLocale?.toLowerCase().split('-')[0];
+        return base && (SUPPORTED_LANGUAGES as readonly string[]).includes(base)
+            ? (base as SupportedLanguage)
+            : undefined;
+    })();
 
     useEffect(() => {
-        // Only sync once we actually have a profile to sync to. `isFetched`
-        // guards the "loading" state; `profile` guards the "no LCN profile"
-        // case (non-LCN users). `profileLocale !== locale` is the actual
-        // divergence check — covers both unset and changed values.
         if (!isFetched) return;
-        if (!isLoggedIn) return; // no private key yet — initWallet() would throw
         if (!profile?.profileId) return; // not an LCN user (or not loaded)
-        if (profileLocale === locale) return; // already in sync
+
+        // An explicit in-session pick is recorded in localStorage by
+        // `changeLocale`. Its presence means "the UI locale is a deliberate
+        // choice"; its absence (e.g. just after logout cleared it, or a fresh
+        // device) means "fall back to the saved profile language".
+        const hasManualChoice =
+            typeof localStorage !== 'undefined' && !!localStorage.getItem('i18n.language');
+
+        const decision = decideLocaleSync(locale, profileLocale, hasManualChoice);
+
+        if (decision.action === 'none') return;
+
+        if (decision.action === 'restore') {
+            // Adopt the user's saved language into the UI (fresh login, or a new
+            // device). Crucially we do NOT write the default UI locale back —
+            // that one-way write is what overwrote the saved profile locale on
+            // re-login after logout cleared localStorage. `changeLocale` persists
+            // the restored value, so the next render converges to `none`.
+            changeLocale(decision.locale);
+            return;
+        }
+
+        // decision.action === 'sync' → push the UI locale to the profile (an
+        // explicit pick, or the profile has no saved locale yet to clobber).
+        if (!isLoggedIn) return; // no private key yet — initWallet() would throw
         if (writingRef.current !== null) return; // a write is already in flight
 
         writingRef.current = locale;
 
         (async () => {
             try {
-                // initWallet() (getWallet) resolves to a wallet or THROWS — most
-                // commonly "no valid private key found" before login completes. The
-                // `isLoggedIn` gate above already filters that case; when login
-                // completes `isLoggedIn` flips and the effect re-runs (it's a dep),
-                // retrying the sync. The `!wallet` branch only guards a would-be
-                // null return and simply bails (best-effort).
+                // initWallet() resolves to a wallet or THROWS (commonly "no valid
+                // private key" before login). The isLoggedIn gate filters that;
+                // when login completes isLoggedIn flips and the effect re-runs.
                 const wallet = await initWallet();
                 if (!wallet) return;
 
                 await wallet.invoke.updateProfile({ locale });
 
-                // The write succeeded — reflect the persisted locale in the
-                // getProfile cache (5-min staleTime). This runs UNCONDITIONALLY
-                // (even if the effect was torn down mid-write): the write already
-                // landed, so the cache must not keep the stale `profile.locale`,
-                // which would otherwise re-trigger a redundant write. The refetch
-                // it kicks off also re-runs this effect, which is how a rapid
-                // locale toggle that bailed on the write-lock eventually converges.
+                // Reflect the persisted locale in the getProfile cache (5-min
+                // staleTime) so the next render sees it and doesn't re-write.
                 await queryClient.invalidateQueries({ queryKey: ['getProfile'] });
             } catch (error) {
-                // Best-effort: never surface to the user. The backend will simply
-                // fall back to 'en' for this user until a future successful sync.
+                // Best-effort: never surface to the user.
                 log.warn('Failed to sync locale to profile', error);
             } finally {
-                // Release the write lock. The `writingRef.current !== null` guard
-                // above prevents any overlapping write from starting while this
-                // one owns the ref, so the async that set it is its sole owner —
-                // unconditional reset is safe.
                 writingRef.current = null;
             }
         })();
-        // locale: the active UI locale (dep).
-        // profileLocale: the persisted backend value (dep) — when the
-        //   invalidateQueries refetch lands, this changes to match `locale` and
-        //   the effect short-circuits.
-        // profile?.profileId: presence (dep) — fires when the profile loads.
-        // isFetched: loading gate (dep).
-        // isLoggedIn: wallet-readiness signal (dep) — flips true once the private
-        //   key is available, re-running the effect to retry a sync that bailed
-        //   before login.
-    }, [locale, profileLocale, profile?.profileId, isFetched, isLoggedIn, initWallet, queryClient]);
+    }, [
+        locale,
+        profileLocale,
+        profile?.profileId,
+        isFetched,
+        isLoggedIn,
+        initWallet,
+        queryClient,
+        changeLocale,
+    ]);
 };
 
 /**
