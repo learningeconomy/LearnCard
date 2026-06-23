@@ -57,14 +57,13 @@ export type DidAuthVP = {
 export type ContactMethod = {
     type: 'email' | 'phone';
     value: string;
-}
+};
 
 const CODE_TTL_SECONDS = 5 * 60; // 5 minutes
 const MAX_ATTEMPTS = 6;
 const ATTEMPT_TTL_SECONDS = 5 * 60; // 5 minutes
 
 export const CONTACT_METHOD_SESSION_PREFIX = 'contact_method_session:';
-
 
 async function createFirebaseToken(keycloakToken: string): Promise<string> {
     const keycloakUser = await verifyKeycloakToken(keycloakToken);
@@ -246,10 +245,10 @@ export const firebaseRouter = t.router({
                 description: 'Sends a verification code to the user for login.',
             },
         })
-        .input(z.object({ email: z.string().email() }))
+        .input(z.object({ email: z.string().email(), locale: z.string().optional() }))
         .output(z.object({ success: z.boolean(), error: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
-            const { email } = input;
+            const { email, locale } = input;
 
             try {
                 // rate limit attempts (max 3 codes per 10 mins)
@@ -281,6 +280,9 @@ export const firebaseRouter = t.router({
                 try {
                     await getDeliveryService().send({
                         to: email,
+                        // Pre-auth login: no profile to resolve from, so localize to
+                        // the UI language the client passes (its localStorage locale).
+                        locale,
                         templateAlias: LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS,
                         templateModel: {
                             verificationCode: code,
@@ -380,9 +382,10 @@ export const firebaseRouter = t.router({
             const { token: jwt } = input;
 
             try {
-                
                 const learnCard = await getEmptyLearnCard();
-                const result = await learnCard.invoke.verifyPresentation(jwt, { proofFormat: 'jwt' });
+                const result = await learnCard.invoke.verifyPresentation(jwt, {
+                    proofFormat: 'jwt',
+                });
                 let contactMethod: ContactMethod | null = null;
 
                 if (
@@ -391,37 +394,45 @@ export const firebaseRouter = t.router({
                     result.checks.includes('JWS')
                 ) {
                     const decodedJwt = jwtDecode<DidAuthVP>(jwt);
-    
+
                     const did = decodedJwt.vp.holder;
                     const challenge = decodedJwt.nonce;
-    
-                    if (!challenge)
-                        return { success: false, error: 'Invalid LCN token.' };
-        
+
+                    if (!challenge) return { success: false, error: 'Invalid LCN token.' };
+
                     // If the user is using a provisional auth token for a contact method:
                     if (challenge?.includes(CONTACT_METHOD_SESSION_PREFIX)) {
                         if (isAuthorizedDID(did)) {
                             const type = challenge.split(':')[2];
                             const value = challenge.split(':')[3];
-                            
+
                             if (!type || !value)
-                                return { success: false, error: 'Invalid LCN token: contact method type and value are required.' };
-                            
+                                return {
+                                    success: false,
+                                    error: 'Invalid LCN token: contact method type and value are required.',
+                                };
+
                             if (type !== 'email' && type !== 'phone')
-                                return { success: false, error: 'Invalid LCN token: contact method type must be email or phone.' };
-                            
+                                return {
+                                    success: false,
+                                    error: 'Invalid LCN token: contact method type must be email or phone.',
+                                };
+
                             contactMethod = {
                                 type,
-                                value
-                            }
+                                value,
+                            };
                         }
-                    }   
+                    }
                 } else {
                     return { success: false, error: 'Invalid LCN token.' };
                 }
 
-
-                if (!contactMethod) return { success: false, error: 'Invalid LCN token: contact method is required.' };
+                if (!contactMethod)
+                    return {
+                        success: false,
+                        error: 'Invalid LCN token: contact method is required.',
+                    };
 
                 // Get or Create the Firebase user based on email or phone
                 let user;
@@ -433,7 +444,6 @@ export const firebaseRouter = t.router({
                     } else {
                         return { success: false, error: 'Invalid LCN token contact type.' };
                     }
-
                 } catch {
                     if (contactMethod.type === 'email') {
                         user = await app?.auth().createUser({ email: contactMethod.value });
@@ -486,11 +496,14 @@ export const firebaseRouter = t.router({
                 let proofOfLoginChallenge = 'proof-of-login:';
                 if (decodedToken?.email) {
                     proofOfLoginChallenge += 'email:' + decodedToken?.email;
-                } else if (decodedToken?.phoneNumber){
+                } else if (decodedToken?.phoneNumber) {
                     proofOfLoginChallenge += 'phone:' + decodedToken?.phoneNumber;
                 }
 
-                const result = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge: proofOfLoginChallenge });
+                const result = await learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: proofOfLoginChallenge,
+                });
 
                 if (typeof result !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 

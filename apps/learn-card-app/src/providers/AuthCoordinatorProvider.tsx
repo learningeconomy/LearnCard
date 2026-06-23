@@ -1212,7 +1212,16 @@ const AuthSessionManager: React.FC<{
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...getTenantHeaders() },
-                            body: JSON.stringify({ email }),
+                            // Localize the (pre-auth) login email to the active UI
+                            // language — LocaleProvider's source of truth is this
+                            // localStorage key; there's no profile to resolve from yet.
+                            body: JSON.stringify({
+                                email,
+                                locale:
+                                    (typeof localStorage !== 'undefined' &&
+                                        localStorage.getItem('i18n.language')) ||
+                                    undefined,
+                            }),
                         });
 
                         const data = await res.json().catch(() => ({}));
