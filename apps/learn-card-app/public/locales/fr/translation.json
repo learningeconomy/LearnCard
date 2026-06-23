@@ -69,6 +69,7 @@
             "copyright": "© {{year}} Learning Economy"
         },
         "links": {
+            "dashboard": "Tableau de bord",
             "launchPad": "Applications",
             "launchPadShort": "Applis",
             "contacts": "Contacts",

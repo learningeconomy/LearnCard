@@ -68,6 +68,7 @@
             "copyright": "© {{year}} Learning Economy"
         },
         "links": {
+            "dashboard": "Dashboard",
             "launchPad": "Apps",
             "launchPadShort": "Apps",
             "contacts": "Contacts",
