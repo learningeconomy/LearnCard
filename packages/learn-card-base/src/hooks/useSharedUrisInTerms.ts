@@ -14,6 +14,8 @@ type CredentialListPage = {
     cursor?: string;
 };
 
+const MAX_LEARN_CLOUD_PAGE_ITERATIONS = 1000;
+
 type SharedUriResolution = {
     sharedUri: string | false;
     status: 'reused' | 'created' | 'missing';
@@ -79,22 +81,30 @@ const loadCategoryRecordsForWallet = async (
     const records: LCR[] = [];
     let cursor: string | undefined = undefined;
     let pageCount = 0;
+    const seenCursors = new Set<string>();
 
-    while (true) {
+    while (pageCount < MAX_LEARN_CLOUD_PAGE_ITERATIONS) {
         const page = (await getPage({ category }, { cursor, limit: 100 })) as
             | CredentialListPage
             | undefined;
+
+        pageCount += 1;
 
         if (!page) {
             break;
         }
 
-        pageCount += 1;
         records.push(...(page.records ?? []));
 
         if (!page.hasMore || !page.cursor) {
             break;
         }
+
+        if (seenCursors.has(page.cursor) || page.cursor === cursor) {
+            break;
+        }
+
+        seenCursors.add(page.cursor);
 
         cursor = page.cursor;
     }

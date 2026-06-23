@@ -191,6 +191,8 @@ type LearnCloudCredentialPage = {
     cursor?: string;
 };
 
+const MAX_LEARN_CLOUD_PAGE_ITERATIONS = 1000;
+
 export const getAllCredentialUrisForCategory = async (
     wallet: BespokeLearnCard,
     category: string
@@ -207,13 +209,21 @@ export const getAllCredentialUrisForCategory = async (
 
     const uris: string[] = [];
     let cursor: string | undefined = undefined;
+    const seenCursors = new Set<string>();
+    let pageIterations = 0;
 
     // Load sequentially to avoid giant batched `index.get` requests that can overwhelm tRPC.
-    while (true) {
+    while (pageIterations < MAX_LEARN_CLOUD_PAGE_ITERATIONS) {
         const page: LearnCloudCredentialPage | undefined = await getPage(
             { category },
             { cursor, limit: 100 }
         );
+
+        pageIterations += 1;
+
+        if (!page) {
+            break;
+        }
 
         uris.push(
             ...((page?.records ?? [])
@@ -224,6 +234,12 @@ export const getAllCredentialUrisForCategory = async (
         if (!page?.hasMore || !page.cursor) {
             break;
         }
+
+        if (seenCursors.has(page.cursor) || page.cursor === cursor) {
+            break;
+        }
+
+        seenCursors.add(page.cursor);
 
         cursor = page.cursor;
     }
