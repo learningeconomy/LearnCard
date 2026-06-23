@@ -56,7 +56,7 @@ const CredentialScan: React.FC<CredentialScanProps> = ({ onContinue, onBack }) =
                     </span>
                 ) : (
                     <span className="text-sm text-grayscale-700 leading-relaxed">
-                        No credentials yet — that's fine. We'll start from your goal.
+                        {m['pathways.noCredentialsYetStartFromGoal']()}
                     </span>
                 )}
             </div>

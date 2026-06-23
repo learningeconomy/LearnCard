@@ -2,7 +2,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
 
-import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
+import { NodeGlobalsPolyfillPlugin as GlobalPolyfill } from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
@@ -13,6 +13,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
+import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
 
 /**
  * Fail the build/dev start if any file imports paraglide/messages.js twice
@@ -116,6 +117,7 @@ export default defineConfig(({ mode }) => {
             target: 'esnext',
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
+                onwarn: paraglideMissingKeyOnWarn,
                 output: {
                     manualChunks: {
                         // Core framework

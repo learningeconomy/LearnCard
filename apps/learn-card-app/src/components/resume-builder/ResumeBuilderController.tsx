@@ -56,7 +56,7 @@ export const ResumeBuilderController: React.FC<{
                     >
                         <img
                             src={ResumeBuilderIcon}
-                            alt="Resume Builder"
+                            alt={m['passport.resumeBuilder.title']()}
                             className="w-[36px] h-[36px]"
                         />
                     </div>
@@ -99,7 +99,7 @@ export const ResumeBuilderController: React.FC<{
                 >
                     <img
                         src={ResumeBuilderIcon}
-                        alt="Resume Builder"
+                        alt={m['passport.resumeBuilder.title']()}
                         className="w-[30px] h-[30px]"
                     />
                     {/* <IonIcon

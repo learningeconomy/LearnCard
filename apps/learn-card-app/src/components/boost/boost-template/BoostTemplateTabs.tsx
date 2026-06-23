@@ -4,6 +4,8 @@ import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
+import * as m from '../../../paraglide/messages.js';
+
 export enum BoostTemplateTabsEnum {
     learnCardTemplates = 'learnCardTemplates',
     myTemplates = 'myTemplates',
@@ -46,7 +48,7 @@ const BoostTemplateTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-semibold text-[14px] text-grayscale-900 font-poppins">
-                        Custom
+                        {m['boost.template.custom']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

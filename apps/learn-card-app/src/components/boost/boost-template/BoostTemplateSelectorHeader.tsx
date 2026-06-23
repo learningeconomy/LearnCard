@@ -10,6 +10,7 @@ import type { SetState } from '@learncard/helpers';
 import { BoostPageViewModeType, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
 
 type BoostTemplateSelectorHeaderProps = {
     selectedCategory: BoostCategoryOptionsEnum;
@@ -77,7 +78,7 @@ const BoostTemplateSelectorHeader: React.FC<BoostTemplateSelectorHeaderProps> = 
 
                     <div className="flex items-center gap-[3px] w-full">
                         <p className="font-poppins text-grayscale-800 text-[20px] leading-[130%] tracking-[-0.25px]">
-                            {title}
+                            {getBoostCategoryLabel(selectedCategory, title)}
                         </p>
                         <CaretDown className="text-grayscale-900 ml-auto" />
                     </div>

@@ -46,6 +46,7 @@ import { createProfileContactMethodRelationship } from '@accesslayer/contact-met
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import {
     EXHAUSTED,
@@ -726,9 +727,14 @@ async function handleInboxClaimPresentation(
                     type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
                     from: { did: learnCard.id.did() },
                     to: { did: inboxCredential.issuerDid },
-                    message: getNotificationMessage('issuanceClaimed', 'en', {
-                        value: contactMethod.value,
-                    }),
+                    message: getNotificationMessage(
+                        'issuanceClaimed',
+                        // issuerProfileForActivity is the issuer (the webhook recipient),
+                        // loaded just above; falls back to 'en' when the issuer has no
+                        // LearnCard profile.
+                        resolveRecipientLocale(issuerProfileForActivity),
+                        { value: contactMethod.value }
+                    ),
                     data: {
                         inbox: {
                             issuanceId: inboxCredential.id,
@@ -779,19 +785,22 @@ async function handleInboxClaimPresentation(
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {
                     const learnCard = await getLearnCard();
+                    const issuanceErrorMsg = getNotificationMessage(
+                        'issuanceError',
+                        // failedIssuerProfile is the issuer (the webhook recipient),
+                        // loaded above; falls back to 'en' when the issuer has no
+                        // LearnCard profile.
+                        resolveRecipientLocale(failedIssuerProfile),
+                        { value: contactMethod.value }
+                    );
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
                         from: { did: learnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: {
-                            title: getNotificationMessage('issuanceError', 'en').title,
-                            body:
-                                error instanceof Error
-                                    ? error.message
-                                    : getNotificationMessage('issuanceError', 'en', {
-                                          value: contactMethod.value,
-                                      }).body,
+                            title: issuanceErrorMsg.title,
+                            body: error instanceof Error ? error.message : issuanceErrorMsg.body,
                         },
                         data: {
                             inbox: {

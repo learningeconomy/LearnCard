@@ -29,6 +29,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonIcon } from '@ionic/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -55,10 +56,7 @@ import { CATALOG } from './catalog/catalog';
 import { searchCatalog } from './catalog/searchCatalog';
 import { createStaticCatalogSource } from './catalog/staticCatalogSource';
 import type { CatalogEntry } from './catalog/types';
-import {
-    CtdlFetchError,
-    fetchCtdlPathway,
-} from './fetchCtdlPathway';
+import { CtdlFetchError, fetchCtdlPathway } from './fetchCtdlPathway';
 import { fromCtdlPathway } from './fromCtdlPathway';
 import { makeCorsProxiedFetch } from './makeCorsProxiedFetch';
 import { SHOWCASES } from './showcase';
@@ -93,24 +91,24 @@ interface ImportCtdlModalProps {
 type View =
     | { kind: 'browse' }
     | {
-        kind: 'fetching';
-        origin: 'catalog' | 'direct';
-        entry?: CatalogEntry;
-    }
+          kind: 'fetching';
+          origin: 'catalog' | 'direct';
+          entry?: CatalogEntry;
+      }
     | {
-        kind: 'preview';
-        origin: 'catalog' | 'direct';
-        pathway: Pathway;
-        warnings: string[];
-        entry?: CatalogEntry;
-    }
+          kind: 'preview';
+          origin: 'catalog' | 'direct';
+          pathway: Pathway;
+          warnings: string[];
+          entry?: CatalogEntry;
+      }
     | {
-        kind: 'error';
-        origin: 'catalog' | 'direct';
-        message: string;
-        entry?: CatalogEntry;
-        directInput?: string;
-    };
+          kind: 'error';
+          origin: 'catalog' | 'direct';
+          message: string;
+          entry?: CatalogEntry;
+          directInput?: string;
+      };
 
 // Build the search source once at module scope — the catalog is a
 // static import, so there's no reason to instantiate per modal. A
@@ -136,50 +134,50 @@ const OverlayFrame: React.FC<{
     // `items-center` pushed the top of a tall modal off-screen where
     // overflow scroll couldn't reach it. Classic Tailwind modal bug.
     <PathwayPortal>
-    <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
                    overflow-y-auto font-poppins"
-        style={{ overscrollBehavior: 'contain' }}
-        onClick={onClose}
-    >
-        <div
-            className="flex min-h-full items-start sm:items-center justify-center
-                       p-0 sm:p-6"
+            style={{ overscrollBehavior: 'contain' }}
+            onClick={onClose}
         >
-            <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 12, scale: 0.98 }}
-                transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
-                onClick={e => e.stopPropagation()}
-                className="relative w-full max-w-xl
+            <div
+                className="flex min-h-full items-start sm:items-center justify-center
+                       p-0 sm:p-6"
+            >
+                <motion.div
+                    initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
+                    onClick={e => e.stopPropagation()}
+                    className="relative w-full max-w-xl
                            bg-white/95 backdrop-blur-xl
                            sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
                            border border-white/60"
-                style={{ paddingTop: 'env(safe-area-inset-top)' }}
-            >
-                <button
-                    type="button"
-                    onClick={onClose}
-                    aria-label="Close"
-                    className="sticky float-right mr-3 w-10 h-10 rounded-full
+                    style={{ paddingTop: 'env(safe-area-inset-top)' }}
+                >
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label={m['common.close']()}
+                        className="sticky float-right mr-3 w-10 h-10 rounded-full
                                bg-white/80 hover:bg-white hover:shadow-md
                                border border-grayscale-200
                                flex items-center justify-center
                                transition-all duration-200 z-10"
-                    style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
-                >
-                    <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
-                </button>
+                        style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
+                    >
+                        <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
+                    </button>
 
-                {children}
-            </motion.div>
-        </div>
-    </motion.div>
+                    {children}
+                </motion.div>
+            </div>
+        </motion.div>
     </PathwayPortal>
 );
 
@@ -187,11 +185,7 @@ const OverlayFrame: React.FC<{
 // Modal
 // ---------------------------------------------------------------------------
 
-const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
-    ownerDid,
-    onImport,
-    onClose,
-}) => {
+const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, onClose }) => {
     useLockBodyScroll();
 
     // Destructure the stable `track` callback rather than depending
@@ -228,8 +222,8 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     useEffect(() => {
         let cancelled = false;
 
-        Promise.all([CATALOG_SOURCE.search(''), CATALOG_SOURCE.allTags()])
-            .then(([entries, tags]) => {
+        Promise.all([CATALOG_SOURCE.search(''), CATALOG_SOURCE.allTags()]).then(
+            ([entries, tags]) => {
                 if (cancelled) return;
 
                 setAllEntries(entries);
@@ -238,9 +232,12 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                 track(AnalyticsEvents.PATHWAYS_CATALOG_BROWSED, {
                     entryCount: entries.length,
                 });
-            });
+            }
+        );
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [track]);
 
     // Live-filtered catalog. `searchCatalog` is pure + cheap (O(N) over
@@ -249,7 +246,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     // we don't flood on every keystroke.
     const filtered = useMemo(
         () => searchCatalog(allEntries, { query, filters: { tags: activeTags } }),
-        [allEntries, query, activeTags],
+        [allEntries, query, activeTags]
     );
 
     useEffect(() => {
@@ -280,7 +277,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     const beginImport = async (
         ctidOrUrl: string,
         origin: 'catalog' | 'direct',
-        entry?: CatalogEntry,
+        entry?: CatalogEntry
     ) => {
         const trimmed = ctidOrUrl.trim();
 
@@ -306,8 +303,8 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                 err instanceof CtdlFetchError
                     ? friendlyFetchMessage(err, trimmed)
                     : err instanceof Error
-                        ? err.message
-                        : 'Something went wrong while importing. Please try again.';
+                    ? err.message
+                    : 'Something went wrong while importing. Please try again.';
 
             setView({
                 kind: 'error',
@@ -369,9 +366,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
     const backToBrowse = () => setView({ kind: 'browse' });
 
     const toggleTag = (tag: string) =>
-        setActiveTags(prev =>
-            prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag],
-        );
+        setActiveTags(prev => (prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]));
 
     const clearFilters = () => {
         setQuery('');
@@ -498,9 +493,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                                     <CatalogCard
                                         key={entry.ctid}
                                         entry={entry}
-                                        onClick={() =>
-                                            beginImport(entry.ctid, 'catalog', entry)
-                                        }
+                                        onClick={() => beginImport(entry.ctid, 'catalog', entry)}
                                     />
                                 ))}
                             </div>
@@ -550,8 +543,8 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                directInput.trim()
-                                                && beginImport(directInput.trim(), 'direct')
+                                                directInput.trim() &&
+                                                beginImport(directInput.trim(), 'direct')
                                             }
                                             disabled={!directInput.trim()}
                                             className="shrink-0 py-2.5 px-4 rounded-[20px] bg-grayscale-900 text-white
@@ -563,8 +556,13 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                                     </div>
 
                                     <p className="text-xs text-grayscale-500 leading-relaxed">
-                                        Paste any <code className="font-mono text-[11px]">ce-...</code> CTID
-                                        or a full <code className="font-mono text-[11px]">credentialengineregistry.org</code> URL.
+                                        Paste any{' '}
+                                        <code className="font-mono text-[11px]">ce-...</code> CTID
+                                        or a full{' '}
+                                        <code className="font-mono text-[11px]">
+                                            credentialengineregistry.org
+                                        </code>{' '}
+                                        URL.
                                     </p>
                                 </div>
                             )}
@@ -593,8 +591,10 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                         {view.entry && <CatalogEntryContext entry={view.entry} />}
 
                         {view.kind === 'fetching' && (
-                            <div className="flex items-center gap-3 p-4 rounded-2xl
-                                            bg-grayscale-10 border border-grayscale-200">
+                            <div
+                                className="flex items-center gap-3 p-4 rounded-2xl
+                                            bg-grayscale-10 border border-grayscale-200"
+                            >
                                 <span className="w-5 h-5 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin" />
 
                                 <div className="text-sm text-grayscale-700">
@@ -622,7 +622,11 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                                             type="button"
                                             onClick={() => {
                                                 if (view.origin === 'catalog' && view.entry) {
-                                                    beginImport(view.entry.ctid, 'catalog', view.entry);
+                                                    beginImport(
+                                                        view.entry.ctid,
+                                                        'catalog',
+                                                        view.entry
+                                                    );
                                                 } else if (view.directInput) {
                                                     beginImport(view.directInput, 'direct');
                                                 }
@@ -645,10 +649,7 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({
                         )}
 
                         {view.kind === 'preview' && (
-                            <PreviewCard
-                                pathway={view.pathway}
-                                warnings={view.warnings}
-                            />
+                            <PreviewCard pathway={view.pathway} warnings={view.warnings} />
                         )}
 
                         {/* Actions */}
@@ -708,11 +709,15 @@ const CatalogCard: React.FC<{
                 className="shrink-0 w-14 h-14 rounded-xl bg-grayscale-10 border border-grayscale-200
                            object-contain p-1"
                 loading="lazy"
-                onError={e => { e.currentTarget.style.display = 'none'; }}
+                onError={e => {
+                    e.currentTarget.style.display = 'none';
+                }}
             />
         ) : (
-            <div className="shrink-0 w-14 h-14 rounded-xl bg-grayscale-100
-                            flex items-center justify-center">
+            <div
+                className="shrink-0 w-14 h-14 rounded-xl bg-grayscale-100
+                            flex items-center justify-center"
+            >
                 <IonIcon icon={libraryOutline} className="text-grayscale-400 text-2xl" />
             </div>
         )}
@@ -728,8 +733,8 @@ const CatalogCard: React.FC<{
                     <>
                         {' · '}
                         <span className="inline-flex items-center gap-0.5">
-                            <IonIcon icon={layersOutline} className="text-[11px]" />
-                            ~{entry.componentCount} steps
+                            <IonIcon icon={layersOutline} className="text-[11px]" />~
+                            {entry.componentCount} steps
                         </span>
                     </>
                 )}
@@ -770,7 +775,9 @@ const CatalogEntryContext: React.FC<{ entry: CatalogEntry }> = ({ entry }) => (
                 className="shrink-0 w-12 h-12 rounded-xl bg-white border border-grayscale-200
                            object-contain p-1"
                 loading="lazy"
-                onError={e => { e.currentTarget.style.display = 'none'; }}
+                onError={e => {
+                    e.currentTarget.style.display = 'none';
+                }}
             />
         )}
 
@@ -794,9 +801,7 @@ const EmptyState: React.FC<{
 }> = ({ hasQuery, onClear }) => (
     <div className="p-6 rounded-2xl bg-grayscale-10 border border-grayscale-200 text-center space-y-2">
         <div className="text-sm text-grayscale-700">
-            {hasQuery
-                ? 'No pathways match your search yet.'
-                : 'The catalog is empty right now.'}
+            {hasQuery ? 'No pathways match your search yet.' : 'The catalog is empty right now.'}
         </div>
 
         <div className="text-xs text-grayscale-500 leading-relaxed">
@@ -823,14 +828,9 @@ const EmptyState: React.FC<{
 // Preview sub-component
 // ---------------------------------------------------------------------------
 
-const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({
-    pathway,
-    warnings,
-}) => {
+const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({ pathway, warnings }) => {
     const nodeCount = pathway.nodes.length;
-    const destinationNode = pathway.nodes.find(
-        n => n.id === pathway.destinationNodeId,
-    );
+    const destinationNode = pathway.nodes.find(n => n.id === pathway.destinationNodeId);
 
     return (
         <motion.div
@@ -846,9 +846,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({
                 />
 
                 <div className="min-w-0">
-                    <div className="text-sm font-semibold text-grayscale-900">
-                        {pathway.title}
-                    </div>
+                    <div className="text-sm font-semibold text-grayscale-900">{pathway.title}</div>
 
                     <div className="text-xs text-grayscale-600 mt-0.5">
                         {nodeCount} {nodeCount === 1 ? 'step' : 'steps'}
@@ -860,10 +858,7 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({
             {/* Node summary — first 5 titles, then an ellipsis. */}
             <ul className="space-y-1 pl-6">
                 {pathway.nodes.slice(0, 5).map(n => (
-                    <li
-                        key={n.id}
-                        className="text-xs text-grayscale-700 flex items-center gap-1.5"
-                    >
+                    <li key={n.id} className="text-xs text-grayscale-700 flex items-center gap-1.5">
                         <span
                             className={`w-1.5 h-1.5 rounded-full ${
                                 n.id === pathway.destinationNodeId
@@ -910,8 +905,8 @@ const PreviewCard: React.FC<{ pathway: Pathway; warnings: string[] }> = ({
                 />
 
                 <div className="text-xs text-grayscale-600 leading-relaxed">
-                    Defaults are a starting shape — tweak policies and termination in
-                    Build to fit how <em>you</em> want to walk this.
+                    Defaults are a starting shape — tweak policies and termination in Build to fit
+                    how <em>you</em> want to walk this.
                 </div>
             </div>
         </motion.div>
@@ -931,7 +926,7 @@ const friendlyFetchMessage = (err: CtdlFetchError, input: string): string => {
     }
 
     if (/HTTP 404/.test(msg)) {
-        return 'That pathway wasn\'t found in the Credential Engine Registry. Double-check the CTID.';
+        return "That pathway wasn't found in the Credential Engine Registry. Double-check the CTID.";
     }
 
     if (/HTTP 4/.test(msg) || /HTTP 5/.test(msg)) {

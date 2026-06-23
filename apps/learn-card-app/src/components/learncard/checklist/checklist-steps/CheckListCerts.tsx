@@ -120,8 +120,8 @@ export const CheckListCerts: React.FC = () => {
                 log.error('Failed to delete certificate', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setCert(prev => (prev.some(c => c?.id === id) ? prev : [...prev, deleted]));
-                presentToast('Failed to delete. Please try again.', {
-                    title: 'Delete failed',
+                presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
+                    title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
                     type: ToastTypeEnum.Error,
                     hasX: true,
@@ -134,7 +134,7 @@ export const CheckListCerts: React.FC = () => {
     const confirmDelete = async (id: string) => {
         if (
             await confirm({
-                text: `Are you sure you want remove your uploaded certificate?`,
+                text: m['passport.buildMyLearnCard.managers.confirmRemove.certificate'](),
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                 confirmButtonClassName:
@@ -147,8 +147,11 @@ export const CheckListCerts: React.FC = () => {
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
-    let buttonText = certs?.length > 0 ? 'Add More' : 'Add';
-    buttonText = isUploading ? 'Uploading...' : buttonText;
+    let buttonText =
+        certs?.length > 0
+            ? m['passport.buildMyLearnCard.managers.addMore']()
+            : m['passport.buildMyLearnCard.managers.addButton']();
+    buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
 
     return (
@@ -168,7 +171,7 @@ export const CheckListCerts: React.FC = () => {
                     <input
                         multiple
                         type="file"
-                        accept=".pdf,.txt,.docx"
+                        accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         onChange={async e => {
                             await getFiles(e, UploadTypesEnum.Certificate);
                         }}

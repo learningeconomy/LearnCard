@@ -7,16 +7,19 @@ import EUParentalConsentModalContent from 'apps/learn-card-app/src/components/on
 import { requiresEUParentalConsent } from 'apps/learn-card-app/src/components/onboarding/onboardingNetworkForm/helpers/gdpr';
 
 export const useEUParentalConsentModal = (onDismiss?: () => void) => {
-    const { data: cachedProfile, isLoading: cachedLoading } = useGetProfile();
+    const { data: cachedProfile, isLoading: cachedLoading, isError: cachedError } = useGetProfile();
     const profileId = cachedProfile?.profileId;
     const {
         data: freshProfile,
         isLoading: freshLoading,
+        isError: freshError,
         refetch: refetchFresh,
     } = useGetProfile(profileId, Boolean(profileId));
 
     const profile = freshProfile ?? cachedProfile;
-    const isLoading = cachedLoading || freshLoading;
+    // Treat an errored profile fetch as "still resolving" so a transient failure
+    // can't be read as a settled state and surface the consent modal prematurely.
+    const isLoading = cachedLoading || freshLoading || cachedError || freshError;
 
     const isLoggedIn = useIsLoggedIn();
 

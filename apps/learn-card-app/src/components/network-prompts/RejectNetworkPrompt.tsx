@@ -87,7 +87,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                         <br />
                         All connections are encrypted.
                     </p>
-                    <button className={`text-${primaryColor} font-bold`}>Learn More</button>
+                    <button className={`text-${primaryColor} font-bold`}>
+                        {m['common.learnMore']()}
+                    </button>
                 </div>
             </div>
             <div className="flex items-center justify-center w-full">

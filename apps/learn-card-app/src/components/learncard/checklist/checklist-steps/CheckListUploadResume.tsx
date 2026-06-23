@@ -94,11 +94,13 @@ export const CheckListUploadResume: React.FC = () => {
                     }
                 })
                 .catch(error => {
-                    const msg = error?.message || 'Something went wrong';
+                    const msg =
+                        error?.message ||
+                        m['passport.buildMyLearnCard.managers.toastGenericError']();
                     // Strip nested "Error: Error:" prefixes from the AI service
                     const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
                     presentToast(cleanMsg, {
-                        title: 'Could not extract credentials',
+                        title: m['passport.buildMyLearnCard.managers.toastExtractFailed'](),
                         hasDismissButton: true,
                         type: ToastTypeEnum.Error,
                         hasX: true,
@@ -164,8 +166,8 @@ export const CheckListUploadResume: React.FC = () => {
             } catch (error) {
                 log.error('handleDeleteResume::error', error);
                 setResume(previous);
-                presentToast('Failed to delete. Please try again.', {
-                    title: 'Delete failed',
+                presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
+                    title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
                     type: ToastTypeEnum.Error,
                     hasX: true,
@@ -178,7 +180,7 @@ export const CheckListUploadResume: React.FC = () => {
     const confirmDelete = async () => {
         if (
             await confirm({
-                text: `Are you sure you want remove your uploaded resume?`,
+                text: m['passport.buildMyLearnCard.managers.confirmRemove.resume'](),
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                 confirmButtonClassName:
@@ -235,8 +237,10 @@ export const CheckListUploadResume: React.FC = () => {
         });
     };
 
-    let buttonText = resume ? 'Update' : 'Add';
-    buttonText = isUploading ? 'Uploading...' : buttonText;
+    let buttonText = resume
+        ? m['passport.buildMyLearnCard.managers.update']()
+        : m['passport.buildMyLearnCard.managers.addButton']();
+    buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = resume ? (
         <RefreshIcon className={`w-[25px] h-[26px] text-${primaryColor} mr-2`} />
     ) : (
@@ -287,9 +291,9 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        {savedCredentialCount} credential
-                                        {savedCredentialCount !== 1 ? 's' : ''} saved to your
-                                        wallet.
+                                        {m['passport.buildMyLearnCard.managers.credentialsSaved']({
+                                            count: savedCredentialCount,
+                                        })}
                                     </p>
                                 </div>
                             )}
@@ -325,7 +329,7 @@ export const CheckListUploadResume: React.FC = () => {
 
                             <input
                                 type="file"
-                                accept=".pdf,.txt,.docx"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp"
                                 onChange={async e => {
                                     setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);

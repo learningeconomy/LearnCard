@@ -23,7 +23,9 @@ export const CheckListSchoolConnect: React.FC = () => {
     };
     const handleSchoolOptions = () => {};
 
-    const buttonText = isConnected ? 'Reconnect' : 'Connect';
+    const buttonText = isConnected
+        ? m['passport.buildMyLearnCard.managers.reconnect']()
+        : m['passport.buildMyLearnCard.managers.connect']();
     const buttonIcon = isConnected ? (
         <RefreshIcon className={`w-[25px] h-[26px] text-${primaryColor} mr-2`} />
     ) : (

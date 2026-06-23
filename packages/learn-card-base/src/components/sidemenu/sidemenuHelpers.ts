@@ -64,11 +64,17 @@ export enum SideMenuLinksEnum {
     ids = CredentialCategoryEnum.id,
 
     // Feature-flagged routes (not backed by a credential category).
-    // Pathways v2 \u2014 the new dynamic-pathways feature, gated by the
+    // Pathways v2 — the new dynamic-pathways feature, gated by the
     // `features.pathways` tenant config + the `enableJourneys`
     // LaunchDarkly flag. Displays as "Journey" in the side menu while
     // the legacy `aiPathways` link still owns the "Pathways" label.
     pathways = 'pathways',
+
+    // Returning-user home surface. Top-of-list above Passport — shows
+    // a welcome header, last credential activity, and the learner's
+    // current Pathway goal when one is active. See
+    // `apps/learn-card-app/src/pages/dashboard/DashboardPage.tsx`.
+    dashboard = 'dashboard',
 }
 
 /**
@@ -90,6 +96,28 @@ export const getSideMenuTranslationKey = (linkId: string | undefined): string =>
         ([_k, v]) => v === linkId
     );
     return entry ? entry[0] : linkId;
+};
+
+/**
+ * Resolve a side-menu link's display label from the Paraglide message map,
+ * falling back to the link's static `label` when no translation key exists.
+ *
+ * Side-menu link sets are theme/config-driven, so the translation key is built
+ * dynamically (`sidemenu.links.${getSideMenuTranslationKey(link.id)}`) and is
+ * invisible to the static missing-key build guards. If a link's key is absent
+ * from the active locale, the raw `m[key]` is `undefined` — calling it throws
+ * "m[...] is not a function" and crashes the whole menu. Degrade to `link.label`
+ * instead. `messages` is passed in (rather than imported) to keep this package
+ * decoupled from the app's generated Paraglide module.
+ */
+export const getSideMenuLinkLabel = (
+    messages: Record<string, unknown>,
+    link: { id?: string | number | null; label?: string | null }
+): string => {
+    const translationKey = getSideMenuTranslationKey(link.id == null ? undefined : String(link.id));
+    const message = messages[`sidemenu.links.${translationKey}`];
+
+    return typeof message === 'function' ? (message as () => string)() : link.label ?? '';
 };
 
 export type SideMenuLinks = {

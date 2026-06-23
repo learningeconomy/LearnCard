@@ -25,6 +25,10 @@
                 "types": "./dist/index.d.cts",
                 "default": "./dist/index.cjs"
             }
+        },
+        "./dist/init.esm.js": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/init.esm.js"
         }
     },
     "files": [

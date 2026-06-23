@@ -6,6 +6,7 @@ import TrashBin from '../../svgs/TrashBin';
 import EmptyImage from '../../../assets/images/wallpaper-empty-state.png';
 
 import { UploadRes, useFilestack } from 'learn-card-base';
+import { m } from '../../../paraglide/messages.js';
 
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { FamilyCMSState } from '../familyCMSState';
@@ -76,7 +77,7 @@ export const FamilyCMSWallpaperSelect: React.FC<{
                 </div>
                 {!wallpaper && (
                     <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                        None
+                        {m['family.none']()}
                     </p>
                 )}
             </div>

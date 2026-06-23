@@ -5,6 +5,7 @@ import ResumeConfigPanelUserInfo from './ResumeConfigPanelUserInfo';
 import ResumeConfigCredentialSelector from './ResumeConfigCredentialSelector';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../../resume-builder.helpers';
+import { getSectionLabel } from '../../resumeBuilderI18n';
 
 export const ResumeConfigPanelOptions: React.FC = () => {
     return (
@@ -16,7 +17,7 @@ export const ResumeConfigPanelOptions: React.FC = () => {
                     <ResumeConfigCredentialSelector
                         key={section.key}
                         sectionKey={section.key as ResumeSectionKey}
-                        label={section.label}
+                        label={getSectionLabel(section.key as ResumeSectionKey)}
                     />
                 ))}
             </div>

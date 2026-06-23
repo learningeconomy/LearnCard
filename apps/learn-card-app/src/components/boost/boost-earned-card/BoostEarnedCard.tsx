@@ -76,6 +76,8 @@ type BoostEarnedCardProps = {
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
+    relativeDate?: boolean;
+    compact?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -100,6 +102,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
+    relativeDate = false,
+    compact = false,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -455,6 +459,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             ? getDefaultDisplayType(categoryType as string)
                             : displayType
                     }
+                    relativeDate={relativeDate}
+                    compact={compact}
                     isCLR={isClrCredential}
                 />
             </ErrorBoundary>
@@ -525,6 +531,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 ? getDefaultDisplayType(categoryType as string)
                                 : displayType
                         }
+                        relativeDate={relativeDate}
+                        compact={compact}
                         isCLR={isClrCredential}
                     />
                 </IonCol>
@@ -636,6 +644,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }
                     uri={record?.uri}
                     indicatorColor={indicatorColor}
+                    relativeDate={relativeDate}
+                    compact={compact}
                     isCLR={isClrCredential}
                 />
             </IonCol>

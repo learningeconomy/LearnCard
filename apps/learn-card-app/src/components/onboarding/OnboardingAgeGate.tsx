@@ -9,6 +9,7 @@ import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import CountrySelectorModal from './onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../svgs/LocationIcon';
 import countries from '../../constants/countries.json';
+import * as m from '../../paraglide/messages.js';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
@@ -36,7 +37,7 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
     const canContinue = Boolean(dob && country);
 
     const countryLabel = useMemo(() => {
-        if (!country) return 'Country of residence';
+        if (!country) return m['onboarding.profile.countryOfResidence']();
         return COUNTRIES[country] ?? country;
     }, [country]);
 
@@ -71,8 +72,8 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
             <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
                 <OnboardingHeader
-                    text="Please enter your age and country to continue"
-                    secondaryText="We ask for this information to make sure we comply with privacy laws and keep you safe"
+                    text={m['onboarding.ageGate.heading']()}
+                    secondaryText={m['onboarding.ageGate.subtitle']()}
                 />
 
                 {error && (
@@ -87,12 +88,12 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
                             value={dob || ''}
                             onChange={onDobChange}
                             isMobile={!isDesktop}
-                            label="Date of Birth"
+                            label={m['onboarding.profile.dateOfBirth']()}
                         />
 
                         {age !== null && (
                             <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
-                                Age: {age}
+                                {m['onboarding.profile.age']({ age })}
                             </p>
                         )}
                     </div>
@@ -103,7 +104,7 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
                             onClick={handlePickCountry}
                             type="button"
                         >
-                            {country ? countryLabel : 'Country of Residence'}
+                            {country ? countryLabel : m['onboarding.profile.countryOfResidence']()}
                             <LocationIcon className="w-[44px] text-grayscale-700" />
                         </button>
                     </div>
@@ -118,7 +119,7 @@ const OnboardingAgeGate: React.FC<OnboardingAgeGateProps> = ({
                         disabled={isLoading || !canContinue}
                         className="shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom flex items-center justify-center min-h-[46px] disabled:opacity-60 disabled:bg-grayscale-200 disabled:text-grayscale-500 disabled:shadow-none disabled:cursor-not-allowed"
                     >
-                        {isLoading ? 'Checking...' : 'Continue'}
+                        {isLoading ? m['onboarding.ageGate.checking']() : m['common.continue']()}
                     </button>
                 </div>
             </div>

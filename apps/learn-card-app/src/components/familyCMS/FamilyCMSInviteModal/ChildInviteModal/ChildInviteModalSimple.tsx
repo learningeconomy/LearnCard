@@ -171,7 +171,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                 <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
                     <div>
                         <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">
-                            Child Account
+                            {m['family.childInvite.title']()}
                         </p>
                     </div>
                     <div className="flex items-center justify-center my-4">
@@ -226,7 +226,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 !pr-8 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                 errors?.name ? 'border-red-300 border-2' : ''
                             }`}
-                            label="Name"
+                            label={m['family.childInvite.nameLabel']()}
                             labelPlacement="stacked"
                             type="text"
                         />
@@ -260,7 +260,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                 errors?.shortBio ? 'border-red-300 border-2' : ''
                             }`}
-                            label="Tagline"
+                            label={m['family.childInvite.taglineLabel']()}
                             labelPlacement="stacked"
                             type="text"
                         />
@@ -299,7 +299,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     onClick={closeModal}
                     className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-sm"
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
                 <button
                     onKeyDown={e => {
