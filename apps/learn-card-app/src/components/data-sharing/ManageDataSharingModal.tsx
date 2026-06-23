@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
@@ -54,6 +54,13 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
 }) => {
     const { closeModal } = useModal();
     const [isRevoking, setIsRevoking] = useState(false);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const handleConfirm = async () => {
         setIsRevoking(true);
@@ -61,7 +68,9 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
         try {
             await onConfirm();
         } finally {
-            setIsRevoking(false);
+            if (isMountedRef.current) {
+                setIsRevoking(false);
+            }
         }
     };
 
