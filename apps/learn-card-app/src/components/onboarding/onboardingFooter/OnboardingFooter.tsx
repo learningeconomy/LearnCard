@@ -13,6 +13,8 @@ export const OnboardingFooter: React.FC<{
     setStep?: (step: OnboardingStepsEnum) => void;
     text?: string;
     onClick?: () => void;
+    onBack?: () => void;
+    isLoading?: boolean;
     showDisclaimer?: boolean;
     showBackButton?: boolean;
     showCloseButton?: boolean;
@@ -25,6 +27,8 @@ export const OnboardingFooter: React.FC<{
     setStep,
     text = 'Continue',
     onClick,
+    onBack,
+    isLoading = false,
     showDisclaimer = false,
     showBackButton = false,
     showCloseButton = false,
@@ -33,7 +37,8 @@ export const OnboardingFooter: React.FC<{
     disabled,
 }) => {
     const { closeModal } = useModal();
-    const isDisabled = (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
+    const isDisabled =
+        isLoading || (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
     const activeStyles = isDisabled
         ? 'bg-grayscale-200 text-grayscale-500 cursor-not-allowed'
         : 'bg-emerald-700 text-white';
@@ -45,8 +50,18 @@ export const OnboardingFooter: React.FC<{
     };
 
     const handleGoBack = () => {
+        if (onBack) {
+            onBack();
+            return;
+        }
+
         if (step === OnboardingStepsEnum.joinNetwork) {
             setStep?.(OnboardingStepsEnum.selectRole);
+            return;
+        }
+
+        if (step === OnboardingStepsEnum.selectRole) {
+            setStep?.(OnboardingStepsEnum.privacyData);
         }
     };
 
@@ -93,7 +108,14 @@ export const OnboardingFooter: React.FC<{
                                 }}
                                 className={`py-[9px] pl-[20px] font-semibold pr-[15px] rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-grayscale-900 w-full flex gap-[5px] justify-center mr-2 shadow-button-bottom ${activeStyles}`}
                             >
-                                {text}
+                                {isLoading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {text}
+                                    </span>
+                                ) : (
+                                    text
+                                )}
                             </button>
                         </div>
 

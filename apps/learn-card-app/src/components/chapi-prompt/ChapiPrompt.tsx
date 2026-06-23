@@ -8,6 +8,7 @@ import { useModal, useWallet } from 'learn-card-base';
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export const CHAPI_ABOUT_LINK = 'https://chapi.io/';
 
@@ -25,7 +26,7 @@ export const ChapiPrompt: React.FC = () => {
                     className="text-grayscale-900 flex items-center justify-center p-0 mr-[1px] z-50"
                     onClick={closeModal}
                 >
-                    <LeftArrow className="w-7 h-auto text-grayscale-900" /> Back
+                    <LeftArrow className="w-7 h-auto text-grayscale-900" /> {m['chapi.back']()}
                 </button>
             </div>
 
@@ -33,25 +34,16 @@ export const ChapiPrompt: React.FC = () => {
                 <img src={PigeonMail} alt="chapi logo" />
 
                 <h4 className="w-full text-center p-0 m-0 text-emerald-800 text-2xl mt-2 mb-2">
-                    About Chapi
+                    {m['chapi.title']()}
                 </h4>
             </div>
 
             <div className="w-full flex flex-col items-center justify-center text-left px-4">
-                <p>
-                    The Credential Handler API (CHAPI) is an open-source solution for communicating
-                    Verifiable Credentials on the Web.
-                </p>
+                <p>{m['chapi.p1']()}</p>
                 <br />
-                <p>
-                    Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.
-                </p>
+                <p>{m['chapi.p2']()}</p>
                 <br />
-                <p>
-                    It allows your digital wallet to send or receive Verifiable Credentials from an
-                    independent third-party verifier or issuer in a way that establishes trust and
-                    preserves privacy.
-                </p>
+                <p>{m['chapi.p3']()}</p>
             </div>
 
             <div className="w-full flex items-center justify-center mt-2 mb-2">
@@ -59,7 +51,7 @@ export const ChapiPrompt: React.FC = () => {
                     onClick={() => openExternalLink(CHAPI_ABOUT_LINK)}
                     className={`text-${primaryColor}`}
                 >
-                    Read More
+                    {m['chapi.readMore']()}
                 </button>
             </div>
 
@@ -68,7 +60,7 @@ export const ChapiPrompt: React.FC = () => {
                     onClick={installChapi}
                     className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 font-poppins text-xl w-full shadow-lg normal"
                 >
-                    <HandshakeIcon className="mr-2" /> Connect Handler
+                    <HandshakeIcon className="mr-2" /> {m['chapi.connectHandler']()}
                 </button>
             </div>
         </section>

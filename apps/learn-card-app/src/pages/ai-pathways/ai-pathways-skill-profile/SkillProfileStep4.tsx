@@ -107,7 +107,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
     return (
         <div className="flex flex-col gap-[20px]">
             <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                {m['skillProfile.step4.workLifeBalance']()}
+                {m['aiPathways.workLifeBalance']()}
             </h3>
 
             <RadioGroup
@@ -121,7 +121,7 @@ const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handl
             />
 
             <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                {m['skillProfile.step4.jobStability']()}
+                {m['aiPathways.jobStability']()}
             </h3>
 
             <RadioGroup

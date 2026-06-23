@@ -3,6 +3,7 @@ import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
@@ -35,6 +36,7 @@ import {
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
+import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
 import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
@@ -62,14 +64,28 @@ const LaunchPad: React.FC = () => {
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+        tab: tabParam,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
     const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
 
-    const [tab, setTab] = useState(LaunchPadTabEnum.myApps);
+    const initialTab = (() => {
+        const raw = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+        const match = Object.values(LaunchPadTabEnum).find(option => option === raw);
+        return match ?? LaunchPadTabEnum.myApps;
+    })();
+
+    const [tab, setTab] = useState(initialTab);
     const [filterBy, setFilterBy] = useState<LaunchPadFilterOptionsEnum>(
         LaunchPadFilterOptionsEnum.allApps
     );
@@ -109,7 +125,7 @@ const LaunchPad: React.FC = () => {
     const { data: featuredCarouselApps } = useFeaturedCarouselApps(appStoreCategory);
 
     // Fetch curated list apps
-    const { data: curatedListApps } = useCuratedListApps();
+    const { data: curatedListApps, isLoading: isLoadingCuratedApps } = useCuratedListApps();
 
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
@@ -383,10 +399,17 @@ const LaunchPad: React.FC = () => {
                                             <div className="w-full flex items-center justify-center z-10">
                                                 <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                        No results found for{' '}
-                                                        <span className="text-black italic">
-                                                            {searchInput}
-                                                        </span>
+                                                        <TransP
+                                                            m={
+                                                                m[
+                                                                    'common.searchResults.noResultsFor'
+                                                                ]
+                                                            }
+                                                            values={{ query: searchInput }}
+                                                            components={[
+                                                                <span className="text-black italic" />,
+                                                            ]}
+                                                        />
                                                     </p>
                                                 </div>
                                             </div>
@@ -397,6 +420,20 @@ const LaunchPad: React.FC = () => {
                                     lines="none"
                                     className="w-full max-w-[600px] bg-grayscale-100"
                                 >
+                                    {/* My Apps tab: Installed Apps loading skeletons (cold load, no data yet) */}
+                                    {isMyApps &&
+                                        isLoadingInstalledApps &&
+                                        filteredInstalledApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        Installed Apps
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="installed-skeleton" />
+                                            </>
+                                        )}
+
                                     {/* My Apps tab: Installed Apps (hidden if none) */}
                                     {isMyApps && filteredInstalledApps.length > 0 && (
                                         <>
@@ -413,6 +450,18 @@ const LaunchPad: React.FC = () => {
                                                     onInstallSuccess={refetchInstalledApps}
                                                 />
                                             ))}
+                                        </>
+                                    )}
+
+                                    {/* Suggested Apps loading skeletons (cold load, no data yet) */}
+                                    {isLoadingCuratedApps && filteredCuratedApps.length === 0 && (
+                                        <>
+                                            <div className="px-2 pt-4 pb-2">
+                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                    Suggested Apps
+                                                </p>
+                                            </div>
+                                            <AppStoreListSkeleton idPrefix="suggested-skeleton" />
                                         </>
                                     )}
 
@@ -436,6 +485,20 @@ const LaunchPad: React.FC = () => {
                                             ))}
                                         </>
                                     )}
+
+                                    {/* Category/All tabs: browse list loading skeletons (cold load, no data yet) */}
+                                    {(isCategory || isAll) &&
+                                        isLoadingBrowseApps &&
+                                        nonPromotedAvailableApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="browse-skeleton" />
+                                            </>
+                                        )}
 
                                     {/* Category/All tabs: browse list (include installed apps with Open CTA) */}
                                     {(isCategory || isAll) &&
@@ -501,7 +564,8 @@ const LaunchPad: React.FC = () => {
                                             !hasContract &&
                                             !hasCustomApp &&
                                             !isLoadingBrowseApps &&
-                                            !isLoadingInstalledApps;
+                                            !isLoadingInstalledApps &&
+                                            !isLoadingCuratedApps;
 
                                         if (!isEmpty) return null;
 

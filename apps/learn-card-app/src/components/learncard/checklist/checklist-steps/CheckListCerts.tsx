@@ -171,7 +171,7 @@ export const CheckListCerts: React.FC = () => {
                     <input
                         multiple
                         type="file"
-                        accept=".pdf,.txt,.docx"
+                        accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         onChange={async e => {
                             await getFiles(e, UploadTypesEnum.Certificate);
                         }}

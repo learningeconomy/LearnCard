@@ -1355,11 +1355,10 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                return client.boost.revokeBoostRecipient.mutate({
-                    boostUri,
-                    recipientProfileId,
-                    credentialUri,
-                });
+                const input = { boostUri, recipientProfileId };
+                if (credentialUri !== undefined) Object.assign(input, { credentialUri });
+
+                return client.boost.revokeBoostRecipient.mutate(input);
             },
             suspendBoostRecipient: async (
                 _learnCard,
@@ -1369,11 +1368,10 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                return client.boost.suspendBoostRecipient.mutate({
-                    boostUri,
-                    recipientProfileId,
-                    credentialUri,
-                });
+                const input = { boostUri, recipientProfileId };
+                if (credentialUri !== undefined) Object.assign(input, { credentialUri });
+
+                return client.boost.suspendBoostRecipient.mutate(input);
             },
             unsuspendBoostRecipient: async (
                 _learnCard,
@@ -1383,11 +1381,10 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                return client.boost.unsuspendBoostRecipient.mutate({
-                    boostUri,
-                    recipientProfileId,
-                    credentialUri,
-                });
+                const input = { boostUri, recipientProfileId };
+                if (credentialUri !== undefined) Object.assign(input, { credentialUri });
+
+                return client.boost.unsuspendBoostRecipient.mutate(input);
             },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();

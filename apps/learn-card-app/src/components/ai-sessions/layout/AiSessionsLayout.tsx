@@ -51,7 +51,7 @@ export const AiSessionsLayout: React.FC<{
                                 className="flex-1 h-[60px] bg-white text-grayscale-900 flex items-center justify-center px-4 py-2 rounded-[20px] font-semibold text-[17px] shadow-soft-bottom"
                             >
                                 <UnicornIcon className="w-[35px] h-auto mr-2" />
-                                Personalize My AI
+                                {m['ai.personalizeMyAi']()}
                             </button>
                             {currentTopicHasSessions && onNewSessionForTopic && (
                                 <NewAiSessionButton

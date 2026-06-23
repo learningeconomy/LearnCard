@@ -342,7 +342,7 @@ export const CheckListTranscripts: React.FC = () => {
                             <input
                                 multiple
                                 type="file"
-                                accept=".pdf,.txt,.docx"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
                                 onChange={async e => {
                                     setLoaderDismissed(false);
                                     await getFiles(e, UploadTypesEnum.Transcript);

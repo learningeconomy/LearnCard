@@ -273,7 +273,9 @@ export const JoinNetworkPrompt: React.FC<{
                         <br />
                         All connections are encrypted.
                     </p>
-                    <button className={`text-${primaryColor} font-bold`}>Learn More</button>
+                    <button className={`text-${primaryColor} font-bold`}>
+                        {m['common.learnMore']()}
+                    </button>
                 </div>
             </div>
 

@@ -35,6 +35,7 @@ interface PathwayItem {
 }
 
 const queryKey = ['useAiInsightCredential'];
+const ONE_WEEK_MS = 1000 * 60 * 60 * 24 * 7;
 const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
 const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 const ENABLE_AI_INSIGHT_CREDENTIAL_LOGS = false;
@@ -318,6 +319,40 @@ export const useAiInsightCredential = () => {
     ]);
 
     return query;
+};
+
+/**
+ * Read-only lookup for an EXISTING AI insight credential.
+ *
+ * Unlike {@link useAiInsightCredential}, this hook NEVER triggers the
+ * get-or-create path: it only reads the `__ai_insight__` LearnCloud index
+ * record and resolves the stored credential. If no record exists it resolves
+ * to `undefined` instead of POSTing to the AI service to generate one.
+ *
+ * Use this on surfaces (e.g. the dashboard) that every user lands on, where
+ * we must not incur AI generation as a side effect of simply rendering.
+ */
+export const useExistingAiInsightCredential = ({ enabled = true }: { enabled?: boolean } = {}) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['useExistingAiInsightCredential'],
+        enabled,
+        queryFn: async (): Promise<VC | undefined> => {
+            const wallet = await initWallet();
+
+            const record = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
+
+            if (!record?.length) return undefined;
+
+            const aiInsightCredential = await wallet.read.get(record[0].uri);
+
+            if (!aiInsightCredential) return undefined;
+
+            return VCValidator.parseAsync(aiInsightCredential);
+        },
+        staleTime: ONE_WEEK_MS,
+    });
 };
 
 export const useAiPathways = () => {

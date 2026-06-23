@@ -12,21 +12,7 @@ import {
 import useTheme from '../../theme/hooks/useTheme';
 
 import * as m from '../../paraglide/messages.js';
-
-// Localized "New X" label per category. Categories not listed fall back to the
-// generic "New {{type}}" message using the (English) category display name.
-const NEW_LABEL_KEYS: Record<string, string> = {
-    [CredentialCategoryEnum.learningHistory]: 'boost.newBoost.study',
-    [CredentialCategoryEnum.workHistory]: 'boost.newBoost.experience',
-    [CredentialCategoryEnum.accommodation]: 'boost.newBoost.assistance',
-    [CredentialCategoryEnum.accomplishment]: 'boost.newBoost.portfolio',
-    [CredentialCategoryEnum.socialBadge]: 'boost.newBoost.boost',
-    [CredentialCategoryEnum.achievement]: 'boost.newBoost.achievement',
-    [CredentialCategoryEnum.skill]: 'boost.newBoost.skill',
-    [CredentialCategoryEnum.id]: 'boost.newBoost.id',
-    [CredentialCategoryEnum.membership]: 'boost.newBoost.membership',
-    [CredentialCategoryEnum.course]: 'boost.newBoost.course',
-};
+import { NEW_LABEL_KEYS } from './newBoostButtonI18n';
 
 type NewBoostButtonProps = {
     credentialType: CredentialCategoryEnum;

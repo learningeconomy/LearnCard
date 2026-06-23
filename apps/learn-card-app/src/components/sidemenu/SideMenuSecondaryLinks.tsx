@@ -16,7 +16,7 @@ import {
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
-import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
+import { getSideMenuLinkLabel } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { chatBotStore } from '../../stores/chatBotStore';
 
@@ -159,14 +159,14 @@ const SideMenuSecondaryLinks: React.FC<{
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
             >
-                {renderIcon()} {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
+                {renderIcon()} {getSideMenuLinkLabel(m, link)}
             </button>
         ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
-                {renderIcon()} {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
+                {renderIcon()} {getSideMenuLinkLabel(m, link)}
             </PreloadingLink>
         );
 

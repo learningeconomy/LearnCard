@@ -51,8 +51,8 @@ const PrivacySettingsModal: React.FC = () => {
         : ageGate.isChildProfile
         ? preferences?.aiEnabled ?? false
         : preferences?.aiEnabled ?? true;
-    const analyticsEnabled = isMinor ? false : preferences?.analyticsEnabled ?? true;
-    const bugReportsEnabled = isMinor ? false : preferences?.bugReportsEnabled ?? true;
+    const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
+    const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
     // Legacy profiles may only have `isPrivate` populated. Mirror the backend
     // fallback so the selected privacy option matches the profile's effective
     // visibility until the user saves the new canonical field.
@@ -168,8 +168,8 @@ const PrivacySettingsModal: React.FC = () => {
 
             <div className="modal-scrollable flex flex-col gap-4">
                 {isMinor && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-4">
-                        <p className="text-sm text-amber-800">{m['settings.minorWarning']()}</p>
+                    <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
+                        <p className="text-sm text-sky-800">{m['settings.minorWarning']()}</p>
                     </div>
                 )}
 
@@ -278,14 +278,13 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={analyticsEnabled}
-                            disabled={isMinor}
-                            onIonChange={e => !isMinor && handleAnalyticsToggle(e.detail.checked)}
-                            aria-label="Analytics & Insights"
+                            onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
+                            aria-label="Usage Analytics"
                         />
                     </div>
                 </div>
 
-                {/* Bug Reports */}
+                {/* Crash Reports */}
                 <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
@@ -298,9 +297,8 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                         <IonToggle
                             checked={bugReportsEnabled}
-                            disabled={isMinor}
-                            onIonChange={e => !isMinor && handleBugReportsToggle(e.detail.checked)}
-                            aria-label="Bug Reports"
+                            onIonChange={e => handleBugReportsToggle(e.detail.checked)}
+                            aria-label="Crash Reports"
                         />
                     </div>
                 </div>
