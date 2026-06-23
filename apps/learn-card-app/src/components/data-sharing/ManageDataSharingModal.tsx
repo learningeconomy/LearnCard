@@ -393,7 +393,9 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
     const handleRevoke = async () => {
         try {
             if (isLearnCardAiContract) {
-                await handleAiToggle(false);
+                const revoked = await handleAiToggle(false);
+                if (!revoked) return;
+
                 await onUpdate?.();
                 closeModal();
                 closeModal();
