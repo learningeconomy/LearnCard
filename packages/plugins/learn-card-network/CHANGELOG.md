@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.13.3
+
+### Patch Changes
+
+-   [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.40
+
 ## 2.13.2
 
 ### Patch Changes
