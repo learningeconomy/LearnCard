@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import {
     issueCredentialToSelf,
+    locatorExists,
     openAddToLearnCardMenu,
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
@@ -85,8 +86,12 @@ test.describe('Wallet Credentials', () => {
         // Click Next to proceed to publish
         await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
 
-        // Click Publish & Issue
-        await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
+        // Click Publish & Issue (skipped when the skipPublishStep flag is enabled,
+        // which routes "Next" straight to the Issue To screen — see BoostCMS.tsx)
+        const publishButton = page.getByRole('button', { name: /publish & issue/i });
+        if (await locatorExists(publishButton, 5_000)) {
+            await publishButton.click({ timeout: 30_000 });
+        }
 
         // Click Plus to open recipient selection
         await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });
