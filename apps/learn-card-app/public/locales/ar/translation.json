@@ -6509,7 +6509,8 @@
                     "whatGetsRenderedDesc": "يستبدل SDK العنصر الهدف بزر منسق. عند النقر، يفتح نافذة منبثقة للتحقق من البريد الإلكتروني والمطالبة بالمؤهل.",
                     "exampleLabel": "← زر مثال",
                     "backButton": "رجوع",
-                    "continueButton": "متابعة"
+                    "continueButton": "متابعة",
+                    "exampleButtonLabel": "المطالبة \"إكمال الدورة\""
                 },
                 "loadSdkStep": {
                     "title": "تحميل SDK التضمين",
@@ -6557,7 +6558,13 @@
                     "continueButton": "متابعة",
                     "builderOpenWarning": "احفظ أو ألغ القالب الذي تقوم بتحريره قبل المتابعة.",
                     "uploadImageTitle": "رفع صورة",
-                    "logoPreviewAlt": "معاينة الشعار"
+                    "logoPreviewAlt": "معاينة الشعار",
+                    "optionTargetDesc": "محدد CSS أو عنصر HTML لزر المطالبة",
+                    "optionCredentialDesc": "تكوين الاعتماد مع الاسم وURI Boost",
+                    "optionPublishableKeyDesc": "مطلوب للمطالبات الحقيقية",
+                    "optionBrandingDesc": "تخصيص مظهر نافذة المطالبة",
+                    "optionBackgroundDesc": "طلب الموافقة على الإصدار المستقبلي",
+                    "optionOnSuccessDesc": "معالجة الإجراءات بعد المطالبة"
                 },
                 "testStep": {
                     "title": "Test Your Integration",
@@ -6581,7 +6588,9 @@
                     "readyToGoLiveDesc": "يمكن للمستخدمين الآن المطالبة بالمؤهلات مباشرة من موقعك على الويب.",
                     "viewOnGithub": "عرض المثال الكامل على GitHub",
                     "backButton": "رجوع",
-                    "continueButton": "متابعة إلى النشر المباشر"
+                    "continueButton": "متابعة إلى النشر المباشر",
+                    "checkPublishableKey": "تم تكوين المفتاح القابل للنشر",
+                    "checkCredentialTemplate": "قالب اعتماد واحد على الأقل"
                 },
                 "goLive": {
                     "title": "جاهز للتضمين!",
@@ -6692,7 +6701,8 @@
                     "tryAgain": "حاول مرة أخرى",
                     "noTokenWarning": "اختر رمز API أعلاه لتمكين التحقق.",
                     "backButton": "رجوع",
-                    "continueButton": "متابعة إلى النشر المباشر"
+                    "continueButton": "متابعة إلى النشر المباشر",
+                    "noApiTokensFound": "لم يتم العثور على رموز API."
                 },
                 "goLive": {
                     "title": "جاهز لإصدار المؤهلات!",
@@ -7207,5 +7217,12 @@
                 "demotedDesc": "ظهور مخفض في القوائم"
             }
         }
-    }
+    },
+    "guides": {},
+    "embedClaim": {},
+    "addTargetStep": {},
+    "testStep": {},
+    "configureStep": {},
+    "issueCredentials": {},
+    "issueVerifyStep": {}
 }

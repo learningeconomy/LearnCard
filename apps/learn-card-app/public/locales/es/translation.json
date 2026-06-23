@@ -6509,7 +6509,8 @@
                     "whatGetsRenderedDesc": "El SDK reemplaza el elemento destino con un botón estilizado. Al hacer clic, abre un modal para que el usuario verifique su correo y reclame la credencial.",
                     "exampleLabel": "← Botón de ejemplo",
                     "backButton": "Atrás",
-                    "continueButton": "Continuar"
+                    "continueButton": "Continuar",
+                    "exampleButtonLabel": "Reclamar \"Finalización del Curso\""
                 },
                 "loadSdkStep": {
                     "title": "Cargar el SDK de Inserción",
@@ -6557,7 +6558,13 @@
                     "continueButton": "Continuar",
                     "builderOpenWarning": "Guarda o cancela la plantilla que estás editando antes de continuar.",
                     "uploadImageTitle": "Subir imagen",
-                    "logoPreviewAlt": "Vista previa del logotipo"
+                    "logoPreviewAlt": "Vista previa del logotipo",
+                    "optionTargetDesc": "Selector CSS o HTMLElement para el botón de reclamo",
+                    "optionCredentialDesc": "Configuración de credencial con nombre y URI de Boost",
+                    "optionPublishableKeyDesc": "Requerido para reclamos reales",
+                    "optionBrandingDesc": "Personalizar la apariencia del modal de reclamo",
+                    "optionBackgroundDesc": "Solicitar consentimiento para emisión futura",
+                    "optionOnSuccessDesc": "Manejar acciones posteriores al reclamo"
                 },
                 "testStep": {
                     "title": "Test Your Integration",
@@ -6581,7 +6588,9 @@
                     "readyToGoLiveDesc": "Los usuarios ahora pueden reclamar credenciales directamente desde tu sitio web.",
                     "viewOnGithub": "Ver ejemplo completo en GitHub",
                     "backButton": "Atrás",
-                    "continueButton": "Continuar para Publicar"
+                    "continueButton": "Continuar para Publicar",
+                    "checkPublishableKey": "Clave publicable configurada",
+                    "checkCredentialTemplate": "Al menos una plantilla de credencial"
                 },
                 "goLive": {
                     "title": "¡Listo para Insertar!",
@@ -6692,7 +6701,8 @@
                     "tryAgain": "Intentar de nuevo",
                     "noTokenWarning": "Selecciona un token de API arriba para habilitar la verificación.",
                     "backButton": "Atrás",
-                    "continueButton": "Continuar para Publicar"
+                    "continueButton": "Continuar para Publicar",
+                    "noApiTokensFound": "No se encontraron tokens de API."
                 },
                 "goLive": {
                     "title": "¡Listo para Emitir Credenciales!",
@@ -7207,5 +7217,12 @@
                 "demotedDesc": "Visibilidad reducida en los listados"
             }
         }
-    }
+    },
+    "guides": {},
+    "embedClaim": {},
+    "addTargetStep": {},
+    "testStep": {},
+    "configureStep": {},
+    "issueCredentials": {},
+    "issueVerifyStep": {}
 }

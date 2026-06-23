@@ -6509,7 +6509,8 @@
                     "whatGetsRenderedDesc": "The SDK replaces the target element with a styled button. When clicked, it opens a modal for the user to verify their email and claim the credential.",
                     "exampleLabel": "← Example button",
                     "backButton": "Back",
-                    "continueButton": "Continue"
+                    "continueButton": "Continue",
+                    "exampleButtonLabel": "Claim \"Course Completion\""
                 },
                 "loadSdkStep": {
                     "title": "Load the Embed SDK",
@@ -6557,7 +6558,13 @@
                     "continueButton": "Continue",
                     "builderOpenWarning": "Save or cancel the template you're editing before continuing.",
                     "uploadImageTitle": "Upload image",
-                    "logoPreviewAlt": "Logo preview"
+                    "logoPreviewAlt": "Logo preview",
+                    "optionTargetDesc": "CSS selector or HTMLElement for the claim button",
+                    "optionCredentialDesc": "Credential config with name and boost URI",
+                    "optionPublishableKeyDesc": "Required for real claims",
+                    "optionBrandingDesc": "Customize the claim modal appearance",
+                    "optionBackgroundDesc": "Ask consent for future issuance",
+                    "optionOnSuccessDesc": "Handle post-claim actions"
                 },
                 "testStep": {
                     "title": "Test Your Integration",
@@ -6581,7 +6588,9 @@
                     "readyToGoLiveDesc": "Users can now claim credentials directly from your website.",
                     "viewOnGithub": "View full example on GitHub",
                     "backButton": "Back",
-                    "continueButton": "Continue to Go Live"
+                    "continueButton": "Continue to Go Live",
+                    "checkPublishableKey": "Publishable key configured",
+                    "checkCredentialTemplate": "At least one credential template"
                 },
                 "goLive": {
                     "title": "Ready to Embed!",
@@ -6692,7 +6701,8 @@
                     "tryAgain": "Try again",
                     "noTokenWarning": "Select an API token above to enable verification.",
                     "backButton": "Back",
-                    "continueButton": "Continue to Go Live"
+                    "continueButton": "Continue to Go Live",
+                    "noApiTokensFound": "No API tokens found."
                 },
                 "goLive": {
                     "title": "Ready to Issue Credentials!",
@@ -7207,5 +7217,12 @@
                 "demotedDesc": "Reduced visibility in listings"
             }
         }
-    }
+    },
+    "guides": {},
+    "embedClaim": {},
+    "addTargetStep": {},
+    "testStep": {},
+    "configureStep": {},
+    "issueCredentials": {},
+    "issueVerifyStep": {}
 }

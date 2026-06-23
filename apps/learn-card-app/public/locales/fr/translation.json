@@ -6509,7 +6509,8 @@
                     "whatGetsRenderedDesc": "Le SDK remplace l'élément cible par un bouton stylisé. Lorsqu'on clique dessus, une modale s'ouvre pour que l'utilisateur vérifie son email et réclame le certificat.",
                     "exampleLabel": "← Bouton d'exemple",
                     "backButton": "Retour",
-                    "continueButton": "Continuer"
+                    "continueButton": "Continuer",
+                    "exampleButtonLabel": "Réclamer \"Achèvement du Cours\""
                 },
                 "loadSdkStep": {
                     "title": "Charger le SDK d'Intégration",
@@ -6557,7 +6558,13 @@
                     "continueButton": "Continuer",
                     "builderOpenWarning": "Enregistrez ou annulez le modèle que vous modifiez avant de continuer.",
                     "uploadImageTitle": "Télécharger une image",
-                    "logoPreviewAlt": "Aperçu du logo"
+                    "logoPreviewAlt": "Aperçu du logo",
+                    "optionTargetDesc": "Sélecteur CSS ou HTMLElement pour le bouton de réclamation",
+                    "optionCredentialDesc": "Configuration du justificatif avec nom et URI Boost",
+                    "optionPublishableKeyDesc": "Requis pour les réclamations réelles",
+                    "optionBrandingDesc": "Personnaliser l'apparence du modal de réclamation",
+                    "optionBackgroundDesc": "Demander le consentement pour l'émission future",
+                    "optionOnSuccessDesc": "Gérer les actions post-réclamation"
                 },
                 "testStep": {
                     "title": "Tester Votre Intégration",
@@ -6581,7 +6588,9 @@
                     "readyToGoLiveDesc": "Les utilisateurs peuvent désormais réclamer des certificats directement depuis votre site web.",
                     "viewOnGithub": "Voir l'exemple complet sur GitHub",
                     "backButton": "Retour",
-                    "continueButton": "Continuer vers la Mise en Ligne"
+                    "continueButton": "Continuer vers la Mise en Ligne",
+                    "checkPublishableKey": "Clé publiable configurée",
+                    "checkCredentialTemplate": "Au moins un modèle de justificatif"
                 },
                 "goLive": {
                     "title": "Prêt à Intégrer !",
@@ -6692,7 +6701,8 @@
                     "tryAgain": "Réessayer",
                     "noTokenWarning": "Sélectionnez un jeton API ci-dessus pour activer la vérification.",
                     "backButton": "Retour",
-                    "continueButton": "Continuer vers la Mise en Ligne"
+                    "continueButton": "Continuer vers la Mise en Ligne",
+                    "noApiTokensFound": "Aucun jeton API trouvé."
                 },
                 "goLive": {
                     "title": "Prêt à Émettre des Certificats !",
@@ -7207,5 +7217,12 @@
                 "demotedDesc": "Visibilité réduite dans les annonces"
             }
         }
-    }
+    },
+    "guides": {},
+    "embedClaim": {},
+    "addTargetStep": {},
+    "testStep": {},
+    "configureStep": {},
+    "issueCredentials": {},
+    "issueVerifyStep": {}
 }
