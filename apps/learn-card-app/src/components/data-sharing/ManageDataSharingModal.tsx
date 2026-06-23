@@ -152,7 +152,12 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
 
     const contracts = [...(consentedContracts ?? [])]
         .filter(contract => contract?.status !== 'withdrawn')
-        .reverse();
+        .sort((a, b) => {
+            const aUpdatedAt = new Date(a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0).getTime();
+            const bUpdatedAt = new Date(b.terms?.updatedAt ?? b.contract?.updatedAt ?? 0).getTime();
+
+            return bUpdatedAt - aUpdatedAt;
+        });
 
     return (
         <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] h-full overflow-hidden flex flex-col min-h-0">
