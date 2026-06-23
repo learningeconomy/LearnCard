@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-code-tab');
 /**
@@ -149,12 +150,12 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
             {copiedId === id ? (
                 <>
                     <Check className="w-3 h-3 text-emerald-500" />
-                    {label || 'Copied!'}
+                    {label || m['developerPortal.dashboards.tabs.consentFlowCode.copied']()}
                 </>
             ) : (
                 <>
                     <Copy className="w-3 h-3" />
-                    {label || 'Copy'}
+                    {label || m['developerPortal.dashboards.tabs.consentFlowCode.copy']()}
                 </>
             )}
         </button>
@@ -163,9 +164,9 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Integration Code</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.consentFlowCode.title']()}</h2>
                 <p className="text-sm text-gray-500">
-                    Code snippets and configuration for your consent flow integration
+                    {m['developerPortal.dashboards.tabs.consentFlowCode.description']()}
                 </p>
             </div>
 
@@ -173,14 +174,14 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
             <Section
                 icon={Link2}
                 iconColor="text-cyan-600"
-                title="Consent Redirect URL"
-                description="The URL to redirect users to for granting consent"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.desc']()}
             >
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <p className="text-xs text-gray-500 font-medium">
-                                Live URL from your configuration:
+                                {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.liveUrl']()}
                             </p>
                             <CopyButton text={consentUrl} id="consent-url" />
                         </div>
@@ -196,20 +197,19 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                             className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
                         >
                             <ExternalLink className="w-4 h-4" />
-                            Test Consent Flow
+                            {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.testButton']()}
                         </a>
                     </div>
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Not configured:</strong> Complete the Build guide to set your
-                            contract URI and callback URL.
+                            {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.notConfigured']()}
                         </p>
                     </div>
                 )}
 
                 <CodeOutputPanel
-                    title="Build the consent URL"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.buildConsentUrl']()}
                     snippets={{
                         typescript: `// Redirect the user to LearnCard's consent screen
 const consentUrl = new URL('${getAppBaseUrl()}/consent-flow');
@@ -234,23 +234,20 @@ ${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
             <Section
                 icon={Webhook}
                 iconColor="text-violet-600"
-                title="Callback Handler"
-                description="Handle the redirect back from LearnCard after consent"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.desc']()}
             >
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
                     <div className="flex gap-2">
                         <Info className="w-4 h-4 text-violet-600 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-violet-800">
-                            After consent, LearnCard redirects to your{' '}
-                            <code className="bg-violet-100 px-1 rounded">returnTo</code> URL with{' '}
-                            <code className="bg-violet-100 px-1 rounded">did</code> and{' '}
-                            <code className="bg-violet-100 px-1 rounded">vp</code> query parameters.
+                            {m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.info']()}
                         </p>
                     </div>
                 </div>
 
                 <CodeOutputPanel
-                    title="Express callback handler"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.expressCallbackHandler']()}
                     snippets={{
                         typescript: `import { initLearnCard } from '@learncard/init';
 
@@ -316,11 +313,11 @@ def learncard_callback():
             <Section
                 icon={Send}
                 iconColor="text-emerald-600"
-                title="Send Credentials"
-                description="Issue credentials to users who have consented"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.desc']()}
             >
                 <CodeOutputPanel
-                    title="Send a credential after consent"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentialAfterConsent']()}
                     snippets={{
                         typescript: `// Get the user's DID (stored from the consent callback)
 const userDID = await getUserLearnCardDID(userId);
@@ -352,7 +349,7 @@ log.info('Credential sent:', result.credentialUri);`,
 
                 {templates.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-xs text-gray-500 font-medium">Your Template URIs:</p>
+                        <p className="text-xs text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.consentFlowCode.yourTemplateUris']()}</p>
                         {templates
                             .filter(t => t.boostUri)
                             .map(t => (
@@ -371,7 +368,7 @@ log.info('Credential sent:', result.credentialUri);`,
                                     <CopyButton
                                         text={t.boostUri!}
                                         id={`uri-${t.id}`}
-                                        label="Copy URI"
+                                        label={m['developerPortal.dashboards.tabs.consentFlowCode.copyUri']()}
                                     />
                                 </div>
                             ))}
@@ -383,12 +380,12 @@ log.info('Credential sent:', result.credentialUri);`,
             <Section
                 icon={Database}
                 iconColor="text-blue-600"
-                title="Query Consent Data"
-                description="Retrieve consent records and connected users"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.queryData.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.queryData.desc']()}
                 defaultOpen={false}
             >
                 <CodeOutputPanel
-                    title="Get all consent records for your contract"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.getAllConsentRecords']()}
                     snippets={{
                         typescript: `// Query all consent records
 const consentData = await learnCard.invoke.getConsentFlowData(
@@ -405,7 +402,7 @@ consentData.records.forEach(record => {
                 />
 
                 <CodeOutputPanel
-                    title="Get consent data for a specific user"
+                    title={m['developerPortal.dashboards.tabs.consentFlowCode.getConsentDataForUser']()}
                     snippets={{
                         typescript: `// Query consent data for a specific DID
 const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
@@ -422,14 +419,14 @@ log.info('User consent records:', userConsentData.records);`,
             <Section
                 icon={Settings}
                 iconColor="text-gray-600"
-                title="Settings"
-                description="View and edit your integration configuration"
+                title={m['developerPortal.dashboards.tabs.consentFlowCode.settings.title']()}
+                description={m['developerPortal.dashboards.tabs.consentFlowCode.settings.desc']()}
             >
                 <div className="space-y-3">
                     {/* Integration ID (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                            <p className="text-xs text-gray-500">Integration ID</p>
+                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.integrationId']()}</p>
                             <code className="text-xs text-gray-700 break-all">
                                 {integration.id}
                             </code>
@@ -440,9 +437,9 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Contract URI (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                            <p className="text-xs text-gray-500">Contract URI</p>
+                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.contractUri']()}</p>
                             <code className="text-xs text-gray-700 break-all">
-                                {contractUri || '(not set)'}
+                                {contractUri || m['developerPortal.dashboards.tabs.consentFlowCode.settings.notSet']()}
                             </code>
                         </div>
                         {contractUri && <CopyButton text={contractUri} id="config-contract-uri" />}
@@ -451,7 +448,7 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Callback URL (editable) */}
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-500">Callback URL (returnTo)</p>
+                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.callbackUrl']()}</p>
                             {!editingCallbackUrl && (
                                 <button
                                     onClick={() => {
@@ -460,7 +457,7 @@ log.info('User consent records:', userConsentData.records);`,
                                     }}
                                     className="text-xs text-cyan-600 hover:text-cyan-700 font-medium"
                                 >
-                                    Edit
+                                    {m['developerPortal.dashboards.tabs.consentFlowCode.settings.edit']()}
                                 </button>
                             )}
                         </div>
@@ -502,11 +499,11 @@ log.info('User consent records:', userConsentData.records);`,
                                                     },
                                                 });
                                                 setEditingCallbackUrl(false);
-                                                presentToast('Callback URL updated', {
+                                                presentToast(m['developerPortal.dashboards.tabs.consentFlowCode.settings.updateSuccess'](), {
                                                     type: ToastTypeEnum.Success,
                                                 });
                                             } catch (err) {
-                                                presentToast('Failed to update callback URL', {
+                                                presentToast(m['developerPortal.dashboards.tabs.consentFlowCode.settings.updateError'](), {
                                                     type: ToastTypeEnum.Error,
                                                 });
                                             }
@@ -514,19 +511,19 @@ log.info('User consent records:', userConsentData.records);`,
                                         disabled={updateIntegration.isPending}
                                         className="px-3 py-1.5 text-xs bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 font-medium"
                                     >
-                                        {updateIntegration.isPending ? 'Saving...' : 'Save'}
+                                        {updateIntegration.isPending ? m['developerPortal.dashboards.tabs.consentFlowCode.settings.saving']() : m['developerPortal.dashboards.tabs.consentFlowCode.settings.save']()}
                                     </button>
                                     <button
                                         onClick={() => setEditingCallbackUrl(false)}
                                         className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
                                     >
-                                        Cancel
+                                        {m['developerPortal.dashboards.tabs.consentFlowCode.settings.cancel']()}
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <code className="text-xs text-gray-700 break-all block">
-                                {redirectUrl || '(not set)'}
+                                {redirectUrl || m['developerPortal.dashboards.tabs.consentFlowCode.settings.notSet']()}
                             </code>
                         )}
                     </div>
@@ -534,9 +531,9 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Templates count (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                            <p className="text-xs text-gray-500">Templates</p>
+                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.templates']()}</p>
                             <code className="text-xs text-gray-700">
-                                {templates.filter(t => t.boostUri).length} saved
+                                {m['developerPortal.dashboards.tabs.consentFlowCode.settings.templatesCount']({ count: templates.filter(t => t.boostUri).length })}
                             </code>
                         </div>
                     </div>

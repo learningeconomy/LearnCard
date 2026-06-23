@@ -1,6 +1,8 @@
 import React from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import type { AppPermission } from '../types';
 import { PERMISSION_OPTIONS } from '../types';
 
@@ -41,8 +43,9 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
     onToggleExpand,
 }) => {
     const getPermissionLabel = (permission: AppPermission | null): string => {
-        if (!permission) return 'Unknown';
-        return PERMISSION_OPTIONS.find(p => p.value === permission)?.label || permission;
+        if (!permission) return m['common.unknown']();
+        const opt = PERMISSION_OPTIONS.find(p => p.value === permission);
+        return opt ? (m as any)[opt.labelKey]() : permission;
     };
 
     const unauthorizedCount = events.filter(e => !e.authorized && e.permission).length;
@@ -67,7 +70,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
             >
                 <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-cyan-400" />
-                    <span className="text-sm font-medium">Partner Connect Diagnostics</span>
+                    <span className="text-sm font-medium">{m['developerPortal.components.diagnosticsPanel.title']()}</span>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -104,10 +107,10 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                 <>
                     {/* Requested Permissions */}
                     <div className="px-3 py-2 border-b border-gray-700">
-                        <div className="text-xs text-gray-400 mb-1.5">Requested Permissions:</div>
+                        <div className="text-xs text-gray-400 mb-1.5">{m['developerPortal.components.diagnosticsPanel.requestedPermissions']()}</div>
                         <div className="flex flex-wrap gap-1.5">
                             {requestedPermissions.length === 0 ? (
-                                <span className="text-xs text-gray-500 italic">None requested</span>
+                                <span className="text-xs text-gray-500 italic">{m['developerPortal.components.diagnosticsPanel.noneRequested']()}</span>
                             ) : (
                                 requestedPermissions.map(permission => (
                                     <span
@@ -126,7 +129,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                         {events.length === 0 ? (
                             <div className="p-4 text-center text-gray-500 text-sm">
                                 <Clock className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                                Waiting for partner app calls...
+                                {m['developerPortal.components.diagnosticsPanel.waitingForCalls']()}
                             </div>
                         ) : (
                             <div className="divide-y divide-gray-800">
@@ -167,7 +170,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
 
                                         {event.permission && (
                                             <div className="mt-1 ml-5 flex items-center gap-2">
-                                                <span className="text-gray-400">Permission:</span>
+                                                <span className="text-gray-400">{m['developerPortal.components.diagnosticsPanel.permission']()}</span>
                                                 <span
                                                     className={`px-1.5 py-0.5 rounded ${
                                                         event.authorized
@@ -176,14 +179,14 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                                                     }`}
                                                 >
                                                     {getPermissionLabel(event.permission)}
-                                                    {!event.authorized && ' (not requested!)'}
+                                                    {!event.authorized && m['developerPortal.components.diagnosticsPanel.notRequested']()}
                                                 </span>
                                             </div>
                                         )}
 
                                         {event.errorMessage && (
                                             <div className="mt-1 ml-5 text-red-400">
-                                                Error: {event.errorMessage}
+                                                {m['developerPortal.components.diagnosticsPanel.error']({ message: event.errorMessage })}
                                             </div>
                                         )}
                                     </div>
@@ -198,9 +201,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                             <div className="flex items-start gap-2">
                                 <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-200">
-                                    <strong>Warning:</strong> This app made {unauthorizedCount} call(s) using
-                                    permissions it did not request. Users may be shown additional consent
-                                    prompts or calls may fail.
+                                    <strong>{m['developerPortal.components.diagnosticsPanel.warning']()}</strong> {m['developerPortal.components.diagnosticsPanel.warningDesc']({ count: unauthorizedCount })}
                                 </div>
                             </div>
                         </div>

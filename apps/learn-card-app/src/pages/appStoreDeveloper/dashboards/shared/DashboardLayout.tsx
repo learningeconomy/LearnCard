@@ -11,6 +11,7 @@ import {
     Rocket,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import * as m from '../../../../paraglide/messages.js';
 
 const GUIDE_TYPE_ICONS: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
     'issue-credentials': { icon: Award, color: 'text-violet-600', bgColor: 'bg-violet-100' },
@@ -41,7 +42,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     integration,
     title,
-    subtitle = 'Integration Dashboard',
+    subtitle,
     statusBadge,
     onBack,
     onRefresh,
@@ -86,19 +87,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                 if (status === 'active') {
                                     return (
                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                            Active
+                                            {m['developerPortal.dashboards.status.active']()}
                                         </span>
                                     );
                                 }
                                 return (
                                     <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium capitalize">
-                                        {status === 'setup' ? 'In Setup' : status}
+                                        {status === 'setup' ? m['developerPortal.dashboards.status.inSetup']() : status}
                                     </span>
                                 );
                             })()}
                         </div>
 
-                        <p className="text-sm text-gray-500">{subtitle}</p>
+                        <p className="text-sm text-gray-500">{subtitle || m['developerPortal.dashboards.subtitle.default']()}</p>
                     </div>
                 </div>
 
@@ -110,7 +111,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Refresh
+                            {m['developerPortal.dashboards.refresh']()}
                         </button>
                     )}
 

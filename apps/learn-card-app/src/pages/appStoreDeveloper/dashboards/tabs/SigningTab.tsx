@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Loader2, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('signing-tab');
 
@@ -67,11 +68,11 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                 authority.name
             );
 
-            presentToast('Signing authority created!', { hasDismissButton: true });
+            presentToast(m['developerPortal.dashboards.tabs.signing.createSuccess'](), { hasDismissButton: true });
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', {
+            presentToast(m['developerPortal.dashboards.tabs.signing.createError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -85,8 +86,8 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Signing Authority</h2>
-                <p className="text-sm text-gray-500">Configure how credentials are signed</p>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.signing.title']()}</h2>
+                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.tabs.signing.description']()}</p>
             </div>
 
             {/* Status */}
@@ -118,10 +119,10 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                         }`}
                     >
                         {loading
-                            ? 'Checking...'
+                            ? m['developerPortal.dashboards.tabs.signing.checking']()
                             : hasSigningAuthority
-                            ? 'Signing authority configured'
-                            : 'No signing authority found'}
+                            ? m['developerPortal.dashboards.tabs.signing.configured']()
+                            : m['developerPortal.dashboards.tabs.signing.notFound']()}
                     </h3>
 
                     {!loading && (
@@ -131,8 +132,8 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                             }`}
                         >
                             {hasSigningAuthority
-                                ? `Using: ${primarySA?.name}`
-                                : 'Create one below to sign credentials'}
+                                ? m['developerPortal.dashboards.tabs.signing.using']({ name: primarySA?.name || '' })
+                                : m['developerPortal.dashboards.tabs.signing.createOne']()}
                         </p>
                     )}
                 </div>
@@ -148,12 +149,12 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Creating...
+                            {m['developerPortal.dashboards.tabs.signing.creating']()}
                         </>
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m['developerPortal.dashboards.tabs.signing.createSigningAuthority']()}
                         </>
                     )}
                 </button>
@@ -169,12 +170,12 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Recreating...
+                            {m['developerPortal.dashboards.tabs.signing.recreating']()}
                         </>
                     ) : (
                         <>
                             <RefreshCw className="w-4 h-4" />
-                            Recreate Signing Authority
+                            {m['developerPortal.dashboards.tabs.signing.recreate']()}
                         </>
                     )}
                 </button>
@@ -182,8 +183,7 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
 
             <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <p>
-                    A signing authority cryptographically signs your credentials, making them
-                    verifiable. This proves the credentials actually came from you.
+                    {m['developerPortal.dashboards.tabs.signing.infoText']()}
                 </p>
             </div>
         </div>

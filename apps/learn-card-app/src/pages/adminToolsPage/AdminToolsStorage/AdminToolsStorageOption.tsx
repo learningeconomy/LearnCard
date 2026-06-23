@@ -7,6 +7,7 @@ const log = getLogger('admin-tools-storage-option');
 
 import GenericLoader from '../../../components/generic/GenericLoader';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
+import * as m from '../../../paraglide/messages.js';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 
 import { useFetchCounts } from '../../../hooks/useFetchCounts';
@@ -39,10 +40,10 @@ export const storageOptionsList: StorageOption[] = [
     { label: 'Custom', endpoint: '', type: StorageOptionsEnum.custom },
 ];
 
-export const storageSwitchMessages = [
+export const getStorageSwitchMessages = () => [
     'Packing up the data boxes…',
     'Rolling the storage cart over…',
-    'Loading the data truck…',
+    m['common.loadingDataTruck'](),
     'Checking the storage map…',
     'Dusting off the new shelves…',
     'Labeling the storage bins…',
@@ -91,7 +92,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchStorage = async (switchNetwork: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(storageSwitchMessages)} />,
+                <GenericLoader overrideText={_.shuffle(getStorageSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },

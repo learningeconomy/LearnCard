@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState } from 'react';
 import { Key, Copy, Check, Trash2, Plus, Loader2, AlertTriangle, Code } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -9,12 +10,12 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { AuthGrant } from '../types';
 
-const SCOPE_OPTIONS = [
-    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+const getScopeOptions = () => [
+    { label: m['developerPortal.dashboards.tabs.apiTokens.fullAccess'](), value: '*:*', description: m['developerPortal.dashboards.tabs.apiTokens.fullAccessDesc']() },
     {
-        label: 'Credentials Only',
+        label: m['developerPortal.dashboards.tabs.apiTokens.credentialsOnly'](),
         value: 'credential:* presentation:*',
-        description: 'Issue and manage credentials',
+        description: m['developerPortal.dashboards.tabs.apiTokens.credentialsOnlyDesc'](),
     },
 ];
 
@@ -47,7 +48,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: 'Created from Integration Dashboard',
+                description: m['developerPortal.dashboards.tabs.apiTokens.tokenCreatedFrom'](),
                 scope: selectedScope,
             });
 
@@ -113,9 +114,9 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">API Tokens</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.apiTokens.title']()}</h2>
                     <p className="text-sm text-gray-500">
-                        Manage tokens for server-side credential issuance
+                        {m['developerPortal.dashboards.tabs.apiTokens.description']()}
                     </p>
                 </div>
 
@@ -125,7 +126,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Create Token
+                        {m['developerPortal.dashboards.tabs.apiTokens.createToken']()}
                     </button>
                 )}
             </div>
@@ -133,11 +134,11 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
             {/* Create Token Form */}
             {showCreateForm && (
                 <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-4">
-                    <h3 className="font-medium text-gray-800">Create New API Token</h3>
+                    <h3 className="font-medium text-gray-800">{m['developerPortal.dashboards.tabs.apiTokens.createNewToken']()}</h3>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Token Name
+                            {m['developerPortal.dashboards.tabs.apiTokens.tokenName']()}
                         </label>
                         <input
                             type="text"
@@ -150,21 +151,21 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Permissions
+                            {m['developerPortal.dashboards.tabs.apiTokens.permissions']()}
                         </label>
                         <select
                             value={selectedScope}
                             onChange={e => setSelectedScope(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         >
-                            {SCOPE_OPTIONS.map(option => (
+                            {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
                             ))}
                         </select>
                         <p className="text-xs text-gray-500 mt-1">
-                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                            {getScopeOptions().find(o => o.value === selectedScope)?.description}
                         </p>
                     </div>
 
@@ -179,7 +180,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                             ) : (
                                 <Plus className="w-4 h-4" />
                             )}
-                            {creating ? 'Creating...' : 'Create Token'}
+                            {creating ? m['developerPortal.dashboards.tabs.apiTokens.creating']() : m['developerPortal.dashboards.tabs.apiTokens.createToken']()}
                         </button>
                         <button
                             onClick={() => {
@@ -188,7 +189,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                             }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m['developerPortal.dashboards.tabs.apiTokens.cancel']()}
                         </button>
                     </div>
                 </div>
@@ -198,8 +199,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800">
-                    <strong>Security:</strong> Never expose your API token in client-side code or
-                    commit it to version control.
+                    <strong>{m['developerPortal.dashboards.tabs.apiTokens.securityWarning']()}:</strong> {m['developerPortal.dashboards.tabs.apiTokens.securityWarningDesc']()}
                 </p>
             </div>
 
@@ -208,13 +208,13 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                 <div className="flex items-center gap-2">
                     <Code className="w-4 h-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-700">
-                        How to use your API token
+                        {m['developerPortal.dashboards.tabs.apiTokens.howToUseTitle']()}
                     </span>
                 </div>
 
                 <div className="space-y-2">
                     <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">SDK (Node.js)</p>
+                        <p className="text-xs text-gray-500 mb-1">{m['developerPortal.dashboards.tabs.apiTokens.sdkLabel']()}</p>
                         <code className="text-xs text-gray-700 font-mono">
                             const learnCard = await initLearnCard({'{'} apiKey: 'YOUR_TOKEN',
                             network: true {'}'});
@@ -222,7 +222,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                     </div>
 
                     <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">HTTP Header</p>
+                        <p className="text-xs text-gray-500 mb-1">{m['developerPortal.dashboards.tabs.apiTokens.httpHeader']()}</p>
                         <code className="text-xs text-gray-700 font-mono">
                             Authorization: Bearer YOUR_TOKEN
                         </code>
@@ -230,17 +230,16 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                 </div>
 
                 <p className="text-xs text-gray-400">
-                    See the <strong className="text-gray-500">Code</strong> tab for full integration
-                    examples.
+                    {m['developerPortal.dashboards.tabs.apiTokens.seeCodeTab']()}
                 </p>
             </div>
 
             {activeGrants.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
                     <Key className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500">No active API tokens</p>
+                    <p className="text-gray-500">{m['developerPortal.dashboards.tabs.apiTokens.noActiveTokens']()}</p>
                     <p className="text-sm text-gray-400 mt-1">
-                        Create a token to start issuing credentials via API
+                        {m['developerPortal.dashboards.tabs.apiTokens.noActiveTokensDesc']()}
                     </p>
                 </div>
             ) : (
@@ -256,7 +255,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                                     <div>
                                         <h3 className="font-medium text-gray-800">{grant.name}</h3>
                                         <p className="text-xs text-gray-500">
-                                            Created {new Date(grant.createdAt).toLocaleDateString()}
+                                            {m['developerPortal.dashboards.tabs.apiTokens.createdDate']({ date: new Date(grant.createdAt).toLocaleDateString() })}
                                         </p>
                                     </div>
                                 </div>
@@ -266,7 +265,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                                         onClick={() => copyToken(grant.id)}
                                         disabled={copyingId === grant.id}
                                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg transition-colors disabled:opacity-50"
-                                        title="Copy token"
+                                        title={m['developerPortal.dashboards.tabs.apiTokens.copyTokenTitle']()}
                                     >
                                         {copyingId === grant.id ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -275,14 +274,14 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                                         ) : (
                                             <Copy className="w-4 h-4" />
                                         )}
-                                        Copy
+                                        {m['developerPortal.dashboards.tabs.apiTokens.copyToken']()}
                                     </button>
 
                                     <button
                                         onClick={() => revokeToken(grant.id)}
                                         disabled={revokingId === grant.id}
                                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                        title="Revoke token"
+                                        title={m['developerPortal.dashboards.tabs.apiTokens.revokeTokenTitle']()}
                                     >
                                         {revokingId === grant.id ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -299,7 +298,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
             {revokedGrants.length > 0 && (
                 <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-3">Revoked Tokens</h3>
+                    <h3 className="text-sm font-medium text-gray-500 mb-3">{m['developerPortal.dashboards.tabs.apiTokens.revokedTokens']()}</h3>
 
                     <div className="space-y-2 opacity-60">
                         {revokedGrants.map(grant => (
@@ -310,7 +309,7 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                                 <div className="flex items-center gap-2">
                                     <Key className="w-4 h-4 text-gray-400" />
                                     <span className="text-sm text-gray-500">{grant.name}</span>
-                                    <span className="text-xs text-red-500 ml-auto">Revoked</span>
+                                    <span className="text-xs text-red-500 ml-auto">{m['developerPortal.dashboards.tabs.apiTokens.revoked']()}</span>
                                 </div>
                             </div>
                         ))}

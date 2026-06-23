@@ -3,6 +3,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('use-integration-activity');
 
 import { useWallet } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 import type { CredentialTemplate } from '../types';
 
@@ -49,15 +50,17 @@ interface CredentialActivityStats {
 
 export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
 
-/** Filter options for event type dropdown */
-export const EVENT_TYPE_FILTER_OPTIONS: { value: CredentialEventType | 'ALL'; label: string }[] = [
-    { value: 'ALL', label: 'All Events' },
-    { value: 'CREATED', label: 'Sent' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CLAIMED', label: 'Claimed' },
-    { value: 'FAILED', label: 'Failed' },
-    { value: 'EXPIRED', label: 'Expired' },
-];
+/** Get filter options for event type dropdown (resolved at render for i18n) */
+export function getEventTypeFilterOptions(): { value: CredentialEventType | 'ALL'; label: string }[] {
+    return [
+        { value: 'ALL', label: m['developerPortal.dashboards.activity.allEvents']() },
+        { value: 'CREATED', label: m['developerPortal.dashboards.activity.sent']() },
+        { value: 'DELIVERED', label: m['developerPortal.dashboards.activity.delivered']() },
+        { value: 'CLAIMED', label: m['developerPortal.dashboards.activity.claimed']() },
+        { value: 'FAILED', label: m['developerPortal.dashboards.activity.failed']() },
+        { value: 'EXPIRED', label: m['developerPortal.dashboards.activity.expired']() },
+    ];
+}
 
 /**
  * Get display label for event type
@@ -65,15 +68,15 @@ export const EVENT_TYPE_FILTER_OPTIONS: { value: CredentialEventType | 'ALL'; la
 export function getEventTypeLabel(eventType: CredentialEventType): string {
     switch (eventType) {
         case 'CREATED':
-            return 'Sent';
+            return m['developerPortal.dashboards.activity.sent']();
         case 'DELIVERED':
-            return 'Delivered';
+            return m['developerPortal.dashboards.activity.delivered']();
         case 'CLAIMED':
-            return 'Claimed';
+            return m['developerPortal.dashboards.activity.claimed']();
         case 'EXPIRED':
-            return 'Expired';
+            return m['developerPortal.dashboards.activity.expired']();
         case 'FAILED':
-            return 'Failed';
+            return m['developerPortal.dashboards.activity.failed']();
     }
 }
 
@@ -85,7 +88,7 @@ export function getEventTypeLabel(eventType: CredentialEventType): string {
  */
 export function getActivityLabel(record: CredentialActivityRecord): string {
     if (record.eventType === 'DELIVERED' && record.recipientProfileId && isInboxActivity(record)) {
-        return 'Auto-Delivered';
+        return m['developerPortal.dashboards.activity.autoDelivered']();
     }
 
     return getEventTypeLabel(record.eventType);
@@ -111,14 +114,14 @@ export function isInboxActivity(record: CredentialActivityRecord): boolean {
  * Get display name for recipient
  */
 export function getRecipientDisplayName(record: CredentialActivityRecord): string {
-    return record.recipientProfile?.displayName || record.recipientIdentifier || 'Unknown';
+    return record.recipientProfile?.displayName || record.recipientIdentifier || m['developerPortal.dashboards.activity.recipientUnknown']();
 }
 
 /**
  * Get template/credential name for display
  */
 export function getActivityName(record: CredentialActivityRecord): string {
-    return record.boost?.name || 'Credential';
+    return record.boost?.name || m['developerPortal.dashboards.activity.credential']();
 }
 
 /**
@@ -135,25 +138,25 @@ export function getActivityError(record: CredentialActivityRecord): string | und
 export function formatActivitySource(source: string): string {
     switch (source) {
         case 'send':
-            return 'API Send';
+            return m['developerPortal.dashboards.activity.source.apiSend']();
         case 'sendBoost':
-            return 'Boost Send';
+            return m['developerPortal.dashboards.activity.source.boostSend']();
         case 'sendCredential':
-            return 'Credential Send';
+            return m['developerPortal.dashboards.activity.source.credentialSend']();
         case 'contract':
-            return 'Contract';
+            return m['developerPortal.dashboards.activity.source.contract']();
         case 'claim':
-            return 'Claim';
+            return m['developerPortal.dashboards.activity.source.claim']();
         case 'inbox':
-            return 'Inbox';
+            return m['developerPortal.dashboards.activity.source.inbox']();
         case 'claimLink':
-            return 'Claim Link';
+            return m['developerPortal.dashboards.activity.source.claimLink']();
         case 'acceptCredential':
-            return 'Accept Credential';
+            return m['developerPortal.dashboards.activity.source.acceptCredential']();
         case 'appEvent':
-            return 'App Event';
+            return m['developerPortal.dashboards.activity.source.appEvent']();
         default:
-            return source || 'Unknown';
+            return source || m['developerPortal.dashboards.activity.source.unknown']();
     }
 }
 
@@ -291,7 +294,7 @@ export function useIntegrationActivity(
             } catch (err) {
                 if (cancelled) return;
                 log.error('Failed to fetch activity', err);
-                setError(err instanceof Error ? err : new Error('Failed to fetch activity'));
+                setError(err instanceof Error ? err : new Error(m['developerPortal.dashboards.activity.fetchFailed']()));
                 setActivity([]);
             } finally {
                 if (!cancelled) {
@@ -339,7 +342,7 @@ export function useIntegrationActivity(
             setCursor(nextCursor);
         } catch (err) {
             log.error('Failed to load more activity', err);
-            setError(err instanceof Error ? err : new Error('Failed to load more activity'));
+            setError(err instanceof Error ? err : new Error(m['developerPortal.dashboards.activity.loadMoreFailed']()));
         } finally {
             setIsLoadingMore(false);
         }
@@ -359,10 +362,10 @@ export function formatRelativeTime(dateString: string): string {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return m['developerPortal.dashboards.activity.justNow']();
+    if (diffMins < 60) return m['developerPortal.dashboards.activity.minutesAgo']({ count: diffMins });
+    if (diffHours < 24) return m['developerPortal.dashboards.activity.hoursAgo']({ count: diffHours });
+    if (diffDays < 7) return m['developerPortal.dashboards.activity.daysAgo']({ count: diffDays });
 
     return date.toLocaleDateString();
 }

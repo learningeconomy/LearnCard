@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type React from 'react';
 import { X, Shield, Loader2, CheckCircle2, AlertCircle, ArrowUpCircle } from 'lucide-react';
+
+import * as m from '../../../paraglide/messages.js';
 import type { AppStoreListing } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-did-upgrade-dialog');
@@ -42,7 +44,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
         } catch (error) {
             log.error('Upgrade failed:', error);
             setUpgradeError(
-                error instanceof Error ? error.message : 'An unexpected error occurred'
+                error instanceof Error ? error.message : m['developerPortal.components.appDidUpgradeDialog.unexpectedError']()
             );
         } finally {
             setIsUpgrading(false);
@@ -59,11 +61,10 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                         </div>
                         <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                            Upgrade Complete!
+                            {m['developerPortal.components.appDidUpgradeDialog.upgradeComplete']()}
                         </h2>
                         <p className="text-sm text-gray-500">
-                            Your app &quot;{listing.display_name}&quot; now has its own unique
-                            identity for issuing credentials.
+                            {m['developerPortal.components.appDidUpgradeDialog.upgradeCompleteDesc']({ name: listing.display_name })}
                         </p>
                     </div>
                 </div>
@@ -79,7 +80,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                 onKeyDown={e => e.key === 'Escape' && onDismiss()}
                 role="button"
                 tabIndex={0}
-                aria-label="Close dialog"
+                aria-label={m['developerPortal.components.appDidUpgradeDialog.closeDialog']()}
             />
 
             <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 animate-fade-in">
@@ -99,9 +100,9 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                         </div>
                         <div>
                             <h2 className="text-lg font-semibold text-gray-800">
-                                Upgrade Your App
+                                {m['developerPortal.components.appDidUpgradeDialog.upgradeYourApp']()}
                             </h2>
-                            <p className="text-sm text-gray-500">One-time setup required</p>
+                            <p className="text-sm text-gray-500">{m['developerPortal.components.appDidUpgradeDialog.oneTimeSetup']()}</p>
                         </div>
                     </div>
 
@@ -127,33 +128,31 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
 
                     <div className="space-y-3 mb-6">
                         <p className="text-sm text-gray-600">
-                            Your app is using an older authentication method. Upgrading to App DIDs
-                            will give your app its own unique identity for issuing credentials,
-                            separate from your personal account.
+                            {m['developerPortal.components.appDidUpgradeDialog.upgradeDescription']()}
                         </p>
 
                         <div className="p-3 bg-violet-50 border border-violet-100 rounded-xl">
                             <p className="text-sm font-medium text-violet-800 mb-2">
-                                This upgrade will:
+                                {m['developerPortal.components.appDidUpgradeDialog.upgradeWill']()}
                             </p>
                             <ul className="text-sm text-violet-700 space-y-1">
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Generate a unique identifier for your app</span>
+                                    <span>{m['developerPortal.components.appDidUpgradeDialog.generateUniqueId']()}</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Create a dedicated signing authority</span>
+                                    <span>{m['developerPortal.components.appDidUpgradeDialog.createDedicatedSigning']()}</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Enable credentials to be issued as the app</span>
+                                    <span>{m['developerPortal.components.appDidUpgradeDialog.enableAppIssuance']()}</span>
                                 </li>
                             </ul>
                         </div>
 
                         <p className="text-xs text-gray-500">
-                            This is a one-time upgrade and your app will continue working normally.
+                            {m['developerPortal.components.appDidUpgradeDialog.oneTimeUpgrade']()}
                         </p>
                     </div>
 
@@ -174,12 +173,12 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             {isUpgrading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Upgrading...
+                                    {m['developerPortal.components.appDidUpgradeDialog.upgrading']()}
                                 </>
                             ) : (
                                 <>
                                     <ArrowUpCircle className="w-4 h-4" />
-                                    Upgrade Now
+                                    {m['developerPortal.components.appDidUpgradeDialog.upgradeNow']()}
                                 </>
                             )}
                         </button>
@@ -190,7 +189,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             disabled={isUpgrading}
                             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-gray-600 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                         >
-                            Remind Me Later
+                            {m['developerPortal.components.appDidUpgradeDialog.remindMeLater']()}
                         </button>
                     </div>
                 </div>

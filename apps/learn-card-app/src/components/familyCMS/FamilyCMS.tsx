@@ -521,7 +521,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     return (
         <IonPage>
             {(isLoading || isSaveLoading || isPublishLoading) && (
-                <BoostLoader text={'Loading...'} darkBackground />
+                <BoostLoader text={m['common.loading']()} darkBackground />
             )}
             <FamilyCMSHeader editorMode={editorMode} />
             <FamilyCMSLayout state={state}>

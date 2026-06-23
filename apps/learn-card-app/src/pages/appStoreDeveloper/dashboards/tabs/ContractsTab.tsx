@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import React, { useState, useMemo } from 'react';
 import { FileText, Copy, Check, Shield, Send, Info } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -38,9 +39,9 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
             contracts.push({
                 uri: dataConsentConfig.contractUri,
                 type: 'data-consent',
-                name: 'Data Consent Contract',
-                description: 'Used to request user consent for data access',
-                feature: 'Request Data Consent',
+                name: m['developerPortal.dashboards.tabs.contracts.dataConsentContract'](),
+                description: m['developerPortal.dashboards.tabs.contracts.dataConsentContractDesc'](),
+                feature: m['developerPortal.dashboards.tabs.contracts.featureRequestDataConsent'](),
             });
         }
 
@@ -50,9 +51,9 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
             contracts.push({
                 uri: issueCredentialsConfig.contractUri,
                 type: 'issue-credentials',
-                name: 'Credential Issuance Contract',
-                description: 'Used to sync credentials to user wallets via consent',
-                feature: 'Issue Credentials (Sync Mode)',
+                name: m['developerPortal.dashboards.tabs.contracts.credentialIssuanceContract'](),
+                description: m['developerPortal.dashboards.tabs.contracts.credentialIssuanceContractDesc'](),
+                feature: m['developerPortal.dashboards.tabs.contracts.featureIssueCredentials'](),
             });
         }
 
@@ -62,9 +63,9 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
             contracts.push({
                 uri: consentFlowConfig.contractUri,
                 type: 'data-consent',
-                name: 'Consent Flow Contract',
-                description: 'Used for consent redirect flow',
-                feature: 'Consent Flow',
+                name: m['developerPortal.dashboards.tabs.contracts.consentFlowContract'](),
+                description: m['developerPortal.dashboards.tabs.contracts.consentFlowContractDesc'](),
+                feature: m['developerPortal.dashboards.tabs.contracts.featureConsentFlow'](),
             });
         }
 
@@ -75,7 +76,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
         await Clipboard.write({ string: uri });
         setCopiedId(uri);
         setTimeout(() => setCopiedId(null), 2000);
-        presentToast('Contract URI copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.contracts.contractUriCopied'](), { hasDismissButton: true });
     };
 
     const getContractIcon = (type: string) => {
@@ -103,29 +104,28 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Consent Contracts</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.contracts.title']()}</h2>
                 <p className="text-sm text-gray-500">
-                    Contracts configured during your integration setup
+                    {m['developerPortal.dashboards.tabs.contracts.description']()}
                 </p>
             </div>
 
             {configuredContracts.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl bg-gray-50">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500 font-medium">No contracts configured</p>
+                    <p className="text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.contracts.noContracts']()}</p>
                     <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
-                        Contracts are configured when you enable features like "Request Data Consent" or 
-                        "Issue Credentials (Sync Mode)" in the setup wizard.
+                        {m['developerPortal.dashboards.tabs.contracts.noContractsDesc']()}
                     </p>
 
                     <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg inline-block text-left">
                         <p className="text-xs text-gray-500">
-                            <strong>How to add a contract:</strong>
+                            <strong>{m['developerPortal.dashboards.tabs.contracts.howToAddTitle']()}</strong>
                         </p>
                         <ol className="text-xs text-gray-400 mt-1 space-y-1 list-decimal list-inside">
-                            <li>Go to the Integration Hub</li>
-                            <li>Select "Request Data Consent" feature</li>
-                            <li>Configure a ConsentFlow contract</li>
+                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep1']()}</li>
+                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep2']()}</li>
+                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep3']()}</li>
                         </ol>
                     </div>
                 </div>
@@ -153,7 +153,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                         </div>
 
                                         <div className="mt-3 p-2 bg-gray-50 rounded-lg">
-                                            <p className="text-xs text-gray-400 mb-1">Contract URI:</p>
+                                            <p className="text-xs text-gray-400 mb-1">{m['developerPortal.dashboards.tabs.contracts.contractUri']()}</p>
                                             <code className="text-xs text-gray-700 font-mono break-all">
                                                 {contract.uri}
                                             </code>
@@ -164,7 +164,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                 <button
                                     onClick={() => copyContractUri(contract.uri)}
                                     className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex-shrink-0"
-                                    title="Copy URI"
+                                    title={m['developerPortal.dashboards.tabs.contracts.copyUri']()}
                                 >
                                     {copiedId === contract.uri ? (
                                         <Check className="w-4 h-4 text-emerald-500" />
@@ -179,7 +179,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
                         <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                         <p className="text-sm text-blue-700">
-                            These contracts are referenced in your integration code. Users will see a consent prompt when your app requests access via these contracts.
+                            {m['developerPortal.dashboards.tabs.contracts.infoBanner']()}
                         </p>
                     </div>
                 </div>

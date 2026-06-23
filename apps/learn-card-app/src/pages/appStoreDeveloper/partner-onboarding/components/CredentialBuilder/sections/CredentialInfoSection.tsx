@@ -5,6 +5,8 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import { OBv3CredentialTemplate, TemplateFieldValue, staticField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
@@ -29,48 +31,48 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Credential Info"
+            title={m['developerPortal.credentialBuilder.sectionTitles.credentialInfo']()}
             icon={<FileText className="w-4 h-4 text-cyan-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
         >
             <FieldEditor
-                label="Credential Name"
+                label={m['developerPortal.credentialBuilder.credentialInfo.name']()}
                 field={template.name || staticField('')}
                 onChange={(f) => updateField('name', f)}
-                placeholder="e.g., Academic Transcript"
-                helpText="The name of this credential"
+                placeholder={m['developerPortal.credentialBuilder.credentialInfo.namePlaceholder']()}
+                helpText={m['developerPortal.credentialBuilder.credentialInfo.nameHelp']()}
                 required
                 showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
-                label="Description"
+                label={m['developerPortal.credentialBuilder.credentialInfo.description']()}
                 field={template.description || staticField('')}
                 onChange={(f) => updateField('description', f)}
-                placeholder="Describe what this credential represents..."
-                helpText="A brief description of the credential"
+                placeholder={m['developerPortal.credentialBuilder.credentialInfo.descriptionPlaceholder']()}
+                helpText={m['developerPortal.credentialBuilder.credentialInfo.descriptionHelp']()}
                 type="textarea"
                 showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
-                label="Credential Image"
+                label={m['developerPortal.credentialBuilder.credentialInfo.image']()}
                 field={template.image || staticField('')}
                 onChange={(f) => updateField('image', f)}
-                placeholder="https://example.com/credential-image.png"
-                helpText="URL to an image representing the credential"
+                placeholder={m['developerPortal.credentialBuilder.credentialInfo.imagePlaceholder']()}
+                helpText={m['developerPortal.credentialBuilder.credentialInfo.imageHelp']()}
                 type="url"
                 enableFileUpload
                 showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
-                label="Credential ID"
+                label={m['developerPortal.credentialBuilder.credentialInfo.id']()}
                 field={template.id || staticField('')}
                 onChange={(f) => updateField('id', f)}
-                placeholder="urn:uuid:..."
-                helpText="Unique identifier for this credential (usually auto-generated)"
+                placeholder={m['developerPortal.credentialBuilder.credentialInfo.idPlaceholder']()}
+                helpText={m['developerPortal.credentialBuilder.credentialInfo.idHelp']()}
                 showDynamicToggle={!disableDynamicFields}
             />
         </CollapsibleSection>

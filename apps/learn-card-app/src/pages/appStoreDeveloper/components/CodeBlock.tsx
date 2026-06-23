@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 /**
  * Simple syntax highlighter for TypeScript/JavaScript code
  */
@@ -96,7 +98,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             <button
                 onClick={handleCopy}
                 className="absolute top-2 right-2 p-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                title="Copy code"
+                title={m['developerPortal.components.codeBlock.copyCode']()}
             >
                 {copied ? (
                     <Check className="w-4 h-4 text-green-400" />

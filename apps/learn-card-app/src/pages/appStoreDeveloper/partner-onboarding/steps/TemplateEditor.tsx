@@ -3,6 +3,8 @@
  * Extracted from TemplateBuilderStep for better code splitting
  */
 
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useCallback, useMemo } from 'react';
 import {
     Award,
@@ -118,14 +120,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
                 <div className="flex-1 text-left min-w-0">
                     <h4 className="font-medium text-gray-800">
-                        {obv3Template.name.value || 'Untitled Template'}
+                        {obv3Template.name.value || m['developerPortal.onboarding.templateBuilder.untitledTemplate']()}
                     </h4>
 
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         {dynamicVars.length > 0 && (
                             <span className="flex items-center gap-1">
                                 <Zap className="w-3 h-3 text-violet-500" />
-                                {dynamicVars.length} dynamic fields
+                                {m['developerPortal.onboarding.templateBuilder.dynamicFields']({ count: dynamicVars.length })}
                             </span>
                         )}
                     </div>
@@ -149,7 +151,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                     } catch { /* fallback: no-op */ }
                                 }}
                                 className="flex-shrink-0 p-1 text-gray-400 hover:text-cyan-600 rounded transition-colors"
-                                title="Copy template URI"
+                                title={m['developerPortal.onboarding.templateBuilder.copyUriTitle']()}
                             >
                                 {copiedUri ? (
                                     <Check className="w-3 h-3 text-emerald-500" />
@@ -207,7 +209,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                 <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
                                     <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                                     <p className="text-xs text-red-700">
-                                        Template has validation errors. Fix the issues shown above before saving.
+                                        {m['developerPortal.onboarding.templateBuilder.validationErrors']()}
                                     </p>
                                 </div>
                             )}
@@ -218,7 +220,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                         onClick={onCancel}
                                         className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
                                     >
-                                        Cancel
+                                        {m['developerPortal.onboarding.templateBuilder.cancel']()}
                                     </button>
                                 )}
 
@@ -230,17 +232,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                     {isSaving ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            {isNew ? 'Creating...' : 'Saving...'}
+                                            {isNew ? m['developerPortal.onboarding.templateBuilder.creating']() : m['developerPortal.onboarding.templateBuilder.saving']()}
                                         </>
                                     ) : isNew ? (
                                         <>
                                             <Plus className="w-4 h-4" />
-                                            Create Template
+                                            {m['developerPortal.onboarding.templateBuilder.createTemplate']()}
                                         </>
                                     ) : (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Save Changes
+                                            {m['developerPortal.onboarding.templateBuilder.saveChanges']()}
                                         </>
                                     )}
                                 </button>

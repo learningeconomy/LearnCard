@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Download, X, Calendar, Filter, Loader2, AlertCircle, Layout } from 'lucide-react';
 import type { AppStoreListing } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('export-dialog');
 
 import { useWallet } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 import { CredentialEventType } from '../hooks/useIntegrationActivity';
 import { useActivityExport, ExportOptions, ExportState } from '../hooks/useActivityExport';
@@ -18,13 +19,13 @@ interface ExportDialogProps {
     onClose: () => void;
 }
 
-const EVENT_TYPE_OPTIONS: { value: CredentialEventType | ''; label: string }[] = [
-    { value: '', label: 'All Events' },
-    { value: 'CREATED', label: 'Sent' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CLAIMED', label: 'Claimed' },
-    { value: 'EXPIRED', label: 'Expired' },
-    { value: 'FAILED', label: 'Failed' },
+const getEventTypeOptions = (): { value: CredentialEventType | ''; label: string }[] => [
+    { value: '', label: m['developerPortal.dashboards.export.allEvents']() },
+    { value: 'CREATED', label: m['developerPortal.dashboards.activity.sent']() },
+    { value: 'DELIVERED', label: m['developerPortal.dashboards.activity.delivered']() },
+    { value: 'CLAIMED', label: m['developerPortal.dashboards.activity.claimed']() },
+    { value: 'EXPIRED', label: m['developerPortal.dashboards.activity.expired']() },
+    { value: 'FAILED', label: m['developerPortal.dashboards.activity.failed']() },
 ];
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({
@@ -48,6 +49,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     const [endDate, setEndDate] = useState('');
     const [eventType, setEventType] = useState<CredentialEventType | ''>(initialEventType);
     const [listingId, setListingId] = useState<string>(initialListingId);
+    const eventTypeOptions = useMemo(getEventTypeOptions, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -123,11 +125,11 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
             <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">Download CSV</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{m['developerPortal.dashboards.export.title']()}</h2>
                     <button
                         onClick={handleCancel}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
@@ -138,11 +140,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         <div className="flex items-center gap-3 p-4 bg-cyan-50 rounded-xl">
                             <Loader2 className="w-6 h-6 text-cyan-600 animate-spin" />
                             <div className="flex-1">
-                                <p className="font-medium text-cyan-900">Downloading...</p>
+                                <p className="font-medium text-cyan-900">{m['developerPortal.dashboards.export.downloading']()}</p>
                                 {state.progress && (
                                     <p className="text-sm text-cyan-700">
-                                        {state.progress.fetched.toLocaleString()} of{' '}
-                                        {state.progress.total.toLocaleString()} records
+                                        {state.progress.fetched.toLocaleString()}
+                                        {/* eslint-disable-next-line i18next/no-literal-string -- counter separator SKIP */}
+                                        <span aria-hidden="true"> / </span>
+                                        {state.progress.total.toLocaleString()}
                                     </p>
                                 )}
                             </div>
@@ -159,7 +163,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                             onClick={cancelExport}
                             className="w-full py-3 px-4 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                         >
-                            Cancel
+                            {m['developerPortal.dashboards.export.cancel']()}
                         </button>
                     </div>
                 ) : (
@@ -167,12 +171,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl min-h-[76px]">
                             <Download className="w-6 h-6 text-gray-600 flex-shrink-0" />
                             <div className="min-w-0">
-                                <p className="text-sm text-gray-500">Export Credential Data</p>
+                                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.export.description']()}</p>
                                 <p className="font-medium text-gray-900 flex items-center gap-2 h-6">
                                     {statsError ? (
                                         <span className="text-amber-600 flex items-center gap-2">
                                             <AlertCircle className="w-4 h-4" />
-                                            Could not load count
+                                            {m['developerPortal.dashboards.export.couldNotLoadCount']()}
                                         </span>
                                     ) : (
                                         <>
@@ -183,9 +187,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                             >
                                                 {totalRecords !== null
                                                     ? `${totalRecords.toLocaleString()} ${
-                                                          totalRecords === 1 ? 'result' : 'results'
+                                                          totalRecords === 1 ? m['developerPortal.dashboards.export.result']({ count: 1 }) : m['developerPortal.dashboards.export.results']({ count: totalRecords })
                                                       }`
-                                                    : 'Loading...'}
+                                                    : m['developerPortal.dashboards.export.loading']()}
                                             </span>
                                             {isLoadingStats && totalRecords !== null && (
                                                 <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
@@ -202,14 +206,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                 <div>
                                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                                         <Layout className="w-4 h-4" />
-                                        App Listing
+                                        {m['developerPortal.dashboards.export.appListing']()}
                                     </label>
                                     <select
                                         value={listingId}
                                         onChange={e => setListingId(e.target.value)}
                                         className="w-full px-3 py-2 border bg-transparent rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                     >
-                                        <option value="">All Apps</option>
+                                        <option value="">{m['developerPortal.dashboards.export.allApps']()}</option>
                                         {appListings.map(listing => (
                                             <option
                                                 key={listing.listing_id}
@@ -225,7 +229,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                                     <Filter className="w-4 h-4" />
-                                    Event Type
+                                    {m['developerPortal.dashboards.export.eventType']()}
                                 </label>
                                 <select
                                     value={eventType}
@@ -234,7 +238,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                     }
                                     className="w-full px-3 py-2 border bg-transparent rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                 >
-                                    {EVENT_TYPE_OPTIONS.map(option => (
+                                    {eventTypeOptions.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>
@@ -245,12 +249,12 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                                     <Calendar className="w-4 h-4" />
-                                    Date Range (Optional)
+                                    {m['developerPortal.dashboards.export.dateRange']()}
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-xs text-gray-500 mb-1 block">
-                                            Start Date
+                                            {m['developerPortal.dashboards.export.startDate']()}
                                         </label>
                                         <input
                                             type="date"
@@ -261,7 +265,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                     </div>
                                     <div>
                                         <label className="text-xs text-gray-500 mb-1 block">
-                                            End Date
+                                            {m['developerPortal.dashboards.export.endDate']()}
                                         </label>
                                         <input
                                             type="date"
@@ -285,7 +289,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                 onClick={handleCancel}
                                 className="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                             >
-                                Cancel
+                                {m['developerPortal.dashboards.export.cancel']()}
                             </button>
                             <button
                                 onClick={handleExport}
@@ -293,7 +297,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                 className="flex-1 py-3 px-4 bg-cyan-600 rounded-xl text-white font-medium hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <Download className="w-4 h-4" />
-                                Export CSV
+                                {m['developerPortal.dashboards.export.exportCsv']()}
                             </button>
                         </div>
                     </div>

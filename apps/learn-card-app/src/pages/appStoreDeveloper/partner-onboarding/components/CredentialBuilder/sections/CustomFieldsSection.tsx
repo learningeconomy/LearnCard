@@ -5,6 +5,8 @@
 import React, { useState } from 'react';
 import { Puzzle, Plus, X } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import { 
     OBv3CredentialTemplate, 
     CustomFieldTemplate, 
@@ -65,17 +67,18 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Custom Fields"
+            title={m['developerPortal.credentialBuilder.sectionTitles.customFields']()}
             icon={<Puzzle className="w-4 h-4 text-purple-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
             optional
-            badge={customFields.length > 0 ? `${customFields.length} field${customFields.length > 1 ? 's' : ''}` : undefined}
+            badge={customFields.length > 0 ? `${customFields.length} ${m['developerPortal.credentialBuilder.customFields.fieldKey']().toLowerCase()}${customFields.length > 1 ? 's' : ''}` : undefined}
         >
-            <p className="text-xs text-gray-500 mb-3">
-                Add custom fields to store additional data in the credential's extensions.
-                These will appear in <code className="bg-gray-100 px-1 rounded">credentialSubject.extensions</code>.
-            </p>
+            <p className="text-xs text-gray-500 mb-3"
+                dangerouslySetInnerHTML={{
+                    __html: m['developerPortal.credentialBuilder.customFields.description']({ code: '<code class="bg-gray-100 px-1 rounded">credentialSubject.extensions</code>' })
+                }}
+            />
 
             {/* Add new field */}
             <div className="flex gap-2 mb-4">
@@ -83,7 +86,7 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
                     type="text"
                     value={newFieldKey}
                     onChange={(e) => setNewFieldKey(e.target.value)}
-                    placeholder="Field name (e.g., courseId)"
+                    placeholder={m['developerPortal.credentialBuilder.customFields.addFieldPlaceholder']()}
                     className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
                     onKeyDown={(e) => e.key === 'Enter' && addCustomField()}
                 />
@@ -95,19 +98,19 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
                     className="flex items-center gap-1 px-3 py-2 text-sm bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Add
+                    {m['developerPortal.credentialBuilder.customFields.addField']()}
                 </button>
             </div>
 
             {customFields.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">No custom fields added</p>
+                <p className="text-xs text-gray-400 italic">{m['developerPortal.credentialBuilder.customFields.noFields']()}</p>
             ) : (
                 <div className="space-y-4">
                     {customFields.map((field, index) => (
                         <div key={field.id} className="p-3 bg-purple-50 rounded-lg border border-purple-100">
                             <div className="flex items-center justify-between mb-3">
                                 <code className="text-sm font-medium text-purple-700">
-                                    {field.key.value || 'unnamed'}
+                                    {field.key.value || m['developerPortal.credentialBuilder.customFields.unnamed']()}
                                 </code>
 
                                 <button
@@ -121,20 +124,20 @@ export const CustomFieldsSection: React.FC<CustomFieldsSectionProps> = ({
 
                             <div className="space-y-3">
                                 <FieldEditor
-                                    label="Field Key"
+                                    label={m['developerPortal.credentialBuilder.customFields.fieldKey']()}
                                     field={field.key}
                                     onChange={(f) => updateField(index, 'key', f)}
-                                    placeholder="fieldKey"
-                                    helpText="The key name in the extensions object"
+                                    placeholder={m['developerPortal.credentialBuilder.customFields.fieldKeyPlaceholder']()}
+                                    helpText={m['developerPortal.credentialBuilder.customFields.fieldKeyHelp']()}
                                     showDynamicToggle={false}
                                 />
 
                                 <FieldEditor
-                                    label="Field Value"
+                                    label={m['developerPortal.credentialBuilder.customFields.fieldValue']()}
                                     field={field.value}
                                     onChange={(f) => updateField(index, 'value', f)}
-                                    placeholder="Value or leave empty for dynamic"
-                                    helpText="The value for this field"
+                                    placeholder={m['developerPortal.credentialBuilder.customFields.fieldValuePlaceholder']()}
+                                    helpText={m['developerPortal.credentialBuilder.customFields.fieldValueHelp']()}
                                 />
                             </div>
                         </div>

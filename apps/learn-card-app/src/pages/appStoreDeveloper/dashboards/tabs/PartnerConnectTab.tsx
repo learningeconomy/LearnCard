@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-connect-tab');
 /**
@@ -55,16 +56,20 @@ interface ApiMethod {
     icon: React.ReactNode;
     shortDescription: string;
     description: string;
+    shortDescKey?: string;
+    descriptionKey?: string;
     parameters: Array<{
         name: string;
         type: string;
         required: boolean;
         description: string;
+        descKey?: string;
     }>;
     returns: {
         type: string;
         description: string;
         example: string;
+        descKey?: string;
     };
     code: string;
     tips?: string[];
@@ -88,19 +93,21 @@ interface BoostTemplate {
 }
 
 const FEATURES = [
-    { id: 'issue-credentials', title: 'Issue Credentials', icon: <Award className="w-4 h-4" /> },
-    { id: 'peer-badges', title: 'Peer-to-Peer Badges', icon: <Send className="w-4 h-4" /> },
+    { id: 'issue-credentials', title: '', titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.issueCredentials', icon: <Award className="w-4 h-4" /> },
+    { id: 'peer-badges', title: '', titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.peerBadges', icon: <Send className="w-4 h-4" /> },
     {
         id: 'request-credentials',
-        title: 'Request Credentials',
+        title: '',
+        titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.requestCredentials',
         icon: <FileSearch className="w-4 h-4" />,
     },
     {
         id: 'request-data-consent',
-        title: 'Request Data Consent',
+        title: '',
+        titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.requestDataConsent',
         icon: <ClipboardCheck className="w-4 h-4" />,
     },
-    { id: 'launch-feature', title: 'Launch Features', icon: <Navigation className="w-4 h-4" /> },
+    { id: 'launch-feature', title: '', titleKey: 'developerPortal.dashboards.tabs.partnerConnect.features.launchFeature', icon: <Navigation className="w-4 h-4" /> },
 ];
 
 const METHODS: ApiMethod[] = [
@@ -110,12 +117,15 @@ const METHODS: ApiMethod[] = [
         category: 'auth',
         icon: <User className="w-4 h-4" />,
         shortDescription: 'SSO authentication',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestIdentity.shortDesc',
         description:
             "Request the user's identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.",
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestIdentity.description',
         parameters: [],
         returns: {
             type: 'Promise<Identity>',
             description: 'User identity object with DID and profile',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestIdentity.returns.desc',
             example: `{
   "did": "did:web:network.learncard.com:users:abc123",
   "profile": {
@@ -151,8 +161,10 @@ const userId = identity.did;`,
         category: 'credentials',
         icon: <Send className="w-4 h-4" />,
         shortDescription: 'Issue a credential',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.shortDesc',
         description:
             "Issue a credential to the user's wallet using a pre-configured template. Create templates in the Templates tab, then reference them by alias. The credential is automatically signed and issued.",
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.description',
         parameters: [
             {
                 name: 'templateAlias',
@@ -160,17 +172,20 @@ const userId = identity.did;`,
                 required: true,
                 description:
                     'The alias of the credential template to use (configured in Templates tab)',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.params.templateAlias.desc',
             },
             {
                 name: 'templateData',
                 type: 'Record<string, string>',
                 required: false,
                 description: 'Values for template variables (e.g., recipient_name, course_name)',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.params.templateData.desc',
             },
         ],
         returns: {
             type: 'Promise<{ credentialUri?: string }>',
             description: 'The URI of the issued credential if successful',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.sendCredential.returns.desc',
             example: `{ "credentialUri": "urn:lc:credential:abc123" }`,
         },
         code: `// Issue a credential using a template alias
@@ -208,19 +223,23 @@ if (resultWithData.credentialUri) {
         category: 'credentials',
         icon: <FileSearch className="w-4 h-4" />,
         shortDescription: 'Query user credentials',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.shortDesc',
         description:
             "Request access to search the user's credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.",
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.description',
         parameters: [
             {
                 name: 'query',
                 type: 'CredentialQuery',
                 required: false,
                 description: 'Optional filter criteria for credential types',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.params.query.desc',
             },
         ],
         returns: {
             type: 'Promise<{ credentials: VerifiableCredential[] }>',
             description: 'Array of credentials the user chose to share',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.askCredentialSearch.returns.desc',
             example: `{
   "credentials": [
     {
@@ -261,25 +280,30 @@ if (result.credentials.length > 0) {
         category: 'credentials',
         icon: <FileText className="w-4 h-4" />,
         shortDescription: 'Issue from template',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.shortDesc',
         description:
             'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.description',
         parameters: [
             {
                 name: 'templateUri',
                 type: 'string',
                 required: true,
                 description: 'The URI of the boost/template to issue from',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.params.templateUri.desc',
             },
             {
                 name: 'recipientDid',
                 type: 'string',
                 required: false,
                 description: 'DID of the recipient (defaults to current user)',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.params.recipientDid.desc',
             },
         ],
         returns: {
             type: 'Promise<{ success: boolean, credentialId?: string }>',
             description: 'Result of the issuance',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.initiateTemplateIssue.returns.desc',
             example: `{
   "success": true,
   "credentialId": "urn:uuid:new-cred-123..."
@@ -310,25 +334,30 @@ if (result.success) {
         category: 'navigation',
         icon: <Navigation className="w-4 h-4" />,
         shortDescription: 'Navigate host app',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.shortDesc',
         description:
             'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.description',
         parameters: [
             {
                 name: 'path',
                 type: 'string',
                 required: true,
                 description: 'The wallet path to navigate to',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.params.path.desc',
             },
             {
                 name: 'description',
                 type: 'string',
                 required: false,
                 description: 'Optional description shown during navigation',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.params.description.desc',
             },
         ],
         returns: {
             type: 'Promise<void>',
             description: 'Resolves when navigation completes',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.launchFeature.returns.desc',
             example: `// No return value`,
         },
         code: `// Navigate to the user's credential wallet
@@ -361,25 +390,30 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
         category: 'consent',
         icon: <ClipboardCheck className="w-4 h-4" />,
         shortDescription: 'Request permissions',
+        shortDescKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.shortDesc',
         description:
             'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
+        descriptionKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.description',
         parameters: [
             {
                 name: 'contractUri',
                 type: 'string',
                 required: true,
                 description: 'The URI of the consent contract',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.params.contractUri.desc',
             },
             {
                 name: 'options',
                 type: 'ConsentOptions',
                 required: false,
                 description: 'Additional options like scope and duration',
+                descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.params.options.desc',
             },
         ],
         returns: {
             type: 'Promise<{ granted: boolean, consentId?: string }>',
             description: 'Whether consent was granted',
+            descKey: 'developerPortal.dashboards.tabs.partnerConnect.methods.requestConsent.returns.desc',
             example: `{
   "granted": true,
   "consentId": "consent:abc123..."
@@ -432,6 +466,12 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     );
 
     // Local selected listing state (can be overridden by external prop)
+    // Helper: localize category name by ID
+    const getCategoryName = (id: string): string => {
+        const key = `developerPortal.dashboards.tabs.partnerConnect.categories.${id}`;
+        try { return (m as any)[key](); } catch { return id; }
+    };
+
     const [localSelectedListing, setLocalSelectedListing] = useState<AppStoreListing | null>(
         externalSelectedListing || null
     );
@@ -675,7 +715,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
  * ${
      selectedFeatures.length > 0
          ? selectedFeatures
-               .map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`)
+               .map(id => `  - ${FEATURES.find(f => f.id === id)?.titleKey ? m[FEATURES.find(f => f.id === id)!.titleKey]() : id}`)
                .join('\n * ')
          : '  - None selected (complete the setup wizard first)'
  }
@@ -1070,7 +1110,7 @@ async function launchWalletFeature(path: string, description?: string) {
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast('Copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied'](), { hasDismissButton: true });
     };
 
     const getCategoryColor = (category: string) => {
@@ -1103,9 +1143,9 @@ log.info('User:', identity.profile.displayName);`;
             {/* Header with App Selector */}
             <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.partnerConnect.title']()}</h2>
                     <p className="text-sm text-gray-500">
-                        Manage templates and generate integration code
+                        {m['developerPortal.dashboards.tabs.partnerConnect.description']()}
                     </p>
                 </div>
 
@@ -1136,7 +1176,7 @@ log.info('User:', identity.profile.displayName);`;
             {listingsLoading && (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
                     <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
-                    <span className="text-gray-600">Loading app listings...</span>
+                    <span className="text-gray-600">{m['developerPortal.dashboards.tabs.partnerConnect.loadingListings']()}</span>
                 </div>
             )}
 
@@ -1146,10 +1186,10 @@ log.info('User:', identity.profile.displayName);`;
                         <Info className="w-5 h-5 text-amber-600" />
                         <div>
                             <p className="text-sm text-amber-800 font-medium">
-                                No app listings found
+                                {m['developerPortal.dashboards.tabs.partnerConnect.noListingsTitle']()}
                             </p>
                             <p className="text-xs text-amber-700">
-                                Create an app listing in the &quot;App Listings&quot; tab first.
+                                {m['developerPortal.dashboards.tabs.partnerConnect.noListingsDesc']()}
                             </p>
                         </div>
                     </div>
@@ -1169,7 +1209,7 @@ log.info('User:', identity.profile.displayName);`;
                             }`}
                         >
                             <Award className="w-4 h-4" />
-                            Templates
+                            {m['developerPortal.dashboards.tabs.partnerConnect.tabTemplates']()}
                         </button>
 
                         <button
@@ -1181,7 +1221,7 @@ log.info('User:', identity.profile.displayName);`;
                             }`}
                         >
                             <Code className="w-4 h-4" />
-                            Code
+                            {m['developerPortal.dashboards.tabs.partnerConnect.tabCode']()}
                         </button>
 
                         <button
@@ -1193,7 +1233,7 @@ log.info('User:', identity.profile.displayName);`;
                             }`}
                         >
                             <Package className="w-4 h-4" />
-                            Setup
+                            {m['developerPortal.dashboards.tabs.partnerConnect.tabSetup']()}
                         </button>
                     </div>
 
@@ -1213,7 +1253,7 @@ log.info('User:', identity.profile.displayName);`;
                                     }`}
                                 >
                                     <Award className="w-4 h-4" />
-                                    Issue Credentials
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.templateType.issueCredentials']()}
                                 </button>
 
                                 <button
@@ -1225,7 +1265,7 @@ log.info('User:', identity.profile.displayName);`;
                                     }`}
                                 >
                                     <Send className="w-4 h-4" />
-                                    Peer Badges
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.templateType.peerBadges']()}
                                 </button>
                             </div>
 
@@ -1237,23 +1277,9 @@ log.info('User:', identity.profile.displayName);`;
                                         : 'bg-violet-50 border border-violet-200 text-violet-800'
                                 }`}
                             >
-                                {templateType === 'issue-credentials' ? (
-                                    <>
-                                        <strong>Issue Credentials:</strong> Templates for
-                                        credentials your app issues to users via{' '}
-                                        <code className="bg-emerald-100 px-1 rounded">
-                                            sendCredential()
-                                        </code>
-                                    </>
-                                ) : (
-                                    <>
-                                        <strong>Peer Badges:</strong> Templates users can send to
-                                        each other via{' '}
-                                        <code className="bg-violet-100 px-1 rounded">
-                                            initiateTemplateIssue()
-                                        </code>
-                                    </>
-                                )}
+                                {templateType === 'issue-credentials'
+                                    ? m['developerPortal.dashboards.tabs.partnerConnect.templateType.issueCredentialsDesc']()
+                                    : m['developerPortal.dashboards.tabs.partnerConnect.templateType.peerBadgesDesc']()}
                             </div>
 
                             {/* Template List Manager */}
@@ -1280,18 +1306,10 @@ log.info('User:', identity.profile.displayName);`;
                                         </div>
                                         <div>
                                             <h3 className="font-medium text-gray-800">
-                                                Your Integration Code
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.title']()}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                {issueCredentialsTemplates.length +
-                                                    peerBadgesTemplates.length}{' '}
-                                                template
-                                                {issueCredentialsTemplates.length +
-                                                    peerBadgesTemplates.length !==
-                                                1
-                                                    ? 's'
-                                                    : ''}{' '}
-                                                configured
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.templatesConfigured']({ count: issueCredentialsTemplates.length + peerBadgesTemplates.length })}
                                             </p>
                                         </div>
                                     </div>
@@ -1307,7 +1325,7 @@ log.info('User:', identity.profile.displayName);`;
                                         ) : (
                                             <Copy className="w-4 h-4" />
                                         )}
-                                        {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                                        {copied === 'personalized' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copyAll']()}
                                     </button>
                                 </div>
 
@@ -1319,13 +1337,7 @@ log.info('User:', identity.profile.displayName);`;
 
                                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                         <p className="text-sm text-amber-800">
-                                            <strong>💡 LLM-Ready:</strong> Copy this code and paste
-                                            it into an AI assistant (like ChatGPT or Claude) along
-                                            with your requirements. The{' '}
-                                            <code className="bg-amber-100 px-1 rounded">
-                                                @llm-config
-                                            </code>{' '}
-                                            section contains all your template URIs and settings.
+                                            {m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.llmReady']()}
                                         </p>
                                     </div>
                                 </div>
@@ -1345,10 +1357,10 @@ log.info('User:', identity.profile.displayName);`;
                                         <Package className="w-5 h-5 text-cyan-600" />
                                         <div>
                                             <h3 className="font-medium text-gray-800">
-                                                Installation & Setup
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.title']()}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                Install the SDK and initialize it in your app
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.desc']()}
                                             </p>
                                         </div>
                                     </div>
@@ -1358,7 +1370,7 @@ log.info('User:', identity.profile.displayName);`;
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-gray-700">
-                                                1. Install the SDK
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.stepInstall']()}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(installCode, 'install')}
@@ -1369,26 +1381,19 @@ log.info('User:', identity.profile.displayName);`;
                                                 ) : (
                                                     <Copy className="w-3 h-3" />
                                                 )}
-                                                {copied === 'install' ? 'Copied!' : 'Copy'}
+                                                {copied === 'install' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copy']()}
                                             </button>
                                         </div>
                                         <CodeBlock code={installCode} />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Also works with{' '}
-                                            <code className="bg-gray-100 px-1 rounded">
-                                                yarn add
-                                            </code>{' '}
-                                            or{' '}
-                                            <code className="bg-gray-100 px-1 rounded">
-                                                pnpm add
-                                            </code>
+                                            {m['developerPortal.dashboards.tabs.partnerConnect.installation.alsoWorksWith']()}
                                         </p>
                                     </div>
 
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-sm font-medium text-gray-700">
-                                                2. Initialize
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.installation.stepInit']()}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(initCode, 'init')}
@@ -1399,7 +1404,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 ) : (
                                                     <Copy className="w-3 h-3" />
                                                 )}
-                                                {copied === 'init' ? 'Copied!' : 'Copy'}
+                                                {copied === 'init' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copy']()}
                                             </button>
                                         </div>
                                         <CodeBlock code={initCode} />
@@ -1407,12 +1412,7 @@ log.info('User:', identity.profile.displayName);`;
 
                                     <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                                         <p className="text-sm text-cyan-800">
-                                            <strong>That's it!</strong> Users are already logged in
-                                            when inside the wallet, so{' '}
-                                            <code className="bg-cyan-100 px-1 rounded">
-                                                requestIdentity()
-                                            </code>{' '}
-                                            returns instantly with their profile.
+                                            {m['developerPortal.dashboards.tabs.partnerConnect.installation.thatIsIt']()}
                                         </p>
                                     </div>
                                 </div>
@@ -1425,10 +1425,10 @@ log.info('User:', identity.profile.displayName);`;
                                         <Code className="w-5 h-5 text-gray-600" />
                                         <div>
                                             <h3 className="font-medium text-gray-800">
-                                                API Reference
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.title']()}
                                             </h3>
                                             <p className="text-xs text-gray-500">
-                                                Explore all available SDK methods
+                                                {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.desc']()}
                                             </p>
                                         </div>
                                     </div>
@@ -1447,7 +1447,7 @@ log.info('User:', identity.profile.displayName);`;
                                                     <div key={category.id}>
                                                         <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                                             {category.icon}
-                                                            {category.name}
+                                                            {getCategoryName(category.id)}
                                                         </div>
 
                                                         <div className="space-y-1">
@@ -1480,8 +1480,8 @@ log.info('User:', identity.profile.displayName);`;
                                                                         </div>
                                                                         <div className="text-xs text-gray-500 truncate">
                                                                             {
-                                                                                method.shortDescription
-                                                                            }
+                                                                            method.shortDescKey ? m[method.shortDescKey]() : method.shortDescription
+                                                                        }
                                                                         </div>
                                                                     </div>
 
@@ -1515,7 +1515,7 @@ log.info('User:', identity.profile.displayName);`;
                                                             learnCard.{selectedMethod.name}()
                                                         </h4>
                                                         <p className="mt-2 text-gray-600 text-sm leading-relaxed">
-                                                            {selectedMethod.description}
+                                                            {selectedMethod.descriptionKey ? m[selectedMethod.descriptionKey]() : selectedMethod.description}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1526,7 +1526,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 <div>
                                                     <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
                                                         <Code className="w-4 h-4 text-gray-500" />
-                                                        Parameters
+                                                        {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.parameters']()}
                                                     </h5>
 
                                                     <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -1549,12 +1549,12 @@ log.info('User:', identity.profile.displayName);`;
                                                                         </code>
                                                                         {param.required && (
                                                                             <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
-                                                                                required
+                                                                                {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.required']()}
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                     <p className="mt-1 text-sm text-gray-600">
-                                                                        {param.description}
+                                                                        {param.descKey ? m[param.descKey]() : param.description}
                                                                     </p>
                                                                 </div>
                                                             )
@@ -1567,7 +1567,7 @@ log.info('User:', identity.profile.displayName);`;
                                             <div>
                                                 <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
                                                     <ChevronRight className="w-4 h-4 text-gray-500" />
-                                                    Returns
+                                                    {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.returns']()}
                                                 </h5>
 
                                                 <div className="p-3 border border-gray-200 rounded-xl">
@@ -1575,7 +1575,7 @@ log.info('User:', identity.profile.displayName);`;
                                                         {selectedMethod.returns.type}
                                                     </code>
                                                     <p className="mt-1 text-sm text-gray-600">
-                                                        {selectedMethod.returns.description}
+                                                        {selectedMethod.returns.descKey ? m[selectedMethod.returns.descKey]() : selectedMethod.returns.description}
                                                     </p>
 
                                                     <div className="mt-2">
@@ -1592,7 +1592,7 @@ log.info('User:', identity.profile.displayName);`;
                                                 <div className="flex items-center justify-between mb-2">
                                                     <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                                                         <Terminal className="w-4 h-4 text-gray-500" />
-                                                        Example
+                                                        {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.example']()}
                                                     </h5>
                                                     <button
                                                         onClick={() =>
@@ -1608,7 +1608,7 @@ log.info('User:', identity.profile.displayName);`;
                                                         ) : (
                                                             <Copy className="w-3 h-3" />
                                                         )}
-                                                        {copied === 'example' ? 'Copied!' : 'Copy'}
+                                                        {copied === 'example' ? m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copied']() : m['developerPortal.dashboards.tabs.partnerConnect.integrationCode.copy']()}
                                                     </button>
                                                 </div>
 
@@ -1624,7 +1624,7 @@ log.info('User:', identity.profile.displayName);`;
                                                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                                         <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
                                                             <Zap className="w-4 h-4" />
-                                                            Pro Tips
+                                                            {m['developerPortal.dashboards.tabs.partnerConnect.apiReference.proTips']()}
                                                         </h5>
                                                         <ul className="space-y-1">
                                                             {selectedMethod.tips.map((tip, idx) => (
@@ -1655,7 +1655,7 @@ log.info('User:', identity.profile.displayName);`;
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
                                     <FileText className="w-4 h-4" />
-                                    SDK Documentation
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.resources.sdkDocs']()}
                                     <ExternalLink className="w-3 h-3" />
                                 </button>
 
@@ -1668,7 +1668,7 @@ log.info('User:', identity.profile.displayName);`;
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
                                     <Code className="w-4 h-4" />
-                                    GitHub Examples
+                                    {m['developerPortal.dashboards.tabs.partnerConnect.resources.githubExamples']()}
                                     <ExternalLink className="w-3 h-3" />
                                 </button>
                             </div>

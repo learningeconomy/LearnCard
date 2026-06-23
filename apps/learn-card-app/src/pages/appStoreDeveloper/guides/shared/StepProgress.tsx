@@ -1,6 +1,8 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 
+import * as m from '../../../../paraglide/messages.js';
+
 interface StepProgressProps {
     currentStep: number;
     totalSteps: number;
@@ -23,11 +25,11 @@ export const StepProgress: React.FC<StepProgressProps> = ({
             {/* Progress bar */}
             <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-600">
-                    Step {currentStep + 1} of {totalSteps}
+                    {m['developerPortal.guides.stepProgress.step']({ current: currentStep + 1, total: totalSteps })}
                 </span>
 
                 <span className="text-sm text-gray-400">
-                    {completedSteps.length} completed
+                    {m['developerPortal.guides.stepProgress.completed']({ count: completedSteps.length })}
                 </span>
             </div>
 

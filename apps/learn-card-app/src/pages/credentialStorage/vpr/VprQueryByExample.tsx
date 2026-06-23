@@ -216,7 +216,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                             }
                         >
                             {credentialsLoading
-                                ? 'Loading verifiable credentials...'
+                                ? m['common.loadingVerifiableCredentials']()
                                 : 'Select the verifiable credentials you would like to share.'}
                         </h2>
                         {credentialsLoading && (

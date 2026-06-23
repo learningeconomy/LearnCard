@@ -245,7 +245,7 @@ export const JoinNetworkPrompt: React.FC<{
                             type="submit"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal max-w-[320px]"
                         >
-                            {loading ? 'Loading...' : 'Continue'}
+                            {loading ? m['common.loading']() : m['common.continue']()}
                         </button>
                     )}
 

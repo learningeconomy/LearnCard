@@ -4,6 +4,9 @@ import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-preview-modal');
 
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import { useModal } from 'learn-card-base';
 import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLearnCardMessageHandlers';
@@ -150,7 +153,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 } catch (error) {
                     updateDiagnosticEvent(eventId, {
                         status: 'error',
-                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        errorMessage: error instanceof Error ? error.message : m['developerPortal.components.appPreviewModal.unknownError'](),
                     });
                     throw error;
                 }
@@ -193,7 +196,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                     <h2 className="text-lg font-semibold text-gray-700">
                                         {listing.display_name}
                                     </h2>
-                                    <span className="text-xs text-gray-500">Preview Mode</span>
+                                    <span className="text-xs text-gray-500"></span>
                                 </div>
                             </div>
 
@@ -220,13 +223,15 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 </div>
 
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                    Preview Not Available
+                                    {m['developerPortal.components.appPreviewModal.previewNotAvailable']()}
                                 </h3>
 
                                 <p className="text-gray-500 mb-4">
-                                    This app uses{' '}
-                                    <strong>{LAUNCH_TYPE_INFO[listing.launch_type]?.label}</strong>{' '}
-                                    launch type which cannot be previewed in an embedded view.
+                                    <TransP
+                                        m={m['developerPortal.components.appPreviewModal.previewNotAvailableDesc']}
+                                        values={{ type: (m as any)[LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey]() }}
+                                        components={[<strong />]}
+                                    />
                                 </p>
 
                                 {launchConfig.url && (
@@ -237,7 +242,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        Open App URL
+                                        {m['developerPortal.components.appPreviewModal.openAppUrl']()}
                                     </a>
                                 )}
                             </div>
@@ -264,7 +269,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 <h2 className="text-lg font-semibold text-gray-700">
                                     {listing.display_name}
                                 </h2>
-                                <span className="text-xs text-gray-500">Preview Mode</span>
+                                <span className="text-xs text-gray-500"></span>
                             </div>
                         </div>
 
@@ -296,10 +301,10 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         </div>
                                         <div className="text-center">
                                             <p className="text-lg font-semibold text-gray-800">
-                                                Loading {listing.display_name}...
+                                                {m['developerPortal.components.appPreviewModal.loadingApp']({ name: listing.display_name })}
                                             </p>
                                             <p className="text-sm text-gray-600 mt-1">
-                                                Please wait
+                                                {m['developerPortal.components.appPreviewModal.pleaseWait']()}
                                             </p>
                                         </div>
                                     </div>
