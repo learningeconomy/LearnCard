@@ -34,6 +34,7 @@ export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
 export * from './components/headerBranding/headerBrandingHelpers';
+export * from './components/headerBranding/HeaderBranding';
 export * from './components/CredentialSubjectDisplay/CredentialSubjectDisplay';
 export * from './components/RadioButton';
 export * from './components/launchpad-app-list/LaunchPadAppList';
@@ -92,7 +93,7 @@ export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapt
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
 export * from './hooks/useSQLiteStorage';
-export * from './hooks/useGetCurrentUser';
+export { useCurrentUser } from './hooks/useGetCurrentUser';
 export * from './hooks/useGetCurrentLCNUser';
 export * from './hooks/useScreenWidth';
 export * from './hooks/useOnScreen';
@@ -126,6 +127,8 @@ export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
 export * from './hooks/useSharedUrisInTerms';
+export * from './hooks/useConsentedContracts';
+export * from './hooks/useLaunchDarklyIdentify';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -225,6 +228,7 @@ export * from './constants/gdprAgeLimits';
 export * from './constants/aiPassport';
 
 export * from './filestack/useFilestack';
+export * from './filestack/constants/filestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
 export * from './types/careerOneStop';

@@ -11,13 +11,16 @@ export const useWithdrawConsent = (_termsUri: string) => {
 
             return wallet.invoke.withdrawConsent(termsUri);
         },
-        onSuccess: data => {
-            if (data) {
-                const switchedDid = switchedProfileStore.get.switchedDid();
-                queryClient.refetchQueries({
-                    queryKey: ['useConsentedContracts', switchedDid ?? ''],
-                });
-            }
+        onSuccess: async () => {
+            const switchedDid = switchedProfileStore.get.switchedDid();
+
+            await queryClient.invalidateQueries({
+                queryKey: ['useConsentedContracts'],
+            });
+
+            await queryClient.refetchQueries({
+                queryKey: ['useConsentedContracts', switchedDid ?? ''],
+            });
         },
     });
 };
