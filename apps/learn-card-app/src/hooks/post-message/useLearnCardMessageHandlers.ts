@@ -25,6 +25,8 @@ import {
     flushOnError as flushSendCredentialFlowOnError,
 } from '../../helpers/sendCredentialFlow.helpers';
 import {
+    clearLearnerContextCache,
+    LEARNER_CONTEXT_CACHE_TTL_MS,
     getLearnerContextCacheKey,
     readLearnerContextCache,
     writeLearnerContextCache,
@@ -58,8 +60,16 @@ interface UseLearnCardMessageHandlersOptions {
 import { getLogger } from 'learn-card-base';
 const moduleLog = getLogger('use-learn-card-message-handlers');
 
-const learnerContextCacheFills = new Map<string, Promise<LearnerContextCacheEntry>>();
-const prewarmedEmbedKeys = new Set<string>();
+type LearnerContextFillTimings = {
+    credentialReadMs?: number;
+    promptizerMs?: number;
+};
+
+const learnerContextCacheFills = new Map<
+    string,
+    { promise: Promise<LearnerContextCacheEntry>; timings: LearnerContextFillTimings }
+>();
+const prewarmedCacheKeys = new Map<string, number>();
 
 type LearnerContextMetadata = {
     cacheStatus?: 'browser-hit' | 'browser-miss' | 'backend-hit' | 'backend-miss' | 'structured';
@@ -366,6 +376,8 @@ export function useLearnCardMessageHandlers({
             ).replace(/\/+$/, '');
 
             try {
+                // The formatter URL is tenant/deployment configuration, not partner input.
+                // End-user authorization happens before this point via login + ConsentFlow.
                 const promptizerResponse = await fetch(
                     `${aiServiceUrl}/ai/learner-context/format`,
                     {
@@ -422,7 +434,13 @@ export function useLearnCardMessageHandlers({
             timings?: LearnerContextMetadata['timings']
         ): Promise<LearnerContextCacheEntry> => {
             const existingFill = learnerContextCacheFills.get(key);
-            if (existingFill) return existingFill;
+            if (existingFill) {
+                const entry = await existingFill.promise;
+                if (timings) Object.assign(timings, existingFill.timings);
+                return entry;
+            }
+
+            const fillTimings: LearnerContextFillTimings = {};
 
             const fillPromise = (async () => {
                 const credentialReadStartedAt = performance.now();
@@ -430,7 +448,7 @@ export function useLearnCardMessageHandlers({
                     learnCard,
                     source.credentialUris
                 );
-                if (timings) timings.credentialReadMs = performance.now() - credentialReadStartedAt;
+                fillTimings.credentialReadMs = performance.now() - credentialReadStartedAt;
 
                 const promptizerStartedAt = performance.now();
                 const { prompt, backendMetadata } = await generatePromptForLearnerContext(
@@ -438,7 +456,7 @@ export function useLearnCardMessageHandlers({
                     source.personalData,
                     options
                 );
-                if (timings) timings.promptizerMs = performance.now() - promptizerStartedAt;
+                fillTimings.promptizerMs = performance.now() - promptizerStartedAt;
 
                 const entry: LearnerContextCacheEntry = {
                     key,
@@ -456,10 +474,12 @@ export function useLearnCardMessageHandlers({
                 return entry;
             })();
 
-            learnerContextCacheFills.set(key, fillPromise);
+            learnerContextCacheFills.set(key, { promise: fillPromise, timings: fillTimings });
 
             try {
-                return await fillPromise;
+                const entry = await fillPromise;
+                if (timings) Object.assign(timings, fillTimings);
+                return entry;
             } finally {
                 learnerContextCacheFills.delete(key);
             }
@@ -477,9 +497,19 @@ export function useLearnCardMessageHandlers({
                 const source = await fetchLearnerContextSource(learnCard, options);
                 const key = getLearnerContextCacheKey(source, options);
 
-                if (readLearnerContextCache(key)) return;
+                const now = Date.now();
+                const lastPrewarmAt = prewarmedCacheKeys.get(key);
+                if (
+                    lastPrewarmAt !== undefined &&
+                    now - lastPrewarmAt < LEARNER_CONTEXT_CACHE_TTL_MS
+                ) {
+                    return;
+                }
+
+                if (readLearnerContextCache(key, now)) return;
 
                 await fillLearnerContextCache(learnCard, source, options, key);
+                prewarmedCacheKeys.set(key, Date.now());
             } catch (error) {
                 log('Learner context prewarm skipped', error);
             }
@@ -1449,23 +1479,19 @@ export function useLearnCardMessageHandlers({
     );
 
     useEffect(() => {
+        if (isLoggedIn) return;
+
+        clearLearnerContextCache();
+        learnerContextCacheFills.clear();
+        prewarmedCacheKeys.clear();
+    }, [isLoggedIn]);
+
+    useEffect(() => {
         if (!isLoggedIn || !appId || !embedOrigin) return;
-
-        const prewarmKey = `${appId}:${embedOrigin}`;
-        if (prewarmedEmbedKeys.has(prewarmKey)) return;
-
-        prewarmedEmbedKeys.add(prewarmKey);
 
         void prewarmLearnerContext({
             includeCredentials: true,
             includePersonalData: false,
-            format: 'prompt',
-            detailLevel: 'compact',
-        });
-
-        void prewarmLearnerContext({
-            includeCredentials: true,
-            includePersonalData: true,
             format: 'prompt',
             detailLevel: 'compact',
         });

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
     LEARNER_CONTEXT_CACHE_TTL_MS,
+    clearLearnerContextCache,
     clearLearnerContextCacheForDid,
     getLearnerContextCacheKey,
     readLearnerContextCache,
@@ -72,6 +73,41 @@ describe('learnerContextCache.helpers', () => {
         expect(
             readLearnerContextCache(key, 1_000 + LEARNER_CONTEXT_CACHE_TTL_MS + 1)
         ).toBeUndefined();
+    });
+
+    it('keeps credential and personal data cache entries out of sessionStorage', () => {
+        const setItem = vi.spyOn(Storage.prototype, 'setItem');
+
+        writeLearnerContextCache({
+            key: 'sensitive-entry',
+            prompt: 'prompt',
+            did: 'did:example:sensitive',
+            credentialUris: ['lc:credential:sensitive'],
+            personalData: { name: 'Taylor' },
+            createdAt: Date.now(),
+        });
+
+        expect(setItem).not.toHaveBeenCalled();
+        expect(readLearnerContextCache('sensitive-entry')).toBeDefined();
+
+        clearLearnerContextCache();
+        setItem.mockRestore();
+    });
+
+    it('can clear every learner context cache entry', () => {
+        writeLearnerContextCache({
+            key: 'clear-all-entry',
+            prompt: 'prompt',
+            did: 'did:example:clear',
+            credentialUris: [],
+            createdAt: Date.now(),
+        });
+
+        expect(readLearnerContextCache('clear-all-entry')).toBeDefined();
+
+        clearLearnerContextCache();
+
+        expect(readLearnerContextCache('clear-all-entry')).toBeUndefined();
     });
 
     it('does not throw when sessionStorage is unavailable', () => {

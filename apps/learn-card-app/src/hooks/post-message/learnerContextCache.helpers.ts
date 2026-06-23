@@ -147,11 +147,22 @@ export const readLearnerContextCache = (
     }
 };
 
+const shouldPersistCacheEntry = (entry: LearnerContextCacheEntry): boolean =>
+    entry.personalData === undefined && entry.credentialUris.length === 0;
+
 export const writeLearnerContextCache = (entry: LearnerContextCacheEntry): void => {
     cache.set(entry.key, entry);
 
     try {
-        getSessionStorage()?.setItem(`${CACHE_PREFIX}${entry.key}`, JSON.stringify(entry));
+        const storage = getSessionStorage();
+        if (!storage) return;
+
+        if (!shouldPersistCacheEntry(entry)) {
+            storage.removeItem(`${CACHE_PREFIX}${entry.key}`);
+            return;
+        }
+
+        storage.setItem(`${CACHE_PREFIX}${entry.key}`, JSON.stringify(entry));
     } catch {
         // Best-effort cache. Storage quota/private-mode failures must not affect the flow.
     }
@@ -177,6 +188,26 @@ export const clearLearnerContextCacheForDid = (did: string): void => {
 
             const entry = parseCacheEntry(JSON.parse(raw));
             if (entry?.did === did) keysToRemove.push(storageKey);
+        }
+
+        keysToRemove.forEach(key => storage.removeItem(key));
+    } catch {
+        // Best-effort cache cleanup.
+    }
+};
+
+export const clearLearnerContextCache = (): void => {
+    cache.clear();
+
+    try {
+        const storage = getSessionStorage();
+        if (!storage) return;
+
+        const keysToRemove: string[] = [];
+
+        for (let i = 0; i < storage.length; i += 1) {
+            const storageKey = storage.key(i);
+            if (storageKey?.startsWith(CACHE_PREFIX)) keysToRemove.push(storageKey);
         }
 
         keysToRemove.forEach(key => storage.removeItem(key));
