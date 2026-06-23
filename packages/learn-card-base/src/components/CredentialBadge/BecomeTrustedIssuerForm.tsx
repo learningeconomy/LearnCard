@@ -31,7 +31,8 @@ export const BecomeTrustedIssuerForm: React.FC<BecomeTrustedIssuerFormProps> = (
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
 
     // Wait until we have the values so the form isn't rendered without prefill.
-    if (currentLCNUserLoading || !did) return null;
+    // currentLCNUser is null on error, which would submit empty profile_id/name.
+    if (currentLCNUserLoading || !did || !currentLCNUser) return null;
 
     return (
         <div className="flex flex-col h-full">
