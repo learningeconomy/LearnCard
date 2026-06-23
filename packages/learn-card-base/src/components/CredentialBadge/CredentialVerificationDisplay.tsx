@@ -194,6 +194,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
             enabled={issuerPopoverEnabled}
             triggerId={popoverTriggerId}
             verifierState={verifierState}
+            issuerDid={issuerDid}
         />
     );
     const renderInteractiveBadge = (badge: React.ReactNode) => (
