@@ -14,7 +14,7 @@ import { EmailButton } from '../components/EmailButton';
 import { IssuerLogo } from '../components/IssuerLogo';
 import { LinkFallback } from '../components/LinkFallback';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate } from '../i18n';
 
 export interface EndorsementRequestProps {
     branding: TenantBranding;
@@ -146,12 +146,6 @@ const STRINGS: Record<
         subject: i => `${i} يطلب منك التأييد`,
     },
 };
-
-const interpolate = (template: string, params: Record<string, string | undefined>): string =>
-    template.replace(/\{(\w+)\}/g, (match, key: string) => {
-        const value = params[key];
-        return value === undefined ? match : value;
-    });
 
 export const EndorsementRequest: React.FC<EndorsementRequestProps> = ({
     branding,

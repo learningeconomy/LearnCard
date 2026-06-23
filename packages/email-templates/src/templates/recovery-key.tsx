@@ -12,7 +12,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { CodeBlock } from '../components/CodeBlock';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate } from '../i18n';
 
 export interface RecoveryKeyProps {
     branding: TenantBranding;
@@ -116,12 +116,6 @@ const STRINGS: Record<
         subject: b => `مفتاح الاستعادة الخاص بك في ${b}`,
     },
 };
-
-const interpolate = (template: string, params: Record<string, string | undefined>): string =>
-    template.replace(/\{(\w+)\}/g, (match, key: string) => {
-        const value = params[key];
-        return value === undefined ? match : value;
-    });
 
 export const RecoveryKey: React.FC<RecoveryKeyProps> = ({ branding, recoveryKey, locale }) => {
     const s = STRINGS[resolveCatalogLocale(locale)];

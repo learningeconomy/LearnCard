@@ -16,7 +16,7 @@ import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import { LinkFallback } from '../components/LinkFallback';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate } from '../i18n';
 
 export interface EmailVerificationProps {
     branding: TenantBranding;
@@ -91,12 +91,6 @@ const STRINGS: Record<
         subject: 'تأكيد بريدك الإلكتروني',
     },
 };
-
-const interpolate = (template: string, params: Record<string, string | undefined>): string =>
-    template.replace(/\{(\w+)\}/g, (match, key: string) => {
-        const value = params[key];
-        return value === undefined ? match : value;
-    });
 
 export const EmailVerification: React.FC<EmailVerificationProps> = ({
     branding,

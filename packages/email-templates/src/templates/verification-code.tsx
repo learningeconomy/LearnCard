@@ -18,7 +18,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { CodeBlock } from '../components/CodeBlock';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate } from '../i18n';
 
 export type VerificationCodeVariant =
     | 'login'
@@ -225,12 +225,6 @@ const BODY: Record<
         codeLabel: 'رمز التحقق',
     },
 };
-
-const interpolate = (template: string, params: Record<string, string | undefined>): string =>
-    template.replace(/\{(\w+)\}/g, (match, key: string) => {
-        const value = params[key];
-        return value === undefined ? match : value;
-    });
 
 export const VerificationCode: React.FC<VerificationCodeProps> = ({
     branding,

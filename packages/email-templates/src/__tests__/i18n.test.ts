@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { renderEmail } from '../render';
 import { renderSms } from '../sms';
 import { DEFAULT_BRANDING } from '../branding';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, htmlDir } from '../i18n';
 import type { NotificationLocale } from '../i18n';
 import type { TemplateId, TemplateDataMap } from '../render';
 
@@ -228,6 +228,35 @@ describe('resolveCatalogLocale', () => {
         expect(resolveCatalogLocale(undefined)).toBe('en');
         expect(resolveCatalogLocale(null)).toBe('en');
         expect(resolveCatalogLocale('')).toBe('en');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// RTL direction
+// ---------------------------------------------------------------------------
+
+describe('htmlDir', () => {
+    it('returns rtl for Arabic (incl. BCP-47), ltr otherwise', () => {
+        expect(htmlDir('ar')).toBe('rtl');
+        expect(htmlDir('ar-EG')).toBe('rtl');
+        expect(htmlDir('en')).toBe('ltr');
+        expect(htmlDir('es')).toBe('ltr');
+        expect(htmlDir('fr')).toBe('ltr');
+        expect(htmlDir(undefined)).toBe('ltr');
+        expect(htmlDir('xx-XX')).toBe('ltr');
+    });
+});
+
+describe('i18n — rendered <Html dir> reflects locale', () => {
+    it.each(ALL_TEMPLATE_IDS)('%s renders dir="rtl" for Arabic', async templateId => {
+        const ar = await renderEmail(templateId, DEFAULT_BRANDING, FIXTURES[templateId], 'ar');
+        expect(ar.html).toContain('dir="rtl"');
+    });
+
+    it.each(ALL_TEMPLATE_IDS)('%s renders dir="ltr" (not rtl) for English', async templateId => {
+        const en = await renderEmail(templateId, DEFAULT_BRANDING, FIXTURES[templateId], 'en');
+        expect(en.html).toContain('dir="ltr"');
+        expect(en.html).not.toContain('dir="rtl"');
     });
 });
 

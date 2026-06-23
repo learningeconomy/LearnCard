@@ -12,7 +12,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate } from '../i18n';
 
 export interface AccountApprovedProps {
     branding: TenantBranding;
@@ -83,12 +83,6 @@ const STRINGS: Record<
         subject: b => `تمت الموافقة على حسابك في ${b}`,
     },
 };
-
-const interpolate = (template: string, params: Record<string, string | undefined>): string =>
-    template.replace(/\{(\w+)\}/g, (match, key: string) => {
-        const value = params[key];
-        return value === undefined ? match : value;
-    });
 
 export const AccountApproved: React.FC<AccountApprovedProps> = ({ branding, user, locale }) => {
     const s = STRINGS[resolveCatalogLocale(locale)];

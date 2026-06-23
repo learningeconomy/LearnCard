@@ -19,7 +19,7 @@ import {
 import * as React from 'react';
 
 import type { TenantBranding } from '../branding';
-import { SHARED, htmlLang, interpolate, resolveCatalogLocale } from '../i18n';
+import { SHARED, htmlLang, htmlDir, interpolate, resolveCatalogLocale } from '../i18n';
 
 interface LayoutProps {
     branding: TenantBranding;
@@ -43,7 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({
     const disclaimerText = interpolate(chrome.footerDisclaimer, { brandName: branding.brandName });
 
     return (
-        <Html lang={htmlLang(locale)}>
+        <Html lang={htmlLang(locale)} dir={htmlDir(locale)}>
             <Head />
 
             <Preview>{preview}</Preview>

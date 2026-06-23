@@ -42,6 +42,17 @@ export const resolveCatalogLocale = (locale?: string | null): NotificationLocale
  */
 export const htmlLang = (locale?: string | null): string => resolveCatalogLocale(locale);
 
+/** Locales that render right-to-left. */
+const RTL_LOCALES = new Set<NotificationLocale>(['ar']);
+
+/**
+ * Text direction for the top-level `<Html dir>` attribute. Arabic renders
+ * right-to-left; everything else left-to-right. Email clients need an explicit
+ * `dir="rtl"` to flip alignment, punctuation, and layout for RTL languages.
+ */
+export const htmlDir = (locale?: string | null): 'ltr' | 'rtl' =>
+    RTL_LOCALES.has(resolveCatalogLocale(locale)) ? 'rtl' : 'ltr';
+
 // ---------------------------------------------------------------------------
 // Shared chrome strings (Layout footer, LinkFallback hint)
 // ---------------------------------------------------------------------------

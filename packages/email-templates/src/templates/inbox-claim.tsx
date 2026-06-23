@@ -14,7 +14,7 @@ import { EmailButton } from '../components/EmailButton';
 import { IssuerLogo } from '../components/IssuerLogo';
 import { LinkFallback } from '../components/LinkFallback';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate } from '../i18n';
 
 export interface InboxClaimProps {
     branding: TenantBranding;
@@ -181,12 +181,6 @@ const AR: Strings = {
 };
 
 const STRINGS: Record<NotificationLocale, Strings> = { en: EN, es: ES, fr: FR, ar: AR };
-
-const interpolate = (template: string, params: Record<string, string | undefined>): string =>
-    template.replace(/\{(\w+)\}/g, (match, key: string) => {
-        const value = params[key];
-        return value === undefined ? match : value;
-    });
 
 export const InboxClaim: React.FC<InboxClaimProps> = ({
     branding,
