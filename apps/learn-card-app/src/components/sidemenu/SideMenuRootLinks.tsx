@@ -8,7 +8,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { currentUserStore, useGetUnreadUserNotifications } from 'learn-card-base';
 import {
     SideMenuLinksEnum,
-    getSideMenuTranslationKey,
+    getSideMenuLinkLabel,
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
@@ -116,7 +116,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
+                {getSideMenuLinkLabel(m, link)}
             </PreloadingLink>
         );
 
@@ -128,7 +128,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                    {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
+                    {getSideMenuLinkLabel(m, link)}
                 </button>
             );
         }
@@ -153,7 +153,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                         )}
                     </div>
 
-                    {m[`sidemenu.links.${getSideMenuTranslationKey(link.id)}`]()}
+                    {getSideMenuLinkLabel(m, link)}
                 </PreloadingLink>
             );
         }
