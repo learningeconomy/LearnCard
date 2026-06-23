@@ -2,7 +2,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
 
-import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
+import { NodeGlobalsPolyfillPlugin as GlobalPolyfill } from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
