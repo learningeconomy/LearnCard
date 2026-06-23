@@ -16,11 +16,11 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
     const primaryColor = colors?.defaults?.primaryColor;
 
     let title = isLoggedIn
-        ? 'No AI Pathways yet.'
-        : `Join ${brandingConfig?.name}\nto unlock AI Pathways`;
+        ? 'No Pathways yet.'
+        : `Join ${brandingConfig?.name}\nto unlock Pathways`;
     const text = isLoggedIn
         ? `Build your ${brandingConfig?.name} to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
-        : 'AI Pathways connect your skills to relevant courses, careers, salaries, and learning content.';
+        : 'Pathways connect your skills to relevant courses, careers, salaries, and learning content.';
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">

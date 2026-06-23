@@ -90,6 +90,10 @@ export const getFileInfo = (file: File) => {
         doc: 'DOC',
         docx: 'DOCX',
         json: 'JSON',
+        png: 'PNG',
+        jpg: 'JPG',
+        jpeg: 'JPEG',
+        webp: 'WEBP',
     };
 
     const type = typeMap[extension] || extension.toUpperCase();
