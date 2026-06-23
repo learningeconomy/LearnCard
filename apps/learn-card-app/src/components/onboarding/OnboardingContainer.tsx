@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 
-import { ModalTypes, useModal } from 'learn-card-base';
+import { ModalTypes, useModal, useGetProfile, useUpdatePreferences } from 'learn-card-base';
 import { calculateAge, isFutureDate } from 'learn-card-base/helpers/dateHelpers';
 import { getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
@@ -12,8 +12,8 @@ import OnboardingFooter from './onboardingFooter/OnboardingFooter';
 import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import OnboardingNetworkForm from './onboardingNetworkForm/OnboardingNetworkForm';
 import OnboardingAgeGate from './OnboardingAgeGate';
+import OnboardingPrivacyDataStep from './OnboardingPrivacyDataStep';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useGetProfile } from 'learn-card-base';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -21,10 +21,12 @@ import useLogout from '../../hooks/useLogout';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
 import { isEUCountry, requiresEUParentalConsent } from './onboardingNetworkForm/helpers/gdpr';
-import { ONBOARDING_STARTED_AT_KEY } from '@analytics';
+import { ONBOARDING_STARTED_AT_KEY, useAnalytics } from '@analytics';
 import UnderageModalContent from './onboardingNetworkForm/components/UnderageModalContent';
 import EUParentalConsentModalContent from './onboardingNetworkForm/components/EUParentalConsentModalContent';
 import USConsentNoticeModalContent from './onboardingNetworkForm/components/USConsentNoticeModalContent';
+import { getDefaultPrivacyPreferences } from './privacyPreferences';
+import type { OnboardingPrivacyPreferences } from './privacyPreferences';
 
 type OnboardingContainerProps = {
     onSuccess?: () => void;
@@ -34,16 +36,24 @@ type OnboardingContainerProps = {
 const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, initialStep }) => {
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState, setupNewKey } = useAppAuth();
+    const { mutateAsync: updatePreferences } = useUpdatePreferences();
+    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { handleLogout } = useLogout();
     const [role, setRole] = useState<LearnCardRolesEnum>(LearnCardRolesEnum.learner);
 
     const [ageGateError, setAgeGateError] = useState<string | null>(null);
+    const [privacyStepError, setPrivacyStepError] = useState<string | null>(null);
     const [isPreparingKey, setIsPreparingKey] = useState(false);
+    const [isSavingPrivacyPreferences, setIsSavingPrivacyPreferences] = useState(false);
     const didPrepareNewKeyRef = useRef(false);
     const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
 
     const currentUser = useCurrentUser();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useGetProfile();
+    const {
+        data: currentLCNUser,
+        isLoading: currentLCNUserLoading,
+        isError: currentLCNUserError,
+    } = useGetProfile();
     const currentLCNUserDob =
         currentLCNUser && 'dob' in currentLCNUser ? currentLCNUser.dob ?? '' : '';
     const currentLCNUserCountry =
@@ -59,6 +69,10 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
         euParentalConsentRequested: false,
         guardianEmail: '',
         profileId: '',
+        privacyPreferences:
+            currentLCNUserDob && currentLCNUserCountry
+                ? getDefaultPrivacyPreferences(currentLCNUserDob, currentLCNUserCountry)
+                : undefined,
     });
 
     useEffect(() => {
@@ -72,12 +86,21 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             dob: prev.dob || currentLCNUserDob || '',
             country: prev.country || currentLCNUserCountry,
             photo: prev.photo || currentLCNUser.image || currentUser?.profileImage || '',
+            privacyPreferences:
+                prev.privacyPreferences ||
+                (currentLCNUserDob && currentLCNUserCountry
+                    ? getDefaultPrivacyPreferences(currentLCNUserDob, currentLCNUserCountry)
+                    : prev.privacyPreferences),
         }));
     }, [currentLCNUser, currentLCNUserCountry, currentLCNUserDob, currentUser?.profileImage]);
 
     const hasProfileAgeData = Boolean(currentLCNUserDob && currentLCNUserCountry);
+    // An errored profile fetch must count as "still resolving", not "no age data" —
+    // otherwise a transient wallet/network failure would drop an existing user onto
+    // the age gate. New users are routed via `needs_setup`, which is unaffected.
+    const profileResolving = currentLCNUserLoading || currentLCNUserError;
     const shouldStartAtAgeGate =
-        coordinatorState.status === 'needs_setup' || (!currentLCNUserLoading && !hasProfileAgeData);
+        coordinatorState.status === 'needs_setup' || (!profileResolving && !hasProfileAgeData);
 
     const [step, setStep] = useState<OnboardingStepsEnum>(
         shouldStartAtAgeGate
@@ -139,6 +162,21 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     const updateFormData = (updates: Partial<typeof formData>) => {
         setFormData(prev => ({ ...prev, ...updates }));
     };
+
+    const advanceToPrivacyStep = useCallback(() => {
+        if (!formData.dob || !formData.country) {
+            return;
+        }
+
+        setPrivacyStepError(null);
+        setFormData(prev => ({
+            ...prev,
+            privacyPreferences:
+                prev.privacyPreferences ??
+                getDefaultPrivacyPreferences(formData.dob ?? '', formData.country),
+        }));
+        setStep(OnboardingStepsEnum.privacyData);
+    }, [formData.country, formData.dob]);
 
     const updateFormDataForChild: React.ComponentProps<
         typeof OnboardingNetworkForm
@@ -208,7 +246,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             setAgeGateError(null);
 
             if (await prepareNewUserKey()) {
-                setStep(OnboardingStepsEnum.selectRole);
+                advanceToPrivacyStep();
             }
         };
 
@@ -231,7 +269,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    }, [closeModal, newModal, prepareNewUserKey, routeChildToParentFlow]);
+    }, [advanceToPrivacyStep, closeModal, newModal, prepareNewUserKey, routeChildToParentFlow]);
 
     const presentUSConsentNoticeModal = useCallback(() => {
         newModal(
@@ -241,7 +279,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                     updateFormData({ usMinorConsent: true });
                     closeModal();
                     if (await prepareNewUserKey()) {
-                        setStep(OnboardingStepsEnum.selectRole);
+                        advanceToPrivacyStep();
                     }
                 }}
             />,
@@ -251,7 +289,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    }, [closeModal, newModal, prepareNewUserKey]);
+    }, [advanceToPrivacyStep, closeModal, newModal, prepareNewUserKey, updateFormData]);
 
     const presentEUParentalConsentModal = useCallback(() => {
         newModal(
@@ -268,7 +306,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                 onComplete={async () => {
                     closeModal();
                     if (await prepareNewUserKey()) {
-                        setStep(OnboardingStepsEnum.selectRole);
+                        advanceToPrivacyStep();
                     }
                 }}
             />,
@@ -278,7 +316,16 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
             },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    }, [closeModal, formData.country, formData.dob, formData.name, newModal, prepareNewUserKey]);
+    }, [
+        advanceToPrivacyStep,
+        closeModal,
+        formData.country,
+        formData.dob,
+        formData.name,
+        newModal,
+        prepareNewUserKey,
+        updateFormData,
+    ]);
 
     const handleAgeGateContinue = useCallback(async () => {
         const { dob, country } = formData;
@@ -325,14 +372,50 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
         }
 
         if (await prepareNewUserKey()) {
-            setStep(OnboardingStepsEnum.selectRole);
+            advanceToPrivacyStep();
         }
     }, [
+        advanceToPrivacyStep,
         formData,
         prepareNewUserKey,
         presentEUParentalConsentModal,
         presentUnderageModal,
         presentUSConsentNoticeModal,
+    ]);
+
+    const handlePrivacyPreferencesContinue = useCallback(async () => {
+        const selectedPreferences =
+            formData.privacyPreferences ??
+            getDefaultPrivacyPreferences(formData.dob ?? '', formData.country);
+        const preferencesToSave: OnboardingPrivacyPreferences = {
+            ...selectedPreferences,
+            aiEnabled: selectedPreferences.isMinor ? false : selectedPreferences.aiEnabled,
+            aiAutoDisabled: selectedPreferences.isMinor,
+            analyticsAutoDisabled: false,
+        };
+
+        setPrivacyStepError(null);
+        setIsSavingPrivacyPreferences(true);
+
+        try {
+            await updatePreferences(preferencesToSave);
+            setAnalyticsEnabled(preferencesToSave.analyticsEnabled);
+            updateFormData({
+                privacyPreferences: preferencesToSave,
+            });
+            setStep(OnboardingStepsEnum.selectRole);
+        } catch {
+            setPrivacyStepError('Something went wrong. Please try again.');
+        } finally {
+            setIsSavingPrivacyPreferences(false);
+        }
+    }, [
+        formData.country,
+        formData.dob,
+        formData.privacyPreferences,
+        setAnalyticsEnabled,
+        updateFormData,
+        updatePreferences,
     ]);
 
     if (step === OnboardingStepsEnum.ageGate) {
@@ -344,21 +427,53 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                 isLoading={isPreparingKey}
                 onDobChange={dob => {
                     setAgeGateError(null);
+                    setPrivacyStepError(null);
                     updateFormData({
                         dob,
                         usMinorConsent: false,
                         euParentalConsentRequested: false,
+                        privacyPreferences: undefined,
                     });
                 }}
                 onCountryChange={country => {
                     setAgeGateError(null);
+                    setPrivacyStepError(null);
                     updateFormData({
                         country,
                         usMinorConsent: false,
                         euParentalConsentRequested: false,
+                        privacyPreferences: undefined,
                     });
                 }}
                 onContinue={handleAgeGateContinue}
+            />
+        );
+    }
+
+    if (step === OnboardingStepsEnum.privacyData) {
+        return (
+            <OnboardingPrivacyDataStep
+                preferences={
+                    formData.privacyPreferences ??
+                    getDefaultPrivacyPreferences(formData.dob ?? '', formData.country)
+                }
+                error={privacyStepError}
+                isLoading={isSavingPrivacyPreferences}
+                onBack={() => {
+                    setPrivacyStepError(null);
+                    setStep(OnboardingStepsEnum.ageGate);
+                }}
+                onChange={updates => {
+                    setPrivacyStepError(null);
+                    updateFormData({
+                        privacyPreferences: {
+                            ...(formData.privacyPreferences ??
+                                getDefaultPrivacyPreferences(formData.dob ?? '', formData.country)),
+                            ...updates,
+                        },
+                    });
+                }}
+                onContinue={handlePrivacyPreferencesContinue}
             />
         );
     }
@@ -382,7 +497,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
 
     return (
         <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
-            <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
+            <div className="max-w-[600px] mx-auto pt-[50px] px-4 pb-[16px] relative w-full">
                 {pendingInstall && (
                     <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-3">
                         {pendingInstall.appIcon && (
@@ -403,17 +518,19 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                 )}
                 <OnboardingHeader text={m['onboarding.selectRole.header']()} />
                 <OnboardingRoles role={role} setRole={setRole} />
-                <OnboardingFooter
-                    overrideSkip={
-                        step === OnboardingStepsEnum.selectRole
-                            ? () => setStep(OnboardingStepsEnum.joinNetwork)
-                            : undefined
-                    }
-                    step={step}
-                    role={role}
-                    setStep={setStep}
-                />
             </div>
+
+            <OnboardingFooter
+                overrideSkip={
+                    step === OnboardingStepsEnum.selectRole
+                        ? () => setStep(OnboardingStepsEnum.joinNetwork)
+                        : undefined
+                }
+                step={step}
+                role={role}
+                setStep={setStep}
+                showBackButton
+            />
         </div>
     );
 };

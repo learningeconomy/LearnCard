@@ -393,10 +393,10 @@ export const LoginContent: React.FC = () => {
                                 }`}
                             >
                                 {isNewUserSetup
-                                    ? 'Create your account in a few quick steps.'
+                                    ? m['login.prompt.newUser']()
                                     : isReturningUser
-                                    ? 'Welcome back — sign in to continue.'
-                                    : 'Sign in or create your account.'}
+                                    ? m['login.prompt.returning']()
+                                    : m['login.prompt.default']()}
                             </p>
                         </div>
                     </IonRow>

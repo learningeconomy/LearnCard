@@ -149,7 +149,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         showCloseButton: true,
         title: (
             <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
-                Select Recipient
+                {m['boost.shortBoost.selectRecipient']()}
             </p>
         ),
         search,
@@ -167,7 +167,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         showCloseButton: false,
         title: (
             <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                Who do you want to boost?
+                {m['boost.cms.issueTo.whoToBoost']()}
             </p>
         ),
         search,
@@ -254,7 +254,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
-                                            {contactCount ?? 0} Contacts
+                                            {m['contacts.contactsCount']({
+                                                count: contactCount ?? 0,
+                                            })}
                                         </h3>
                                     </IonCol>
 
@@ -305,7 +307,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 />
                             </div>
                             <p className="font-bold text-grayscale-800 mt-[20px]">
-                                No connections yet
+                                {m['contacts.noConnectionsYet']()}
                             </p>
                         </section>
                     )}
@@ -347,7 +349,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         onClick={handleSaveContacts}
                                         className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white font-poppins text-xl w-full shadow-lg normal font-medium text-center"
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </IonCol>
                             </div>
@@ -451,7 +453,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </div>
                         {collectionPropName === 'admins' && (
                             <p className="px-[16px] pb-6 font-poppins text-black text-base">
-                                Admins are granted permission to send and edit this Boost.
+                                {m['boost.cms.issueTo.adminsDescription']()}
                             </p>
                         )}
 

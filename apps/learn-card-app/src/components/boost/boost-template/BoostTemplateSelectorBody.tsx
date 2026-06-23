@@ -31,6 +31,8 @@ import {
 } from './boostTemplateSearch.helpers';
 import { getLearnCardBoostTemplates } from '../boostHelpers';
 
+import * as m from '../../../paraglide/messages.js';
+
 type BoostTemplateSelectorBodyProps = {
     selectedCategory: BoostCategoryOptionsEnum;
     viewMode: BoostPageViewModeType;
@@ -231,7 +233,7 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
                             <IonInput
                                 type="text"
                                 value={searchInput}
-                                placeholder="Browse templates..."
+                                placeholder={m['boost.template.browseTemplates']()}
                                 onIonInput={e => setSearchInput(e.detail.value)}
                                 className="bg-white text-grayscale-800 rounded-[15px] !p-[5px] !font-notoSans text-[17px] !pl-[48px]"
                             />
@@ -245,7 +247,9 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
                     {!boostsLoading && boostsList?.length === 0 && (
                         <div className="flex flex-col w-full h-full items-center justify-center">
                             <p className="mt-2 font-poppins text-xl text-grayscale-900">
-                                {searchInput ? 'No results found' : 'No Boosts yet!'}
+                                {searchInput
+                                    ? m['boost.template.noResults']()
+                                    : m['boost.template.noBoosts']()}
                             </p>
                         </div>
                     )}

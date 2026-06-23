@@ -72,13 +72,13 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
                         customImageClass="flex justify-center items-center h-[44px] w-[44px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[44px] min-h-[44px]"
                         customSize={120}
                     />
-                    <p className="text-[22px] font-medium text-white">Share</p>
+                    <p className="text-[22px] font-medium text-white">{m['common.share']()}</p>
                     <button
                         type="button"
                         onClick={handleClose}
                         className="text-white disabled:opacity-50"
                         disabled={!handleClose}
-                        aria-label="Close share modal"
+                        aria-label={m['passport.resumeBuilder.shareLink.close']()}
                     >
                         <X className="h-8 w-8 text-white" />
                     </button>
@@ -98,7 +98,7 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
                             <p className="min-w-0 flex-1 truncate text-[16px] font-medium text-grayscale-500">
                                 {shareLink
                                     ? truncateWithEllipsis(shareLink, 40)
-                                    : 'Generating link...'}
+                                    : m['passport.resumeBuilder.shareLink.generatingLink']()}
                             </p>
                             <button
                                 type="button"
@@ -106,21 +106,22 @@ const ResumeShareLink: React.FC<ResumeShareLinkProps> = ({ handleClose, resume, 
                                 disabled={!shareLink}
                                 className="shrink-0 text-[16px] font-semibold text-blue-500 disabled:opacity-50"
                             >
-                                Copy Link
+                                {m['passport.resumeBuilder.shareLink.copyLink']()}
                             </button>
                         </div>
                     </div>
 
                     <div className="mt-3 w-full flex flex-col gap-[10px] bg-sky-50 border border-sky-200 rounded-[15px] p-[14px]">
                         <p className="text-sky-900 font-poppins text-[16px] font-[600] m-0">
-                            Share your {brandingConfig?.name} resume
+                            {m['passport.resumeBuilder.shareLink.heading']({
+                                brand: brandingConfig?.name ?? '',
+                            })}
                         </p>
                         <p className="text-sky-800 text-sm m-0">
-                            This link and QR code let others view your shared resume.
+                            {m['passport.resumeBuilder.shareLink.description1']()}
                         </p>
                         <p className="text-sky-800 text-sm m-0">
-                            Share with recruiters, hiring managers, friends, or anyone you want to
-                            review your resume.
+                            {m['passport.resumeBuilder.shareLink.description2']()}
                         </p>
                     </div>
                 </div>

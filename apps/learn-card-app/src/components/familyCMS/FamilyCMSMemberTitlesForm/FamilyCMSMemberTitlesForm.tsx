@@ -1,6 +1,7 @@
 import { IonInput } from '@ionic/react';
 import React, { useState } from 'react';
 import { FamilyCMSState, MemberTitleTypes } from '../familyCMSState';
+import { m } from '../../../paraglide/messages.js';
 
 export type FamilyMemberTitles = {
     singular: string;
@@ -19,10 +20,13 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
     }>(
         state?.basicInfo?.memberTitles ?? {
             guardians: {
-                singular: 'Guardian',
-                plural: 'Guardians',
+                singular: m['family.members.guardian'](),
+                plural: m['family.members.guardians'](),
             },
-            dependents: { singular: 'Child', plural: 'Children' },
+            dependents: {
+                singular: m['family.members.child'](),
+                plural: m['family.members.children'](),
+            },
         }
     );
 
@@ -63,23 +67,22 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
         <section className="bg-white ion-padding rounded-[20px] shadow-soft-bottom mt-[20px]">
             <div className="w-full flex items-start justify-center flex-col mb-4">
                 <h2 className="font-poppins text-[22px] font-normal text-grayscale-800">
-                    Member Titles
+                    {m['family.titles.heading']()}
                 </h2>
             </div>
 
             <div className="w-full flex items-start justify-center flex-col">
                 <h2 className="font-poppins text-xl font-normal text-grayscale-800 mb-2">
-                    Connected Users Titles
+                    {m['family.titles.connectedHeading']()}
                 </h2>
                 <p className="text-grayscale-600 font-normal text-sm text-left">
-                    Connected users are primary Learncard accounts that exist independent of
-                    families.{' '}
+                    {m['family.titles.connectedDesc']()}{' '}
                 </p>
             </div>
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                    Singular
+                    {m['family.titles.singular']()}
                 </h3>
 
                 <IonInput
@@ -88,7 +91,7 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.guardians?.singular ? 'border-red-300 border-2' : ''
                     }`}
-                    placeholder="Singular"
+                    placeholder={m['family.titles.singular']()}
                     clearInput
                     type="text"
                 />
@@ -102,7 +105,7 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                    Plural
+                    {m['family.titles.plural']()}
                 </h3>
 
                 <IonInput
@@ -111,7 +114,7 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.guardians?.plural ? 'border-red-300 border-2' : ''
                     }`}
-                    placeholder="Plural"
+                    placeholder={m['family.titles.plural']()}
                     clearInput
                     type="text"
                 />
@@ -125,17 +128,16 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
 
             <div className="w-full flex items-start justify-center flex-col mt-6">
                 <h2 className="font-poppins text-xl font-normal text-grayscale-800 mb-2">
-                    Dependents Titles
+                    {m['family.titles.dependentsHeading']()}
                 </h2>
                 <p className="text-grayscale-600 font-normal text-sm text-left">
-                    Dependent accounts exist only in the family that they are created in. They have
-                    no personal login and limited permissions in LearnCard.
+                    {m['family.titles.dependentsDesc']()}
                 </p>
             </div>
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                    Singular
+                    {m['family.titles.singular']()}
                 </h3>
 
                 <IonInput
@@ -144,7 +146,7 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.dependents?.singular ? 'border-red-300 border-2' : ''
                     }`}
-                    placeholder="Singular"
+                    placeholder={m['family.titles.singular']()}
                     clearInput
                     type="text"
                 />
@@ -158,7 +160,7 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                    Plural
+                    {m['family.titles.plural']()}
                 </h3>
 
                 <IonInput
@@ -167,7 +169,7 @@ export const FamilyCMSMemberTitlesForm: React.FC<{
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                         errors?.dependents?.plural ? 'border-red-300 border-2' : ''
                     }`}
-                    placeholder="Plural"
+                    placeholder={m['family.titles.plural']()}
                     clearInput
                     type="text"
                 />

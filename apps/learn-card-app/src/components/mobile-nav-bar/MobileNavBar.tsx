@@ -39,6 +39,8 @@ import { NavBarIcons } from 'learn-card-base';
 
 import navBarBackground from '../../assets/images/mobile-nav-bar-vector.svg';
 
+import * as m from '../../paraglide/messages.js';
+
 const { notification: NavBarBellIcon } = NavBarIcons;
 
 export enum MobileNavBarLinks {
@@ -92,8 +94,9 @@ const MobileNavBar: React.FC = () => {
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
     let walletTextStyles = 'mt-[3px]';
     if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[3px] pb-[2px]`;
@@ -152,7 +155,7 @@ const MobileNavBar: React.FC = () => {
                                             isSyncing={isSyncing}
                                             isCompleted={isCompleted}
                                             version={isWalletTabActive ? '2' : '1'}
-                                            className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px]`}
+                                            className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px] ml-[-4px]`}
                                         />
                                         <IonLabel
                                             className={`font-notoSans font-bold text-[12px] ${
@@ -206,7 +209,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {m['sidemenu.links.launchPadShort']()}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
@@ -220,7 +223,7 @@ const MobileNavBar: React.FC = () => {
                                         href={link.path}
                                         className="mobile-nav-notification-button"
                                     >
-                                        <div className="relative">
+                                        <div className="relative mt-[-3px]">
                                             <NotificationIcon
                                                 version={isNotificationTabActive ? '2' : '1'}
                                                 className="h-[40px] w-[40px] mt-[0px] mb-0"
@@ -230,13 +233,13 @@ const MobileNavBar: React.FC = () => {
                                             )}
                                         </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[12px] ${
+                                            className={`font-notoSans font-bold mt-[3px] text-[12px] ${
                                                 isNotificationTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {m['sidemenu.links.alerts']()}
                                         </IonLabel>
                                     </IonTabButton>
                                 );

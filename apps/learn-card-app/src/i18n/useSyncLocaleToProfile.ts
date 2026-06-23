@@ -27,7 +27,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { getLogger, useGetProfile, useWallet } from 'learn-card-base';
+import { getLogger, useGetProfile, useIsLoggedIn, useWallet } from 'learn-card-base';
 
 import { useLocale } from './index';
 
@@ -37,6 +37,7 @@ export const useSyncLocaleToProfile = (): void => {
     const locale = useLocale();
     const { data: profile, isFetched } = useGetProfile();
     const { initWallet } = useWallet();
+    const isLoggedIn = useIsLoggedIn();
     const queryClient = useQueryClient();
 
     // Tracks the locale value currently being written to the backend, so a
@@ -56,6 +57,7 @@ export const useSyncLocaleToProfile = (): void => {
         // case (non-LCN users). `profileLocale !== locale` is the actual
         // divergence check — covers both unset and changed values.
         if (!isFetched) return;
+        if (!isLoggedIn) return; // no private key yet — initWallet() would throw
         if (!profile?.profileId) return; // not an LCN user (or not loaded)
         if (profileLocale === locale) return; // already in sync
         if (writingRef.current !== null) return; // a write is already in flight
@@ -65,8 +67,13 @@ export const useSyncLocaleToProfile = (): void => {
 
         (async () => {
             try {
+                // initWallet() (getWallet) resolves to a wallet or THROWS — most
+                // commonly "no valid private key found" before login completes. The
+                // `isLoggedIn` gate above already filters that case; this guard is
+                // purely defensive. When login completes, `isLoggedIn` flips and the
+                // effect re-runs (it's a dep), so the sync is retried then.
                 const wallet = await initWallet();
-                if (!wallet) return; // wallet not ready yet — will retry on next profile change
+                if (!wallet) return;
                 await wallet.invoke.updateProfile({ locale });
                 if (cancelled) return;
 
@@ -101,7 +108,10 @@ export const useSyncLocaleToProfile = (): void => {
         //   the effect short-circuits.
         // profile?.profileId: presence (dep) — fires when the profile loads.
         // isFetched: loading gate (dep).
-    }, [locale, profileLocale, profile?.profileId, isFetched, initWallet, queryClient]);
+        // isLoggedIn: wallet-readiness signal (dep) — flips true once the private
+        //   key is available, re-running the effect to retry a sync that bailed
+        //   before login.
+    }, [locale, profileLocale, profile?.profileId, isFetched, isLoggedIn, initWallet, queryClient]);
 };
 
 /**

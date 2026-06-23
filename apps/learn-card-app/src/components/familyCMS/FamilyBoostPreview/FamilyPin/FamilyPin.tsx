@@ -4,6 +4,7 @@ import FamilyPinWrapper, { FamilyPinViewModeEnum } from './FamilyPinWrapper';
 
 import { FamilyCMSState } from '../../familyCMSState';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { m } from '../../../../paraglide/messages.js';
 
 export const FamilyPin: React.FC<{
     state: FamilyCMSState;
@@ -31,7 +32,7 @@ export const FamilyPin: React.FC<{
             <FamilyPinWrapper
                 viewMode={pinExists ? FamilyPinViewModeEnum?.edit : FamilyPinViewModeEnum?.create}
                 skipVerification
-                titleOverride={!pinExists ? 'Create Your Pin' : ''}
+                titleOverride={!pinExists ? m['family.pin.createPin']() : ''}
                 existingPin={state?.pin}
                 handleOnSubmit={handleSetPin}
                 familyName={state?.basicInfo?.name}
@@ -56,7 +57,7 @@ export const FamilyPin: React.FC<{
             >
                 <div className="w-full flex items-start justify-center flex-col">
                     <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                        Personal PIN
+                        {m['family.pin.heading']()}
                     </h3>
 
                     {pinError?.length > 0 && (
@@ -64,8 +65,7 @@ export const FamilyPin: React.FC<{
                     )}
 
                     <p className="text-grayscale-600 font-normal text-sm text-left mb-4">
-                        Your pin allows you to access and manage controls that require your
-                        authorization.
+                        {m['family.pin.description']()}
                     </p>
 
                     <FamilyPinButton
@@ -73,7 +73,7 @@ export const FamilyPin: React.FC<{
                             presentPinModal();
                             setPinError('');
                         }}
-                        title={`${pinExists ? 'Edit Pin' : 'Set Pin'}`}
+                        title={pinExists ? m['family.pin.editPin']() : m['family.pin.setPin']()}
                         className="!border-0 !p-0 !m-0"
                         pinExists={pinExists}
                     />

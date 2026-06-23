@@ -33,6 +33,23 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.appIssuer': 'Trusted App',
     'verification.untrustedIssuer': 'Untrusted Issuer',
     'credential.by': 'By',
+    'verification.title': 'Credential Verifications',
+    'verification.infoText':
+        'Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy.',
+    'verification.status.success': 'Success',
+    'verification.status.error': 'Error',
+    'verification.status.failed': 'Failed',
+    'verification.check.proof': 'Proof',
+    'verification.check.status': 'Status',
+    'verification.check.expiration': 'Expiration',
+    'verification.message.valid': 'Valid',
+    'verification.message.invalid': 'Invalid',
+    'verification.message.notRevoked': 'Not Revoked',
+    'verification.message.revoked': 'Revoked',
+    'verification.message.doesNotExpire': 'Does Not Expire',
+    'verification.message.expired': 'Expired',
+    'verification.message.active': 'Active',
+    'verification.message.couldNotVerify': 'Boost Credential could not be verified.',
 };
 
 /** Minimal `{var}` interpolation — no dependency. */

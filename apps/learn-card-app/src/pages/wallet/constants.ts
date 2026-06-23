@@ -77,7 +77,7 @@ export const walletPageData: WalletPageItem[] = [
     },
     {
         id: 2,
-        title: 'AI Pathways',
+        title: 'Pathways',
         bgColor: 'bg-teal-300',
         bgColorSecondary: 'bg-teal-500',
         subtype: WalletCategoryTypes.aiPathways,
@@ -93,7 +93,7 @@ export const walletPageData: WalletPageItem[] = [
     },
     {
         id: 3,
-        title: 'AI Insights',
+        title: 'Insights',
         bgColor: 'bg-lime-300',
         IconWithShape: AiInsightsIconWithShape,
         IconWithLightShape: AiInsightsIconWithLightShape,

@@ -13,6 +13,7 @@ import CredentialCard from './CredentialCard';
 import AiSessionCard, { isAiSessionSummaryRecord } from './AiSessionCard';
 import AiTopicCard, { isAiTopicRecord } from './AiTopicCard';
 import { CredentialRecord } from './AppCredentialDashboard';
+import * as m from '../../paraglide/messages.js';
 
 type PanelTab = 'credentials' | 'notifications';
 
@@ -410,8 +411,10 @@ const CredentialPanelContent: React.FC<CredentialPanelContentProps> = ({
                         ) : earnedCredentials.length === 0 ? (
                             <EmptyState
                                 icon={<Inbox className="w-12 h-12 text-indigo-400" />}
-                                title="No credentials earned yet"
-                                description={`Keep exploring ${appName}! Credentials you earn will appear here.`}
+                                title={m['launchpad.emptyStates.noCredentialsEarned']()}
+                                description={m['launchpad.emptyStates.keepExploring']({
+                                    appName,
+                                })}
                             />
                         ) : (
                             <div className="space-y-4">

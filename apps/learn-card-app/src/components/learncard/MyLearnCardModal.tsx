@@ -354,7 +354,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Privacy & Data',
+                title: m['consentFlow.privacyAndData'](),
                 Icon: PrivacyLock,
                 caretText: '',
                 onClick: () => {
@@ -810,7 +810,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                 disabled={isLoggingOut}
                             >
                                 <SignOutIcon />
-                                Logout
+                                {m['recovery.logOut']()}
                             </button>
                         )}
                     </div>

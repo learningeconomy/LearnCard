@@ -115,7 +115,8 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
                     <span className="issued-by text-grayscale-900 font-[500]">
-                        by <strong className="font-[700] capitalize">{issuerName}</strong>
+                        {m['claim.by']()}{' '}
+                        <strong className="font-[700] capitalize">{issuerName}</strong>
                     </span>
                 </div>
             </>
@@ -137,7 +138,8 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
                 <span className="issued-by text-grayscale-900 font-[500]">
-                    by <strong className="font-[700] capitalize">{issuerName}</strong>
+                    {m['claim.by']()}{' '}
+                    <strong className="font-[700] capitalize">{issuerName}</strong>
                 </span>
             </div>
         </>
@@ -352,7 +354,9 @@ const ClaimFromDashboard: React.FC = () => {
         return <ClaimFromDashboardLoggedOut metadata={metadata} />;
     }
 
-    const loadingText = claimingCredential ? 'Claiming Credential' : 'Fetching Credential';
+    const loadingText = claimingCredential
+        ? m['claim.claimingCredential']()
+        : m['claim.fetchingCredential']();
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID =
@@ -383,10 +387,10 @@ const ClaimFromDashboard: React.FC = () => {
                     {!loading && !credential && (
                         <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
                             <h1 className="text-center text-xl font-bold text-grayscale-800">
-                                Eeek!
+                                {m['claim.notFound.title']()}
                             </h1>
                             <strong className="text-center font-medium text-grayscale-600">
-                                Unable to find credential
+                                {m['claim.notFound.message']()}
                             </strong>
                         </section>
                     )}
@@ -429,7 +433,7 @@ const ClaimFromDashboard: React.FC = () => {
                                 className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
                                 disabled={claimingCredential}
                             >
-                                Accept
+                                {m['common.accept']()}
                             </button>
                         )}
 
@@ -446,7 +450,7 @@ const ClaimFromDashboard: React.FC = () => {
                                 className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
                                 disabled={claimingCredential}
                             >
-                                Accept
+                                {m['common.accept']()}
                             </button>
                         )}
 

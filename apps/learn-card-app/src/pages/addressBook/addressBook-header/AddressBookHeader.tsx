@@ -66,11 +66,11 @@ export const AddressBookHeader: React.FC<{
                             onClick={() => {
                                 history.goBack();
                             }}
-                            aria-label="Back button"
+                            aria-label={m['common.back']()}
                         >
                             <LeftArrow className="w-[30px] mr-[10px] h-auto text-grayscale-600 desktop:hidden" />
                             <span className="text-grayscale-900 font-poppins font-semibold text-[25px] tracking-[0.01rem]">
-                                Contacts
+                                {m['contacts.title']()}
                             </span>
                         </button>
                     </IonCol>
@@ -89,7 +89,7 @@ export const AddressBookHeader: React.FC<{
                         }}
                         className={`text-${colorSet.primaryColor} flex rounded-[40px] bg-white py-[6px] px-[16px] text-[17px] font-semibold font-poppins`}
                     >
-                        New
+                        {m['contacts.new']()}
                         <Plus
                             className={`ml-[5px] w-[24px] h-[24px] text-${colorSet.primaryColor}`}
                         />

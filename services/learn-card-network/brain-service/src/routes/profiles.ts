@@ -112,7 +112,16 @@ const UpdateProfileInputValidator = z.object({
     role: z.string().optional(),
     dob: z.string().optional(),
     country: z.string().optional(),
-    locale: z.string().optional(),
+    // Guard against arbitrary strings being durably persisted. Accept only a
+    // BCP-47 tag whose primary subtag is a supported catalog locale (en/es/fr/ar)
+    // — region variants like `es-MX` are allowed and normalized at notification
+    // time (see resolveCatalogLocale in helpers/notificationMessages.ts).
+    locale: z
+        .string()
+        .refine(value => ['en', 'es', 'fr', 'ar'].includes(value.toLowerCase().split('-')[0] ?? ''), {
+            message: 'Unsupported locale (expected one of en, es, fr, ar)',
+        })
+        .optional(),
     highlightedCredentials: z.array(z.string()).optional(),
     approved: z.boolean().optional(),
 });

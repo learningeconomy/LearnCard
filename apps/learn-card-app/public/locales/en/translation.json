@@ -39,7 +39,23 @@
         "cancel": "Cancel",
         "save": "Save",
         "continue": "Continue",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "add": "Add",
+        "saving": "Saving...",
+        "searchResults": {
+            "noResults": "No results found",
+            "noResultsFor": "No results found for <0>{{query}}</0>"
+        },
+        "create": "Create",
+        "creating": "Creating...",
+        "updating": "Updating...",
+        "revoked": "Revoked",
+        "learnMore": "Learn More",
+        "viewAll": "View All",
+        "tagline": "Universal Learning & Work Portfolio",
+        "gotIt": "Got it.",
+        "edit": "Edit",
+        "clear": "Clear"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",
@@ -53,6 +69,7 @@
         },
         "links": {
             "launchPad": "Apps",
+            "launchPadShort": "Apps",
             "contacts": "Contacts",
             "alerts": "Alerts",
             "personalize": "Personalize",
@@ -77,6 +94,10 @@
     },
     "passport": {
         "buildMyLearnCard": {
+            "addVCs": {
+                "title": "Add Verifiable Credentials",
+                "description": "If you have raw JSON credentials, you can add them to your wallet here."
+            },
             "title": "Build My {{brand}}",
             "progress": "{{percent}}% optimized",
             "processing": "Processing documents…",
@@ -131,7 +152,11 @@
                     "title": "Verifiable Credentials",
                     "description": "Upload or paste raw JSON credentials to add them to your wallet.",
                     "placeholder": "Paste your JSON here...",
-                    "addButton": "Add Credentials"
+                    "addButton": "Add Credentials",
+                    "parsing": "Parsing...",
+                    "toastAdded": "JSON Credential Successfully Added",
+                    "toastAddedBody": "Your journey is now reflected in portable, trusted credentials.",
+                    "toastParseFailed": "Failed to parse JSON VC."
                 },
                 "addButton": "Add",
                 "schools": {
@@ -146,6 +171,24 @@
                     "title": "Self-Attested Skills",
                     "description": "Select from suggested skills based on your profile or add your own.",
                     "addSkill": "Add a skill"
+                },
+                "upload": "Upload",
+                "uploading": "Uploading...",
+                "addMore": "Add More",
+                "update": "Update",
+                "connect": "Connect",
+                "reconnect": "Reconnect",
+                "toastDeleteFailed": "Failed to delete. Please try again.",
+                "toastDeleteFailedShort": "Delete failed",
+                "toastExtractFailed": "Could not extract credentials",
+                "toastGenericError": "Something went wrong",
+                "credentialsSaved": "{{count}} credential(s) saved to your wallet.",
+                "confirmRemove": {
+                    "resume": "Are you sure you want remove your uploaded resume?",
+                    "certificate": "Are you sure you want remove your uploaded certificate?",
+                    "diploma": "Are you sure you want remove your uploaded diploma?",
+                    "transcript": "Are you sure you want remove your uploaded transcript?",
+                    "credential": "Are you sure you want remove your uploaded credential?"
                 }
             },
             "review": {
@@ -174,7 +217,68 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
-                "notifyWhenReady": "Notify me when it's ready"
+                "notifyWhenReady": "Notify me when it's ready",
+                "quotes": {
+                    "resume": {
+                        "q0": "Scanning your resume for hidden gems...",
+                        "q1": "Extracting your work history — one line at a time.",
+                        "q2": "Highlighting your accomplishments...",
+                        "q3": "Polishing your achievements into credentials...",
+                        "q4": "Turning experience into verifiable skills...",
+                        "q5": "Giving your resume the credential treatment...",
+                        "q6": "Building your learning and work timeline...",
+                        "q7": "Parsing education and work history...",
+                        "q8": "Verifying your resume for smart records...",
+                        "q9": "Creating digital proof of your career journey..."
+                    },
+                    "certificate": {
+                        "q0": "Reading your certificate details...",
+                        "q1": "Extracting certified skills and knowledge...",
+                        "q2": "Identifying your issuing authority...",
+                        "q3": "Verifying your certification date...",
+                        "q4": "Translating your certificate into a credential...",
+                        "q5": "Generating a smart badge for your expertise...",
+                        "q6": "Recognizing your certified accomplishments...",
+                        "q7": "Checking for expiration or renewal status...",
+                        "q8": "Transforming paper credentials into digital records...",
+                        "q9": "Capturing verified skills from your certificate..."
+                    },
+                    "transcript": {
+                        "q0": "Parsing your academic transcript...",
+                        "q1": "Extracting course history and grades...",
+                        "q2": "Mapping your educational timeline...",
+                        "q3": "Reading earned credits and GPA (if available)...",
+                        "q4": "Converting course data into credentials...",
+                        "q5": "Tracking your learning progress...",
+                        "q6": "Translating transcripts into verifiable records...",
+                        "q7": "Analyzing your academic performance...",
+                        "q8": "Identifying completed programs or majors...",
+                        "q9": "Building smart records from your coursework..."
+                    },
+                    "diploma": {
+                        "q0": "Analyzing your diploma...",
+                        "q1": "Verifying institution and degree type...",
+                        "q2": "Recognizing your awarded qualification...",
+                        "q3": "Converting your diploma into a verifiable record...",
+                        "q4": "Recording your academic milestone...",
+                        "q5": "Extracting awarded date and field of study...",
+                        "q6": "Documenting your graduation achievement...",
+                        "q7": "Preserving proof of your education...",
+                        "q8": "Digitizing your academic honor...",
+                        "q9": "Building a portable credential from your diploma..."
+                    },
+                    "rawVC": {
+                        "q0": "Parsing your raw JSON credential...",
+                        "q1": "Extracting credential details...",
+                        "q2": "Verifying credential signature...",
+                        "q3": "Converting JSON into a verifiable credential...",
+                        "q4": "Generating a smart badge for your expertise...",
+                        "q5": "Recognizing your verified accomplishments...",
+                        "q6": "Checking for expiration or renewal status...",
+                        "q7": "Transforming paper credentials into digital records...",
+                        "q8": "Capturing verified skills from your credential..."
+                    }
+                }
             },
             "misc": {
                 "noCredentialsExtracted": "No credentials were extracted from this file.",
@@ -191,7 +295,163 @@
             "yourResume": "Your Resume",
             "buildYourResume": "Build Your Resume",
             "updatedToday": "Updated <0>today</0>",
-            "tagline": "Stand out with a tailored resume"
+            "tagline": "Stand out with a tailored resume",
+            "on": "On",
+            "off": "Off",
+            "goBack": "Go back",
+            "download": "Download",
+            "currentJob": "Current Job",
+            "credential": "Credential",
+            "addDescription": "Add a description...",
+            "addItem": "Add item",
+            "remove": "Remove",
+            "deselectCredential": "Deselect credential",
+            "buildingResume": "Building your resume...",
+            "generatingPdf": "Generating PDF…",
+            "downloadResume": "Download Resume",
+            "status": {
+                "published": "Published",
+                "draft": "Draft",
+                "active": "Active"
+            },
+            "history": {
+                "iconAlt": "Resume history",
+                "title": "Resume History",
+                "newResume": "+ New Resume",
+                "creating": "Creating...",
+                "empty": "No existing resumes yet.",
+                "editedOn": "Edited on {{date}}",
+                "noEditDate": "No edit date",
+                "credentialCount": "{{count}} Credentials"
+            },
+            "documentSetup": {
+                "title": "Document Setup",
+                "qrCode": "{{brand}} QR code • {{status}}",
+                "qrCodeDescription": "This code allows employers to view the credentials attached to this resume.",
+                "fileName": "File Name"
+            },
+            "personalInfo": {
+                "title": "Personal Info",
+                "thumbnail": "Thumbnail • {{status}}"
+            },
+            "fields": {
+                "name": {
+                    "label": "Full Name",
+                    "placeholder": "Jane Doe"
+                },
+                "career": {
+                    "label": "Professional Title",
+                    "placeholder": "Software Engineer"
+                },
+                "location": {
+                    "label": "Location",
+                    "placeholder": "San Francisco, CA"
+                },
+                "summary": {
+                    "label": "Professional Summary",
+                    "placeholder": "Brief professional summary..."
+                },
+                "email": {
+                    "label": "Email",
+                    "placeholder": "jane@example.com"
+                },
+                "phone": {
+                    "label": "Phone",
+                    "placeholder": "+1 (555) 000-0000"
+                },
+                "website": {
+                    "label": "Website",
+                    "placeholder": "https://example.com"
+                },
+                "linkedIn": {
+                    "label": "LinkedIn",
+                    "placeholder": "https://linkedin.com/in/janedoe"
+                }
+            },
+            "sections": {
+                "workHistory": "Work Experience",
+                "learningHistory": "Education & Learning",
+                "achievement": "Achievements",
+                "accomplishment": "Accomplishments",
+                "socialBadge": "Badges & Certifications",
+                "accommodation": "Accommodations"
+            },
+            "selector": {
+                "selectedStatus": "{{count}} Selected • {{status}}",
+                "loading": "Loading credentials...",
+                "empty": "No credentials in this category.",
+                "noMatch": "No credentials match \"{{query}}\".",
+                "previous": "Previous credential",
+                "next": "Next credential"
+            },
+            "emptySection": {
+                "noCredentials": "No credentials found",
+                "descriptionSuffix": "to your {{brand}} passport to automatically populate this section.",
+                "workHistory": {
+                    "action": "Add Experience",
+                    "emphasis": "Add Work Experiences"
+                },
+                "learningHistory": {
+                    "action": "Add Study",
+                    "emphasis": "Add Studies"
+                },
+                "achievement": {
+                    "action": "Add Achievement",
+                    "emphasis": "Add Achievements"
+                },
+                "accomplishment": {
+                    "action": "Add Accomplishment",
+                    "emphasis": "Add Accomplishments"
+                },
+                "accommodation": {
+                    "action": "Add Assistance",
+                    "emphasis": "Add Assistances"
+                }
+            },
+            "dates": {
+                "start": "Start date",
+                "end": "End date"
+            },
+            "editable": {
+                "edited": "Edited",
+                "restoreDefault": "Restore Default",
+                "defaultSummary": "Default Summary"
+            },
+            "editBlock": {
+                "edit": "Edit",
+                "stopEditing": "Stop editing"
+            },
+            "emptyPreview": {
+                "title": "Your resume will appear here",
+                "subtitle": "Fill in your details and select credentials from the panel"
+            },
+            "pdfPreview": {
+                "defaultName": "Resume Preview",
+                "page": "Page",
+                "pages": "Pages",
+                "downloadPdf": "Download PDF",
+                "iframeTitle": "Resume PDF Preview"
+            },
+            "toastTitle": {
+                "downloaded": "Downloaded",
+                "downloadFailed": "Download Failed",
+                "published": "Published",
+                "saved": "Saved",
+                "publishFailed": "Publish Failed"
+            },
+            "selfAttest": {
+                "addTitle": "Add {{type}}",
+                "namePlaceholder": "Name...",
+                "descriptionPlaceholder": "Description..."
+            },
+            "shareLink": {
+                "close": "Close share modal",
+                "copyLink": "Copy Link",
+                "generatingLink": "Generating link...",
+                "heading": "Share your {{brand}} resume",
+                "description1": "This link and QR code let others view your shared resume.",
+                "description2": "Share with recruiters, hiring managers, friends, or anyone you want to review your resume."
+            }
         }
     },
     "launchpad": {
@@ -279,7 +539,10 @@
             "nothingInCategory": "Nothing in {{category}} yet",
             "installSomething": "Install something from the App Store to get started.",
             "checkBackLater": "Check back later — new apps are added all the time.",
-            "checkBackSoon": "Check back soon, or browse all apps."
+            "checkBackSoon": "Check back soon, or browse all apps.",
+            "noTemplates": "No templates found",
+            "noCredentialsEarned": "No credentials earned yet",
+            "keepExploring": "Keep exploring {{appName}}! Credentials you earn will appear here."
         },
         "header": {
             "contacts": "Contacts",
@@ -313,15 +576,16 @@
             "plugins": "Plugins",
             "all": "All"
         },
-        "title": "Apps"
+        "title": "Apps",
+        "searchApps": "Search apps..."
     },
     "wallet": {
         "actions": "Actions",
         "addToWallet": "Add to Wallet",
         "categories": {
             "aiSessions": "AI Sessions",
-            "aiPathways": "AI Pathways",
-            "aiInsights": "AI Insights",
+            "aiPathways": "Pathways",
+            "aiInsights": "Insights",
             "skills": "Skills",
             "socialBadges": "Boosts",
             "achievements": "Achievements",
@@ -551,12 +815,26 @@
                 "achievements": "Achievements",
                 "skills": "Skills"
             }
+        },
+        "prompt": {
+            "newUser": "Create your account in a few quick steps.",
+            "returning": "Welcome back — sign in to continue.",
+            "default": "Sign in or create your account."
         }
     },
     "onboarding": {
+        "ageGate": {
+            "heading": "Please enter your age and country to continue",
+            "subtitle": "We ask for this information to make sure we comply with privacy laws and keep you safe",
+            "checking": "Checking..."
+        },
         "back": "Back",
         "consent": {
             "underage": {
+                "shareLink": "Share this link with your parent so they can finish setting up the family.",
+                "copyLink": "Copy family link",
+                "linkCopied": "Link copied",
+                "copyFailed": "Failed to copy to clipboard.",
                 "heading": "Get an Adult",
                 "description": "You'll need a parent or guardian to add you to a family account before you can join.",
                 "schoolCode": {
@@ -625,7 +903,8 @@
             "userId": {
                 "placeholder": "User ID",
                 "charLength": "Must be between 3 to 25 characters.",
-                "format": "Letters, numbers, and dashes (-) only."
+                "format": "Letters, numbers, and dashes (-) only.",
+                "unique": "Must be unique."
             },
             "privacyNotice": "We ask for your age and country to make sure we comply with privacy laws and keep you safe.",
             "joiningNetwork": "Joining Network...",
@@ -873,13 +1152,13 @@
     },
     "settings": {
         "aiFeatures": "AI Features",
-        "aiFeaturesDesc": "AI tutoring sessions, insights, and personalization",
-        "analytics": "Analytics & Insights",
-        "analyticsDesc": "Help improve {{brand}} with anonymous usage data",
-        "bugReports": "Bug Reports",
-        "bugReportsDesc": "Automatically send crash reports to help fix issues",
+        "aiFeaturesDesc": "AI tutoring sessions, insights, and personalization. This may share relevant messages and records with AI providers.",
+        "analytics": "Usage Analytics",
+        "analyticsDesc": "Help improve {{brand}} by sharing anonymous app usage data",
+        "bugReports": "Crash Reports",
+        "bugReportsDesc": "Share technical details if the app crashes so we can fix issues faster",
         "goBack": "Go back",
-        "minorWarning": "Some features are restricted for users under 18.",
+        "minorWarning": "AI Features are restricted for users under 18.",
         "notifications": {
             "title": "Edit Notification Settings",
             "connectionRequests": {
@@ -966,7 +1245,19 @@
         "showCode": "Show Code",
         "title": "Contacts",
         "unblock": "Unblock",
-        "unblockContact": "Unblock Contact"
+        "unblockContact": "Unblock Contact",
+        "myContactCard": "My Contact Card",
+        "noConnections": "No connections yet.",
+        "new": "New",
+        "contactCountOne": "{{count}} Contact",
+        "contactCountOther": "{{count}} Contacts",
+        "requestCountOne": "{{count}} Request",
+        "requestCountOther": "{{count}} Requests",
+        "blockedCountLabel": "{{count}} Blocked",
+        "removeContactError": "An error occurred, unable to remove contact",
+        "blockUserError": "An error occurred, unable to block user",
+        "contactsCount": "{{count}} Contacts",
+        "noConnectionsYet": "No connections yet"
     },
     "consentFlow": {
         "acceptAndSync": "Accept & Sync",
@@ -1062,7 +1353,31 @@
         "newFamily": "New Family",
         "requestingPermissions": "Requesting Permissions",
         "addingNewCredentials": "Adding New Credentials",
-        "aiLearningData": "AI Learning Data"
+        "aiLearningData": "AI Learning Data",
+        "privacyData": {
+            "shareData": "Share Your {{brand}} Data",
+            "cannotRead": "This app is not able to read any credentials from your {{brand}}.",
+            "liveSyncDescription": "Turning on <0>Live Syncing</0> will automatically share all credentials as you get them. If it's turned off, you can selectively share specific wallet categories and credentials at any time",
+            "sharePersonalData": "Share Your Personal Data",
+            "anonymizeDescription": "Turning on <0>Anonymize</0> will hide your name, profile picture, and email when sharing to this app.",
+            "allowAddData": "Allow {{name}} to Add Data to Your {{brand}}",
+            "cannotWrite": "This app is not able to write any data to your {{brand}}.",
+            "writeDescription": "Turning on <0>Allow All</0> will let the app issue credentials and add them to your {{brand}}. If turned off, you can selectively choose which wallet categories that the app can add to."
+        },
+        "terms": {
+            "requestedAccessTo": "has requested access to",
+            "requestingAccessTo": "is requesting access to",
+            "notRequesting": "is not requesting to read or write anything to your {{brand}}",
+            "viewPersonal": "view your {{fields}}",
+            "viewCredentials": "<0>view and access credentials</0> you select to share",
+            "sendCredentials": "send credentials to you",
+            "developerPrivacyPolicy": "Developer's Privacy Policy"
+        },
+        "personalField": {
+            "name": "name",
+            "email": "email",
+            "profilePicture": "profile picture"
+        }
     },
     "recovery": {
         "accountRecovery": "Account Recovery",
@@ -1275,7 +1590,8 @@
         "profileLinkCopied": "Profile link copied to clipboard",
         "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
         "shareProfile": "Share Profile",
-        "generateInviteLink": "Generate Invite Link"
+        "generateInviteLink": "Generate Invite Link",
+        "noCredentialsToShare": "No credentials to share."
     },
     "scanner": {
         "cameraPermission": "Camera permission required",
@@ -1388,7 +1704,8 @@
         "start": "Start",
         "unfinished": "Unfinished",
         "untitledSession": "Untitled Session",
-        "browseTopicsPlaceholder": "Browse topics..."
+        "browseTopicsPlaceholder": "Browse topics...",
+        "personalizeMyAi": "Personalize My AI"
     },
     "pathways": {
         "addSkill": "Add Skill",
@@ -1422,9 +1739,110 @@
         "saveProfile": "Save Profile",
         "skillProfile": "Skills Profile",
         "title": "Pathways",
-        "workHistory": "Work History"
+        "workHistory": "Work History",
+        "noMatches": "No matches",
+        "noMatchesBlurb": "Nothing matches \"{{query}}\". Try fewer words or clear the search.",
+        "noCredentialsYetStartFromGoal": "No credentials yet — that's fine. We'll start from your goal."
+    },
+    "claim": {
+        "didAuth": {
+            "title": "You've Been Sent a Credential!",
+            "subtitle": "Someone wants to issue you a verifiable credential",
+            "ready": "Ready to claim it?",
+            "intro": "To receive this credential, you'll need to confirm your identity. This lets the issuer securely deliver it to your wallet.",
+            "whatHappens": "What happens when you continue:",
+            "step1": "Your wallet confirms your identity to the issuer",
+            "step2": "The credential is securely delivered to your wallet",
+            "step3": "You own and control this credential forever",
+            "privacy": "Your identity is only shared with the issuer to complete this exchange. You're always in control of your data.",
+            "connecting": "Connecting...",
+            "claimButton": "Claim My Credential",
+            "decline": "No thanks, take me home",
+            "loginRequired": "Please log in to continue."
+        },
+        "initiate": {
+            "heading": "You've been sent a request",
+            "description": "Click the button below to begin the exchange process.",
+            "begin": "Begin"
+        },
+        "redirect": {
+            "heading": "Redirect Required",
+            "description": "To continue, you need to complete a step on an external website."
+        },
+        "claiming": "Claiming...",
+        "claimingCredential": "Claiming Credential",
+        "fetchingCredential": "Fetching Credential",
+        "by": "by",
+        "revokedToast": "This credential has been revoked and can no longer be claimed.",
+        "failedToClaim": "Failed to claim credential: {{message}}",
+        "pleaseTryAgain": "Please try again.",
+        "errorWithMessage": "There was an error: {{message}}",
+        "fullSizeAttachment": "Full size attachment",
+        "notFound": {
+            "title": "Eeek!",
+            "message": "Unable to find Credential"
+        },
+        "received": {
+            "title": "You've received a credential!",
+            "subtitle": "Login or signup to claim.",
+            "subtitleNamed": "Login or signup to claim your {{name}}.",
+            "signUp": "Sign up for {{brand}}",
+            "haveAccount": "Have an account?"
+        },
+        "boost": {
+            "accepted": "Accepted",
+            "expiredHeader": "The boost claim link has expired or has reached the maximum number of times it can be claimed."
+        },
+        "modal": {
+            "earnedTitle": "You've Earned a Credential!",
+            "claimedTitle": "Credential Claimed!",
+            "claimedBody": "The credential has been added to your wallet.",
+            "loadingCredential": "Loading credential...",
+            "loadErrorTitle": "Unable to Load Credential",
+            "loadError": "Unable to load credential",
+            "notFoundBody": "The credential could not be found.",
+            "credentialFallback": "Credential",
+            "loadingNameAria": "Loading credential name",
+            "preparing": "Preparing...",
+            "acceptCredential": "Accept Credential",
+            "maybeLater": "Maybe Later"
+        },
+        "paste": {
+            "title": "Use a Claim Link",
+            "subtitle": "Paste a link or upload a QR",
+            "linkHeading": "Got a credential link?",
+            "linkDesc": "Paste it below to continue.",
+            "checking": "Checking…",
+            "qrHeading": "Got a QR code?",
+            "qrDesc": "Drop an image, or pick one from your device.",
+            "dropIt": "Drop it!",
+            "chooseImage": "Choose an image",
+            "releaseToUpload": "Release to upload",
+            "orDropHere": "or drop it here",
+            "somethingWentWrong": "Something went wrong.",
+            "oops": "Oops! {{message}}",
+            "qrNotFound": "We couldn't find a QR code in that image. Make sure the QR fills most of the photo and isn't blurry.",
+            "qrReadFailed": "We couldn't read a QR code from that image. Try a clearer photo, or paste the link instead.",
+            "unrecognized": {
+                "empty": "Paste a link or upload a QR code image to continue.",
+                "malformedUrl": "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.",
+                "unknownScheme": "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.",
+                "invalidVc": "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.",
+                "unknownFormat": "We couldn't make sense of that. Paste a claim link or upload a QR code image."
+            }
+        }
+    },
+    "chapi": {
+        "back": "Back",
+        "title": "About Chapi",
+        "p1": "The Credential Handler API (CHAPI) is an open-source solution for communicating Verifiable Credentials on the Web.",
+        "p2": "Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.",
+        "p3": "It allows your digital wallet to send or receive Verifiable Credentials from an independent third-party verifier or issuer in a way that establishes trust and preserves privacy.",
+        "readMore": "Read More",
+        "connectHandler": "Connect Handler"
     },
     "legal": {
+        "connectionsEncrypted": "All connections are encrypted.",
         "appEcosystem": "App Ecosystem",
         "consentLayer": "Consent Layer",
         "consentLayerDefinition": "You decide what data connects to which apps, and for how long.",
@@ -1440,7 +1858,117 @@
         "joinFamily": "Join Family",
         "parentProfile": "Parent Profile",
         "switchProfile": "Switch Profile",
-        "title": "Families"
+        "title": "Families",
+        "editor": {
+            "headingNew": "New Family",
+            "headingEdit": "Edit Family",
+            "tabContent": "Content",
+            "tabAppearance": "Appearance",
+            "familyNameLabel": "Family name",
+            "familyNamePlaceholder": "Family Name",
+            "addEmoji": "Add a Family Emoji",
+            "mottoLabel": "Family Motto",
+            "mottoPlaceholder": "About my family..."
+        },
+        "members": {
+            "count": "{{count}} Members",
+            "all": "All",
+            "searchPlaceholder": "Search...",
+            "child": "Child",
+            "children": "Children",
+            "guardian": "Guardian",
+            "guardians": "Guardians"
+        },
+        "invite": {
+            "addMember": "Add a {{title}}",
+            "inviteMember": "Invite a {{title}}"
+        },
+        "actionMenu": {
+            "editFamily": "Edit Family",
+            "shareFamily": "Share Family"
+        },
+        "childInvite": {
+            "title": "Child Account",
+            "inFamily": "{{title}} in {{family}}",
+            "nameLabel": "Name",
+            "taglineLabel": "Tagline",
+            "dobLabel": "Date of Birth",
+            "countryLabel": "Country (Optional)",
+            "selectCountry": "Select Country",
+            "edit": "Edit {{brand}}"
+        },
+        "titles": {
+            "heading": "Member Titles",
+            "connectedHeading": "Connected Users Titles",
+            "connectedDesc": "Connected users are primary LearnCard accounts that exist independent of families.",
+            "dependentsHeading": "Dependents Titles",
+            "dependentsDesc": "Dependent accounts exist only in the family that they are created in. They have no personal login and limited permissions in LearnCard.",
+            "singular": "Singular",
+            "plural": "Plural"
+        },
+        "appearance": {
+            "wallpaper": "Wallpaper",
+            "fadeBackground": "Fade background",
+            "repeatBackground": "Repeat background",
+            "wallpaperBackground": "Wallpaper Background"
+        },
+        "pin": {
+            "heading": "Personal PIN",
+            "description": "Your pin allows you to access and manage controls that require your authorization.",
+            "setPin": "Set Pin",
+            "editPin": "Edit Pin",
+            "createPin": "Create Pin"
+        },
+        "preview": {
+            "details": "Details",
+            "trusted": "Trusted",
+            "createdOn": "Created on {{date}}"
+        },
+        "createToSelectPlayer": "Create a family to select a player.",
+        "gotIt": "Got It",
+        "none": "None",
+        "colorHexCode": "Color Hex Code",
+        "confirmRemoveMember": "Are you sure you want to remove this {{title}}?",
+        "titlesToggle": {
+            "admins": "Admins",
+            "kids": "Kids"
+        },
+        "delete": {
+            "confirmTitle": "Delete Family?",
+            "confirmBody": "Deleting this family will also delete the profiles and data of each child in this family.",
+            "action": "Delete",
+            "successTitle": "Family Deleted",
+            "successBody": "{{family}} family has been deleted. You can now join or create another family."
+        },
+        "leave": {
+            "confirmTitle": "Leave Family?",
+            "confirmBody": "Leaving this family will remove your access to its profiles and data.",
+            "action": "Leave",
+            "successTitle": "Family Left Successfully",
+            "successBody": "You have left {{family}}. You can now join or create another family."
+        },
+        "pinModal": {
+            "forgotTitle": "Forgot PIN?",
+            "forgotBody": "Forgot your PIN? To update it, please ensure you've logged in recently to keep your account secure.",
+            "reauthenticate": "Reauthenticate",
+            "forgotShort": "Forgot Pin",
+            "createYourPin": "Create Your Pin",
+            "updateYourPin": "Update Your Pin",
+            "setPinAction": "Set PIN",
+            "verifyTitle": "Verify PIN",
+            "verifySubtext": "Please re-enter your PIN to confirm.",
+            "enterTitle": "Enter PIN",
+            "enterSubtext": "Please enter your current PIN to proceed",
+            "verifying": "Verifying...",
+            "forUser": "for {{name}}"
+        },
+        "guardianInvite": {
+            "shareTitle": "Guardian Invite",
+            "showQrCode": "Show QR Code",
+            "shareLink": "Share Link",
+            "browseContacts": "Browse Contacts",
+            "inviteGuardians": "Invite Guardians"
+        }
     },
     "membership": {
         "adminPanel": "Admin Panel",
@@ -1550,7 +2078,12 @@
                 "generateClaimLink": "Generate Claim Link?",
                 "cannotGenerateClaimLinks": "This template cannot generate claim links because view permission are disabled.",
                 "enableViewing": "Enable viewing to continue with claim link generation.",
-                "anyoneCanView": "Anyone can view this credential template"
+                "anyoneCanView": "Anyone can view this credential template",
+                "whoToBoost": "Who do you want to boost?",
+                "boostMyself": "Boost Myself",
+                "boostOthers": "Boost Others",
+                "assignAdmins": "Assign Admins",
+                "adminsDescription": "Admins are granted permission to send and edit this Boost."
             },
             "notes": {
                 "title": "Notes",
@@ -1618,7 +2151,24 @@
                 "criteria": "Criteria",
                 "certificate": "Certificate",
                 "id": "ID"
-            }
+            },
+            "loading": {
+                "issuing": "Issuing boost...",
+                "creating": "Creating boost...",
+                "publishing": "Publishing boost...",
+                "saving": "Saving boost...",
+                "autoSaving": "Auto-saving...",
+                "loading": "Loading boost..."
+            },
+            "quit": "Quit",
+            "leavePage": {
+                "title": "Leave This Page?",
+                "body": "You have unsaved changes. Your progress will be saved locally and you can continue editing later.",
+                "leave": "Leave Page",
+                "stay": "Stay & Continue Editing"
+            },
+            "continueEditing": "Continue Editing",
+            "continueIssuing": "Continue Issuing"
         },
         "confirmDelete": "Are you sure you want to delete this boost?",
         "createBoost": "Create Boost",
@@ -1651,6 +2201,7 @@
         "saving": "Saving...",
         "searchBoosts": "Search boosts...",
         "searchRecipients": "Search recipients...",
+        "selectCategory": "Select Category",
         "selectTemplate": "Select a template",
         "sendBoost": "Send",
         "skill": "Skill",
@@ -1671,7 +2222,68 @@
             "generateLink": "Generate Link",
             "editDraft": "Edit Draft",
             "sendingBoost": "Sending Boost"
-        }
+        },
+        "issuing": "Issuing Boost",
+        "wizard": {
+            "title": "AI Boost Wizard",
+            "subtextSelf": "You can issue yourself boosts to tell your story. Your skills are currencies for your future.",
+            "subtextSomeone": "Issue boosts to people you know.",
+            "promptDescription": "Use simple words to describe why you admire someone, what they accomplished, why they are great, etc.",
+            "promptPlaceholder": "Write prompt...",
+            "charCount": "{{count}} / 500",
+            "generateMagic": "Generate Magic",
+            "charLimitError": "You have exceeded the 500-character limit.",
+            "unexpectedError": "An unexpected error occurred. Please try again.",
+            "describePlaceholder": "Describe the boost you want to make.",
+            "generating": "Generating...",
+            "generateBoost": "Generate Boost",
+            "goBack": "Go Back",
+            "loaderText": [
+                "Analyzing your inputs...",
+                "Spinning up your smart credential...",
+                "Generating your credential...",
+                "Sealing your achievement...",
+                "Building your verifiable record...",
+                "Packing it all up...",
+                "Creating your digital badge...",
+                "Finalizing everything now...",
+                "AI is crafting your proof...",
+                "Almost there..."
+            ]
+        },
+        "template": {
+            "custom": "Custom",
+            "browseTemplates": "Browse templates...",
+            "noResults": "No results found",
+            "noBoosts": "No Boosts yet!",
+            "newTemplate": "New Template",
+            "brandTemplate": "{{brand}} Template",
+            "boostTypePlaceholder": "Boost type..."
+        },
+        "newBoost": {
+            "study": "New Study",
+            "experience": "New Experience",
+            "assistance": "New Assistance",
+            "portfolio": "New Portfolio",
+            "boost": "New Boost",
+            "achievement": "New Achievement",
+            "skill": "New Skill",
+            "id": "New ID",
+            "membership": "New Membership",
+            "course": "New Course",
+            "generic": "New {{type}}"
+        },
+        "browseEarnedPlaceholder": "Browse earned...",
+        "browseManagedPlaceholder": "Browse managed...",
+        "issue": "Issue",
+        "editDraft": "Edit Draft",
+        "search": {
+            "searchEarned": "Search {{count}} earned Boost(s)",
+            "searchManaged": "Search {{count}} managed Boost(s)",
+            "noResultsTitled": "No results titled \"{{query}}\"",
+            "foundResults": "Found {{count}} result(s) for \"{{query}}\""
+        },
+        "endorsements": "Endorsements"
     },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
@@ -1681,7 +2293,7 @@
             "parentNotified": "Parent notified of share request!",
             "alreadyPending": "Insights request already pending.",
             "alreadyAccepted": "Insights request already accepted.",
-            "aiInsightsShared": "AI Insights shared!"
+            "aiInsightsShared": "Insights shared!"
         },
         "alreadyClaimed": "You have already claimed this credential.",
         "boost": {
@@ -1833,7 +2445,7 @@
         "contractSubtitle": "Share learning progress with your teacher",
         "denied": "Denied",
         "expired": "Expired",
-        "exploreAiInsights": "Explore AI Insights",
+        "exploreAiInsights": "Explore Insights",
         "exploreYourInsights": "Explore Your Insights",
         "filter.accepted": "Accepted",
         "filter.all": "All",
@@ -1842,7 +2454,7 @@
         "findingMarketData": "Finding market data...",
         "findingQualitativeData": "Finding qualitative data...",
         "findingSalaryData": "Finding salary data...",
-        "generateAiInsights": "Generate AI Insights",
+        "generateAiInsights": "Generate Insights",
         "generating": "Generating...",
         "getPermission": "Get Permission",
         "getPermissionFromAdult": "Get permission <br /> from an adult.",
@@ -1872,7 +2484,7 @@
         "noAdditionalRoles": "No additional roles are available yet.",
         "noContacts": "No Contacts",
         "noInsightsSharedView": "This learner hasn't generated any AI Insights yet.",
-        "noInsightsYet": "No AI Insights yet.",
+        "noInsightsYet": "No Insights yet.",
         "noRolesFound": "No roles found for that search.",
         "noSearchResults": "No Search Results",
         "noSharedInsights": "No Shared Insights",
@@ -1927,7 +2539,10 @@
         "workLife.veryLow": "Your current work life balance <0>is very low</0> compared to others.",
         "workLife.veryStrong": "Your current work life balance <0>is very strong</0> compared to others.",
         "workLifeBalance": "Work Life Balance",
-        "yourMarketComparison": "Your Market Comparison"
+        "yourMarketComparison": "Your Market Comparison",
+        "shareChildInsights": "Share <0>{{child}}</0>'s insights with <1>{{teacher}}</1>",
+        "successfullyShared": "You've successfully shared insights with {{name}}",
+        "approveDescription": "If you approve, your teacher will be able to see your Top Skills, Learning Snapshots, Suggested Pathways. They will also be able to send learning pathway suggestions to you."
     },
     "aiPathways": {
         "searchSkillGoalJob": "Search by skill, goal, or job...",
@@ -1963,13 +2578,40 @@
         "previousCredential": "Previous credential",
         "nextCredential": "Next credential",
         "noSessionsYet": "No sessions yet",
-        "aiLearningSessions": "AI Learning Sessions"
+        "aiLearningSessions": "AI Learning Sessions",
+        "discovery": {
+            "enterCareerKeyword": "Enter a career keyword",
+            "keywordPlaceholder": "e.g. Software Engineer",
+            "searchingFor": "Searching for: <0>{{keyword}}</0>",
+            "noPathwaysYet": "No Pathways yet.",
+            "buildToUnlock": "Build your {{brand}} to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.",
+            "joinToUnlock": "Join {{brand}}\nto unlock Pathways",
+            "connectDescription": "Pathways connect your skills to relevant courses, careers, salaries, and learning content.",
+            "joinBrand": "Join {{brand}}"
+        },
+        "exploreRolesSubtitle": "Use your current skills to start new opportunities.",
+        "avgAnnualSalary": "AVG. ANNUAL SALARY",
+        "matchingSkill": "Matching Skill",
+        "matchingSkills": "Matching Skills",
+        "plusMore": "+ {{count}} more",
+        "skill": "Skill",
+        "skills": "Skills",
+        "goals": "Goals",
+        "searchToExplore": "Search to explore matching roles.",
+        "noRolesMatched": "No roles matched your search. Try a broader keyword."
     },
     "aiSession": {
         "loadingTitle": "Loading title",
         "newTopic": "New Topic",
         "browse": "Browse...",
-        "somethingElse": "Something else..."
+        "somethingElse": "Something else...",
+        "hasCompleted": "has successfully completed",
+        "summary": "AI Session Summary",
+        "startedOn": "Started on {{date}}",
+        "unfinished": "Unfinished",
+        "learningOverview": "Learning Overview",
+        "finishSession": "Finish Session",
+        "finish": "Finish"
     },
     "aiFeatureLinks": {
         "skillsHub": "Skills Hub"
@@ -1981,6 +2623,17 @@
             "unknownIssuer": "Unknown Issuer",
             "appIssuer": "App Issuer",
             "untrustedIssuer": "Untrusted Issuer"
+        },
+        "boostFooter": {
+            "close": "Close",
+            "back": "Back",
+            "details": "Details",
+            "share": "Share",
+            "accept": "Accept"
+        },
+        "common": {
+            "close": "Close",
+            "select": "Select"
         }
     },
     "sdk": {
@@ -1989,7 +2642,29 @@
             "trustedIssuer": "Trusted Issuer",
             "unknownIssuer": "Unknown Issuer",
             "appIssuer": "Trusted App",
-            "untrustedIssuer": "Untrusted Issuer"
+            "untrustedIssuer": "Untrusted Issuer",
+            "title": "Credential Verifications",
+            "infoText": "Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy.",
+            "status": {
+                "success": "Success",
+                "error": "Error",
+                "failed": "Failed"
+            },
+            "check": {
+                "proof": "Proof",
+                "status": "Status",
+                "expiration": "Expiration"
+            },
+            "message": {
+                "valid": "Valid",
+                "invalid": "Invalid",
+                "notRevoked": "Not Revoked",
+                "revoked": "Revoked",
+                "doesNotExpire": "Does Not Expire",
+                "expired": "Expired",
+                "active": "Active",
+                "couldNotVerify": "Boost Credential could not be verified."
+            }
         }
     },
     "skills": {
@@ -2003,7 +2678,8 @@
         "framework": {
             "framework": "Framework",
             "locationInFramework": "Location in Framework",
-            "browse": "Browse"
+            "browse": "Browse",
+            "searchPlaceholder": "Search framework..."
         },
         "boostsBySkill": {
             "noBoosts": "No Boosts yet!"
@@ -2072,7 +2748,25 @@
         },
         "myHub": {
             "noResultsFoundFor": "No results found for <0>{{query}}</0>"
-        }
+        },
+        "frameworks": {
+            "create": "Create Framework",
+            "edit": "Edit Framework",
+            "startNew": "Start a new framework. You can add skills manually or import a file after creating it.",
+            "editThumbnail": "Edit thumbnail",
+            "namePlaceholder": "Framework Name *",
+            "descriptionPlaceholder": "Framework Description",
+            "adminCount": "{{count}} Admin(s)",
+            "createFailed": "Failed to create framework. Please try again.",
+            "updateFailed": "Failed to update framework. Please try again.",
+            "approve": "Approve",
+            "approveFramework": "Approve Framework",
+            "saveFramework": "Save Framework",
+            "editShort": "Edit"
+        },
+        "addSkillsCount": "Add {{count}} Skills",
+        "skillsCount": "{{count}} skills",
+        "loadingSkills": "... skills"
     },
     "skillProfile": {
         "header": "My Skill Profile",
@@ -2141,5 +2835,577 @@
         "modalTitle": "Grow your skills",
         "edit": "Edit",
         "noResults": "No results found. Try a broader search term."
+    },
+    "aiPersonalization": {
+        "header": "Personalize my <0>AI Sessions</0>",
+        "loading": "Loading Personalization...",
+        "q1": {
+            "title": "I <0>learn best</0> when I",
+            "options": {
+                "o1": "See examples or visuals",
+                "o2": "Read and analyze concepts",
+                "o3": "Discuss and ask questions",
+                "o4": "Practice hands on",
+                "o5": "Follow instructions"
+            }
+        },
+        "q2": {
+            "title": "My favorite <0>fictional characters</0> are",
+            "placeholder": "Add fictional character"
+        },
+        "q3": {
+            "title": "My favorite <0>movie genres</0> are",
+            "placeholder": "Add movie genre"
+        }
+    },
+    "endorsement": {
+        "optional": "Optional",
+        "button": {
+            "request": "Request Endorsement"
+        },
+        "form": {
+            "header": {
+                "requestTitle": "Endorsement Request",
+                "reviewTitle": "Review Endorsement",
+                "requestText": "<0>{{name}}</0> has requested an endorsement from you for <1>{{title}}</1>",
+                "endorsingText": "You’re endorsing <0>{{name}}</0> for <1>{{title}}</1>",
+                "reviewText": "<0>{{name}}</0> has written an endorsement for <1>{{title}}</1>"
+            },
+            "footer": {
+                "decline": "Decline",
+                "sending": "Sending...",
+                "endorse": "Endorse"
+            },
+            "qualifications": {
+                "title": "Share your qualifications that support this endorsement.",
+                "placeholder": "My qualifications include..."
+            },
+            "relationship": {
+                "label": "Relationship",
+                "prompt": "How do you know {{name}}?",
+                "selectTitle": "Select Relationship",
+                "otherPlaceholder": "Other...",
+                "friend": "Friend",
+                "professionalColleague": "Professional Colleague",
+                "volunteeredTogether": "Volunteered Together",
+                "college": "College",
+                "other": "Other"
+            },
+            "text": {
+                "prompt": "Write a brief message to support or confirm <0>{{title}}</0>",
+                "placeholder": "Write endorsement..."
+            }
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Video",
+            "link": "Link",
+            "viewDocument": "View Document",
+            "visitLink": "Visit Link",
+            "selectType": "Select Media Type",
+            "uploaded": "{{count}}% uploaded",
+            "addSupporting": "Add Supporting Media",
+            "addAny": "Add any <0>links, images, videos,</0> or <1>documents</1> that support your endorsement.",
+            "attachmentTitle": "{{type}} Attachment",
+            "titlePlaceholder": "Title",
+            "pasteLink": "Paste link...",
+            "uploading": "Uploading...",
+            "upload": "Upload",
+            "change": "Change {{type}}"
+        },
+        "request": {
+            "header": {
+                "title": "Endorsement Request",
+                "text": "Send a request to someone who can vouch for your {{categoryType}}, <0>{{title}}</0>."
+            },
+            "options": {
+                "howToSend": "How do you want to send it?",
+                "copyLink": "Copy Link",
+                "generating": "Generating...",
+                "getCode": "Get Code",
+                "whatToSay": "What would you like to say?",
+                "messagePlaceholder": "Message...",
+                "emailPlaceholder": "Email",
+                "sendEmail": "Send Email Request",
+                "sending": "Sending..."
+            },
+            "success": {
+                "title": "Request Sent!",
+                "bodyPre": "You’ll be notified when the",
+                "bodyPost": "endorsement is ready."
+            },
+            "draft": {
+                "sendingPre": "Sending",
+                "sendingPost": "Endorsement...",
+                "sentPre": "Thanks!",
+                "sentPost": "Endorsement Sent!",
+                "approvedPre": "Thanks!",
+                "approvedPost": "Endorsement Approved!",
+                "waitingReview": "Waiting for review by {{name}}",
+                "approvedBy": "Approved by {{name}}"
+            },
+            "footer": {
+                "viewEndorsement": "View Endorsement"
+            }
+        },
+        "modal": {
+            "footer": {
+                "endorse": "Endorse"
+            },
+            "success": {
+                "thanksPre": "Thanks!",
+                "thanksPost": "Your endorsement is temporarily saved.",
+                "signInBodyPre": "Sign in to send your",
+                "signInBodyPost": "endorsement.",
+                "signInButton": "Sign in to send"
+            },
+            "requestedEndorsement": "<0>{{name}}</0> has requested your endorsement for <1>{{title}}</1>"
+        },
+        "list": {
+            "title": "Endorsements"
+        },
+        "fullview": {
+            "endorsement": "Endorsement",
+            "qualifications": "Qualifications",
+            "supportingMedia": "Supporting Media",
+            "showEndorsement": "Show Endorsement?",
+            "active": "Active",
+            "hidden": "Hidden",
+            "notPublicWaiting": "Not public • Waiting for review",
+            "endorsedOn": "Endorsed on {{date}}",
+            "deletedOn": "Deleted on {{date}}"
+        },
+        "reviewFooter": {
+            "approve": "Approve",
+            "approving": "Approving...",
+            "approved": "Approved"
+        },
+        "delete": {
+            "title": "Delete Endorsement?",
+            "confirm": "Yes, Delete"
+        },
+        "viewRequest": {
+            "ok": "OK",
+            "errorFetching": "Error fetching credential: {{error}}"
+        }
+    },
+    "verification": {
+        "title": "Credential Verifications",
+        "viewJson": "View json",
+        "hideJson": "Hide json",
+        "status": {
+            "success": "Success",
+            "failed": "Failed",
+            "error": "Error"
+        },
+        "checks": {
+            "proof": "Proof",
+            "revocation": "Status",
+            "expiration": "Expiration"
+        },
+        "messages": {
+            "valid": "Valid",
+            "notRevoked": "Not Revoked",
+            "doesNotExpire": "Does Not Expire",
+            "expired": "Invalid • Expired {{date}}",
+            "expires": "Valid • Expires {{date}}"
+        }
+    },
+    "versionInfo": {
+        "gathering": "Gathering version info…",
+        "version": "Version",
+        "supportBlurb": "These details help support identify exactly which build you’re running if you ever need to report an issue.",
+        "platform": "Platform",
+        "appVersion": "App version",
+        "nativeVersion": "Native version",
+        "contentVersion": "Content version",
+        "updateChannel": "Update channel",
+        "lastUpdated": "Last updated",
+        "copyDetails": "Copy details",
+        "copiedToClipboard": "Copied to clipboard",
+        "advanced": "Advanced",
+        "checkForUpdates": "Check for updates",
+        "checking": "Checking…"
+    },
+    "learnCardId": {
+        "display": "DISPLAY",
+        "card": "Card",
+        "wallpaper": "Wallpaper",
+        "fadeImage": "Fade Image",
+        "darkText": "Dark Text",
+        "repeatBackground": "Repeat background",
+        "dark": "Dark",
+        "light": "Light",
+        "custom": "Custom"
+    },
+    "adminTools": {
+        "title": "Advanced Tools",
+        "developerTools": "Developer Tools",
+        "devLocked": {
+            "title": "Developer tools are limited to users with a Developer or Admin role.",
+            "subtitle": "You can update your role in your account settings."
+        },
+        "devDocs": {
+            "title": "Want to learn more?",
+            "description": "Check out the LearnCard developer docs to learn how to build and integrate with our SDKs and APIs.",
+            "button": "Launch Developer Docs"
+        },
+        "roles": {
+            "user": "User",
+            "organization": "Organization",
+            "child": "Child"
+        },
+        "partnerPortal": {
+            "label": "Partner Portal",
+            "description": "Publish and manage apps in the App Store."
+        },
+        "tools": {
+            "importCredentials": {
+                "label": "Import Credentials",
+                "description": "Upload multiple credentials at once."
+            },
+            "consentFlow": {
+                "label": "Manage ConsentFlow Contracts",
+                "description": "Create and share consent contracts.",
+                "actionLabel": "Create Contract"
+            },
+            "apiTokens": {
+                "label": "API Tokens",
+                "description": "Generate and manage API tokens."
+            },
+            "learnerContextTest": {
+                "label": "Learner Context Test UX",
+                "description": "Pick wallet credentials, choose a backend URL, and inspect formatter output."
+            },
+            "signingAuthorities": {
+                "label": "Signing Authorities",
+                "description": "Manage your credential signing infrastructure."
+            },
+            "networks": {
+                "label": "Networks",
+                "description": "Select your preferred network environment."
+            },
+            "storage": {
+                "label": "Storage",
+                "description": "Configure your data storage settings."
+            },
+            "syncAll": {
+                "label": "Sync All Credentials to Contracts",
+                "description": "Scan your wallet and sync all credentials to all consented contracts based on your sharing settings."
+            },
+            "cli": {
+                "label": "Developer CLI",
+                "description": "Interactive terminal for exploring and testing the LearnCard API."
+            }
+        },
+        "consentFlow": {
+            "contracts": "Contracts",
+            "noContracts": "No existing contracts.",
+            "warning": {
+                "title": "Organization Profile Required",
+                "description": "To create a contract, you must be logged in as an Organization Profile. If you don't have one yet, please create an Organization Profile first."
+            }
+        }
+    },
+    "dataSharing": {
+        "loading": "Loading your data sharing...",
+        "title": "Data Sharing",
+        "subtitle": "Apps and services you've given permission to access your {{brand}} data.",
+        "empty": {
+            "title": "No data sharing yet",
+            "subtitle": "When you connect apps, they'll appear here."
+        },
+        "revokeHint": "You can revoke access at any time by tapping on a service.",
+        "unknownApp": "Unknown App",
+        "readCount": "{{count}} read",
+        "writeCount": "{{count}} write",
+        "noPermissions": "No permissions",
+        "revokeConfirm": {
+            "title": "Revoke Access?",
+            "body": "<0>{{name}}</0> will no longer be able to access your {{brand}} data."
+        },
+        "revoking": "Revoking...",
+        "confirmRevoke": "Yes, Revoke Access",
+        "appDetails": "App Details",
+        "dataAccessPermissions": "Data Access Permissions",
+        "opening": "Opening...",
+        "openApp": "Open App",
+        "xapiDataFeed": "xAPI Data Feed",
+        "editPermissions": "Edit Permissions",
+        "revokeAccess": "Revoke Access",
+        "noDataPermissions": "No data permissions granted",
+        "readAccess": "Read Access",
+        "noReadPermissions": "No read permissions granted",
+        "writeAccess": "Write Access",
+        "noWritePermissions": "No write permissions granted"
+    },
+    "recoveryPrompt": {
+        "title": "Recover Your Progress",
+        "continueEditing": "Continue Editing",
+        "startFresh": "Start Fresh",
+        "body": "We found a {{itemType}} with unsaved changes. Would you like to continue where you left off?",
+        "defaultItemType": "item"
+    },
+    "createProfile": {
+        "organizationTitle": "Create New Organization",
+        "profileTitle": "Create a New Profile",
+        "namePlaceholder": "Name",
+        "organizationNamePlaceholder": "Organization Name",
+        "taglinePlaceholder": "Tagline",
+        "organizationProfileId": "Organization Profile ID",
+        "fullNameAria": "Full Name",
+        "rules": {
+            "length": "Must be between 3 to 25 characters.",
+            "format": "Letters, numbers, and dashes (-) only.",
+            "unique": "Must be unique."
+        },
+        "validation": {
+            "nameRequired": "Name is required.",
+            "minChars": "Must contain at least 3 character(s).",
+            "nameMaxChars": "Must contain at most 30 character(s).",
+            "nameFormat": "Alphanumeric characters only.",
+            "userIdRequired": "User ID is required.",
+            "profileIdMaxChars": "Must contain at most 25 character(s).",
+            "profileIdFormat": "Alphanumeric characters and dashes '-' only, no spaces allowed."
+        }
+    },
+    "category": {
+        "aiSummaries": "AI Summaries",
+        "aiTopics": "AI Topics",
+        "aiAssessments": "AI Assessments",
+        "learningPathways": "Learning Pathways",
+        "membership": "Membership",
+        "resumes": "Resumes",
+        "goals": "Goals",
+        "events": "Events",
+        "verifiableData": "Verifiable Data",
+        "all": "All",
+        "course": "Course",
+        "job": "Job",
+        "currency": "Currency",
+        "describe": "Describe",
+        "relationship": "Relationship",
+        "professionalTitle": "Professional Title",
+        "roleExperience": "Role Experience",
+        "workExperience": "Work Experience",
+        "payRate": "Pay Rate",
+        "workLifeBalance": "Work Life Balance",
+        "jobStability": "Job Stability",
+        "selfAssignedSkills": "Self-Assigned Skills",
+        "meritBadge": "Merit Badge",
+        "troop": "Troop",
+        "troopLeaderId": "Troop Leader ID",
+        "scoutId": "Scout ID",
+        "globalAdminId": "Global Admin ID",
+        "nationalNetworkAdminId": "National Network Admin ID"
+    },
+    "appInstall": {
+        "installApp": "Install <0>{{name}}</0>?",
+        "requestingPermissions": "This app is requesting the following permissions",
+        "willBeAbleTo": "This app will be able to:",
+        "noSpecialPermissions": "This app doesn't require any special permissions.",
+        "loadingDataPermissions": "Loading data permissions...",
+        "noReadRequested": "No read permissions requested",
+        "noWriteRequested": "No write permissions requested",
+        "unableToLoadPermissions": "Unable to load data permissions for this app.",
+        "uninstallNote": "You can uninstall this app at any time from your installed apps.",
+        "previewOnly": "Preview Only",
+        "connecting": "Connecting...",
+        "install": "Install",
+        "permission": {
+            "requestIdentity": {
+                "label": "Request Identity",
+                "description": "View your profile information and verify your identity"
+            },
+            "sendCredential": {
+                "label": "Send Credentials",
+                "description": "Send verifiable credentials to your wallet"
+            },
+            "launchFeature": {
+                "label": "Launch Features",
+                "description": "Open wallet features programmatically"
+            },
+            "credentialSearch": {
+                "label": "Search Credentials",
+                "description": "Search through your stored credentials"
+            },
+            "credentialById": {
+                "label": "Access Credentials",
+                "description": "Retrieve specific credentials by their ID"
+            },
+            "requestConsent": {
+                "label": "Request Consent",
+                "description": "Ask for your consent to access or share data"
+            },
+            "templateIssuance": {
+                "label": "Issue Credentials",
+                "description": "Create and issue credentials from templates"
+            }
+        },
+        "installFailed": "Unable to install app, please try again.",
+        "setDobFirst": "Please set your date of birth before installing this app.",
+        "previewDisabled": "Install is disabled in preview mode"
+    },
+    "dashboard": {
+        "header": {
+            "scanQrAria": "Open QR scanner",
+            "greetingMorning": "Good morning, {{name}}.",
+            "greetingAfternoon": "Good afternoon, {{name}}.",
+            "greetingEvening": "Good evening, {{name}}.",
+            "greetingMorningNoName": "Good morning.",
+            "greetingAfternoonNoName": "Good afternoon.",
+            "greetingEveningNoName": "Good evening.",
+            "profileAlt": "Profile",
+            "avatarAria": "Open your {{brand}}",
+            "memberRole": "Member",
+            "newToBrand": "New to {{brand}}",
+            "since": "Since {{date}}",
+            "experienceYear": "{{count}} yr experience",
+            "experienceYears": "{{count}} yrs experience",
+            "experienceMonth": "{{count}} month experience",
+            "experienceMonths": "{{count}} months experience",
+            "statCredential": "{{count}} credential",
+            "statCredentials": "{{count}} credentials",
+            "statSkill": "{{count}} skill",
+            "statSkills": "{{count}} skills",
+            "statContact": "{{count}} contact",
+            "statContacts": "{{count}} contacts",
+            "overflowSkills": "+{{count}} more"
+        },
+        "tips": {
+            "scanQrTitle": "Scan a QR code",
+            "scanQrSubtitle": "Claim a credential from a poster or screen",
+            "claimLinkTitle": "Use a claim link",
+            "claimLinkSubtitle": "Paste or upload a credential link",
+            "issueTitle": "Issue a credential",
+            "issueSubtitle": "Send a credential to someone"
+        },
+        "checklist": {
+            "addCredential": "Add your first credential",
+            "setGoal": "Set a goal",
+            "discoverApps": "Discover apps",
+            "skillProfile": "Fill out your skills profile"
+        },
+        "activity": {
+            "title": "Activity",
+            "meanwhile": "Meanwhile",
+            "emptyTitle": "No alerts right now",
+            "emptySubtitle": "We'll let you know here when someone wants to connect or send you a credential.",
+            "viewMore": "View {{count}} more →",
+            "viewAllPending": "View all pending →",
+            "viewAllPassport": "View all in passport →",
+            "wantsToConnect": "{{name}} wants to connect",
+            "requestedDataAccess": "{{name}} requested data access",
+            "someone": "Someone",
+            "anApp": "An app",
+            "notifConnectionRequest": "New connection request",
+            "notifCredentialReceived": "Credential received",
+            "notifBoostReceived": "New credential available",
+            "notifPresentationRequest": "Presentation requested",
+            "notifDeviceLinkRequest": "Device link request",
+            "notifGuardianApproval": "Guardian approval needed",
+            "notifDefault": "New notification"
+        },
+        "currentGoal": {
+            "label": "Current goal",
+            "emptyHeroTitle": "Set your direction",
+            "emptyHeroSubtitle": "Pick a goal and we'll map a personal path with the steps, skills, and credentials to get there.",
+            "emptyTitle": "No active journey yet",
+            "emptySubtitle": "Set a goal and we'll help you build the path to get there.",
+            "startJourney": "Start a journey",
+            "startPathway": "Start a pathway",
+            "dueToday": "{{count}} due today",
+            "progress": "{{completed}} of {{total}}",
+            "progressSteps": "{{completed}} of {{total}} steps complete",
+            "nextStep": "Next step",
+            "continueJourney": "Continue journey",
+            "openJourney": "Open journey",
+            "navigatePathways": "Navigate pathways"
+        },
+        "getStarted": {
+            "label": "Get started",
+            "heroTitle": "Make {{brand}} yours",
+            "heroSubtitle": "Three quick steps to set up your passport.",
+            "title": "Make {{brand}} yours in 3 steps",
+            "dismiss": "Dismiss",
+            "progress": "{{completed}} of {{total}}"
+        },
+        "dataTrust": {
+            "label": "Your data",
+            "title": "Your data is yours",
+            "emptyStatus": "Nothing is shared yet.",
+            "sharingWithOne": "Sharing with {{count}} place.",
+            "sharingWithMany": "Sharing with {{count}} places.",
+            "emptyDetail": "When an app or school asks for your data, you decide — every time.",
+            "detailReadOnly": "{{read}} can read. You're in control.",
+            "detailReadWrite": "{{read}} can read, {{write}} can also write. You're in control.",
+            "detailFew": "You can stop anytime.",
+            "manage": "Manage data sharing"
+        },
+        "learningProfile": {
+            "title": "Your Insights",
+            "updated": "Updated {{time}}",
+            "emptyAddCourse": "Add a course to reveal your strengths.",
+            "earlyRead": "Early read",
+            "strongestIn": "You're strongest in <0>{{title}}</0>.",
+            "buildingProfile": "Your learning profile takes shape as you add courses, achievements, and experiences.",
+            "groundedInOne": "Grounded in {{count}} verified record",
+            "groundedInMany": "Grounded in {{count}} verified records",
+            "viewInsights": "View insights →",
+            "tierStrongest": "Strongest",
+            "tierStrong": "Strong",
+            "tierGrowing": "Growing",
+            "snapStrongest": "Strongest area",
+            "snapWeakest": "Needs work",
+            "snapGrowth": "Room for growth"
+        },
+        "apps": {
+            "suggestedLabel": "Suggested for you",
+            "yourAppsLabel": "Your apps",
+            "appsToExplore": "Apps to explore",
+            "jumpBackIn": "Jump back in",
+            "browseAll": "Browse all →",
+            "viewAll": "View all →"
+        },
+        "appTile": {
+            "new": "New",
+            "open": "Open {{name}}",
+            "openSuggested": "Open {{name}} — suggested app",
+            "openUnreadOne": "Open {{name}}, {{count}} unread notification",
+            "openUnreadMany": "Open {{name}}, {{count}} unread notifications"
+        },
+        "quickActions": {
+            "connectNewLabel": "Build Your {{brand}}",
+            "connectNewCaption": "Add your first credential",
+            "connectActiveLabel": "See Passport",
+            "connectActiveCaptionOne": "{{count}} credential",
+            "connectActiveCaptionMany": "{{count}} credentials",
+            "claimLabel": "Use a Claim Link",
+            "claimCaption": "Claim a credential you were sent",
+            "understandNewLabel": "Create Skill Profile",
+            "understandNewCaption": "Tell us about your skills",
+            "insightsLabel": "See Insights",
+            "insightsCaption": "AI summary of your record",
+            "skillsLabel": "See Skills",
+            "skillsCaption": "Skills you've collected",
+            "setGoalLabel": "Set a Goal",
+            "setGoalCaption": "Get a personal path",
+            "pathwaysLabel": "See Pathways",
+            "pathwaysCaption": "Open your pathways",
+            "browsePathwaysLabel": "Browse Pathways",
+            "browsePathwaysCaption": "Explore available paths",
+            "discoverAppsLabel": "Discover Apps",
+            "discoverAppsCaption": "Find apps to get started"
+        },
+        "skillProfile": {
+            "eyebrow": "Make {{brand}} yours",
+            "title": "Fill out your skills profile",
+            "stepOf": "Step {{current}} of {{total}}",
+            "skip": "Skip"
+        },
+        "appLaunch": {
+            "error": "Couldn't open this app. Please try again."
+        }
     }
 }

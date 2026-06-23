@@ -1,4 +1,5 @@
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 const ExchangeLoading = () => {
     return (
@@ -15,7 +16,7 @@ const ExchangeLoading = () => {
                     }}
                 >
                     <IonSpinner name="crescent" />
-                    <p style={{ marginTop: '1rem' }}>Loading...</p>
+                    <p style={{ marginTop: '1rem' }}>{m['common.loading']()}</p>
                 </div>
             </IonContent>
         </IonPage>

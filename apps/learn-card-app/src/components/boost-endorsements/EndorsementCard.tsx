@@ -13,6 +13,8 @@ import {
 
 import { VC } from '@learncard/types';
 import { hasEndorsedCredential } from 'learn-card-base/helpers/credentialHelpers';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 export const EndorsementCard: React.FC<{
     credential: VC;
@@ -72,8 +74,11 @@ export const EndorsementCard: React.FC<{
 
                 <div className="flex items-start">
                     <p className="text-sm text-grayscale-900 text-left">
-                        Send a request to someone who can vouch for your {categoryTypeString},{' '}
-                        <span className="font-semibold">{title}</span>.
+                        <TransP
+                            m={m['endorsement.request.header.text']}
+                            values={{ categoryType: categoryTypeString, title }}
+                            components={[<span className="font-semibold" />]}
+                        />
                     </p>
                 </div>
             </div>

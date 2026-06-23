@@ -163,7 +163,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
             {/* Verification badge + pills + issuer logo */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <div className="bg-grayscale-100 rounded-full px-2 py-1">
+                    <div className="bg-grayscale-100 rounded-full px-2 !py-0">
                         <CredentialVerificationDisplay
                             className="!bg-grayscale-100"
                             iconClassName="!w-4 !h-4"

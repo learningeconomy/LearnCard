@@ -477,7 +477,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             <br />
                             All connections are encrypted.
                         </p>
-                        <button className={`text-${primaryColor} font-bold`}>Learn More</button>
+                        <button className={`text-${primaryColor} font-bold`}>
+                            {m['common.learnMore']()}
+                        </button>
                     </IonCol>
                 </IonRow>
 

@@ -8,6 +8,7 @@ import { AddressBookTabsEnum } from '../addressBookHelpers';
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
 import { StyleSetEnum } from '../../../theme/styles/index';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookTabs: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -54,7 +55,9 @@ const AddressBookTabs: React.FC<{
                                     : 'text-grayscale-600'
                             }`}
                         >
-                            {connectionCount ?? 0} Contact{connectionCount !== 1 ? 's' : ''}
+                            {(connectionCount ?? 0) === 1
+                                ? m['contacts.contactCountOne']({ count: connectionCount ?? 0 })
+                                : m['contacts.contactCountOther']({ count: connectionCount ?? 0 })}
                         </button>
                         <button
                             onClick={() => {
@@ -67,7 +70,9 @@ const AddressBookTabs: React.FC<{
                                     : 'text-grayscale-600'
                             }`}
                         >
-                            {requestCount ?? 0} Request{requestCount !== 1 ? 's' : ''}
+                            {(requestCount ?? 0) === 1
+                                ? m['contacts.requestCountOne']({ count: requestCount ?? 0 })
+                                : m['contacts.requestCountOther']({ count: requestCount ?? 0 })}
                         </button>
                         {blockedCount > 0 && (
                             <button
@@ -80,7 +85,7 @@ const AddressBookTabs: React.FC<{
                                         : 'text-grayscale-600'
                                 }`}
                             >
-                                {blockedCount ?? 0} Blocked
+                                {m['contacts.blockedCountLabel']({ count: blockedCount ?? 0 })}
                             </button>
                         )}
                     </IonCol>
@@ -93,7 +98,7 @@ const AddressBookTabs: React.FC<{
                     </div>
                     <IonInput
                         autocapitalize="on"
-                        placeholder="Search"
+                        placeholder={m['common.search']()}
                         value={search}
                         className="bg-grayscale-100 text-grayscale-800 ion-padding rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased !pl-[40px]"
                         onIonInput={e => handleSearch(e.detail.value as string)}

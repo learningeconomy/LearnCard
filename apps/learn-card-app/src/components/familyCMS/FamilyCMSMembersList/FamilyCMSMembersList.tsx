@@ -5,6 +5,7 @@ import { useConfirmation, useModal, ModalTypes } from 'learn-card-base';
 import { IonInput } from '@ionic/react';
 import AddUser from '../../svgs/AddUser';
 import { m } from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import FamilyCMSInviteModal from '../FamilyCMSInviteModal/FamilyCMSInviteModal';
 import FamilyCMSMemberListItem from './FamilyCMSMemberListItem';
 
@@ -85,7 +86,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
         if (key === 'admins') {
             if (
                 await confirm({
-                    text: `Are you sure you want remove this ${customGuardianName.singular}`,
+                    text: m['family.confirmRemoveMember']({ title: customGuardianName.singular }),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:
@@ -107,7 +108,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
         if (key === 'issueTo') {
             if (
                 await confirm({
-                    text: `Are you sure you want remove this ${customChildrenName.singular}`,
+                    text: m['family.confirmRemoveMember']({ title: customChildrenName.singular }),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:
@@ -168,7 +169,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
             <div className="w-full flex items-start justify-center flex-col">
                 <div className="w-full flex items-center justify-between">
                     <h3 className="font-poppins text-xl font-normal text-grayscale-800">
-                        {childrenAndGuardiansListCount} Members
+                        {m['family.members.count']({ count: childrenAndGuardiansListCount })}
                     </h3>
 
                     <button
@@ -190,7 +191,7 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                         : 'text-grayscale-700'
                                 }`}
                             >
-                                All
+                                {m['family.members.all']()}
                             </button>
                             {childsListCount > 0 && (
                                 <button
@@ -203,8 +204,10 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                 >
                                     {childsListCount}{' '}
                                     {childsListCount === 1
-                                        ? customChildrenName?.singular || 'Child'
-                                        : customChildrenName?.plural || 'Children'}
+                                        ? customChildrenName?.singular ||
+                                          m['family.members.child']()
+                                        : customChildrenName?.plural ||
+                                          m['family.members.children']()}
                                 </button>
                             )}
 
@@ -219,14 +222,16 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                                 >
                                     {GuardiansListCount}{' '}
                                     {GuardiansListCount === 1
-                                        ? customGuardianName?.singular || 'Guardian'
-                                        : customGuardianName?.plural || 'Guardians'}
+                                        ? customGuardianName?.singular ||
+                                          m['family.members.guardian']()
+                                        : customGuardianName?.plural ||
+                                          m['family.members.guardians']()}
                                 </button>
                             )}
                         </div>
                         <IonInput
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder mb-2"
-                            placeholder="Search..."
+                            placeholder={m['family.members.searchPlaceholder']()}
                             value={search}
                             onIonInput={e => setSearch(e.detail.value)}
                         />
@@ -253,7 +258,11 @@ export const FamilyCMSMemberList: React.FC<FamilyCMSMemberListProps> = ({
                 {filteredList.length === 0 && search.length > 0 && (
                     <div className="w-full text-left flex flex-col items-start justify-center border-t-[2px] border-solid border-grayscale-100 pt-2 mt-2">
                         <p className="text-grayscale-600 text-base font-normal font-notoSans">
-                            No results found for <span className="text-black italic">{search}</span>
+                            <TransP
+                                m={m['common.searchResults.noResultsFor']}
+                                values={{ query: search }}
+                                components={[<span className="text-black italic" />]}
+                            />
                         </p>
                     </div>
                 )}
