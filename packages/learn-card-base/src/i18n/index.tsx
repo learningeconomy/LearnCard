@@ -51,7 +51,13 @@ export const EN_DEFAULTS: Record<string, string> = {
 export const getActiveLocale = (): string => {
     try {
         if (typeof localStorage !== 'undefined') {
-            return localStorage.getItem('i18n.language') || 'en';
+            const raw = localStorage.getItem('i18n.language') || 'en';
+            // Strip anything that isn't a valid BCP-47 character (alphanumeric +
+            // hyphen) before this value gets interpolated into request URLs
+            // (`&locale=...`). A crafted localStorage entry — e.g. via XSS —
+            // must not be able to inject extra query parameters like
+            // `en&did=attacker`. An all-invalid value collapses to 'en'.
+            return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
         }
     } catch {
         // localStorage may be unavailable (native/SSR) — default to English.
