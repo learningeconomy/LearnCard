@@ -1629,6 +1629,9 @@ importers:
       '@radix-ui/react-slot':
         specifier: 1.0.2
         version: 1.0.2(@types/react@18.3.27)(react@18.3.1)
+      '@typeform/embed-react':
+        specifier: ^5.0.0
+        version: 5.0.0(react@18.3.1)
       '@udecode/zustood':
         specifier: 1.1.1
         version: 1.1.1(react-dom@18.3.1(react@18.3.1))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(scheduler@0.26.0)(zustand@3.7.2(react@18.3.1))
@@ -13447,6 +13450,16 @@ packages:
 
   '@tsconfig/node16@1.0.4':
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
+
+  '@typeform/embed-react@5.0.0':
+    resolution: {integrity: sha512-HlBxVJBEtf15Mjp6bYnoO91z2SnOLkqkJCflKsuUEqJSauf1RDSTl0X00AJqOsb+SQ8C7kWkGHceXrlEUii4mg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: '>=16.8.0'
+
+  '@typeform/embed@6.0.0':
+    resolution: {integrity: sha512-ShV9P8/I9Cp24vJEDyb1huWAbPE4T6d7sE6jux03YPH67RzOE5cUrEuZ4vq0rpiGbWvpmhRLSZKspBC8SstN4Q==}
+    engines: {node: '>=18'}
 
   '@types/acorn@4.0.6':
     resolution: {integrity: sha512-veQTnWP+1D/xbxVrPC3zHnCZRjSrKfhbMUlEA43iMZLu7EsnTtkJklIuwrCPbOi8YkvDQAiW05VQQFvvz9oieQ==}
@@ -43428,6 +43441,14 @@ snapshots:
   '@tsconfig/node14@1.0.3': {}
 
   '@tsconfig/node16@1.0.4': {}
+
+  '@typeform/embed-react@5.0.0(react@18.3.1)':
+    dependencies:
+      '@typeform/embed': 6.0.0
+      fast-deep-equal: 3.1.3
+      react: 18.3.1
+
+  '@typeform/embed@6.0.0': {}
 
   '@types/acorn@4.0.6':
     dependencies:
