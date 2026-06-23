@@ -11,6 +11,7 @@ import MeritBadgeBackFace from './MeritBadgeBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 import { KnownDIDRegistryType } from '../../types';
+import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 type MeritBadgeDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -42,6 +43,10 @@ type MeritBadgeDisplayCardProps = {
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
@@ -74,6 +79,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     customBodyContentSlot,
     unknownVerifierTitle,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -101,6 +107,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         customBodyContentSlot={customBodyContentSlot}
                         unknownVerifierTitle={unknownVerifierTitle}
                         hideFrontFaceDetails={hideFrontFaceDetails}
+                        onVerifierClick={onVerifierClick}
                     />
                 )}
 

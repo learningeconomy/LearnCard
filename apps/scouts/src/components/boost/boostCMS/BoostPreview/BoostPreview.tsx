@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
 import { VCDisplayCard2 } from '@learncard/react';
 import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
@@ -76,6 +79,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     handleShareBoost,
 }) => {
     const { initWallet } = useWallet();
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
     const issuerDid =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
@@ -179,6 +184,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             qrCodeOnClick={qrCodeOnClick}
                             hideQRCode={hideQRCode}
                             unknownVerifierTitle={unknownVerifierTitle}
+                            onVerifierClick={openCredentialIssuerPopover}
                         />
                     </section>
                 </IonRow>
@@ -197,6 +203,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     />
                 </IonRow>
             </IonFooter>
+            <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
         </IonPage>
     );
 };
