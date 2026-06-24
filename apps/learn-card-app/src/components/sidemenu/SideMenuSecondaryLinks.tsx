@@ -101,6 +101,8 @@ const SideMenuSecondaryLinks: React.FC<{
 
     const sideMenuLinks = theme?.sideMenuSecondaryLinks;
 
+    if (!sideMenuLinks || sideMenuLinks.length === 0) return null;
+
     const secondaryLinks = sideMenuLinks?.map(link => {
         if (link?.path === '/families' && !canCreateFamilies)
             return <React.Fragment key={link.path}></React.Fragment>;
@@ -183,8 +185,7 @@ const SideMenuSecondaryLinks: React.FC<{
                             )}
                         </div>
                     )}
-                    {renderIcon({ isCompleted, isSyncing })}{' '}
-                    {walletText}
+                    {renderIcon({ isCompleted, isSyncing })} {walletText}
                 </PreloadingLink>
             );
         }
@@ -209,11 +210,7 @@ const SideMenuSecondaryLinks: React.FC<{
         );
     });
 
-    return (
-        <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">
-            {secondaryLinks}
-        </IonList>
-    );
+    return <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">{secondaryLinks}</IonList>;
 };
 
 export default SideMenuSecondaryLinks;

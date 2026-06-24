@@ -3,7 +3,13 @@ import numeral from 'numeral';
 import PreloadingLink from '../generic/PreloadingLink';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { currentUserStore, useGetUnreadUserNotifications } from 'learn-card-base';
+import {
+    currentUserStore,
+    useGetUnreadUserNotifications,
+    walletStore,
+    WalletSyncState,
+} from 'learn-card-base';
+import CustomSpinner from '../svgs/CustomSpinner';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
@@ -26,6 +32,17 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const { theme, getIconSet, getColorSet } = useTheme();
     const iconSet = getIconSet(IconSetEnum.sideMenu);
     const colors = getColorSet(ColorSetEnum.sideMenu);
+
+    const isWalletSyncing = walletStore.useTracked.syncState();
+    const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
+    const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
+
+    let walletText = 'Passport';
+    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+
+    let walletTextStyles = '';
+    if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
+    if (isCompleted) walletTextStyles = `${colors.completedColor}`;
 
     const flags = useFlags();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
@@ -148,6 +165,32 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     </div>
 
                     {link.label}
+                </PreloadingLink>
+            );
+        }
+
+        if (linkPath === '/passport') {
+            linkEl = (
+                <PreloadingLink
+                    to={linkPath}
+                    className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
+                >
+                    {(isSyncing || isCompleted) && (
+                        <div className="flex items-center justify-center absolute top-[12px] z-50 h-[28px] w-[28px] rounded-[10px]">
+                            {isSyncing && (
+                                <CustomSpinner
+                                    className={`${colors?.syncingColor} h-[18px] w-[18px]`}
+                                />
+                            )}
+                        </div>
+                    )}
+                    <IconComponent
+                        className={`${iconStyles}`}
+                        shadeColor={shadeColor}
+                        isCompleted={isCompleted}
+                        isSyncing={isSyncing}
+                    />
+                    {walletText}
                 </PreloadingLink>
             );
         }
