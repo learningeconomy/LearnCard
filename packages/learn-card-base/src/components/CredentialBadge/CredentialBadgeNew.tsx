@@ -197,7 +197,6 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                 credential={credential}
                 backgroundColor={backgroundColor}
                 badgeContainerCustomClass={badgeContainerCustomClass}
-                boostType={boostType}
             />
         );
     }
