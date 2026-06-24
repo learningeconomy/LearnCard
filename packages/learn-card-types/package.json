@@ -35,7 +35,7 @@
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
     "dependencies": {
-        "zod": "4.1.13"
+        "zod": "^4.1.13"
     },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.2.2",
