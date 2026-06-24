@@ -1,5 +1,18 @@
 # learn-card-base
 
+## 0.2.2
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/helpers@1.3.5
+    -   @learncard/lca-api-plugin@1.2.15
+    -   @learncard/learn-card-plugin@1.2.23
+    -   @learncard/ler-rs-plugin@0.1.14
+    -   @learncard/render-method-plugin@3.0.3
+    -   @learncard/sss-key-manager@0.1.13
+
 ## 0.2.1
 
 ### Patch Changes

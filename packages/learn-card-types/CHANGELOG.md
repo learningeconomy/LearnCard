@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.17.3
+
+### Patch Changes
+
+-   [#1321](https://github.com/learningeconomy/LearnCard/pull/1321) [`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix smoketest GH actions
+
 ## 5.17.2
 
 ### Patch Changes
