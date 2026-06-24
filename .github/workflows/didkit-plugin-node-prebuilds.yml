@@ -17,7 +17,7 @@ env:
     # Skip mongodb-memory-server's postinstall binary download — it races when
     # multiple workspace packages depend on it, and we don't run brain-service
     # tests in this workflow.
-    MONGOMS_DISABLE_POSTINSTALL: "1"
+    MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
     build:
@@ -57,23 +57,20 @@ jobs:
         name: Build ${{ matrix.settings.target }}
         runs-on: ${{ matrix.settings.host }}
         env:
-            BUILD_DIDKIT_NAPI: "1"
+            BUILD_DIDKIT_NAPI: '1'
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
               with:
                   submodules: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
-                  node-version: 20
+                  node-version-file: .nvmrc
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v2
-              with:
-                  version: 9
-
+              uses: pnpm/action-setup@v6
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -81,7 +78,7 @@ jobs:
                   targets: ${{ matrix.settings.target }}
 
             - name: Cache cargo
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   path: |
                       ~/.cargo/registry/index/
@@ -181,20 +178,17 @@ jobs:
             contents: read
             id-token: write
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
 
             - name: Setup Node.js
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
                   registry-url: 'https://registry.npmjs.org'
                   package-manager-cache: false
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v2
-              with:
-                  version: 9
-
+              uses: pnpm/action-setup@v6
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
 
