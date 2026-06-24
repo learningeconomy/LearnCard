@@ -71,9 +71,6 @@ jobs:
 
             - name: Install pnpm
               uses: pnpm/action-setup@v6
-              with:
-                  version: 9
-
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -192,9 +189,6 @@ jobs:
 
             - name: Install pnpm
               uses: pnpm/action-setup@v6
-              with:
-                  version: 9
-
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
 

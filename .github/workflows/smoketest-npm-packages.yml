@@ -98,7 +98,6 @@ jobs:
               if: matrix.package-manager == 'pnpm'
               uses: pnpm/action-setup@v6
               with:
-                  version: 9
                   run_install: false
 
             - name: Set up yarn (via corepack)

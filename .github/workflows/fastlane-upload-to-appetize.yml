@@ -39,7 +39,6 @@ jobs:
               uses: pnpm/action-setup@v6
               id: pnpm-install
               with:
-                  version: 9
                   run_install: false
 
             - name: Install Workspace dependencies
@@ -169,7 +168,6 @@ jobs:
               uses: pnpm/action-setup@v6
               id: pnpm-install
               with:
-                  version: 9
                   run_install: false
 
             - name: Install Workspace dependencies

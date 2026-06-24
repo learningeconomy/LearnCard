@@ -29,9 +29,6 @@ jobs:
 
             - name: Install pnpm
               uses: pnpm/action-setup@v6
-              with:
-                  version: 9
-
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -98,7 +95,6 @@ jobs:
               uses: pnpm/action-setup@v6
               id: pnpm-install
               with:
-                  version: 9
                   run_install: false
 
             - name: Get pnpm store directory
