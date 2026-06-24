@@ -212,9 +212,9 @@ jobs:
                   submodules: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
 
             - name: Install pnpm
               uses: pnpm/action-setup@v2

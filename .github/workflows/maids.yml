@@ -23,9 +23,9 @@ jobs:
           submodules: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 24.12.0
+          node-version-file: .nvmrc
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -89,10 +89,10 @@ jobs:
           name: didkit-native-linux-x64
           path: packages/plugins/didkit-plugin-node
 
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: 20.x
+          node-version-file: .nvmrc
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
