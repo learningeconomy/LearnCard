@@ -54,7 +54,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
             disabled={disableClick}
         >
             {showTitle ? (
-                <span className="text-base font-bold normal-case">{pageTitle}</span>
+                <span className="text-base font-bold normal-case tracking-normal">{pageTitle}</span>
             ) : textLogoDark ? (
                 <img
                     src={textLogoDark}
