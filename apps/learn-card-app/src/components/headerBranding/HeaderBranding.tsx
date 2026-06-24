@@ -12,6 +12,8 @@ import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { useTenantConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getPageTitle } from '../main-header/pageTitles';
+import headerScrollStore from '../../stores/headerScrollStore';
 
 type HeaderBrandingProps = {
     category?: CredentialCategoryEnum;
@@ -41,13 +43,19 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
 
     const headerText = getHeaderText(tenantConfig.branding);
 
+    const scrolled = headerScrollStore.use.scrolled();
+    const pageTitle = getPageTitle(location.pathname);
+    const showTitle = scrolled && !!pageTitle;
+
     return (
         <button
             onClick={() => history.push(tenantConfig.branding.homeRoute ?? '/wallet')}
             className={`text-sm z-10 tracking-[6px] font-bold select-none ${headerColors} ${textColor} ${className}`}
             disabled={disableClick}
         >
-            {textLogoDark ? (
+            {showTitle ? (
+                <span className="text-base font-bold normal-case">{pageTitle}</span>
+            ) : textLogoDark ? (
                 <img
                     src={textLogoDark}
                     alt={headerText}

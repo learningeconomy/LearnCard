@@ -36,6 +36,7 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
+import headerScrollStore from '../../stores/headerScrollStore';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -86,6 +87,8 @@ const WalletPage: React.FC = () => {
     useEffect(() => {
         prefetchRoutes({ aiEnabled: isAiEnabled });
     }, [isAiEnabled]);
+
+    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
@@ -215,6 +218,13 @@ const WalletPage: React.FC = () => {
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
+                    scrollEvents
+                    onIonScroll={e => {
+                        const next = e.detail.scrollTop > 24;
+                        if (headerScrollStore.get.scrolled() !== next) {
+                            headerScrollStore.set.scrolled(next);
+                        }
+                    }}
                     style={
                         passportBgColor
                             ? ({ '--background': passportBgColor } as React.CSSProperties)
