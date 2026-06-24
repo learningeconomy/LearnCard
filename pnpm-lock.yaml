@@ -2296,6 +2296,13 @@ importers:
         version: 5.6.2
 
   packages/learn-card-types:
+    dependencies:
+      zod:
+        specifier: 4.1.13
+        version: 4.1.13
+      zod-openapi:
+        specifier: 5.4.5
+        version: 5.4.5(zod@4.1.13)
     devDependencies:
       '@esbuild-plugins/node-resolve':
         specifier: ^0.2.2

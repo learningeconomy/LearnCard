@@ -34,6 +34,10 @@
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
+    "dependencies": {
+        "zod": "^4.1.13",
+        "zod-openapi": "^5.4.5"
+    },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.2.2",
         "@size-limit/preset-small-lib": "^7.0.8",
