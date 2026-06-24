@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.96.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/credential-library@1.0.9
+    -   @learncard/helpers@1.3.5
+    -   @learncard/lca-api-plugin@1.2.15
+    -   @learncard/ler-rs-plugin@0.1.14
+    -   @learncard/open-badge-v2-plugin@1.1.24
+    -   @learncard/render-method-plugin@3.0.3
+    -   @learncard/react@2.10.2
+    -   @learncard/sss-key-manager@0.1.13
+
 ## 1.96.1
 
 ### Patch Changes
