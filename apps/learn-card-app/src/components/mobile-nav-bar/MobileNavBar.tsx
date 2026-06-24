@@ -42,6 +42,7 @@ import navBarBackground from '../../assets/images/mobile-nav-bar-vector.svg';
 const { notification: NavBarBellIcon } = NavBarIcons;
 
 export enum MobileNavBarLinks {
+    dashboard = 'dashboard',
     wallet = 'wallet',
     plus = '/boost',
     launchpad = 'launchpad',
