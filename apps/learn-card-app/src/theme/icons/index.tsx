@@ -40,6 +40,7 @@ export type SideMenuIcons = {
 };
 
 export type NavbarIcons = {
+    dashboard: React.FC<{ className?: string; version?: string }>;
     wallet: React.FC<{
         className?: string;
         version?: string;
