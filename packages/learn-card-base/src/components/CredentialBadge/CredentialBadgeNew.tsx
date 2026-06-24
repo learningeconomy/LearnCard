@@ -41,6 +41,7 @@ type CredentialBadgeProps = {
     branding?: BrandingEnum;
     credential: VC;
     borderStyle?: string;
+    hideMediaBadge?: boolean;
     clrBadgeKind?: ClrBadgeKind;
     clrIssuerName?: string;
     clrLogoSrc?: string;
@@ -66,6 +67,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     branding,
     credential,
     borderStyle,
+    hideMediaBadge,
     clrBadgeKind,
     clrIssuerName,
     clrLogoSrc,
@@ -189,12 +191,13 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
         );
     }
 
-    if (isMediaDisplayType) {
+    if (isMediaDisplayType && !hideMediaBadge) {
         return (
             <CredentialMediaBadge
                 credential={credential}
                 backgroundColor={backgroundColor}
                 badgeContainerCustomClass={badgeContainerCustomClass}
+                boostType={boostType}
             />
         );
     }
