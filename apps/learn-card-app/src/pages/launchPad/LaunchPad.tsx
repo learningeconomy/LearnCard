@@ -29,6 +29,7 @@ import {
 } from './LaunchPadSearch/launchpad-search.helpers';
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
+import headerScrollStore from '../../stores/headerScrollStore';
 import AppStoreListItem from './AppStoreListItem';
 import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
@@ -160,6 +161,8 @@ const LaunchPad: React.FC = () => {
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
 
+    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
+
     // Filter app store apps based on search and category
     const filteredInstalledApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
@@ -263,7 +266,18 @@ const LaunchPad: React.FC = () => {
         <IonPage className="bg-white">
             <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
-                <IonContent fullscreen scrollY={true} color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    scrollY={true}
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={e => {
+                        const next = e.detail.scrollTop > 24;
+                        if (headerScrollStore.get.scrolled() !== next) {
+                            headerScrollStore.set.scrolled(next);
+                        }
+                    }}
+                >
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
                             <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">

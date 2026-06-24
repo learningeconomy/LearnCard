@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
@@ -43,6 +43,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import pathwayStore from '../../stores/pathways/pathwayStore';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 import useTheme from '../../theme/hooks/useTheme';
+import headerScrollStore from '../../stores/headerScrollStore';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 import {
@@ -100,6 +101,8 @@ const DashboardPage: React.FC = () => {
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
+
+    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
 
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -551,7 +554,17 @@ const DashboardPage: React.FC = () => {
     return (
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={e => {
+                        const next = e.detail.scrollTop > 24;
+                        if (headerScrollStore.get.scrolled() !== next) {
+                            headerScrollStore.set.scrolled(next);
+                        }
+                    }}
+                >
                     <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>
