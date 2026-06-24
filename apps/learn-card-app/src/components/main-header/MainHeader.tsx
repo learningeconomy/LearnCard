@@ -14,8 +14,8 @@ import HeaderBranding from '../headerBranding/HeaderBranding';
 
 import Burger from '../svgs/Burger';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import QRCodeScannerButton from '../qrcode-scanner-button/QRCodeScannerButton';
 import NotificationButton from 'learn-card-base/components/notification-button/NotificationButton';
+import MyLearnCardModal from '../learncard/MyLearnCardModal';
 import MainSubHeader from '../main-subheader/MainSubHeader';
 
 import { SubheaderTypeEnum } from '../main-subheader/MainSubHeader.types';
@@ -26,7 +26,13 @@ import {
 
 import { getStatusBarColor } from 'learn-card-base/helpers/statusBarHelpers';
 
-import { CredentialCategoryEnum, useIsLoggedIn } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    useIsLoggedIn,
+    ProfilePicture,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -76,6 +82,15 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
     const history = useHistory();
+
+    const { newModal: openProfileModal } = useModal({
+        desktop: ModalTypes.Freeform,
+        mobile: ModalTypes.Freeform,
+    });
+
+    const openMyLearnCard = () => {
+        openProfileModal(<MyLearnCardModal branding={branding} />);
+    };
 
     const isLoading = loadingStore.use.loading();
 
@@ -138,11 +153,21 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             {mainHeaderBranding}
                         </IonCol>
 
-                        <IonCol size="10" className="flex justify-end items-center">
+                        <IonCol size="10" className="flex justify-end items-center gap-2">
                             {isLoggedIn ? (
                                 <>
+                                    <button
+                                        type="button"
+                                        aria-label="Open profile"
+                                        onClick={openMyLearnCard}
+                                        className="flex items-center justify-center"
+                                    >
+                                        <ProfilePicture
+                                            customContainerClass="h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px]"
+                                            customImageClass="w-full h-full object-cover"
+                                        />
+                                    </button>
                                     <NotificationButton colorOverride={notificationColorOverride} />
-                                    <QRCodeScannerButton branding={branding} />
                                 </>
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
