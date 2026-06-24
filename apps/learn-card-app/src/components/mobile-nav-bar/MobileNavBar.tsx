@@ -92,8 +92,11 @@ const MobileNavBar: React.FC = () => {
                                 return (
                                     <IonTabButton key={link.id} tab={link.id} href={link.path}>
                                         <DashboardIcon
-                                            version={isDashboardTabActive ? '2' : '1'}
-                                            className="h-[35px] w-[35px]"
+                                            className={`h-[35px] w-[35px] ${
+                                                isDashboardTabActive
+                                                    ? colors?.activeColor
+                                                    : colors?.inactiveColor
+                                            }`}
                                         />
                                         <IonLabel
                                             className={`font-notoSans font-bold text-[12px] mt-[3px] ${
