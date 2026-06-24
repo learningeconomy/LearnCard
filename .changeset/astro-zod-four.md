@@ -7,7 +7,8 @@
 "@learncard/chapi-example": patch
 "@learncard/embed-example": patch
 "@learncard/snap-chapi-example": patch
+"@learncard/ler-rs-plugin": patch
 "@learncard/snap-example-dapp": patch
 ---
 
-Upgrade Astro example apps to the Zod 4-compatible Astro 6 line and remove the Astro-specific Zod 3 override.
+Upgrade Astro example apps to the Zod 4-compatible Astro 6 line, remove the Astro-specific Zod 3 override, and keep package builds compatible with the updated esbuild runtime.
