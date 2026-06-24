@@ -7,18 +7,6 @@ const parseRegexString = (regexStr: string) => {
     return { pattern: match[1], flags: match[2] };
 };
 
-const withStringOverride = <T extends z.ZodTypeAny>(schema: T): T => {
-    const metaSchema = schema as T & {
-        meta?: (metadata: { override: { type: 'string' } }) => T;
-    };
-
-    if (typeof metaSchema.meta === 'function') {
-        return metaSchema.meta({ override: { type: 'string' } });
-    }
-
-    return schema;
-};
-
 // TRPC validator that converts Regex strings into RegExps
 const RegExpStringValidator = z
     .string()
@@ -43,14 +31,19 @@ const RegExpStringValidator = z
         } catch (error) {
             throw new Error(`Invalid RegExp: ${(error as Error).message}`);
         }
-    });
+    })
+    .meta({ override: { type: 'string' } });
 
-export const RegExpValidator = withStringOverride(z.instanceof(RegExp).or(RegExpStringValidator));
+export const RegExpValidator = z
+    .instanceof(RegExp)
+    .meta({ override: { type: 'string' } })
+    .or(RegExpStringValidator)
+    .meta({ override: { type: 'string' } });
 
 const BaseStringQuery = z
     .string()
     .or(z.object({ $in: z.string().array() }))
-    .or(z.object({ $regex: RegExpValidator }));
+    .or(z.object({ $regex: RegExpValidator.meta({ override: { type: 'string' } }) }));
 
 export const StringQuery = z.union([
     BaseStringQuery,
