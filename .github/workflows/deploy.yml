@@ -137,7 +137,7 @@ jobs:
             # Skip heavy steps for manual dispatch - we already know what to deploy
             - name: Checkout Repo
               if: github.event_name != 'workflow_dispatch'
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -207,7 +207,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   submodules: true
 
@@ -217,7 +217,7 @@ jobs:
                   node-version-file: .nvmrc
 
             - name: Install pnpm
-              uses: pnpm/action-setup@v2
+              uses: pnpm/action-setup@v6
               with:
                   version: 9
 
@@ -228,7 +228,7 @@ jobs:
                   targets: x86_64-unknown-linux-gnu
 
             - name: Cache cargo
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   path: |
                       ~/.cargo/registry/index/
@@ -272,7 +272,7 @@ jobs:
         environment: ci-tests
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -317,7 +317,7 @@ jobs:
         environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
@@ -428,7 +428,7 @@ jobs:
         environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
@@ -519,7 +519,7 @@ jobs:
         environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
@@ -656,7 +656,7 @@ jobs:
                   echo "force_push=${{ vars.DEPLOY_FORCE_PUSH }}" >> "$GITHUB_OUTPUT"
 
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
                   token: ${{ secrets.GITHUB_TOKEN }}
@@ -785,7 +785,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -1016,7 +1016,7 @@ jobs:
             id-token: write
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -1099,7 +1099,7 @@ jobs:
             contents: read
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -1238,7 +1238,7 @@ jobs:
                   private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
 
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
                   token: ${{ steps.app-token.outputs.token }}
