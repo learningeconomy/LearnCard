@@ -1,9 +1,12 @@
 import React from 'react';
+import { IonMenuToggle } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import VersionInfoModal from '../versionInfoModal/VersionInfoModal';
+import PreloadingLink from '../generic/PreloadingLink';
+import Settings from '../svgs/Settings';
 
 const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version }) => {
     const currentYear = new Date().getFullYear();
@@ -23,6 +26,15 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
 
     return (
         <div className="px-2 bg-transparent h-18 flex-none order-1 self-stretch flex-grow-0 text-white text-xs font-normal font-poppins mt-6 leading-snug m-4 mb-8">
+            <IonMenuToggle autoHide={false} className="w-full">
+                <PreloadingLink
+                    to="/privacy-and-data"
+                    className="flex items-center gap-2 text-grayscale-900 font-notoSans text-[15px] font-semibold py-2 mb-4"
+                >
+                    <Settings className="h-[24px] w-[24px] text-grayscale-800" />
+                    Settings
+                </PreloadingLink>
+            </IonMenuToggle>
             <p className="text-grayscale-600 text-xs font-notoSans">
                 Powered by <span className="font-semibold">Consent Flow</span>
                 <br />
