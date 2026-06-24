@@ -2295,6 +2295,10 @@ importers:
         version: 5.6.2
 
   packages/learn-card-types:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
     devDependencies:
       '@esbuild-plugins/node-resolve':
         specifier: ^0.2.2
@@ -12647,7 +12651,6 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.10':
     resolution: {integrity: sha512-mHH7I6fWdztaNjguGJOLaerXWnQymQ/xKQ8NqClIXoI2PJNgmpQG6DxFcLRs1aYyWg1iY8bPliLJi41u94KdCA==}
-    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
