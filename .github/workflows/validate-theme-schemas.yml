@@ -1,20 +1,20 @@
 name: Validate Theme Schemas
 
 on:
-  pull_request:
-    paths:
-      - 'apps/learn-card-app/src/theme/schemas/**'
-      - 'apps/learn-card-app/src/theme/validators/**'
+    pull_request:
+        paths:
+            - 'apps/learn-card-app/src/theme/schemas/**'
+            - 'apps/learn-card-app/src/theme/validators/**'
 
 jobs:
-  validate:
-    name: Validate theme schemas
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
+    validate:
+        name: Validate theme schemas
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
 
-      - uses: ./.github/actions/setup
+            - uses: ./.github/actions/setup
 
-      - name: Validate all theme schemas
-        working-directory: apps/learn-card-app
-        run: npx tsx scripts/validate-theme-schemas.ts
+            - name: Validate all theme schemas
+              working-directory: apps/learn-card-app
+              run: npx tsx scripts/validate-theme-schemas.ts
