@@ -25,21 +25,30 @@ ion-tab-bar {
     }
 }
 
+// LC-1921: mobile bottom nav surface — white→80% gradient, blurred, white
+// top hairline, with the Figma 20px/40px horizontal padding.
+ion-tab-bar.lc-footer-nav {
+    --background: linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+    --border: none;
+    border-top: 1px solid #ffffff;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding-left: 20px;
+    padding-right: 40px;
+
+    // Every item (incl. the hamburger) is an equal flex column so the row is
+    // evenly spaced like the Figma; kill the Ionic press ripple/highlight.
+    ion-tab-button {
+        --ripple-color: transparent;
+        --background-focused: transparent;
+        --background-focused-opacity: 0;
+        --background-activated: transparent;
+    }
+}
+
 .mobile-nav-hamburger-button {
     background: none;
-    position: absolute;
-    // Bar has pb-[15px]; absolute centering at 50% places element below flex siblings.
-    top: calc(50% - 7px);
-    left: 20px;
-    transform: translateY(-50%);
-    height: 35px;
-    width: 41px;
-    z-index: 9999;
-    border-radius: none !important;
-
-    @media (max-width: 414px) {
-        left: 10px;
-    }
+    border-radius: 0 !important;
 }
 
 // side menu

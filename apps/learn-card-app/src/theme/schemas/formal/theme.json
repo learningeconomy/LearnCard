@@ -50,7 +50,7 @@
 
         "navbar": {
             "activeColor": "text-grayscale-900",
-            "inactiveColor": "text-grayscale-500",
+            "inactiveColor": "text-grayscale-800",
             "syncingColor": "!text-blue-500",
             "completedColor": "!text-emerald-700"
         },

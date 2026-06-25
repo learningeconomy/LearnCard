@@ -53,6 +53,14 @@ const MobileNavBar: React.FC = () => {
 
     const navlinks = theme?.navbar ?? [];
 
+    // Active tab icon sits in a themed pill (indigo/blue -200 @ 50% + white
+    // border) per the Figma "LearnCard Footer Nav - V3".
+    const pillFamily = theme?.colors?.defaults?.primaryColor?.split('-')[0] || 'indigo';
+    const iconPillClass = (active: boolean): string =>
+        `flex items-center justify-center p-[5px] rounded-[40px] ${
+            active ? `border border-solid border-white bg-${pillFamily}-200/50` : ''
+        }`;
+
     const activePathname = location.pathname;
     const isWalletTabActive =
         activePathname === '/wallet' || activePathname === '/passport' || activePathname === '/';
@@ -76,7 +84,7 @@ const MobileNavBar: React.FC = () => {
                     <Routes />
                 </IonRouterOutlet>
                 {isLoggedIn && showNavBar(activePathname) ? (
-                    <IonTabBar slot="bottom" className="pb-[15px]">
+                    <IonTabBar slot="bottom" className="lc-footer-nav pb-[15px]">
                         {/*
                             tab prop is needed to prevent hard refresh...
                             set href to # to prevent id undefined errors & rerouting
@@ -91,17 +99,25 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.dashboard) {
                                 return (
                                     <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        {DashboardIcon && (
-                                            <DashboardIcon
-                                                className={`h-[35px] w-[35px] ${
-                                                    isDashboardTabActive
-                                                        ? colors?.activeColor
-                                                        : colors?.inactiveColor
-                                                }`}
-                                            />
-                                        )}
+                                        <div
+                                            className={`${iconPillClass(
+                                                isDashboardTabActive
+                                            )} relative`}
+                                        >
+                                            {DashboardIcon && (
+                                                <DashboardIcon
+                                                    className={`h-[35px] w-[35px] ${
+                                                        isDashboardTabActive
+                                                            ? colors?.activeColor
+                                                            : colors?.inactiveColor
+                                                    }`}
+                                                />
+                                            )}
+                                            {/* New-items indicator, top-right of the icon (Figma) */}
+                                            <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" />
+                                        </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[12px] mt-[3px] ${
+                                            className={`font-poppins font-semibold text-[11px] mt-[3px] ${
                                                 isDashboardTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -125,16 +141,18 @@ const MobileNavBar: React.FC = () => {
                                                 )}
                                             </div>
                                         )}
-                                        {WalletIcon && (
-                                            <WalletIcon
-                                                isSyncing={isSyncing}
-                                                isCompleted={isCompleted}
-                                                version={isWalletTabActive ? '2' : '1'}
-                                                className="h-[35px] w-[35px]"
-                                            />
-                                        )}
+                                        <div className={iconPillClass(isWalletTabActive)}>
+                                            {WalletIcon && (
+                                                <WalletIcon
+                                                    isSyncing={isSyncing}
+                                                    isCompleted={isCompleted}
+                                                    version={isWalletTabActive ? '2' : '1'}
+                                                    className="h-[35px] w-[35px]"
+                                                />
+                                            )}
+                                        </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[12px] ${
+                                            className={`font-poppins font-semibold text-[11px] ${
                                                 isWalletTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -149,14 +167,16 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.launchpad) {
                                 return (
                                     <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        {LaunchPadIcon && (
-                                            <LaunchPadIcon
-                                                version={isLaunchPadTabActive ? '2' : '1'}
-                                                className="h-[35px] w-[35px]"
-                                            />
-                                        )}
+                                        <div className={iconPillClass(isLaunchPadTabActive)}>
+                                            {LaunchPadIcon && (
+                                                <LaunchPadIcon
+                                                    version={isLaunchPadTabActive ? '2' : '1'}
+                                                    className="h-[35px] w-[35px]"
+                                                />
+                                            )}
+                                        </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[12px] mt-[3px] ${
+                                            className={`font-poppins font-semibold text-[11px] mt-[3px] ${
                                                 isLaunchPadTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor

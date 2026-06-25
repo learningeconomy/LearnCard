@@ -179,7 +179,7 @@
         },
         "navbar": {
             "activeColor": "text-grayscale-900",
-            "inactiveColor": "text-grayscale-600",
+            "inactiveColor": "text-grayscale-800",
             "syncingColor": "!text-indigo-500",
             "completedColor": "!text-emerald-700"
         },

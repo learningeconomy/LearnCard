@@ -24,9 +24,11 @@ module.exports = {
         // via `bg-${family}-{50,200,500}` from the active theme primary color.
         'bg-indigo-50',
         'bg-indigo-200',
+        'bg-indigo-200/50',
         'bg-indigo-500',
         'bg-blue-50',
         'bg-blue-200',
+        'bg-blue-200/50',
         'bg-blue-500',
     ],
     theme: {
