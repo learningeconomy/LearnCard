@@ -139,7 +139,8 @@ RUN rm -rf node_modules/.cache/nx
 
 ENV NX_DAEMON=false
 
-RUN bunx nx build:docker lca-api-service
+RUN bunx nx build:docker lca-api-service && \
+    find services packages -name node_modules -prune -exec rm -rf {} +
 
 # Expose common ports used by server
 EXPOSE 3000

@@ -128,7 +128,6 @@ services:
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
             - ../../services/learn-card-network/brain-service/nodemon.docker.json:/app/services/learn-card-network/brain-service/nodemon.docker.json
-            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -174,7 +173,6 @@ services:
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
             - ../../services/learn-card-network/learn-cloud-service/nodemon.docker.json:/app/services/learn-card-network/learn-cloud-service/nodemon.docker.json
-            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4100
@@ -211,7 +209,6 @@ services:
         volumes:
             - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
             - ../../services/learn-card-network/lca-api/nodemon.docker.json:/app/services/learn-card-network/lca-api/nodemon.docker.json
-            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'

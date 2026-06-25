@@ -121,7 +121,8 @@ COPY services/learn-card-network/brain-service services/learn-card-network/brain
 ENV NX_DAEMON=false
 
 # Build project - Building inside container ensures parity on all machines
-RUN bunx nx build:docker network-brain-service
+RUN bunx nx build:docker network-brain-service && \
+    find services packages -name node_modules -prune -exec rm -rf {} +
 
 # Expose common ports used by server
 EXPOSE 3000

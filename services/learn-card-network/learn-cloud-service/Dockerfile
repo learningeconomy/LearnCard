@@ -118,7 +118,8 @@ COPY services/learn-card-network/learn-cloud-service services/learn-card-network
 
 ENV NX_DAEMON=false
 
-RUN bunx nx build:docker learn-cloud-service
+RUN bunx nx build:docker learn-cloud-service && \
+    find services packages -name node_modules -prune -exec rm -rf {} +
 
 # Expose common ports used by server
 EXPOSE 3000

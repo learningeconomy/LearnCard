@@ -38,7 +38,27 @@ services:
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
         volumes:
-            - .:/app/apps/learn-card-app
+            - ./src:/app/apps/learn-card-app/src
+            - ./environments:/app/apps/learn-card-app/environments
+            - ./public:/app/apps/learn-card-app/public
+            - ./scripts:/app/apps/learn-card-app/scripts
+            - ./tests:/app/apps/learn-card-app/tests
+            - ./tools:/app/apps/learn-card-app/tools
+            - ./index.html:/app/apps/learn-card-app/index.html
+            - ./index.template.html:/app/apps/learn-card-app/index.template.html
+            - ./package.json:/app/apps/learn-card-app/package.json
+            - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
+            - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
+            - ./playwright.config.ts:/app/apps/learn-card-app/playwright.config.ts
+            - ./playwright-global-setup.ts:/app/apps/learn-card-app/playwright-global-setup.ts
+            - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
+            - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
+            - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json
+            - ./vitest.config.ts:/app/apps/learn-card-app/vitest.config.ts
+            - ./vitest.setup.ts:/app/apps/learn-card-app/vitest.setup.ts
+            - ./migrations.json:/app/apps/learn-card-app/migrations.json
+            - ./netlify.toml:/app/apps/learn-card-app/netlify.toml
+            - ./_headers:/app/apps/learn-card-app/_headers
             - ../../packages/credential-library/src:/app/packages/credential-library/src
             - ../../packages/react-learn-card/src:/app/packages/react-learn-card/src
             - ../../packages/learn-card-embed-sdk/src:/app/packages/learn-card-embed-sdk/src
@@ -90,12 +110,13 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
+        tmpfs:
+            - /app/services/learn-card-network/brain-service/node_modules:mode=1777
         container_name: 'lcn-brain-service'
         expose:
             - 4000
         ports:
             - '4000:4000'
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
         depends_on:
             neo4j:
                 condition: service_healthy
@@ -110,10 +131,8 @@ services:
         env_file:
             - path: ../../services/learn-card-network/brain-service/.env
               required: false
-        volumes:
-            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
-            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
-            - ../../packages/email-templates/src:/app/packages/email-templates/src
+        command:
+            ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run start:docker']
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -147,12 +166,13 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
+        tmpfs:
+            - /app/services/learn-card-network/learn-cloud-service/node_modules:mode=1777
         container_name: 'lcn-cloud-service'
         expose:
             - 4100
         ports:
             - '4100:4100'
-        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
         depends_on:
             - mongodb
             - redis2
@@ -163,10 +183,12 @@ services:
         env_file:
             - path: ../../services/learn-card-network/learn-cloud-service/.env
               required: false
-        volumes:
-            - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
-            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
-            - ../../packages/email-templates/src:/app/packages/email-templates/src
+        command:
+            [
+                'sh',
+                '-c',
+                'cd services/learn-card-network/learn-cloud-service && bun run start:docker',
+            ]
         environment:
             IS_OFFLINE: true
             PORT: 4100
@@ -191,12 +213,13 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
+        tmpfs:
+            - /app/services/learn-card-network/lca-api/node_modules:mode=1777
         container_name: 'lcn-api-service'
         expose:
             - 5100
         ports:
             - '5100:5100'
-        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
         depends_on:
             - mongodb
             - redis3
@@ -207,10 +230,7 @@ services:
         env_file:
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
-        volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
-            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
-            - ../../packages/email-templates/src:/app/packages/email-templates/src
+        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run start:docker']
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'

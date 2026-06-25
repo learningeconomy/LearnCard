@@ -100,18 +100,22 @@ COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 
 # Install dependencies - done before copying source for caching
 RUN --mount=type=cache,id=bun-cache,target=/root/.bun/install/cache \
-    bun install --ignore-scripts --frozen-lockfile
+    bun install --ignore-scripts --frozen-lockfile --linker=hoisted --backend=copyfile
 
 # Copy all workspace source. The docker-build script resolves @learncard/* from TS
 # source (VITE_DOCKER_SOURCE=true), so vite bundles the app in a single pass with no
 # per-package dist build; .dockerignore excludes node_modules/dist/build.
-COPY . .
+COPY --exclude=**/node_modules . .
 
 RUN rm -rf node_modules/.cache/nx
 
 ENV NX_DAEMON=false
 
-RUN bunx nx docker-build learn-card-app
+RUN bunx nx docker-build learn-card-app && \
+    # Bun/Nx can recreate package-local node_modules directories while building
+    # the app image. Remove them in the same layer so Docker never snapshots
+    # the symlink forest as an intermediate filesystem state.
+    find apps examples packages services tests -type d -name node_modules -prune -exec rm -rf {} +
 
 # Expose the port the app runs on
 EXPOSE 3000

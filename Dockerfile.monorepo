@@ -48,8 +48,6 @@ COPY packages/plugins/ethereum/package.json packages/plugins/ethereum/
 COPY packages/plugins/expiration/package.json packages/plugins/expiration/
 COPY packages/plugins/learn-card/package.json packages/plugins/learn-card/
 COPY packages/plugins/learn-card-network/package.json packages/plugins/learn-card-network/
-COPY packages/plugins/linked-claims/package.json packages/plugins/linked-claims/
-COPY packages/plugins/learn-cloud/package.json packages/plugins/learn-cloud/
 COPY packages/plugins/ler-rs/package.json packages/plugins/ler-rs/
 COPY packages/plugins/render-method/package.json packages/plugins/render-method/
 COPY packages/plugins/open-badge-v2/package.json packages/plugins/open-badge-v2/
@@ -93,15 +91,19 @@ COPY tests/federation-e2e/package.json tests/federation-e2e/
 COPY tests/openid4vc-e2e/package.json tests/openid4vc-e2e/
 COPY tests/openid4vc-interop-e2e/package.json tests/openid4vc-interop-e2e/
 COPY tests/smoketests/package.json tests/smoketests/
+RUN --mount=type=bind,source=.,target=/src,ro \
+    mkdir -p packages/plugins/linked-claims packages/plugins/learn-cloud && \
+    cp /src/packages/plugins/linked-claims/package.json packages/plugins/linked-claims/ && \
+    cp /src/packages/plugins/learn-cloud/package.json packages/plugins/learn-cloud/ && \
+    cp /src/packages/plugins/learn-cloud/project.json packages/plugins/learn-cloud/
 
 RUN --mount=type=cache,id=bun-cache,target=/root/.bun/install/cache \
-    bun install --ignore-scripts --frozen-lockfile
-
-# Keep one canonical dependency tree at /app/node_modules. Bun may create
-# package-local node_modules directories/symlinks for workspaces; some Docker
-# Desktop/BuildKit versions hit "max depth exceeded" while snapshotting or
-# creating containers from those workspace-local trees.
-RUN rm -rf \
+    bun install --ignore-scripts --frozen-lockfile --linker=hoisted --backend=copyfile && \
+    # Keep one canonical dependency tree at /app/node_modules. Bun may create
+    # package-local node_modules directories/symlinks for workspaces; some Docker
+    # Desktop/BuildKit versions hit "max depth exceeded" while snapshotting or
+    # creating containers from those workspace-local trees.
+    rm -rf \
     apps/*/node_modules \
     examples/*/node_modules \
     examples/app-store-apps/*/node_modules \
@@ -111,7 +113,19 @@ RUN rm -rf \
     services/*/*/node_modules \
     tests/*/node_modules
 
-COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
+COPY services/learn-card-network/lca-api/project.json services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/esbuild-docker.mjs services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/esbuild.mjs services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/esbuildPlugins.cjs services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/lambda.ts services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/serverless-local.yml services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/serverless.yml services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/src services/learn-card-network/lca-api/src
+COPY services/learn-card-network/lca-api/test services/learn-card-network/lca-api/test
+COPY services/learn-card-network/lca-api/tsconfig.build.json services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/tsconfig.json services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/vite.config.ts services/learn-card-network/lca-api/
+COPY services/learn-card-network/lca-api/vitest-setup.ts services/learn-card-network/lca-api/
 COPY packages/lca-api-client packages/lca-api-client
 COPY packages/plugins/lca-api-plugin packages/plugins/lca-api-plugin
 COPY packages/learn-card-helpers packages/learn-card-helpers
@@ -126,32 +140,111 @@ COPY packages/learn-card-network/simple-signing-client packages/learn-card-netwo
 COPY services/learn-card-network/brain-service services/learn-card-network/brain-service
 COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
 COPY services/learn-card-network/simple-signing-service services/learn-card-network/simple-signing-service
-COPY packages/plugins/chapi packages/plugins/chapi
-COPY packages/plugins/crypto packages/plugins/crypto
-COPY packages/plugins/ceramic packages/plugins/ceramic
-COPY packages/plugins/idx packages/plugins/idx
-COPY packages/plugins/didkey packages/plugins/didkey
-COPY packages/plugins/didkit packages/plugins/didkit
-COPY packages/plugins/didkit-plugin-node packages/plugins/didkit-plugin-node
-COPY packages/plugins/did-web-plugin packages/plugins/did-web-plugin
-COPY packages/plugins/dynamic-loader packages/plugins/dynamic-loader
-COPY packages/plugins/encryption packages/plugins/encryption
-COPY packages/plugins/ethereum packages/plugins/ethereum
-COPY packages/plugins/expiration packages/plugins/expiration
-COPY packages/plugins/learn-card packages/plugins/learn-card
-COPY packages/plugins/learn-card-network packages/plugins/learn-card-network
-COPY packages/plugins/linked-claims packages/plugins/linked-claims
-COPY packages/plugins/learn-cloud packages/plugins/learn-cloud
-COPY packages/plugins/ler-rs packages/plugins/ler-rs
-COPY packages/plugins/render-method packages/plugins/render-method
-COPY packages/plugins/open-badge-v2 packages/plugins/open-badge-v2
-COPY packages/plugins/openid4vc packages/plugins/openid4vc
-COPY packages/plugins/sd-jwt-vc packages/plugins/sd-jwt-vc
-COPY packages/plugins/vc packages/plugins/vc
-COPY packages/plugins/vc-api packages/plugins/vc-api
-COPY packages/plugins/vc-templates packages/plugins/vc-templates
-COPY packages/plugins/vpqr packages/plugins/vpqr
-COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
+RUN --mount=type=bind,source=packages/plugins,target=/src/plugins,ro \
+    set -eu; \
+    copy_plugin() { \
+    pkg="$1"; \
+    mkdir -p "packages/plugins/$pkg/scripts" "packages/plugins/$pkg/src"; \
+    for file in package.json project.json tsconfig.json; do \
+    if [ -f "/src/plugins/$pkg/$file" ]; then \
+    cp "/src/plugins/$pkg/$file" "packages/plugins/$pkg/"; \
+    fi; \
+    done; \
+    if [ -d "/src/plugins/$pkg/scripts" ]; then \
+    cp -R "/src/plugins/$pkg/scripts/." "packages/plugins/$pkg/scripts/"; \
+    fi; \
+    if [ -d "/src/plugins/$pkg/src" ]; then \
+    cp -R "/src/plugins/$pkg/src/." "packages/plugins/$pkg/src/"; \
+    fi; \
+    }; \
+    copy_plugin chapi; \
+    copy_plugin crypto; \
+    copy_plugin ceramic; \
+    copy_plugin idx; \
+    copy_plugin didkey; \
+    copy_plugin didkit; \
+    copy_plugin didkit-plugin-node; \
+    copy_plugin did-web-plugin; \
+    copy_plugin dynamic-loader; \
+    copy_plugin encryption; \
+    copy_plugin ethereum; \
+    copy_plugin expiration; \
+    copy_plugin learn-card; \
+    copy_plugin learn-card-network; \
+    copy_plugin ler-rs; \
+    copy_plugin render-method; \
+    copy_plugin simple-signing-plugin
+RUN --mount=type=bind,source=packages/plugins/vpqr,target=/src/vpqr,ro \
+    mkdir -p packages/plugins/vpqr/scripts packages/plugins/vpqr/src && \
+    cp /src/vpqr/package.json packages/plugins/vpqr/ && \
+    cp /src/vpqr/project.json packages/plugins/vpqr/ && \
+    cp /src/vpqr/tsconfig.json packages/plugins/vpqr/ && \
+    cp -R /src/vpqr/scripts/. packages/plugins/vpqr/scripts/ && \
+    cp -R /src/vpqr/src/. packages/plugins/vpqr/src/
+RUN --mount=type=bind,source=packages/plugins/vc-templates,target=/src/vc-templates,ro \
+    mkdir -p packages/plugins/vc-templates/scripts packages/plugins/vc-templates/src && \
+    cp /src/vc-templates/package.json packages/plugins/vc-templates/ && \
+    cp /src/vc-templates/project.json packages/plugins/vc-templates/ && \
+    cp /src/vc-templates/tsconfig.json packages/plugins/vc-templates/ && \
+    cp -R /src/vc-templates/scripts/. packages/plugins/vc-templates/scripts/ && \
+    cp -R /src/vc-templates/src/. packages/plugins/vc-templates/src/
+RUN --mount=type=bind,source=packages/plugins/vc-api,target=/src/vc-api,ro \
+    mkdir -p packages/plugins/vc-api/scripts packages/plugins/vc-api/src && \
+    cp /src/vc-api/package.json packages/plugins/vc-api/ && \
+    cp /src/vc-api/project.json packages/plugins/vc-api/ && \
+    cp /src/vc-api/tsconfig.json packages/plugins/vc-api/ && \
+    cp -R /src/vc-api/scripts/. packages/plugins/vc-api/scripts/ && \
+    cp -R /src/vc-api/src/. packages/plugins/vc-api/src/
+RUN --mount=type=bind,source=packages/plugins/vc,target=/src/vc,ro \
+    mkdir -p packages/plugins/vc/scripts packages/plugins/vc/src && \
+    cp /src/vc/package.json packages/plugins/vc/ && \
+    cp /src/vc/project.json packages/plugins/vc/ && \
+    cp /src/vc/tsconfig.json packages/plugins/vc/ && \
+    cp -R /src/vc/scripts/. packages/plugins/vc/scripts/ && \
+    cp -R /src/vc/src/. packages/plugins/vc/src/
+RUN --mount=type=bind,source=packages/plugins/sd-jwt-vc,target=/src/sd-jwt-vc,ro \
+    mkdir -p packages/plugins/sd-jwt-vc/scripts packages/plugins/sd-jwt-vc/src && \
+    cp /src/sd-jwt-vc/package.json packages/plugins/sd-jwt-vc/ && \
+    cp /src/sd-jwt-vc/project.json packages/plugins/sd-jwt-vc/ && \
+    cp /src/sd-jwt-vc/tsconfig.json packages/plugins/sd-jwt-vc/ && \
+    cp -R /src/sd-jwt-vc/scripts/. packages/plugins/sd-jwt-vc/scripts/ && \
+    cp -R /src/sd-jwt-vc/src/. packages/plugins/sd-jwt-vc/src/
+RUN --mount=type=bind,source=packages/plugins/openid4vc,target=/src/openid4vc,ro \
+    mkdir -p packages/plugins/openid4vc/scripts packages/plugins/openid4vc/src && \
+    cp /src/openid4vc/package.json packages/plugins/openid4vc/ && \
+    cp /src/openid4vc/project.json packages/plugins/openid4vc/ && \
+    cp /src/openid4vc/tsconfig.json packages/plugins/openid4vc/ && \
+    cp -R /src/openid4vc/scripts/. packages/plugins/openid4vc/scripts/ && \
+    cp -R /src/openid4vc/src/. packages/plugins/openid4vc/src/
+RUN --mount=type=bind,source=packages/plugins/open-badge-v2,target=/src/open-badge-v2,ro \
+    mkdir -p packages/plugins/open-badge-v2/scripts packages/plugins/open-badge-v2/src && \
+    cp /src/open-badge-v2/package.json packages/plugins/open-badge-v2/ && \
+    cp /src/open-badge-v2/project.json packages/plugins/open-badge-v2/ && \
+    cp /src/open-badge-v2/tsconfig.json packages/plugins/open-badge-v2/ && \
+    cp /src/open-badge-v2/scripts/build.mjs packages/plugins/open-badge-v2/scripts/ && \
+    cp /src/open-badge-v2/scripts/mixedEntypoint.js packages/plugins/open-badge-v2/scripts/ && \
+    cp /src/open-badge-v2/src/index.ts packages/plugins/open-badge-v2/src/ && \
+    cp /src/open-badge-v2/src/plugin.ts packages/plugins/open-badge-v2/src/ && \
+    cp /src/open-badge-v2/src/types.ts packages/plugins/open-badge-v2/src/
+RUN --mount=type=bind,source=.,target=/src,ro \
+    mkdir -p packages/plugins/linked-claims/scripts packages/plugins/linked-claims/src packages/plugins/learn-cloud/scripts packages/plugins/learn-cloud/src && \
+    cp /src/packages/plugins/linked-claims/jest.config.cjs packages/plugins/linked-claims/ && \
+    cp /src/packages/plugins/linked-claims/tsconfig.json packages/plugins/linked-claims/ && \
+    cp /src/packages/plugins/linked-claims/scripts/build.mjs packages/plugins/linked-claims/scripts/ && \
+    cp /src/packages/plugins/linked-claims/scripts/mixedEntypoint.js packages/plugins/linked-claims/scripts/ && \
+    cp /src/packages/plugins/linked-claims/src/index.ts packages/plugins/linked-claims/src/ && \
+    cp /src/packages/plugins/linked-claims/src/types.ts packages/plugins/linked-claims/src/ && \
+    cp /src/packages/plugins/learn-cloud/jest.config.cjs packages/plugins/learn-cloud/ && \
+    cp /src/packages/plugins/learn-cloud/tsconfig.json packages/plugins/learn-cloud/ && \
+    cp /src/packages/plugins/learn-cloud/scripts/build.mjs packages/plugins/learn-cloud/scripts/ && \
+    cp /src/packages/plugins/learn-cloud/scripts/mixedEntypoint.js packages/plugins/learn-cloud/scripts/ && \
+    cp /src/packages/plugins/learn-cloud/src/index.ts packages/plugins/learn-cloud/src/ && \
+    cp /src/packages/plugins/learn-cloud/src/helpers.ts packages/plugins/learn-cloud/src/ && \
+    cp /src/packages/plugins/learn-cloud/src/plugin.ts packages/plugins/learn-cloud/src/ && \
+    cp /src/packages/plugins/learn-cloud/src/types.ts packages/plugins/learn-cloud/src/
+# Final pass: remove any workspace-local node_modules trees without relying on
+# shell glob expansion over deep workspace paths.
+RUN find apps examples packages services tests -name node_modules -prune -exec rm -rf {} +
 # Local Docker dev and PR previews bind-mount app/package sources over these
 # paths. Do not copy learn-card-app, credential-library, sss-key-manager,
 # email-templates, or embed-sdk source into the image: some Docker
