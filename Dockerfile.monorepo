@@ -245,6 +245,9 @@ RUN --mount=type=bind,source=.,target=/src,ro \
 # Final pass: remove any workspace-local node_modules trees without relying on
 # shell glob expansion over deep workspace paths.
 RUN find apps examples packages services tests -name node_modules -prune -exec rm -rf {} +
+
+RUN chmod -R a+rwX apps/learn-card-app
+
 # Local Docker dev and PR previews bind-mount app/package sources over these
 # paths. Do not copy learn-card-app, credential-library, sss-key-manager,
 # email-templates, or embed-sdk source into the image: some Docker

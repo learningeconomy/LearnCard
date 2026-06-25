@@ -133,6 +133,9 @@ services:
               required: false
         command:
             ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run start:docker']
+        volumes:
+            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -231,6 +234,9 @@ services:
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
         command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run start:docker']
+        volumes:
+            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
+            - ../../packages/email-templates/src:/app/packages/email-templates/src
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'
