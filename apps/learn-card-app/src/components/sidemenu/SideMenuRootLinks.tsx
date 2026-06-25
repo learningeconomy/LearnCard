@@ -199,7 +199,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             <IonMenuToggle key={link.id} autoHide={false} className="w-full">
                 <div
                     onClick={() => setActiveTab(linkPath)}
-                    className="flex items-center justify-center px-2 py-0"
+                    className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
                 </div>

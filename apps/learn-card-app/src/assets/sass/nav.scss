@@ -50,8 +50,9 @@ ion-tab-bar {
 }
 
 .side-menu-split-pane-container-visible.split-pane-md.split-pane-visible > .split-pane-side {
-    min-width: 270px;
-    max-width: 270px;
+    // LC-1921: Side Nav widened 270 → 290 to match Figma.
+    min-width: 290px;
+    max-width: 290px;
     border-right: var(--border);
     border-left: 0;
     transition: all 0.3s ease-out;

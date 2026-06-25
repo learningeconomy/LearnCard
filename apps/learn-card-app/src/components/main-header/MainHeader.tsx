@@ -15,7 +15,7 @@ import HeaderBranding from '../headerBranding/HeaderBranding';
 import Burger from '../svgs/Burger';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import NotificationButton from 'learn-card-base/components/notification-button/NotificationButton';
-import MyLearnCardModal from '../learncard/MyLearnCardModal';
+import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
 import MainSubHeader from '../main-subheader/MainSubHeader';
 
 import { SubheaderTypeEnum } from '../main-subheader/MainSubHeader.types';
@@ -26,13 +26,7 @@ import {
 
 import { getStatusBarColor } from 'learn-card-base/helpers/statusBarHelpers';
 
-import {
-    CredentialCategoryEnum,
-    useIsLoggedIn,
-    ProfilePicture,
-    useModal,
-    ModalTypes,
-} from 'learn-card-base';
+import { CredentialCategoryEnum, useIsLoggedIn, ProfilePicture } from 'learn-card-base';
 import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -83,14 +77,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     const location = useLocation();
     const history = useHistory();
 
-    const { newModal: openProfileModal } = useModal({
-        desktop: ModalTypes.Freeform,
-        mobile: ModalTypes.Freeform,
-    });
-
-    const openMyLearnCard = () => {
-        openProfileModal(<MyLearnCardModal branding={branding} />);
-    };
+    const openMyLearnCard = useOpenMyLearnCard(branding);
 
     const isLoading = loadingStore.use.loading();
 

@@ -197,7 +197,7 @@ const SideMenuSecondaryLinks: React.FC<{
                         if (link.path === '/ai/topics') chatBotStore.set.resetStore();
                         setActiveTab(link.path);
                     }}
-                    className="flex items-center justify-center px-2 py-0"
+                    className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
                 </li>
