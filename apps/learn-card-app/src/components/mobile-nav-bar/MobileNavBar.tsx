@@ -91,13 +91,15 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.dashboard) {
                                 return (
                                     <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        <DashboardIcon
-                                            className={`h-[35px] w-[35px] ${
-                                                isDashboardTabActive
-                                                    ? colors?.activeColor
-                                                    : colors?.inactiveColor
-                                            }`}
-                                        />
+                                        {DashboardIcon && (
+                                            <DashboardIcon
+                                                className={`h-[35px] w-[35px] ${
+                                                    isDashboardTabActive
+                                                        ? colors?.activeColor
+                                                        : colors?.inactiveColor
+                                                }`}
+                                            />
+                                        )}
                                         <IonLabel
                                             className={`font-notoSans font-bold text-[12px] mt-[3px] ${
                                                 isDashboardTabActive
@@ -123,12 +125,14 @@ const MobileNavBar: React.FC = () => {
                                                 )}
                                             </div>
                                         )}
-                                        <WalletIcon
-                                            isSyncing={isSyncing}
-                                            isCompleted={isCompleted}
-                                            version={isWalletTabActive ? '2' : '1'}
-                                            className="h-[35px] w-[35px]"
-                                        />
+                                        {WalletIcon && (
+                                            <WalletIcon
+                                                isSyncing={isSyncing}
+                                                isCompleted={isCompleted}
+                                                version={isWalletTabActive ? '2' : '1'}
+                                                className="h-[35px] w-[35px]"
+                                            />
+                                        )}
                                         <IonLabel
                                             className={`font-notoSans font-bold text-[12px] ${
                                                 isWalletTabActive
@@ -145,10 +149,12 @@ const MobileNavBar: React.FC = () => {
                             if (link.id === MobileNavBarLinks.launchpad) {
                                 return (
                                     <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        <LaunchPadIcon
-                                            version={isLaunchPadTabActive ? '2' : '1'}
-                                            className="h-[35px] w-[35px]"
-                                        />
+                                        {LaunchPadIcon && (
+                                            <LaunchPadIcon
+                                                version={isLaunchPadTabActive ? '2' : '1'}
+                                                className="h-[35px] w-[35px]"
+                                            />
+                                        )}
                                         <IonLabel
                                             className={`font-notoSans font-bold text-[12px] mt-[3px] ${
                                                 isLaunchPadTabActive
