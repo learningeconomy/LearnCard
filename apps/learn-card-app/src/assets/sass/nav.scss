@@ -33,12 +33,13 @@ ion-tab-bar.lc-footer-nav {
     border-top: 1px solid #ffffff;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding-left: 20px;
-    padding-right: 40px;
 
-    // Every item (incl. the hamburger) is an equal flex column so the row is
-    // evenly spaced like the Figma; kill the Ionic press ripple/highlight.
+    // No host padding: Ionic's :host is content-box, so any L/R padding adds
+    // ONTO the 100% width and overflows the viewport (jamming "Apps" off the
+    // right edge). The four buttons are equal flex columns that already fill
+    // the width and center their icons, giving even, symmetric spacing.
     ion-tab-button {
+        min-width: 0;
         --ripple-color: transparent;
         --background-focused: transparent;
         --background-focused-opacity: 0;
