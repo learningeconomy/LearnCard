@@ -70,7 +70,12 @@ ion-tab-bar.lc-footer-nav {
     border-right: var(--border);
     border-left: 0;
     // LC-1921: subtle drop shadow on the desktop side nav's right edge.
-    box-shadow: 4px 0 16px rgba(24, 34, 78, 0.06);
+    // position + z-index are required so the shadow paints OVER the adjacent
+    // main content; otherwise #main's white background covers it (and Ionic
+    // ignores ion-menu's --box-shadow when the pane is docked/visible).
+    position: relative;
+    z-index: 5;
+    box-shadow: 6px 0 18px rgba(24, 34, 78, 0.1);
     transition: all 0.3s ease-out;
 }
 
