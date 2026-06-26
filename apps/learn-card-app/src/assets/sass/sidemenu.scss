@@ -104,3 +104,16 @@ ion-split-pane {
 .side-menu-logo {
     padding-top: calc(env(safe-area-inset-top) + 0px);
 }
+
+// LC-1921: suppress the browser focus ring on side-menu nav links/buttons.
+// The selected row is already conveyed by its background highlight; the default
+// outline drew an unwanted box around the focused/just-clicked item.
+.lc-side-menu-content {
+    a,
+    button {
+        &:focus,
+        &:focus-visible {
+            outline: none;
+        }
+    }
+}
