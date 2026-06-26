@@ -25,15 +25,17 @@ import {
 // root-link id assertions verify the real enum values; only the MobileNavBar
 // module is stubbed above to satisfy the jsdom loader.
 describe('defaultNavLinks (LC-1921)', () => {
-    it('root links are Dashboard, Passport, Apps, Contacts, Admin Tools (Alerts removed)', () => {
+    // Alerts (/notifications) is present in the config array but hidden on
+    // desktop at render time (SideMenuRootLinks filters it on !isMobile).
+    it('root links are Dashboard, Passport, Apps, Alerts, Contacts, Admin Tools', () => {
         expect(DEFAULT_SIDE_MENU_ROOT_LINKS.map(l => l.path)).toEqual([
             '/dashboard',
             '/passport',
             '/launchpad',
+            '/notifications',
             '/contacts',
             '/admin-tools',
         ]);
-        expect(DEFAULT_SIDE_MENU_ROOT_LINKS.map(l => l.path)).not.toContain('/notifications');
     });
 
     it('root links use the expected labels', () => {
@@ -41,6 +43,7 @@ describe('defaultNavLinks (LC-1921)', () => {
             'Dashboard',
             'Passport',
             'Apps',
+            'Alerts',
             'Contacts',
             'Admin Tools',
         ]);

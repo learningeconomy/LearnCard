@@ -20,7 +20,7 @@ import {
     useWallet,
     useMarkAllNotificationsRead,
 } from 'learn-card-base';
-import headerScrollStore from '../../stores/headerScrollStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 
 const NotificationNavTabsContainer: React.FC<{
     isEmptyState: boolean;
@@ -108,7 +108,7 @@ const NotificationsPage: React.FC = () => {
     const [tab, setTab] = useState('active');
     const notificationCount = 0;
 
-    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
+    const onHeaderScroll = useHeaderScrollSync();
 
     return (
         <IonPage className="bg-white h-full">
@@ -125,12 +125,7 @@ const NotificationsPage: React.FC = () => {
                     fullscreen
                     className="bg-white h-full w-full"
                     scrollEvents
-                    onIonScroll={e => {
-                        const next = e.detail.scrollTop > 24;
-                        if (headerScrollStore.get.scrolled() !== next) {
-                            headerScrollStore.set.scrolled(next);
-                        }
-                    }}
+                    onIonScroll={onHeaderScroll}
                 >
                     <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-[100%] notifications-list-container bg-white px-[20px]">
                         <NotificationNavTabsContainer

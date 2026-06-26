@@ -15,8 +15,10 @@ const PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
 ];
 
 export const getPageTitle = (pathname: string): string | null => {
-    const match = PAGE_TITLES.filter(([prefix]) => pathname.startsWith(prefix)).sort(
-        (a, b) => b[0].length - a[0].length
-    )[0];
+    // Match on full path segments only: an exact match or a `prefix/...` child
+    // route. A bare `startsWith` would let `/wallet-worker` match `/wallet`.
+    const match = PAGE_TITLES.filter(
+        ([prefix]) => pathname === prefix || pathname.startsWith(prefix + '/')
+    ).sort((a, b) => b[0].length - a[0].length)[0];
     return match ? match[1] : null;
 };

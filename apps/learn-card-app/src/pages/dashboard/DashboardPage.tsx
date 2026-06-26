@@ -43,7 +43,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import pathwayStore from '../../stores/pathways/pathwayStore';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 import useTheme from '../../theme/hooks/useTheme';
-import headerScrollStore from '../../stores/headerScrollStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 import {
@@ -102,7 +102,7 @@ const DashboardPage: React.FC = () => {
         mobile: ModalTypes.FullScreen,
     });
 
-    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
+    const onHeaderScroll = useHeaderScrollSync();
 
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -558,12 +558,7 @@ const DashboardPage: React.FC = () => {
                     fullscreen
                     color="grayscale-100"
                     scrollEvents
-                    onIonScroll={e => {
-                        const next = e.detail.scrollTop > 24;
-                        if (headerScrollStore.get.scrolled() !== next) {
-                            headerScrollStore.set.scrolled(next);
-                        }
-                    }}
+                    onIonScroll={onHeaderScroll}
                 >
                     <DashboardView vm={viewModel} />
                 </IonContent>

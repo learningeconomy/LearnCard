@@ -29,7 +29,7 @@ import {
 } from './LaunchPadSearch/launchpad-search.helpers';
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
-import headerScrollStore from '../../stores/headerScrollStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import AppStoreListItem from './AppStoreListItem';
 import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
@@ -161,7 +161,7 @@ const LaunchPad: React.FC = () => {
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
 
-    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
+    const onHeaderScroll = useHeaderScrollSync();
 
     // Filter app store apps based on search and category
     const filteredInstalledApps = useMemo(() => {
@@ -271,12 +271,7 @@ const LaunchPad: React.FC = () => {
                     scrollY={true}
                     color="grayscale-100"
                     scrollEvents
-                    onIonScroll={e => {
-                        const next = e.detail.scrollTop > 24;
-                        if (headerScrollStore.get.scrolled() !== next) {
-                            headerScrollStore.set.scrolled(next);
-                        }
-                    }}
+                    onIonScroll={onHeaderScroll}
                 >
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>

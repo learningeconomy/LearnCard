@@ -28,7 +28,7 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
-import headerScrollStore from '../../stores/headerScrollStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { IconSetEnum } from '../../theme/icons';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
@@ -150,7 +150,7 @@ const AddressBook: React.FC = () => {
             setRequestCount(requestContacts?.length ?? 0);
     }, [requestCount, requestContacts, activeTab, url]);
 
-    useEffect(() => () => headerScrollStore.set.scrolled(false), []);
+    const onHeaderScroll = useHeaderScrollSync();
 
     return (
         <IonPage className="bg-grayscale-100">
@@ -164,12 +164,7 @@ const AddressBook: React.FC = () => {
                 fullscreen
                 style={{ '--background': '#EFF0F5' }}
                 scrollEvents
-                onIonScroll={e => {
-                    const next = e.detail.scrollTop > 24;
-                    if (headerScrollStore.get.scrolled() !== next) {
-                        headerScrollStore.set.scrolled(next);
-                    }
-                }}
+                onIonScroll={onHeaderScroll}
             >
                 <GenericErrorBoundary>
                     <AddressBookHeader
