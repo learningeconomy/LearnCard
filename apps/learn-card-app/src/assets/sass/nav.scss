@@ -75,7 +75,7 @@ ion-tab-bar.lc-footer-nav {
     // ignores ion-menu's --box-shadow when the pane is docked/visible).
     position: relative;
     z-index: 5;
-    box-shadow: 6px 0 18px rgba(24, 34, 78, 0.1);
+    box-shadow: 6px 0 16px rgba(24, 34, 78, 0.18);
     transition: all 0.3s ease-out;
 }
 

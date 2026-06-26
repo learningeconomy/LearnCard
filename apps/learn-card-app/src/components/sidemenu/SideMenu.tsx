@@ -155,13 +155,13 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                                 <img
                                                     src={resolvedAssets.textLogoDark}
                                                     alt="Logo"
-                                                    className="w-[85%] max-w-[150px] object-contain"
+                                                    className="w-[180px] max-w-full object-contain"
                                                 />
                                             ) : (
                                                 <LearnCardTextLogo
                                                     className={`${
                                                         colors.logoColor ?? 'text-grayscale-900'
-                                                    } w-[85%] max-w-[150px]`}
+                                                    } w-[180px] max-w-full`}
                                                 />
                                             )}
                                         </div>
