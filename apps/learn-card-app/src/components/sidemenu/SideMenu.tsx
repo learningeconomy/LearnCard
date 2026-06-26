@@ -13,7 +13,7 @@ import { useAnalytics } from '@analytics';
 
 import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';
-import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
@@ -148,7 +148,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                     <div className="flex min-h-full flex-col">
                         <div className="flex-shrink-0">
                             <div className="flex w-full flex-col items-center justify-center">
-                                <div className="side-menu-logo w-full flex items-center justify-between mt-8 mb-6 px-6">
+                                <div className="side-menu-logo w-full flex items-center justify-between mt-8 mb-4 px-6">
                                     <IonMenuToggle autoHide={false} className="cursor-pointer">
                                         <div className="max-w-[90%] flex items-center justify-center">
                                             {resolvedAssets.textLogoDark ? (
@@ -176,10 +176,16 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                             aria-label="Close menu"
                                             className="cursor-pointer flex items-center justify-center p-2 -mr-2"
                                         >
-                                            <CaretLeft className="text-grayscale-400 h-[22px] w-auto" />
+                                            <LeftArrow
+                                                className="text-grayscale-400 h-[22px] w-auto"
+                                                opacity="1"
+                                            />
                                         </IonMenuToggle>
                                     )}
                                 </div>
+
+                                {/* Light divider under the logo (LC-1921 Figma). */}
+                                <div className="self-stretch mx-6 border-t border-solid border-grayscale-200" />
 
                                 <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
                                     {/* Disable New AI Session Button for now on Side Menu

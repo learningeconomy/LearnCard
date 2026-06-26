@@ -41,6 +41,10 @@ ion-tab-bar.lc-footer-nav {
     ion-tab-button {
         min-width: 0;
         --ripple-color: transparent;
+        // Transparent so each button doesn't re-paint the bar's white→80%
+        // gradient on top of itself — that double layer made the icon columns
+        // look more opaque than the (background:none) hamburger column.
+        --background: transparent;
         --background-focused: transparent;
         --background-focused-opacity: 0;
         --background-activated: transparent;
@@ -65,6 +69,8 @@ ion-tab-bar.lc-footer-nav {
     max-width: 290px;
     border-right: var(--border);
     border-left: 0;
+    // LC-1921: subtle drop shadow on the desktop side nav's right edge.
+    box-shadow: 4px 0 16px rgba(24, 34, 78, 0.06);
     transition: all 0.3s ease-out;
 }
 
