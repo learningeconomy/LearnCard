@@ -26,6 +26,7 @@ export const getNotificationButtonColor = (path?: string) => {
         path === '/home' ||
         path === '/jobs' ||
         path === '/wallet' ||
+        path === '/launchpad' ||
         path === '/lc-preview' ||
         path === '/notifications' ||
         path === '/campfire' ||
@@ -44,7 +45,7 @@ export const getNotificationButtonColor = (path?: string) => {
         return 'text-black';
     }
 
-    if (path === '/launchpad' || path?.includes('/consent-flow')) {
+    if (path?.includes('/consent-flow')) {
         return 'hidden';
     }
 

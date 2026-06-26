@@ -6,9 +6,9 @@
  */
 const PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
     ['/dashboard', 'Dashboard'],
-    ['/passport', 'Passport'],
-    ['/wallet', 'Passport'],
-    ['/launchpad', 'Apps'],
+    ['/passport', 'My Passport'],
+    ['/wallet', 'My Passport'],
+    ['/launchpad', 'My Apps'],
     ['/contacts', 'Contacts'],
     ['/notifications', 'Alerts'],
     ['/privacy-and-data', 'Settings'],
