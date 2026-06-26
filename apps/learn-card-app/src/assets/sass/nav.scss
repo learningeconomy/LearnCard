@@ -75,7 +75,8 @@ ion-tab-bar.lc-footer-nav {
     // ignores ion-menu's --box-shadow when the pane is docked/visible).
     position: relative;
     z-index: 5;
-    box-shadow: 6px 0 16px rgba(24, 34, 78, 0.18);
+    // Exact Figma Side Nav shadow.
+    box-shadow: 1px 5px 5px 0 rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease-out;
 }
 
