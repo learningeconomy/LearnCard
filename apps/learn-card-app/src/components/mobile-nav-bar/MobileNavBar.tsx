@@ -113,8 +113,10 @@ const MobileNavBar: React.FC = () => {
                                                     }`}
                                                 />
                                             )}
-                                            {/* New-items indicator, top-right of the icon (Figma) */}
-                                            <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" />
+                                            {/* New-items indicator, top-right of the icon (Figma).
+                                                Hidden until the unread/new-items logic exists —
+                                                was hardcoded to always show. */}
+                                            {/* <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" /> */}
                                         </div>
                                         <IonLabel
                                             className={`font-poppins font-semibold text-[11px] mt-[3px] ${
