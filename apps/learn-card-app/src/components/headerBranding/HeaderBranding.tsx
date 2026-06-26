@@ -54,7 +54,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
             disabled={disableClick}
         >
             {showTitle ? (
-                <span className="font-poppins text-[22px] font-normal normal-case tracking-normal">
+                <span className="font-poppins text-[20px] font-normal normal-case tracking-normal whitespace-nowrap">
                     {pageTitle}
                 </span>
             ) : textLogoDark ? (
