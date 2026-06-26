@@ -78,6 +78,12 @@ type MyLearnCardModalProps = {
     hideLogout?: boolean;
     hideEdit?: boolean;
     hideShare?: boolean;
+    /**
+     * Omit the bottom LearnCardFooter (Share/Close bar) entirely. Used when this
+     * view is rendered as a route (e.g. the `/profile` page) rather than inside a
+     * modal, where the footer's Share/X/Close affordances don't apply.
+     */
+    hideFooter?: boolean;
 };
 
 const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
@@ -87,6 +93,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     hideLogout = false,
     hideEdit = false,
     hideShare = false,
+    hideFooter = false,
 }) => {
     const flags = useFlags();
     const [user, setUser] = useState(_user);
@@ -720,7 +727,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     return (
         <section
-            className="min-h-full h-full overflow-y-auto pb-[100px]"
+            className={`min-h-full h-full overflow-y-auto ${hideFooter ? '' : 'pb-[100px]'}`}
             style={{
                 ...backgroundStyles,
             }}
@@ -814,7 +821,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 </div>
             </section>
 
-            <LearnCardFooter hideShare={hideShare} icon={<ReplyIcon />} />
+            {!hideFooter && <LearnCardFooter hideShare={hideShare} icon={<ReplyIcon />} />}
         </section>
     );
 };

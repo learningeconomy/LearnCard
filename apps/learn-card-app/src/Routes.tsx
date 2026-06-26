@@ -43,6 +43,7 @@ const CredentialStorageGet = lazyWithRetry(
     () => import('./pages/credentialStorage/CredentialStorageGet')
 );
 const AddressBook = lazyWithRetry(() => import('./pages/addressBook/AddressBook'));
+const ProfilePage = lazyWithRetry(() => import('./pages/profile/ProfilePage'));
 const BoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/BoostCMS'));
 const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/UpdateBoostCMS'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
@@ -264,6 +265,7 @@ export const Routes: React.FC = () => {
                         />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
+                        <PrivateRoute exact path="/profile" component={ProfilePage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
                         <PrivateRoute exact path="/contacts/pending" component={AddressBook} />
                         <PrivateRoute exact path="/contacts/requests" component={AddressBook} />

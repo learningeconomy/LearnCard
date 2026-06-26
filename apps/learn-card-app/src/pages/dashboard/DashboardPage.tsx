@@ -31,7 +31,6 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
-import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
 import ManageDataSharingModal from '../../components/data-sharing/ManageDataSharingModal';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
@@ -212,7 +211,9 @@ const DashboardPage: React.FC = () => {
     }, [aiInsightsAllowed, skillsCredentials]);
 
     const openMyLearnCard = () => {
-        openHeaderModal(<MyLearnCardModal branding={BrandingEnum.learncard} />);
+        // LC-1921: profile view is now a route (rendered beside the nav) rather
+        // than a modal overlay. Shared with the side-menu + header entry points.
+        history.push('/profile');
     };
     const openQrScanner = () => {
         openHeaderModal(
