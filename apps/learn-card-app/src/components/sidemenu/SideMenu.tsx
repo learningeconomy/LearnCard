@@ -23,7 +23,6 @@ import Settings from '../svgs/Settings';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import CheckListButton from '../learncard/checklist/CheckListButton';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
-import AddToLearnCardMenu from '../add-to-learncard-menu/AddToLearnCardMenu';
 import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
@@ -107,23 +106,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         const { prompted } = await gate();
         if (prompted) return;
 
-        if (isMobile) {
-            // Mobile: existing "Add to LearnCard" menu in a Cancel modal.
-            newModal(
-                <AddToLearnCardMenu />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                },
-                {
-                    desktop: ModalTypes.Cancel,
-                    mobile: ModalTypes.Cancel,
-                }
-            );
-            return;
-        }
-
-        // Desktop: open the launchpad action modal instead — same Freeform modal
-        // configuration used by the launchpad greeting card's quick-action button.
+        // Both desktop and mobile open the launchpad action modal (LC-1921) —
+        // the same Freeform modal used by the launchpad greeting card's
+        // quick-action button. Mobile previously opened the AddToLearnCardMenu
+        // submenu directly; it now follows the desktop pattern.
         newModal(
             <LaunchPadActionModal />,
             {
