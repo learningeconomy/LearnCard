@@ -1,23 +1,24 @@
-import { useHistory } from 'react-router-dom';
+import React from 'react';
 
-import { BrandingEnum } from 'learn-card-base';
+import { useModal, ModalTypes, BrandingEnum } from 'learn-card-base';
+
+import MyLearnCardModal from './MyLearnCardModal';
 
 /**
- * Navigates to the current user's "My LearnCard" profile/settings view at
- * `/profile` (rendered by `ProfilePage`).
+ * Opens the "My LearnCard" profile/settings view in a right-loading modal
+ * (LC-1921). On desktop it slides in from the right beside the nav; on mobile
+ * the right modal fills the screen and closes back to the previous page.
  *
- * Shared by the header profile avatar (MainHeader) and the side-menu Settings
- * row (LC-1921) so the two entry points can never drift on where they land.
- *
- * Previously this opened `MyLearnCardModal` in a Freeform modal; LC-1921 moved
- * the view to a first-class route so it lays out beside the side menu on
- * desktop instead of as an overlay. The `branding` arg is retained for
- * signature compatibility with existing callers.
+ * Shared by the header profile avatar (MainHeader), the side-menu Settings row,
+ * and the Dashboard avatar so all entry points present the same modal/config.
  */
-export const useOpenMyLearnCard = (_branding: BrandingEnum = BrandingEnum.learncard) => {
-    const history = useHistory();
+export const useOpenMyLearnCard = (branding: BrandingEnum = BrandingEnum.learncard) => {
+    const { newModal: openProfileModal } = useModal({
+        desktop: ModalTypes.Right,
+        mobile: ModalTypes.Right,
+    });
 
-    return () => history.push('/profile');
+    return () => openProfileModal(<MyLearnCardModal branding={branding} />);
 };
 
 export default useOpenMyLearnCard;

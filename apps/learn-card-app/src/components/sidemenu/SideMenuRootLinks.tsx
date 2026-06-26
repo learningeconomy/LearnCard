@@ -16,6 +16,7 @@ import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersona
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
@@ -45,6 +46,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     if (isCompleted) walletTextStyles = `${colors.completedColor}`;
 
     const flags = useFlags();
+    const { isMobile } = useDeviceTypeByWidth();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
     const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
     // Same two-layer gate as the `/` landing redirect in Routes.tsx, so the
@@ -113,6 +115,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     rootLinks = walletLink?.map(link => {
         if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
+        // Alerts lives in the header island on desktop; only show it in the
+        // side menu on mobile (LC-1921).
+        if (link.path === '/notifications' && !isMobile) return null;
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
         const linkPath = link.path;

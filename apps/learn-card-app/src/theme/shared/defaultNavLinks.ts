@@ -10,8 +10,11 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
     // spinner/label is handled in SideMenuRootLinks.
     { id: SideMenuLinksEnum.wallet, label: 'Passport', path: '/passport' },
     { id: SideMenuLinksEnum.launchPad, label: 'Apps', path: '/launchpad' },
+    // Alerts (notifications) appears in the side menu on MOBILE only — on desktop
+    // notifications live in the header island. The mobile-only filtering happens
+    // in SideMenuRootLinks (LC-1921).
+    { id: SideMenuLinksEnum.alerts, label: 'Alerts', path: '/notifications' },
     { id: SideMenuLinksEnum.contacts, label: 'Contacts', path: '/contacts' },
-    // Alerts removed from the sidebar — notifications now live in the header (LC-1921).
     { id: SideMenuLinksEnum.adminTools, label: 'Admin Tools', path: '/admin-tools' },
 ];
 

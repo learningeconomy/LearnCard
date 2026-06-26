@@ -36,6 +36,7 @@ import ManageDataSharingModal from '../../components/data-sharing/ManageDataShar
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
+import useOpenMyLearnCard from '../../components/learncard/useOpenMyLearnCard';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -210,11 +211,9 @@ const DashboardPage: React.FC = () => {
         return buildTopSkills(getTopSkills(aggregatedSkills, 15), 3);
     }, [aiInsightsAllowed, skillsCredentials]);
 
-    const openMyLearnCard = () => {
-        // LC-1921: profile view is now a route (rendered beside the nav) rather
-        // than a modal overlay. Shared with the side-menu + header entry points.
-        history.push('/profile');
-    };
+    // LC-1921: shared right-loading profile/settings modal, same entry point as
+    // the side-menu Settings row and the header avatar.
+    const openMyLearnCard = useOpenMyLearnCard();
     const openQrScanner = () => {
         openHeaderModal(
             <QrCodeUserCardModal

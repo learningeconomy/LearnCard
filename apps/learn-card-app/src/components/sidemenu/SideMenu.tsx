@@ -13,7 +13,7 @@ import { useAnalytics } from '@analytics';
 
 import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';
-import BurgerIcon from '../../components/svgs/Burger';
+import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
@@ -148,13 +148,9 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                     <div className="flex min-h-full flex-col">
                         <div className="flex-shrink-0">
                             <div className="flex w-full flex-col items-center justify-center">
-                                <button className="side-menu-logo w-full flex items-center justify-start mt-8 mb-6 px-6 cursor-pointer">
-                                    <IonMenuToggle autoHide={false}>
+                                <div className="side-menu-logo w-full flex items-center justify-between mt-8 mb-6 px-6">
+                                    <IonMenuToggle autoHide={false} className="cursor-pointer">
                                         <div className="max-w-[90%] flex items-center justify-center">
-                                            {isMobile && (
-                                                <BurgerIcon className="text-grayscale-800 h-[25px] w-[25px] mr-4" />
-                                            )}
-
                                             {resolvedAssets.textLogoDark ? (
                                                 <img
                                                     src={resolvedAssets.textLogoDark}
@@ -170,7 +166,20 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                             )}
                                         </div>
                                     </IonMenuToggle>
-                                </button>
+
+                                    {/* Mobile-only close affordance (LC-1921): tap or swipe to
+                                        dismiss the drawer. Hidden on desktop where the menu is
+                                        a persistent split-pane. */}
+                                    {isMobile && (
+                                        <IonMenuToggle
+                                            autoHide={false}
+                                            aria-label="Close menu"
+                                            className="cursor-pointer flex items-center justify-center p-2 -mr-2"
+                                        >
+                                            <CaretLeft className="text-grayscale-400 h-[22px] w-auto" />
+                                        </IonMenuToggle>
+                                    )}
+                                </div>
 
                                 <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
                                     {/* Disable New AI Session Button for now on Side Menu
@@ -217,7 +226,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     onClick={openMyLearnCard}
                                     className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px] text-grayscale-900 font-poppins text-[17px]"
                                 >
-                                    <Settings className="h-[35px] w-[35px] text-grayscale-800" />
+                                    <Settings className="h-[35px] w-[35px] text-grayscale-400" />
                                     Settings
                                 </button>
                             </IonMenuToggle>

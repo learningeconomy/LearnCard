@@ -142,7 +142,11 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
 
                         <IonCol size="10" className="flex justify-end items-center gap-2">
                             {isLoggedIn ? (
-                                <>
+                                // Profile + Alerts cluster. On desktop this renders as an
+                                // "island" pill (see `.main-header-profile-island` in
+                                // header.scss); on mobile the icons sit bare in the header
+                                // (LC-1921).
+                                <div className="main-header-profile-island flex items-center gap-2">
                                     <button
                                         type="button"
                                         aria-label="Open profile"
@@ -154,8 +158,11 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                             customImageClass="w-full h-full object-cover"
                                         />
                                     </button>
-                                    <NotificationButton colorOverride={notificationColorOverride} />
-                                </>
+                                    <NotificationButton
+                                        colorOverride={notificationColorOverride}
+                                        iconVariant="alerts"
+                                    />
+                                </div>
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
                             )}
