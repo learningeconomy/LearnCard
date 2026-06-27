@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useModal } from 'learn-card-base';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
-import { LEARNCARD_APP_SHORTCUTS } from './learnCardAppShortcuts';
+import { LEARNCARD_APP_SHORTCUTS, LearnCardAppShortcut } from './learnCardAppShortcuts';
 import useOpenBoostTemplateSelector from './useOpenBoostTemplateSelector';
 import useMoreApps from './useMoreApps';
 
@@ -16,7 +16,8 @@ const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
-    const { newModal } = useModal();
+    // Initialize with a modal type so newModal renders (mirrors AppStoreListItem).
+    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
@@ -34,13 +35,52 @@ const MyAppsLanding: React.FC = () => {
         [history, openBoost]
     );
 
-    const filteredMoreApps = useMemo(() => {
-        const q = searchInput.trim().toLowerCase();
-        if (!q) return moreApps;
-        return moreApps.filter(
-            a => a.display_name?.toLowerCase().includes(q) || a.tagline?.toLowerCase().includes(q)
-        );
-    }, [moreApps, searchInput]);
+    const query = searchInput.trim().toLowerCase();
+    const isSearching = query.length > 0;
+
+    const matchedShortcuts = useMemo(
+        () =>
+            isSearching
+                ? LEARNCARD_APP_SHORTCUTS.filter(s => s.title.toLowerCase().includes(query))
+                : [],
+        [isSearching, query]
+    );
+
+    const matchedApps = useMemo(
+        () =>
+            isSearching
+                ? moreApps.filter(
+                      a =>
+                          a.display_name?.toLowerCase().includes(query) ||
+                          a.tagline?.toLowerCase().includes(query)
+                  )
+                : [],
+        [isSearching, query, moreApps]
+    );
+
+    const resultsCount = matchedShortcuts.length + matchedApps.length;
+
+    const renderShortcutTile = (shortcut: LearnCardAppShortcut) => (
+        <AppGridTile
+            key={shortcut.key}
+            title={shortcut.title}
+            icon={<shortcut.Icon className="h-full w-full" />}
+            gradientFrom={shortcut.gradientFrom}
+            gradientTo={shortcut.gradientTo}
+            onClick={shortcut.getAction(helpers)}
+        />
+    );
+
+    const renderAppTile = (app: (typeof moreApps)[number]) => (
+        <AppGridTile
+            key={app.listing_id}
+            title={app.display_name}
+            icon={app.icon_url}
+            onClick={() =>
+                newModal(<AppStoreDetailModal listing={app} isInstalled={!isSuggested} />)
+            }
+        />
+    );
 
     return (
         <IonPage className="bg-white">
@@ -69,36 +109,31 @@ const MyAppsLanding: React.FC = () => {
                         />
                     </div>
 
-                    <AppGrid heading="LearnCard Apps">
-                        {LEARNCARD_APP_SHORTCUTS.map(s => (
-                            <AppGridTile
-                                key={s.key}
-                                title={s.title}
-                                icon={<s.Icon className="h-full w-full" />}
-                                gradientFrom={s.gradientFrom}
-                                gradientTo={s.gradientTo}
-                                onClick={s.getAction(helpers)}
-                            />
-                        ))}
-                    </AppGrid>
+                    {isSearching ? (
+                        <section className="w-full max-w-[820px]">
+                            <p className="mb-4 font-poppins text-[15px] text-[#6F7590] md:mb-6">
+                                {resultsCount === 0
+                                    ? `No results for "${searchInput.trim()}"`
+                                    : `${resultsCount} result${
+                                          resultsCount === 1 ? '' : 's'
+                                      } for "${searchInput.trim()}"`}
+                            </p>
+                            {resultsCount > 0 && (
+                                <div className="grid grid-cols-3 justify-items-center gap-x-3 gap-y-5 md:grid-cols-4 md:gap-x-6 md:gap-y-8">
+                                    {matchedShortcuts.map(renderShortcutTile)}
+                                    {matchedApps.map(renderAppTile)}
+                                </div>
+                            )}
+                        </section>
+                    ) : (
+                        <>
+                            <AppGrid heading="LearnCard Apps">
+                                {LEARNCARD_APP_SHORTCUTS.map(renderShortcutTile)}
+                            </AppGrid>
 
-                    <AppGrid heading="More Apps">
-                        {filteredMoreApps.map(app => (
-                            <AppGridTile
-                                key={app.listing_id}
-                                title={app.display_name}
-                                icon={app.icon_url}
-                                onClick={() =>
-                                    newModal(
-                                        <AppStoreDetailModal
-                                            listing={app}
-                                            isInstalled={!isSuggested}
-                                        />
-                                    )
-                                }
-                            />
-                        ))}
-                    </AppGrid>
+                            <AppGrid heading="More Apps">{moreApps.map(renderAppTile)}</AppGrid>
+                        </>
+                    )}
                 </div>
             </IonContent>
         </IonPage>
