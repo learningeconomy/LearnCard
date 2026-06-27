@@ -164,7 +164,12 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                                         />
                                     </button>
                                     <NotificationButton
-                                        colorOverride={notificationColorOverride}
+                                        // Match the alerts icon to the rest of the header's icon
+                                        // color (back arrow / wordmark) instead of its own
+                                        // per-path white default, which was invisible inside the
+                                        // white desktop profile island on category pages. An
+                                        // explicit override (e.g. WalletPage) still wins.
+                                        colorOverride={notificationColorOverride ?? headerColors}
                                         iconVariant="alerts"
                                     />
                                 </div>
