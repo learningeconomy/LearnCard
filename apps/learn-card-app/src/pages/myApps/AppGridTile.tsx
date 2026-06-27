@@ -31,8 +31,10 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
                     alt={title}
                     className="aspect-square w-full max-w-[100px] rounded-[22%] border border-[#FBFBFC] object-cover"
                     onError={e => {
-                        (e.target as HTMLImageElement).src =
-                            'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                        // Clear the handler first so a 404 on the fallback can't loop.
+                        const img = e.currentTarget;
+                        img.onerror = null;
+                        img.src = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
                     }}
                 />
             ) : (

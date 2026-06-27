@@ -3,11 +3,12 @@ import { renderHook } from '@testing-library/react';
 let installed: any[] = [];
 let featured: any[] = [];
 let curated: any[] = [];
+let featuredLoading = false;
 
 vi.mock('../launchPad/useAppStore', () => ({
     default: () => ({
         useInstalledApps: () => ({ data: { records: installed }, isLoading: false }),
-        useFeaturedCarouselApps: () => ({ data: featured, isLoading: false }),
+        useFeaturedCarouselApps: () => ({ data: featured, isLoading: featuredLoading }),
         useCuratedListApps: () => ({ data: curated, isLoading: false }),
     }),
 }));
@@ -19,6 +20,7 @@ describe('useMoreApps', () => {
         installed = [];
         featured = [];
         curated = [];
+        featuredLoading = false;
     });
 
     it('returns installed apps when the user has some', () => {
@@ -42,5 +44,14 @@ describe('useMoreApps', () => {
         const { result } = renderHook(() => useMoreApps());
         expect(result.current.apps.map(a => a.listing_id)).toEqual(['c']);
         expect(result.current.isSuggested).toBe(true);
+    });
+
+    it('does not flash curated while featured is still loading', () => {
+        featuredLoading = true;
+        curated = [{ listing_id: 'c' }];
+        const { result } = renderHook(() => useMoreApps());
+        expect(result.current.apps).toEqual([]);
+        expect(result.current.isSuggested).toBe(true);
+        expect(result.current.isLoading).toBe(true);
     });
 });

@@ -19,16 +19,19 @@ const MyAppsLanding: React.FC = () => {
     // Initialize with a modal type so newModal renders (mirrors AppStoreListItem).
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const openBoost = useOpenBoostTemplateSelector();
-    const { apps: moreApps, isSuggested } = useMoreApps();
+    const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
 
-    // Preserve existing /launchpad deep-link flows by handing them to the browse view.
+    // Existing /launchpad deep-link flows (partner connect, consent, embed) are
+    // handled by the browse view — hand them off, preserving the query string.
+    const hasDeepLink = useMemo(
+        () => DEEP_LINK_PARAMS.some(p => new URLSearchParams(search).has(p)),
+        [search]
+    );
+
     useEffect(() => {
-        const params = new URLSearchParams(search);
-        if (DEEP_LINK_PARAMS.some(p => params.has(p))) {
-            history.replace(`/launchpad/browse${search}`);
-        }
-    }, [search, history]);
+        if (hasDeepLink) history.replace(`/launchpad/browse${search}`);
+    }, [hasDeepLink, search, history]);
 
     const helpers = useMemo(
         () => ({ push: (path: string) => history.push(path), openBoost }),
@@ -77,6 +80,21 @@ const MyAppsLanding: React.FC = () => {
         />
     );
 
+    const renderSkeletonTile = (key: string) => (
+        <div
+            key={key}
+            className="aspect-square w-full max-w-[100px] animate-pulse rounded-[22%] bg-grayscale-200"
+        />
+    );
+
+    const moreAppsTiles =
+        isLoadingMore && moreApps.length === 0
+            ? Array.from({ length: 8 }).map((_, i) => renderSkeletonTile(`more-skeleton-${i}`))
+            : moreApps.map(renderAppTile);
+
+    // Don't paint the landing for a frame before the deep-link redirect lands.
+    if (hasDeepLink) return null;
+
     return (
         <IonPage className="bg-white">
             <MainHeader />
@@ -123,7 +141,7 @@ const MyAppsLanding: React.FC = () => {
                                 {LEARNCARD_APP_SHORTCUTS.map(renderShortcutTile)}
                             </AppGrid>
 
-                            <AppGrid heading="More Apps">{moreApps.map(renderAppTile)}</AppGrid>
+                            <AppGrid heading="More Apps">{moreAppsTiles}</AppGrid>
                         </>
                     )}
                 </div>
