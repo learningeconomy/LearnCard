@@ -40,7 +40,8 @@ export const getNotificationButtonColor = (path?: string) => {
         path?.includes('/ai/insights') ||
         path?.includes('/ai/chat') ||
         path?.includes('/ai/pathways') ||
-        path?.includes('/ai/topics')
+        path?.includes('/ai/topics') ||
+        path?.startsWith('/pathways')
     ) {
         return 'text-black';
     }
