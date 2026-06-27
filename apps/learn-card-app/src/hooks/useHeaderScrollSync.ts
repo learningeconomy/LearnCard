@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useIonViewWillEnter } from '@ionic/react';
 import { IonContentCustomEvent, ScrollDetail } from '@ionic/core';
 
 import headerScrollStore from '../stores/headerScrollStore';
@@ -19,6 +20,13 @@ const SCROLL_THRESHOLD = 24;
  * ```
  */
 export const useHeaderScrollSync = () => {
+    // `headerScrollStore.scrolled` is a single global flag. Ionic keeps
+    // previously-visited pages mounted in the IonRouterOutlet stack, so the
+    // unmount cleanup below does NOT fire on forward navigation — without an
+    // enter-time reset, a page navigated to while another page left the flag
+    // `true` would show its condensed title at scrollTop 0. Resetting on view
+    // enter clears it every time a (possibly cached) page is re-entered.
+    useIonViewWillEnter(() => headerScrollStore.set.scrolled(false));
     useEffect(() => () => headerScrollStore.set.scrolled(false), []);
 
     return (event: IonContentCustomEvent<ScrollDetail>) => {

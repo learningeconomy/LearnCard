@@ -30,6 +30,10 @@ module.exports = {
         'bg-blue-200',
         'bg-blue-200/50',
         'bg-blue-500',
+        // VetPass default family is multi-word (`baltic-blue-500`).
+        'bg-baltic-blue-50',
+        'bg-baltic-blue-200',
+        'bg-baltic-blue-200/50',
     ],
     theme: {
         fontFamily: {

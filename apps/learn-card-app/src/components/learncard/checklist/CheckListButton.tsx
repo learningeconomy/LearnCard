@@ -64,7 +64,9 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     if (mode === 'sidemenu') {
         // Theme color family (e.g. `indigo` / `blue`) drives the card tint +
         // progress track per the LC-1921 colorful/neutral Side Nav variants.
-        const family = primaryColor?.split('-')[0] || 'indigo';
+        // Strip only the trailing shade so multi-word families survive
+        // (e.g. `baltic-blue-500` → `baltic-blue`, not `baltic`).
+        const family = primaryColor?.replace(/-\d+$/, '') || 'indigo';
 
         return (
             <div

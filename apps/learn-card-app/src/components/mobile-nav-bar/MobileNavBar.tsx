@@ -55,7 +55,10 @@ const MobileNavBar: React.FC = () => {
 
     // Active tab icon sits in a themed pill (indigo/blue -200 @ 50% + white
     // border) per the Figma "LearnCard Footer Nav - V3".
-    const pillFamily = theme?.colors?.defaults?.primaryColor?.split('-')[0] || 'indigo';
+    // Strip only the trailing shade (`-500`) so multi-word families survive,
+    // e.g. `baltic-blue-500` → `baltic-blue` (not `baltic`). Safelist the
+    // resulting `bg-{family}-200/50` in tailwind.config.js.
+    const pillFamily = theme?.colors?.defaults?.primaryColor?.replace(/-\d+$/, '') || 'indigo';
     const iconPillClass = (active: boolean): string =>
         `flex items-center justify-center p-[5px] rounded-[40px] ${
             active ? `border border-solid border-white bg-${pillFamily}-200/50` : ''
