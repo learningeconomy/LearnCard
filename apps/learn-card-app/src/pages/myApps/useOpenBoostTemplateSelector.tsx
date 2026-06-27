@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 import BoostTemplateSelector from '../../components/boost/boost-template/BoostTemplateSelector';
@@ -11,7 +11,7 @@ const useOpenBoostTemplateSelector = (): (() => void) => {
     const { newModal, closeModal } = useModal();
     const { checkAndPromptRecovery } = useBoostRecoveryCheck();
 
-    return () => {
+    return useCallback(() => {
         closeModal();
         checkAndPromptRecovery(() => {
             newModal(
@@ -20,7 +20,7 @@ const useOpenBoostTemplateSelector = (): (() => void) => {
                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
         });
-    };
+    }, [closeModal, checkAndPromptRecovery, newModal]);
 };
 
 export default useOpenBoostTemplateSelector;

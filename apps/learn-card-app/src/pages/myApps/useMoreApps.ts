@@ -7,9 +7,8 @@ const useMoreApps = () => {
     const { data: featured } = useFeaturedCarouselApps();
     const { data: curated, isLoading: loadingCurated } = useCuratedListApps();
 
-    const installed = installedData?.records ?? [];
-
     return useMemo(() => {
+        const installed = installedData?.records ?? [];
         if (installed.length > 0) {
             return { apps: installed, isSuggested: false, isLoading: loadingInstalled };
         }
@@ -19,7 +18,7 @@ const useMoreApps = () => {
             isSuggested: true,
             isLoading: loadingInstalled || loadingCurated,
         };
-    }, [installed, featured, curated, loadingInstalled, loadingCurated]);
+    }, [installedData, featured, curated, loadingInstalled, loadingCurated]);
 };
 
 export default useMoreApps;

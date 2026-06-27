@@ -40,22 +40,20 @@ const MyAppsLanding: React.FC = () => {
 
     const matchedShortcuts = useMemo(
         () =>
-            isSearching
-                ? LEARNCARD_APP_SHORTCUTS.filter(s => s.title.toLowerCase().includes(query))
-                : [],
-        [isSearching, query]
+            query ? LEARNCARD_APP_SHORTCUTS.filter(s => s.title.toLowerCase().includes(query)) : [],
+        [query]
     );
 
     const matchedApps = useMemo(
         () =>
-            isSearching
+            query
                 ? moreApps.filter(
                       a =>
                           a.display_name?.toLowerCase().includes(query) ||
                           a.tagline?.toLowerCase().includes(query)
                   )
                 : [],
-        [isSearching, query, moreApps]
+        [query, moreApps]
     );
 
     const resultsCount = matchedShortcuts.length + matchedApps.length;
@@ -110,7 +108,7 @@ const MyAppsLanding: React.FC = () => {
                     </div>
 
                     {isSearching ? (
-                        <section className="w-full max-w-[820px]">
+                        <div className="w-full max-w-[820px]">
                             <p className="mb-4 font-poppins text-[15px] text-[#6F7590] md:mb-6">
                                 {resultsCount === 0
                                     ? `No results for "${searchInput.trim()}"`
@@ -119,12 +117,12 @@ const MyAppsLanding: React.FC = () => {
                                       } for "${searchInput.trim()}"`}
                             </p>
                             {resultsCount > 0 && (
-                                <div className="grid grid-cols-3 justify-items-center gap-x-3 gap-y-5 md:grid-cols-4 md:gap-x-6 md:gap-y-8">
+                                <AppGrid>
                                     {matchedShortcuts.map(renderShortcutTile)}
                                     {matchedApps.map(renderAppTile)}
-                                </div>
+                                </AppGrid>
                             )}
-                        </section>
+                        </div>
                     ) : (
                         <>
                             <AppGrid heading="LearnCard Apps">
