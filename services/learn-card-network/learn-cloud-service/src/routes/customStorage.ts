@@ -1,5 +1,5 @@
 import { calculateObjectSize } from 'bson';
-import { Filter, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
@@ -188,13 +188,7 @@ export const customStorageRouter = t.router({
         .input(
             z
                 .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(
-                            z.record(z.string(), z.any()).parse
-                        )
-                        .meta({ override: { type: 'object' } })
-                        .or(JWEValidator)
-                        .optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
                 .default({ includeAssociatedDids: true })
@@ -225,13 +219,7 @@ export const customStorageRouter = t.router({
         .input(
             z
                 .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(
-                            z.record(z.string(), z.any()).parse
-                        )
-                        .meta({ override: { type: 'object' } })
-                        .or(JWEValidator)
-                        .optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     update: EncryptedRecordValidator.partial().or(JWEValidator),
                     includeAssociatedDids: z.boolean().default(true),
                 })
@@ -284,13 +272,7 @@ export const customStorageRouter = t.router({
         .input(
             z
                 .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(
-                            z.record(z.string(), z.any()).parse
-                        )
-                        .meta({ override: { type: 'object' } })
-                        .or(JWEValidator)
-                        .optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
                 .default({ query: {}, includeAssociatedDids: true })
