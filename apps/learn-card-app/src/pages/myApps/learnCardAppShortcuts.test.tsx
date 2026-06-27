@@ -21,12 +21,12 @@ describe('LEARNCARD_APP_SHORTCUTS', () => {
         const byTitle = Object.fromEntries(LEARNCARD_APP_SHORTCUTS.map(s => [s.title, s]));
 
         byTitle['Skill Insights'].getAction(helpers)();
-        byTitle['Pathways'].getAction(helpers)();
+        byTitle.Pathways.getAction(helpers)();
         byTitle['AI Sessions'].getAction(helpers)();
         byTitle['Resume Builder'].getAction(helpers)();
         byTitle['Skills Hub'].getAction(helpers)();
         byTitle['Data Sharing'].getAction(helpers)();
-        byTitle['Families'].getAction(helpers)();
+        byTitle.Families.getAction(helpers)();
 
         expect(push.mock.calls.map(c => c[0])).toEqual([
             '/ai/insights',
