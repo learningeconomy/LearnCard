@@ -18,7 +18,7 @@ const MyAppsLanding: React.FC = () => {
     const { search } = useLocation();
     const { newModal } = useModal();
     const openBoost = useOpenBoostTemplateSelector();
-    const { apps: moreApps } = useMoreApps();
+    const { apps: moreApps, isSuggested } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
 
     // Preserve existing /launchpad deep-link flows by handing them to the browse view.
@@ -38,8 +38,7 @@ const MyAppsLanding: React.FC = () => {
         const q = searchInput.trim().toLowerCase();
         if (!q) return moreApps;
         return moreApps.filter(
-            (a: any) =>
-                a.display_name?.toLowerCase().includes(q) || a.tagline?.toLowerCase().includes(q)
+            a => a.display_name?.toLowerCase().includes(q) || a.tagline?.toLowerCase().includes(q)
         );
     }, [moreApps, searchInput]);
 
@@ -82,13 +81,18 @@ const MyAppsLanding: React.FC = () => {
                     </AppGrid>
 
                     <AppGrid heading="More Apps">
-                        {filteredMoreApps.map((app: any) => (
+                        {filteredMoreApps.map(app => (
                             <AppGridTile
                                 key={app.listing_id}
                                 title={app.display_name}
                                 icon={app.icon_url}
                                 onClick={() =>
-                                    newModal(<AppStoreDetailModal listing={app} isInstalled />)
+                                    newModal(
+                                        <AppStoreDetailModal
+                                            listing={app}
+                                            isInstalled={!isSuggested}
+                                        />
+                                    )
                                 }
                             />
                         ))}
