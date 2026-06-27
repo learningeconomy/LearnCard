@@ -38,12 +38,9 @@ const MyAppsLanding: React.FC = () => {
     const query = searchInput.trim().toLowerCase();
     const isSearching = query.length > 0;
 
-    const matchedShortcuts = useMemo(
-        () =>
-            query ? LEARNCARD_APP_SHORTCUTS.filter(s => s.title.toLowerCase().includes(query)) : [],
-        [query]
-    );
-
+    // Search only covers the More Apps section. The LearnCard shortcut tiles are
+    // always on screen above the search, and their larger gradient tiles look out
+    // of place mixed into the results grid.
     const matchedApps = useMemo(
         () =>
             query
@@ -56,7 +53,7 @@ const MyAppsLanding: React.FC = () => {
         [query, moreApps]
     );
 
-    const resultsCount = matchedShortcuts.length + matchedApps.length;
+    const resultsCount = matchedApps.length;
 
     const renderShortcutTile = (shortcut: LearnCardAppShortcut) => (
         <AppGridTile
@@ -117,10 +114,7 @@ const MyAppsLanding: React.FC = () => {
                                       } for "${searchInput.trim()}"`}
                             </p>
                             {resultsCount > 0 && (
-                                <AppGrid>
-                                    {matchedShortcuts.map(renderShortcutTile)}
-                                    {matchedApps.map(renderAppTile)}
-                                </AppGrid>
+                                <AppGrid>{matchedApps.map(renderAppTile)}</AppGrid>
                             )}
                         </div>
                     ) : (
