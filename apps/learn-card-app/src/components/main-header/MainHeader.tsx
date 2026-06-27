@@ -19,6 +19,7 @@ import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
 import MainSubHeader from '../main-subheader/MainSubHeader';
 
 import { SubheaderTypeEnum } from '../main-subheader/MainSubHeader.types';
+import { resolveShowBackButton } from './headerConfig';
 import {
     BrandingEnum,
     getHeaderBrandingColor,
@@ -56,7 +57,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     style,
     children = null,
     subheaderType,
-    showBackButton = false,
+    showBackButton,
     branding = BrandingEnum.learncard,
     customHeaderClass,
     showSideMenuButton = false,
@@ -76,6 +77,10 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
     const history = useHistory();
+
+    // Back button defaults ON for non-top-level routes (LC-1921); an explicit
+    // prop still wins. Keeps deep pages consistent without per-page wiring.
+    const resolvedShowBackButton = resolveShowBackButton(location.pathname, showBackButton);
 
     const openMyLearnCard = useOpenMyLearnCard(branding);
 
@@ -121,7 +126,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                 <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
                     <IonRow>
                         <IonCol size="2" className="flex justify-start items-center">
-                            {showBackButton && (
+                            {resolvedShowBackButton && (
                                 <button
                                     aria-label="Go back"
                                     className="p-0 mr-[10px] main-header-back-button"
