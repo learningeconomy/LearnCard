@@ -495,7 +495,8 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/ai/topics': () => AiSessionTopicsContainer.preload(),
     '/ai/sessions': () => AiSessionsContainer.preload(),
     // Side menu root links.
-    '/launchpad': () => LaunchPad.preload(),
+    '/launchpad': () => MyAppsLanding.preload(),
+    '/launchpad/browse': () => LaunchPad.preload(),
     '/contacts': () => AddressBook.preload(),
     '/notifications': () => NotificationsPage.preload(),
     // Mobile navbar / wallet header.
