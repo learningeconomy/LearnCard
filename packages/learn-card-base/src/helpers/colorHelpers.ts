@@ -26,7 +26,7 @@ export const getNotificationButtonColor = (path?: string) => {
         path === '/home' ||
         path === '/jobs' ||
         path === '/wallet' ||
-        path === '/launchpad' ||
+        path?.startsWith('/launchpad') ||
         path === '/lc-preview' ||
         path === '/notifications' ||
         path === '/campfire' ||
