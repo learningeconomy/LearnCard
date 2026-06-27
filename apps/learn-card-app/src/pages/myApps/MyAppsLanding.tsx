@@ -46,25 +46,27 @@ const MyAppsLanding: React.FC = () => {
         <IonPage className="bg-white">
             <MainHeader />
             <IonContent fullscreen color="grayscale-100">
-                <div className="flex flex-col items-center w-full gap-6 px-4 pb-8">
-                    <div className="flex items-center justify-between w-full max-w-[820px] pt-4 gap-3">
-                        <h1 className="font-poppins font-semibold text-[36px] text-[#18224E]">
-                            My Apps
-                        </h1>
+                <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12">
+                    <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
+                        <div className="flex items-center justify-between gap-3 md:contents">
+                            <h1 className="font-poppins text-[28px] font-semibold text-[#18224E] md:order-1 md:text-[30px]">
+                                My Apps
+                            </h1>
+                            <button
+                                type="button"
+                                onClick={() => history.push('/launchpad/browse?tab=All')}
+                                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-[#E2E3E9] bg-[#FBFBFC] px-4 py-2.5 font-poppins text-[15px] font-medium text-[#6366F1] md:order-3 md:text-[17px]"
+                            >
+                                Browse More <span className="text-[18px] leading-none">+</span>
+                            </button>
+                        </div>
                         <input
                             value={searchInput}
                             onChange={e => setSearchInput(e.target.value)}
                             placeholder="Search..."
-                            className="flex-1 max-w-[320px] rounded-full bg-grayscale-100 px-4 py-2 font-poppins"
                             aria-label="Search apps"
+                            className="w-full rounded-[10px] bg-[#E2E3E9] px-4 py-2.5 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none md:order-2 md:max-w-[320px] md:flex-1"
                         />
-                        <button
-                            type="button"
-                            onClick={() => history.push('/launchpad/browse?tab=All')}
-                            className="rounded-full border border-indigo-600 text-indigo-600 font-poppins font-semibold px-4 py-2 whitespace-nowrap"
-                        >
-                            Browse More +
-                        </button>
                     </div>
 
                     <AppGrid heading="LearnCard Apps">
@@ -72,7 +74,7 @@ const MyAppsLanding: React.FC = () => {
                             <AppGridTile
                                 key={s.key}
                                 title={s.title}
-                                icon={<s.Icon />}
+                                icon={<s.Icon className="h-full w-full" />}
                                 gradientFrom={s.gradientFrom}
                                 gradientTo={s.gradientTo}
                                 onClick={s.getAction(helpers)}

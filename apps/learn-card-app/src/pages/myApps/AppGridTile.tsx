@@ -23,13 +23,13 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
             type="button"
             onClick={onClick}
             aria-label={title}
-            className="flex flex-col items-center gap-[10px] focus:outline-none"
+            className="flex w-full flex-col items-center gap-[10px] focus:outline-none"
         >
             {isImage ? (
                 <img
                     src={icon as string}
                     alt={title}
-                    className="size-[100px] rounded-[24px] object-cover border border-[#FBFBFC]"
+                    className="aspect-square w-full max-w-[100px] rounded-[22%] border border-[#FBFBFC] object-cover"
                     onError={e => {
                         (e.target as HTMLImageElement).src =
                             'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -37,7 +37,7 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
                 />
             ) : (
                 <div
-                    className="flex items-center justify-center size-[160px] rounded-[30px] border border-[#FBFBFC]"
+                    className="flex aspect-square w-full max-w-[160px] items-center justify-center rounded-[19%] border border-[#FBFBFC] p-[18%]"
                     style={{
                         backgroundImage:
                             gradientFrom && gradientTo
@@ -45,10 +45,10 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
                                 : undefined,
                     }}
                 >
-                    <div className="size-[100px] flex items-center justify-center">{icon}</div>
+                    <div className="flex h-full w-full items-center justify-center">{icon}</div>
                 </div>
             )}
-            <p className="font-poppins font-semibold text-[16px] text-center text-[#353E64] [word-break:break-word] line-clamp-3 md:line-clamp-2">
+            <p className="line-clamp-3 text-center font-poppins text-[13px] font-semibold text-[#353E64] [word-break:break-word] sm:text-[14px] md:line-clamp-2 md:text-[16px]">
                 {title}
             </p>
         </button>

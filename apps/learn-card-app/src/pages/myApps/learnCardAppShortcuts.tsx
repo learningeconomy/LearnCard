@@ -1,16 +1,17 @@
-// Icons are the best-available existing learn-card-base assets reused here.
-// Gradient stops (except Skill Insights, which is exact from Figma) are
-// placeholder values pending a Figma visual-fidelity pass in QA (Task 8).
+// The 8 LearnCard Apps are hardcoded shortcuts into existing app features.
+// Icons: the 6 existing features reuse their branded `…WithShape` wallet icons
+// (the same art their route pages render); Resume Builder + Data Sharing are
+// Figma-exported tile icons (LC-1928). Gradient stops approximate the Figma tiles.
 
 import React from 'react';
-import { AiInsightsIconFormal } from 'learn-card-base/svgs/walletsIconsFormal/AiInsightsIconFormal';
-import { AiPathwaysIconFormal } from 'learn-card-base/svgs/walletsIconsFormal/AiPathwaysIconFormal';
-import { AiSessionsIconFormal } from 'learn-card-base/svgs/walletsIconsFormal/AiSessionsIconFormal';
-import { SkillsIconFormal } from 'learn-card-base/svgs/walletsIconsFormal/SkillsIconFormal';
-import { FamiliesIconFormal } from 'learn-card-base/svgs/walletsIconsFormal/FamiliesIconFormal';
-import { BoostsIconFormal } from 'learn-card-base/svgs/walletsIconsFormal/BoostsIconFormal';
-import { DataSharingIcon } from 'learn-card-base/svgs/DataSharingIcon';
-import DocumentIcon from 'learn-card-base/svgs/DocumentIcon';
+import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
+import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
+import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
+import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import { FamiliesIconWithShape } from 'learn-card-base/svgs/wallet/FamiliesIcon';
+import { BoostsIconWithShape } from 'learn-card-base/svgs/wallet/BoostsIcon';
+import ResumeBuilderTileIcon from './icons/ResumeBuilderTileIcon';
+import DataSharingTileIcon from './icons/DataSharingTileIcon';
 
 export type ShortcutActionHelpers = {
     push: (path: string) => void;
@@ -34,39 +35,39 @@ export const LEARNCARD_APP_SHORTCUTS: LearnCardAppShortcut[] = [
         title: 'Skill Insights',
         gradientFrom: '#BEF264',
         gradientTo: '#84CC16',
-        Icon: AiInsightsIconFormal,
+        Icon: AiInsightsIconWithShape,
         getAction: route('/ai/insights'),
     },
     {
         key: 'pathways',
         title: 'Pathways',
-        gradientFrom: '#2DD4BF',
-        gradientTo: '#115E59',
-        Icon: AiPathwaysIconFormal,
+        gradientFrom: '#5EEAD4',
+        gradientTo: '#14B8A6',
+        Icon: AiPathwaysIconWithShape,
         getAction: route('/pathways'),
     },
     {
         key: 'ai-sessions',
         title: 'AI Sessions',
-        gradientFrom: '#A5F3FC',
+        gradientFrom: '#BAE6FD',
         gradientTo: '#38BDF8',
-        Icon: AiSessionsIconFormal,
+        Icon: AiSessionsIconWithShape,
         getAction: route('/ai/topics'),
     },
     {
         key: 'resume-builder',
         title: 'Resume Builder',
-        gradientFrom: '#F87171',
-        gradientTo: '#B91C1C',
-        Icon: DocumentIcon,
+        gradientFrom: '#FCA5A5',
+        gradientTo: '#EF4444',
+        Icon: ResumeBuilderTileIcon,
         getAction: route('/resume-builder'),
     },
     {
         key: 'skills-hub',
         title: 'Skills Hub',
-        gradientFrom: '#8B5CF6',
-        gradientTo: '#5B21B6',
-        Icon: SkillsIconFormal,
+        gradientFrom: '#C4B5FD',
+        gradientTo: '#8B5CF6',
+        Icon: SkillsIconWithShape,
         getAction: route('/skills'),
     },
     {
@@ -74,23 +75,23 @@ export const LEARNCARD_APP_SHORTCUTS: LearnCardAppShortcut[] = [
         title: 'Data Sharing',
         gradientFrom: '#FDE047',
         gradientTo: '#FACC15',
-        Icon: DataSharingIcon,
+        Icon: DataSharingTileIcon,
         getAction: route('/privacy-and-data'),
     },
     {
         key: 'families',
         title: 'Families',
-        gradientFrom: '#F97316',
-        gradientTo: '#9A3412',
-        Icon: FamiliesIconFormal,
+        gradientFrom: '#FDBA74',
+        gradientTo: '#F97316',
+        Icon: FamiliesIconWithShape,
         getAction: route('/families'),
     },
     {
         key: 'boost-a-friend',
         title: 'Boost a Friend',
-        gradientFrom: '#60A5FA',
-        gradientTo: '#1D4ED8',
-        Icon: BoostsIconFormal,
+        gradientFrom: '#93C5FD',
+        gradientTo: '#3B82F6',
+        Icon: BoostsIconWithShape,
         getAction: h => () => h.openBoost(),
     },
 ];
