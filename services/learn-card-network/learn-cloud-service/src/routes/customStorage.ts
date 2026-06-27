@@ -23,6 +23,7 @@ import { updateCustomDocumentsByQuery } from '@accesslayer/custom-document/updat
 import { deleteCustomDocumentsByQuery } from '@accesslayer/custom-document/delete';
 import { PaginationOptionsValidator } from 'types/mongo';
 import { decryptObject, encryptObject } from '@helpers/encryption.helpers';
+import { assertSafeMongoQuery } from '@helpers/query.helpers';
 import { MAX_CUSTOM_STORAGE_SIZE } from 'src/constants/limits';
 
 export const customStorageRouter = t.router({
@@ -142,6 +143,8 @@ export const customStorageRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
+            assertSafeMongoQuery(query);
+
             const rawResults = await getCustomDocumentsByQuery(
                 ctx.user.did,
                 query,
@@ -201,6 +204,8 @@ export const customStorageRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as any);
 
+            assertSafeMongoQuery(query);
+
             return countCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),
 
@@ -233,6 +238,8 @@ export const customStorageRouter = t.router({
             let update: Partial<EncryptedRecord> = (_update as any) || {};
 
             if (isEncrypted(query)) query = await decryptObject(query as any);
+
+            assertSafeMongoQuery(query);
             if (isEncrypted(update)) update = await decryptObject(update as JWE);
 
             const recordsToUpdate = await getCustomDocumentsByQuery(
@@ -284,6 +291,8 @@ export const customStorageRouter = t.router({
             let query: MongoCustomDocumentType = (_query as any) || {};
 
             if (isEncrypted(query)) query = await decryptObject(query as any);
+
+            assertSafeMongoQuery(query);
 
             return deleteCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),
