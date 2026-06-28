@@ -31,6 +31,7 @@ import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import WalletPageItemWrapper from './WalletPageItemWrapper';
 import { filterPassportCategories } from './passportCategories';
+import PassportActivityFeed from './activity-feed/PassportActivityFeed';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -70,6 +71,7 @@ const WalletPage: React.FC = () => {
     const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
     const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
     const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
+    const showActivityFeed = Boolean(flags?.enablePassportActivityFeed);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
 
@@ -275,6 +277,7 @@ const WalletPage: React.FC = () => {
                                     {renderWalletList}
                                 </IonCol>
                             </IonRow>
+                            {showActivityFeed && <PassportActivityFeed />}
                         </div>
                     </div>
                 </IonContent>
