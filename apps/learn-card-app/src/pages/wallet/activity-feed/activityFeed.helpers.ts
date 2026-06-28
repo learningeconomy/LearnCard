@@ -62,6 +62,8 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
     const label = (record.boost?.category && CATEGORY_LABEL[category]) || 'Credential';
     const article = /^[AEIOU]/.test(label) ? 'an' : 'a';
     const recipientName = record.recipientProfile?.displayName ?? record.recipientIdentifier;
+    // STUB: for received items this is a raw profileId, not a display name — the
+    // backend follow-up (see investigation note) must resolve actor name + avatar.
     const actorName = direction === 'sent' ? 'You' : record.actorProfileId ?? 'Someone';
     const title =
         direction === 'sent'
@@ -96,6 +98,8 @@ const MONTHS = [
     'NOVEMBER',
     'DECEMBER',
 ];
+// UTC grouping: matches the server's UTC timestamps and keeps month buckets
+// timezone-stable (deterministic across the user's locale and in tests).
 const monthLabel = (iso: string): string => {
     const d = new Date(iso);
     return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
