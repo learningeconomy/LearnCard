@@ -1,15 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// learn-card-base's runtime barrel (src/index.ts) pulls in heavy UI components
-// (e.g. BecomeTrustedIssuerForm -> @typeform/embed-react, which isn't resolvable
-// under the app's vitest resolver). We only need CredentialCategoryEnum, so we
-// stub the barrel with the REAL enum re-exported from its source module. This
-// keeps the provided test/SUT imports (`from 'learn-card-base'`) intact while
-// avoiding the unresolvable barrel.
-vi.mock('learn-card-base', async () => {
-    const mod = await import('learn-card-base/types/boostAndCredentialMetadata');
-    return { CredentialCategoryEnum: mod.CredentialCategoryEnum };
-});
+// Stub learn-card-base's unresolvable runtime barrel with the REAL enum.
+// See test-utils/mockLearnCardBase for the why.
+vi.mock('learn-card-base', async () =>
+    (await import('../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()
+);
 
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { DEFAULT_CATEGORIES } from './defaultCategories';

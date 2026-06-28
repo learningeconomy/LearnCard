@@ -67,7 +67,6 @@ const WalletPage: React.FC = () => {
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
-    const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
     const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
     const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
     const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
