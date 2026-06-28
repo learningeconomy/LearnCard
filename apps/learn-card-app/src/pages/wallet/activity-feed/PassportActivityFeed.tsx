@@ -51,6 +51,8 @@ export const PassportActivityFeed: React.FC = () => {
             </h3>
             <div className="flex items-center gap-2 mb-3 relative">
                 <input
+                    type="search"
+                    aria-label="Search activity"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Search..."
@@ -63,6 +65,7 @@ export const PassportActivityFeed: React.FC = () => {
                 >
                     Filter
                 </button>
+                {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
                 {filterOpen && (
                     <div className="absolute right-0 top-[110%] z-10">
                         <ActivityFilterPopover

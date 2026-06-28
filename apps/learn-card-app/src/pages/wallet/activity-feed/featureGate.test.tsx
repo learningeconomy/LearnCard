@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 
+// Documents the mount predicate WalletPage uses to gate the activity feed. This
+// mirrors `Boolean(flags?.enablePassportActivityFeed)` rather than rendering the
+// Ionic-heavy WalletPage; mount correctness is covered by typecheck + code review.
 const shouldShowActivityFeed = (flags?: Record<string, unknown>) =>
     Boolean(flags?.enablePassportActivityFeed);
 
