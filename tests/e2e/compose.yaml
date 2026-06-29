@@ -154,7 +154,7 @@ services:
         image: lca-api-service
         build:
             context: ../../
-            dockerfile: services/learn-card-network/lca-api/Dockerfile
+            dockerfile: Dockerfile.monorepo
 
         expose:
             - 5200
