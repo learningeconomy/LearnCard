@@ -4,6 +4,7 @@ lib/ssi/target
 
 scripts/siwa-migration
 reference
+examples/openid4vc-playground
 
 # Dependencies (copied selectively in Dockerfiles)
 node_modules
@@ -73,9 +74,6 @@ services/*/*/node_modules/**
 .github
 docs
 examples
-!examples/
-!examples/**/
-!examples/**/package.json
 *.md
 .vscode
 .idea
