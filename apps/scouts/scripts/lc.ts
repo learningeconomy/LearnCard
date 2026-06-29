@@ -5,7 +5,7 @@ import { createInterface } from 'readline';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
-import { getLogger } from 'learn-card-base';
+import { getLogger } from '../../../packages/learn-card-base/src/logging/logger';
 
 const log = getLogger('lc');
 
