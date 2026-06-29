@@ -33,4 +33,20 @@ describe('assertSafeMongoQuery', () => {
             expect(() => assertSafeMongoQuery([{ a: 1 }, { b: 2 }])).not.toThrow();
         });
     });
+
+    describe('depth limit (stack-overflow DoS guard)', () => {
+        const buildDeep = (levels: number): Record<string, unknown> => {
+            let node: Record<string, unknown> = { value: 1 };
+            for (let i = 0; i < levels; i += 1) node = { a: node };
+            return node;
+        };
+
+        it('rejects a pathologically deep object with BAD_REQUEST', () => {
+            expect(() => assertSafeMongoQuery(buildDeep(5_000))).toThrow(/nested too deeply/);
+        });
+
+        it('allows objects within the depth limit', () => {
+            expect(() => assertSafeMongoQuery(buildDeep(10))).not.toThrow();
+        });
+    });
 });

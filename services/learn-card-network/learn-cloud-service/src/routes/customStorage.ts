@@ -242,6 +242,8 @@ export const customStorageRouter = t.router({
             assertSafeMongoQuery(query);
             if (isEncrypted(update)) update = await decryptObject(update as JWE);
 
+            assertSafeMongoQuery(update);
+
             const recordsToUpdate = await getCustomDocumentsByQuery(
                 ctx.user.did,
                 query,
