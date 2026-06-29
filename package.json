@@ -79,6 +79,7 @@
     },
     "pnpm": {
         "overrides": {
+            "@parcel/watcher": "2.5.1",
             "fastify": "5.7.2",
             "pvutils": "1.0.17",
             "did-jwt": "5.9.0",
