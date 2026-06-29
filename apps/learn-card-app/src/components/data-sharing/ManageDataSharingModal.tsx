@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
@@ -20,6 +20,7 @@ import {
     useModal,
     ModalTypes,
     useWithdrawConsent,
+    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
     contractCategoryNameToCategoryMetadata,
     useWallet,
 } from 'learn-card-base';
@@ -28,10 +29,105 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { buildPermissionText } from './consentSummary';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
+};
+
+type RevokeAccessConfirmationModalProps = {
+    name: string;
+    brandName: string;
+    isLearnCardAiContract: boolean;
+    isWorking: boolean;
+    onConfirm: () => Promise<void>;
+    onCancel: () => void;
+};
+
+const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps> = ({
+    name,
+    brandName,
+    isLearnCardAiContract,
+    isWorking,
+    onConfirm,
+    onCancel,
+}) => {
+    const { closeModal } = useModal();
+    const [isRevoking, setIsRevoking] = useState(false);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
+    const handleConfirm = async () => {
+        setIsRevoking(true);
+
+        try {
+            await onConfirm();
+        } finally {
+            if (isMountedRef.current) {
+                setIsRevoking(false);
+            }
+        }
+    };
+
+    const handleCancel = () => {
+        onCancel();
+        closeModal();
+    };
+
+    return (
+        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[400px]">
+            <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                    <Trash2 className="w-8 h-8 text-red-500" />
+                </div>
+
+                <div>
+                    <h3 className="text-lg font-semibold text-grayscale-900">
+                        {isLearnCardAiContract ? 'Disable AI features?' : 'Revoke Access?'}
+                    </h3>
+
+                    <p className="text-sm text-grayscale-600 mt-2 leading-relaxed">
+                        {isLearnCardAiContract ? (
+                            <>This will revoke LearnCard AI access and turn off AI features.</>
+                        ) : (
+                            <>
+                                <span className="font-medium">{name}</span> will no longer be able
+                                to access your {brandName} data.
+                            </>
+                        )}
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-2 w-full mt-2">
+                    <button
+                        onClick={handleConfirm}
+                        disabled={isRevoking || isWorking}
+                        className="w-full py-3 bg-red-500 text-white rounded-full font-medium disabled:opacity-60"
+                    >
+                        {isRevoking || isWorking
+                            ? 'Revoking...'
+                            : isLearnCardAiContract
+                            ? 'Disable AI & Revoke'
+                            : 'Yes, Revoke Access'}
+                    </button>
+
+                    <button
+                        onClick={handleCancel}
+                        disabled={isRevoking || isWorking}
+                        className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium disabled:opacity-60"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose }) => {
@@ -55,10 +151,17 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
         );
     }
 
-    const contracts = consentedContracts ?? [];
+    const contracts = [...(consentedContracts ?? [])]
+        .filter(contract => contract?.status !== 'withdrawn')
+        .sort((a, b) => {
+            const aUpdatedAt = new Date(a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0).getTime();
+            const bUpdatedAt = new Date(b.terms?.updatedAt ?? b.contract?.updatedAt ?? 0).getTime();
+
+            return bUpdatedAt - aUpdatedAt;
+        });
 
     return (
-        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full flex flex-col !overflow-hidden">
+        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-full overflow-hidden flex flex-col min-h-0">
             <div className="shrink-0 p-6 pb-4">
                 <div className="flex items-center gap-3 mb-3">
                     <button onClick={handleClose} className="p-1 -ml-1" aria-label="Back">
@@ -116,7 +219,7 @@ type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
 
 type ConsentedContractRowProps = {
     contract: ConsentedContract;
-    onUpdate?: () => void;
+    onUpdate?: () => Promise<unknown> | void;
 };
 
 const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, onUpdate }) => {
@@ -127,7 +230,10 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     const handleOpenDetails = () => {
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
-            { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
+            {
+                sectionClassName:
+                    '!bg-transparent !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
+            },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -162,24 +268,27 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
 
 type ContractDetailViewProps = {
     contract: ConsentedContract;
-    onUpdate?: () => void;
+    onUpdate?: () => Promise<unknown> | void;
 };
 
 const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
     const contractDetails = contract.contract;
-    const { closeModal, closeAllModals, newModal } = useModal();
+    const { closeModal, newModal } = useModal();
     const { initWallet } = useWallet();
+    const { handleAiToggle } = useAiConsentToggle();
+    const { name: brandName } = useBrandingConfig();
+    const contractUri = contractDetails?.uri ?? contract.uri;
 
     const handleBack = () => {
-        onUpdate?.(); // Refetch to show updated terms
+        void onUpdate?.(); // Refetch to show updated terms
         closeModal();
     };
 
     const { mutateAsync: withdrawConsent, isPending: isWithdrawing } = useWithdrawConsent(
         contract.uri
     );
-    const [showConfirmRevoke, setShowConfirmRevoke] = useState(false);
     const [isOpening, setIsOpening] = useState(false);
+    const isLearnCardAiContract = contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI;
 
     const name = contractDetails?.name ?? 'Unknown App';
     const image = contractDetails?.image;
@@ -197,7 +306,10 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
                 termsUri={contract.uri}
                 ownerDid={contractDetails.owner?.did}
             />,
-            {},
+            {
+                sectionClassName:
+                    '!bg-transparent !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
+            },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -209,7 +321,10 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
                 contractName={name}
                 onBack={closeModal}
             />,
-            { sectionClassName: '!p-0 !shadow-none' },
+            {
+                sectionClassName:
+                    '!p-0 !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
+            },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -258,55 +373,45 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
 
     const handleRevoke = async () => {
         try {
+            if (isLearnCardAiContract) {
+                const revoked = await handleAiToggle(false);
+                if (!revoked) return;
+
+                await onUpdate?.();
+                closeModal();
+                closeModal();
+                return;
+            }
+
             await withdrawConsent(contract.uri);
-            onUpdate?.();
-            closeAllModals();
+            await onUpdate?.();
+            closeModal();
+            closeModal();
         } catch (error) {
             log.error('Failed to revoke access:', error);
         }
     };
 
-    if (showConfirmRevoke) {
-        return (
-            <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[400px]">
-                <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
-                        <Trash2 className="w-8 h-8 text-red-500" />
-                    </div>
-
-                    <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900">Revoke Access?</h3>
-
-                        <p className="text-sm text-grayscale-600 mt-2">
-                            <span className="font-medium">{name}</span> will no longer be able to
-                            access your {brandingConfig?.name} data.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-col gap-2 w-full mt-2">
-                        <button
-                            onClick={handleRevoke}
-                            disabled={isWithdrawing}
-                            className="w-full py-3 bg-red-500 text-white rounded-full font-medium disabled:opacity-60"
-                        >
-                            {isWithdrawing ? 'Revoking...' : 'Yes, Revoke Access'}
-                        </button>
-
-                        <button
-                            onClick={() => setShowConfirmRevoke(false)}
-                            disabled={isWithdrawing}
-                            className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium disabled:opacity-60"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
+    const openRevokeConfirmation = () => {
+        newModal(
+            <RevokeAccessConfirmationModal
+                name={name}
+                brandName={brandName}
+                isLearnCardAiContract={isLearnCardAiContract}
+                onConfirm={handleRevoke}
+                onCancel={closeModal}
+                isWorking={isWithdrawing}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !shadow-none !max-w-[400px] !w-[400px] !overflow-hidden',
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
-    }
+    };
 
     return (
-        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] h-[80vh] overflow-hidden flex flex-col min-h-0">
             <div className="flex items-center gap-3 mb-4">
                 <button onClick={handleBack} className="p-1 -ml-1">
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
@@ -335,7 +440,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto mb-4">
+            <div className="flex-1 min-h-0 overflow-y-auto mb-4">
                 <h4 className="text-sm font-semibold text-grayscale-700 mb-2">
                     Data Access Permissions
                 </h4>
@@ -374,7 +479,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
                 </button>
 
                 <button
-                    onClick={() => setShowConfirmRevoke(true)}
+                    onClick={openRevokeConfirmation}
                     className="w-full py-3 bg-red-50 text-red-600 rounded-full font-medium flex items-center justify-center gap-2"
                 >
                     <Trash2 className="w-4 h-4" />

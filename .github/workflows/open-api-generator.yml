@@ -1,11 +1,11 @@
 name: Generate Client SDKs for LearnCard Network API
 
 on:
-  workflow_call:
-    inputs:
-      affected:
-        required: true
-        type: string
+    workflow_call:
+        inputs:
+            affected:
+                required: true
+                type: string
 
 env:
     working-directory: packages/open-api-lcn-clients
@@ -20,7 +20,7 @@ jobs:
                 generator-name: [python]
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
                   token: '${{ secrets.GITHUB_TOKEN }}'

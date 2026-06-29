@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.141
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.23
+    -   @learncard/didkit-plugin@1.9.3
+    -   @learncard/meta-mask-snap@1.0.119
+
 ## 1.0.140
 
 ### Patch Changes
