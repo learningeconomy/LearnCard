@@ -261,18 +261,21 @@ jobs:
                       # Link to this user's open assigned PRs in the repo (GitHub search query)
                       assigned_url="https://github.com/${GH_REPO}/pulls?q=is%3Aopen+is%3Apr+assignee%3A${gh_login}"
 
-                      # Highest priority first (stale=0, changes=1, review=2), then oldest first
-                      checklist=$(echo "$user_items" | jq -r '
-                        sort_by(.priority, -.age_days) | .[] |
-                        ({"0": "🔴", "1": "🟡", "2": "🔵"}[.priority | tostring]) as $dot |
-                        "☐ " + $dot + "  <" + .url + "|#" + .number + "> *" + .title + "*  ·  " + .age +
-                        (if .sprint then "  ·  ⚡" else "" end)
-                      ')
-
-                      dm_blocks=$(jq -n --arg count "$count" --arg items "$checklist" --arg assigned_url "$assigned_url" '[
-                        {"type": "header", "text": {"type": "plain_text", "text": "Your PR Review Checklist", "emoji": true}},
-                        {"type": "context", "elements": [{"type": "mrkdwn", "text": ($count + " PR(s) assigned to you · 🔴 stale · 🟡 changes requested · 🔵 needs review")}]},
-                        {"type": "section", "text": {"type": "mrkdwn", "text": $items}},
+                      # One section per PR (sorted: priority asc, then oldest first) to stay under Slack's 3000-char section limit.
+                      dm_blocks=$(echo "$user_items" | jq \
+                        --arg count "$count" --arg assigned_url "$assigned_url" '
+                        ({"0": "🔴", "1": "🟡", "2": "🔵"}) as $dots |
+                        [
+                          {"type": "header", "text": {"type": "plain_text", "text": "Your PR Review Checklist", "emoji": true}},
+                          {"type": "context", "elements": [{"type": "mrkdwn", "text": ($count + " PR(s) assigned to you · 🔴 stale · 🟡 changes requested · 🔵 needs review")}]}
+                        ]
+                        + ( sort_by(.priority, -.age_days) | map(
+                            {"type": "section", "text": {"type": "mrkdwn", "text": (
+                              "☐ " + $dots[.priority | tostring] + "  <" + .url + "|#" + .number + "> *" + .title + "*  ·  " + .age +
+                              (if .sprint then "  ·  ⚡" else "" end)
+                            )}}
+                          ) )
+                        + [
                         {"type": "divider"},
                         {"type": "context", "elements": [{"type": "mrkdwn", "text": ("📎 <" + $assigned_url + "|View all your assigned PRs on GitHub>")}]}
                       ]')
