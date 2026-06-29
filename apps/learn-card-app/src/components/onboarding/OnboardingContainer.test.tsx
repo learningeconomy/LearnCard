@@ -17,7 +17,7 @@ const mockIsOnboardingOpen = vi.fn();
 const mockInstallIntent = vi.fn((_value?: unknown) => null);
 const mockUpdatePreferences = vi.fn();
 const mockSetAnalyticsEnabled = vi.fn();
-let mockAuthState: { status: 'needs_setup' | 'ready' } = { status: 'needs_setup' };
+let mockAuthState: { status: 'idle' | 'needs_setup' | 'ready' } = { status: 'needs_setup' };
 let mockCurrentLCNUser: {
     displayName: string;
     image?: string;
@@ -25,6 +25,10 @@ let mockCurrentLCNUser: {
     country?: string;
 } | null = null;
 let mockCurrentLCNUserLoading = false;
+let mockCurrentUser: { name: string; profileImage: string; privateKey?: string } = {
+    name: 'Test User',
+    profileImage: 'https://example.com/avatar.png',
+};
 
 let lastModalElement: React.ReactElement | null = null;
 
@@ -74,10 +78,7 @@ vi.mock('learn-card-base/helpers/walletHelpers', () => ({
 }));
 
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
-    default: () => ({
-        name: 'Test User',
-        profileImage: 'https://example.com/avatar.png',
-    }),
+    default: () => mockCurrentUser,
 }));
 
 vi.mock('learn-card-base/stores/redirectStore', () => ({
@@ -222,6 +223,10 @@ describe('OnboardingContainer school-code bypass', () => {
         mockCurrentLCNUser = null;
         mockCurrentLCNUserLoading = false;
         setupNewKeyDeferred = createDeferred<boolean>();
+        mockCurrentUser = {
+            name: 'Test User',
+            profileImage: 'https://example.com/avatar.png',
+        };
 
         vi.stubGlobal('localStorage', {
             getItem: vi.fn(() => null),
@@ -328,6 +333,29 @@ describe('OnboardingContainer school-code bypass', () => {
         });
 
         expect(screen.queryByTestId('age-gate')).toBeNull();
+    });
+
+    it('continues existing private-key users without coordinator setup', async () => {
+        mockAuthState = { status: 'idle' };
+        mockCurrentUser = {
+            name: 'Demo User',
+            profileImage: 'https://example.com/avatar.png',
+            privateKey: 'demo-private-key',
+        };
+        mockCalculateAge.mockReturnValue(18);
+
+        render(<OnboardingContainer />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'set dob' }));
+        fireEvent.click(screen.getByRole('button', { name: 'set country' }));
+        fireEvent.click(screen.getByRole('button', { name: 'continue' }));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('privacy-step')).toBeInTheDocument();
+        });
+
+        expect(mockGenerateEd25519PrivateKey).not.toHaveBeenCalled();
+        expect(mockSetupNewKey).not.toHaveBeenCalled();
     });
 
     it('saves privacy preferences before advancing to role selection', async () => {
