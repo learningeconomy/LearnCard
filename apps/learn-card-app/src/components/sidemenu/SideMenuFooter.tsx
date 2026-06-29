@@ -4,6 +4,7 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import VersionInfoModal from '../versionInfoModal/VersionInfoModal';
+import useLogout from '../../hooks/useLogout';
 
 const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version }) => {
     const currentYear = new Date().getFullYear();
@@ -11,6 +12,8 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
     const primaryColor = colors?.defaults?.primaryColor;
 
     const { newModal } = useModal({ desktop: ModalTypes.Center, mobile: ModalTypes.Cancel });
+
+    const { handleLogout, isLoggingOut } = useLogout();
 
     const openVersionInfo = (): void => {
         if (!version) return;
@@ -30,6 +33,15 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
                 <span className="text-grayscale-600"> • </span>
                 <button className={`text-${primaryColor} font-bold no-underline`} onClick={openToS}>
                     Terms
+                </button>
+                <span className="text-grayscale-600"> • </span>
+                <button
+                    type="button"
+                    className={`text-${primaryColor} font-bold no-underline disabled:opacity-60`}
+                    onClick={() => handleLogout()}
+                    disabled={isLoggingOut}
+                >
+                    Logout
                 </button>
             </p>
 
