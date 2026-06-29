@@ -140,11 +140,12 @@ jobs:
                       review)  needs_review_items=$(echo "$needs_review_items" | jq --argjson item "$item" '. + [$item]') ;;
                     esac
 
-                    for login in $(echo "$pr" | jq -r '.assignees[]?.login'); do
+                    while IFS= read -r login; do
+                      [ -n "$login" ] || continue
                       assignee_items=$(echo "$assignee_items" | jq \
                         --arg login "$login" --argjson item "$item" \
                         '.[$login] = ((.[$login] // []) + [$item])')
-                    done
+                    done < <(echo "$pr" | jq -r '.assignees[]?.login')
                   done
 
                   # --- Build Slack Block Kit payload ---
@@ -247,7 +248,8 @@ jobs:
                   if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
                     echo "SLACK_BOT_TOKEN not set — skipping personal DM checklists."
                   else
-                    for gh_login in $(echo "$SLACK_USER_MAP" | jq -r 'keys[]'); do
+                    while IFS= read -r gh_login; do
+                      [ -n "$gh_login" ] || continue
                       user_items=$(echo "$assignee_items" | jq --arg l "$gh_login" '.[$l] // []')
                       count=$(echo "$user_items" | jq 'length')
                       if [ "$count" -eq 0 ]; then
@@ -285,7 +287,7 @@ jobs:
                       if [ "$(echo "$response" | jq -r '.ok')" != "true" ]; then
                         echo "Failed to DM $gh_login: $(echo "$response" | jq -r '.error // "unknown"')"
                       fi
-                    done
+                    done < <(echo "$SLACK_USER_MAP" | jq -r 'keys[]')
                   fi
 
             - name: Send Slack notification
