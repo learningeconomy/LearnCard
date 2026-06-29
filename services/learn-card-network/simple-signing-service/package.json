@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-service",
-    "version": "1.2.22",
+    "version": "1.2.23",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
