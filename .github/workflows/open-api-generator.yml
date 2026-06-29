@@ -23,7 +23,6 @@ jobs:
               uses: actions/checkout@v7
               with:
                   fetch-depth: 0
-                  token: '${{ secrets.GITHUB_TOKEN }}'
                   # create-pull-request manages its own git auth; persisting the
                   # checkout extraheader causes a "Duplicate header: Authorization"
                   # 400 with newer git (2.54+). See peter-evans/create-pull-request.
