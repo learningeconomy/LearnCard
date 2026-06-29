@@ -12,7 +12,7 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 
 import {
     BoostCategoryOptionsEnum,
-    CredentialBadge,
+    CredentialBadgeNew,
     CredentialCategoryEnum,
     ProfilePicture,
     getBoostMetadata,
@@ -372,7 +372,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             {isID && subjectProfileImageElement}
 
                             {!isID && !isFamily && (
-                                <CredentialBadge
+                                <CredentialBadgeNew
                                     achievementType={achievementType}
                                     fallbackCircleText={title}
                                     boostType={categoryType as BoostCategoryOptionsEnum}
