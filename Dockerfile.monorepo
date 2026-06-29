@@ -4,7 +4,11 @@ ENV SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
 
-COPY . .
+RUN chown bun:bun /app
+
+USER bun
+
+COPY --chown=bun:bun . .
 
 RUN bun install
 

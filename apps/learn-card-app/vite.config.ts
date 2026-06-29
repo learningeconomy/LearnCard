@@ -74,7 +74,6 @@ export default defineConfig(async ({ mode }) => {
     // from a Netlify/dist build. We instead emit a loud build-log notice so an accidental
     // production build with this flag set — which would ship uncompiled TS — is obvious.
     const useDockerSourceMode = process.env.VITE_DOCKER_SOURCE === 'true';
-
     if (useDockerSourceMode) {
         console.warn(
             [

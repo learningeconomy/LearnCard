@@ -208,16 +208,6 @@ if (tenantArg === '--reset') {
     process.exit(0);
 }
 
-const shouldSkipNativeProjectWrites = process.env.WEB_ONLY_CONFIG === '1';
-
-const isNativeProjectPath = (path: string): boolean =>
-    path.startsWith('ios/') || path.startsWith('android/');
-
-if (shouldSkipNativeProjectWrites) {
-    log.info(
-        '\n🌐 Web-only config mode — skipping iOS/Android project writes; public web assets will still be generated.'
-    );
-}
 // ---------------------------------------------------------------------------
 // 1. Load tenant-specific overrides from environments/<tenant>/config.json
 // ---------------------------------------------------------------------------
@@ -326,7 +316,7 @@ if (existsSync(assetsDir)) {
     // iOS assets → ios/App/App/Assets.xcassets/
     const iosSrc = join(assetsDir, 'ios');
 
-    if (existsSync(iosSrc) && !shouldSkipNativeProjectWrites) {
+    if (existsSync(iosSrc)) {
         const iosAppIconDest = resolve(APP_ROOT, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
         const iosSplashDest = resolve(APP_ROOT, 'ios/App/App/Assets.xcassets/Splash.imageset');
 
@@ -353,19 +343,15 @@ if (existsSync(assetsDir)) {
         }
 
         log.info('   ✓ iOS assets');
-    } else if (existsSync(iosSrc)) {
-        log.info('   ↷ Skipped iOS assets (web-only config mode)');
     }
 
     // Android assets → android/app/src/main/res/
     const androidSrc = join(assetsDir, 'android');
 
-    if (existsSync(androidSrc) && !shouldSkipNativeProjectWrites) {
+    if (existsSync(androidSrc)) {
         const androidResDest = resolve(APP_ROOT, 'android/app/src/main/res');
         copyRecursive(androidSrc, androidResDest);
         log.info('   ✓ Android assets');
-    } else if (existsSync(androidSrc)) {
-        log.info('   ↷ Skipped Android assets (web-only config mode)');
     }
 
     // Web assets → public/assets/icon/
@@ -514,11 +500,6 @@ for (const { src, dests } of CONFIG_TEMPLATE_MAP) {
     if (!existsSync(srcPath)) continue;
 
     for (const destRel of dests) {
-        if (shouldSkipNativeProjectWrites && isNativeProjectPath(destRel)) {
-            log.info(`   ↷ Skipped ${destRel} (web-only config mode)`);
-            continue;
-        }
-
         const destPath = resolve(APP_ROOT, destRel);
         mkdirSync(dirname(destPath), { recursive: true });
         cpSync(srcPath, destPath);
@@ -552,7 +533,7 @@ const nativeConfig = validatedConfig.native;
 // installed binaries off the channel CI uploads to (PR #1063 incident).
 const defaultCapgoChannel = readDefaultChannel(resolve(APP_ROOT, 'capacitor.config.ts'));
 
-if (nativeConfig && !shouldSkipNativeProjectWrites) {
+if (nativeConfig) {
     if (!defaultCapgoChannel) {
         log.error('❌ Failed to read CapacitorUpdater.defaultChannel from capacitor.config.ts.');
         log.error('   Aborting: writing platform JSONs without a Capgo channel would silently');
@@ -912,8 +893,6 @@ if (nativeConfig && !shouldSkipNativeProjectWrites) {
             log.warn('   ⚠️  Failed to patch strings.xml:', err);
         }
     }
-} else if (nativeConfig) {
-    log.info('   ↷ Skipped native Capacitor/project patches (web-only config mode)');
 }
 // ---------------------------------------------------------------------------
 // 8. Patch manifest.json / manifest.webmanifest with tenant branding name
@@ -971,11 +950,6 @@ const FIREBASE_CONFIG_MAP: Array<{ src: string; dest: string }> = [
 log.info('\n🔥 Copying Firebase config files...');
 
 for (const { src, dest } of FIREBASE_CONFIG_MAP) {
-    if (shouldSkipNativeProjectWrites && isNativeProjectPath(dest)) {
-        log.info(`   ↷ Skipped ${dest} (web-only config mode)`);
-        continue;
-    }
-
     const fileName = src.replace('config/', '');
     let srcPath = join(configDir, fileName);
 
@@ -998,7 +972,7 @@ for (const { src, dest } of FIREBASE_CONFIG_MAP) {
 // 10. Patch iOS entitlements with tenant deep link domains
 // ---------------------------------------------------------------------------
 
-if (nativeConfig?.deepLinkDomains?.length && !shouldSkipNativeProjectWrites) {
+if (nativeConfig?.deepLinkDomains?.length) {
     log.info('\n🔗 Patching iOS entitlements with deep link domains...');
 
     const entitlementFiles = [
@@ -1047,8 +1021,6 @@ if (nativeConfig?.deepLinkDomains?.length && !shouldSkipNativeProjectWrites) {
             log.warn(`   ⚠️  Failed to patch ${relPath}:`, err);
         }
     }
-} else if (nativeConfig?.deepLinkDomains?.length) {
-    log.info('   ↷ Skipped iOS entitlements (web-only config mode)');
 }
 // ---------------------------------------------------------------------------
 // 11. Patch index.html with tenant branding name + apple-touch-icon
@@ -1119,7 +1091,7 @@ const SYNC_ITEMS = [
 
 const activeNativeDirs = NATIVE_PUBLIC_DIRS.filter(d => existsSync(d));
 
-if (activeNativeDirs.length > 0 && !shouldSkipNativeProjectWrites) {
+if (activeNativeDirs.length > 0) {
     log.info('\n📲 Syncing runtime files into native asset directories...');
 
     let syncCount = 0;
@@ -1155,6 +1127,4 @@ if (activeNativeDirs.length > 0 && !shouldSkipNativeProjectWrites) {
         .join(' + ');
 
     log.info(`   ✓ Synced ${syncCount} item(s) into ${platforms} native assets`);
-} else if (activeNativeDirs.length > 0) {
-    log.info('   ↷ Skipped native public asset sync (web-only config mode)');
 }

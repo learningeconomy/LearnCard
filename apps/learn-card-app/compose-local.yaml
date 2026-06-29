@@ -4,7 +4,6 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
         container_name: 'lcn-app'
         expose:
             - 3000
