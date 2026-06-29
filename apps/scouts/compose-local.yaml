@@ -9,7 +9,7 @@ services:
     #         - 3000
     #     ports:
     #         - '3000:3000'
-    #     command: ['sh', '-c', 'bunx nx docker-start scouts']
+    #     command: ['sh', '-c', 'bun run --cwd apps/scouts docker-start']
     #     depends_on:
     #         - brain
     #         - cloud
@@ -42,7 +42,7 @@ services:
             - 3000
         ports:
             - '3000:3000'
-        command: ['sh', '-c', 'bunx nx docker-start scouts']
+        command: ['sh', '-c', 'bun run --cwd apps/scouts docker-start']
         depends_on:
             - brain
             - cloud
