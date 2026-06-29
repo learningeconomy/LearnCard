@@ -17,6 +17,7 @@ jobs:
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   GH_REPO: ${{ github.repository }}
+                  SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
               run: |
                   set -euo pipefail
 
@@ -48,6 +49,9 @@ jobs:
                   changes_requested_items='[]'
                   stale_items='[]'
                   draft_count=0
+
+                  # Per-assignee accumulator for personal DM checklists: { "<github_login>": [ item, ... ] }
+                  assignee_items='{}'
 
                   pr_count=$(echo "$prs_json" | jq 'length')
 
@@ -104,6 +108,18 @@ jobs:
                       end
                     ')
 
+                    if [ "$has_changes_requested" = "true" ]; then
+                      category="changes"; priority=1
+                    elif [ "$has_approval" != "true" ]; then
+                      if [ "$age_days" -ge 7 ]; then
+                        category="stale"; priority=0
+                      else
+                        category="review"; priority=2
+                      fi
+                    else
+                      continue
+                    fi
+
                     # Build a JSON item for this PR
                     item=$(jq -n \
                       --arg number "$number" \
@@ -114,17 +130,22 @@ jobs:
                       --argjson age_days "$age_days" \
                       --argjson sprint "$is_sprint" \
                       --arg assignees "$assignees" \
-                      '{number: $number, title: $title, author: $author, url: $url, age: $age, age_days: $age_days, sprint: $sprint, assignees: $assignees}')
+                      --arg category "$category" \
+                      --argjson priority "$priority" \
+                      '{number: $number, title: $title, author: $author, url: $url, age: $age, age_days: $age_days, sprint: $sprint, assignees: $assignees, category: $category, priority: $priority}')
 
-                    if [ "$has_changes_requested" = "true" ]; then
-                      changes_requested_items=$(echo "$changes_requested_items" | jq --argjson item "$item" '. + [$item]')
-                    elif [ "$has_approval" != "true" ]; then
-                      if [ "$age_days" -ge 7 ]; then
-                        stale_items=$(echo "$stale_items" | jq --argjson item "$item" '. + [$item]')
-                      else
-                        needs_review_items=$(echo "$needs_review_items" | jq --argjson item "$item" '. + [$item]')
-                      fi
-                    fi
+                    case "$category" in
+                      changes) changes_requested_items=$(echo "$changes_requested_items" | jq --argjson item "$item" '. + [$item]') ;;
+                      stale)   stale_items=$(echo "$stale_items" | jq --argjson item "$item" '. + [$item]') ;;
+                      review)  needs_review_items=$(echo "$needs_review_items" | jq --argjson item "$item" '. + [$item]') ;;
+                    esac
+
+                    while IFS= read -r login; do
+                      [ -n "$login" ] || continue
+                      assignee_items=$(echo "$assignee_items" | jq \
+                        --arg login "$login" --argjson item "$item" \
+                        '.[$login] = ((.[$login] // []) + [$item])')
+                    done < <(echo "$pr" | jq -r '.assignees[]?.login')
                   done
 
                   # --- Build Slack Block Kit payload ---
@@ -220,6 +241,57 @@ jobs:
                   echo "$payload" > /tmp/slack-payload.json
 
                   echo "total=$total" >> "$GITHUB_OUTPUT"
+
+                  # --- Personal DM checklists ---
+                  # Requires a Slack bot token (SLACK_BOT_TOKEN) with chat:write + im:write scopes.
+                  # Incoming webhooks cannot DM users, so this is skipped if the token is absent.
+                  if [ -z "${SLACK_BOT_TOKEN:-}" ]; then
+                    echo "SLACK_BOT_TOKEN not set — skipping personal DM checklists."
+                  else
+                    while IFS= read -r gh_login; do
+                      [ -n "$gh_login" ] || continue
+                      user_items=$(echo "$assignee_items" | jq --arg l "$gh_login" '.[$l] // []')
+                      count=$(echo "$user_items" | jq 'length')
+                      if [ "$count" -eq 0 ]; then
+                        continue
+                      fi
+
+                      slack_id=$(echo "$SLACK_USER_MAP" | jq -r --arg l "$gh_login" '.[$l] | gsub("[<@>]"; "")')
+
+                      # Link to this user's open assigned PRs in the repo (GitHub search query)
+                      assigned_url="https://github.com/${GH_REPO}/pulls?q=is%3Aopen+is%3Apr+assignee%3A${gh_login}"
+
+                      # One section per PR (sorted: priority asc, then oldest first) to stay under Slack's 3000-char section limit.
+                      dm_blocks=$(echo "$user_items" | jq \
+                        --arg count "$count" --arg assigned_url "$assigned_url" '
+                        ({"0": "🔴", "1": "🟡", "2": "🔵"}) as $dots |
+                        [
+                          {"type": "header", "text": {"type": "plain_text", "text": "Your PR Review Checklist", "emoji": true}},
+                          {"type": "context", "elements": [{"type": "mrkdwn", "text": ($count + " PR(s) assigned to you · 🔴 stale · 🟡 changes requested · 🔵 needs review")}]}
+                        ]
+                        + ( sort_by(.priority, -.age_days) | map(
+                            {"type": "section", "text": {"type": "mrkdwn", "text": (
+                              "☐ " + $dots[.priority | tostring] + "  <" + .url + "|#" + .number + "> *" + .title + "*  ·  " + .age +
+                              (if .sprint then "  ·  ⚡" else "" end)
+                            )}}
+                          ) )
+                        + [
+                        {"type": "divider"},
+                        {"type": "context", "elements": [{"type": "mrkdwn", "text": ("📎 <" + $assigned_url + "|View all your assigned PRs on GitHub>")}]}
+                      ]')
+
+                      dm_payload=$(jq -n --arg channel "$slack_id" --argjson blocks "$dm_blocks" '{channel: $channel, blocks: $blocks}')
+
+                      response=$(curl -s -X POST https://slack.com/api/chat.postMessage \
+                        -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+                        -H 'Content-Type: application/json; charset=utf-8' \
+                        -d "$dm_payload" || echo '{"ok":false,"error":"curl_failed"}')
+
+                      if [ "$(echo "$response" | jq -r '.ok')" != "true" ]; then
+                        echo "Failed to DM $gh_login: $(echo "$response" | jq -r '.error // "unknown"')"
+                      fi
+                    done < <(echo "$SLACK_USER_MAP" | jq -r 'keys[]')
+                  fi
 
             - name: Send Slack notification
               if: always()

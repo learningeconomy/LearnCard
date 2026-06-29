@@ -1214,8 +1214,13 @@ export const getAchievementTypeDisplayText = (
                 (options: { title: string; type: string }) => options?.type === achievementType
             )?.title ?? '';
 
-        if (!achievementType && fallbackText) {
-            displayText = fallbackText;
+        // 'Achievement' is the OBv3 base achievement type — it has no specific subtype and
+        //   maps to the meaningless label 'Generic'. Treat it like the no-type case: clear the
+        //   'Generic' lookup so we fall back to the credential title when a caller provides one
+        //   (e.g. the badge), otherwise to the boostType display text via the fail-safe below
+        //   (matching how unmatched/empty types already behave).
+        if (!achievementType || achievementType === 'Achievement') {
+            displayText = fallbackText || '';
         }
     }
 
