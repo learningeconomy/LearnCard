@@ -275,7 +275,7 @@ jobs:
                       response=$(curl -s -X POST https://slack.com/api/chat.postMessage \
                         -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
                         -H 'Content-Type: application/json; charset=utf-8' \
-                        -d "$dm_payload")
+                        -d "$dm_payload" || echo '{"ok":false,"error":"curl_failed"}')
 
                       if [ "$(echo "$response" | jq -r '.ok')" != "true" ]; then
                         echo "Failed to DM $gh_login: $(echo "$response" | jq -r '.error // "unknown"')"
