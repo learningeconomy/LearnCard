@@ -256,6 +256,9 @@ jobs:
 
                       slack_id=$(echo "$SLACK_USER_MAP" | jq -r --arg l "$gh_login" '.[$l] | gsub("[<@>]"; "")')
 
+                      # Link to this user's open assigned PRs in the repo (GitHub search query)
+                      assigned_url="https://github.com/${GH_REPO}/pulls?q=is%3Aopen+is%3Apr+assignee%3A${gh_login}"
+
                       # Highest priority first (stale=0, changes=1, review=2), then oldest first
                       checklist=$(echo "$user_items" | jq -r '
                         sort_by(.priority, -.age_days) | .[] |
@@ -264,10 +267,12 @@ jobs:
                         (if .sprint then "  ·  ⚡" else "" end)
                       ')
 
-                      dm_blocks=$(jq -n --arg count "$count" --arg items "$checklist" '[
+                      dm_blocks=$(jq -n --arg count "$count" --arg items "$checklist" --arg assigned_url "$assigned_url" '[
                         {"type": "header", "text": {"type": "plain_text", "text": "Your PR Review Checklist", "emoji": true}},
                         {"type": "context", "elements": [{"type": "mrkdwn", "text": ($count + " PR(s) assigned to you · 🔴 stale · 🟡 changes requested · 🔵 needs review")}]},
-                        {"type": "section", "text": {"type": "mrkdwn", "text": $items}}
+                        {"type": "section", "text": {"type": "mrkdwn", "text": $items}},
+                        {"type": "divider"},
+                        {"type": "context", "elements": [{"type": "mrkdwn", "text": ("📎 <" + $assigned_url + "|View all your assigned PRs on GitHub>")}]}
                       ]')
 
                       dm_payload=$(jq -n --arg channel "$slack_id" --argjson blocks "$dm_blocks" '{channel: $channel, blocks: $blocks}')
