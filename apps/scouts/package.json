@@ -102,6 +102,7 @@
         "dev:services": "docker compose -f compose-local.yaml up --build --scale app=0",
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
+        "lc": "bun scripts/lc.ts",
         "start": "vite",
         "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc LEARN_CLOUD_XAPI_URL=http://localhost:4100/xapi API_URL=http://localhost:5100/trpc VITE_SSS_SERVER_URL=/lca-api vite --host",
         "serve": "vite",
