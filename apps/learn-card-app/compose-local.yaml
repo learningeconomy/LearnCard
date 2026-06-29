@@ -5,10 +5,6 @@ services:
             context: ../../
             dockerfile: Dockerfile.monorepo
         user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
-        tmpfs:
-            - /app/.nx-cache:mode=1777
-            - /app/node_modules/.cache:mode=1777
-            - /app/apps/learn-card-app/node_modules:mode=1777
         container_name: 'lcn-app'
         expose:
             - 3000
@@ -41,38 +37,12 @@ services:
             - ./src:/app/apps/learn-card-app/src
             - ./environments:/app/apps/learn-card-app/environments
             - ./public:/app/apps/learn-card-app/public
-            - ./scripts:/app/apps/learn-card-app/scripts
-            - ./tests:/app/apps/learn-card-app/tests
-            - ./tools:/app/apps/learn-card-app/tools
             - ./index.html:/app/apps/learn-card-app/index.html
-            - ./index.template.html:/app/apps/learn-card-app/index.template.html
             - ./package.json:/app/apps/learn-card-app/package.json
             - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
-            - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
-            - ./playwright.config.ts:/app/apps/learn-card-app/playwright.config.ts
-            - ./playwright-global-setup.ts:/app/apps/learn-card-app/playwright-global-setup.ts
             - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
             - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
             - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json
-            - ./vitest.config.ts:/app/apps/learn-card-app/vitest.config.ts
-            - ./vitest.setup.ts:/app/apps/learn-card-app/vitest.setup.ts
-            - ./migrations.json:/app/apps/learn-card-app/migrations.json
-            - ./netlify.toml:/app/apps/learn-card-app/netlify.toml
-            - ./_headers:/app/apps/learn-card-app/_headers
-            - ../../packages/credential-library/src:/app/packages/credential-library/src
-            - ../../packages/react-learn-card/src:/app/packages/react-learn-card/src
-            - ../../packages/learn-card-embed-sdk/src:/app/packages/learn-card-embed-sdk/src
-            - ../../packages/learn-card-base/src:/app/packages/learn-card-base/src
-            - ../../packages/learn-card-helpers/src:/app/packages/learn-card-helpers/src
-            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
-            - ../../packages/learn-card-init/src:/app/packages/learn-card-init/src
-            - ../../packages/learn-card-core/src:/app/packages/learn-card-core/src
-            - ../../packages/learn-card-network/brain-client/src:/app/packages/learn-card-network/brain-client/src
-            - ../../packages/learn-card-network/cloud-client/src:/app/packages/learn-card-network/cloud-client/src
-            - ../../packages/plugins/lca-api-plugin/src:/app/packages/plugins/lca-api-plugin/src
-            - ../../packages/plugins/learn-card-network/src:/app/packages/plugins/learn-card-network/src
-            - ../../packages/plugins/learn-cloud/src:/app/packages/plugins/learn-cloud/src
-            - ../../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -110,8 +80,6 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        tmpfs:
-            - /app/services/learn-card-network/brain-service/node_modules:mode=1777
         container_name: 'lcn-brain-service'
         expose:
             - 4000
@@ -169,8 +137,6 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        tmpfs:
-            - /app/services/learn-card-network/learn-cloud-service/node_modules:mode=1777
         container_name: 'lcn-cloud-service'
         expose:
             - 4100
@@ -216,8 +182,6 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        tmpfs:
-            - /app/services/learn-card-network/lca-api/node_modules:mode=1777
         container_name: 'lcn-api-service'
         expose:
             - 5100
