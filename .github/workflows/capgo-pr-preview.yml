@@ -73,7 +73,7 @@ jobs:
                       core.setOutput('channel', `pr-${prNumber}`);
 
             - name: Checkout PR for package.json read
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   ref: ${{ steps.lookup.outputs.head_sha }}
 

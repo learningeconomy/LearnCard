@@ -1,5 +1,39 @@
 # learn-card-base
 
+## 0.2.2
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/helpers@1.3.5
+    -   @learncard/lca-api-plugin@1.2.15
+    -   @learncard/learn-card-plugin@1.2.23
+    -   @learncard/ler-rs-plugin@0.1.14
+    -   @learncard/render-method-plugin@3.0.3
+    -   @learncard/sss-key-manager@0.1.13
+
+## 0.2.1
+
+### Patch Changes
+
+-   [#1294](https://github.com/learningeconomy/LearnCard/pull/1294) [`fffb7b42fa224e1a96fba7f03c5333f5ac0121ec`](https://github.com/learningeconomy/LearnCard/commit/fffb7b42fa224e1a96fba7f03c5333f5ac0121ec) Thanks [@Custard7](https://github.com/Custard7)! - Add shared support for the Dashboard home screen: `dashboardHome` tenant config flag, `useAiInsightCredential` hook, `useVerifiableData` updates, `dashboardGetStartedDismissed` startup flag, dashboard side-nav icons, and `BoostListItem` relative-date/compact rendering options.
+
+-   [#1296](https://github.com/learningeconomy/LearnCard/pull/1296) [`d75873c16f6bb287ef4d1c3e3fcc665a0e00ffd5`](https://github.com/learningeconomy/LearnCard/commit/d75873c16f6bb287ef4d1c3e3fcc665a0e00ffd5) Thanks [@smurflo2](https://github.com/smurflo2)! - Drive seeded skill frameworks via a `features.useSeededSkillFrameworks` tenant config flag instead of a hardcoded production brain-service host allowlist
+
+-   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+
+-   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+
+-   [#1307](https://github.com/learningeconomy/LearnCard/pull/1307) [`d28f87ebf8c2272b19ee83c5e1f8ba8aa3b329ae`](https://github.com/learningeconomy/LearnCard/commit/d28f87ebf8c2272b19ee83c5e1f8ba8aa3b329ae) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1896] - Add "Become a Verified Issuer" CTA
+
+-   [#1310](https://github.com/learningeconomy/LearnCard/pull/1310) [`d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d`](https://github.com/learningeconomy/LearnCard/commit/d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d) Thanks [@smurflo2](https://github.com/smurflo2)! - New LearnCard AI contract that includes goals, skills, professional title, and work experience. Also seperate network consent contract from LearnCard AI contract
+
+-   [#1313](https://github.com/learningeconomy/LearnCard/pull/1313) [`fddb03ad07d3409544717a496d3877fd4b73ee8f`](https://github.com/learningeconomy/LearnCard/commit/fddb03ad07d3409544717a496d3877fd4b73ee8f) Thanks [@Custard7](https://github.com/Custard7)! - fix: prevent mixed login state on app resume — a transient wallet/private-key reconstruction failure no longer caches a spurious "no profile" result, which previously surfaced "Complete Profile", the age gate, and the JoinNetworkModal for users who had already onboarded
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.14
+
 ## 0.2.0
 
 ### Minor Changes

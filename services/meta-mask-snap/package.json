@@ -1,6 +1,6 @@
 {
     "name": "@learncard/meta-mask-snap",
-    "version": "1.0.118",
+    "version": "1.0.119",
     "description": "The official LearnCard MetaMask Snap",
     "private": true,
     "repository": {
@@ -44,7 +44,7 @@
         "shx": "^0.3.4"
     },
     "engines": {
-        "node": ">=16.0.0"
+        "node": ">=24.12.0"
     },
     "dependencies": {
         "@learncard/core": "workspace:*"

@@ -52,6 +52,8 @@ module.exports = {
                 'image-drop': 'image-drop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                 'confetti-fall': 'confetti-fall 1600ms ease-in forwards',
                 'reveal-card': 'reveal-card 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                'pop-in': 'pop-in 0.4s ease-out forwards',
+                'shimmer': 'shimmer 1.2s ease-in-out forwards',
             },
             keyframes: {
                 'pulse-opacity': {
@@ -130,6 +132,14 @@ module.exports = {
                     '0%': { opacity: '0', transform: 'translateY(16px) scale(0.86) rotate(-4deg)' },
                     '55%': { opacity: '1', transform: 'translateY(0) scale(1.03) rotate(1.5deg)' },
                     '100%': { opacity: '1', transform: 'translateY(0) scale(1) rotate(0deg)' },
+                },
+                'pop-in': {
+                    '0%': { opacity: '0', transform: 'translateY(6px) scale(0.96)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                },
+                'shimmer': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(200%)' },
                 },
             },
             boxShadow: {

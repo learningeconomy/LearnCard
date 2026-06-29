@@ -1,5 +1,31 @@
 # @learncard/network-brain-service
 
+## 3.16.4
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/core@9.4.23
+    -   @learncard/helpers@1.3.5
+    -   @learncard/did-web-plugin@1.1.23
+    -   @learncard/didkey-plugin@1.1.23
+    -   @learncard/didkit-plugin@1.9.3
+    -   @learncard/didkit-plugin-node@0.2.21
+    -   @learncard/encryption-plugin@1.1.23
+    -   @learncard/learn-card-plugin@1.2.23
+    -   @learncard/vc-plugin@1.5.3
+    -   @learncard/vc-templates-plugin@1.1.23
+    -   @learncard/crypto-plugin@1.1.23
+    -   @learncard/dynamic-loader-plugin@1.1.23
+    -   @learncard/expiration-plugin@1.2.23
+
+## 3.16.3
+
+### Patch Changes
+
+-   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+
 ## 3.16.2
 
 ### Patch Changes

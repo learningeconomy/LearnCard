@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
+import useCurrentUser from './useGetCurrentUser';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { useWallet } from 'learn-card-base';
 import { ANONYMOUS_CONTEXT } from '../constants/launchDarkly';

@@ -128,7 +128,7 @@ export const SubheaderContentType: Record<
         showBetaLabel: true,
     },
     [SubheaderTypeEnum.AiInsights]: {
-        title: 'AI Insights',
+        title: 'Insights',
         IconComponent: AiInsightsIcon,
         iconColor: 'text-lime-700',
         textColor: 'text-white',

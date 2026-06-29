@@ -1,5 +1,27 @@
 # @welibraryos/react-learn-card
 
+## 2.10.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.2
+
+## 2.10.1
+
+### Patch Changes
+
+-   [#1298](https://github.com/learningeconomy/LearnCard/pull/1298) [`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c) Thanks [@Custard7](https://github.com/Custard7)! - fix: stop barrelsby-generated barrels from fighting prettier
+
+-   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+
+-   [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
+
+-   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+
+-   Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
+    -   @learncard/init@2.4.1
+
 ## 2.10.0
 
 ### Minor Changes

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { IonRow } from '@ionic/react';
+import moment from 'moment';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import CredentialVerificationDisplay, {
@@ -11,6 +12,7 @@ import {
     getAchievementType,
     getAchievementTypeDisplayText,
     getIssuer,
+    getIssuanceDate,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { VC } from '@learncard/types';
@@ -42,6 +44,8 @@ type BoostListItemProps = {
     uri?: string;
     indicatorColor?: string;
     unknownVerifierTitle?: string;
+    relativeDate?: boolean;
+    compact?: boolean;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -62,6 +66,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     uri,
     indicatorColor,
     unknownVerifierTitle,
+    relativeDate = false,
+    compact = false,
 }) => {
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
@@ -74,11 +80,13 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     );
 
     const issuanceDateDisplay = useMemo(() => {
+        if (relativeDate) return moment(getIssuanceDate(credential)).fromNow();
+
         const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
             uppercaseDate: false,
         });
         return createdAt;
-    }, [credential]);
+    }, [credential, relativeDate]);
 
     const { subColor } = categoryMetadata[categoryType];
 
@@ -175,11 +183,17 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         </span>
     ) : null;
 
+    const rowPadding = isMediaDisplay ? '' : compact ? 'p-[4px]' : 'p-[8px]';
+    const rowGap = compact ? 'gap-[8px]' : 'gap-[10px]';
+    const thumbSize = compact ? 'h-[34px] w-[34px]' : 'h-[40px] w-[40px]';
+    const textBlockSize = compact ? 'text-[13px]' : 'text-[14px]';
+    const verificationIconClass = compact
+        ? 'w-[14px] h-[14px] min-w-[14px] min-h-[14px] mr-1 z-50'
+        : 'w-[20px] h-[20px] min-w-[20px] min-h-[20px] mr-1 z-50';
+
     return (
         <IonRow
-            className={`${
-                isMediaDisplay ? '' : 'p-[8px]'
-            } rounded-[15px] relative overflow-hidden w-full flex gap-[10px] items-center ${backgroundColor} z-[2]`}
+            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2]`}
             onClick={onClick}
             data-testid="boost-list-item"
         >
@@ -192,12 +206,9 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         showIcon={false}
                         playIconClassName="!w-[30px] !h-[30px]"
                     />
-                    {/* <div className="bg-white h-[30px] p-2 w-[30px] flex items-center justify-center border-solid border-[1px] border-grayscale-200 rounded-full p-[6px] absolute bottom-[50%] right-[0%] translate-x-1/2 translate-y-1/2 z-[9999]">
-                        <AttachmentIcon className="w-[20px] h-[20px]" />
-                    </div> */}
                 </div>
             ) : (
-                <div className={`relative h-[40px] w-[40px] rounded-full bg-${subColor}`}>
+                <div className={`relative ${thumbSize} rounded-full bg-${subColor}`}>
                     <BadgeThumbnailImg
                         src={
                             thumbImgSrc ||
@@ -212,9 +223,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             )}
 
             <div
-                className={`${
-                    isMediaDisplay ? '' : ''
-                } flex flex-col items-start text-[14px] font-poppins flex-1 min-w-0`}
+                className={`flex flex-col items-start ${textBlockSize} font-poppins flex-1 min-w-0`}
             >
                 {isMediaDisplay && (
                     <>
@@ -236,28 +245,55 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     </>
                 )}
                 {!isMediaDisplay && (
-                    <>
-                        <h3 className="text-grayscale-900 font-semibold truncate w-full">
-                            {title}
-                        </h3>
-                        <span className="text-grayscale-500 font-normal">
-                            {newItemIndicator} {boostTypeDisplayName}
-                        </span>
-                    </>
+                    <h3 className="text-grayscale-900 font-semibold truncate w-full leading-tight">
+                        {title}
+                    </h3>
+                )}
+                {!isMediaDisplay && !compact && (
+                    <span className="text-grayscale-500 font-normal">
+                        {newItemIndicator} {boostTypeDisplayName}
+                    </span>
                 )}
 
-                <span className="text-grayscale-800 font-normal flex items-center w-full min-w-0">
+                <span
+                    className={`font-normal flex items-center w-full min-w-0 ${
+                        compact
+                            ? 'text-grayscale-600 text-[11px] leading-tight mt-0.5'
+                            : 'text-grayscale-800'
+                    }`}
+                >
                     {(isMediaDisplay || displayType !== DisplayTypeEnum.Media) && !managedBoost && (
                         <CredentialVerificationDisplay
                             managedBoost={managedBoost}
                             credential={credential}
-                            iconClassName="w-[16px] h-[16px] min-w-[16px] min-h-[16px] mr-1 z-50"
+                            iconClassName={verificationIconClass}
                             unknownVerifierTitle={unknownVerifierTitle}
                         />
                     )}
-                    {issuerNode && <span className="truncate min-w-0">{issuerNode}</span>}
-                    {issuerNode && <span className="shrink-0 px-1.5 text-grayscale-400">•</span>}
-                    <span className="shrink-0 whitespace-nowrap">{issuanceDateDisplay}</span>
+                    {compact ? (
+                        <>
+                            {newItemIndicator}
+                            {boostTypeDisplayName && (
+                                <span className="truncate min-w-0">{boostTypeDisplayName}</span>
+                            )}
+                            {boostTypeDisplayName && (
+                                <span className="shrink-0 mx-1 text-grayscale-400">·</span>
+                            )}
+                            <span className="shrink-0 whitespace-nowrap">
+                                {issuanceDateDisplay}
+                            </span>
+                        </>
+                    ) : (
+                        <>
+                            {issuerNode && <span className="truncate min-w-0">{issuerNode}</span>}
+                            {issuerNode && (
+                                <span className="shrink-0 px-1.5 text-grayscale-400">•</span>
+                            )}
+                            <span className="shrink-0 whitespace-nowrap">
+                                {issuanceDateDisplay}
+                            </span>
+                        </>
+                    )}
                 </span>
             </div>
 
