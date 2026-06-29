@@ -10,7 +10,7 @@ import { IonList, IonItem } from '@ionic/react';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 const HourGlass = '/lotties/hourglass.json';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import IdDisplayContainer from 'apps/learn-card-app/src/pages/ids/IdDisplayContainer';
@@ -248,7 +248,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                         cred={cred}
                     />
                 ) : (
-                    <CredentialBadge
+                    <CredentialBadgeNew
                         achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                         boostType={categoryType}
                         badgeThumbnail={badgeThumbnail}

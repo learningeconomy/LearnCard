@@ -7,7 +7,7 @@ import X from 'learn-card-base/svgs/X';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import ArrowArcLeft from '../../../assets/images/ArrowArcLeft.svg';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 import NotificationSkeleton from './NotificationSkeleton';
 
@@ -343,7 +343,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         )}
 
                         {!isLoading && !isEndorsementCredentialType && (
-                            <CredentialBadge
+                            <CredentialBadgeNew
                                 achievementType={credentialBadgeAchievementType}
                                 boostType={credCategory}
                                 badgeThumbnail={credImgUrl}

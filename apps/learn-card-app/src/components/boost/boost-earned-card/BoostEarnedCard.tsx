@@ -32,7 +32,6 @@ import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import CustomIssuerName from './helpers/CustomIssuerName';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
@@ -298,7 +297,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     {...mappedInputs}
                 />
             ) : (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     boostType={categoryType}
                     badgeThumbnail={badgeThumbnail}
@@ -332,7 +331,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 handleOptionsMenu();
             },
             customThumbComponent: (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}
@@ -427,7 +426,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         />
                     }
                     customThumbComponent={
-                        <CredentialBadge
+                        <CredentialBadgeNew
                             achievementType={achievementType}
                             fallbackCircleText={title}
                             boostType={categoryType}
@@ -499,7 +498,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         }
                         customThumbComponent={
                             <>
-                                <CredentialBadge
+                                <CredentialBadgeNew
                                     achievementType={achievementType}
                                     boostType={categoryType}
                                     badgeThumbnail={badgeThumbnail}
