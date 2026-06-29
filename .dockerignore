@@ -2,6 +2,8 @@
 lib/didkit/target
 lib/ssi/target
 
+scripts/siwa-migration
+
 # Dependencies (copied selectively in Dockerfiles)
 node_modules
 **/node_modules
