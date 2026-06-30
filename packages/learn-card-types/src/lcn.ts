@@ -1,5 +1,5 @@
 import type {} from 'zod-openapi';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
