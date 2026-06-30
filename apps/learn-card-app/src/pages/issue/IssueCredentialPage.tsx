@@ -40,6 +40,7 @@ import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
 import { JsonStudio } from './components/JsonStudio';
 import { DynamicFieldsSection, type VariableScope } from './components/DynamicFieldsSection';
+import { RecipientPicker } from './components/RecipientPicker';
 import { RecipientEvidenceSection } from './components/RecipientEvidenceSection';
 import { applyVariableValues } from './components/variableSubstitution';
 import { attachmentsToEvidence } from './components/mediaEvidence';
@@ -745,6 +746,16 @@ const IssueCredentialPage: React.FC = () => {
 
                                 {viewingJson && issuableJson ? (
                                     <div className="space-y-5">
+                                        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
+                                            <RecipientPicker
+                                                mode={recipientMode}
+                                                onModeChange={setRecipientMode}
+                                                recipients={recipients}
+                                                onRecipientsChange={setRecipients}
+                                                linkOptions={linkOptions}
+                                                onLinkOptionsChange={setLinkOptions}
+                                            />
+                                        </section>
                                         <JsonStudio
                                             credential={issuableJson}
                                             identity={identity}
