@@ -26,6 +26,7 @@ interface IssueSuccessProps {
     linkOptions?: LinkOptions;
     onIssueAnother: () => void;
     onViewWallet: () => void;
+    onLinkConsumed?: () => void;
 }
 
 const recipientName = (recipient: Recipient): string =>
@@ -48,6 +49,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
     linkOptions,
     onIssueAnother,
     onViewWallet,
+    onLinkConsumed,
 }) => {
     const { presentToast } = useToast();
     const [copied, setCopied] = useState(false);
@@ -58,6 +60,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
         try {
             await navigator.clipboard.writeText(claimLink);
             setCopied(true);
+            onLinkConsumed?.();
             presentToast('Link copied.', {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
@@ -66,7 +69,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
         } catch (e) {
             log.error('issue-success.copy_failed', e);
         }
-    }, [claimLink, presentToast]);
+    }, [claimLink, presentToast, onLinkConsumed]);
 
     const handleShare = useCallback(async () => {
         if (!claimLink) return;
@@ -76,6 +79,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                     title: 'A credential for you',
                     url: claimLink,
                 });
+                onLinkConsumed?.();
                 return;
             } catch (e) {
                 log.info('issue-success.share_dismissed');
@@ -83,7 +87,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             }
         }
         await handleCopy();
-    }, [claimLink, handleCopy]);
+    }, [claimLink, handleCopy, onLinkConsumed]);
 
     const handleDownloadQR = useCallback(() => {
         if (!canvasRef.current) return;

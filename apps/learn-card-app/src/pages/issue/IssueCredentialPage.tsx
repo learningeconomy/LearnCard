@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonPage } from '@ionic/react';
+import { IonContent, IonPage, useIonAlert } from '@ionic/react';
 import { ArrowLeft, Code, Database, RotateCcw, X, AlertCircle } from 'lucide-react';
 
 import MainHeader from '../../components/main-header/MainHeader';
@@ -41,6 +41,45 @@ import type { SelectedSkill } from '../skills/skillTypes';
 
 const log = getLogger('issue-page');
 
+interface IssueSuccessSnapshot {
+    issuedUri: string;
+    claimLink: string | null;
+    template: OBv3CredentialTemplate;
+    selectedType: CredentialTypeEntry | null;
+    recipientMode: RecipientMode;
+    recipients: Recipient[];
+    linkOptions: LinkOptions;
+    linkConsumed: boolean;
+}
+
+const SUCCESS_SNAPSHOT_KEY = 'issue-success-snapshot';
+
+const readSuccessSnapshot = (): IssueSuccessSnapshot | null => {
+    try {
+        const raw = sessionStorage.getItem(SUCCESS_SNAPSHOT_KEY);
+        return raw ? (JSON.parse(raw) as IssueSuccessSnapshot) : null;
+    } catch (e) {
+        log.warn('issue.snapshot_read_failed', e);
+        return null;
+    }
+};
+
+const writeSuccessSnapshot = (snapshot: IssueSuccessSnapshot): void => {
+    try {
+        sessionStorage.setItem(SUCCESS_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    } catch (e) {
+        log.warn('issue.snapshot_write_failed', e);
+    }
+};
+
+const clearSuccessSnapshot = (): void => {
+    try {
+        sessionStorage.removeItem(SUCCESS_SNAPSHOT_KEY);
+    } catch (e) {
+        log.warn('issue.snapshot_clear_failed', e);
+    }
+};
+
 const IssueCredentialPage: React.FC = () => {
     const history = useHistory();
     const { initWallet } = useWallet();
@@ -48,23 +87,33 @@ const IssueCredentialPage: React.FC = () => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
+    const [presentAlert] = useIonAlert();
 
-    const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(null);
-    const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(null);
+    const initialSnapshot = useMemo(() => readSuccessSnapshot(), []);
+
+    const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(
+        initialSnapshot?.selectedType ?? null
+    );
+    const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(
+        initialSnapshot?.template ?? null
+    );
     const [provenance, setProvenance] = useState<ImportProvenance | null>(null);
     const [showJson, setShowJson] = useState(false);
 
-    const [recipientMode, setRecipientMode] = useState<RecipientMode>('self');
-    const [recipients, setRecipients] = useState<Recipient[]>([]);
-    const [linkOptions, setLinkOptions] = useState<LinkOptions>({});
+    const [recipientMode, setRecipientMode] = useState<RecipientMode>(
+        initialSnapshot?.recipientMode ?? 'self'
+    );
+    const [recipients, setRecipients] = useState<Recipient[]>(initialSnapshot?.recipients ?? []);
+    const [linkOptions, setLinkOptions] = useState<LinkOptions>(initialSnapshot?.linkOptions ?? {});
 
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
     const [resolvedSkills, setResolvedSkills] = useState<ResolvedSkill[]>([]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<IssueError | null>(null);
-    const [issuedUri, setIssuedUri] = useState<string | null>(null);
-    const [claimLink, setClaimLink] = useState<string | null>(null);
+    const [issuedUri, setIssuedUri] = useState<string | null>(initialSnapshot?.issuedUri ?? null);
+    const [claimLink, setClaimLink] = useState<string | null>(initialSnapshot?.claimLink ?? null);
+    const [linkConsumed, setLinkConsumed] = useState(initialSnapshot?.linkConsumed ?? false);
 
     const ach = template?.credentialSubject?.achievement;
     const nameValid = Boolean(ach?.name?.value?.trim());
@@ -311,9 +360,34 @@ const IssueCredentialPage: React.FC = () => {
         getRegisteredSigningAuthority,
     ]);
 
+    useEffect(() => {
+        if (!issuedUri || !template) return;
+        writeSuccessSnapshot({
+            issuedUri,
+            claimLink,
+            template,
+            selectedType,
+            recipientMode,
+            recipients,
+            linkOptions,
+            linkConsumed,
+        });
+    }, [
+        issuedUri,
+        claimLink,
+        template,
+        selectedType,
+        recipientMode,
+        recipients,
+        linkOptions,
+        linkConsumed,
+    ]);
+
     const reset = useCallback(() => {
+        clearSuccessSnapshot();
         setIssuedUri(null);
         setClaimLink(null);
+        setLinkConsumed(false);
         setSelectedType(null);
         setTemplate(null);
         setProvenance(null);
@@ -324,6 +398,22 @@ const IssueCredentialPage: React.FC = () => {
         setResolvedSkills([]);
         setError(null);
     }, []);
+
+    const handleIssueAnother = useCallback(() => {
+        if (claimLink && !linkConsumed) {
+            presentAlert({
+                header: 'Discard this link?',
+                message:
+                    "You haven't copied or shared this claim link yet. If you start over, it'll be cleared.",
+                buttons: [
+                    { text: 'Keep', role: 'cancel' },
+                    { text: 'Discard', role: 'destructive', handler: () => reset() },
+                ],
+            });
+            return;
+        }
+        reset();
+    }, [claimLink, linkConsumed, presentAlert, reset]);
 
     return (
         <IonPage className="bg-white">
@@ -337,8 +427,10 @@ const IssueCredentialPage: React.FC = () => {
                         recipients={recipients}
                         claimLink={claimLink}
                         linkOptions={linkOptions}
-                        onIssueAnother={reset}
+                        onIssueAnother={handleIssueAnother}
+                        onLinkConsumed={() => setLinkConsumed(true)}
                         onViewWallet={() => {
+                            clearSuccessSnapshot();
                             const category = previewCredential
                                 ? getDefaultCategoryForCredential(previewCredential as any)
                                 : undefined;
