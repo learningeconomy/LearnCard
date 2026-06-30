@@ -161,7 +161,7 @@ export const CATEGORY_MAP: Record<
     'ext:Upskilling': 'Achievement',
 
     License: 'ID',
-    Membership: 'Membership',
+    Membership: 'ID',
     'Student Buckcard': 'ID',
     PermanentResidentCard: 'ID',
     AlumniCredential: 'ID',

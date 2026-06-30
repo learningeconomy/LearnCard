@@ -38,6 +38,7 @@ interface BoostRecord {
     uri: string;
     name?: string;
     category?: string;
+    created?: string;
 }
 
 interface ReuseExistingProps {
@@ -47,23 +48,8 @@ interface ReuseExistingProps {
 
 type Step = 'list' | 'preview' | 'recipient' | 'success';
 
-const CATEGORY_ORDER: BoostCategoryOptionsEnum[] = [
-    BoostCategoryOptionsEnum.achievement,
-    BoostCategoryOptionsEnum.course,
-    BoostCategoryOptionsEnum.learningHistory,
-    BoostCategoryOptionsEnum.skill,
-    BoostCategoryOptionsEnum.membership,
-    BoostCategoryOptionsEnum.id,
-    BoostCategoryOptionsEnum.workHistory,
-    BoostCategoryOptionsEnum.socialBadge,
-    BoostCategoryOptionsEnum.accomplishment,
-    BoostCategoryOptionsEnum.accommodation,
-];
-
 const ENUM_VALUES = Object.values(BoostCategoryOptionsEnum);
 
-// A boost record's `category` is a free string; match it to a known enum (by
-// value or key, case-insensitively) to look up its label and icon metadata.
 const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
     if (!category) return BoostCategoryOptionsEnum.achievement;
     const lower = category.toLowerCase();
@@ -75,14 +61,40 @@ const resolveCategory = (category?: string): BoostCategoryOptionsEnum => {
     return (byKey?.[1] as BoostCategoryOptionsEnum) ?? BoostCategoryOptionsEnum.achievement;
 };
 
-const sortByName = (items: BoostRecord[]): BoostRecord[] =>
-    [...items].sort((a, b) => {
-        const aName = (a.name ?? '').trim();
-        const bName = (b.name ?? '').trim();
-        if (!aName && bName) return 1;
-        if (aName && !bName) return -1;
-        return aName.localeCompare(bName);
-    });
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const startOfDay = (date: Date): number =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+// Newest-first records produce these labels in strictly descending order, so a
+// newly fetched page only ever extends the bottom (older) edge of the list.
+const relativeTimeBucket = (iso?: string): string => {
+    if (!iso) return 'Earlier';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return 'Earlier';
+
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const dayStart = startOfDay(date);
+    const daysAgo = Math.round((todayStart - dayStart) / MS_PER_DAY);
+
+    if (daysAgo <= 0) return 'Today';
+    if (daysAgo === 1) return 'Yesterday';
+
+    // Day-of-week index where Sunday = 0; treat the week as starting Sunday.
+    if (daysAgo <= now.getDay()) return 'Earlier This Week';
+    if (daysAgo <= now.getDay() + 7) return 'Last Week';
+
+    if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) {
+        return 'Earlier This Month';
+    }
+
+    if (date.getFullYear() === now.getFullYear()) {
+        return date.toLocaleDateString(undefined, { month: 'long' });
+    }
+
+    return String(date.getFullYear());
+};
 
 const achievementTypeOf = (vc: Record<string, unknown>): string | undefined => {
     const subject = (vc.credentialSubject ?? {}) as { achievement?: { achievementType?: string } };
@@ -123,24 +135,12 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     }, [data, query]);
 
     const groups = useMemo(() => {
-        const byCategory = new Map<BoostCategoryOptionsEnum, BoostRecord[]>();
+        const ordered: { label: string; items: BoostRecord[] }[] = [];
         for (const record of records) {
-            const category = resolveCategory(record.category);
-            const existing = byCategory.get(category);
-            if (existing) existing.push(record);
-            else byCategory.set(category, [record]);
-        }
-        const ordered: { category: BoostCategoryOptionsEnum; items: BoostRecord[] }[] = [];
-        const seen = new Set<BoostCategoryOptionsEnum>();
-        for (const category of CATEGORY_ORDER) {
-            const items = byCategory.get(category);
-            if (items) {
-                ordered.push({ category, items: sortByName(items) });
-                seen.add(category);
-            }
-        }
-        for (const [category, items] of byCategory) {
-            if (!seen.has(category)) ordered.push({ category, items: sortByName(items) });
+            const label = relativeTimeBucket(record.created);
+            const last = ordered[ordered.length - 1];
+            if (last && last.label === label) last.items.push(record);
+            else ordered.push({ label, items: [record] });
         }
         return ordered;
     }, [records]);
@@ -376,20 +376,23 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                         ) : (
                             <>
                                 <div className="space-y-5">
-                                    {groups.map(({ category, items }) => (
-                                        <div key={category}>
+                                    {groups.map(({ label, items }) => (
+                                        <div key={label}>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <h3 className="text-xs font-semibold text-grayscale-500 uppercase tracking-wide">
-                                                    {boostCategoryMetadata[category]?.plural ??
-                                                        boostCategoryMetadata[category]?.title ??
-                                                        'Other'}
+                                                    {label}
                                                 </h3>
                                                 <span className="text-xs text-grayscale-400">
                                                     {items.length}
                                                 </span>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {items.map(record => renderRow(record, category))}
+                                                {items.map(record =>
+                                                    renderRow(
+                                                        record,
+                                                        resolveCategory(record.category)
+                                                    )
+                                                )}
                                             </div>
                                         </div>
                                     ))}

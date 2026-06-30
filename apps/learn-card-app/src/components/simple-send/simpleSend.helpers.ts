@@ -1,5 +1,7 @@
 import base64url from 'base64url';
+import { v4 as uuidv4 } from 'uuid';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import { RecipientMode, Recipient, LinkOptions } from '../../pages/issue/components/recipientTypes';
 
@@ -74,9 +76,7 @@ export const buildSimpleTemplate = (input: SimpleSendInput): OBv3CredentialTempl
                 achievementType: staticField(achievementType),
                 ...(input.imageUrl ? { image: staticField(input.imageUrl) } : {}),
                 criteria: {
-                    narrative: input.criteriaNarrative
-                        ? staticField(input.criteriaNarrative)
-                        : staticField(`Awarded for: ${input.name}`),
+                    narrative: staticField(input.criteriaNarrative ?? ''),
                 },
             },
         },
@@ -163,7 +163,18 @@ const deliverBoost = async (
                     ((await wallet.read.get(sentCredentialUri).catch(() => undefined)) as
                         | Record<string, unknown>
                         | undefined);
-                if (credential) await wallet.store.LearnCloud.uploadEncrypted(credential);
+                if (credential) {
+                    const indexUri = await wallet.store.LearnCloud.uploadEncrypted(credential);
+                    if (indexUri) {
+                        const category =
+                            getDefaultCategoryForCredential(credential as any) || 'Achievement';
+                        await wallet.index.LearnCloud.add({
+                            id: uuidv4(),
+                            uri: indexUri,
+                            category,
+                        });
+                    }
+                }
             }
         }
     } else if (options.mode === 'people') {
@@ -226,7 +237,10 @@ export const issueViaBoost = async (
         unknown
     >;
 
-    const boostUri = await wallet.invoke.createBoost(signedCredential);
+    const name = template.name?.value || template.credentialSubject?.achievement?.name?.value || '';
+    const category = getDefaultCategoryForCredential(signedCredential as any) || 'Achievement';
+
+    const boostUri = await wallet.invoke.createBoost(signedCredential, { name, category });
 
     return deliverBoost(wallet, boostUri, options, signedCredential);
 };
