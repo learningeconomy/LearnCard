@@ -22,7 +22,10 @@ import {
     useSigningAuthority,
 } from 'learn-card-base';
 import { validateCredentialJsonLd } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
-import { templateToJson } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
+import {
+    templateToJson,
+    jsonToTemplate,
+} from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 import {
     staticField,
     type OBv3CredentialTemplate,
@@ -34,7 +37,8 @@ import type { CredentialCategoryEnum } from 'learn-card-base';
 
 import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
-import { JsonLens } from './components/JsonLens';
+import { JsonStudio } from './components/JsonStudio';
+import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { IssueSuccess } from './components/IssueSuccess';
 import { skillsToAlignmentTemplates, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
@@ -99,6 +103,7 @@ const IssueCredentialPage: React.FC = () => {
     );
     const [provenance, setProvenance] = useState<ImportProvenance | null>(null);
     const [showJson, setShowJson] = useState(false);
+    const [jsonError, setJsonError] = useState<string | null>(null);
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>(
         initialSnapshot?.recipientMode ?? 'self'
@@ -122,7 +127,24 @@ const IssueCredentialPage: React.FC = () => {
         recipientMode === 'self' ||
         recipientMode === 'link' ||
         (recipientMode === 'people' && recipients.length > 0);
-    const canIssue = Boolean(template) && detailsValid && recipientValid && !isSubmitting;
+
+    // CLR / custom VCs are authored as raw JSON: the single-achievement form
+    // can't represent them and would drop their rawJson, so the form is locked off.
+    const jsonOnly = Boolean(template?.schemaType && template.schemaType !== 'obv3');
+    const viewingJson = showJson || jsonOnly;
+
+    const issuableJson = useMemo<Record<string, unknown> | null>(
+        () => (template ? templateToJson(template) : null),
+        [template]
+    );
+    const identity = useCredentialIdentity(issuableJson, jsonError);
+
+    const canIssue =
+        Boolean(template) &&
+        recipientValid &&
+        !isSubmitting &&
+        !jsonError &&
+        (jsonOnly ? identity.status === 'valid' : detailsValid);
 
     const issuerName = currentLCNUser?.displayName?.trim() || 'You';
     const issuerImage = currentLCNUser?.image || undefined;
@@ -137,7 +159,11 @@ const IssueCredentialPage: React.FC = () => {
 
     const missingHint = !template
         ? 'Pick a type to begin'
-        : !nameValid
+        : jsonError
+        ? 'Fix the JSON to continue'
+        : viewingJson && identity.status === 'invalid'
+        ? identity.reason
+        : !jsonOnly && !nameValid
         ? 'Add a name to continue'
         : !recipientValid
         ? 'Add a recipient to continue'
@@ -203,6 +229,11 @@ const IssueCredentialPage: React.FC = () => {
         });
     }, []);
 
+    const handleJsonChange = useCallback((json: Record<string, unknown>) => {
+        setTemplate(jsonToTemplate(json));
+        setError(null);
+    }, []);
+
     const previewCredential = useMemo<Record<string, unknown> | null>(() => {
         if (!template) return null;
         const json = templateToJson(template);
@@ -247,9 +278,13 @@ const IssueCredentialPage: React.FC = () => {
         }
 
         const filledJson = fill(json) as Record<string, unknown>;
-        const credentialSubject = filledJson.credentialSubject as
-            | Record<string, unknown>
-            | undefined;
+        const rawSubject = filledJson.credentialSubject;
+        // A custom VC may carry an array (or absent) credentialSubject; only the
+        // single-object case can take the preview's name/image injection.
+        const subjectObject =
+            rawSubject && typeof rawSubject === 'object' && !Array.isArray(rawSubject)
+                ? (rawSubject as Record<string, unknown>)
+                : undefined;
 
         return {
             ...filledJson,
@@ -258,11 +293,13 @@ const IssueCredentialPage: React.FC = () => {
                 name: issuerName,
                 ...(showIssuerImage && issuerImage ? { image: issuerImage } : {}),
             },
-            credentialSubject: {
-                ...(credentialSubject || {}),
-                ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
-                ...(credentialSubjectImage ? { image: credentialSubjectImage } : {}),
-            },
+            credentialSubject: subjectObject
+                ? {
+                      ...subjectObject,
+                      ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
+                      ...(credentialSubjectImage ? { image: credentialSubjectImage } : {}),
+                  }
+                : rawSubject,
             validFrom: new Date().toISOString(),
         };
     }, [
@@ -281,7 +318,9 @@ const IssueCredentialPage: React.FC = () => {
         setIsSubmitting(true);
         try {
             const wallet = await initWallet();
-            const jsonLd = await validateCredentialJsonLd(templateToJson(template));
+            const jsonLd = await validateCredentialJsonLd(templateToJson(template), {
+                allowRemoteContexts: true,
+            });
             if (!jsonLd.valid) {
                 log.warn('issue.validation_failed', { errors: jsonLd.errors });
                 setError({
@@ -391,6 +430,8 @@ const IssueCredentialPage: React.FC = () => {
         setSelectedType(null);
         setTemplate(null);
         setProvenance(null);
+        setShowJson(false);
+        setJsonError(null);
         setRecipientMode('self');
         setRecipients([]);
         setLinkOptions({});
@@ -464,7 +505,12 @@ const IssueCredentialPage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {template && (
+                                    {template && jsonOnly ? (
+                                        <span className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full text-xs font-medium bg-grayscale-900 text-white shadow-md">
+                                            <Code className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">JSON</span>
+                                        </span>
+                                    ) : template ? (
                                         <button
                                             type="button"
                                             onClick={() => setShowJson(v => !v)}
@@ -477,7 +523,7 @@ const IssueCredentialPage: React.FC = () => {
                                             <Code className="w-3.5 h-3.5" />
                                             <span className="hidden sm:inline">JSON</span>
                                         </button>
-                                    )}
+                                    ) : null}
 
                                     <button
                                         type="button"
@@ -555,8 +601,13 @@ const IssueCredentialPage: React.FC = () => {
                                     </div>
                                 )}
 
-                                {showJson && previewCredential ? (
-                                    <JsonLens credential={previewCredential} />
+                                {viewingJson && issuableJson ? (
+                                    <JsonStudio
+                                        credential={issuableJson}
+                                        identity={identity}
+                                        onChange={handleJsonChange}
+                                        onParseError={setJsonError}
+                                    />
                                 ) : (
                                     <IssuePalette
                                         selectedType={selectedType}
