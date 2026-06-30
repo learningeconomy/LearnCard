@@ -70,7 +70,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     const flags = useFlags();
     const history = useHistory();
     const { isDesktop } = useDeviceTypeByWidth();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, closeAllModals } = useModal();
     const { gate } = useLCNGatedAction();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
@@ -114,8 +114,8 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     };
 
     const handleSimpleSend = () => {
-        closeModal();
         checkAndPromptRecovery(() => {
+            closeAllModals();
             history.push('/issue');
         });
     };
