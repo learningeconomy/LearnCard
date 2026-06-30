@@ -198,6 +198,7 @@ export * from './components/openid4vc/ExchangeErrorDisplay';
 export * from './components/openid4vc/IssuerHeader';
 export * from './components/openid4vc/VerifierHeader';
 export * from './helpers/web3AuthHelpers';
+export * from './helpers/networkHelpers';
 export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';

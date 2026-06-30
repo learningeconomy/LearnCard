@@ -6,7 +6,7 @@ const log = getLogger('use-auto-consent-learn-card-ai');
 import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
 import { getOrFetchConsentedContracts } from 'learn-card-base';
 import { getTermsWithSharedUrisForWallet } from 'learn-card-base';
-import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
+import { isProductionNetwork } from 'learn-card-base';
 
 import {
     AiPassportAppsEnum,
