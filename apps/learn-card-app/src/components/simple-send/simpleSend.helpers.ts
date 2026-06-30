@@ -130,7 +130,7 @@ export interface IssueViaBoostOptions {
     currentLCNUser?: { profileId?: string; did?: string };
     claimLinkSA?: { name?: string; endpoint?: string };
     variableValues?: Record<string, string>;
-    variableValuesByRecipient?: Record<string, Record<string, string>>;
+    variableValuesByRecipient?: Record<string, Record<string, unknown>>;
 }
 
 export interface IssueViaBoostResult {
@@ -296,13 +296,20 @@ export const issueViaBoost = async (
 
     const name = template.name?.value || template.credentialSubject?.achievement?.name?.value || '';
 
-    // A template is dynamic if custom placeholders survive once system fields are
-    // resolved. Such credentials must NOT be pre-signed: substitution has to happen
-    // before signing, which the network does at send time from an unsigned template.
+    // A template needs send-time templating if custom placeholders survive once
+    // system fields are resolved, OR if any templateData (e.g. per-recipient
+    // evidence) must be applied. Either way it must NOT be pre-signed: substitution
+    // has to happen before signing, which the network does from an unsigned template.
     const reusableTemplate = buildReusableBoostTemplate(template, issuerDid);
     const hasDynamicPlaceholders = /\{\{.*?\}\}/.test(JSON.stringify(reusableTemplate));
+    const hasTemplateData =
+        (options.variableValues && Object.keys(options.variableValues).length > 0) ||
+        Object.values(options.variableValuesByRecipient ?? {}).some(
+            data => Object.keys(data).length > 0
+        );
+    const needsTemplating = hasDynamicPlaceholders || hasTemplateData;
 
-    if (!hasDynamicPlaceholders) {
+    if (!needsTemplating) {
         const unsigned = fillTemplateSystemVars(
             template,
             issuerDid,

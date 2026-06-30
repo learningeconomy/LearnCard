@@ -40,7 +40,10 @@ import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
 import { JsonStudio } from './components/JsonStudio';
 import { DynamicFieldsSection, type VariableScope } from './components/DynamicFieldsSection';
+import { RecipientEvidenceSection } from './components/RecipientEvidenceSection';
 import { applyVariableValues } from './components/variableSubstitution';
+import { attachmentsToEvidence } from './components/mediaEvidence';
+import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { IssueSuccess } from './components/IssueSuccess';
 import { skillsToAlignmentTemplates, type ResolvedSkill } from './components/skillAlignment';
@@ -60,6 +63,7 @@ interface IssueSuccessSnapshot {
     variableValues: Record<string, string>;
     variableScope: VariableScope;
     recipientValues: Record<string, Record<string, string>>;
+    recipientEvidence: Record<string, SimpleMediaAttachment[]>;
 }
 
 const SUCCESS_SNAPSHOT_KEY = 'issue-success-snapshot';
@@ -119,6 +123,9 @@ const IssueCredentialPage: React.FC = () => {
     const [recipientValues, setRecipientValues] = useState<Record<string, Record<string, string>>>(
         initialSnapshot?.recipientValues ?? {}
     );
+    const [recipientEvidence, setRecipientEvidence] = useState<
+        Record<string, SimpleMediaAttachment[]>
+    >(initialSnapshot?.recipientEvidence ?? {});
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>(
         initialSnapshot?.recipientMode ?? 'self'
@@ -178,6 +185,43 @@ const IssueCredentialPage: React.FC = () => {
             return recipientValues[recipientKey(recipients[0])] ?? {};
         return variableValues;
     }, [usePerRecipient, recipients, recipientValues, variableValues]);
+
+    const hasRecipientEvidence = recipients.some(
+        r => (recipientEvidence[recipientKey(r)]?.length ?? 0) > 0
+    );
+
+    // Per-recipient templateData: each recipient's variable values merged with
+    // their evidence as OBv3 `evidence`, which the network appends at send time.
+    const recipientTemplateData = useMemo<
+        Record<string, Record<string, unknown>> | undefined
+    >(() => {
+        if (recipientMode !== 'people' || (!usePerRecipient && !hasRecipientEvidence)) {
+            return undefined;
+        }
+        const out: Record<string, Record<string, unknown>> = {};
+        for (const recipient of recipients) {
+            const key = recipientKey(recipient);
+            const values = usePerRecipient ? recipientValues[key] ?? {} : variableValues;
+            const evidence = attachmentsToEvidence(recipientEvidence[key] ?? []);
+            const data: Record<string, unknown> = { ...values };
+            if (evidence.length > 0) {
+                data.evidence = evidence.map((entry, index) => ({
+                    ...entry,
+                    last: index === evidence.length - 1,
+                }));
+            }
+            out[key] = data;
+        }
+        return out;
+    }, [
+        recipientMode,
+        usePerRecipient,
+        hasRecipientEvidence,
+        recipients,
+        recipientValues,
+        variableValues,
+        recipientEvidence,
+    ]);
 
     // The template keeps its {{placeholders}} — filled values are applied at
     // issuance via LearnCard's templateData, not baked into the JSON, so the
@@ -304,6 +348,13 @@ const IssueCredentialPage: React.FC = () => {
                 ...prev,
                 [key]: { ...(prev[key] ?? {}), [name]: value },
             }));
+        },
+        []
+    );
+
+    const handleRecipientEvidenceChange = useCallback(
+        (key: string, attachments: SimpleMediaAttachment[]) => {
+            setRecipientEvidence(prev => ({ ...prev, [key]: attachments }));
         },
         []
     );
@@ -445,7 +496,7 @@ const IssueCredentialPage: React.FC = () => {
                     currentLCNUser,
                     claimLinkSA,
                     variableValues,
-                    variableValuesByRecipient: usePerRecipient ? recipientValues : undefined,
+                    variableValuesByRecipient: recipientTemplateData,
                 })
             );
 
@@ -472,8 +523,7 @@ const IssueCredentialPage: React.FC = () => {
         linkOptions,
         currentLCNUser,
         variableValues,
-        usePerRecipient,
-        recipientValues,
+        recipientTemplateData,
         presentToast,
         getRegisteredSigningAuthorities,
         getRegisteredSigningAuthority,
@@ -493,6 +543,7 @@ const IssueCredentialPage: React.FC = () => {
             variableValues,
             variableScope,
             recipientValues,
+            recipientEvidence,
         });
     }, [
         issuedUri,
@@ -506,6 +557,7 @@ const IssueCredentialPage: React.FC = () => {
         variableValues,
         variableScope,
         recipientValues,
+        recipientEvidence,
     ]);
 
     const reset = useCallback(() => {
@@ -521,6 +573,7 @@ const IssueCredentialPage: React.FC = () => {
         setVariableValues({});
         setVariableScope('shared');
         setRecipientValues({});
+        setRecipientEvidence({});
         setRecipientMode('self');
         setRecipients([]);
         setLinkOptions({});
@@ -709,6 +762,13 @@ const IssueCredentialPage: React.FC = () => {
                                             recipientValues={recipientValues}
                                             onRecipientChange={handleRecipientVariableChange}
                                         />
+                                        {recipientMode === 'people' && (
+                                            <RecipientEvidenceSection
+                                                recipients={recipients}
+                                                recipientEvidence={recipientEvidence}
+                                                onChange={handleRecipientEvidenceChange}
+                                            />
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="space-y-5">
@@ -740,6 +800,13 @@ const IssueCredentialPage: React.FC = () => {
                                             recipientValues={recipientValues}
                                             onRecipientChange={handleRecipientVariableChange}
                                         />
+                                        {recipientMode === 'people' && (
+                                            <RecipientEvidenceSection
+                                                recipients={recipients}
+                                                recipientEvidence={recipientEvidence}
+                                                onChange={handleRecipientEvidenceChange}
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>

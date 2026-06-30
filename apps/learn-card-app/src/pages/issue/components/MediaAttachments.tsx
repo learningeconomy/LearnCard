@@ -17,6 +17,7 @@ export interface SimpleMediaAttachment {
 interface MediaAttachmentsProps {
     attachments: SimpleMediaAttachment[];
     onChange: (attachments: SimpleMediaAttachment[]) => void;
+    bare?: boolean;
 }
 
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
@@ -108,7 +109,11 @@ const AttachmentPreview: React.FC<{
     );
 };
 
-export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({ attachments, onChange }) => {
+export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
+    attachments,
+    onChange,
+    bare = false,
+}) => {
     const [linkUrl, setLinkUrl] = useState('');
     const [linkTitle, setLinkTitle] = useState('');
 
@@ -141,15 +146,8 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({ attachments,
         setLinkTitle('');
     }, [linkUrl, linkTitle, addAttachment]);
 
-    return (
-        <section className={`${CARD_CLASS} space-y-4`}>
-            <div>
-                <h3 className="text-base font-semibold text-grayscale-900">Evidence & media</h3>
-                <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
-                    Attach proof — photos, documents, videos, or links.
-                </p>
-            </div>
-
+    const body = (
+        <>
             <div className="flex flex-wrap gap-2">
                 <UploadButton type="photo" onUploaded={addAttachment} />
                 <UploadButton type="document" onUploaded={addAttachment} />
@@ -202,6 +200,20 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({ attachments,
                     No attachments yet.
                 </div>
             )}
+        </>
+    );
+
+    if (bare) return <div className="space-y-4">{body}</div>;
+
+    return (
+        <section className={`${CARD_CLASS} space-y-4`}>
+            <div>
+                <h3 className="text-base font-semibold text-grayscale-900">Evidence & media</h3>
+                <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
+                    Attach proof — photos, documents, videos, or links.
+                </p>
+            </div>
+            {body}
         </section>
     );
 };
