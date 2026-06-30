@@ -156,6 +156,8 @@ services:
             context: ../../
             dockerfile: Dockerfile.monorepo
 
+        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
+
         expose:
             - 5200
         ports:
