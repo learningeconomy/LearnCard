@@ -25,6 +25,7 @@ import { validateCredentialJsonLd } from '../appStoreDeveloper/partner-onboardin
 import {
     templateToJson,
     jsonToTemplate,
+    extractVariablesByType,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 import {
     staticField,
@@ -38,6 +39,8 @@ import type { CredentialCategoryEnum } from 'learn-card-base';
 import { HeroCanvas } from './components/HeroCanvas';
 import { IssuePalette } from './components/IssuePalette';
 import { JsonStudio } from './components/JsonStudio';
+import { DynamicFieldsSection } from './components/DynamicFieldsSection';
+import { applyVariableValues } from './components/variableSubstitution';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { IssueSuccess } from './components/IssueSuccess';
 import { skillsToAlignmentTemplates, type ResolvedSkill } from './components/skillAlignment';
@@ -54,6 +57,7 @@ interface IssueSuccessSnapshot {
     recipients: Recipient[];
     linkOptions: LinkOptions;
     linkConsumed: boolean;
+    variableValues: Record<string, string>;
 }
 
 const SUCCESS_SNAPSHOT_KEY = 'issue-success-snapshot';
@@ -104,6 +108,9 @@ const IssueCredentialPage: React.FC = () => {
     const [provenance, setProvenance] = useState<ImportProvenance | null>(null);
     const [showJson, setShowJson] = useState(false);
     const [jsonError, setJsonError] = useState<string | null>(null);
+    const [variableValues, setVariableValues] = useState<Record<string, string>>(
+        initialSnapshot?.variableValues ?? {}
+    );
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>(
         initialSnapshot?.recipientMode ?? 'self'
@@ -133,6 +140,16 @@ const IssueCredentialPage: React.FC = () => {
     const jsonOnly = Boolean(template?.schemaType && template.schemaType !== 'obv3');
     const viewingJson = showJson || jsonOnly;
 
+    const dynamicVars = useMemo(
+        () => (template ? extractVariablesByType(template).dynamic : []),
+        [template]
+    );
+    const unfilledVars = dynamicVars.filter(v => !variableValues[v]?.trim());
+    const allVariablesFilled = unfilledVars.length === 0;
+
+    // The template keeps its {{placeholders}} — filled values are applied at
+    // issuance via LearnCard's templateData, not baked into the JSON, so the
+    // boost stays a reusable dynamic template.
     const issuableJson = useMemo<Record<string, unknown> | null>(
         () => (template ? templateToJson(template) : null),
         [template]
@@ -144,6 +161,7 @@ const IssueCredentialPage: React.FC = () => {
         recipientValid &&
         !isSubmitting &&
         !jsonError &&
+        allVariablesFilled &&
         (jsonOnly ? identity.status === 'valid' : detailsValid);
 
     const issuerName = currentLCNUser?.displayName?.trim() || 'You';
@@ -165,6 +183,8 @@ const IssueCredentialPage: React.FC = () => {
         ? identity.reason
         : !jsonOnly && !nameValid
         ? 'Add a name to continue'
+        : !allVariablesFilled
+        ? `Fill in ${unfilledVars.length} detail${unfilledVars.length === 1 ? '' : 's'} to continue`
         : !recipientValid
         ? 'Add a recipient to continue'
         : null;
@@ -172,6 +192,7 @@ const IssueCredentialPage: React.FC = () => {
     const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
         log.info('issue.type_selected', { obv3Type: entry.obv3Type });
         setSelectedType(entry);
+        setVariableValues({});
         setTemplate(() => {
             const base = buildSimpleTemplate({
                 credentialType: entry.baseSimpleType,
@@ -196,6 +217,7 @@ const IssueCredentialPage: React.FC = () => {
             log.info('issue.imported', { source: result.provenance.source });
             const { template: next, note } = prepareImportedTemplate(result);
             setTemplate(next);
+            setVariableValues({});
             const achievementType = next.credentialSubject.achievement.achievementType?.value;
             setSelectedType(
                 (achievementType ? getTypeByObv3(achievementType) : undefined) ??
@@ -234,9 +256,13 @@ const IssueCredentialPage: React.FC = () => {
         setError(null);
     }, []);
 
+    const handleVariableChange = useCallback((name: string, value: string) => {
+        setVariableValues(prev => ({ ...prev, [name]: value }));
+    }, []);
+
     const previewCredential = useMemo<Record<string, unknown> | null>(() => {
         if (!template) return null;
-        const json = templateToJson(template);
+        const json = applyVariableValues(templateToJson(template), variableValues);
         const fill = (obj: unknown): unknown => {
             if (typeof obj === 'string') {
                 return obj.replace(/\{\{(\w+)\}\}/g, (_m, v) =>
@@ -310,6 +336,7 @@ const IssueCredentialPage: React.FC = () => {
         currentLCNUser?.displayName,
         recipientMode,
         recipients,
+        variableValues,
     ]);
 
     const handleIssue = useCallback(async () => {
@@ -369,6 +396,7 @@ const IssueCredentialPage: React.FC = () => {
                     linkOptions,
                     currentLCNUser,
                     claimLinkSA,
+                    variableValues,
                 })
             );
 
@@ -394,6 +422,7 @@ const IssueCredentialPage: React.FC = () => {
         recipients,
         linkOptions,
         currentLCNUser,
+        variableValues,
         presentToast,
         getRegisteredSigningAuthorities,
         getRegisteredSigningAuthority,
@@ -410,6 +439,7 @@ const IssueCredentialPage: React.FC = () => {
             recipients,
             linkOptions,
             linkConsumed,
+            variableValues,
         });
     }, [
         issuedUri,
@@ -420,6 +450,7 @@ const IssueCredentialPage: React.FC = () => {
         recipients,
         linkOptions,
         linkConsumed,
+        variableValues,
     ]);
 
     const reset = useCallback(() => {
@@ -432,6 +463,7 @@ const IssueCredentialPage: React.FC = () => {
         setProvenance(null);
         setShowJson(false);
         setJsonError(null);
+        setVariableValues({});
         setRecipientMode('self');
         setRecipients([]);
         setLinkOptions({});
@@ -602,30 +634,44 @@ const IssueCredentialPage: React.FC = () => {
                                 )}
 
                                 {viewingJson && issuableJson ? (
-                                    <JsonStudio
-                                        credential={issuableJson}
-                                        identity={identity}
-                                        onChange={handleJsonChange}
-                                        onParseError={setJsonError}
-                                    />
+                                    <div className="space-y-5">
+                                        <JsonStudio
+                                            credential={issuableJson}
+                                            identity={identity}
+                                            onChange={handleJsonChange}
+                                            onParseError={setJsonError}
+                                        />
+                                        <DynamicFieldsSection
+                                            variables={dynamicVars}
+                                            values={variableValues}
+                                            onChange={handleVariableChange}
+                                        />
+                                    </div>
                                 ) : (
-                                    <IssuePalette
-                                        selectedType={selectedType}
-                                        template={template}
-                                        onSelectType={handleSelectType}
-                                        onChangeTemplate={setTemplate}
-                                        onImport={handleImport}
-                                        recipientMode={recipientMode}
-                                        recipients={recipients}
-                                        linkOptions={linkOptions}
-                                        onRecipientModeChange={setRecipientMode}
-                                        onRecipientsChange={setRecipients}
-                                        onLinkOptionsChange={setLinkOptions}
-                                        selectedSkills={selectedSkills}
-                                        resolvedSkills={resolvedSkills}
-                                        onSelectedSkillsChange={setSelectedSkills}
-                                        onResolvedSkillsChange={handleResolvedSkillsChange}
-                                    />
+                                    <div className="space-y-5">
+                                        <IssuePalette
+                                            selectedType={selectedType}
+                                            template={template}
+                                            onSelectType={handleSelectType}
+                                            onChangeTemplate={setTemplate}
+                                            onImport={handleImport}
+                                            recipientMode={recipientMode}
+                                            recipients={recipients}
+                                            linkOptions={linkOptions}
+                                            onRecipientModeChange={setRecipientMode}
+                                            onRecipientsChange={setRecipients}
+                                            onLinkOptionsChange={setLinkOptions}
+                                            selectedSkills={selectedSkills}
+                                            resolvedSkills={resolvedSkills}
+                                            onSelectedSkillsChange={setSelectedSkills}
+                                            onResolvedSkillsChange={handleResolvedSkillsChange}
+                                        />
+                                        <DynamicFieldsSection
+                                            variables={dynamicVars}
+                                            values={variableValues}
+                                            onChange={handleVariableChange}
+                                        />
+                                    </div>
                                 )}
                             </div>
 

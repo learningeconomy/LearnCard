@@ -88,11 +88,13 @@ export const buildSimpleTemplate = (input: SimpleSendInput): OBv3CredentialTempl
 export const fillTemplateSystemVars = (
     template: OBv3CredentialTemplate,
     issuerDid: string,
-    recipientDid?: string
+    recipientDid?: string,
+    variableValues?: Record<string, string>
 ): Record<string, unknown> => {
     const json = templateToJson(template);
     const now = new Date().toISOString();
     const replacements: Record<string, string> = {
+        ...(variableValues ?? {}),
         issuer_did: issuerDid,
         issue_date: now,
         ...(recipientDid ? { recipient_did: recipientDid } : {}),
@@ -127,6 +129,8 @@ export interface IssueViaBoostOptions {
     linkOptions: LinkOptions;
     currentLCNUser?: { profileId?: string; did?: string };
     claimLinkSA?: { name?: string; endpoint?: string };
+    variableValues?: Record<string, string>;
+    variableValuesByRecipient?: Record<string, Record<string, string>>;
 }
 
 export interface IssueViaBoostResult {
@@ -142,12 +146,18 @@ const deliverBoost = async (
 ): Promise<IssueViaBoostResult> => {
     let claimLink: string | undefined;
 
+    const templateData =
+        options.variableValues && Object.keys(options.variableValues).length > 0
+            ? options.variableValues
+            : undefined;
+
     if (options.mode === 'self') {
         const ownProfileIdOrDid = options.currentLCNUser?.profileId || wallet.id.did();
         const response = await wallet.invoke.send({
             type: 'boost',
             recipient: ownProfileIdOrDid,
             templateUri: boostUri,
+            ...(templateData ? { templateData } : {}),
         });
 
         // `send` returns `credentialUri` (the issued credential) and `uri` (the boost
@@ -181,10 +191,15 @@ const deliverBoost = async (
         for (const recipient of options.recipients) {
             const recipientIdentifier =
                 recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+            const recipientData =
+                options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
             await wallet.invoke.send({
                 type: 'boost',
                 recipient: recipientIdentifier,
                 templateUri: boostUri,
+                ...(recipientData && Object.keys(recipientData).length > 0
+                    ? { templateData: recipientData }
+                    : {}),
             });
         }
     } else if (options.mode === 'link') {
@@ -218,6 +233,54 @@ const deliverBoost = async (
     return { credentialUri: boostUri, claimLink };
 };
 
+const deepReplaceVariables = (json: unknown, replacements: Record<string, string>): unknown => {
+    if (typeof json === 'string') {
+        return json.replace(/\{\{(\w+)\}\}/g, (match, varName) =>
+            varName in replacements ? replacements[varName] : match
+        );
+    }
+    if (Array.isArray(json)) return json.map(v => deepReplaceVariables(v, replacements));
+    if (json && typeof json === 'object') {
+        return Object.fromEntries(
+            Object.entries(json).map(([k, v]) => [k, deepReplaceVariables(v, replacements)])
+        );
+    }
+    return json;
+};
+
+const stripUnresolvedRecipientId = (credential: Record<string, unknown>): void => {
+    const subject = credential.credentialSubject;
+    const clear = (s: unknown): void => {
+        if (s && typeof s === 'object' && !Array.isArray(s)) {
+            const obj = s as Record<string, unknown>;
+            if (typeof obj.id === 'string' && obj.id.includes('{{')) delete obj.id;
+        }
+    };
+    if (Array.isArray(subject)) subject.forEach(clear);
+    else clear(subject);
+};
+
+/**
+ * Build a reusable, unsigned boost template that keeps its custom `{{variables}}`
+ * intact. Only the issuer is resolved; recipient id and dates are removed so the
+ * network fills them per-issuance — substitution + signing happen at send time
+ * via `templateData`, keeping the stored boost a genuine reusable template.
+ */
+const buildReusableBoostTemplate = (
+    template: OBv3CredentialTemplate,
+    issuerDid: string
+): Record<string, unknown> => {
+    const credential = deepReplaceVariables(templateToJson(template), {
+        issuer_did: issuerDid,
+    }) as Record<string, unknown>;
+
+    stripUnresolvedRecipientId(credential);
+    delete credential.validFrom;
+    delete credential.issuanceDate;
+
+    return credential;
+};
+
 export const issueViaBoost = async (
     wallet: BespokeLearnCard,
     template: OBv3CredentialTemplate,
@@ -231,18 +294,48 @@ export const issueViaBoost = async (
         throw new Error(structuralErrors.map(e => `${e.field}: ${e.message}`).join('; '));
     }
 
-    const unsigned = fillTemplateSystemVars(template, issuerDid);
-    const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
-        string,
-        unknown
-    >;
-
     const name = template.name?.value || template.credentialSubject?.achievement?.name?.value || '';
-    const category = getDefaultCategoryForCredential(signedCredential as any) || 'Achievement';
 
-    const boostUri = await wallet.invoke.createBoost(signedCredential, { name, category });
+    // A template is dynamic if custom placeholders survive once system fields are
+    // resolved. Such credentials must NOT be pre-signed: substitution has to happen
+    // before signing, which the network does at send time from an unsigned template.
+    const reusableTemplate = buildReusableBoostTemplate(template, issuerDid);
+    const hasDynamicPlaceholders = /\{\{.*?\}\}/.test(JSON.stringify(reusableTemplate));
 
-    return deliverBoost(wallet, boostUri, options, signedCredential);
+    if (!hasDynamicPlaceholders) {
+        const unsigned = fillTemplateSystemVars(
+            template,
+            issuerDid,
+            undefined,
+            options.variableValues
+        );
+        const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
+            string,
+            unknown
+        >;
+        const category = getDefaultCategoryForCredential(signedCredential as any) || 'Achievement';
+        const boostUri = await wallet.invoke.createBoost(signedCredential, { name, category });
+        return deliverBoost(wallet, boostUri, options, signedCredential);
+    }
+
+    const category = getDefaultCategoryForCredential(reusableTemplate as any) || 'Achievement';
+
+    // Claim links can't substitute templateData at claim time, so a dynamic link
+    // is issued from a one-off boost with the values already baked in.
+    if (options.mode === 'link') {
+        const oneOff = fillTemplateSystemVars(
+            template,
+            issuerDid,
+            undefined,
+            options.variableValues
+        );
+        stripUnresolvedRecipientId(oneOff);
+        const boostUri = await wallet.invoke.createBoost(oneOff, { name, category });
+        return deliverBoost(wallet, boostUri, { ...options, variableValues: undefined });
+    }
+
+    const boostUri = await wallet.invoke.createBoost(reusableTemplate, { name, category });
+    return deliverBoost(wallet, boostUri, options);
 };
 
 /**

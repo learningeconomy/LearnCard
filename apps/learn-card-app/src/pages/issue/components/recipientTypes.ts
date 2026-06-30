@@ -12,3 +12,9 @@ export interface LinkOptions {
 export const isEmail = (value: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 };
+
+export const recipientKey = (recipient: Recipient): string =>
+    recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+
+export const recipientLabel = (recipient: Recipient): string =>
+    recipient.kind === 'profile' ? recipient.displayName : recipient.email;
