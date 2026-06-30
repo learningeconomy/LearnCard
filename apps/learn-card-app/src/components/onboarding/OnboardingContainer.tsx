@@ -47,7 +47,11 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
 
     const currentUser = useCurrentUser();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useGetProfile();
+    const {
+        data: currentLCNUser,
+        isLoading: currentLCNUserLoading,
+        isError: currentLCNUserError,
+    } = useGetProfile();
     const currentLCNUserDob =
         currentLCNUser && 'dob' in currentLCNUser ? currentLCNUser.dob ?? '' : '';
     const currentLCNUserCountry =
@@ -89,8 +93,12 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
     }, [currentLCNUser, currentLCNUserCountry, currentLCNUserDob, currentUser?.profileImage]);
 
     const hasProfileAgeData = Boolean(currentLCNUserDob && currentLCNUserCountry);
+    // An errored profile fetch must count as "still resolving", not "no age data" —
+    // otherwise a transient wallet/network failure would drop an existing user onto
+    // the age gate. New users are routed via `needs_setup`, which is unaffected.
+    const profileResolving = currentLCNUserLoading || currentLCNUserError;
     const shouldStartAtAgeGate =
-        coordinatorState.status === 'needs_setup' || (!currentLCNUserLoading && !hasProfileAgeData);
+        coordinatorState.status === 'needs_setup' || (!profileResolving && !hasProfileAgeData);
 
     const [step, setStep] = useState<OnboardingStepsEnum>(
         shouldStartAtAgeGate

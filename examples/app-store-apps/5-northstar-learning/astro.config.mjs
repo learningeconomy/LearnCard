@@ -1,5 +1,4 @@
 import { defineConfig } from 'astro/config';
-
 import netlify from '@astrojs/netlify';
 
 // Server output + Netlify adapter — Astro actions need a server runtime

@@ -55,7 +55,8 @@
         "analytics": true,
         "themeSwitching": false,
         "introSlides": true,
-        "launchPadQuickActions": false
+        "launchPadQuickActions": false,
+        "dashboardHome": true
     },
     "observability": {
         "sentryDsn": "https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704",

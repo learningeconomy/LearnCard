@@ -8,11 +8,14 @@ import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsI
 
 type AiFeature = 'ai-sessions' | 'skills-hub' | 'pathways' | 'ai-insights';
 
-const FEATURE_CONFIG: Record<AiFeature, { label: string; to: string; Icon: React.FC<{ className?: string }> }> = {
+const FEATURE_CONFIG: Record<
+    AiFeature,
+    { label: string; to: string; Icon: React.FC<{ className?: string }> }
+> = {
     'ai-sessions': { label: 'AI Sessions', to: '/ai/topics', Icon: AiSessionsIconWithShape },
     'skills-hub': { label: 'Skills Hub', to: '/skills', Icon: SkillsIconWithShape },
     'pathways': { label: 'Pathways', to: '/ai/pathways', Icon: AiPathwaysIconWithShape },
-    'ai-insights': { label: 'AI Insights', to: '/ai/insights', Icon: AiInsightsIconWithShape },
+    'ai-insights': { label: 'Insights', to: '/ai/insights', Icon: AiInsightsIconWithShape },
 };
 
 interface AiFeatureLinksProps {

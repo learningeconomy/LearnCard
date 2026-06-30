@@ -32,7 +32,6 @@ import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import CustomIssuerName from './helpers/CustomIssuerName';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
@@ -76,6 +75,8 @@ type BoostEarnedCardProps = {
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
+    relativeDate?: boolean;
+    compact?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -100,6 +101,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
+    relativeDate = false,
+    compact = false,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -294,7 +297,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     {...mappedInputs}
                 />
             ) : (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     boostType={categoryType}
                     badgeThumbnail={badgeThumbnail}
@@ -328,7 +331,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 handleOptionsMenu();
             },
             customThumbComponent: (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}
@@ -423,7 +426,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         />
                     }
                     customThumbComponent={
-                        <CredentialBadge
+                        <CredentialBadgeNew
                             achievementType={achievementType}
                             fallbackCircleText={title}
                             boostType={categoryType}
@@ -455,6 +458,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             ? getDefaultDisplayType(categoryType as string)
                             : displayType
                     }
+                    relativeDate={relativeDate}
+                    compact={compact}
                     isCLR={isClrCredential}
                 />
             </ErrorBoundary>
@@ -493,7 +498,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         }
                         customThumbComponent={
                             <>
-                                <CredentialBadge
+                                <CredentialBadgeNew
                                     achievementType={achievementType}
                                     boostType={categoryType}
                                     badgeThumbnail={badgeThumbnail}
@@ -525,6 +530,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 ? getDefaultDisplayType(categoryType as string)
                                 : displayType
                         }
+                        relativeDate={relativeDate}
+                        compact={compact}
                         isCLR={isClrCredential}
                     />
                 </IonCol>
@@ -636,6 +643,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }
                     uri={record?.uri}
                     indicatorColor={indicatorColor}
+                    relativeDate={relativeDate}
+                    compact={compact}
                     isCLR={isClrCredential}
                 />
             </IonCol>

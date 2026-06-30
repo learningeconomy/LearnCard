@@ -1,5 +1,37 @@
 # @learncard/chapi-example
 
+## 1.1.33
+
+### Patch Changes
+
+-   [#1327](https://github.com/learningeconomy/LearnCard/pull/1327) [`9853f6a89fa9103975ec855367e789746aee5387`](https://github.com/learningeconomy/LearnCard/commit/9853f6a89fa9103975ec855367e789746aee5387) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Upgrade Astro example apps to the Zod 4-compatible Astro 6 line, remove the Astro-specific Zod 3 override, and keep package builds compatible with the updated esbuild runtime.
+
+-   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/types@5.17.4
+    -   @learncard/helpers@1.3.6
+    -   @learncard/init@2.4.3
+    -   @learncard/chapi-plugin@1.1.24
+    -   @learncard/react@2.10.3
+
+## 1.1.32
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/helpers@1.3.5
+    -   @learncard/init@2.4.2
+    -   @learncard/chapi-plugin@1.1.23
+    -   @learncard/react@2.10.2
+
+## 1.1.31
+
+### Patch Changes
+
+-   Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c), [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9), [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095), [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
+    -   @learncard/init@2.4.1
+    -   @learncard/react@2.10.1
+
 ## 1.1.30
 
 ### Patch Changes

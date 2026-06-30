@@ -1,6 +1,6 @@
 {
     "name": "@learncard/types",
-    "version": "5.17.2",
+    "version": "5.17.4",
     "description": "Shared types for learn card",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -35,6 +35,9 @@
     },
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "dependencies": {
+        "zod": "^4.1.13"
     },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.2.2",

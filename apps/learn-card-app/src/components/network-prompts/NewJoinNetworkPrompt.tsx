@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { z } from 'zod';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('new-join-network-prompt');
 
@@ -20,6 +19,7 @@ import {
     getNotificationsEndpoint,
     BrandingEnum,
     SocialLoginTypes,
+    useNetworkConsentMutation,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
@@ -159,11 +159,15 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
-        currentUserStore.set.currentUser({
-            ...currentUser,
-            name: name ?? currentUser?.name ?? '',
-            profileImage: photo ?? currentUser?.profileImage ?? '',
-        });
+        currentUserStore.set.currentUser(
+            currentUser
+                ? {
+                      ...currentUser,
+                      name: name ?? currentUser.name,
+                      profileImage: photo ?? currentUser.profileImage,
+                  }
+                : null
+        );
     };
 
     const handleJoinLearnCardNetwork = async () => {
@@ -173,9 +177,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
                 const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
                     profileId: profileId,
                     displayName: name,
+                    shortBio: '',
+                    bio: '',
                     image: photo,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
@@ -198,9 +203,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     setIsLoading(false);
                     setIsCreateLoading(false);
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 log.info('createProfile::error', err);
-                setError(err?.message);
+                setError(err instanceof Error ? err.message : String(err));
                 setIsLoading(false);
                 setIsCreateLoading(false);
             }
@@ -228,7 +233,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
+            const firebaseUser = auth()?.currentUser;
+            if (!firebaseUser) {
+                presentLogoutErrorModal();
+                setIsLoading(false);
+                return;
+            }
+
+            await updateProfile(firebaseUser, {
                 displayName: name ?? '',
                 photoURL: photo ?? '',
             });
@@ -260,13 +272,25 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } else {
                         // update firebase profile
                         try {
-                            await updateProfile(auth()?.currentUser, {
+                            const firebaseUser = auth()?.currentUser;
+                            if (!firebaseUser) {
+                                presentLogoutErrorModal();
+                                setIsLoading(false);
+                                setIsCreateLoading(false);
+                                return;
+                            }
+
+                            await updateProfile(firebaseUser, {
                                 displayName: name,
                                 photoURL: photo,
                             });
-                        } catch (e) {
+                        } catch (e: unknown) {
                             presentLogoutErrorModal();
-                            setError(`There was a firebase error: ${e?.toString?.()}`);
+                            setError(
+                                `There was a firebase error: ${
+                                    e instanceof Error ? e.message : String(e)
+                                }`
+                            );
                         }
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
@@ -333,8 +357,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px]"
                                 customImageClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[70px] min-h-[70px]"
                                 customSize={500}
-                                overrideSrc={photo?.length > 0}
-                                overrideSrcURL={photo}
+                                overrideSrc={Boolean(photo)}
+                                overrideSrcURL={photo ?? ''}
                             >
                                 {imageUploadLoading && (
                                     <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">

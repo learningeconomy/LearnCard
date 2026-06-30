@@ -23,6 +23,13 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
+        # @learncard/init's default (node.import) entry uses createRequire('./index.cjs'),
+        # which esbuild cannot bundle — the emitted Lambda bundle is left with a runtime
+        # require('./index.cjs') that does not exist next to the output, so the function
+        # throws at init and every route 500s. Point esbuild at init's self-contained
+        # bundler ESM build instead. (See LC staging incident 2026-06-11 / PR #1297.)
+        alias:
+            '@learncard/init': '@learncard/init/dist/init.esm.js'
         external:
             [
                 'snappy',

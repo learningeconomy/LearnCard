@@ -32,7 +32,7 @@ jobs:
         timeout-minutes: 45
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
                   fetch-depth: 0
