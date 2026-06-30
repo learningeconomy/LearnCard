@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "2.4.2",
+    "version": "2.4.3",
     "description": "Primary initialization of LearnCard SDK",
     "type": "module",
     "main": "./dist/index.cjs",
