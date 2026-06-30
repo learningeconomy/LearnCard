@@ -6,6 +6,7 @@ const log = getLogger('use-auto-consent-learn-card-ai');
 import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
 import { getOrFetchConsentedContracts } from 'learn-card-base';
 import { getTermsWithSharedUrisForWallet } from 'learn-card-base';
+import { isProductionNetwork } from 'learn-card-base';
 
 import {
     AiPassportAppsEnum,
@@ -37,6 +38,8 @@ export const useAutoConsentLearnCardAi = () => {
     const autoConsentLearnCardAi = useCallback(
         async ({ enabled, userOverrides }: AutoConsentOptions) => {
             if (!enabled) return false;
+            // Prod-only contract (does not exist off-prod); mirrors useNetworkConsentMutation gate.
+            if (!isProductionNetwork()) return false;
             if (autoConsentInFlight) return autoConsentInFlight;
 
             const run = (async () => {
