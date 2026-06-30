@@ -1,9 +1,9 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "lca-api-service",
-    "sourceRoot": "services/lca-api/src",
+    "sourceRoot": "services/learn-card-network/lca-api/src",
     "projectType": "application",
-    "root": "services/lca-api",
+    "root": "services/learn-card-network/lca-api",
     "tags": [],
     "implicitDependencies": ["nx-run-command"],
     "namedInputs": {
@@ -61,7 +61,7 @@
             "executor": "./tools/executors/workspace:run-command",
             "options": {
                 "command": "bun run test:watch",
-                "cwd": "{root}/services/lca-api"
+                "cwd": "{root}/services/learn-card-network/lca-api"
             }
         }
     }

@@ -16,7 +16,7 @@
         "build": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "outputs": ["dist"],
+            "outputs": ["{projectRoot}/dist"],
             "options": {
                 "script": "build"
             }
@@ -24,7 +24,7 @@
         "docker-build": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "outputs": ["dist"],
+            "outputs": ["{projectRoot}/dist"],
             "dependsOn": [],
             "options": {
                 "script": "docker-build"
@@ -33,7 +33,7 @@
         "build:docker": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "outputs": ["dist"],
+            "outputs": ["{projectRoot}/dist"],
             "dependsOn": ["^build"],
             "options": {
                 "script": "docker-build"
