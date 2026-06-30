@@ -1,6 +1,6 @@
 # Use an official Node runtime as the base image
 # Using bullseye (Debian 11) to avoid native module build issues on Debian 12
-FROM node:20.10.0-bullseye-slim
+FROM node:24.12.0-bullseye-slim
 
 # Skip native DIDKit build (not needed for browser apps, uses WASM fallback)
 ENV SKIP_DIDKIT_NAPI=1
