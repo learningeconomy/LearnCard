@@ -1,5 +1,12 @@
 # lca-api-plugin
 
+## 1.1.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.28
+
 ## 1.1.27
 
 ### Patch Changes
