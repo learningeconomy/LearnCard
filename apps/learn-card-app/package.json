@@ -171,7 +171,8 @@
         "ionic:serve": "vite",
         "appflow:install": "npx pnpm install --loglevel=warn --ignore-scripts --no-frozen-lockfile && npx nx build learn-card-app",
         "preview": "vite preview --host --port=3000",
-        "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH"
+        "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
+        "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line"
     },
     "browserslist": {
         "production": [

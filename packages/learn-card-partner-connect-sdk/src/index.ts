@@ -288,10 +288,7 @@ export class PartnerConnect {
             // Replace the wildcard labels with a syntactically-valid host so
             // URL() can parse it; we validate the real shape ourselves below.
             patternUrl = new URL(
-                pattern.replace(
-                    PartnerConnect.WILDCARD_REGEX,
-                    PartnerConnect.WILDCARD_PLACEHOLDER
-                )
+                pattern.replace(PartnerConnect.WILDCARD_REGEX, PartnerConnect.WILDCARD_PLACEHOLDER)
             );
             candidateUrl = new URL(candidate);
         } catch {
@@ -782,16 +779,23 @@ export class PartnerConnect {
      * console.log('Credentials count:', context.raw?.credentials.length);
      * ```
      */
-    public requestLearnerContext(
+    public async requestLearnerContext(
         options?: RequestLearnerContextOptions
     ): Promise<LearnerContextResponse> {
-        return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+        const startedAt = performance.now();
+        const response = await this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
             includeCredentials: options?.includeCredentials ?? true,
             includePersonalData: options?.includePersonalData ?? false,
             format: options?.format ?? 'prompt',
             instructions: options?.instructions,
             detailLevel: options?.detailLevel ?? 'compact',
         });
+
+        response.metadata ??= {};
+        response.metadata.timings ??= { totalMs: 0 };
+        response.metadata.timings.sdkRoundTripMs = performance.now() - startedAt;
+
+        return response;
     }
 
     /**
