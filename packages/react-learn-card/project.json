@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "react",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/react-learn-card/src",
     "projectType": "library",
-    "root": "packages/react-learn-card",
     "tags": [],
     "implicitDependencies": ["types", "core", "nx-run-command"],
     "namedInputs": {
@@ -22,7 +21,7 @@
         "build-storybook": {
             "executor": "nx:run-script",
             "inputs": ["source", "rollup-config"],
-            "outputs": ["storybook-static"],
+            "outputs": ["{workspaceRoot}/storybook-static"],
             "options": {
                 "script": "build-storybook"
             }

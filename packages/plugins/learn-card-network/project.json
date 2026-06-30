@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "network-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/learn-card-network/src",
     "projectType": "library",
-    "root": "packages/plugins/learn-card-network",
     "tags": [],
     "implicitDependencies": ["types", "network-brain-client", "core", "didkit-plugin", "vc-plugin"],
     "namedInputs": {

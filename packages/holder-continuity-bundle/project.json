@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "holder-continuity",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/holder-continuity-bundle/src",
     "projectType": "library",
-    "root": "packages/holder-continuity-bundle",
     "tags": [],
     "implicitDependencies": ["init", "types", "sss-key-manager"],
     "namedInputs": {

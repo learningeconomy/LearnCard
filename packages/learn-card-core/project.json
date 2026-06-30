@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "core",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/learn-card-core/src",
     "projectType": "library",
-    "root": "packages/learn-card-core",
     "tags": [],
     "implicitDependencies": ["types", "helpers", "nx-run-command"],
     "namedInputs": {

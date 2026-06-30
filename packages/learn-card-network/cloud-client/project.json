@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "learn-cloud-client",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/learn-card-network/cloud-client/src",
     "projectType": "library",
-    "root": "packages/learn-card-network/cloud-client",
     "tags": [],
     "implicitDependencies": ["types", "learn-cloud-service"],
     "namedInputs": {

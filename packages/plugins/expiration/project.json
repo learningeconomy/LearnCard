@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "expiration-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/expiration/src",
     "projectType": "library",
-    "root": "packages/plugins/expiration",
     "tags": [],
     "implicitDependencies": ["core", "vc-plugin"],
     "namedInputs": {

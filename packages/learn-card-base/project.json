@@ -1,4 +1,5 @@
 {
+    "name": "learn-card-base",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/learn-card-base/src",
     "projectType": "library",

@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "vc-api-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/vc-api/src",
     "projectType": "library",
-    "root": "packages/plugins/vc-api",
     "tags": [],
     "implicitDependencies": ["types", "core"],
     "namedInputs": {

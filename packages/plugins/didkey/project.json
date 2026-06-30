@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "didkey-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/didkey/src",
     "projectType": "library",
-    "root": "packages/plugins/didkey",
     "tags": [],
     "implicitDependencies": ["types", "core", "helpers"],
     "namedInputs": {

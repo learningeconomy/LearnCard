@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "chapi-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/chapi/src",
     "projectType": "library",
-    "root": "packages/plugins/chapi",
     "tags": [],
     "implicitDependencies": ["types", "core", "didkit-plugin"],
     "namedInputs": {

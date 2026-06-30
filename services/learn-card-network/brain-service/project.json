@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "network-brain-service",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "services/learn-card-network/brain-service/src",
     "projectType": "application",
-    "root": "services/learn-card-network/brain-service",
     "tags": [],
     "implicitDependencies": [
         "core",

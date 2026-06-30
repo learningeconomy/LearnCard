@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "learn-card-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/learn-card/src",
     "projectType": "library",
-    "root": "packages/plugins/learn-card",
     "tags": [],
     "implicitDependencies": ["types", "core", "didkit-plugin"],
     "namedInputs": {

@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "ceramic-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/ceramic/src",
     "projectType": "library",
-    "root": "packages/plugins/ceramic",
     "tags": [],
     "implicitDependencies": ["types", "core", "didkit-plugin"],
     "namedInputs": {

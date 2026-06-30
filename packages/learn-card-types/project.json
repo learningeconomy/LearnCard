@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "types",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/learn-card-types/src",
     "projectType": "library",
-    "root": "packages/learn-card-types",
     "tags": [],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],

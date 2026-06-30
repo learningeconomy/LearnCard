@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "scouts",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "apps/scouts/src",
     "projectType": "application",
-    "root": "apps/scouts",
     "tags": [],
     "implicitDependencies": ["learn-card-base", "linked-claims-plugin"],
     "namedInputs": {
@@ -16,7 +15,7 @@
         "build": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "outputs": ["dist"],
+            "outputs": ["{workspaceRoot}/dist"],
             "options": {
                 "script": "build"
             }
@@ -24,7 +23,7 @@
         "docker-build": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "outputs": ["dist"],
+            "outputs": ["{workspaceRoot}/dist"],
             "dependsOn": ["^build"],
             "options": {
                 "script": "docker-build"

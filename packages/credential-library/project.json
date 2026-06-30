@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "credential-library",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/credential-library/src",
     "projectType": "library",
-    "root": "packages/credential-library",
     "tags": [],
     "implicitDependencies": ["types"],
     "namedInputs": {

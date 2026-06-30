@@ -1,11 +1,10 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "didkit-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/didkit/src",
     "projectType": "library",
-    "root": "packages/plugins/didkit",
     "tags": [],
-    "implicitDependencies": ["types","core"],
+    "implicitDependencies": ["types", "core"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
         "source": ["{projectRoot}/src/**/*"],

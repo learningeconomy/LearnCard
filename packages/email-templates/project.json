@@ -1,7 +1,7 @@
 {
+    "name": "email-templates",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/email-templates/src",
-    "name": "email-templates",
     "projectType": "library",
     "tags": [],
     "namedInputs": {

@@ -1,31 +1,19 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "simple-signing-client",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/learn-card-network/simple-signing-client/src",
     "projectType": "library",
-    "root": "packages/learn-card-network/simple-signing-client",
     "tags": [],
-    "implicitDependencies": [
-        "simple-signing-service-app"
-    ],
+    "implicitDependencies": ["simple-signing-service-app"],
     "namedInputs": {
-        "source": [
-            "{projectRoot}/src/**/*"
-        ],
-        "scripts": [
-            "{projectRoot}/scripts/**/*"
-        ],
-        "dist": [
-            "{projectRoot}/dist/**/*"
-        ]
+        "source": ["{projectRoot}/src/**/*"],
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {
         "build": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source",
-                "scripts"
-            ],
+            "inputs": ["source", "scripts"],
             "options": {
                 "script": "build"
             }

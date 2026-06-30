@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "idx-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/idx/src",
     "projectType": "library",
-    "root": "packages/plugins/idx",
     "tags": [],
     "implicitDependencies": ["types", "core", "ceramic-plugin"],
     "namedInputs": {

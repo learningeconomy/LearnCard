@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "learn-cloud-service",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "services/learn-card-network/learn-cloud-service/src",
     "projectType": "application",
-    "root": "services/learn-card-network/learn-cloud-service",
     "tags": [],
     "implicitDependencies": [
         "core",

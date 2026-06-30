@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "sd-jwt-vc-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/sd-jwt-vc/src",
     "projectType": "library",
-    "root": "packages/plugins/sd-jwt-vc",
     "tags": [],
     "implicitDependencies": ["types", "core", "didkit-plugin"],
     "namedInputs": {

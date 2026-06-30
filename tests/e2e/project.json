@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "e2e",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "tests/e2e/tests",
     "projectType": "application",
-    "root": "tests/e2e",
     "tags": [],
     "implicitDependencies": ["init", "helpers", "simple-signing-plugin", "nx-run-command"],
     "namedInputs": {

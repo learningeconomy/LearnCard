@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "lca-api-client",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/lca-api-client/src",
     "projectType": "library",
-    "root": "packages/lca-api-client",
     "tags": [],
     "implicitDependencies": ["lca-api-service"],
     "namedInputs": {
@@ -21,4 +20,3 @@
         }
     }
 }
-

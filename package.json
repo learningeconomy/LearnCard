@@ -44,7 +44,7 @@
         "jest-silent-reporter": "^0.5.0",
         "lint-staged": "13.3.0",
         "node-gyp": "^12.2.0",
-        "nx": "16.1.4",
+        "nx": "23.0.1",
         "prettier": "^2.8.4",
         "prettier-plugin-astro": "^0.5.5",
         "publint": "^0.3.21",

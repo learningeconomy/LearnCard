@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "learn-cloud-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/learn-cloud/src",
     "projectType": "library",
-    "root": "packages/plugins/learn-cloud",
     "tags": [],
     "implicitDependencies": ["types", "learn-cloud-client", "core", "didkit-plugin", "helpers"],
     "namedInputs": {

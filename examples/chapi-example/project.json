@@ -1,9 +1,8 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "chapi-example",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "examples/chapi-example/src",
     "projectType": "application",
-    "root": "examples/chapi-example",
     "tags": [],
     "implicitDependencies": ["chapi-plugin", "init", "helpers", "react", "types"],
     "namedInputs": {
@@ -20,4 +19,3 @@
         }
     }
 }
-

@@ -28,3 +28,6 @@ CHANGELOG.md
 
 # Changesets (tool-generated; @changesets/cli emits double quotes that conflict with our config)
 .changeset/*.md
+
+/.nx/cache
+/.nx/workspace-data

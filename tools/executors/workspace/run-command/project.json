@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
     "name": "nx-run-command",
+    "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "tools/executors/workspace/run-command/src",
     "projectType": "library",
-    "root": "tools/executors/workspace/run-command",
     "tags": [],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
@@ -19,4 +18,3 @@
         }
     }
 }
-

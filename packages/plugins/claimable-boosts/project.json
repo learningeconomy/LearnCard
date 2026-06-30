@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "claimable-boosts-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/claimable-boosts/src",
     "projectType": "library",
-    "root": "packages/plugins/claimable-boosts",
     "tags": [],
     "implicitDependencies": ["types", "core"],
     "namedInputs": {

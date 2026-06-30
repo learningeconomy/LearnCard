@@ -1,31 +1,19 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "simple-signing-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/simple-signing-plugin/src",
     "projectType": "library",
-    "root": "packages/plugins/simple-signing-plugin",
     "tags": [],
-    "implicitDependencies": [
-        "simple-signing-client"
-    ],
+    "implicitDependencies": ["simple-signing-client"],
     "namedInputs": {
-        "scripts": [
-            "{projectRoot}/scripts/**/*"
-        ],
-        "source": [
-            "{projectRoot}/src/**/*"
-        ],
-        "dist": [
-            "{projectRoot}/dist/**/*"
-        ]
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {
         "build": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source",
-                "scripts"
-            ],
+            "inputs": ["source", "scripts"],
             "options": {
                 "script": "build"
             }

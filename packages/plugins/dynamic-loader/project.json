@@ -1,9 +1,8 @@
 {
-    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "name": "dynamic-loader-plugin",
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/plugins/dynamic-loader/src",
     "projectType": "library",
-    "root": "packages/plugins/dynamic-loader",
     "tags": [],
     "implicitDependencies": ["core"],
     "namedInputs": {
