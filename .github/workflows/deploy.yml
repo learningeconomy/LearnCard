@@ -38,7 +38,7 @@ on:
                 default: false
                 type: boolean
             publish-npm:
-                description: 'Publish NPM Packages'
+                description: 'Publish Registry Packages'
                 required: false
                 default: false
                 type: boolean
@@ -212,15 +212,8 @@ jobs:
               with:
                   submodules: true
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
-
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.3.14
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -696,13 +689,13 @@ jobs:
             - name: Get App Version
               id: app-version
               run: |
-                  VERSION=$(node -p "require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version")
+                  VERSION=$(bun -e "console.log(require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Get CapGo Channel
               id: capgo-channel
               run: |
-                  CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
+                  CHANNEL=$(bun tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
             # Prepare tenant config for learn-card-app builds.
@@ -1042,7 +1035,7 @@ jobs:
               id: brain-service-version
               working-directory: './services/learn-card-network/brain-service'
               run: |
-                  VERSION=$(node -p "require('./package.json').version")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Extract metadata for Brain Service
@@ -1066,7 +1059,7 @@ jobs:
               id: cloud-service-version
               working-directory: './services/learn-card-network/learn-cloud-service'
               run: |
-                  VERSION=$(node -p "require('./package.json').version")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Extract metadata for Cloud Service
@@ -1087,10 +1080,10 @@ jobs:
                   labels: ${{ steps.cloud-service-meta.outputs.labels }}
 
     # ============================================================================
-    # NPM PUBLISHING
+    # PACKAGE PUBLISHING
     # ============================================================================
     publish-npm:
-        name: Publish NPM Packages
+        name: Publish Registry Packages
         needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
         if: |
             always() &&
@@ -1122,25 +1115,25 @@ jobs:
             # with platform artifacts. Keep it out of the generic changeset publish pass.
             - name: Keep DIDKit native addon out of changeset publish
               run: |
-                  node <<'NODE'
-                  const fs = require('fs');
-                  const path = 'packages/plugins/didkit-plugin-node/package.json';
-                  const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+                  bun -e '
+                  const fs = require("fs");
+                  const path = "packages/plugins/didkit-plugin-node/package.json";
+                  const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
 
                   pkg.private = true;
 
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
-                  NODE
+                  '
 
-            - name: Publish to NPM
+            - name: Publish Registry Packages
               run: bunx changeset publish
 
     # ============================================================================
-    # SMOKETEST PUBLISHED NPM PACKAGES (verify external installability)
+    # SMOKETEST PUBLISHED PACKAGES (verify external installability)
     # Calls the reusable smoketest-npm-packages workflow against the freshly
     # published `latest` dist-tags from a clean directory with no monorepo
     # context. Catches regressions like the didkit-plugin-node@0.2.14
-    # workspace:* leak that broke `npx @learncard/cli` for external users.
+    # workspace:* leak that broke external `@learncard/cli` execution.
     # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
     # so a failure here WILL mark the deploy workflow run as failed. Treat
     # smoketest failures as a real signal — the package was published but is
@@ -1148,7 +1141,7 @@ jobs:
     # provides a second line of defense.
     # ============================================================================
     smoketest-published-packages:
-        name: Smoketest Published NPM Packages
+        name: Smoketest Published Packages
         needs: publish-npm
         if: |
             always() &&

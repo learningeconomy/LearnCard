@@ -64,15 +64,8 @@ jobs:
               with:
                   submodules: true
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
-
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.3.14
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -122,7 +115,8 @@ jobs:
                       rustup update stable
                       rustup default stable
                       rustup target add $TARGET
-                      curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
+                      BUN_VERSION="$(awk -F'"' '/"packageManager"/ { split($4, parts, "@"); print parts[2]; exit }' package.json)"
+                      curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
                       export BUN_INSTALL="$HOME/.bun"
                       export PATH="$BUN_INSTALL/bin:$PATH"
                       bun install --frozen-lockfile
@@ -147,7 +141,8 @@ jobs:
                       rustup update stable
                       rustup default stable
                       rustup target add $TARGET
-                      curl -fsSL https://bun.sh/install | bash -s -- bun-v1.3.14
+                      BUN_VERSION="$(awk -F'"' '/"packageManager"/ { split($4, parts, "@"); print parts[2]; exit }' package.json)"
+                      curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
                       export BUN_INSTALL="$HOME/.bun"
                       export PATH="$BUN_INSTALL/bin:$PATH"
                       bun install --frozen-lockfile
@@ -191,17 +186,8 @@ jobs:
         steps:
             - uses: actions/checkout@v7
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
-                  registry-url: 'https://registry.npmjs.org'
-                  package-manager-cache: false
-
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.3.14
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -218,12 +204,12 @@ jobs:
               id: published
               working-directory: packages/plugins/didkit-plugin-node
               run: |
-                  PACKAGE=$(node -p "require('./package.json').name")
-                  VERSION=$(node -p "require('./package.json').version")
+                  PACKAGE=$(bun -e "console.log(require('./package.json').name)")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
 
-                  if npm view "$PACKAGE@$VERSION" version > /dev/null 2>&1; then
+                  if bun pm view "$PACKAGE@$VERSION" version > /dev/null 2>&1; then
                     echo "exists=true" >> "$GITHUB_OUTPUT"
-                    echo "$PACKAGE@$VERSION is already published; skipping npm publish"
+                    echo "$PACKAGE@$VERSION is already published; skipping registry publish"
                   else
                     echo "exists=false" >> "$GITHUB_OUTPUT"
                     echo "$PACKAGE@$VERSION is not published yet"
@@ -258,13 +244,15 @@ jobs:
             - name: Publish platform packages
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: bunx napi prepublish -t npm --skip-gh-release
+              run: bun run prepublishOnly
 
-            # Use npm for npm-registry tarball creation/publication; Bun handles the workspace install/build.
+            # Use Bun for npm-registry tarball creation/publication alongside the workspace install/build.
             - name: Pack package
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: npm pack --pack-destination "${{ runner.temp }}/didkit-plugin-node-pack"
+              run: |
+                  mkdir -p "${{ runner.temp }}/didkit-plugin-node-pack"
+                  bun pm pack --destination "${{ runner.temp }}/didkit-plugin-node-pack"
 
             - name: Validate packed package metadata
               if: steps.published.outputs.exists != 'true'
@@ -278,8 +266,8 @@ jobs:
                     exit 1
                   fi
 
-            # Use npm for the final registry publish because this job publishes a prepared npm tarball.
+            # Publish the prepared npm-registry tarball with Bun.
             - name: Publish to npm
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: npm publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public
+              run: bun publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public

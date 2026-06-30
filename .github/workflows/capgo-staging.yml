@@ -72,7 +72,7 @@ jobs:
               id: version
               if: steps.gate.outputs.should_deploy == 'true'
               run: |
-                  BASE_VERSION=$(node -p "require('./apps/learn-card-app/package.json').version")
+                  BASE_VERSION=$(bun -e "console.log(require('./apps/learn-card-app/package.json').version)")
                   SHORT_SHA="${GITHUB_SHA::7}"
                   echo "bundle_version=${BASE_VERSION}-staging.${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 

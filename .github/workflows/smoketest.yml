@@ -23,8 +23,8 @@ jobs:
         steps:
             - uses: actions/checkout@v7
 
-            # Composite action handles Node 24.12 + Bun 1.3.14 + Bun cache +
-            # workspace install.
+            # Composite action handles Bun 1.3.14 + Bun cache + workspace
+            # install.
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 

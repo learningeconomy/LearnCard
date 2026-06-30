@@ -1,20 +1,11 @@
-name: 'Setup Node.js, Bun, and Install Dependencies'
+name: 'Setup Bun and Install Dependencies'
 description: 'A composite action to set up the environment for CI/CD jobs.'
 
 runs:
     using: 'composite'
     steps:
-        - name: Setup Node.js
-          uses: actions/setup-node@v6
-          with:
-              node-version-file: .nvmrc
-              registry-url: 'https://registry.npmjs.org'
-              package-manager-cache: false
-
         - name: Setup Bun
           uses: oven-sh/setup-bun@v2
-          with:
-              bun-version: 1.3.14
 
         - name: Setup Bun cache
           uses: actions/cache@v6

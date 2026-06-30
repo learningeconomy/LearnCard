@@ -10,8 +10,8 @@ name: Validate Published Package Contracts
 #   1. publint  — static manifest + dist validation (missing exports map,
 #                 file paths that don't resolve, type condition ordering,
 #                 ESM file with CJS extension, etc.)
-#   2. attw     — `npm pack` + resolve through every TypeScript module
-#                 resolution mode (node10, node16, bundler) and consumer
+#   2. attw     — build package tarballs + resolve through every TypeScript
+#                 module resolution mode (node10, node16, bundler) and consumer
 #                 style (ESM import, CJS require).
 #
 # Failure modes:
@@ -20,8 +20,8 @@ name: Validate Published Package Contracts
 #     → diagnostics printed, exit zero
 #
 # Runs on every PR + push to main. The validation script runs publint + attw
-# (the latter shells out to `npm pack`) across ~36 packages with a bounded
-# concurrency pool; combined with the up-front `bun run build`, budget ~10-15 min.
+# (the latter validates generated package tarballs) across ~36 packages with a
+# bounded concurrency pool; combined with the up-front `bun run build`, budget ~10-15 min.
 
 on:
     pull_request:
@@ -84,4 +84,4 @@ jobs:
                   vpqr-plugin
 
             - name: Validate package contracts
-              run: bun run validate-packages
+              run: bun scripts/validate-packages.mjs
