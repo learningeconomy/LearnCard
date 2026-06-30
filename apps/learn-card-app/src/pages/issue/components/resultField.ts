@@ -3,6 +3,7 @@ import {
     type OBv3CredentialTemplate,
     type ResultTemplate,
     type ResultDescriptionTemplate,
+    type TemplateFieldValue,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
 export type ResultType = 'LetterGrade' | 'Percent' | 'GradePointAverage' | 'RawScore' | 'Status';
@@ -43,6 +44,7 @@ const newResultDescriptionId = (): string =>
 export interface ResultState {
     resultType: ResultType;
     value: string;
+    valueField?: TemplateFieldValue;
     /** True when imported from a bare result with no linked ResultDescription. */
     isLegacyUntyped: boolean;
 }
@@ -57,16 +59,18 @@ export const readResultState = (template: OBv3CredentialTemplate): ResultState =
     );
 
     if (!desc?.resultType?.value) {
+        const valueField = result.value ?? result.status;
         return {
             resultType: 'LetterGrade',
-            value: result.value?.value ?? result.status?.value ?? '',
+            value: valueField?.value ?? '',
+            valueField,
             isLegacyUntyped: true,
         };
     }
 
     const resultType = desc.resultType.value as ResultType;
-    const value = resultType === 'Status' ? result.status?.value ?? '' : result.value?.value ?? '';
-    return { resultType, value, isLegacyUntyped: false };
+    const valueField = resultType === 'Status' ? result.status : result.value;
+    return { resultType, value: valueField?.value ?? '', valueField, isLegacyUntyped: false };
 };
 
 const buildResultDescription = (id: string, resultType: ResultType): ResultDescriptionTemplate => ({
@@ -75,19 +79,24 @@ const buildResultDescription = (id: string, resultType: ResultType): ResultDescr
     resultType: staticField(resultType),
 });
 
-const buildResult = (id: string, resultType: ResultType, value: string): ResultTemplate =>
+const buildResult = (
+    id: string,
+    resultType: ResultType,
+    field: TemplateFieldValue
+): ResultTemplate =>
     resultType === 'Status'
-        ? { id: 'result_0', resultDescription: staticField(id), status: staticField(value) }
-        : { id: 'result_0', resultDescription: staticField(id), value: staticField(value) };
+        ? { id: 'result_0', resultDescription: staticField(id), status: field }
+        : { id: 'result_0', resultDescription: staticField(id), value: field };
 
 export const writeResult = (
     template: OBv3CredentialTemplate,
-    next: { resultType: ResultType; value: string }
+    next: { resultType: ResultType; value: string | TemplateFieldValue }
 ): OBv3CredentialTemplate => {
-    const { resultType, value } = next;
+    const { resultType } = next;
+    const field = typeof next.value === 'string' ? staticField(next.value) : next.value;
     const achievement = template.credentialSubject.achievement;
 
-    if (!value.trim()) {
+    if (!field.isDynamic && !field.value.trim()) {
         const remainingDescriptions = achievement.resultDescription?.filter(
             d => d.name?.value !== DEFAULT_RESULT_NAME || d.resultType?.value === undefined
         );
@@ -119,7 +128,7 @@ export const writeResult = (
         ...template,
         credentialSubject: {
             ...template.credentialSubject,
-            result: [buildResult(id, resultType, value)],
+            result: [buildResult(id, resultType, field)],
             achievement: {
                 ...achievement,
                 resultDescription: [...otherDescriptions, buildResultDescription(id, resultType)],

@@ -4,11 +4,13 @@ import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onb
 import type { ActivityField } from './credentialTypeCatalog';
 import { getDescriptor } from './fieldDescriptors';
 import { ResultFieldEditor } from './ResultFieldEditor';
+import { TemplatableField } from './TemplatableField';
 
 interface ActivityFieldsProps {
     fields: ActivityField[];
     template: OBv3CredentialTemplate;
     onChangeTemplate: (template: OBv3CredentialTemplate) => void;
+    canMakeDynamic: boolean;
 }
 
 const INPUT_CLASS =
@@ -19,6 +21,7 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
     fields,
     template,
     onChangeTemplate,
+    canMakeDynamic,
 }) => {
     if (fields.length === 0) return null;
 
@@ -31,6 +34,7 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
                             key="score"
                             template={template}
                             onChangeTemplate={onChangeTemplate}
+                            canMakeDynamic={canMakeDynamic}
                         />
                     );
                 }
@@ -38,6 +42,27 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
                 const descriptor = getDescriptor(field);
                 const value = descriptor.get(template);
                 const onChange = (next: string) => onChangeTemplate(descriptor.set(template, next));
+
+                if (
+                    descriptor.setField &&
+                    descriptor.getField &&
+                    (descriptor.input === 'text' || descriptor.input === 'number')
+                ) {
+                    return (
+                        <TemplatableField
+                            key={field}
+                            label={descriptor.label}
+                            field={descriptor.getField(template)}
+                            variableName={field}
+                            canMakeDynamic={canMakeDynamic}
+                            variant={descriptor.input === 'number' ? 'number' : 'input'}
+                            placeholder={descriptor.placeholder}
+                            onChange={next =>
+                                onChangeTemplate(descriptor.setField!(template, next))
+                            }
+                        />
+                    );
+                }
 
                 return (
                     <div key={field}>

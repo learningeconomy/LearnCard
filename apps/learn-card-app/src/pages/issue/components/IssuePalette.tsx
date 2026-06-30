@@ -15,12 +15,16 @@ import { SkillsSection } from './SkillsSection';
 import { TypePicker } from './TypePicker';
 import { StartFromExisting } from './StartFromExisting';
 import { ActivityFields } from './ActivityFields';
+import { TemplatableField } from './TemplatableField';
 import type { CredentialTypeEntry } from './credentialTypeCatalog';
 import type { ResolvedSkill } from './skillAlignment';
 import type { NormalizedImport } from '../import/normalizeToObv3';
 import type { SelectedSkill } from '../../skills/skillTypes';
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
-import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import type {
+    OBv3CredentialTemplate,
+    TemplateFieldValue,
+} from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -82,20 +86,19 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         [template, onChangeTemplate]
     );
 
-    const setName = (value: string) => {
+    const setNameField = (field: TemplateFieldValue) => {
         if (!template) return;
         onChangeTemplate({
             ...template,
-            name: staticField(value),
+            name: field,
             credentialSubject: {
                 ...template.credentialSubject,
-                achievement: {
-                    ...template.credentialSubject.achievement,
-                    name: staticField(value),
-                },
+                achievement: { ...template.credentialSubject.achievement, name: field },
             },
         });
     };
+
+    const canMakeDynamic = recipientMode === 'people' && recipients.length > 1;
 
     const { handleFileSelect, isLoading: imageUploading } = useFilestack({
         fileType: 'image/*',
@@ -104,8 +107,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
     });
 
     const name = ach?.name?.value ?? '';
-    const nameInvalid = nameTouched && !name.trim();
-    const description = ach?.description?.value ?? '';
+    const nameInvalid = nameTouched && !ach?.name?.isDynamic && !name.trim();
     const hasImage = Boolean(ach?.image?.value);
 
     const mediaAttachments: SimpleMediaAttachment[] = (template?.credentialSubject?.evidence ?? [])
@@ -162,36 +164,28 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
 
                     <section className={`${CARD_CLASS} space-y-4`}>
                         <h3 className="text-base font-semibold text-grayscale-900">Details</h3>
-                        <div>
-                            <label className={LABEL_CLASS}>Name</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={e => setName(e.target.value)}
-                                onBlur={() => setNameTouched(true)}
-                                placeholder="e.g. Web Development Fundamentals"
-                                className={`${INPUT_CLASS} ${
-                                    nameInvalid ? '!border-red-400 focus:!ring-red-500' : ''
-                                }`}
-                            />
-                            {nameInvalid && (
-                                <p className="mt-1.5 text-xs text-red-600">
-                                    Give your credential a name to continue.
-                                </p>
-                            )}
-                        </div>
-                        <div>
-                            <label className={LABEL_CLASS}>Description (optional)</label>
-                            <textarea
-                                value={description}
-                                onChange={e =>
-                                    patchAchievement({ description: staticField(e.target.value) })
-                                }
-                                placeholder="What does this credential represent?"
-                                rows={3}
-                                className={`${INPUT_CLASS} resize-none`}
-                            />
-                        </div>
+                        <TemplatableField
+                            label="Name"
+                            field={ach?.name}
+                            variableName="name"
+                            canMakeDynamic={canMakeDynamic}
+                            onChange={setNameField}
+                            onBlur={() => setNameTouched(true)}
+                            placeholder="e.g. Web Development Fundamentals"
+                            errorText={
+                                nameInvalid ? 'Give your credential a name to continue.' : undefined
+                            }
+                        />
+                        <TemplatableField
+                            label="Description (optional)"
+                            field={ach?.description}
+                            variableName="description"
+                            canMakeDynamic={canMakeDynamic}
+                            variant="textarea"
+                            rows={3}
+                            placeholder="What does this credential represent?"
+                            onChange={field => patchAchievement({ description: field })}
+                        />
                         <button
                             type="button"
                             onClick={e => handleFileSelect(e as any)}
@@ -211,6 +205,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                 fields={selectedType.activityFields}
                                 template={template}
                                 onChangeTemplate={onChangeTemplate}
+                                canMakeDynamic={canMakeDynamic}
                             />
                         )}
                     </section>
@@ -243,25 +238,23 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
 
                         {showAdvanced && (
                             <div className="pt-5 mt-5 border-t border-grayscale-200 space-y-4 animate-fade-in-up">
-                                <div>
-                                    <label className={LABEL_CLASS}>
-                                        How it’s earned (criteria)
-                                    </label>
-                                    <textarea
-                                        value={ach?.criteria?.narrative?.value ?? ''}
-                                        onChange={e =>
-                                            patchAchievement({
-                                                criteria: {
-                                                    ...(ach?.criteria ?? {}),
-                                                    narrative: staticField(e.target.value),
-                                                },
-                                            })
-                                        }
-                                        placeholder="Describe what the recipient did to earn this."
-                                        rows={2}
-                                        className={`${INPUT_CLASS} resize-none`}
-                                    />
-                                </div>
+                                <TemplatableField
+                                    label="How it’s earned (criteria)"
+                                    field={ach?.criteria?.narrative}
+                                    variableName="criteria"
+                                    canMakeDynamic={canMakeDynamic}
+                                    variant="textarea"
+                                    rows={2}
+                                    placeholder="Describe what the recipient did to earn this."
+                                    onChange={field =>
+                                        patchAchievement({
+                                            criteria: {
+                                                ...(ach?.criteria ?? {}),
+                                                narrative: field,
+                                            },
+                                        })
+                                    }
+                                />
                                 <div>
                                     <label className={LABEL_CLASS}>Expires on (optional)</label>
                                     <input

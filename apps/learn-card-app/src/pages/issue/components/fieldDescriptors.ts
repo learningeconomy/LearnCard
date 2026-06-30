@@ -1,6 +1,7 @@
 import {
     staticField,
     type OBv3CredentialTemplate,
+    type TemplateFieldValue,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { ActivityField } from './credentialTypeCatalog';
 
@@ -21,6 +22,12 @@ export interface FieldDescriptor {
     specRef: string;
     get: (template: OBv3CredentialTemplate) => string;
     set: (template: OBv3CredentialTemplate, value: string) => OBv3CredentialTemplate;
+    /** Raw field accessors — present only on fields that support a dynamic {{variable}} toggle. */
+    getField?: (template: OBv3CredentialTemplate) => TemplateFieldValue | undefined;
+    setField?: (
+        template: OBv3CredentialTemplate,
+        field: TemplateFieldValue
+    ) => OBv3CredentialTemplate;
 }
 
 const patchSubject = (
@@ -73,6 +80,8 @@ const subjectTextDescriptor = (
     specRef,
     get: t => t.credentialSubject[subjectKey]?.value ?? '',
     set: (t, v) => patchSubject(t, { [subjectKey]: staticField(v) }),
+    getField: t => t.credentialSubject[subjectKey],
+    setField: (t, f) => patchSubject(t, { [subjectKey]: f }),
 });
 
 const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor> = {
@@ -130,6 +139,8 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
         specRef: 'Achievement.creditsAvailable',
         get: t => t.credentialSubject.achievement.creditsAvailable?.value ?? '',
         set: (t, v) => patchAchievement(t, { creditsAvailable: staticField(v) }),
+        getField: t => t.credentialSubject.achievement.creditsAvailable,
+        setField: (t, f) => patchAchievement(t, { creditsAvailable: f }),
     },
 
     humanCode: {
@@ -140,6 +151,8 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
         specRef: 'Achievement.humanCode',
         get: t => t.credentialSubject.achievement.humanCode?.value ?? '',
         set: (t, v) => patchAchievement(t, { humanCode: staticField(v) }),
+        getField: t => t.credentialSubject.achievement.humanCode,
+        setField: (t, f) => patchAchievement(t, { humanCode: f }),
     },
 
     fieldOfStudy: {
@@ -150,6 +163,8 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
         specRef: 'Achievement.fieldOfStudy',
         get: t => t.credentialSubject.achievement.fieldOfStudy?.value ?? '',
         set: (t, v) => patchAchievement(t, { fieldOfStudy: staticField(v) }),
+        getField: t => t.credentialSubject.achievement.fieldOfStudy,
+        setField: (t, f) => patchAchievement(t, { fieldOfStudy: f }),
     },
 
     specialization: {
@@ -160,6 +175,8 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
         specRef: 'Achievement.specialization',
         get: t => t.credentialSubject.achievement.specialization?.value ?? '',
         set: (t, v) => patchAchievement(t, { specialization: staticField(v) }),
+        getField: t => t.credentialSubject.achievement.specialization,
+        setField: (t, f) => patchAchievement(t, { specialization: f }),
     },
 
     version: {
@@ -170,6 +187,8 @@ const BASE_DESCRIPTORS: Record<Exclude<ActivityField, 'score'>, FieldDescriptor>
         specRef: 'Achievement.version',
         get: t => t.credentialSubject.achievement.version?.value ?? '',
         set: (t, v) => patchAchievement(t, { version: staticField(v) }),
+        getField: t => t.credentialSubject.achievement.version,
+        setField: (t, f) => patchAchievement(t, { version: f }),
     },
 
     // validUntil lives at the VC v2 credential top level, not inside credentialSubject.
