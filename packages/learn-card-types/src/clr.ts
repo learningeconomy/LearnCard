@@ -1,16 +1,8 @@
 import { z } from 'zod/v4';
 
-import {
-    UnsignedVCValidator,
-    ProofValidator,
-    ProfileValidator,
-    ImageValidator,
-} from './vc';
+import { UnsignedVCValidator, ProofValidator, ProfileValidator, ImageValidator } from './vc';
 
-import {
-    AchievementValidator,
-    EndorsementCredentialValidator,
-} from './obv3';
+import { AchievementValidator, EndorsementCredentialValidator } from './obv3';
 
 // ---------------------------------------------------------------------------
 // CLR v2 — Comprehensive Learner Record
