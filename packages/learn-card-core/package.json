@@ -7,13 +7,15 @@
     "module": "./dist/core.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "types": "./dist/index.d.ts",
             "import": "./dist/core.esm.js",
             "require": "./dist/index.cjs"
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && tsc-alias",

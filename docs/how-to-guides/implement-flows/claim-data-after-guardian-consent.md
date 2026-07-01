@@ -8,10 +8,10 @@ description: How to implement the Consentful "Claim Later" Flow
 
 The Consentful "Claim Later" Flow enables applications to save an ephemeral user's session data as a "Save Game" state, which can be restored after obtaining guardian consent. This pattern is ideal for applications that need to:
 
-* Create low-PII profiles quickly (using nicknames)
-* Allow users to start using the application immediately
-* Obtain guardian consent after initial engagement
-* Restore the user's session state after consent is granted
+-   Create low-PII profiles quickly (using nicknames)
+-   Allow users to start using the application immediately
+-   Obtain guardian consent after initial engagement
+-   Restore the user's session state after consent is granted
 
 ### Use Case: MyLittleTabbyCat
 
@@ -24,13 +24,14 @@ Before you begin, make sure you've [setup a Service Profile ](https://docs.learn
 
 ```javascript
 const serviceProfile = {
-  displayName: 'My Tabby Cat',
-  profileId: 'my-tabby-cat',
-  image: 'https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg',
+    displayName: 'My Tabby Cat',
+    profileId: 'my-tabby-cat',
+    image: 'https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg',
 };
 
 await learnCard.invoke.createServiceProfile(serviceProfile);
 ```
+
 {% endhint %}
 
 #### 1. Create a "Save Game" Boost
@@ -41,8 +42,9 @@ After the user creates their content in your application, store this data as a B
 This example shows how to extend a regular "BoostCredential" with a "TabbyCat" schema in JSON-LD. Check it out on the JSON-LD playground [here](https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/yM1TQS4JsC2o2UyqGfWZ/). You can verify it's a valid credential by "issuing it" in the CLI:
 
 ```javascript
-await learnCard.invoke.issueCredential(credential)
+await learnCard.invoke.issueCredential(credential);
 ```
+
 {% endhint %}
 
 <pre class="language-javascript"><code class="lang-javascript">// Prepare the credential with user data
@@ -150,15 +152,15 @@ After creating the boost, set up a ConsentFlow that requires guardian consent:
 To attach autoboosts to your ConsentFlow, you need to setup a "Signing Authority". You can do this once for your LearnCard service profile like so:<br>
 
 ```javascript
-// Make sure to pnpm install @learncard/simple-signing-plugin
+// Make sure to bun add @learncard/simple-signing-plugin
 import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 
 // Add signing plugin to your learnCard
 const signingLearnCard = await learnCard.addPlugin(
-  await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
+    await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
 );
 
-// Create a Signing Authority (one-time). The name is an arbitrary identifier. 
+// Create a Signing Authority (one-time). The name is an arbitrary identifier.
 const sa = await signingLearnCard.invoke.createSigningAuthority('autoboost');
 
 // Register a signing authority with LearnCard Network
@@ -173,50 +175,52 @@ const signingAuthority = {
     name: saResult.relationship.name,
 };
 ```
+
 {% endhint %}
 
 ```javascript
-
 // Create a GameFlow contract (based on ConsentFlow)
 const gameFlowContract = {
-  name: "MyLittleTabbyCat Game",
-  subtitle: "Guardian Consent for Child's Tabby Cat",
-  description: "Allow your child to save their tabby cat and receive inspirational quotes",
-  image: "https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg",
-  needsGuardianConsent: true,
-  
-  // Ensure this redirects to a valid URL where the user will go after consent
-  redirectUrl: "https://mylittletabbycat.com/callback",
-  reasonForAccessing: "Allow your child to save their progress and tabby cat design",
-  contract: {
-    read: {
-      anonymize: true,
-      credentials: {
-        categories: {
-          "Social Badge": { required: false }
-        }
-      }
+    name: 'MyLittleTabbyCat Game',
+    subtitle: "Guardian Consent for Child's Tabby Cat",
+    description: 'Allow your child to save their tabby cat and receive inspirational quotes',
+    image: 'https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg',
+    needsGuardianConsent: true,
+
+    // Ensure this redirects to a valid URL where the user will go after consent
+    redirectUrl: 'https://mylittletabbycat.com/callback',
+    reasonForAccessing: 'Allow your child to save their progress and tabby cat design',
+    contract: {
+        read: {
+            anonymize: true,
+            credentials: {
+                categories: {
+                    'Social Badge': { required: false },
+                },
+            },
+        },
+        write: {
+            credentials: {
+                categories: {
+                    'Social Badge': { required: true },
+                },
+            },
+        },
     },
-    write: {
-      credentials: {
-        categories: {
-          "Social Badge": { required: true }
-        }
-      }
-    }
-  },
-  // Most important part: link the boost for auto-claim after consent
-  autoboosts: [{ 
-    boostUri,
-    signingAuthority
-  }]
+    // Most important part: link the boost for auto-claim after consent
+    autoboosts: [
+        {
+            boostUri,
+            signingAuthority,
+        },
+    ],
 };
 
 // Create the contract on the LearnCard network
 const contractUri = await learnCard.invoke.createContract(gameFlowContract);
 
 // Generate QR code URL for the contract
-const consentLink = `https://learncard.app/consent-flow?uri=${contractUri}`
+const consentLink = `https://learncard.app/consent-flow?uri=${contractUri}`;
 ```
 
 #### 3. Generate QR Code for User
@@ -228,7 +232,7 @@ Display a QR code linking to the ConsentFlow for the user:
 const qrCode = generateQRCode(consentLink);
 
 // Display to user with instructions
-displayQRCode(qrCode, "Have your guardian scan this code to save your cat!");
+displayQRCode(qrCode, 'Have your guardian scan this code to save your cat!');
 ```
 
 #### 4. Handle Redirect After Guardian Consent
@@ -238,17 +242,17 @@ After the guardian provides consent, LearnCard redirects to your application's c
 ```javascript
 // Example callback handler (server-side route)
 app.get('/callback', async (req, res) => {
-  const userDid = req.query.did;
-  
-  if (!userDid) {
-    return res.redirect('/error?message=No+user+ID+provided');
-  }
-  
-  // Store the LearnCard DID in your system, associated with the user account
-  await storeUserDid(userDid);
-  
-  // Redirect to the restoration page
-  res.redirect(`/restore?did=${userDid}`);
+    const userDid = req.query.did;
+
+    if (!userDid) {
+        return res.redirect('/error?message=No+user+ID+provided');
+    }
+
+    // Store the LearnCard DID in your system, associated with the user account
+    await storeUserDid(userDid);
+
+    // Redirect to the restoration page
+    res.redirect(`/restore?did=${userDid}`);
 });
 ```
 
@@ -258,28 +262,28 @@ After receiving the user's DID, retrieve their boost data to restore their sessi
 
 ```javascript
 // Client-side restoration code
-async function restoreUserSessionFromProfileID(userProfileId) { 
+async function restoreUserSessionFromProfileID(userProfileId) {
   try {
-  
+
     if userProfileId.contains("did") {
      // If profileID is in "did" format (i.e. "did:web:network.learncard.com:users:my-tabby-cat"), extract plain profileId
       userProfileId = userProfileId.split(':').reverse()[0]
     }
-    
+
     const sentCredentials = await learnCard.invoke.getSentCredentials(userProfileId)
-    
+
     if (sentCredentials.length <= 0) {
       showError("Guardian has not consented for this profile ID.")
     }
-  
+
     const catCredential = await learnCard.read.get(sentCredentials[0].uri)
-    
+
     if (catCredential) {
       restoreUserSession(catCredential)
     } else {
       showError("Could not find your saved cat");
     }
-    
+
   } catch (error) {
     console.error("Error restoring session:", error);
     showError("Error restoring your saved game");
@@ -293,7 +297,7 @@ async function restoreUserSession(catCredential) {
       const catName = catCredential.catName;
       const bodyParts = catCredential.bodyParts;
       const externalUserId = catCredential.externalUserId;
-      
+
       // Restore the user's experience
       restoreTabbycat(catName, bodyParts, externalUserId);
       showWelcomeBack(catName);
@@ -313,48 +317,53 @@ For returning users who know their cat's name:
 
 ```javascript
 async function lookupByCatName(catName) {
-  try {
-    // Search for boosts with the provided catName in metadata
-    const tabbyCatBoosts = await learnCard.invoke.getPaginatedBoosts({
-          query: {
-             name: catName 
-          }
-      })
-      
-    if (boosts.records.length === 0) {
-      return showError("No cat found with that name");
+    try {
+        // Search for boosts with the provided catName in metadata
+        const tabbyCatBoosts = await learnCard.invoke.getPaginatedBoosts({
+            query: {
+                name: catName,
+            },
+        });
+
+        if (boosts.records.length === 0) {
+            return showError('No cat found with that name');
+        }
+
+        const boost = boosts.records[0];
+
+        // Check if the boost has been claimed (has recipients) and therefore guardian consent achieved.
+        const recipients = await learnCard.invoke.getPaginatedBoostRecipients(boost.uri);
+
+        if (recipients.records.length === 0) {
+            return showError(
+                "Your cat exists but hasn't been claimed yet. Please ask a guardian to scan the QR code"
+            );
+        }
+
+        // The boost is claimed, extract user profileId
+        const profileId = recipients.records[0].to.profileId;
+        const profileDID = `did:web:network.learncard.com:users:${profileId}`;
+
+        // Check that the Guardian approved with consent
+        const consentFlowData = await learnCard.invoke.getConsentFlowDataForDid(profileDID);
+        const didGuardianConsent = await learnCard.invoke.verifyConsent(
+            consentFlowData.records[0].contractUri,
+            profileDID
+        );
+
+        if (!didGuardianConsent) {
+            return showError('Guardian has not yet consented for this user.');
+        }
+
+        // Extract the saved cat credential in the boost.
+        const catCredential = (await learnCard.invoke.getBoost(boost.uri)).boost;
+
+        // Restore session using the cat credential
+        restoreUserSession(catCredential);
+    } catch (error) {
+        console.error('Error looking up cat:', error);
+        showError('Error looking up your cat');
     }
-    
-    const boost = boosts.records[0];
-    
-    // Check if the boost has been claimed (has recipients) and therefore guardian consent achieved.
-    const recipients = await learnCard.invoke.getPaginatedBoostRecipients(boost.uri);
-    
-    if (recipients.records.length === 0) {
-      return showError("Your cat exists but hasn't been claimed yet. Please ask a guardian to scan the QR code");
-    }
-    
-    // The boost is claimed, extract user profileId
-    const profileId = recipients.records[0].to.profileId
-    const profileDID = `did:web:network.learncard.com:users:${profileId}`
-    
-    // Check that the Guardian approved with consent
-    const consentFlowData = await learnCard.invoke.getConsentFlowDataForDid(profileDID)
-    const didGuardianConsent = await learnCard.invoke.verifyConsent(consentFlowData.records[0].contractUri, profileDID)
-    
-    if (!didGuardianConsent) {
-      return showError("Guardian has not yet consented for this user.")
-    }
-    
-    // Extract the saved cat credential in the boost.
-    const catCredential = (await learnCard.invoke.getBoost(boost.uri)).boost
-    
-    // Restore session using the cat credential
-    restoreUserSession(catCredential);
-  } catch (error) {
-    console.error("Error looking up cat:", error);
-    showError("Error looking up your cat");
-  }
 }
 ```
 
@@ -368,8 +377,6 @@ async function lookupByCatName(catName) {
 6. User is redirected back to your application with their LearnCard DID
 7. Application retrieves "Save Game" data using the DID
 8. Application restores the user's session
-
-
 
 ### Best Practices
 

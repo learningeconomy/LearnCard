@@ -635,28 +635,28 @@ try {
 ---
 // src/pages/index.astro
 const config = {
-  learnCardHostOrigin: import.meta.env.PUBLIC_LEARNCARD_HOST || 'https://learncard.app'
+    learnCardHostOrigin: import.meta.env.PUBLIC_LEARNCARD_HOST || 'https://learncard.app',
 };
 ---
 
 <script>
-  import { createPartnerConnect } from '@learncard/partner-connect';
+    import { createPartnerConnect } from '@learncard/partner-connect';
 
-  const config = window.__LC_CONFIG;
-  const learnCard = createPartnerConnect({
-    hostOrigin: config.learnCardHostOrigin
-  });
+    const config = window.__LC_CONFIG;
+    const learnCard = createPartnerConnect({
+        hostOrigin: config.learnCardHostOrigin,
+    });
 
-  async function init() {
-    try {
-      const identity = await learnCard.requestIdentity();
-      console.log('Logged in as:', identity.user.did);
-    } catch (error) {
-      console.error('Not authenticated:', error);
+    async function init() {
+        try {
+            const identity = await learnCard.requestIdentity();
+            console.log('Logged in as:', identity.user.did);
+        } catch (error) {
+            console.error('Not authenticated:', error);
+        }
     }
-  }
 
-  init();
+    init();
 </script>
 ```
 

@@ -11,13 +11,13 @@
  * Instead, they run only when `LEARNCARD_PATHWAYS_LIVE_TESTS=1` is set:
  *
  * ```
- * pnpm test:live-ctdl
+ * bun run test:live-ctdl
  * ```
  *
  * or
  *
  * ```
- * LEARNCARD_PATHWAYS_LIVE_TESTS=1 pnpm exec vitest run src/pages/pathways/import/fetchCtdlPathway.live.test.ts
+ * LEARNCARD_PATHWAYS_LIVE_TESTS=1 bunx vitest run src/pages/pathways/import/fetchCtdlPathway.live.test.ts
  * ```
  *
  * ### What these test catches that fixtures can't
@@ -46,10 +46,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PathwaySchema } from '../types';
 
-import {
-    fetchCtdlPathway,
-    CtdlFetchError,
-} from './fetchCtdlPathway';
+import { fetchCtdlPathway, CtdlFetchError } from './fetchCtdlPathway';
 import { fromCtdlPathway } from './fromCtdlPathway';
 import { toCtdlPathway } from '../projection/toCtdlPathway';
 
@@ -89,7 +86,7 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
         //  but doesn't run the bodies. This log is a belt-and-braces.)
         // eslint-disable-next-line no-console
         console.info(
-            '[ctdl-live] Skipping live CTDL tests. Set LEARNCARD_PATHWAYS_LIVE_TESTS=1 to enable.',
+            '[ctdl-live] Skipping live CTDL tests. Set LEARNCARD_PATHWAYS_LIVE_TESTS=1 to enable.'
         );
     }
 
@@ -103,7 +100,7 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
                     expect(graph.pathway['ceterms:ctid']).toBe(entry.ctid);
                     expect(Object.keys(graph.components).length).toBeGreaterThan(0);
                 },
-                LIVE_TIMEOUT_MS,
+                LIVE_TIMEOUT_MS
             );
 
             it(
@@ -123,7 +120,7 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
                         // eslint-disable-next-line no-console
                         console.info(
                             `[ctdl-live] ${entry.label} produced ${warnings.length} warning(s):`,
-                            warnings,
+                            warnings
                         );
                     }
 
@@ -135,9 +132,7 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
                     if (entry.mustHaveDestination) {
                         expect(pathway.destinationNodeId).toBeDefined();
 
-                        const dest = pathway.nodes.find(
-                            n => n.id === pathway.destinationNodeId,
-                        );
+                        const dest = pathway.nodes.find(n => n.id === pathway.destinationNodeId);
 
                         expect(dest).toBeDefined();
                         expect(dest?.title.length).toBeGreaterThan(0);
@@ -150,7 +145,7 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
 
                     expect(selfLoops).toHaveLength(0);
                 },
-                LIVE_TIMEOUT_MS,
+                LIVE_TIMEOUT_MS
             );
 
             it(
@@ -175,7 +170,7 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
                     expect(second.pathway.nodes.length).toBe(first.pathway.nodes.length);
                     expect(second.pathway.destinationNodeId).toBeDefined();
                 },
-                LIVE_TIMEOUT_MS,
+                LIVE_TIMEOUT_MS
             );
         });
     }
@@ -193,6 +188,6 @@ describe.skipIf(!LIVE)('CTDL live contract tests', () => {
 
             expect(err).toBeInstanceOf(CtdlFetchError);
         },
-        LIVE_TIMEOUT_MS,
+        LIVE_TIMEOUT_MS
     );
 });

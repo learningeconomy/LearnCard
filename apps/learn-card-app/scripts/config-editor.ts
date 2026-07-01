@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('config-editor');
@@ -10,8 +10,8 @@ const log = getLogger('config-editor');
  * Serves the SPA and provides REST endpoints for tenant CRUD + validation.
  *
  * Usage:
- *   npx tsx scripts/config-editor.ts
- *   pnpm config-editor
+ *   bun scripts/config-editor.ts
+ *   bun run config-editor
  *
  * Opens http://localhost:4400 in your default browser.
  */
@@ -1754,7 +1754,7 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
             if (bgColor) args.push('--bg', bgColor);
             if (name) args.push('--name', name);
 
-            const result = await runScript('npx tsx', args);
+            const result = await runScript('bun', args);
 
             json(res, result.exitCode === 0 ? 200 : 500, result);
             return;
@@ -1773,17 +1773,14 @@ const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void>
 
             if (stage) args.push('--stage', stage);
 
-            const result = await runScript('npx tsx', args);
+            const result = await runScript('bun', args);
 
             json(res, result.exitCode === 0 ? 200 : 500, result);
             return;
         }
 
         if (path === '/api/actions/reset-config' && req.method === 'POST') {
-            const result = await runScript('npx tsx', [
-                'scripts/prepare-native-config.ts',
-                '--reset',
-            ]);
+            const result = await runScript('bun', ['scripts/prepare-native-config.ts', '--reset']);
 
             json(res, result.exitCode === 0 ? 200 : 500, result);
             return;

@@ -16,7 +16,7 @@ on:
             - 'packages/plugins/openid4vc/**'
             - 'tests/openid4vc-interop-e2e/**'
             - 'tests/openid4vc-e2e/**'
-            - 'pnpm-lock.yaml'
+            - 'bun.lock'
             - '.github/workflows/openid4vc-interop.yml'
     workflow_dispatch:
         inputs:
@@ -41,13 +41,13 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build openid4vc plugin
-              run: pnpm exec nx build openid4vc-plugin
+              run: bunx nx build openid4vc-plugin
 
             - name: Run in-process OID4VC e2e suite
-              run: pnpm --filter @workspace/openid4vc-e2e-tests test
+              run: bun run --filter @workspace/openid4vc-e2e-tests test
 
             - name: Run cross-vendor interop suite (docker compose)
-              run: pnpm --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
+              run: bun run --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
               env:
                   # Surface real-vendor failures rather than silently skipping.
                   CI: 'true'

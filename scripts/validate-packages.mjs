@@ -57,9 +57,7 @@ const CANDIDATES = [
     'packages/learn-card-network/cloud-client',
     'packages/learn-card-network/simple-signing-client',
     'packages/sss-key-manager',
-    ...fs
-        .readdirSync(path.join(ROOT, 'packages/plugins'))
-        .map(d => `packages/plugins/${d}`),
+    ...fs.readdirSync(path.join(ROOT, 'packages/plugins')).map(d => `packages/plugins/${d}`),
 ];
 
 function readPkg(absDir) {
@@ -133,6 +131,9 @@ const ATTW_IGNORE_RULES = [
     // partner-connect ESM bundle is correctly ESM, but its `.d.ts` is treated
     // as CJS under the parent package's no-`"type"` setting. Bundler green.
     'false-cjs',
+    // init's CJS entry is paired with ESM declarations in legacy node16-from-CJS.
+    // Bundler and node16-from-ESM resolution stay green.
+    'false-esm',
     // Some CJS-only packages (e.g. cli) expose named exports that TS sees but
     // Node's named-export interop can miss. Treated as advisory until the
     // affected packages migrate to dual-format.
@@ -180,7 +181,7 @@ const ADVISORY_ONLY = new Set([
 // Errors still fail. This is the level that catches missing/broken `exports`
 // maps, FalseESM, and the original smoketest regression.
 function runPublint({ abs }) {
-    return run('pnpm', ['exec', 'publint', abs]);
+    return run('bunx', ['publint', abs]);
 }
 
 // --pack: runs `npm pack` and checks the actual tarball that would be published
@@ -189,8 +190,7 @@ function runPublint({ abs }) {
 // --profile esm-only: ignores node10 (legacy) and node16-cjs (we ship a proper
 //         CJS shim with .d.cts; node16-from-CJS is green).
 function runAttw({ abs }) {
-    return run('pnpm', [
-        'exec',
+    return run('bunx', [
         'attw',
         '--pack',
         abs,
@@ -228,7 +228,8 @@ function runAttw({ abs }) {
 // Static `import`/`export ... from '...cjs'` and bare `import '...cjs'`.
 // Excludes `createRequire(...)('...cjs')` and `require('...cjs')`, which are
 // runtime calls, not static ESM edges.
-const STATIC_CJS_IMPORT = /(?:^|[\s;])(?:import|export)\b[^;]*?\bfrom\s*['"][^'"]*\.c(?:j|t)s['"]|(?:^|[\s;])import\s*['"][^'"]*\.c(?:j|t)s['"]/m;
+const STATIC_CJS_IMPORT =
+    /(?:^|[\s;])(?:import|export)\b[^;]*?\bfrom\s*['"][^'"]*\.c(?:j|t)s['"]|(?:^|[\s;])import\s*['"][^'"]*\.c(?:j|t)s['"]/m;
 
 // Collect dist files reachable through any ESM-side export condition
 // (`import`, a nested `node.import`, `default`, or the top-level `module`
@@ -287,7 +288,9 @@ function checkNoEsmToCjsImport({ pkg, abs }) {
     };
 }
 
-const concurrencyArg = args.find(a => a.startsWith('--concurrency='))?.slice('--concurrency='.length);
+const concurrencyArg = args
+    .find(a => a.startsWith('--concurrency='))
+    ?.slice('--concurrency='.length);
 const CONCURRENCY = Math.max(1, Number(concurrencyArg) || 6);
 
 async function validateOne(t) {
@@ -355,6 +358,4 @@ if (failures.length > 0) {
 }
 
 const gating = targets.length - advisories.length;
-console.log(
-    `\n${gating} gating package(s) valid; ${advisories.length} advisory.`,
-);
+console.log(`\n${gating} gating package(s) valid; ${advisories.length} advisory.`);

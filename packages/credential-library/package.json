@@ -5,7 +5,8 @@
     "main": "./dist/index.js",
     "module": "./dist/credential-library.esm.js",
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
@@ -36,5 +37,14 @@
         "zod": "4.1.13"
     },
     "types": "./dist/index.d.ts",
-    "sideEffects": false
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/credential-library.esm.js",
+            "require": "./dist/index.js",
+            "default": "./dist/credential-library.esm.js"
+        }
+    }
 }

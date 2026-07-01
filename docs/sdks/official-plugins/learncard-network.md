@@ -7,7 +7,7 @@ The LearnCard Network Plugin (`@learncard/network-plugin`) simplifies the proces
 #### Installation
 
 ```bash
-pnpm install @learncard/network-plugin
+bun add @learncard/network-plugin
 ```
 
 #### Initialization

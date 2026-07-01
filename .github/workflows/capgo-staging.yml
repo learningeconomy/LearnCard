@@ -49,7 +49,7 @@ jobs:
               id: affected
               if: steps.release_check.outputs.is_release != 'true'
               run: |
-                  AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+                  AFFECTED=$(bunx nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
                   echo "Affected: $AFFECTED"
                   if echo "$AFFECTED" | grep -q "learn-card-app"; then
                     echo "affected=true" >> "$GITHUB_OUTPUT"
@@ -72,7 +72,7 @@ jobs:
               id: version
               if: steps.gate.outputs.should_deploy == 'true'
               run: |
-                  BASE_VERSION=$(node -p "require('./apps/learn-card-app/package.json').version")
+                  BASE_VERSION=$(bun -e "console.log(require('./apps/learn-card-app/package.json').version)")
                   SHORT_SHA="${GITHUB_SHA::7}"
                   echo "bundle_version=${BASE_VERSION}-staging.${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
