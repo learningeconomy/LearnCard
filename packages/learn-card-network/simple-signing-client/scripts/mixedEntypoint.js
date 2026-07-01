@@ -1,7 +1,7 @@
 'use strict';
 
 if (process.env.NODE_ENV === 'production') {
-    module.exports = require('./simple-signing-client.cjs.production.min.js');
+    module.exports = require('./simple-signing-client.cjs.production.min.cjs');
 } else {
-    module.exports = require('./simple-signing-client.cjs.development.js');
+    module.exports = require('./simple-signing-client.cjs.development.cjs');
 }
