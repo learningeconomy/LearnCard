@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { IonContent, IonPage, useIonAlert } from '@ionic/react';
-import { ArrowLeft, Code, Database, RotateCcw, X, AlertCircle } from 'lucide-react';
+import { useIonAlert } from '@ionic/react';
 
-import MainHeader from '../../components/main-header/MainHeader';
 import {
     buildSimpleTemplate,
     issueViaBoost,
@@ -36,19 +34,14 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 
-import { HeroCanvas } from './components/HeroCanvas';
-import { IssuePalette } from './components/IssuePalette';
-import { JsonStudio } from './components/JsonStudio';
-import { DynamicFieldsSection, type VariableScope } from './components/DynamicFieldsSection';
-import { RecipientPicker } from './components/RecipientPicker';
-import { RecipientEvidenceSection } from './components/RecipientEvidenceSection';
+import { type VariableScope } from './components/DynamicFieldsSection';
 import { applyVariableValues } from './components/variableSubstitution';
 import { attachmentsToEvidence } from './components/mediaEvidence';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
-import { IssueSuccess } from './components/IssueSuccess';
 import { skillsToAlignmentTemplates, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
+import { IssueCredentialView } from './IssueCredentialView';
 
 const log = getLogger('issue-page');
 
@@ -599,242 +592,73 @@ const IssueCredentialPage: React.FC = () => {
         reset();
     }, [claimLink, linkConsumed, presentAlert, reset]);
 
+    const handleBack = useCallback(() => history.goBack(), [history]);
+    const handleToggleJson = useCallback(() => setShowJson(v => !v), []);
+    const handleDismissProvenance = useCallback(() => setProvenance(null), []);
+    const handleLinkConsumed = useCallback(() => setLinkConsumed(true), []);
+
+    const handleViewWallet = useCallback(() => {
+        clearSuccessSnapshot();
+        const category = previewCredential
+            ? getDefaultCategoryForCredential(previewCredential as any)
+            : undefined;
+        const route =
+            recipientMode === 'self' && category
+                ? CATEGORY_TO_ROUTE[category as CredentialCategoryEnum]
+                : undefined;
+        history.push(route ?? '/wallet');
+    }, [previewCredential, recipientMode, history]);
+
     return (
-        <IonPage className="bg-white">
-            <MainHeader showBackButton customClassName="bg-white" />
-            <IonContent>
-                {issuedUri ? (
-                    <IssueSuccess
-                        credential={previewCredential}
-                        credentialType={selectedType?.baseSimpleType ?? null}
-                        recipientMode={recipientMode}
-                        recipients={recipients}
-                        claimLink={claimLink}
-                        linkOptions={linkOptions}
-                        onIssueAnother={handleIssueAnother}
-                        onLinkConsumed={() => setLinkConsumed(true)}
-                        onViewWallet={() => {
-                            clearSuccessSnapshot();
-                            const category = previewCredential
-                                ? getDefaultCategoryForCredential(previewCredential as any)
-                                : undefined;
-                            const route =
-                                recipientMode === 'self' && category
-                                    ? CATEGORY_TO_ROUTE[category as CredentialCategoryEnum]
-                                    : undefined;
-                            history.push(route ?? '/wallet');
-                        }}
-                    />
-                ) : (
-                    <div className="font-poppins min-h-full bg-grayscale-10">
-                        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-grayscale-200/60 transition-all duration-300">
-                            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-2 sm:gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => history.goBack()}
-                                    className="flex items-center gap-1.5 text-sm font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors group shrink-0"
-                                >
-                                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                                    Back
-                                </button>
-
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    {!canIssue && !isSubmitting && missingHint && (
-                                        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100/50 animate-fade-in-up">
-                                            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                                            <span className="text-xs font-medium text-amber-700">
-                                                {missingHint}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {template && jsonOnly ? (
-                                        <span className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full text-xs font-medium bg-grayscale-900 text-white shadow-md">
-                                            <Code className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">JSON</span>
-                                        </span>
-                                    ) : template ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowJson(v => !v)}
-                                            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
-                                                showJson
-                                                    ? 'bg-grayscale-900 text-white shadow-md'
-                                                    : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 hover:text-grayscale-900'
-                                            }`}
-                                        >
-                                            <Code className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">JSON</span>
-                                        </button>
-                                    ) : null}
-
-                                    <button
-                                        type="button"
-                                        onClick={handleIssue}
-                                        disabled={!canIssue}
-                                        className="relative overflow-hidden py-2.5 px-4 sm:px-6 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:bg-grayscale-800 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-grayscale-900 shadow-sm hover:shadow-md active:scale-[0.98] shrink-0"
-                                    >
-                                        {isSubmitting ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                Issuing...
-                                            </span>
-                                        ) : (
-                                            <>
-                                                <span className="sm:hidden">Issue</span>
-                                                <span className="hidden sm:inline">
-                                                    Issue Credential
-                                                </span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                            {!canIssue && !isSubmitting && missingHint && (
-                                <div className="sm:hidden bg-amber-50 border-t border-amber-100/50 px-4 py-2 flex items-center justify-center gap-1.5 animate-fade-in-up">
-                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                                    <span className="text-xs font-medium text-amber-700">
-                                        {missingHint}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="max-w-[1100px] mx-auto px-6 py-8 flex flex-col-reverse desktop:flex-row desktop:items-start gap-8">
-                            <div className="flex-1 desktop:min-w-0">
-                                {provenance && !showJson && (
-                                    <div className="mb-4 inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 animate-fade-in-up">
-                                        {provenance.source === 'reuse' ? (
-                                            <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
-                                        ) : (
-                                            <Database className="w-3.5 h-3.5 text-emerald-600" />
-                                        )}
-                                        <span className="text-xs font-medium text-emerald-700">
-                                            Imported from {provenanceLabel}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setProvenance(null)}
-                                            className="text-emerald-500 hover:text-emerald-700 transition-colors"
-                                            aria-label="Dismiss"
-                                        >
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                )}
-                                {error && (
-                                    <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                            <span className="text-sm text-red-700 leading-relaxed">
-                                                {error.message}
-                                            </span>
-                                            {error.canRetry && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleIssue}
-                                                    disabled={isSubmitting}
-                                                    className="mt-2 flex items-center gap-1.5 text-sm font-medium text-red-700 hover:text-red-900 transition-colors disabled:opacity-50"
-                                                >
-                                                    <RotateCcw className="w-3.5 h-3.5" />
-                                                    Try Again
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {viewingJson && issuableJson ? (
-                                    <div className="space-y-5">
-                                        <section className="bg-white border border-grayscale-200 rounded-[20px] p-5 space-y-4">
-                                            <RecipientPicker
-                                                mode={recipientMode}
-                                                onModeChange={setRecipientMode}
-                                                recipients={recipients}
-                                                onRecipientsChange={setRecipients}
-                                                linkOptions={linkOptions}
-                                                onLinkOptionsChange={setLinkOptions}
-                                            />
-                                        </section>
-                                        <JsonStudio
-                                            credential={issuableJson}
-                                            identity={identity}
-                                            onChange={handleJsonChange}
-                                            onParseError={setJsonError}
-                                        />
-                                        <DynamicFieldsSection
-                                            variables={dynamicVars}
-                                            recipientMode={recipientMode}
-                                            recipients={recipients}
-                                            scope={variableScope}
-                                            onScopeChange={setVariableScope}
-                                            sharedValues={variableValues}
-                                            onSharedChange={handleVariableChange}
-                                            recipientValues={recipientValues}
-                                            onRecipientChange={handleRecipientVariableChange}
-                                        />
-                                        {recipientMode === 'people' && (
-                                            <RecipientEvidenceSection
-                                                recipients={recipients}
-                                                recipientEvidence={recipientEvidence}
-                                                onChange={handleRecipientEvidenceChange}
-                                            />
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-5">
-                                        <IssuePalette
-                                            selectedType={selectedType}
-                                            template={template}
-                                            onSelectType={handleSelectType}
-                                            onChangeTemplate={setTemplate}
-                                            onImport={handleImport}
-                                            recipientMode={recipientMode}
-                                            recipients={recipients}
-                                            linkOptions={linkOptions}
-                                            onRecipientModeChange={setRecipientMode}
-                                            onRecipientsChange={setRecipients}
-                                            onLinkOptionsChange={setLinkOptions}
-                                            selectedSkills={selectedSkills}
-                                            resolvedSkills={resolvedSkills}
-                                            onSelectedSkillsChange={setSelectedSkills}
-                                            onResolvedSkillsChange={handleResolvedSkillsChange}
-                                        />
-                                        <DynamicFieldsSection
-                                            variables={dynamicVars}
-                                            recipientMode={recipientMode}
-                                            recipients={recipients}
-                                            scope={variableScope}
-                                            onScopeChange={setVariableScope}
-                                            sharedValues={variableValues}
-                                            onSharedChange={handleVariableChange}
-                                            recipientValues={recipientValues}
-                                            onRecipientChange={handleRecipientVariableChange}
-                                        />
-                                        {recipientMode === 'people' && (
-                                            <RecipientEvidenceSection
-                                                recipients={recipients}
-                                                recipientEvidence={recipientEvidence}
-                                                onChange={handleRecipientEvidenceChange}
-                                            />
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="desktop:w-[340px] shrink-0 desktop:sticky desktop:top-[84px]">
-                                <HeroCanvas
-                                    credential={previewCredential}
-                                    credentialType={selectedType?.baseSimpleType ?? null}
-                                    cardTitle={ach?.name?.value ?? ''}
-                                    hasImage={Boolean(ach?.image?.value)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </IonContent>
-        </IonPage>
+        <IssueCredentialView
+            issuedUri={issuedUri}
+            previewCredential={previewCredential}
+            selectedType={selectedType}
+            template={template}
+            recipientMode={recipientMode}
+            recipients={recipients}
+            linkOptions={linkOptions}
+            claimLink={claimLink}
+            provenance={provenance}
+            provenanceLabel={provenanceLabel}
+            error={error}
+            isSubmitting={isSubmitting}
+            canIssue={canIssue}
+            missingHint={missingHint}
+            showJson={showJson}
+            jsonOnly={jsonOnly}
+            viewingJson={viewingJson}
+            issuableJson={issuableJson}
+            identity={identity}
+            dynamicVars={dynamicVars}
+            variableScope={variableScope}
+            variableValues={variableValues}
+            recipientValues={recipientValues}
+            recipientEvidence={recipientEvidence}
+            selectedSkills={selectedSkills}
+            resolvedSkills={resolvedSkills}
+            onBack={handleBack}
+            onIssue={handleIssue}
+            onIssueAnother={handleIssueAnother}
+            onViewWallet={handleViewWallet}
+            onLinkConsumed={handleLinkConsumed}
+            onToggleJson={handleToggleJson}
+            onDismissProvenance={handleDismissProvenance}
+            onSelectType={handleSelectType}
+            onChangeTemplate={setTemplate}
+            onImport={handleImport}
+            onRecipientModeChange={setRecipientMode}
+            onRecipientsChange={setRecipients}
+            onLinkOptionsChange={setLinkOptions}
+            onSelectedSkillsChange={setSelectedSkills}
+            onResolvedSkillsChange={handleResolvedSkillsChange}
+            onJsonChange={handleJsonChange}
+            onParseError={setJsonError}
+            onScopeChange={setVariableScope}
+            onSharedVariableChange={handleVariableChange}
+            onRecipientVariableChange={handleRecipientVariableChange}
+            onRecipientEvidenceChange={handleRecipientEvidenceChange}
+        />
     );
 };
 
