@@ -5,6 +5,7 @@ export enum AiInsightsTabsEnum {
     LearnerInsights = 'learner-insights',
     SharedInsights = 'shared-insights',
     ChildInsights = 'child-insights',
+    AgentDebug = 'agent-debug',
 }
 
 export const aiInsightsTabs: {
@@ -26,5 +27,9 @@ export const aiInsightsTabs: {
     {
         label: 'Child insights',
         value: AiInsightsTabsEnum.ChildInsights,
+    },
+    {
+        label: 'Agent Debug',
+        value: AiInsightsTabsEnum.AgentDebug,
     },
 ];

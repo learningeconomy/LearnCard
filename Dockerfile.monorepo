@@ -34,6 +34,7 @@ COPY packages/learn-card-network/simple-signing-client/package.json packages/lea
 COPY services/learn-card-network/brain-service/package.json services/learn-card-network/brain-service/
 COPY services/learn-card-network/learn-cloud-service/package.json services/learn-card-network/learn-cloud-service/
 COPY services/learn-card-network/simple-signing-service/package.json services/learn-card-network/simple-signing-service/
+COPY services/learn-card-network/ai-agent/package.json services/learn-card-network/ai-agent/
 COPY packages/plugins/chapi/package.json packages/plugins/chapi/
 COPY packages/plugins/crypto/package.json packages/plugins/crypto/
 COPY packages/plugins/ceramic/package.json packages/plugins/ceramic/
@@ -84,6 +85,7 @@ COPY packages/learn-card-network/simple-signing-client packages/learn-card-netwo
 COPY services/learn-card-network/brain-service services/learn-card-network/brain-service
 COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
 COPY services/learn-card-network/simple-signing-service services/learn-card-network/simple-signing-service
+COPY services/learn-card-network/ai-agent services/learn-card-network/ai-agent
 COPY packages/plugins/chapi packages/plugins/chapi
 COPY packages/plugins/crypto packages/plugins/crypto
 COPY packages/plugins/ceramic packages/plugins/ceramic

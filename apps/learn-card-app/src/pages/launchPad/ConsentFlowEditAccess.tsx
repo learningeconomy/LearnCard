@@ -17,8 +17,10 @@ import {
     useDeleteCredentialRecord,
     useGetCredentialsFromContract,
     ToastTypeEnum,
+    useCurrentUser,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/contract.helpers';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',
@@ -44,6 +46,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
     const { closeModal, closeAllModals } = useModal();
     const { presentToast } = useToast();
     const brandingConfig = useBrandingConfig();
+    const currentUser = useCurrentUser();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
     const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
@@ -52,8 +55,6 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
     const [terms, setTerms] = useImmer(initialTerms);
 
     const updateSlice = curriedStateSlice(setTerms);
-
-    const updateRead = curriedStateSlice(updateSlice('read'));
 
     const updateWrite = curriedStateSlice(updateSlice('write'));
     const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
@@ -81,6 +82,20 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                 oldCategories[key] =
                     !allWriteToggle ||
                     contractDetails?.contract.write.credentials.categories[key]?.required;
+            });
+        });
+    };
+
+    const handleToggleAnonymize = () => {
+        const nextAnonymize = !terms.read.anonymize;
+
+        updateSlice('read', oldRead => {
+            oldRead.anonymize = nextAnonymize;
+
+            Object.keys(contractDetails.contract.read.personal ?? {}).forEach(key => {
+                if (oldRead.personal[key] && isSupportedPersonalField(key)) {
+                    oldRead.personal[key] = getPersonalEntry(key, currentUser, nextAnonymize);
+                }
             });
         });
     };
@@ -257,7 +272,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         )}
                         {!contractReadDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not reading any data from your {brandingConfig?.name}
+                                This contract is not reading any data from your{' '}
+                                {brandingConfig?.name}
                             </p>
                         )}
                     </IonCol>
@@ -354,7 +370,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                             <IonToggle
                                 mode="ios"
                                 color="emerald-700"
-                                onClick={() => updateRead('anonymize', !terms.read.anonymize)}
+                                onClick={handleToggleAnonymize}
                                 checked={terms.read.anonymize}
                             />
                         </IonCol>

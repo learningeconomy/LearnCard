@@ -56,7 +56,7 @@ import useConsentFlow from './pages/consentFlow/useConsentFlow';
 
 const log = getLogger('app-router');
 
-export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
+export const aiRoutes = ['/ai/assistant', '/ai/topics', '/ai/sessions', '/chats'];
 
 const AppRouter: React.FC = () => {
     const { state: coordinatorState, walletReady } = useAppAuth();

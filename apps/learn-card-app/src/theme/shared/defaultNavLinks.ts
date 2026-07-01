@@ -16,6 +16,7 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
     { id: SideMenuLinksEnum.launchPad, label: 'Apps', path: '/launchpad' },
     { id: SideMenuLinksEnum.contacts, label: 'Contacts', path: '/contacts' },
     { id: SideMenuLinksEnum.alerts, label: 'Alerts', path: '/notifications' },
+    { id: SideMenuLinksEnum.myAssistant, label: 'My Assistant', path: '/ai/assistant' },
     // Disable personalize as default side menu link for now
     // { id: SideMenuLinksEnum.personalize, label: 'Personalize', path: '/personalize' },
     { id: SideMenuLinksEnum.adminTools, label: 'Admin Tools', path: '/admin-tools' },
