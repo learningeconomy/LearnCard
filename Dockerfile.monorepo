@@ -7,5 +7,6 @@ WORKDIR /app
 
 COPY . .
 
-RUN bun install
-
+# Cache dependencies, making builds after the first faster
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install
