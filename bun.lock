@@ -421,6 +421,20 @@
         "prettier-plugin-astro": "^0.5.4",
       },
     },
+    "examples/app-store-apps/6-basic-sync-app": {
+      "name": "@learncard/app-store-demo-basic-sync",
+      "version": "1.0.0",
+      "dependencies": {
+        "@astrojs/netlify": "^7.0.13",
+        "@learncard/init": "workspace:*",
+        "@learncard/partner-connect": "workspace:*",
+        "astro": "^6.4.8",
+      },
+      "devDependencies": {
+        "@astrojs/tailwind": "^6.0.2",
+        "tailwindcss": "^3.4.18",
+      },
+    },
     "examples/chapi-example": {
       "name": "@learncard/chapi-example",
       "version": "1.1.33",
@@ -3653,6 +3667,8 @@
     "@kwsites/promise-deferred": ["@kwsites/promise-deferred@1.1.1", "", {}, "sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw=="],
 
     "@learncard/app-store-demo-basic-launchpad": ["@learncard/app-store-demo-basic-launchpad@workspace:examples/app-store-apps/1-basic-launchpad-app"],
+
+    "@learncard/app-store-demo-basic-sync": ["@learncard/app-store-demo-basic-sync@workspace:examples/app-store-apps/6-basic-sync-app"],
 
     "@learncard/app-store-demo-lore-card": ["@learncard/app-store-demo-lore-card@workspace:examples/app-store-apps/2-lore-card-app"],
 

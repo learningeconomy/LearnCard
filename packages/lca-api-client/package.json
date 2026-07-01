@@ -8,6 +8,7 @@
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/lca-api-client.esm.js"
@@ -48,14 +49,5 @@
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
     },
-    "sideEffects": false,
-    "exports": {
-        ".": {
-            "development": "./src/index.ts",
-            "types": "./dist/index.d.ts",
-            "import": "./dist/lca-api-client.esm.js",
-            "require": "./dist/index.js",
-            "default": "./dist/lca-api-client.esm.js"
-        }
-    }
+    "sideEffects": false
 }

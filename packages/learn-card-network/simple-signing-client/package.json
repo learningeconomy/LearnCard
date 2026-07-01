@@ -8,6 +8,7 @@
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/simple-signing-client.esm.js"
@@ -46,14 +47,5 @@
     "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-network/simple-signing-client/README.md",
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
-    },
-    "exports": {
-        ".": {
-            "development": "./src/index.ts",
-            "types": "./dist/index.d.ts",
-            "import": "./dist/simple-signing-client.esm.js",
-            "require": "./dist/index.js",
-            "default": "./dist/simple-signing-client.esm.js"
-        }
     }
 }
