@@ -13,7 +13,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { CodeBlock } from '../components/CodeBlock';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface GuardianEmailOtpProps {
     branding: TenantBranding;
@@ -127,7 +127,9 @@ export const GuardianEmailOtp: React.FC<GuardianEmailOtpProps> = ({
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

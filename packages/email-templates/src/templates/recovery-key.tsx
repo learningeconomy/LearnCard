@@ -12,7 +12,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { CodeBlock } from '../components/CodeBlock';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale, interpolate } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface RecoveryKeyProps {
     branding: TenantBranding;
@@ -141,7 +141,9 @@ export const RecoveryKey: React.FC<RecoveryKeyProps> = ({ branding, recoveryKey,
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

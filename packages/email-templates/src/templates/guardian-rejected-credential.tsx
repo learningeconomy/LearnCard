@@ -12,7 +12,7 @@ import type { TenantBranding } from '../branding';
 import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface GuardianRejectedCredentialProps {
     branding: TenantBranding;
@@ -171,7 +171,9 @@ export const GuardianRejectedCredential: React.FC<GuardianRejectedCredentialProp
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

@@ -12,7 +12,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale, interpolate } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface AccountApprovedProps {
     branding: TenantBranding;
@@ -109,7 +109,9 @@ export const AccountApproved: React.FC<AccountApprovedProps> = ({ branding, user
             <Text style={signOff}>
                 {s.thankYou}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

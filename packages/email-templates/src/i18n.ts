@@ -64,6 +64,8 @@ export interface SharedChromeStrings {
     contactSupport: string;
     /** Hint above the copy/paste link fallback. */
     linkFallbackHint: string;
+    /** Sign-off line at the end of every email body (uses {brandName}). */
+    teamSignature: string;
 }
 
 export const SHARED: Record<NotificationLocale, SharedChromeStrings> = {
@@ -73,6 +75,7 @@ export const SHARED: Record<NotificationLocale, SharedChromeStrings> = {
         contactSupport: 'Contact Support',
         linkFallbackHint:
             'If you have trouble with the button above, copy and paste this link into your browser:',
+        teamSignature: 'The {brandName} Team',
     },
     es: {
         footerDisclaimer:
@@ -80,6 +83,7 @@ export const SHARED: Record<NotificationLocale, SharedChromeStrings> = {
         contactSupport: 'Contactar con soporte',
         linkFallbackHint:
             'Si tienes problemas con el botón anterior, copia y pega este enlace en tu navegador:',
+        teamSignature: 'El equipo de {brandName}',
     },
     fr: {
         footerDisclaimer:
@@ -87,12 +91,14 @@ export const SHARED: Record<NotificationLocale, SharedChromeStrings> = {
         contactSupport: 'Contacter le support',
         linkFallbackHint:
             'Si le bouton ci-dessus ne fonctionne pas, copiez et collez ce lien dans votre navigateur :',
+        teamSignature: 'L’équipe {brandName}',
     },
     ar: {
         footerDisclaimer:
             'لقد تلقيت هذه الرسالة لأن أحدهم طلب إضافة هذا البريد إلى حسابه في {brandName}. يرجى تجاهل هذه الرسالة إذا لم تكن أنت.',
         contactSupport: 'تواصل مع الدعم',
         linkFallbackHint: 'إذا واجهت مشكلة مع الزر أعلاه، انسخ هذا الرابط والصقه في متصفحك:',
+        teamSignature: 'فريق {brandName}',
     },
 };
 

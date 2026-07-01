@@ -13,7 +13,7 @@ import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import { LinkFallback } from '../components/LinkFallback';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale, interpolate } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface GuardianApprovalProps {
     branding: TenantBranding;
@@ -147,7 +147,9 @@ export const GuardianApproval: React.FC<GuardianApprovalProps> = ({
             <Text style={signOff}>
                 {s.thankYou}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
 
             <LinkFallback href={approvalUrl} locale={locale} />

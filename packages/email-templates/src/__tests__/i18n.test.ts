@@ -171,6 +171,37 @@ describe('i18n — non-EN locales localize content', () => {
         expect(en.text).toContain('You received this email because');
         expect(es.text).not.toContain('You received this email because');
     });
+
+    it('localizes the "The {brand} Team" sign-off across all templates', async () => {
+        for (const templateId of ALL_TEMPLATE_IDS) {
+            const en = await renderEmail(templateId, DEFAULT_BRANDING, FIXTURES[templateId], 'en');
+            const es = await renderEmail(templateId, DEFAULT_BRANDING, FIXTURES[templateId], 'es');
+
+            expect(en.text).toContain(`The ${DEFAULT_BRANDING.brandName} Team`);
+            expect(es.text).toContain(`El equipo de ${DEFAULT_BRANDING.brandName}`);
+            expect(es.text).not.toContain(`The ${DEFAULT_BRANDING.brandName} Team`);
+        }
+    });
+
+    it('localizes the verification-code preview sub-title (not just the subject)', async () => {
+        const en = await renderEmail(
+            'login-verification-code',
+            DEFAULT_BRANDING,
+            FIXTURES['login-verification-code'],
+            'en'
+        );
+        const es = await renderEmail(
+            'login-verification-code',
+            DEFAULT_BRANDING,
+            FIXTURES['login-verification-code'],
+            'es'
+        );
+
+        // Preview text renders into the hidden <Preview> block in the HTML.
+        expect(en.html).toContain('Your code:');
+        expect(es.html).toContain('Tu código:');
+        expect(es.html).not.toContain('Your code:');
+    });
 });
 
 // ---------------------------------------------------------------------------

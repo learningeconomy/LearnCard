@@ -13,7 +13,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { IssuerLogo } from '../components/IssuerLogo';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface CredentialAwaitingGuardianProps {
     branding: TenantBranding;
@@ -154,7 +154,9 @@ export const CredentialAwaitingGuardian: React.FC<CredentialAwaitingGuardianProp
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

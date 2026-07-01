@@ -14,7 +14,7 @@ import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import { IssuerLogo } from '../components/IssuerLogo';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface GuardianApprovedClaimProps {
     branding: TenantBranding;
@@ -177,7 +177,9 @@ export const GuardianApprovedClaim: React.FC<GuardianApprovedClaimProps> = ({
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

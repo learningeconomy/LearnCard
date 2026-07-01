@@ -18,7 +18,7 @@ import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import { CodeBlock } from '../components/CodeBlock';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale, interpolate } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export type VerificationCodeVariant =
     | 'login'
@@ -194,9 +194,10 @@ const CATALOGS: Record<NotificationLocale, Record<VerificationCodeVariant, Varia
 /** Shared body strings (interpolates {brandName}). */
 const BODY: Record<
     NotificationLocale,
-    { greeting: string; passport: string; sincerely: string; codeLabel: string }
+    { preview: string; greeting: string; passport: string; sincerely: string; codeLabel: string }
 > = {
     en: {
+        preview: 'Your code: {code}',
         greeting: 'Hello,',
         passport:
             '{brandName} is your private, digital passport for learning and work. It lets you securely collect and share your verified skills and achievements online.',
@@ -204,6 +205,7 @@ const BODY: Record<
         codeLabel: 'Verification code',
     },
     es: {
+        preview: 'Tu código: {code}',
         greeting: 'Hola,',
         passport:
             '{brandName} es tu pasaporte digital y privado para el aprendizaje y el trabajo. Te permite recopilar y compartir de forma segura tus habilidades y logros verificados en línea.',
@@ -211,6 +213,7 @@ const BODY: Record<
         codeLabel: 'Código de verificación',
     },
     fr: {
+        preview: 'Votre code : {code}',
         greeting: 'Bonjour,',
         passport:
             '{brandName} est votre passeport numérique privé pour l\u2019apprentissage et le travail. Il vous permet de collecter et de partager en toute sécurité vos compétences et réalisations vérifiées en ligne.',
@@ -218,6 +221,7 @@ const BODY: Record<
         codeLabel: 'Code de vérification',
     },
     ar: {
+        preview: 'رمزك: {code}',
         greeting: 'مرحبًا،',
         passport:
             '{brandName} هو جواز سفرك الرقمي والخاص للتعلّم والعمل. يتيح لك جمع ومشاركة مهاراتك وإنجازاتك الموثّقة بأمان عبر الإنترنت.',
@@ -241,7 +245,11 @@ export const VerificationCode: React.FC<VerificationCodeProps> = ({
     const passport = interpolate(body.passport, { brandName: branding.brandName });
 
     return (
-        <Layout branding={branding} locale={locale} preview={`Your code: ${verificationCode}`}>
+        <Layout
+            branding={branding}
+            locale={locale}
+            preview={interpolate(body.preview, { code: verificationCode })}
+        >
             <Text style={headingStyle}>{heading}</Text>
 
             <Text style={paragraph}>{body.greeting}</Text>
@@ -257,7 +265,9 @@ export const VerificationCode: React.FC<VerificationCodeProps> = ({
             <Text style={signOff}>
                 {body.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
         </Layout>
     );

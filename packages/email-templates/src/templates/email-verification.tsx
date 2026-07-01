@@ -16,7 +16,7 @@ import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import { LinkFallback } from '../components/LinkFallback';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale, interpolate } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface EmailVerificationProps {
     branding: TenantBranding;
@@ -124,7 +124,9 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                The {branding.brandName} Team
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
 
             <LinkFallback href={verifyUrl} locale={locale} />
