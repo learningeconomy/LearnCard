@@ -98,6 +98,13 @@ jobs:
               if: matrix.package-manager == 'pnpm'
               uses: pnpm/action-setup@v6
               with:
+                  # action-setup@v6 has no bundled default and resolves the
+                  # version from a `packageManager`/`pnpm.version` field in the
+                  # cwd's package.json. This smoketest runs in a throwaway dir
+                  # with no such field, so pin it explicitly (matching the repo's
+                  # pnpm major) — otherwise the step fails with
+                  # "No pnpm version is specified."
+                  version: 9
                   run_install: false
 
             - name: Set up yarn (via corepack)

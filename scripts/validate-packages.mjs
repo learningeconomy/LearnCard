@@ -53,6 +53,9 @@ const CANDIDATES = [
     'packages/learn-card-init',
     'packages/learn-card-partner-connect-sdk',
     'packages/learn-card-types',
+    'packages/learn-card-network/brain-client',
+    'packages/learn-card-network/cloud-client',
+    'packages/learn-card-network/simple-signing-client',
     'packages/sss-key-manager',
     ...fs
         .readdirSync(path.join(ROOT, 'packages/plugins'))
