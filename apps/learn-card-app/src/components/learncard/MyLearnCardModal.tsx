@@ -49,6 +49,7 @@ import {
     useWallet,
     useGetCheckListStatus,
     getAuthConfig,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
@@ -101,6 +102,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { gate } = useLCNGatedAction();
+    const { isDesktop } = useDeviceTypeByWidth();
+    const [activePanel, setActivePanel] = useState<string | null>(null);
 
     const { newModal, closeModal } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
@@ -217,13 +220,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             showNetworkSettings={true}
                             showNotificationsModal={false}
                         />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            usePortal: true,
-                            hideButton: true,
-                            portalClassName: '!max-w-[400px]',
-                        },
-                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                        { sectionClassName: '!max-w-[500px]' },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                     );
                 },
             },
@@ -647,6 +645,41 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     //     });
     // }
 
+    const groups = [
+        {
+            title: 'Profile & Identity',
+            items: ['My Account', 'Edit Contact Card', buildMyLCTitle],
+        },
+        {
+            title: 'Account & Security',
+            items: ['Account Recovery', 'Email Addresses'],
+        },
+        {
+            title: 'Connections & Apps',
+            items: ['My Contacts', 'Admin Tools'],
+        },
+        {
+            title: 'Preferences',
+            items: ['Personalize AI Sessions', 'Manage Data Sharing', 'Privacy & Data'],
+        },
+    ];
+
+    const visibleRows = rows.filter(r => !r.hide);
+    const groupedRows = groups
+        .map(group => ({
+            title: group.title,
+            rows: visibleRows.filter(r => group.items.includes(r.title)),
+        }))
+        .filter(group => group.rows.length > 0);
+
+    const moreRows = visibleRows.filter(r => !groups.some(g => g.items.includes(r.title)));
+    if (moreRows.length > 0) {
+        groupedRows.push({
+            title: 'More',
+            rows: moreRows,
+        });
+    }
+
     const handleSwitchAccountsClick = () => {
         newModal(
             <AccountSwitcherModal
@@ -716,6 +749,201 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     if (isLoggingOut) {
         return <LogoutLoadingPage />;
+    }
+
+    if (isDesktop) {
+        return (
+            <section
+                className="min-h-full h-full w-full flex items-center justify-center p-[40px] relative"
+                style={{
+                    ...backgroundStyles,
+                }}
+            >
+                <button
+                    onClick={closeModal}
+                    className="absolute top-[40px] right-[40px] w-[48px] h-[48px] bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-grayscale-700 hover:text-grayscale-900 hover:bg-white shadow-sm transition-colors z-50"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M13 1L1 13M1 1L13 13"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                </button>
+
+                <div className="w-full max-w-[1100px] h-[85vh] min-h-[600px] bg-white/80 backdrop-blur-xl rounded-[24px] shadow-2xl overflow-hidden flex border border-white/50">
+                    <div className="w-[360px] flex-shrink-0 flex flex-col h-full min-w-0 border-r border-grayscale-200/50 bg-white/50">
+                        <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                            <div className="p-[24px] flex flex-col gap-[12px]">
+                                <LearnCardIdView user={user} />
+                                <SwitchAccountButton
+                                    handleAccountSwitcher={handleSwitchAccountsClick}
+                                />
+                            </div>
+
+                            <div
+                                className={`flex justify-center relative ${
+                                    hideShare ? 'pb-[24px]' : 'pb-[12px]'
+                                }`}
+                            >
+                                {!hideShare && (
+                                    <button
+                                        onClick={handleQrCodeClick}
+                                        className="bg-white rounded-full p-[12px] h-[56px] w-[56px] shadow-sm border border-grayscale-100 hover:bg-grayscale-10 transition-colors z-10"
+                                    >
+                                        <QRCodeScanner className="text-grayscale-900 w-full h-full" />
+                                    </button>
+                                )}
+                                <IdViewDivetFrame className="absolute top-[28px] bottom-0 pointer-events-none opacity-50" />
+                            </div>
+
+                            <div className="px-[24px] flex flex-col pb-[24px]">
+                                <span className="py-[12px] text-grayscale-900 font-poppins text-[15px] text-center line-clamp-4">
+                                    {description}
+                                </span>
+                                {!isNetworkUser && !isNetworkUserLoading && (
+                                    <button
+                                        onClick={() => {
+                                            void handlePresentJoinNetworkModal();
+                                        }}
+                                        className="bg-grayscale-900 text-white font-poppins text-[14px] font-medium px-[20px] py-[12px] rounded-[20px] mb-[24px] hover:opacity-90 transition-opacity"
+                                    >
+                                        Complete Profile
+                                    </button>
+                                )}
+
+                                <div className="flex flex-col gap-[24px]">
+                                    {groupedRows.map((group, gIdx) => (
+                                        <div key={gIdx} className="flex flex-col">
+                                            {group.title && (
+                                                <h3 className="text-[11px] font-semibold text-grayscale-500 uppercase tracking-wider mb-[8px] px-[12px]">
+                                                    {group.title}
+                                                </h3>
+                                            )}
+                                            <div className="flex flex-col gap-[2px]">
+                                                {group.rows.map((r, rIdx) => {
+                                                    const { title, Icon, caretText, onClick } = r;
+                                                    const version =
+                                                        title === 'Email Addresses' ? '2' : '1';
+                                                    let icon = (
+                                                        <Icon
+                                                            className="h-[20px] w-[20px]"
+                                                            version={version}
+                                                        />
+                                                    );
+                                                    if (title === buildMyLCTitle) {
+                                                        icon = (
+                                                            <img
+                                                                src={buildMyLCIcon}
+                                                                className="w-[20px] h-[20px]"
+                                                                alt="blocks"
+                                                            />
+                                                        );
+                                                    }
+                                                    const isActive = activePanel === title;
+                                                    return (
+                                                        <button
+                                                            key={rIdx}
+                                                            onClick={() => {
+                                                                if (title === 'My Account') {
+                                                                    setActivePanel(title);
+                                                                } else {
+                                                                    onClick?.();
+                                                                }
+                                                            }}
+                                                            className={`flex items-center justify-between px-[12px] py-[10px] rounded-[12px] text-left transition-colors ${
+                                                                isActive
+                                                                    ? 'bg-white shadow-sm border border-grayscale-200/50'
+                                                                    : 'hover:bg-white/60 border border-transparent'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-[12px]">
+                                                                <div
+                                                                    className={`flex items-center justify-center w-[28px] h-[28px] rounded-[8px] ${
+                                                                        isActive
+                                                                            ? 'bg-grayscale-100 text-grayscale-900'
+                                                                            : 'text-grayscale-600'
+                                                                    }`}
+                                                                >
+                                                                    {icon}
+                                                                </div>
+                                                                <span
+                                                                    className={`font-poppins text-[14px] ${
+                                                                        isActive
+                                                                            ? 'font-medium text-grayscale-900'
+                                                                            : 'text-grayscale-700'
+                                                                    }`}
+                                                                >
+                                                                    {title}
+                                                                </span>
+                                                            </div>
+                                                            {caretText && (
+                                                                <span className="text-grayscale-500 text-[12px] font-poppins bg-grayscale-100 px-[8px] py-[2px] rounded-full">
+                                                                    {caretText}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {!hideLogout && (
+                            <div className="p-[24px] border-t border-grayscale-200/50 bg-white/30">
+                                <button
+                                    onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
+                                    className="w-full flex items-center justify-center gap-[8px] py-[12px] text-grayscale-700 hover:text-grayscale-900 hover:bg-white rounded-[20px] font-poppins text-[14px] font-medium transition-colors disabled:opacity-60 border border-grayscale-300/50 shadow-sm"
+                                    disabled={isLoggingOut}
+                                >
+                                    <SignOutIcon className="w-[18px] h-[18px]" />
+                                    Logout
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-white/60 relative">
+                        {activePanel === 'My Account' ? (
+                            <div className="w-full max-w-[600px] mx-auto py-[40px] px-[32px]">
+                                <UserProfileSetup
+                                    title="My Account"
+                                    handleCloseModal={() => setActivePanel(null)}
+                                    handleLogout={() => handleLogout()}
+                                    showNetworkSettings={true}
+                                    showNotificationsModal={false}
+                                />
+                            </div>
+                        ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-[40px]">
+                                <div className="w-[64px] h-[64px] bg-white rounded-full shadow-sm flex items-center justify-center mb-[24px] border border-grayscale-100">
+                                    <OrangeProfileIcon className="w-[32px] h-[32px]" />
+                                </div>
+                                <h2 className="text-[20px] font-poppins font-semibold text-grayscale-900 mb-[8px]">
+                                    {brandingConfig.name} Settings
+                                </h2>
+                                <p className="text-[14px] font-poppins text-grayscale-500 max-w-[280px] leading-relaxed">
+                                    Select a setting from the menu to view or update your
+                                    preferences.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+        );
     }
 
     return (

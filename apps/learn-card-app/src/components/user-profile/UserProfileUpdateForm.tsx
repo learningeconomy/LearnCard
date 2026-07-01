@@ -424,37 +424,33 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     return (
         <>
-            <IonRow class="w-full">
+            <IonRow class="w-full mb-6">
                 <IonCol>
                     <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl font-bold">
                         {title}
                     </p>
                 </IonCol>
-                <IonCol size="12" className="flex items-center justify-center">
-                    <div className="bg-grayscale-100/40 relative m-0 flex items-center justify-between rounded-[40px] object-fill p-0 pb-[3px] pr-[10px] pt-[3px]">
+                <IonCol size="12" className="flex items-center justify-center mt-6">
+                    <div className="relative flex items-center justify-center">
                         <ProfilePicture
-                            customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px]"
-                            customImageClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[70px] min-h-[70px]"
+                            customContainerClass="flex justify-center items-center h-[88px] w-[88px] rounded-full overflow-hidden border-4 border-white shadow-sm text-white font-medium text-xl min-w-[88px] min-h-[88px] bg-grayscale-100"
+                            customImageClass="flex justify-center items-center h-[88px] w-[88px] rounded-full overflow-hidden object-cover min-w-[88px] min-h-[88px]"
                             customSize={500}
                             overrideSrc={photo?.length > 0}
                             overrideSrcURL={photo}
                         >
                             {imageUploadLoading && (
-                                <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                    <IonSpinner
-                                        name="crescent"
-                                        color="dark"
-                                        className="scale-[1.75]"
-                                    />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                                    <IonSpinner name="crescent" color="light" />
                                 </div>
                             )}
                         </ProfilePicture>
                         <button
                             onClick={handleImageSelect}
                             type="button"
-                            className="text-grayscale-900 ml-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
+                            className="absolute bottom-0 right-0 text-grayscale-700 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-grayscale-200 hover:bg-grayscale-10 transition-colors"
                         >
-                            <Pencil className="h-[60%]" />
+                            <Pencil className="h-[14px] w-[14px]" />
                         </button>
                     </div>
                 </IonCol>
@@ -463,19 +459,36 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             <div className="flex-grow flex items-center justify-center py-2">{children}</div>
 
             {!Capacitor.isNativePlatform() && (
-                <div className="w-full flex items-center justify-between px-6">
-                    <button
-                        onClick={installChapi}
-                        className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 font-poppins text-xl w-[85%] shadow-lg"
-                    >
-                        <HandshakeIcon className="mr-2" /> Connect Handler
-                    </button>
-                    <button
-                        onClick={() => handleChapiInfo()}
-                        className="flex items-center justify-center text-grayscale-900 text-xl"
-                    >
-                        <InfoIcon />
-                    </button>
+                <div className="w-full px-6 mb-6">
+                    <div className="flex items-center justify-between p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-grayscale-900">
+                                <HandshakeIcon className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-grayscale-900 font-poppins">
+                                    Connect Handler
+                                </span>
+                                <span className="text-xs text-grayscale-500 font-poppins">
+                                    Enable CHAPI integration
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleChapiInfo()}
+                                className="p-2 text-grayscale-500 hover:text-grayscale-900 transition-colors"
+                            >
+                                <InfoIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={installChapi}
+                                className="px-4 py-2 bg-grayscale-900 text-white text-sm font-medium rounded-[20px] hover:opacity-90 transition-opacity font-poppins"
+                            >
+                                Connect
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -489,41 +502,49 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     e.preventDefault();
                     handleUpdateUser();
                 }}
-                className="flex flex-col items-center justify-center w-full px-6 mt-4"
+                className="flex flex-col items-center justify-center w-full px-6 mt-6 space-y-5"
             >
-                <IonRow className="flex flex-col items-center justify-center w-full">
+                <div className="flex flex-col items-center justify-center w-full space-y-5">
                     {profileLoading && (
                         <BoostTextSkeleton
-                            containerClassName="w-full min-h-[52px] h-[52px] rounded-[15px] mb-4"
-                            skeletonStyles={{ width: '100%', height: '100%', borderRadius: '15px' }}
+                            containerClassName="w-full min-h-[52px] h-[52px] rounded-xl"
+                            skeletonStyles={{ width: '100%', height: '100%', borderRadius: '12px' }}
                         />
                     )}
                     {lcNetworkProfile &&
                         lcNetworkProfile?.profileId &&
                         !profileLoading &&
                         !hasParentSwitchedProfile && (
-                            <IonInput
-                                autocapitalize="on"
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4 !opacity-70`}
-                                value={`@${lcNetworkProfile?.profileId}`}
-                                placeholder="User ID"
-                                type="text"
-                                disabled={true}
-                            />
+                            <div className="flex flex-col w-full">
+                                <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                    User ID
+                                </label>
+                                <input
+                                    className="w-full py-3 px-4 bg-grayscale-100 text-grayscale-500 rounded-xl text-sm font-poppins border border-transparent cursor-not-allowed focus:outline-none"
+                                    value={`@${lcNetworkProfile?.profileId}`}
+                                    type="text"
+                                    disabled={true}
+                                    readOnly
+                                />
+                            </div>
                         )}
-                    <div className="flex flex-col items-center justify-center w-full mb-2">
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                                errors.name ? 'login-input-email-error' : ''
+                    <div className="flex flex-col w-full">
+                        <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                            Full Name
+                        </label>
+                        <input
+                            className={`w-full py-3 px-4 bg-white text-grayscale-900 rounded-xl text-sm font-poppins border focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow ${
+                                errors.name
+                                    ? 'border-red-300 focus:ring-red-500'
+                                    : 'border-grayscale-300'
                             }`}
-                            onIonInput={e => setName(e.detail.value)}
-                            value={name}
-                            placeholder="Full Name"
+                            onChange={e => setName(e.target.value)}
+                            value={name || ''}
+                            placeholder="Enter your full name"
                             type="text"
                         />
                         {errors.name && (
-                            <p className="p-0 m-0 w-full text-left mt-1 text-red-600">
+                            <p className="text-xs text-red-600 mt-1.5 font-poppins">
                                 {errors.name}
                             </p>
                         )}
@@ -531,7 +552,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
                     {lcNetworkProfile && (
                         <>
-                            <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
+                            <div className="flex flex-col w-full">
+                                <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                    Date of Birth {hasParentSwitchedProfile ? '(disabled)' : ''}
+                                </label>
                                 <DatePickerInput
                                     value={dob || ''}
                                     onChange={(newDob: string) => {
@@ -540,30 +564,30 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     }}
                                     error={errors?.dob?.[0]}
                                     isMobile={!isDesktop}
-                                    label={`Date of Birth ${
-                                        hasParentSwitchedProfile ? '(disabled)' : ''
-                                    }`}
+                                    label="Select date"
                                     disabled={hasParentSwitchedProfile}
                                 />
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
+                                    <p className="text-xs text-grayscale-500 mt-1.5 font-poppins">
                                         Age: {calculateAge(dob)}
                                     </p>
                                 )}
 
                                 {errors?.dob && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
+                                    <p className="text-xs text-red-600 mt-1.5 font-poppins">
                                         {errors?.dob}
                                     </p>
                                 )}
                             </div>
 
-                            {/* Country selector */}
-                            <div className="flex flex-col items-center justify-center w-full mt-2">
+                            <div className="flex flex-col w-full">
+                                <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                    Country
+                                </label>
                                 <button
                                     type="button"
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base`}
+                                    className="w-full flex items-center justify-between bg-white border border-grayscale-300 text-grayscale-900 rounded-xl font-poppins px-4 py-3 text-sm hover:bg-grayscale-10 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                     onClick={e => {
                                         e.preventDefault();
                                         newModal(
@@ -587,26 +611,26 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     aria-label="Country"
                                 >
                                     {country ? (
-                                        <span className="text-grayscale-700 text-[14px] flex items-center gap-[10px]">
+                                        <span className="flex items-center gap-2.5">
                                             <img
                                                 src={`https://flagcdn.com/36x27/${country.toLowerCase()}.png`}
                                                 alt={`${
                                                     (countries as Record<string, string>)[country]
                                                 } flag`}
-                                                className="w-[36px] h-[27px] object-cover"
+                                                className="w-6 h-[18px] object-cover rounded-sm shadow-sm"
                                             />
                                             {(countries as Record<string, string>)[country]}
                                         </span>
                                     ) : (
-                                        <span className="text-grayscale-500 text-[14px]">
-                                            Country
-                                        </span>
+                                        <span className="text-grayscale-400">Select a country</span>
                                     )}
                                 </button>
                             </div>
 
-                            {/* Role selector */}
-                            <div className="w-full flex items-center justify-center my-2">
+                            <div className="flex flex-col w-full">
+                                <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                    Role
+                                </label>
                                 <OnboardingRoleItem
                                     role={role}
                                     roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
@@ -634,59 +658,67 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     )}
 
                     {walletDid && (
-                        <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mb-4 rounded-[15px] mt-2">
-                            <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
-                                <div className="w-[80%] flex flex-col justify-center items-start text-left">
-                                    <p className="text-grayscale-500 font-medium text-sm">
-                                        {brandingConfig.name} Number (DID)
-                                    </p>
-                                    <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
-                                        {walletDid}
-                                    </p>
-                                </div>
-                                <div
+                        <div className="flex flex-col w-full">
+                            <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                {brandingConfig.name} Number (DID)
+                            </label>
+                            <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-xl px-4 py-3 border border-transparent">
+                                <p className="text-grayscale-900 text-sm font-poppins truncate mr-4">
+                                    {walletDid}
+                                </p>
+                                <button
+                                    type="button"
                                     onClick={copyToClipBoard}
-                                    className="w-[20%] flex items-center justify-end"
+                                    className="flex-shrink-0 text-grayscale-500 hover:text-grayscale-900 transition-colors"
                                 >
-                                    <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
-                                </div>
-                            </IonCol>
-                        </IonRow>
+                                    <CopyStack className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
                     )}
                     {email && !hasParentSwitchedProfile && (
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4 !opacity-70`}
-                            onIonInput={e => setEmail(e.detail.value)}
-                            value={email}
-                            placeholder="Email address"
-                            type="email"
-                            disabled={true}
-                        />
+                        <div className="flex flex-col w-full">
+                            <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                Email Address
+                            </label>
+                            <input
+                                className="w-full py-3 px-4 bg-grayscale-100 text-grayscale-500 rounded-xl text-sm font-poppins border border-transparent cursor-not-allowed focus:outline-none"
+                                value={email}
+                                type="email"
+                                disabled={true}
+                                readOnly
+                            />
+                        </div>
                     )}
                     {phone && (
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4 !opacity-70`}
-                            onIonInput={e => setPhone(e.detail.value)}
-                            value={phone}
-                            placeholder="Phone Number"
-                            type="tel"
-                            disabled={true}
-                        />
+                        <div className="flex flex-col w-full">
+                            <label className="text-xs font-medium text-grayscale-700 mb-1.5 font-poppins">
+                                Phone Number
+                            </label>
+                            <input
+                                className="w-full py-3 px-4 bg-grayscale-100 text-grayscale-500 rounded-xl text-sm font-poppins border border-transparent cursor-not-allowed focus:outline-none"
+                                value={phone}
+                                type="tel"
+                                disabled={true}
+                                readOnly
+                            />
+                        </div>
                     )}
-                </IonRow>
-                <button
-                    type="button"
-                    onClick={e =>
-                        newModal(<ExportSeedPhraseModal />, { sectionClassName: '!max-w-[450px]' })
-                    }
-                    className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal mb-[10px]"
-                >
-                    Export Seed Phrase
-                </button>
-                {showDeleteAccountButton && !hasParentSwitchedProfile && (
-                    <IonRow className="w-full flex items-center justify-center">
+                </div>
+
+                <div className="pt-4 space-y-3 w-full">
+                    <button
+                        type="button"
+                        onClick={e =>
+                            newModal(<ExportSeedPhraseModal />, {
+                                sectionClassName: '!max-w-[450px]',
+                            })
+                        }
+                        className="w-full py-3 px-4 bg-white border border-grayscale-300 text-grayscale-700 rounded-[20px] font-poppins text-sm font-medium hover:bg-grayscale-10 transition-colors flex items-center justify-center"
+                    >
+                        Export Seed Phrase
+                    </button>
+                    {showDeleteAccountButton && !hasParentSwitchedProfile && (
                         <button
                             type="button"
                             onClick={e => {
@@ -703,41 +735,53 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     />
                                 );
                             }}
-                            className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal"
+                            className="w-full py-3 px-4 bg-red-50 border border-red-100 text-red-600 rounded-[20px] font-poppins text-sm font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                         >
-                            <TrashBin className="ml-[5px] h-[30px] w-[30px] mr-2" />
+                            <TrashBin className="w-5 h-5" />
                             Delete Account
                         </button>
-                    </IonRow>
-                )}
+                    )}
+                </div>
             </form>
-            {sectionPortal &&
-                createPortal(
-                    <div
-                        className={`flex justify-center items-center relative max-w-[500px] !border-none ${
-                            isMobile ? 'min-h-[120px]' : 'h-full'
-                        }`}
-                        style={{
-                            bottom: `${bottomPosition}px`,
-                        }}
-                    >
+            {(() => {
+                const footerButtons = (
+                    <div className="flex gap-3 w-full">
                         <button
-                            disabled={isLoading}
-                            onClick={handleSubmit}
-                            className="bg-grayscale-900 text-white text-[17px] py-1.5 rounded-[30px] font-poppins font-semibold w-full h-[50px] flex justify-center items-center shadow-[0px_2px_3px_rgba(0,0,0,0.25)] mr-[5px]"
-                        >
-                            {isLoading ? 'Saving...' : 'Save'}
-                        </button>
-
-                        <button
-                            onClick={closeModal}
-                            className="bg-white text-grayscale-800 text-[17px] font-poppins py-1.5 rounded-[30px] w-full h-[50px] shadow-[0px_4px_4px_rgba(0,0,0,0.25)]"
+                            onClick={handleCloseModal}
+                            className="flex-1 py-3 px-4 bg-white border border-grayscale-300 text-grayscale-700 rounded-[20px] font-poppins text-sm font-medium hover:bg-grayscale-10 transition-colors"
                         >
                             Close
                         </button>
-                    </div>,
-                    sectionPortal
-                )}
+                        <button
+                            disabled={isLoading}
+                            onClick={handleSubmit}
+                            className="flex-1 py-3 px-4 bg-grayscale-900 text-white rounded-[20px] font-poppins text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? 'Saving...' : 'Save'}
+                        </button>
+                    </div>
+                );
+
+                return sectionPortal ? (
+                    createPortal(
+                        <div
+                            className={`flex justify-center items-center relative max-w-[500px] w-full px-6 ${
+                                isMobile ? 'min-h-[100px]' : 'h-full'
+                            }`}
+                            style={{
+                                bottom: `${bottomPosition}px`,
+                            }}
+                        >
+                            {footerButtons}
+                        </div>,
+                        sectionPortal
+                    )
+                ) : (
+                    <div className="w-full max-w-[500px] mx-auto flex justify-center items-center px-6 mt-8 mb-4">
+                        {footerButtons}
+                    </div>
+                );
+            })()}
         </>
     );
 };
