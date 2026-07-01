@@ -34,15 +34,20 @@ services:
             CHOKIDAR_INTERVAL: '1000'
         volumes:
             - ./src:/app/apps/learn-card-app/src
-            - ../../packages/react-learn-card/src:/app/packages/react-learn-card/src
+            - ./scripts:/app/apps/learn-card-app/scripts
             - ./environments:/app/apps/learn-card-app/environments
             - ./public:/app/apps/learn-card-app/public
             - ./index.html:/app/apps/learn-card-app/index.html
+            - ./index.template.html:/app/apps/learn-card-app/index.template.html
             - ./package.json:/app/apps/learn-card-app/package.json
+            - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
             - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
             - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
             - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
             - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json
+            - ../../packages:/app/packages
+            - ../../services/learn-card-network:/app/services/learn-card-network
+            - ../../tools:/app/tools
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -99,11 +104,10 @@ services:
         env_file:
             - path: ../../services/learn-card-network/brain-service/.env
               required: false
-        command:
-            ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run start:docker']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
         volumes:
-            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
-            - ../../packages/email-templates/src:/app/packages/email-templates/src
+            - ../../services/learn-card-network:/app/services/learn-card-network
+            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4000
@@ -152,12 +156,10 @@ services:
         env_file:
             - path: ../../services/learn-card-network/learn-cloud-service/.env
               required: false
-        command:
-            [
-                'sh',
-                '-c',
-                'cd services/learn-card-network/learn-cloud-service && bun run start:docker',
-            ]
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
+        volumes:
+            - ../../services/learn-card-network:/app/services/learn-card-network
+            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4100
@@ -197,10 +199,10 @@ services:
         env_file:
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
-        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run start:docker']
+        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
         volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
-            - ../../packages/email-templates/src:/app/packages/email-templates/src
+            - ../../services/learn-card-network:/app/services/learn-card-network
+            - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             CHOKIDAR_USEPOLLING: 'true'
