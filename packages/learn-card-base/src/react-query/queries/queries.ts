@@ -16,7 +16,7 @@ import {
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 import { useAuthGateState } from 'learn-card-base/auth-status/useAuthGateState';
-import { hasNetworkProfile, isProfileResolved } from 'learn-card-base/auth-status/authStatus';
+import { hasNetworkProfile, isAuthSettled } from 'learn-card-base/auth-status/authStatus';
 import {
     Boost,
     BoostRecipientInfo,
@@ -763,8 +763,9 @@ export const useGetSearchProfiles = (profileId: string) => {
  * Hook: Determine if the current user is an LCN user.
  *
  * Re-rooted on the canonical auth-gate selector: `data` is true ONLY for a
- * confirmed network profile, and `isLoading` stays true until the profile is
- * definitively resolved (present or absent). A transient wallet/network failure
+ * confirmed network profile, and `isLoading` stays true until auth is settled —
+ * the profile is definitively resolved (present or absent) or the user is
+ * definitively unauthenticated. A transient wallet/network failure
  * resolves to "still resolving", never "no profile", so the Complete Profile /
  * age gate / JoinNetworkModal prompts can't fire during the resume race.
  */
@@ -775,7 +776,7 @@ export const useIsCurrentUserLCNUser = () => {
     return {
         ...result,
         data: hasNetworkProfile(authStatus),
-        isLoading: !isProfileResolved(authStatus),
+        isLoading: !isAuthSettled(authStatus),
     };
 };
 

@@ -104,6 +104,16 @@ export const shouldPromptProfileOnboarding = (state: AuthGateState): boolean =>
 export const isProfileResolved = (state: AuthGateState): boolean =>
     state.tag === 'ready' && (state.profile.tag === 'present' || state.profile.tag === 'absent');
 
+/**
+ * True once the auth/profile question is settled enough to stop showing a loader:
+ * either the profile is definitively resolved, or the user is definitively
+ * unauthenticated (no profile to fetch). Consumers that key a spinner off
+ * `isLoading` must use this — `isProfileResolved` alone leaves logged-out users
+ * loading forever.
+ */
+export const isAuthSettled = (state: AuthGateState): boolean =>
+    state.tag === 'unauthenticated' || isProfileResolved(state);
+
 /** True while the user genuinely has a network profile. */
 export const hasNetworkProfile = (state: AuthGateState): boolean =>
     state.tag === 'ready' && state.profile.tag === 'present';

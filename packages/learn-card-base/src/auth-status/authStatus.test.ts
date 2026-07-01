@@ -4,6 +4,7 @@ import {
     deriveAuthStatus,
     shouldPromptProfileOnboarding,
     isProfileResolved,
+    isAuthSettled,
     hasNetworkProfile,
     isAuthResolving,
     type AuthStatusInput,
@@ -195,6 +196,20 @@ describe('predicates', () => {
 
             expect(isProfileResolved(deriveAuthStatus(input)), JSON.stringify(input)).toBe(
                 expected
+            );
+        }
+    });
+
+    it('isAuthSettled is true for resolved profiles AND unauthenticated (never leaves logged-out loading)', () => {
+        for (const input of everyInput()) {
+            const isUnauthenticated = input.coordinatorStatus === 'idle';
+            const isResolved =
+                input.coordinatorStatus === 'ready' &&
+                input.walletReady &&
+                input.profileQueryStatus === 'success';
+
+            expect(isAuthSettled(deriveAuthStatus(input)), JSON.stringify(input)).toBe(
+                isUnauthenticated || isResolved
             );
         }
     });
