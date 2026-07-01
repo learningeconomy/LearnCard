@@ -30,6 +30,10 @@ const preview: Preview = {
         actions: { argTypesRegex: '^on[A-Z].*' },
         controls: { matchers: { color: /(background|color)$/i, date: /Date$/ } },
         layout: 'fullscreen',
+        chromatic: {
+            diffThreshold: 0.2,
+            diffIncludeAntiAliasing: false,
+        },
         backgrounds: {
             default: 'app',
             values: [
