@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: 'Poppins', 'Lucida Sans', Geneva, Verdana, sans-serif;
+}
+
+/* Storybook's fullscreen layout pins the body with position:fixed and clips
+   overflow, so tall stories like DashboardView can't scroll. Unpin it and let
+   the body own the scroll. */
+.sb-main-fullscreen {
+    position: static !important;
+    overflow-y: auto !important;
+    height: 100vh !important;
+}

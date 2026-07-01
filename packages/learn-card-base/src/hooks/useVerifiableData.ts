@@ -8,6 +8,17 @@ const log = getLogger('use-verifiable-data');
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
 
+/** Prefix used for the LearnCloud index `id` of every verifiable-data record. */
+export const VERIFIABLE_DATA_INDEX_PREFIX = '__verifiable_data_';
+
+/** Builds the canonical index `id` for a verifiable-data key. */
+export const getVerifiableDataIndexId = (key: string): string =>
+    `${VERIFIABLE_DATA_INDEX_PREFIX}${key}__`;
+
+/** True when a credential record is internal verifiable-data plumbing (not a user-facing credential). */
+export const isVerifiableDataRecord = (record?: { id?: string } | null): boolean =>
+    typeof record?.id === 'string' && record.id.startsWith(VERIFIABLE_DATA_INDEX_PREFIX);
+
 export type VerifiableDataOptions = {
     /** Optional credential category. Defaults to 'VerifiableData' */
     category?: string;
@@ -80,7 +91,7 @@ const storeVerifiableData = async <T>(
     category: string,
     options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ): Promise<string> => {
-    const indexId = `__verifiable_data_${key}__`;
+    const indexId = getVerifiableDataIndexId(key);
 
     // Check whether an index record already exists for this key
     const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
@@ -137,7 +148,7 @@ const getVerifiableData = async <T>(
     key: string
 ): Promise<VerifiableDataResult<T>> => {
     const records = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: `__verifiable_data_${key}__`,
+        id: getVerifiableDataIndexId(key),
     });
 
     if (records?.length > 0 && records[0].verifiableData !== undefined) {

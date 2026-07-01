@@ -1,6 +1,6 @@
 {
     "name": "@learncard/credential-library",
-    "version": "1.0.8",
+    "version": "1.0.10",
     "description": "Comprehensive library of Verifiable Credential fixtures for testing, development, and regression prevention across the VC ecosystem",
     "main": "./dist/index.js",
     "module": "./dist/credential-library.esm.js",
@@ -33,7 +33,7 @@
     },
     "dependencies": {
         "@learncard/types": "workspace:*",
-        "zod": "^3.23.8"
+        "zod": "4.1.13"
     },
     "types": "./dist/index.d.ts",
     "sideEffects": false

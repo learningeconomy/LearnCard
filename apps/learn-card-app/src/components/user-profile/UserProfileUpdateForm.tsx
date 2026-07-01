@@ -42,9 +42,11 @@ import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoa
 import OnboardingRoleItem from '../onboarding/onboardingRoles/OnboardingRoleItem';
 import OnboardingRolesContainer from '../onboarding/onboardingRoles/OnboardingRolesContainer';
 import CountrySelectorModal from '../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
+import IssuerStatusCard from './IssuerStatusCard';
 import countries from '../../constants/countries.json';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
+
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -476,6 +478,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     </button>
                 </div>
             )}
+
+            <div className="w-full px-6 mt-4">
+                <IssuerStatusCard walletDid={walletDid} />
+            </div>
 
             <form
                 onSubmit={e => {

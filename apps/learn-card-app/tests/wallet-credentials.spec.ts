@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import {
+    clickPublishAndIssueIfPresent,
     issueCredentialToSelf,
     openAddToLearnCardMenu,
     TEST_CREDENTIAL_TITLE,
@@ -85,8 +86,8 @@ test.describe('Wallet Credentials', () => {
         // Click Next to proceed to publish
         await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
 
-        // Click Publish & Issue
-        await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
+        // Click Publish & Issue (skipped when the skipPublishStep flag is enabled)
+        await clickPublishAndIssueIfPresent(page);
 
         // Click Plus to open recipient selection
         await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });

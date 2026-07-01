@@ -40,14 +40,28 @@ const LaunchPad: React.FC = () => {
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+        tab: tabParam,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
     const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
 
-    const [tab, setTab] = useState(LaunchPadTabEnum.myApps);
+    const initialTab = (() => {
+        const raw = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+        const match = Object.values(LaunchPadTabEnum).find(option => option === raw);
+        return match ?? LaunchPadTabEnum.myApps;
+    })();
+
+    const [tab, setTab] = useState(initialTab);
     const [filterBy, setFilterBy] = useState<LaunchPadFilterOptionsEnum>(
         LaunchPadFilterOptionsEnum.allApps
     );

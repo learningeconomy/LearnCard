@@ -15,6 +15,7 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
 import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
+import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 
 import {
     useIsLoggedIn,
@@ -33,24 +34,23 @@ import {
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
+    useNetworkConsentMutation,
+    BrandingEnum,
+    useLaunchDarklyIdentify,
+    useIsChapiInteraction,
+    redirectStore,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import { useQueryClient } from '@tanstack/react-query';
-
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
-import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
-import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
-import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
@@ -128,11 +128,30 @@ const AppRouter: React.FC = () => {
     const analytics = useAnalytics();
     const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+
+    useEffect(() => {
+        if (!isLoggedIn || !currentUser || !isAiEnabled) return;
+
+        void autoConsentLearnCardAi({
+            enabled: true,
+            userOverrides: {
+                name: currentUser.name ?? '',
+                profileImage: currentUser.profileImage ?? '',
+            },
+        });
+    }, [
+        autoConsentLearnCardAi,
+        currentUser?.name,
+        currentUser?.profileImage,
+        isAiEnabled,
+        isLoggedIn,
+    ]);
 
     const params = queryString.parse(location.search);
 
@@ -145,7 +164,7 @@ const AppRouter: React.FC = () => {
     // Insights Consent
     const insightsConsent = params.insightsConsent;
     const shareInsightsRequest = params.shareInsights;
-    const contractUri = params.contractUri;
+    const contractUri = typeof params.contractUri === 'string' ? params.contractUri : undefined;
     const teacherProfileId = params.teacherProfileId;
     const learnerProfileId = params.learnerProfileId;
 

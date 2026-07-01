@@ -4,22 +4,167 @@ import { switchedProfileStore, useWallet } from 'learn-card-base';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { cloneDeep } from 'lodash';
+import { getLogger } from '../logging/logger';
 
-const getRecipientsForContractOwner = (contractOwnerDid: string): [string, ...string[]] => {
-    const recipients: [string, ...string[]] = [contractOwnerDid];
+const log = getLogger('use-shared-uris-in-terms');
 
+type CredentialListPage = {
+    records: LCR[];
+    hasMore: boolean;
+    cursor?: string;
+};
+
+const MAX_LEARN_CLOUD_PAGE_ITERATIONS = 1000;
+
+type SharedUriResolution = {
+    sharedUri: string | false;
+    status: 'reused' | 'created' | 'missing';
+};
+
+const getCredentialListQueryKey = (category: string) => [
+    'useGetCredentialList',
+    switchedProfileStore.get.switchedDid() ?? '',
+    category,
+];
+
+const getRecipientsForOwnerDid = (contractOwnerDid: string): string[] => {
     const isSmartResume =
         contractOwnerDid === 'did:web:network.learncard.com:users:smart-resume-integration' ||
         contractOwnerDid === 'did:web:localhost%3A4000:users:in-service' ||
         contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume' ||
         contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume-test';
 
+    const recipients = [contractOwnerDid];
     if (isSmartResume) {
         recipients.push('did:web:network.learncard.com');
         recipients.push('did:web:localhost%3A4000');
     }
 
     return recipients;
+};
+
+const syncCachedCategoryRecords = (
+    queryClient: QueryClient,
+    category: string,
+    records: LCR[]
+): void => {
+    const queryKey = getCredentialListQueryKey(category);
+    const recordMap = new Map(records.map(record => [record.id, record]));
+
+    queryClient.setQueriesData<InfiniteData<CredentialListPage, string>>({ queryKey }, oldData =>
+        oldData
+            ? {
+                  ...oldData,
+                  pages: oldData.pages.map(oldPage => ({
+                      ...oldPage,
+                      records: oldPage.records.map(oldRecord => {
+                          const updatedRecord = recordMap.get(oldRecord.id);
+                          return updatedRecord ?? oldRecord;
+                      }),
+                  })),
+              }
+            : oldData
+    );
+};
+
+const loadCategoryRecordsForWallet = async (
+    wallet: BespokeLearnCard,
+    category: string
+): Promise<{ records: LCR[]; pageCount: number }> => {
+    const getPage = wallet.index.LearnCloud.getPage;
+
+    if (!getPage) {
+        const records = ((await wallet.index.LearnCloud.get({ category })) ?? []) as LCR[];
+        return { records, pageCount: records.length > 0 ? 1 : 0 };
+    }
+
+    const records: LCR[] = [];
+    let cursor: string | undefined = undefined;
+    let pageCount = 0;
+    const seenCursors = new Set<string>();
+
+    while (pageCount < MAX_LEARN_CLOUD_PAGE_ITERATIONS) {
+        const page = (await getPage({ category }, { cursor, limit: 100 })) as
+            | CredentialListPage
+            | undefined;
+
+        pageCount += 1;
+
+        if (!page) {
+            break;
+        }
+
+        records.push(...(page.records ?? []));
+
+        if (!page.hasMore || !page.cursor) {
+            break;
+        }
+
+        if (seenCursors.has(page.cursor) || page.cursor === cursor) {
+            break;
+        }
+
+        seenCursors.add(page.cursor);
+
+        cursor = page.cursor;
+    }
+
+    return { records, pageCount };
+};
+
+const getOrCreateSharedUriFromCategoryRecords = async (
+    wallet: BespokeLearnCard,
+    contractOwnerDid: string,
+    credUri: string,
+    records: LCR[]
+): Promise<SharedUriResolution> => {
+    const mainRecord = records.find(record => record.uri === credUri);
+
+    if (mainRecord) {
+        const existingSharedUris = mainRecord.sharedUris?.[contractOwnerDid];
+        if (existingSharedUris?.length) {
+            return { sharedUri: existingSharedUris.at(-1) ?? false, status: 'reused' };
+        }
+
+        const vc = await wallet.read.get(credUri);
+        if (!vc) {
+            return { sharedUri: false, status: 'missing' };
+        }
+
+        const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
+            recipients: getRecipientsForOwnerDid(contractOwnerDid),
+        });
+
+        if (!newUri) {
+            return { sharedUri: false, status: 'missing' };
+        }
+
+        const newSharedUris = mainRecord.sharedUris
+            ? { ...mainRecord.sharedUris, [contractOwnerDid]: [newUri] }
+            : { [contractOwnerDid]: [newUri] };
+
+        await wallet.index.LearnCloud.update(mainRecord.id, {
+            sharedUris: newSharedUris,
+        });
+
+        mainRecord.sharedUris = newSharedUris;
+
+        return { sharedUri: newUri, status: 'created' };
+    }
+
+    const alreadySharedRecord = records.find(record => {
+        const sharedUris = record.sharedUris?.[contractOwnerDid];
+        return sharedUris?.includes(credUri);
+    });
+
+    if (alreadySharedRecord) {
+        return {
+            sharedUri: alreadySharedRecord.sharedUris?.[contractOwnerDid]?.at(-1) ?? false,
+            status: 'reused',
+        };
+    }
+
+    return { sharedUri: false, status: 'missing' };
 };
 
 /**
@@ -62,126 +207,34 @@ const createSharedUriForWallet = async (
     credUri: string,
     category: string
 ): Promise<string | false> => {
-    const didWeb = switchedProfileStore.get.switchedDid();
-    const queryKey = ['useGetCredentialList', didWeb ?? '', category];
-    const cache =
-        queryClient.getQueryData<
-            InfiniteData<{ records: LCR[]; hasMore: boolean; cursor?: string }, string>
-        >(queryKey);
+    const queryKey = getCredentialListQueryKey(category);
+    const cache = queryClient.getQueryData<InfiniteData<CredentialListPage, string>>(queryKey);
+    const cachedRecords = cache?.pages.flatMap(page => page.records) ?? [];
 
-    for (const record of cache?.pages.flatMap(page => page.records) ?? []) {
-        if (record.uri === credUri) {
-            const existingSharedUris = record.sharedUris?.[contractOwnerDid];
-            if (existingSharedUris?.length) {
-                return existingSharedUris.at(-1)!;
-            }
+    if (cachedRecords.length > 0) {
+        const cachedResult = await getOrCreateSharedUriFromCategoryRecords(
+            wallet,
+            contractOwnerDid,
+            credUri,
+            cachedRecords
+        );
 
-            const vc = await wallet.read.get(credUri);
-            if (!vc) return false;
-
-            const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
-                recipients: getRecipientsForContractOwner(contractOwnerDid),
-            });
-
-            if (!newUri) return false;
-
-            const newSharedUris = record.sharedUris
-                ? { ...record.sharedUris, [contractOwnerDid]: [newUri] }
-                : { [contractOwnerDid]: [newUri] };
-
-            await wallet.index.LearnCloud.update(record.id, {
-                sharedUris: newSharedUris,
-            });
-
-            await queryClient.cancelQueries({ queryKey });
-            // manually update react query
-            queryClient.setQueriesData<InfiniteData<LCR, string>>({ queryKey }, oldData =>
-                oldData
-                    ? {
-                          ...oldData,
-                          pages: oldData.pages.map(oldPage => ({
-                              ...oldPage,
-                              records: oldPage.records.map(oldRecord => ({
-                                  ...oldRecord,
-                                  ...(oldRecord.uri === credUri && {
-                                      sharedUris: newSharedUris,
-                                  }),
-                              })),
-                          })),
-                      }
-                    : undefined
-            );
-
-            return newUri;
+        if (cachedResult.status !== 'missing') {
+            syncCachedCategoryRecords(queryClient, category, cachedRecords);
+            return cachedResult.sharedUri;
         }
     }
 
-    // Not in react query cache, we gotta do this the hard way
-    let oldCursor = cache?.pageParams.at(-1);
-    let page = await wallet.index.LearnCloud.getPage?.(
-        { category },
-        { cursor: oldCursor } // start where the cache ended
+    const { records } = await loadCategoryRecordsForWallet(wallet, category);
+    const result = await getOrCreateSharedUriFromCategoryRecords(
+        wallet,
+        contractOwnerDid,
+        credUri,
+        records
     );
 
-    do {
-        await queryClient.cancelQueries({ queryKey });
-        // update react query cache with this page
-        queryClient.setQueriesData<InfiniteData<LCR, string>>({ queryKey }, oldData =>
-            oldData
-                ? {
-                      pages: [...oldData.pages, page],
-                      pageParams: [...oldData.pageParams, oldCursor],
-                  }
-                : {
-                      pages: [page],
-                      pageParams: [oldCursor],
-                  }
-        );
-
-        const mainRecord = page?.records.find(record => record.uri === credUri);
-
-        if (mainRecord) {
-            // re-use existing shared uris if they exist
-            const existingSharedUris = mainRecord.sharedUris?.[contractOwnerDid];
-            if (existingSharedUris?.length) {
-                return existingSharedUris.at(-1) ?? false;
-            }
-
-            const vc = await wallet.read.get(credUri);
-            if (!vc) return false;
-
-            const newUri = await wallet.store.LearnCloud.uploadEncrypted?.(vc, {
-                recipients: getRecipientsForContractOwner(contractOwnerDid),
-            });
-
-            if (!newUri) return false;
-
-            await wallet.index.LearnCloud.update(mainRecord.id, {
-                sharedUris: mainRecord.sharedUris
-                    ? { ...mainRecord.sharedUris, [contractOwnerDid]: [newUri] }
-                    : { [contractOwnerDid]: [newUri] },
-            });
-
-            return newUri;
-        }
-
-        // if credUri is already a sharedUri
-        const alreadySharedRecord = page?.records.find(
-            record =>
-                record.sharedUris &&
-                Object.keys(record.sharedUris).includes(contractOwnerDid) &&
-                record.sharedUris[contractOwnerDid].includes(credUri)
-        );
-
-        if (alreadySharedRecord) {
-            return alreadySharedRecord.sharedUris[contractOwnerDid].at(-1)!;
-        }
-
-        oldCursor = page?.cursor;
-        page = await wallet.index.LearnCloud.getPage?.({ category }, { cursor: page?.cursor });
-    } while (page?.hasMore);
-
-    return false;
+    syncCachedCategoryRecords(queryClient, category, records);
+    return result.sharedUri;
 };
 
 export const getTermsWithSharedUrisForWallet = async (
@@ -195,32 +248,70 @@ export const getTermsWithSharedUrisForWallet = async (
     }
 ) => {
     const terms = cloneDeep(_terms);
-
     const categories = Object.keys(terms.terms.read.credentials.categories);
-    await Promise.all(
-        categories.map(async category => {
-            const credUris = terms.terms.read.credentials.categories[category].shared;
-            const newCredUris = (
-                await Promise.all(
-                    credUris?.map(
-                        async credUri =>
-                            await getOrCreateSharedUriForWallet(
-                                wallet,
-                                contractOwnerDid,
-                                queryClient,
-                                credUri,
-                                category
-                            )
-                    ) ?? []
-                )
-            ).filter(c => c !== false);
-
-            terms.terms.read.credentials.categories[category].shared = newCredUris;
-        })
+    const totalCredentialUris = categories.reduce(
+        (count, category) =>
+            count + (terms.terms.read.credentials.categories[category].shared?.length ?? 0),
+        0
     );
+
+    log.debug('Preparing shared URIs for consent terms', {
+        categoryCount: categories.length,
+        totalCredentialUris,
+    });
+
+    for (const category of categories) {
+        const requestedCredUris = Array.from(
+            new Set(terms.terms.read.credentials.categories[category].shared ?? [])
+        );
+
+        if (requestedCredUris.length === 0) {
+            terms.terms.read.credentials.categories[category].shared = [];
+            continue;
+        }
+
+        const { records, pageCount } = await loadCategoryRecordsForWallet(wallet, category);
+        let reusedCount = 0;
+        let createdCount = 0;
+        let missingCount = 0;
+        const newCredUris: string[] = [];
+
+        for (const credUri of requestedCredUris) {
+            const result = await getOrCreateSharedUriFromCategoryRecords(
+                wallet,
+                contractOwnerDid,
+                credUri,
+                records
+            );
+
+            if (result.status === 'reused' && result.sharedUri) {
+                reusedCount += 1;
+                newCredUris.push(result.sharedUri);
+            } else if (result.status === 'created' && result.sharedUri) {
+                createdCount += 1;
+                newCredUris.push(result.sharedUri);
+            } else {
+                missingCount += 1;
+            }
+        }
+
+        syncCachedCategoryRecords(queryClient, category, records);
+        terms.terms.read.credentials.categories[category].shared = newCredUris;
+
+        log.debug('Prepared shared URIs for category', {
+            category,
+            requestedCount: requestedCredUris.length,
+            matchedRecordCount: records.length,
+            pageCount,
+            reusedCount,
+            createdCount,
+            missingCount,
+        });
+    }
 
     return terms;
 };
+
 export const useSharedUrisInTerms = (contractOwnerDid: string) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();

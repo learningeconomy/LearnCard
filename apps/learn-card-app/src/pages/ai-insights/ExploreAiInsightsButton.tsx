@@ -16,7 +16,7 @@ export const ExploreAiInsightsButton: React.FC<{ className?: string }> = ({ clas
                     <AiInsightsIcon className="h-[49px] w-[49px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]" />
                 </div>
                 <span className="text-[20px] font-poppins font-[600] leading-[130%]">
-                    Explore AI Insights
+                    Explore Insights
                 </span>
             </Link>
         </div>
