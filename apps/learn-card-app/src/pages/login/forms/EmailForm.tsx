@@ -286,7 +286,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
         try {
-            await sendLoginVerificationCode({ email: verificationEmail as string });
+            await sendLoginVerificationCode({ email: verificationEmail as string, locale });
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);

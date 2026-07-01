@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
 import { getChallenges } from '@helpers/challenges.helpers';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 
 import { t, openRoute, didRoute } from '@routes';
 import { setValidChallengesForDid } from '@cache/challenges';
+import { getProfileByEmail } from '@accesslayer/profile/read';
 
 import packageJson from '../../package.json';
 
@@ -22,6 +24,25 @@ export const utilitiesRouter = t.router({
         .output(z.string())
         .query(async () => {
             return `Healthy and well! (Version ${packageJson.version})`;
+        }),
+
+    resolveEmailLocale: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/utilities/resolve-email-locale',
+                tags: ['Utilities'],
+                summary: 'Resolve a recipient locale by email',
+                description:
+                    "Returns the BCP-47 locale preference for the account with this email, or 'en' when none is set or no account exists. Always returns a locale and never reveals whether an account exists, so it is safe to call before authentication (e.g. to localize a login-code email).",
+            },
+        })
+        .input(z.object({ email: z.string().email() }))
+        .output(z.object({ locale: z.string() }))
+        .mutation(async ({ input }) => {
+            const profile = await getProfileByEmail(input.email);
+
+            return { locale: resolveRecipientLocale(profile) };
         }),
 
     getChallenges: didRoute
