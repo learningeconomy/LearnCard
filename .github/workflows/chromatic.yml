@@ -99,5 +99,9 @@ jobs:
                   workingDir: apps/learn-card-app
                   # The app has no prebuilt Storybook output, so let Chromatic run the build script.
                   buildScriptName: build-storybook
+                  # TurboSnap: only snapshot stories whose files (or their dependencies) changed
+                  # since the baseline. Storybook 8 + Vite generates the dependency stats natively,
+                  # so no extra --stats-json flag is needed when Chromatic builds Storybook itself.
+                  onlyChanged: true
                   # Don't fail the build on visual changes — they're reviewed in Chromatic's UI.
                   exitZeroOnChanges: true
