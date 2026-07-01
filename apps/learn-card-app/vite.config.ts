@@ -1,6 +1,7 @@
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
+import { readdirSync, readFileSync, existsSync } from 'fs';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
@@ -49,23 +50,49 @@ const resolveBuildSha = (): string => {
     }
 };
 
-// Workspace packages resolve to source in dev; keep them out of optimizeDeps for HMR.
-const workspacePackages = [
-    '@learncard/helpers',
-    '@learncard/types',
-    '@learncard/react',
-    '@learncard/init',
-    '@learncard/core',
-    '@learncard/chapi-plugin',
-    '@learncard/lca-api-plugin',
-    '@learncard/open-badge-v2-plugin',
-    '@learncard/network-brain-client',
-    '@learncard/network-plugin',
-    '@learncard/openid4vc-plugin',
-    '@learncard/sd-jwt-vc-plugin',
-];
+// Every @learncard/* workspace package in the monorepo. In dev these resolve to their
+// TypeScript source (via the `development` export condition below), so they must be kept
+// out of esbuild pre-bundling for HMR to work. Collected by scanning the packages roots
+// so a newly added package is picked up automatically — no hand-maintained list to drift.
+const collectWorkspacePackages = (): string[] => {
+    const names = new Set<string>();
 
-export default defineConfig(async ({ mode }) => {
+    // Depth-bounded walk: packages live at varying nesting (packages/x, packages/plugins/x,
+    // packages/learn-card-network/brain-client, ...). Prune heavy/irrelevant dirs so the scan
+    // stays cheap and never descends into module or source trees.
+    const walk = (dir: string, depth: number): void => {
+        if (depth < 0 || !existsSync(dir)) return;
+
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'src') {
+                continue;
+            }
+
+            const child = path.join(dir, entry.name);
+            const pkgPath = path.join(child, 'package.json');
+
+            if (existsSync(pkgPath)) {
+                try {
+                    const { name } = JSON.parse(readFileSync(pkgPath, 'utf8')) as { name?: string };
+                    if (name?.startsWith('@learncard/')) names.add(name);
+                } catch {
+                    // Ignore unreadable/partial package.json files during the scan.
+                }
+            }
+
+            walk(child, depth - 1);
+        }
+    };
+
+    walk(path.resolve(__dirname, '../../packages'), 2);
+
+    return [...names];
+};
+
+const workspacePackages = collectWorkspacePackages();
+
+export default defineConfig(async ({ mode, command }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
 
@@ -88,6 +115,11 @@ export default defineConfig(async ({ mode }) => {
             ].join('\n')
         );
     }
+
+    // Resolve @learncard/* to TypeScript source when serving the dev server (HMR / Fast
+    // Refresh) or in the self-host container build. Production dist builds leave this off
+    // so consumers get the optimized prebuilt bundles.
+    const useSourceConditions = useDockerSourceMode || command === 'serve';
 
     return {
         plugins: [
@@ -170,9 +202,10 @@ export default defineConfig(async ({ mode }) => {
                 : 'undefined',
         },
         resolve: {
-            // See useDockerSourceMode above: source-mode resolution for self-host container
-            // builds; Netlify/dist builds leave VITE_DOCKER_SOURCE unset and use published dist.
-            ...(useDockerSourceMode
+            // See useSourceConditions above: the `development` condition resolves @learncard/*
+            // to source for the dev server and self-host container builds; Netlify/dist builds
+            // leave it off and use the published dist bundles.
+            ...(useSourceConditions
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),
             alias: {

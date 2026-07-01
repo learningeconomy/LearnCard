@@ -34,6 +34,7 @@ services:
             CHOKIDAR_INTERVAL: '1000'
         volumes:
             - ./src:/app/apps/learn-card-app/src
+            - ../../packages/react-learn-card/src:/app/packages/react-learn-card/src
             - ./environments:/app/apps/learn-card-app/environments
             - ./public:/app/apps/learn-card-app/public
             - ./index.html:/app/apps/learn-card-app/index.html
