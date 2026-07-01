@@ -11,7 +11,7 @@ runs:
           uses: actions/cache@v6
           with:
               path: ~/.bun/install/cache
-              key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+              key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
               restore-keys: |
                   ${{ runner.os }}-bun-
 
