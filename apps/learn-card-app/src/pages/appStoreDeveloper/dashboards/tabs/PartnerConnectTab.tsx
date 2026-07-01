@@ -409,6 +409,62 @@ if (result.granted) {
             'Store consent IDs to track active agreements',
         ],
     },
+    {
+        id: 'requestLearnerContext',
+        name: 'requestLearnerContext',
+        category: 'consent',
+        icon: <FileText className="w-4 h-4" />,
+        shortDescription: 'Read learner context',
+        description:
+            'Request learner context for AI or personalization. Set waitForSync when your app needs a complete credential snapshot before continuing.',
+        parameters: [
+            {
+                name: 'waitForSync',
+                type: 'boolean',
+                required: false,
+                description: 'Wait for LearnCard to finish background data sync',
+            },
+            {
+                name: 'format',
+                type: "'prompt' | 'structured'",
+                required: false,
+                description: 'Return an LLM-ready prompt or structured data',
+            },
+        ],
+        returns: {
+            type: "Promise<{ status?: 'ready' | 'syncing', prompt: string, raw?: object }>",
+            description: 'Learner context and optional sync progress',
+            example: `{
+  "status": "ready",
+  "prompt": "User has 12 credentials."
+}`,
+        },
+        code: `const context = await learnCard.requestLearnerContext({
+    includeCredentials: true,
+    waitForSync: true,
+    format: 'structured',
+});
+
+if (context.status === 'syncing') {
+    const unsubscribe = learnCard.onSyncComplete(async () => {
+        const readyContext = await learnCard.requestLearnerContext({
+            includeCredentials: true,
+            waitForSync: true,
+            format: 'structured',
+        });
+
+        unsubscribe();
+        renderLearnerData(readyContext.raw?.credentials ?? []);
+    });
+} else {
+    renderLearnerData(context.raw?.credentials ?? []);
+}`,
+        tips: [
+            'Use waitForSync for full learner snapshots',
+            'Use getSyncStatus to render custom progress',
+            'Omit waitForSync when partial current data is enough',
+        ],
+    },
 ];
 
 const CATEGORIES = [
