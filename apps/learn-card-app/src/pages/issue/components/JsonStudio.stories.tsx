@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { within, expect } from '@storybook/test';
 
 import { JsonStudio } from './JsonStudio';
 import type { CredentialIdentity } from './useCredentialIdentity';
@@ -55,6 +56,11 @@ export const Valid: Story = {
     render: () => (
         <Harness identity={{ status: 'valid', schema: 'obv3', label: 'Open Badges 3.0' }} />
     ),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.getByText(/^Valid ·/)).toBeVisible();
+        await expect(canvas.getByText(/Open Badges 3\.0/)).toBeVisible();
+    },
 };
 
 /** Validation in flight — the debounced JSON-LD check is still running. */
@@ -73,6 +79,10 @@ export const Invalid: Story = {
             }}
         />
     ),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.getByText('Missing required property: issuer.')).toBeVisible();
+    },
 };
 
 /** Empty — no credential yet, so the badge is hidden entirely. */

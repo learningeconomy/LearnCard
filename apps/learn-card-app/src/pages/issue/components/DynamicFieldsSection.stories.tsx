@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { within, userEvent, expect, waitFor } from '@storybook/test';
 
 import { DynamicFieldsSection, type VariableScope } from './DynamicFieldsSection';
 import type { Recipient, RecipientMode } from './recipientTypes';
@@ -108,6 +109,17 @@ export const PerRecipientScope: Story = {
             initialScope="perRecipient"
         />
     ),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+
+        await expect(canvas.getByText('Ada Lovelace')).toBeVisible();
+
+        await userEvent.click(canvas.getByRole('button', { name: 'Same for everyone' }));
+        await waitFor(() => expect(canvas.queryByText('Ada Lovelace')).toBeNull());
+
+        await userEvent.click(canvas.getByRole('button', { name: 'Per recipient' }));
+        await expect(await canvas.findByText('Ada Lovelace')).toBeVisible();
+    },
 };
 
 /**

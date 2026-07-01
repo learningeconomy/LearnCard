@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { within, userEvent, expect } from '@storybook/test';
 
 import { RecipientPicker } from './RecipientPicker';
 import type { LinkOptions, Recipient, RecipientMode } from './recipientTypes';
@@ -63,6 +64,17 @@ const Harness: React.FC<HarnessProps> = ({ initialMode, initialRecipients = [] }
 /** "Just me" — no recipient inputs, the credential goes to the issuer. */
 export const SelfMode: Story = {
     render: () => <Harness initialMode="self" />,
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+
+        await expect(canvas.queryByPlaceholderText('Search people...')).toBeNull();
+
+        await userEvent.click(canvas.getByRole('button', { name: /specific people|^people$/i }));
+        await expect(await canvas.findByPlaceholderText('Search people...')).toBeVisible();
+
+        await userEvent.click(canvas.getByRole('button', { name: /anyone with a link|^link$/i }));
+        await expect(canvas.getByText(/create a shareable link when you issue/i)).toBeVisible();
+    },
 };
 
 /** "Specific people" — seeded connections appear inline; type to search. */

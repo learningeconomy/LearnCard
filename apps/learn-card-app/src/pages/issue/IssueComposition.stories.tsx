@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { within, userEvent, expect, waitFor } from '@storybook/test';
 
 import { IssueCredentialView } from './IssueCredentialView';
 import { getTypeByObv3, type CredentialTypeEntry } from './components/credentialTypeCatalog';
@@ -179,4 +180,18 @@ export const FullPage: Story = {
             <ViewHarness />
         </SeedProfiles>
     ),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+
+        const nameField = await canvas.findByPlaceholderText('e.g. Web Development Fundamentals');
+        await expect(nameField).toHaveValue('Intro to Storybook');
+
+        await userEvent.click(canvas.getByRole('button', { name: /specific people|^people$/i }));
+        await expect(await canvas.findByPlaceholderText('Search people...')).toBeVisible();
+
+        await userEvent.click(canvas.getByRole('button', { name: 'JSON' }));
+        await waitFor(() =>
+            expect(canvasElement.querySelector('textarea.font-mono')).not.toBeNull()
+        );
+    },
 };

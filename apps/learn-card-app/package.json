@@ -143,6 +143,8 @@
         "start-p-4000": "vite --port=4000",
         "storybook": "storybook dev -p 6007",
         "build-storybook": "storybook build",
+        "test-storybook": "test-storybook --url http://localhost:6007",
+        "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
         "prepare-config": "npx tsx scripts/prepare-native-config.ts",
         "generate-assets": "npx tsx scripts/generate-tenant-assets.ts",
         "validate-configs": "npx tsx scripts/validate-tenant-configs.ts",
@@ -193,9 +195,12 @@
         "@ionic/cli": "^7.2.1",
         "@netlify/edge-functions": "^2.15.1",
         "@storybook/addon-essentials": "8.6.18",
+        "@storybook/addon-interactions": "8.6.18",
         "@storybook/addon-themes": "8.6.18",
         "@storybook/react": "8.6.18",
         "@storybook/react-vite": "8.6.18",
+        "@storybook/test": "8.6.18",
+        "@storybook/test-runner": "0.22.0",
         "@tailwindcss/line-clamp": "^0.4.4",
         "@tailwindcss/typography": "^0.5.16",
         "@testing-library/react": "^14.3.1",
@@ -206,6 +211,8 @@
         "@vitejs/plugin-react-swc": "^3.8.0",
         "autoprefixer": "^10.4.20",
         "chromatic": "^17.4.1",
+        "concurrently": "7.6.0",
+        "http-server": "14.1.1",
         "jeep-sqlite": "2.5.8",
         "neo4j-driver": "5.18.0",
         "node-gyp": "^12.2.0",
@@ -221,7 +228,8 @@
         "vite": "6.4.2",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3",
-        "vitest": "^3.0.0"
+        "vitest": "^3.0.0",
+        "wait-on": "6.0.1"
     },
     "description": "An Ionic project"
 }
