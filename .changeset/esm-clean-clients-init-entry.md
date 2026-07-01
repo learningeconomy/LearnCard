@@ -17,7 +17,10 @@ Node's native ESM loader this bound to the CJS entry, whose named exports
 threw "getClient not found". Each package now declares `"type": "module"`, emits
 its CJS bundles with a `.cjs` extension, and publishes a dual `exports` map
 (`import` → real ESM build, `require` → CJS entry) mirroring `@learncard/types`
-and `@learncard/helpers`.
+and `@learncard/helpers`. Each also gains the `files: ["dist"]` field it was
+previously missing (with `dist` gitignored, `pnpm pack` shipped zero build
+artifacts — now caught by `scripts/validate-packages.mjs`, which also gates the
+three network clients going forward). 
 
 With the leaf clients resolving cleanly as ESM, `@learncard/init` no longer needs
 the `createRequire(import.meta.url)` shim (`node-esm.mjs`) that routed Node ESM

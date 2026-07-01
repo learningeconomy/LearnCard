@@ -18,6 +18,9 @@
             }
         }
     },
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts"
     },
