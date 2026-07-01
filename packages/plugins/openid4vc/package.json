@@ -1,6 +1,6 @@
 {
     "name": "@learncard/openid4vc-plugin",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "OpenID for Verifiable Credentials (OID4VCI + OID4VP + SIOPv2) holder support for LearnCard",
     "type": "module",
     "main": "./dist/index.cjs",
