@@ -31,7 +31,7 @@ const preview: Preview = {
         controls: { matchers: { color: /(background|color)$/i, date: /Date$/ } },
         layout: 'fullscreen',
         chromatic: {
-            diffThreshold: 0.2,
+            diffThreshold: 0.1,
             diffIncludeAntiAliasing: false,
         },
         backgrounds: {
