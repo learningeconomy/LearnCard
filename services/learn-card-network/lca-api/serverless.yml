@@ -19,7 +19,9 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
-        packager: bun
+        # serverless-esbuild does not support Bun as a Lambda artifact packager.
+        # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
+        packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
