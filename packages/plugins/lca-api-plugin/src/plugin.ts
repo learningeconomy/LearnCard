@@ -14,13 +14,17 @@ const getNewClient = async (
     learnCard: LearnCard<any, 'id', LCAPluginDependentMethods>,
     extraHeaders?: Record<string, string>
 ) => {
-    return getClient(url, async challenge => {
-        const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    return getClient(
+        url,
+        async challenge => {
+            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-        if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-        return jwt;
-    }, extraHeaders);
+            return jwt;
+        },
+        extraHeaders
+    );
 };
 
 const getEncryptionJwk = async (
@@ -195,11 +199,14 @@ export const getLCAPlugin = async (
                     client = await getNewClient(url, _learnCard);
                     learnCard = _learnCard;
                 },
-                generateBoostInfo: async (_learnCard, description) => {
+                generateBoostInfo: async (_learnCard, description, locale) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.ai.generateBoostInfo.query({ description });
+                    const result = await client.ai.generateBoostInfo.query({
+                        description,
+                        locale,
+                    });
 
                     return {
                         title: result.title,
@@ -216,11 +223,14 @@ export const getLCAPlugin = async (
 
                     return (await client.ai.generateImage.query({ prompt })).url;
                 },
-                generateBoostSkills: async (_learnCard, description: string) => {
+                generateBoostSkills: async (_learnCard, description: string, locale?: string) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.ai.generateBoostSkills.query({ description });
+                    const result = await client.ai.generateBoostSkills.query({
+                        description,
+                        locale,
+                    });
 
                     return result;
                 },
