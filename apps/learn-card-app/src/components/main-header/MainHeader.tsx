@@ -14,11 +14,12 @@ import HeaderBranding from '../headerBranding/HeaderBranding';
 
 import Burger from '../svgs/Burger';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import QRCodeScannerButton from '../qrcode-scanner-button/QRCodeScannerButton';
 import NotificationButton from 'learn-card-base/components/notification-button/NotificationButton';
+import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
 import MainSubHeader from '../main-subheader/MainSubHeader';
 
 import { SubheaderTypeEnum } from '../main-subheader/MainSubHeader.types';
+import { resolveShowBackButton } from './headerConfig';
 import {
     BrandingEnum,
     getHeaderBrandingColor,
@@ -26,7 +27,7 @@ import {
 
 import { getStatusBarColor } from 'learn-card-base/helpers/statusBarHelpers';
 
-import { CredentialCategoryEnum, useIsLoggedIn } from 'learn-card-base';
+import { CredentialCategoryEnum, useIsLoggedIn, ProfilePicture } from 'learn-card-base';
 import loadingStore from '../../stores/loadingStore';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -56,7 +57,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     style,
     children = null,
     subheaderType,
-    showBackButton = false,
+    showBackButton,
     branding = BrandingEnum.learncard,
     customHeaderClass,
     showSideMenuButton = false,
@@ -76,6 +77,12 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
     const history = useHistory();
+
+    // Back button defaults ON for non-top-level routes (LC-1921); an explicit
+    // prop still wins. Keeps deep pages consistent without per-page wiring.
+    const resolvedShowBackButton = resolveShowBackButton(location.pathname, showBackButton);
+
+    const openMyLearnCard = useOpenMyLearnCard(branding);
 
     const isLoading = loadingStore.use.loading();
 
@@ -119,7 +126,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                 <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
                     <IonRow>
                         <IonCol size="2" className="flex justify-start items-center">
-                            {showBackButton && (
+                            {resolvedShowBackButton && (
                                 <button
                                     aria-label="Go back"
                                     className="p-0 mr-[10px] main-header-back-button"
@@ -138,12 +145,34 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             {mainHeaderBranding}
                         </IonCol>
 
-                        <IonCol size="10" className="flex justify-end items-center">
+                        <IonCol size="10" className="flex justify-end items-center gap-2">
                             {isLoggedIn ? (
-                                <>
-                                    <NotificationButton colorOverride={notificationColorOverride} />
-                                    <QRCodeScannerButton branding={branding} />
-                                </>
+                                // Profile + Alerts cluster. On desktop this renders as an
+                                // "island" pill (see `.main-header-profile-island` in
+                                // header.scss); on mobile the icons sit bare in the header
+                                // (LC-1921).
+                                <div className="main-header-profile-island flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        aria-label="Open profile"
+                                        onClick={openMyLearnCard}
+                                        className="flex items-center justify-center"
+                                    >
+                                        <ProfilePicture
+                                            customContainerClass="h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px]"
+                                            customImageClass="w-full h-full object-cover"
+                                        />
+                                    </button>
+                                    <NotificationButton
+                                        // Match the alerts icon to the rest of the header's icon
+                                        // color (back arrow / wordmark) instead of its own
+                                        // per-path white default, which was invisible inside the
+                                        // white desktop profile island on category pages. An
+                                        // explicit override (e.g. WalletPage) still wins.
+                                        colorOverride={notificationColorOverride ?? headerColors}
+                                        iconVariant="alerts"
+                                    />
+                                </div>
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
                             )}

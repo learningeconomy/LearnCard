@@ -25,59 +25,35 @@ ion-tab-bar {
     }
 }
 
-.mobile-nav-left-button {
-    margin-right: 40px;
+// LC-1921: mobile bottom nav surface — white→80% gradient, blurred, white
+// top hairline, with the Figma 20px/40px horizontal padding.
+ion-tab-bar.lc-footer-nav {
+    --background: linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+    --border: none;
+    border-top: 1px solid #ffffff;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
-    @media (max-width: 579px) {
-        margin-right: 0px;
-    }
-
-    @media (max-width: 479px) {
-        margin-right: 0px;
-        margin-left: 0px;
-    }
-}
-
-.mobile-nav-right-button {
-    margin-left: 0px;
-}
-
-.mobile-nav-notification-button {
-    position: absolute;
-    right: 20px;
-    // Bar has pb-[15px]; flex siblings center within content area (above the
-    // padding), so absolute centering at 50% appears below them. The bell
-    // icon also runs slightly taller (40px) than Apps' rocket, so the offset
-    // here is larger than the hamburger's to keep visual alignment.
-    // Paired with translateY(-45%) (instead of -50%) and mt-0 on the label.
-    top: calc(50% - 11px);
-    transform: translateY(-45%);
-    z-index: 9999;
-    background: none;
-
-    @media (max-width: 500px) {
-        right: 15px;
-    }
-    @media (max-width: 320px) {
-        right: -2px;
+    // No host padding: Ionic's :host is content-box, so any L/R padding adds
+    // ONTO the 100% width and overflows the viewport (jamming "Apps" off the
+    // right edge). The four buttons are equal flex columns that already fill
+    // the width and center their icons, giving even, symmetric spacing.
+    ion-tab-button {
+        min-width: 0;
+        --ripple-color: transparent;
+        // Transparent so each button doesn't re-paint the bar's white→80%
+        // gradient on top of itself — that double layer made the icon columns
+        // look more opaque than the (background:none) hamburger column.
+        --background: transparent;
+        --background-focused: transparent;
+        --background-focused-opacity: 0;
+        --background-activated: transparent;
     }
 }
 
 .mobile-nav-hamburger-button {
     background: none;
-    position: absolute;
-    // Same bar-padding offset as .mobile-nav-notification-button.
-    top: calc(50% - 7px);
-    left: 20px;
-    transform: translateY(-50%);
-    height: 35px;
-    width: 41px;
-    z-index: 9999;
-    border-radius: none !important;
-
-    @media (max-width: 414px) {
-        left: 10px;
-    }
+    border-radius: 0 !important;
 }
 
 // side menu
@@ -88,10 +64,19 @@ ion-tab-bar {
 }
 
 .side-menu-split-pane-container-visible.split-pane-md.split-pane-visible > .split-pane-side {
-    min-width: 270px;
-    max-width: 270px;
+    // LC-1921: Side Nav widened 270 → 290 to match Figma.
+    min-width: 290px;
+    max-width: 290px;
     border-right: var(--border);
     border-left: 0;
+    // LC-1921: subtle drop shadow on the desktop side nav's right edge.
+    // position + z-index are required so the shadow paints OVER the adjacent
+    // main content; otherwise #main's white background covers it (and Ionic
+    // ignores ion-menu's --box-shadow when the pane is docked/visible).
+    position: relative;
+    z-index: 5;
+    // Exact Figma Side Nav shadow.
+    box-shadow: 1px 5px 5px 0 rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease-out;
 }
 
@@ -120,28 +105,3 @@ ion-tab-bar {
     width: 100%;
 }
 
-.mobile-nav-boost-button {
-    position: absolute;
-    top: 0px;
-    background: transparent;
-    transform: translateX(-65%);
-    z-index: 50;
-    height: 75px;
-    width: 75px;
-
-    @media (min-width: 500px) {
-        left: 52%;
-    }
-    @media (max-width: 500px) {
-        left: 53%;
-    }
-    @media (max-width: 320px) {
-        left: 53.5%;
-    }
-    @media (min-width: 500px) and (max-width: 768px) {
-        left: 51.5%;
-    }
-    @media (min-width: 768px) and (max-width: 991px) {
-        transform: translateX(-70%);
-    }
-}
