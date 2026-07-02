@@ -95,12 +95,14 @@ custom:
 
 package:
     individually: true
+    # DIDKit assets no longer ship via node_modules copy-patterns: those globs were
+    # service-relative and match nothing under Bun workspaces (root cause of the
+    # 2026-07-02 staging incident, PR #1341) — and if a service-level node_modules
+    # ever reappeared, force-including didkit-plugin-node here would shadow the
+    # didkitNative Lambda Layer (/var/task/node_modules wins over NODE_PATH). The
+    # WASM ships inside the bundle (esbuildPlugins.cjs); native ships via the Layer.
     patterns:
         - '!node_modules/**'
-        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
-        - 'node_modules/@learncard/didkit-plugin-node/*.node'
-        - 'node_modules/@learncard/didkit-plugin-node/package.json'
-        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
         - 'src/swagger-ui'
 
 # Ships @learncard/didkit-plugin-node (JS wrapper + linux-x64 napi binary) at
