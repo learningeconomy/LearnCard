@@ -27,6 +27,7 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import {
+    getAllCredentialUrisForCategory,
     getPrivacyAndDataInfo,
     isVerifiableDataContractCategory,
     VERIFIABLE_DATA_CONTRACT_CATEGORIES,
@@ -144,22 +145,16 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                         categories: {},
                     };
                     updatedTerms.read.credentials.categories ??= {};
-                    await Promise.all(
-                        categoriesWithLiveSync.map(async category => {
-                            const allCategoryCredUris = (
-                                await wallet.index.LearnCloud.get({ category })
-                            ).map(item => item.uri);
-
-                            updatedTerms.read.credentials.categories[category] = {
-                                ...(updatedTerms.read.credentials.categories[category] ?? {
-                                    shareAll: true,
-                                    sharing: true,
-                                    shared: [],
-                                }),
-                                shared: allCategoryCredUris,
-                            };
-                        })
-                    );
+                    for (const category of categoriesWithLiveSync) {
+                        updatedTerms.read.credentials.categories[category] = {
+                            ...(updatedTerms.read.credentials.categories[category] ?? {
+                                shareAll: true,
+                                sharing: true,
+                                shared: [],
+                            }),
+                            shared: await getAllCredentialUrisForCategory(wallet, category),
+                        };
+                    }
 
                     const isUpdated = !isEqual(terms, updatedTerms);
 

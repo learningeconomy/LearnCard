@@ -635,28 +635,28 @@ try {
 ---
 // src/pages/index.astro
 const config = {
-  learnCardHostOrigin: import.meta.env.PUBLIC_LEARNCARD_HOST || 'https://learncard.app'
+    learnCardHostOrigin: import.meta.env.PUBLIC_LEARNCARD_HOST || 'https://learncard.app',
 };
 ---
 
 <script>
-  import { createPartnerConnect } from '@learncard/partner-connect';
+    import { createPartnerConnect } from '@learncard/partner-connect';
 
-  const config = window.__LC_CONFIG;
-  const learnCard = createPartnerConnect({
-    hostOrigin: config.learnCardHostOrigin
-  });
+    const config = window.__LC_CONFIG;
+    const learnCard = createPartnerConnect({
+        hostOrigin: config.learnCardHostOrigin,
+    });
 
-  async function init() {
-    try {
-      const identity = await learnCard.requestIdentity();
-      console.log('Logged in as:', identity.user.did);
-    } catch (error) {
-      console.error('Not authenticated:', error);
+    async function init() {
+        try {
+            const identity = await learnCard.requestIdentity();
+            console.log('Logged in as:', identity.user.did);
+        } catch (error) {
+            console.error('Not authenticated:', error);
+        }
     }
-  }
 
-  init();
+    init();
 </script>
 ```
 
@@ -734,6 +734,38 @@ import type {
     ConsentResponse,
     LearnCardError,
 } from '@learncard/partner-connect';
+```
+
+## Learner Context Sync Readiness
+
+Apps that need a complete learner snapshot can ask LearnCard to wait for background data sync:
+
+```typescript
+const context = await learnCard.requestLearnerContext({
+    includeCredentials: true,
+    waitForSync: true,
+    format: 'structured',
+});
+
+if (context.status === 'syncing') {
+    const unsubscribe = learnCard.onSyncComplete(async () => {
+        const readyContext = await learnCard.requestLearnerContext({
+            includeCredentials: true,
+            waitForSync: true,
+            format: 'structured',
+        });
+
+        unsubscribe();
+        console.log(readyContext.raw?.credentials);
+    });
+}
+```
+
+Use `learnCard.getSyncStatus()` to render your own progress UI:
+
+```typescript
+const syncStatus = await learnCard.getSyncStatus();
+console.log(syncStatus.status, syncStatus.progress);
 ```
 
 ## License

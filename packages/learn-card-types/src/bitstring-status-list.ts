@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const BITSTRING_STATUS_PURPOSES = ['revocation', 'suspension'] as const;
 export const DEFAULT_BITSTRING_STATUS_LIST_SIZE = 131_072;

@@ -9,7 +9,7 @@ This is a plugin for simplifying useful, meaningful credentials with minimal inp
 ### Install
 
 ```bash
-pnpm i @learncard/vc-templates-plugin
+bun add @learncard/vc-templates-plugin
 ```
 
 ### Basic Credential
@@ -17,6 +17,7 @@ pnpm i @learncard/vc-templates-plugin
 The credential of type `basic` is the most simple credential, following the minimum information required by the Verifiable Credential specification.&#x20;
 
 {% code title="LearnCard CLI" %}
+
 ```typescript
 // Basic Credential: with default, 'basic' template
 learnCard.invoke.newCredential();
@@ -33,11 +34,11 @@ learnCard.invoke.newCredential({ type: 'basic' });
 **/
 
 // Basic Credential: with did, subject, and issuanceDate overloads
-learnCard.invoke.newCredential({ 
-  type: 'basic', 
-  did:'did:example:123', 
-  subject: 'did:example:456', 
-  issuanceDate: '2020-08-19T21:41:50Z' 
+learnCard.invoke.newCredential({
+    type: 'basic',
+    did: 'did:example:123',
+    subject: 'did:example:456',
+    issuanceDate: '2020-08-19T21:41:50Z',
 });
 /**
 {
@@ -49,13 +50,14 @@ learnCard.invoke.newCredential({
   credentialSubject: { id: 'did:example:456' }
 }
 **/
-
 ```
+
 {% endcode %}
 
 ### Achievement Credential:
 
 {% code title="LearnCard CLI" %}
+
 ```typescript
 // Achievement Credential: with default, 'achievement' template
 learnCard.invoke.newCredential({ type: 'achievement' });
@@ -85,15 +87,16 @@ learnCard.invoke.newCredential({ type: 'achievement' });
 **/
 
 // Achievement Credential: with overloads
-learnCard.invoke.newCredential({ 
-  type: 'achievement', 
-  did:'did:example:123', 
-  subject: 'did:example:456', 
-  name: 'Singing Badge',
-  achievementName: 'Beautiful Singing',
-  description: 'This badge recognizes beautiful singing.',
-  criteriaNarrative: 'Group members earn this badge when they sing a beautiful song at Karaoke night.',
-  issuanceDate: '2020-08-19T21:41:50Z' 
+learnCard.invoke.newCredential({
+    type: 'achievement',
+    did: 'did:example:123',
+    subject: 'did:example:456',
+    name: 'Singing Badge',
+    achievementName: 'Beautiful Singing',
+    description: 'This badge recognizes beautiful singing.',
+    criteriaNarrative:
+        'Group members earn this badge when they sing a beautiful song at Karaoke night.',
+    issuanceDate: '2020-08-19T21:41:50Z',
 });
 /**
 {
@@ -120,6 +123,7 @@ learnCard.invoke.newCredential({
 }
 **/
 ```
+
 {% endcode %}
 
 ### Other Types
@@ -127,6 +131,6 @@ learnCard.invoke.newCredential({
 {% hint style="warning" %}
 More credential types are coming soon! Have a particular credential type you'd like to turn into a template? Start a conversation in our [Github Discussions](https://github.com/learningeconomy/LearnCard/discussions):&#x20;
 
-* [Post a Credential Template Request ](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)💡
-* [Ask for Help](https://github.com/learningeconomy/LearnCard/discussions/categories/help) 💖
-{% endhint %}
+-   [Post a Credential Template Request ](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)💡
+-   [Ask for Help](https://github.com/learningeconomy/LearnCard/discussions/categories/help) 💖
+    {% endhint %}

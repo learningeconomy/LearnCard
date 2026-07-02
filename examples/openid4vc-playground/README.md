@@ -21,8 +21,8 @@ For SD-JWT-VC dev-loop testing, the `embedded` provider runs a self-contained is
 
 ```bash
 cd examples/openid4vc-playground
-pnpm install
-pnpm dev
+bun install
+bun run dev
 # → open http://localhost:5173
 # → pick "Embedded" provider in the dropdown
 ```
@@ -46,8 +46,8 @@ docker compose up -d
 
 # 2. Run the playground
 cd ../../examples/openid4vc-playground
-pnpm install
-pnpm dev
+bun install
+bun run dev
 # → open http://localhost:5173
 ```
 
@@ -55,7 +55,7 @@ In a separate terminal, run the LearnCard app:
 
 ```bash
 cd ../../apps/learn-card-app
-pnpm start
+bun run start
 # → http://localhost:3000
 ```
 
@@ -63,9 +63,9 @@ Then in the playground, click any scenario card. The panel surfaces three ways t
 
 -   **Open in browser** (primary) — same-machine link into the running LCA dev server (`http://localhost:3000/oid4vp?...` or `/oid4vci?...`). No OS deep-link handler needed; opens in a new tab.
 -   **Open via deep link** — the raw `openid4vp://` / `openid-credential-offer://` URI for installed wallet apps + PWAs.
--   **QR code** — scan from a phone (run `pnpm dev --host` in the playground first so the page is reachable on LAN).
+-   **QR code** — scan from a phone (run `bun run dev --host` in the playground first so the page is reachable on LAN).
 
-The "LearnCard dev URL" field at the top of the page is persisted to localStorage so you only set it once. Change it if you run the LCA app on a non-default port (e.g. `localhost:4000` via `pnpm start-p-4000`).
+The "LearnCard dev URL" field at the top of the page is persisted to localStorage so you only set it once. Change it if you run the LCA app on a non-default port (e.g. `localhost:4000` via `bun run start-p-4000`).
 
 ## What's covered in v1
 
@@ -111,7 +111,7 @@ examples/openid4vc-playground/
 
 Two non-obvious decisions worth knowing:
 
--   **Vite middleware over a separate Express server.** Lets `pnpm dev` start everything with one command. The walt.id calls happen Node-side so the issuer signing key never leaves the dev machine.
+-   **Vite middleware over a separate Express server.** Lets `bun run dev` start everything with one command. The walt.id calls happen Node-side so the issuer signing key never leaves the dev machine.
 -   **By-reference → by-value rewriting.** walt.id Docker emits `credential_offer_uri=http://localhost:7002/...`, but the LearnCard wallet rejects HTTP on that field (a pre-auth code over plain HTTP would be a credential leak). The playground server resolves the reference and inlines the JSON before handing the URI to the browser. See `server/waltid.ts → resolveOfferToByValue`.
 
 ## Adding a scenario
@@ -166,7 +166,7 @@ The provider dropdown surfaces the new option automatically; cards greys out for
 Default binding is `localhost`, which only the dev machine can reach. To scan the QR from a phone:
 
 ```bash
-pnpm dev --host
+bun run dev --host
 ```
 
 Vite then prints a LAN address. The walt.id Docker stack also binds on the LAN by default — when the wallet hits `http://<lan-ip>:7002/...` directly, things work without further config.

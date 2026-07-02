@@ -1,5 +1,41 @@
 # learn-card-types
 
+## 5.17.4
+
+### Patch Changes
+
+-   [#1331](https://github.com/learningeconomy/LearnCard/pull/1331) [`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354) Thanks [@goblincore](https://github.com/goblincore)! - Fix OpenAPI document generation under Zod 4.4 so the brain and cloud services boot.
+
+    Zod 4.3 tightened two behaviors that broke `generateOpenApiDocument` (which runs
+    eagerly at service startup, so a failure crashed every Lambda at cold start):
+
+    -   `.omit()` is no longer allowed on object schemas containing refinements, which
+        `trpc-to-openapi` calls internally on every route's input. Bumping the
+        `trpc-to-openapi` override to `3.3.0` resolves this for all refined route inputs.
+    -   `z.custom()` (and `z.instanceof()`) can no longer be represented in OpenAPI,
+        and the `.meta({ override })` escape hatch is not honored for these types. Two
+        schemas are affected:
+        -   The custom-storage `count`/`update`/`delete` query schemas now use
+            `z.record(z.string(), z.any())`, matching the already-working `read` route.
+        -   `RegExpValidator` in `@learncard/types` (used by the brain-service skill /
+            skill-framework search routes via `$regex`) no longer relies on
+            `z.instanceof(RegExp)`. It now `z.preprocess`es a `RegExp` instance into its
+            `/source/flags` string, so the OpenAPI schema is a plain string while still
+            accepting both `RegExp` and string inputs at runtime.
+
+    Also hardens the custom-storage query routes (`read`/`count`/`update`/`delete`)
+    by rejecting MongoDB server-side-JavaScript operators (`$where`, `$function`,
+    `$accumulator`) in caller-supplied queries, closing a denial-of-service vector.
+    (did-scoping was already enforced in the access layer; this is orthogonal.)
+
+-   [#1325](https://github.com/learningeconomy/LearnCard/pull/1325) [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e) Thanks [@smurflo2](https://github.com/smurflo2)! - Zod v4
+
+## 5.17.3
+
+### Patch Changes
+
+-   [#1321](https://github.com/learningeconomy/LearnCard/pull/1321) [`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix smoketest GH actions
+
 ## 5.17.2
 
 ### Patch Changes
@@ -28,7 +64,7 @@
 
     This change is verified by two new CI surfaces:
 
-    -   `pnpm validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
+    -   `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
     -   `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
 
     Follow-up work tracked as advisory failures in both surfaces (not gating CI until fixed): `@learncard/ceramic-plugin`, `@learncard/didkey-plugin`, `@learncard/helpers`, `@learncard/idx-plugin`, `@learncard/lca-api-plugin`, `@learncard/learn-cloud-plugin`, `@learncard/network-plugin`, `@learncard/simple-signing-plugin` each have pre-existing publish-time bugs (CJS-only transitive deps imported via named ESM, dynamic `require()` in ESM bundles, or unmigrated upstream packages).
@@ -370,7 +406,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

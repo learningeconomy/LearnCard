@@ -422,8 +422,8 @@ export function curriedStateSlice<State>(
  * This function works with both useImmer and useState, and allows you to seamlessly transform
  * between the two when creating state slices.
  *
- * Use like so:
- *
+ * @example
+ * ```tsx
  * // This component will have access to the whole state, while dealing with subcomponents who only
  * // want access to the individual pieces as if they were their own pieces of state
  * type ComplexStateObject = {
@@ -431,6 +431,7 @@ export function curriedStateSlice<State>(
  *     piece2: { arr: number[]; obj: { num: number } };
  *     piece3: string;
  * }
+ *
  * const ComplexState = () => {
  *     [state, setState] = useImmer<ComplexStateObject>({
  *         piece1: { num: 1, str: '' },
@@ -458,13 +459,16 @@ export function curriedStateSlice<State>(
  *         </>
  *     )
  * }
+ * ```
  *
  * The function returned by this function takes in a type-safe string representing a key from the
  * state object, followed by a type-checked value for that key's field.
  *
+ * ```ts
  * // Assuming updateSlice is called in the above component
  * updateSlice('piece4', 'nice'); // This errors because piece4 is not in our state object
  * updateSlice('piece3', 123); // This errors because piece3 should be a string, not a number
+ * ```
  *
  * If you are not using immer everywhere (you really should be when dealing with complex state),
  * you can pass in an object as the second parameter specifying whether you want to use immer or

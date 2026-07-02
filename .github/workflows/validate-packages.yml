@@ -10,8 +10,8 @@ name: Validate Published Package Contracts
 #   1. publint  — static manifest + dist validation (missing exports map,
 #                 file paths that don't resolve, type condition ordering,
 #                 ESM file with CJS extension, etc.)
-#   2. attw     — `npm pack` + resolve through every TypeScript module
-#                 resolution mode (node10, node16, bundler) and consumer
+#   2. attw     — build package tarballs + resolve through every TypeScript
+#                 module resolution mode (node10, node16, bundler) and consumer
 #                 style (ESM import, CJS require).
 #
 # Failure modes:
@@ -20,8 +20,8 @@ name: Validate Published Package Contracts
 #     → diagnostics printed, exit zero
 #
 # Runs on every PR + push to main. The validation script runs publint + attw
-# (the latter shells out to `npm pack`) across ~36 packages with a bounded
-# concurrency pool; combined with the up-front `pnpm build`, budget ~10-15 min.
+# (the latter validates generated package tarballs) across ~36 packages with a
+# bounded concurrency pool; combined with the up-front `bun run build`, budget ~10-15 min.
 
 on:
     pull_request:
@@ -37,13 +37,51 @@ jobs:
         timeout-minutes: 25
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Build all publishable packages
-              run: pnpm build
+            - name: Build publishable packages
+              run: >
+                  bunx nx run-many -t build -p
+                  core
+                  credential-library
+                  lca-api-client
+                  lca-api-plugin
+                  cli
+                  helpers
+                  init
+                  partner-connect-sdk
+                  types
+                  sss-key-manager
+                  claimable-boosts-plugin
+                  chapi-plugin
+                  ceramic-plugin
+                  crypto-plugin
+                  didkey-plugin
+                  didkit-plugin
+                  didkit-plugin-node
+                  did-web-plugin
+                  dynamic-loader-plugin
+                  encryption-plugin
+                  ethereum-plugin
+                  expiration-plugin
+                  idx-plugin
+                  learn-card-plugin
+                  learn-cloud-plugin
+                  ler-rs-plugin
+                  linked-claims-plugin
+                  network-plugin
+                  open-badge-v2-plugin
+                  openid4vc-plugin
+                  render-method-plugin
+                  sd-jwt-vc-plugin
+                  simple-signing-plugin
+                  vc-api-plugin
+                  vc-plugin
+                  vc-templates-plugin
+                  vpqr-plugin
 
             - name: Validate package contracts
-              run: pnpm validate-packages
+              run: bun scripts/validate-packages.mjs

@@ -9,10 +9,11 @@ A self-hostable service implementation for providing signature verification with
 This service acts as a Signing Authority for LearnCard Network operations. It provides endpoints for verifying signatures and validating actions within the network.
 
 Key features:
-- Self-hostable TypeScript-based service
-- tRPC API for simple, type-safe client-server interaction
-- Straightforward configuration for different deployment environments
-- Designed for integration with LearnCard Network
+
+-   Self-hostable TypeScript-based service
+-   tRPC API for simple, type-safe client-server interaction
+-   Straightforward configuration for different deployment environments
+-   Designed for integration with LearnCard Network
 
 ## Setup & Deployment
 
@@ -20,17 +21,17 @@ Key features:
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Start the development server
-pnpm dev
+bun run dev
 ```
 
 ### Production Deployment
 
 ```bash
 # Deploy using serverless framework
-pnpm serverless-deploy
+bun run serverless-deploy
 ```
 
 ### Environment Configuration
@@ -47,8 +48,9 @@ MONGO_DB_NAME=test
 ## Integration
 
 This service is designed to be used with:
-- `@learncard/simple-signing-client`: Client library for communicating with this service
-- `@learncard/simple-signing-plugin`: LearnCard plugin that connects to this service
+
+-   `@learncard/simple-signing-client`: Client library for communicating with this service
+-   `@learncard/simple-signing-plugin`: LearnCard plugin that connects to this service
 
 ## E2E Testing
 

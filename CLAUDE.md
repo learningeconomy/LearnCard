@@ -2,11 +2,11 @@
 
 ## Build & Test Commands
 
--   Build project: `pnpm build` or `pnpm exec nx build <package-name>`
--   Test all packages: `pnpm test` or `pnpm exec nx test`
--   Run tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
--   Run single test: `pnpm exec nx test <package-name> --testFile=path/to/test.spec.ts`
--   Run e2e tests: `pnpm exec nx test:e2e e2e`
+-   Build project: `bun run build` or `bunx nx build <package-name>`
+-   Test all packages: `bun test` or `bunx nx test`
+-   Run tests once (non-watch): `bun test -- run` (equivalent to `vitest run`)
+-   Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
+-   Run e2e tests: `bunx nx test:e2e e2e`
 
 ## Code Style Guidelines
 
@@ -23,7 +23,7 @@
 
 ## Monorepo Structure
 
-pnpm workspaces + NX. Packages in `packages/`, services in `services/`, apps in `apps/`, e2e tests in `tests/`.
+Bun workspaces + NX. Packages in `packages/`, services in `services/`, apps in `apps/`, e2e tests in `tests/`.
 
 ## Documentation (`docs/`)
 

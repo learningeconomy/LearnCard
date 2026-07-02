@@ -7,7 +7,7 @@ A bundle is a normal ZIP file with a readable `manifest.json` and encrypted payl
 ## Install
 
 ```bash
-pnpm add @learncard/holder-continuity
+bun add @learncard/holder-continuity
 ```
 
 ## Export a wallet

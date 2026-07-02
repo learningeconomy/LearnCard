@@ -4,7 +4,7 @@ To learn more, check out our [Core Concepts page on Signing Authorities](../../c
 
 ## Example Usage
 
-<pre class="language-typescript"><code class="lang-typescript">// Make sure to pnpm install @learncard/simple-signing-plugin
+<pre class="language-typescript"><code class="lang-typescript">// Make sure to bun add @learncard/simple-signing-plugin
 import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 
 const SIGNING_AUTHORITY_NAME = 'My-First-Signing-Authority'

@@ -1,12 +1,13 @@
 {
     "name": "@learncard/types",
-    "version": "5.17.2",
+    "version": "5.17.4",
     "description": "Shared types for learn card",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/types.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/types.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
@@ -33,6 +35,9 @@
     },
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "dependencies": {
+        "zod": "^4.1.13"
     },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.2.2",

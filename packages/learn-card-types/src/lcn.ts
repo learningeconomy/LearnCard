@@ -1,5 +1,5 @@
 import type {} from 'zod-openapi';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
@@ -1974,6 +1974,7 @@ export const RequestLearnerContextEventValidator = z.object({
     format: z.enum(['prompt', 'structured']).optional().default('prompt'),
     instructions: z.string().optional(),
     detailLevel: z.enum(['compact', 'expanded']).optional().default('compact'),
+    waitForSync: z.boolean().optional().default(false),
 });
 
 export type RequestLearnerContextEvent = z.infer<typeof RequestLearnerContextEventValidator>;
