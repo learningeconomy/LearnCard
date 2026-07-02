@@ -38,7 +38,7 @@ export const Group = ModelFactory<FlatGroupType, GroupRelationships>(
             type: { type: 'string', enum: GroupTypeEnum.options, required: true },
             description: { type: 'string', required: false },
             parentGroupId: { type: 'string', required: false },
-            pathIds: { type: 'string', required: true },
+            pathIds: { type: 'array', items: { type: 'string' }, required: true },
             depth: { type: 'number', required: true },
             rootGroupId: { type: 'string', required: true },
             ownerEcosystemId: { type: 'string', required: true },
