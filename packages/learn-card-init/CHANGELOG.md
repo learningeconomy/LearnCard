@@ -1,5 +1,32 @@
 # learn-card-core
 
+## 2.4.3
+
+### Patch Changes
+
+-   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/types@5.17.4
+    -   @learncard/helpers@1.3.6
+    -   @learncard/core@9.4.24
+    -   @learncard/chapi-plugin@1.1.24
+    -   @learncard/did-web-plugin@1.1.24
+    -   @learncard/didkey-plugin@1.1.24
+    -   @learncard/didkit-plugin@1.9.4
+    -   @learncard/encryption-plugin@1.1.24
+    -   @learncard/learn-card-plugin@1.2.24
+    -   @learncard/network-plugin@2.13.5
+    -   @learncard/learn-cloud-plugin@2.3.29
+    -   @learncard/openid4vc-plugin@0.2.2
+    -   @learncard/sd-jwt-vc-plugin@0.2.2
+    -   @learncard/vc-plugin@1.5.4
+    -   @learncard/vc-api-plugin@1.1.24
+    -   @learncard/vc-templates-plugin@1.1.24
+    -   @learncard/vpqr-plugin@1.1.24
+    -   @learncard/crypto-plugin@1.1.24
+    -   @learncard/dynamic-loader-plugin@1.1.24
+    -   @learncard/ethereum-plugin@1.1.25
+    -   @learncard/expiration-plugin@1.2.24
+
 ## 2.4.2
 
 ### Patch Changes
@@ -736,7 +763,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

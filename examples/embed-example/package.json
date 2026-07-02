@@ -1,12 +1,12 @@
 {
     "name": "@learncard/embed-example",
     "type": "module",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "private": true,
     "scripts": {
         "dev": "astro dev",
         "start": "astro dev",
-        "build": "echo \"Skipping build in CI. Run 'pnpm run build:prod' locally to build.\"",
+        "build": "echo \"Skipping build in CI. Run 'bun run build:prod' locally to build.\"",
         "build:prod": "astro build",
         "preview": "astro preview",
         "astro": "astro"

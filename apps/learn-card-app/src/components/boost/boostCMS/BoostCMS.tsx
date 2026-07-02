@@ -42,8 +42,8 @@ const BoostCMSAppearanceController = lazyWithRetry(
 );
 
 const BoostPreviewFooter = lazyWithRetry(() => import('./BoostPreview/BoostPreviewFooter'));
-const CredentialBadge = lazyWithRetry(
-    () => import('learn-card-base/components/CredentialBadge/CredentialBadge')
+const CredentialBadgeNew = lazyWithRetry(
+    () => import('learn-card-base/components/CredentialBadge/CredentialBadgeNew')
 );
 
 // Legacy skill selector (hardcoded skills)
@@ -973,7 +973,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

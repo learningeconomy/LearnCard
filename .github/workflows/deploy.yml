@@ -38,7 +38,7 @@ on:
                 default: false
                 type: boolean
             publish-npm:
-                description: 'Publish NPM Packages'
+                description: 'Publish Registry Packages'
                 required: false
                 default: false
                 type: boolean
@@ -61,6 +61,7 @@ env:
     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     AWS_DEFAULT_REGION: us-east-1
     SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
+    MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
     # ============================================================================
@@ -153,8 +154,9 @@ jobs:
               if: github.event_name != 'workflow_dispatch'
               id: affected
               run: |
-                  affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-                  echo "affected=$affected" >> $GITHUB_OUTPUT
+                  set -o pipefail
+                  affected="$(bunx nx show projects --affected --base=HEAD~1 --head=HEAD | paste -sd, -)"
+                  echo "affected=$affected" >> "$GITHUB_OUTPUT"
                   echo "Affected projects: $affected"
 
             - name: Check version changes for release
@@ -211,13 +213,17 @@ jobs:
               with:
                   submodules: true
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
+            - name: Setup Bun cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -235,14 +241,14 @@ jobs:
                   key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
 
             - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Build native plugin
               working-directory: packages/plugins/didkit-plugin-node
               env:
                   BUILD_DIDKIT_NAPI: true
               run: |
-                  pnpm exec nx build didkit-plugin-node
+                  bunx nx build didkit-plugin-node
                   strip -x *.node
 
             - name: Upload native binary
@@ -287,7 +293,7 @@ jobs:
               with:
                   timeout_minutes: 10
                   max_attempts: 3
-                  command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
@@ -367,7 +373,7 @@ jobs:
                   fi
 
             - name: Deploy Brain Service Lambda
-              run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
                   CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
                   POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
@@ -478,7 +484,7 @@ jobs:
                   fi
 
             - name: Deploy LearnCloud Lambda
-              run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              run: bunx nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
                   SERVER_URL: ${{ vars.SERVER_URL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
@@ -569,7 +575,7 @@ jobs:
                   fi
 
             - name: Deploy LCA API Service Lambda
-              run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              run: bunx nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
@@ -684,13 +690,13 @@ jobs:
             - name: Get App Version
               id: app-version
               run: |
-                  VERSION=$(node -p "require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version")
+                  VERSION=$(bun -e "console.log(require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Get CapGo Channel
               id: capgo-channel
               run: |
-                  CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
+                  CHANNEL=$(bun tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
             # Prepare tenant config for learn-card-app builds.
@@ -707,10 +713,10 @@ jobs:
                     STAGE_FLAG="--stage $STAGE"
                   fi
                   echo "Preparing tenant config: $TENANT $STAGE_FLAG"
-                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
             - name: Build App
-              run: pnpm exec nx build ${{ steps.vars.outputs.project_name }}
+              run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
@@ -733,7 +739,7 @@ jobs:
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
               run: |
-                  npx @capgo/cli@latest bundle upload \
+                  bunx @capgo/cli@latest bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \
                     --apikey ${{ secrets.CAPGO_TOKEN }} \
@@ -741,11 +747,11 @@ jobs:
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
                     --bundle ${{ steps.app-version.outputs.version }} \
                     --package-json apps/${{ steps.vars.outputs.project_name }}/package.json \
-                    --node-modules apps/${{ steps.vars.outputs.project_name }}/node_modules
+                    --node-modules node_modules
 
             - name: Set CapGo Channel
               run: |
-                  npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+                  bunx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
                     -a ${{ secrets.CAPGO_TOKEN }} \
                     -b ${{ steps.app-version.outputs.version }} \
@@ -1030,7 +1036,7 @@ jobs:
               id: brain-service-version
               working-directory: './services/learn-card-network/brain-service'
               run: |
-                  VERSION=$(node -p "require('./package.json').version")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Extract metadata for Brain Service
@@ -1054,7 +1060,7 @@ jobs:
               id: cloud-service-version
               working-directory: './services/learn-card-network/learn-cloud-service'
               run: |
-                  VERSION=$(node -p "require('./package.json').version")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Extract metadata for Cloud Service
@@ -1075,10 +1081,10 @@ jobs:
                   labels: ${{ steps.cloud-service-meta.outputs.labels }}
 
     # ============================================================================
-    # NPM PUBLISHING
+    # PACKAGE PUBLISHING
     # ============================================================================
     publish-npm:
-        name: Publish NPM Packages
+        name: Publish Registry Packages
         needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
         if: |
             always() &&
@@ -1104,17 +1110,31 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build packages
-              run: pnpm exec nx run-many --target=build --exclude docs --exclude didkit-plugin-node
+              run: bunx nx run-many --target=build --exclude docs --exclude didkit-plugin-node
 
-            - name: Publish to NPM
-              run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
+            # The native DIDKit package is published by didkit-plugin-node-prebuilds.yml
+            # with platform artifacts. Keep it out of the generic changeset publish pass.
+            - name: Keep DIDKit native addon out of changeset publish
+              run: |
+                  bun -e '
+                  const fs = require("fs");
+                  const path = "packages/plugins/didkit-plugin-node/package.json";
+                  const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+
+                  pkg.private = true;
+
+                  fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
+                  '
+
+            - name: Publish Registry Packages
+              run: bunx changeset publish
 
     # ============================================================================
-    # SMOKETEST PUBLISHED NPM PACKAGES (verify external installability)
+    # SMOKETEST PUBLISHED PACKAGES (verify external installability)
     # Calls the reusable smoketest-npm-packages workflow against the freshly
     # published `latest` dist-tags from a clean directory with no monorepo
     # context. Catches regressions like the didkit-plugin-node@0.2.14
-    # workspace:* leak that broke `npx @learncard/cli` for external users.
+    # workspace:* leak that broke external `@learncard/cli` execution.
     # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
     # so a failure here WILL mark the deploy workflow run as failed. Treat
     # smoketest failures as a real signal — the package was published but is
@@ -1122,7 +1142,7 @@ jobs:
     # provides a second line of defense.
     # ============================================================================
     smoketest-published-packages:
-        name: Smoketest Published NPM Packages
+        name: Smoketest Published Packages
         needs: publish-npm
         if: |
             always() &&
@@ -1246,6 +1266,7 @@ jobs:
             - name: Create Release Pull Request
               uses: changesets/action@v1
               with:
+                  version: bunx changeset version
                   commit: 'chore(release): version packages'
                   title: 'chore(release): version packages'
               env:

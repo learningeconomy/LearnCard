@@ -8,10 +8,10 @@ Welcome to your first LearnCard integration! In just a few lines of code, you'll
 
 This quickstart helps you:
 
-* Install LearnCard tools
-* Create a demo issuer profile
-* Generate a verifiable Boost (credential)
-* Output a link that anyone can claim
+-   Install LearnCard tools
+-   Create a demo issuer profile
+-   Generate a verifiable Boost (credential)
+-   Output a link that anyone can claim
 
 No experience required. Just code, coffee, and a terminal.
 
@@ -30,8 +30,8 @@ npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/simple
 # Using yarn
 yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin dotenv
 
-# Using pnpm
-pnpm add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin dotenv
+# Using Bun
+bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin dotenv
 
 ```
 
@@ -47,9 +47,9 @@ This script:
 
 ## ✅ Prerequisites
 
-* Node.js (v18+)
-* A secure seed phrase (stored in `SECURE_SEED`)
-* A unique ID for your issuer (e.g. `my-awesome-org-profile`)
+-   Node.js (v18+)
+-   A secure seed phrase (stored in `SECURE_SEED`)
+-   A unique ID for your issuer (e.g. `my-awesome-org-profile`)
 
 ## 📁 Create `createBoost.js`:
 
@@ -147,7 +147,7 @@ quickstartBoost();
 ## 🔩 Setup Organization Config (optional)
 
 {% hint style="danger" %}
-This step sets up your secret seed phrase for controlling your Organization's profile. However, for demonstration, **you may safely skip this step to use the provided DEMO\_SEED**. Never hardcode a seed in production.  Learn more about [seeds](../core-concepts/identities-and-keys/seed-phrases.md).
+This step sets up your secret seed phrase for controlling your Organization's profile. However, for demonstration, **you may safely skip this step to use the provided DEMO_SEED**. Never hardcode a seed in production. Learn more about [seeds](../core-concepts/identities-and-keys/seed-phrases.md).
 {% endhint %}
 
 #### Create and save your seed to .en&#x76;_:_
@@ -157,9 +157,11 @@ This step sets up your secret seed phrase for controlling your Organization's pr
 Run the following command in your terminal:&#x20;
 
 {% code overflow="wrap" %}
+
 ```bash
 echo "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")\"" > .env
 ```
+
 {% endcode %}
 {% endtab %}
 
@@ -167,9 +169,11 @@ echo "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toS
 Run the following command in your Windows cmd prompt:&#x20;
 
 {% code overflow="wrap" %}
+
 ```bash
 echo "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")\"" > .env
 ```
+
 {% endcode %}
 {% endtab %}
 
@@ -177,9 +181,11 @@ echo "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toS
 Run the following command in Powershell:&#x20;
 
 {% code overflow="wrap" %}
+
 ```bash
 "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")\"" | Out-File -Encoding utf8 .env
 ```
+
 {% endcode %}
 {% endtab %}
 {% endtabs %}
@@ -191,11 +197,13 @@ You must create a unique profile ID for your organization. It must be 3-40 chara
 {% endhint %}
 
 {% code title=".env" overflow="wrap" %}
+
 ```bash
 SECURE_SEED="..." # Created from command in prior step.
 PROFILE_ID="<unique-profile-id>" # Unique profile ID.
 PROFILE_NAME="<Display Name>" # Human Readable Display Name
 ```
+
 {% endcode %}
 
 ## 🏃‍♂️ Run the Script
@@ -221,10 +229,10 @@ Want to customize your claimable boost even more? Check out our Core Concepts gu
 
 ## ➡️ Next Steps
 
-* 📝 Play with sending different kinds of credentials (see[ Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md))
-* 🔐 Add expiration, limits, or QR codes (see [Detailed Usage](../sdks/official-plugins/claimable-boosts.md))
-* 🧠 Learn how Boosts work under the hood (see [Core Concepts](../core-concepts/credentials-and-data/boost-credentials.md))
-* 🛠️ [Issue credentials ](../tutorials/create-a-credential.md)dynamically in your app or game
+-   📝 Play with sending different kinds of credentials (see[ Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md))
+-   🔐 Add expiration, limits, or QR codes (see [Detailed Usage](../sdks/official-plugins/claimable-boosts.md))
+-   🧠 Learn how Boosts work under the hood (see [Core Concepts](../core-concepts/credentials-and-data/boost-credentials.md))
+-   🛠️ [Issue credentials ](../tutorials/create-a-credential.md)dynamically in your app or game
 
 **You just built your first digital credential.**\
 You’ve touched real-world decentralized identity and verifiable credentials—with just a few lines of code.

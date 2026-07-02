@@ -1,5 +1,12 @@
 # @welibraryos/react-learn-card
 
+## 2.10.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.3
+
 ## 2.10.2
 
 ### Patch Changes
@@ -265,7 +272,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

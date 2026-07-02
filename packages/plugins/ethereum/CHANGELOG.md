@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 1.1.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.24
+
 ## 1.1.24
 
 ### Patch Changes
@@ -178,7 +185,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

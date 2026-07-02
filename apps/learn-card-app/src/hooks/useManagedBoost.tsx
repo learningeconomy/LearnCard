@@ -12,7 +12,7 @@ import {
     useGetBoostRecipients,
     useCountBoostRecipients,
     ModalTypes,
-    CredentialBadge,
+    CredentialBadgeNew,
     CredentialCategory,
     UserProfilePicture,
 } from 'learn-card-base';
@@ -215,7 +215,7 @@ export const useManagedBoost = (
                 cred={cred}
             />
         ) : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 boostType={categoryType}
                 badgeThumbnail={badgeThumbnail}
@@ -269,7 +269,7 @@ export const useManagedBoost = (
             />
         ),
         customThumbComponent: isCertificate ? undefined : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 boostType={categoryType}
                 badgeThumbnail={badgeThumbnail}

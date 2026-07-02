@@ -21,7 +21,7 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
-        packager: pnpm
+        packager: bun
         bundle: true
         minify: false
         sourcemap: true

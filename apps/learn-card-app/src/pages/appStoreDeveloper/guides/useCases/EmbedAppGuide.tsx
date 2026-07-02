@@ -713,8 +713,9 @@ log.info('User:', identity.profile.displayName);`;
                     <CodeBlock code={installCode} />
 
                     <p className="text-xs text-gray-500">
-                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code>{' '}
-                        or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
+                        Also works with{' '}
+                        <code className="bg-gray-100 px-1 rounded">npm install</code> or{' '}
+                        <code className="bg-gray-100 px-1 rounded">yarn add</code>
                     </p>
                 </div>
             </div>
@@ -1581,14 +1582,14 @@ const InstallSdkStep: React.FC<{
             <CodeOutputPanel
                 title="Installation"
                 snippets={{
-                    typescript: `# npm
+                    typescript: `# bun
+bun add @learncard/partner-connect
+
+# npm
 npm install @learncard/partner-connect
 
 # yarn
-yarn add @learncard/partner-connect
-
-# pnpm
-pnpm add @learncard/partner-connect`,
+yarn add @learncard/partner-connect`,
                 }}
             />
 

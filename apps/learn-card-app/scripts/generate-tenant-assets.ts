@@ -11,7 +11,7 @@ const log = getLogger();
  * complete brand kit.
  *
  * Usage:
- *   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
+ *   bun scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
  *
  * General options:
  *   --bg <hex>                Background color for icons (default: #FFFFFF)
@@ -91,7 +91,7 @@ const log = getLogger();
  *       └── apple-touch-icon.png            180×180
  *
  * After generation, run:
- *   npx tsx scripts/prepare-native-config.ts <tenant>
+ *   bun scripts/prepare-native-config.ts <tenant>
  * to copy config + assets into the Capacitor project.
  */
 
@@ -1186,7 +1186,7 @@ const main = async (): Promise<void> => {
     if (args.length < 2) {
         log.info(`
 Usage:
-  npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
+  bun scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
 
 General options:
   --bg <hex>                Icon background color        (default: #FFFFFF)
@@ -1211,8 +1211,8 @@ Legacy aliases (still supported):
   --text-logo-dark <path>   Alias for --wordmark-light
 
 Example:
-  npx tsx scripts/generate-tenant-assets.ts vetpass ~/icon.png --bg "#1A3C5E" --name "VetPass"
-  npx tsx scripts/generate-tenant-assets.ts vetpass ~/icon.png --bg "#1A3C5E" \\
+  bun scripts/generate-tenant-assets.ts vetpass ~/icon.png --bg "#1A3C5E" --name "VetPass"
+  bun scripts/generate-tenant-assets.ts vetpass ~/icon.png --bg "#1A3C5E" \\
     --icon-light ~/icon-white.png \\
     --wordmark ~/wordmark-white.svg --wordmark-light ~/wordmark-dark.svg \\
     --full-logo ~/lockup-dark.png --full-logo-light ~/lockup-white.png
@@ -1476,7 +1476,7 @@ Example:
     log.info(`\n✅ Generated ${fileCount} asset files in:\n   ${outDir}\n`);
     log.info('Next steps:');
     log.info(`  1. Review the generated assets in environments/${tenant}/assets/`);
-    log.info(`  2. Run:  npx tsx scripts/prepare-native-config.ts ${tenant}`);
+    log.info(`  2. Run:  bun scripts/prepare-native-config.ts ${tenant}`);
     log.info('     This copies config + assets into the Capacitor project.\n');
 };
 

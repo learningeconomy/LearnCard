@@ -30,7 +30,7 @@ You may be invoked in one of two modes, determined by the trigger phrase:
 
 ### Monorepo Context
 
-This is a pnpm + Nx monorepo. Key areas:
+This is a Bun + Nx monorepo. Key areas:
 
 **High risk (never auto-approve):**
 
@@ -90,7 +90,7 @@ This is a pnpm + Nx monorepo. Key areas:
 -   Auth, permission, or role enforcement code being changed
 -   `Dockerfile*`, `serverless*.yml`, `compose*.yaml`, `lambda.ts` changes
 -   `.github/workflows/` changes
--   Root monorepo config changes: `nx.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, root `package.json`
+-   Root monorepo config changes: `nx.json`, `bun.lock`, root `package.json`
 -   `heroku.yml`, `Procfile` changes
 -   Removal or weakening of existing tests (deleting assertions, `.skip`, commenting out tests)
 

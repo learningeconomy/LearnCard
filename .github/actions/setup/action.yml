@@ -1,32 +1,24 @@
-name: 'Setup Node.js, pnpm, and Install Dependencies'
+name: 'Setup Bun and Install Dependencies'
 description: 'A composite action to set up the environment for CI/CD jobs.'
 
 runs:
     using: 'composite'
     steps:
-        - name: Setup Node.js
-          uses: actions/setup-node@v6
-          with:
-              node-version-file: .nvmrc
+        - name: Setup Bun
+          uses: oven-sh/setup-bun@v2
 
-        - name: Install pnpm
-          uses: pnpm/action-setup@v6
-          with:
-              run_install: false
-
-        - name: Get pnpm store directory
-          id: pnpm-cache
-          shell: bash
-          run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-        - name: Setup pnpm cache
+        - name: Setup Bun cache
           uses: actions/cache@v6
           with:
-              path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-              key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+              path: ~/.bun/install/cache
+              key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
               restore-keys: |
-                  ${{ runner.os }}-pnpm-store-
+                  ${{ runner.os }}-bun-
+
+        - name: Disable optional MongoDB binary download
+          shell: bash
+          run: echo "MONGOMS_DISABLE_POSTINSTALL=1" >> "$GITHUB_ENV"
 
         - name: Install dependencies
           shell: bash
-          run: pnpm install --no-frozen-lockfile
+          run: bun install --frozen-lockfile
