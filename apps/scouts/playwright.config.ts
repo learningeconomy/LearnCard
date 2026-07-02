@@ -89,7 +89,7 @@ const config: PlaywrightTestConfig = {
 
     /* Run your local dev server before starting the tests */
     webServer: {
-        command: `pnpm exec nx ${process.env.CI ? 'preview' : 'start'} learn-card-app`,
+        command: `bunx nx ${process.env.CI ? 'preview' : 'start'} learn-card-app`,
         url: 'https://localhost:3000',
         reuseExistingServer: !process.env.CI,
         ignoreHTTPSErrors: true,

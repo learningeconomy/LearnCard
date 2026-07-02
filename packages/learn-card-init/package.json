@@ -1,22 +1,13 @@
 {
     "name": "@learncard/init",
-    "version": "2.4.2",
+    "version": "2.4.3",
     "description": "Primary initialization of LearnCard SDK",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/init.esm.js",
     "exports": {
         ".": {
-            "node": {
-                "import": {
-                    "types": "./dist/index.d.ts",
-                    "default": "./dist/node-esm.mjs"
-                },
-                "require": {
-                    "types": "./dist/index.d.cts",
-                    "default": "./dist/index.cjs"
-                }
-            },
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/init.esm.js"
@@ -32,7 +23,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",

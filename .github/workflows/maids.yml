@@ -11,6 +11,7 @@ on:
 
 env:
     CI: true
+    MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
     build-native-plugin:
@@ -22,13 +23,17 @@ jobs:
               with:
                   submodules: true
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
+            - name: Setup Bun cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -46,14 +51,14 @@ jobs:
                   key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
 
             - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Build native plugin
               working-directory: packages/plugins/didkit-plugin-node
               env:
                   BUILD_DIDKIT_NAPI: true
               run: |
-                  pnpm exec nx build didkit-plugin-node
+                  bunx nx build didkit-plugin-node
                   strip -x *.node
 
             - name: Upload native binary
@@ -86,28 +91,16 @@ jobs:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
-              id: pnpm-install
-              with:
-                  run_install: false
-
-            - name: Get pnpm store directory
-              id: pnpm-cache
-              run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-            - name: Setup pnpm cache
+            - name: Setup Bun cache
               uses: actions/cache@v6
               with:
-                  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
                   restore-keys: |
-                      ${{ runner.os }}-pnpm-store-
+                      ${{ runner.os }}-bun-
 
             - name: Restore nx cache
               id: restore-nx-cache
@@ -117,14 +110,14 @@ jobs:
                   key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
             - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Run tests
               uses: nick-fields/retry@v2
               with:
                   timeout_minutes: 10
                   max_attempts: 3
-                  command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}

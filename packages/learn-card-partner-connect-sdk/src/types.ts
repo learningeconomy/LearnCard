@@ -343,6 +343,13 @@ export interface RequestLearnerContextOptions {
      * @default 'compact'
      */
     detailLevel?: 'compact' | 'expanded';
+
+    /**
+     * Wait for LearnCard to finish background ConsentFlow data sync before returning context.
+     * Apps that need a complete learner snapshot should set this to true.
+     * @default false
+     */
+    waitForSync?: boolean;
 }
 
 /**
@@ -360,6 +367,12 @@ export interface LearnerContextRawData {
  * Response from REQUEST_LEARNER_CONTEXT action
  */
 export interface LearnerContextResponse {
+    /** Whether the response used immediately available data or waited for a complete sync */
+    status?: 'ready' | 'syncing';
+
+    /** Current sync progress when available */
+    progress?: SyncProgress;
+
     /** LLM-ready formatted prompt text */
     prompt: string;
 
@@ -371,6 +384,20 @@ export interface LearnerContextResponse {
 
     /** User's display name if available */
     displayName?: string;
+}
+
+export interface SyncProgress {
+    totalCredentials: number;
+    completedCredentials: number;
+    failedCredentials: number;
+    retryCount: number;
+}
+
+export interface SyncStatus {
+    status: 'ready' | 'syncing' | 'error';
+    progress: SyncProgress;
+    eta?: number;
+    lastError?: string;
 }
 
 /**

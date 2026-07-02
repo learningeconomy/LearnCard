@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const ContextValidator = z.array(z.string().or(z.record(z.string(), z.any())));
 export type Context = z.infer<typeof ContextValidator>;

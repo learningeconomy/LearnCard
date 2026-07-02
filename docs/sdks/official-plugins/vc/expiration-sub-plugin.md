@@ -5,5 +5,5 @@ The Expiration Plugin is a Sub-Plugin for the VC Plugin that adds an additional 
 ### Install
 
 ```bash
-pnpm i @learncard/expiration-plugin
+bun add @learncard/expiration-plugin
 ```

@@ -77,10 +77,12 @@ jobs:
               with:
                   ref: ${{ steps.lookup.outputs.head_sha }}
 
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
             - name: Compute bundle version
               id: version
               run: |
-                  BASE_VERSION=$(node -p "require('./apps/learn-card-app/package.json').version")
+                  BASE_VERSION=$(bun -e "console.log(require('./apps/learn-card-app/package.json').version)")
                   echo "bundle_version=${BASE_VERSION}-pr${{ steps.lookup.outputs.pr_number }}.${{ steps.lookup.outputs.short_sha }}" >> "$GITHUB_OUTPUT"
 
             - name: Post "building" sticky comment
@@ -153,7 +155,7 @@ jobs:
             version: ${{ needs.gate.outputs.bundle_version }}
             build_path: apps/learn-card-app/build
             package_json: apps/learn-card-app/package.json
-            node_modules_path: apps/learn-card-app/node_modules
+            node_modules_path: node_modules
             environment: learn-card-app-staging
             channel: ${{ needs.gate.outputs.channel }}
             ref: ${{ needs.gate.outputs.head_sha }}

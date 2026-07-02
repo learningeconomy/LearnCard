@@ -7,6 +7,7 @@
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": "./dist/learncard.esm.js",
             "require": "./dist/learncard.js",
             "default": "./dist/learncard.js",
@@ -36,7 +37,8 @@
         "typescript": "^5.4.5"
     },
     "files": [
-        "dist/**"
+        "dist/**",
+        "src"
     ],
     "repository": {
         "type": "git",

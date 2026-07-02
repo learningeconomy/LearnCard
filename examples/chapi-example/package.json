@@ -1,12 +1,12 @@
 {
     "name": "@learncard/chapi-example",
     "type": "module",
-    "version": "1.1.32",
+    "version": "1.1.33",
     "private": true,
     "scripts": {
         "dev": "astro dev",
         "start": "astro dev",
-        "build": "echo \"Skipping Build in CI. Please run 'pnpm run build:prod' locally\"",
+        "build": "echo \"Skipping Build in CI. Please run 'bun run build:prod' locally\"",
         "build:prod": "astro build",
         "preview": "astro preview",
         "astro": "astro"

@@ -12,6 +12,7 @@ import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
 import { CredentialActivity } from './CredentialActivity';
 import { StatusList } from './StatusList';
+import { ContactMethod } from './ContactMethod';
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
@@ -102,6 +103,10 @@ Profile.addRelationships({
         direction: 'out',
         name: 'OWNS_STATUS_LIST',
     },
+});
+
+ContactMethod.addRelationships({
+    profile: { model: Profile, direction: 'in', name: 'HAS_CONTACT_METHOD' },
 });
 
 const shouldCreateIndices =

@@ -40,11 +40,11 @@ Under the hood, it is simply a map between the config you provide and the init f
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
-// Constructs an empty LearnCard without key material (can not sign VCs). 
+// Constructs an empty LearnCard without key material (can not sign VCs).
 // Useful for Verifying Credentials only in a light-weight form.
 const emptyLearncard = await initLearnCard();
 
-// Constructs a LearnCard from a deterministic seed. 
+// Constructs a LearnCard from a deterministic seed.
 const learncard = await initLearnCard({ seed: 'abc123' });
 
 // Constructs a LearnCard default connected to LearnCard Network hosted at https://network.learncard.com
@@ -76,7 +76,7 @@ const customLearnCard = await initLearnCard({ custom: true });
 
 The examples above are not exhaustive of possible ways to instantiate a LearnCard:
 
-* For more on initialization with a VC-API, check out the [VC-API Plugin](../official-plugins/vc-api.md).&#x20;
+-   For more on initialization with a VC-API, check out the [VC-API Plugin](../official-plugins/vc-api.md).&#x20;
 
 #### The learnCardFromSeed function
 
@@ -116,19 +116,23 @@ How to generate and store keys is left to you, the consumer. However, if you'd l
 
 {% tabs %}
 {% tab title="Browser" %}
+
 ```typescript
 const randomKey = Array.from(crypto.getRandomValues(new Uint8Array(32)), dec =>
-  dec.toString(16).padStart(2, "0")
-).join("");
+    dec.toString(16).padStart(2, '0')
+).join('');
 ```
+
 {% endtab %}
 
 {% tab title="Node" %}
+
 ```typescript
 import crypto from 'node:crypto';
 
 const randomKey = crypto.randomBytes(32).toString('hex');
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -136,23 +140,27 @@ To speed up instantiation of the wallet, you can host our[ didkit](https://githu
 
 {% tabs %}
 {% tab title="Webpack 5" %}
-<pre class="language-typescript"><code class="lang-typescript">// Make sure you have the didkit plugin installed! pnpm i @learncard/didkit-plugin
+
+<pre class="language-typescript"><code class="lang-typescript">// Make sure you have the didkit plugin installed! bun add @learncard/didkit-plugin
 
 import { initLearnCard } from '@learncard/init';
 <strong>import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm';
 </strong>
 const learnCard = await initLearnCard({ seed: 'abc123', didkit });
 </code></pre>
+
 {% endtab %}
 
 {% tab title="Vite" %}
-<pre class="language-typescript"><code class="lang-typescript">// Make sure you have the didkit plugin installed! pnpm i @learncard/didkit-plugin
+
+<pre class="language-typescript"><code class="lang-typescript">// Make sure you have the didkit plugin installed! bun add @learncard/didkit-plugin
 
 import { initLearnCard } from '@learncard/init';
 <strong>import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 </strong>
 const learnCard = await initLearnCard({ seed: 'abc123', didkit });
 </code></pre>
+
 {% endtab %}
 {% endtabs %}
 
@@ -175,45 +183,37 @@ In it's most basic form, you can create a Boost credential using the following s
 
 ```json
 {
-  "@context": [
-    "https://www.w3.org/ns/credentials/v2",
-    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-    "https://ctx.learncard.com/boosts/1.0.3.json"
-  ],
-  "credentialSubject": {
-    "achievement": {
-      "achievementType": "ext:LCA_CUSTOM:Social Badge:Adventurer",
-      "criteria": {
-        "narrative": "This badge is awarded for being a adventurer."
-      },
-      "description": "An adventure badge.",
-      "id": "urn:uuid:123",
-      "image": "https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg",
-      "name": "Adventurer",
-      "type": [
-        "Achievement"
-      ]
+    "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+        "https://ctx.learncard.com/boosts/1.0.3.json"
+    ],
+    "credentialSubject": {
+        "achievement": {
+            "achievementType": "ext:LCA_CUSTOM:Social Badge:Adventurer",
+            "criteria": {
+                "narrative": "This badge is awarded for being a adventurer."
+            },
+            "description": "An adventure badge.",
+            "id": "urn:uuid:123",
+            "image": "https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg",
+            "name": "Adventurer",
+            "type": ["Achievement"]
+        },
+        "id": "did:web:network.learncard.com:users:example",
+        "type": ["AchievementSubject"]
     },
-    "id": "did:web:network.learncard.com:users:example",
-    "type": [
-      "AchievementSubject"
-    ]
-  },
-  "display": {
-    "backgroundColor": "",
-    "backgroundImage": "",
-    "displayType": "badge"
-  },
-  "image": "https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg",
-  "skills": [],
-  "issuanceDate": "2025-04-01T16:56:00.667Z",
-  "issuer": "did:web:network.learncard.com:users:issuer-example",
-  "name": "Tabby Cat",
-  "type": [
-    "VerifiableCredential",
-    "OpenBadgeCredential",
-    "BoostCredential"
-  ]
+    "display": {
+        "backgroundColor": "",
+        "backgroundImage": "",
+        "displayType": "badge"
+    },
+    "image": "https://i.postimg.cc/s2xdx5Ss/erik-jan-leusink-Ib-Px-GLg-Ji-MI-unsplash.jpg",
+    "skills": [],
+    "issuanceDate": "2025-04-01T16:56:00.667Z",
+    "issuer": "did:web:network.learncard.com:users:issuer-example",
+    "name": "Tabby Cat",
+    "type": ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"]
 }
 ```
 
@@ -224,7 +224,7 @@ But sometimes the test credential is too basic for most use cases. That's why Le
 ```typescript
 // Returns an unsigned, basic credential
 const basicCredential = learnCard.invoke.newCredential({ type: 'basic' });
-// Returns an unsigned, achievement credential. 
+// Returns an unsigned, achievement credential.
 const achievementCredential = learnCard.invoke.newCredential({ type: 'achievement' });
 ```
 
@@ -248,6 +248,7 @@ After a credential is signed, the credential may be transferred via an exchange 
 
 {% tabs %}
 {% tab title="Valid Credential" %}
+
 ```typescript
 const result = await learnCard.invoke.verifyCredential(signedVc);
 
@@ -266,9 +267,11 @@ const result = await learnCard.invoke.verifyCredential(signedVc, {}, true);
 //     }
 // ]
 ```
+
 {% endtab %}
 
 {% tab title="Invalid Credential" %}
+
 ```typescript
 signedVc.expirationDate = '2022-06-10T18:26:57.687Z';
 
@@ -288,9 +291,9 @@ console.log(result);
 
 const result = await learnCard.invoke.verifyCredential(signedVc, {}, true);
 
-console.log(result); 
+console.log(result);
 // [
-//     { 
+//     {
 //         status: "Failed",
 //         check: "signature",
 //         details: "signature error: Verification equation was not satisfied"
@@ -303,6 +306,7 @@ console.log(result);
 //     { status: "Success", check: "proof", message: "Valid" }
 // ]
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -312,6 +316,7 @@ Similar to Verifiable Credentials, LearnCard has methods for verifying and issui
 
 {% tabs %}
 {% tab title="Valid Presentation" %}
+
 ```typescript
 const unsignedVp = await learnCard.invoke.getTestVp();
 
@@ -329,9 +334,11 @@ console.log(result);
 //   errors: [],
 // }
 ```
+
 {% endtab %}
 
 {% tab title="Invalid Presentation" %}
+
 ```typescript
 const unsignedVp = await learnCard.invoke.getTestVp();
 const vp = await learnCard.invoke.issuePresentation(unsignedVp);
@@ -347,6 +354,7 @@ console.log(result);
 //     errors: ['Unable to filter proofs: Unable to resolve: invalidDid'],
 // }
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -363,17 +371,20 @@ Verifiable Presentations enable trusted sharing of one or more claims in a singl
 Credentials can be converted back and forth to [URIs](../../core-concepts/credentials-and-data/uris.md), which can be stored per holder using [Control Planes](../../core-concepts/architecture-and-principles/control-planes.md). [URIs](../../core-concepts/credentials-and-data/uris.md) simplify complex processes, such as indexing and caching, over credentials stored in many different locations, such as in IPFS, device storage, or a Decentralized Web Node.
 
 {% code title="Issuer" %}
+
 ```typescript
-const holderDid = 'did:key:z6MknqnHBn4Rx64gH4Dy1qjmaHjxFjaNG1WioKvQuXKhEKL5'
+const holderDid = 'did:key:z6MknqnHBn4Rx64gH4Dy1qjmaHjxFjaNG1WioKvQuXKhEKL5';
 const uvc = learnCard.invoke.newCredential({ subject: holderDid });
 const vc = await learnCard.invoke.issueCredential(uvc);
 const uri = await learnCard.store.LearnCloud.uploadEncrypted(vc);
 
 // *** Send URI to Holder ***
 ```
+
 {% endcode %}
 
 {% code title="Holder" %}
+
 ```typescript
 // *** Receive URI from Issuer ***
 
@@ -389,15 +400,14 @@ const records = await learnCard.index.LearnCloud.get();
 const record = records.find(({ id }) => id === 'test');
 const storedCredential = await learnCard.read.get(record.uri);
 
-// _.isEqual(credential, storedCredential) = true 
+// _.isEqual(credential, storedCredential) = true
 ```
+
 {% endcode %}
 
 {% hint style="info" %}
 The above example uses LearnCloud storage, but there are many ways to store and retrieve a credential! Check out the[ **Store control plane**](../../core-concepts/architecture-and-principles/control-planes.md#store-control-plane) for more info and options.
 {% endhint %}
-
-
 
 ## LearnCloud Network
 
@@ -406,10 +416,10 @@ The above example uses LearnCloud storage, but there are many ways to store and 
 To create a new profile, use the `createProfile` method. This method accepts an object containing the profile information, excluding the `did` and `isServiceProfile` properties.
 
 ```javascript
-await  learnCard.invoke.createProfile({
-  displayName: 'John Smith',
-  profileId: 'johnsmith',
-  image: 'https://example.com/avatar.jpg',
+await learnCard.invoke.createProfile({
+    displayName: 'John Smith',
+    profileId: 'johnsmith',
+    image: 'https://example.com/avatar.jpg',
 });
 ```
 
@@ -418,10 +428,10 @@ These examples demonstrate creating, retrieving, updating, and deleting differen
 ```typescript
 // --- Creating Profiles ---
 const profileDetails = {
-  profileId: 'john.doe',
-  displayName: 'John Doe',
-  email: 'john.doe@example.com',
-  // ... other LCNProfile fields
+    profileId: 'john.doe',
+    displayName: 'John Doe',
+    email: 'john.doe@example.com',
+    // ... other LCNProfile fields
 };
 
 const managerDetails = {
@@ -430,33 +440,37 @@ const managerDetails = {
 };
 
 try {
-  // Create a regular user profile
-  const regularProfileDid = await learnCard.invoke.createProfile(profileDetails);
-  console.log('Regular Profile DID:', regularProfileDid);
+    // Create a regular user profile
+    const regularProfileDid = await learnCard.invoke.createProfile(profileDetails);
+    console.log('Regular Profile DID:', regularProfileDid);
 
-  // Create a service profile
-  const serviceProfileDid = await learnCard.invoke.createServiceProfile(profileDetails);
-  console.log('Service Profile DID:', serviceProfileDid);
+    // Create a service profile
+    const serviceProfileDid = await learnCard.invoke.createServiceProfile(profileDetails);
+    console.log('Service Profile DID:', serviceProfileDid);
 
-  // Create a managed profile (often used for profiles requiring oversight)
-  const managedProfileDid = await learnCard.invoke.createManagedProfile(profileDetails);
-  console.log('Managed Profile DID:', managedProfileDid);
-  
-  // Create a managed service profile
-  const managedServiceProfileDid = await learnCard.invoke.createManagedServiceProfile(profileDetails);
-  console.log('Managed Service Profile DID:', managedServiceProfileDid);
+    // Create a managed profile (often used for profiles requiring oversight)
+    const managedProfileDid = await learnCard.invoke.createManagedProfile(profileDetails);
+    console.log('Managed Profile DID:', managedProfileDid);
 
-  // Create a profile manager
-  const profileManagerId = await learnCard.invoke.createProfileManager(managerDetails);
-  console.log('Profile Manager ID:', profileManagerId);
+    // Create a managed service profile
+    const managedServiceProfileDid = await learnCard.invoke.createManagedServiceProfile(
+        profileDetails
+    );
+    console.log('Managed Service Profile DID:', managedServiceProfileDid);
 
-  // Create a child profile manager under an existing parent
-  const parentManagerUri = 'uri:manager:parent123'; // Replace with actual parent URI
-  const childProfileManagerId = await learnCard.invoke.createChildProfileManager(parentManagerUri, managerDetails);
-  console.log('Child Profile Manager ID:', childProfileManagerId);
+    // Create a profile manager
+    const profileManagerId = await learnCard.invoke.createProfileManager(managerDetails);
+    console.log('Profile Manager ID:', profileManagerId);
 
+    // Create a child profile manager under an existing parent
+    const parentManagerUri = 'uri:manager:parent123'; // Replace with actual parent URI
+    const childProfileManagerId = await learnCard.invoke.createChildProfileManager(
+        parentManagerUri,
+        managerDetails
+    );
+    console.log('Child Profile Manager ID:', childProfileManagerId);
 } catch (error) {
-  console.error('Error creating profile:', error);
+    console.error('Error creating profile:', error);
 }
 ```
 
@@ -464,9 +478,9 @@ try {
 
 To search for profiles, use the `searchProfiles` method. This method accepts an optional `profileId` parameter and an `options` object. The `options` object can contain the following properties:
 
-* `limit`: Maximum number of profiles to return.
-* `includeSelf`: Whether to include the current user's profile in the results.
-* `includeConnectionStatus`: Whether to include connection status in the results.
+-   `limit`: Maximum number of profiles to return.
+-   `includeSelf`: Whether to include the current user's profile in the results.
+-   `includeConnectionStatus`: Whether to include connection status in the results.
 
 ```javascript
 const profileId = 'johnsmith';
@@ -483,39 +497,53 @@ const queryOptionsMock = { limit: 10, cursor: undefined }; // Example pagination
 const profileQueryMock = { displayName: 'John' }; // Example query
 
 try {
-  // Get the current authenticated user's profile
-  const myProfile = await learnCard.invoke.getProfile(); // No argument for self
-  console.log('My Profile:', myProfile);
+    // Get the current authenticated user's profile
+    const myProfile = await learnCard.invoke.getProfile(); // No argument for self
+    console.log('My Profile:', myProfile);
 
-  // Get another profile by its ID
-  const otherProfileId = 'jane.doe'; // Example profile ID
-  const otherProfile = await learnCard.invoke.getProfile(otherProfileId);
-  console.log(`Profile for ${otherProfileId}:`, otherProfile);
+    // Get another profile by its ID
+    const otherProfileId = 'jane.doe'; // Example profile ID
+    const otherProfile = await learnCard.invoke.getProfile(otherProfileId);
+    console.log(`Profile for ${otherProfileId}:`, otherProfile);
 
-  // Get profile manager details
-  const someManagerId = 'manager-xyz'; // Example manager ID
-  const profileManager = await learnCard.invoke.getProfileManagerProfile(someManagerId);
-  console.log('Profile Manager:', profileManager);
+    // Get profile manager details
+    const someManagerId = 'manager-xyz'; // Example manager ID
+    const profileManager = await learnCard.invoke.getProfileManagerProfile(someManagerId);
+    console.log('Profile Manager:', profileManager);
 
-  // Search for profiles
-  const searchResults = await learnCard.invoke.searchProfiles('john', { limit: 5, includeConnectionStatus: true });
-  console.log('Search Results for "john":', searchResults);
-  
-  // Get profiles available to the current user (e.g., owned or managed)
-  const availableProfiles = await learnCard.invoke.getAvailableProfiles({ query: profileQueryMock, ...queryOptionsMock });
-  console.log('Available Profiles:', availableProfiles);
+    // Search for profiles
+    const searchResults = await learnCard.invoke.searchProfiles('john', {
+        limit: 5,
+        includeConnectionStatus: true,
+    });
+    console.log('Search Results for "john":', searchResults);
 
-  // Get profiles managed by the current user
-  const managedProfiles = await learnCard.invoke.getManagedProfiles({ query: profileQueryMock, ...queryOptionsMock });
-  console.log('Managed Profiles:', managedProfiles);
+    // Get profiles available to the current user (e.g., owned or managed)
+    const availableProfiles = await learnCard.invoke.getAvailableProfiles({
+        query: profileQueryMock,
+        ...queryOptionsMock,
+    });
+    console.log('Available Profiles:', availableProfiles);
 
-  // Get service profiles managed by the user (or by a specific manager ID if provided)
-  const managerIdForServiceProfiles = 'manager-abc';
-  const managedServiceProfiles = await learnCard.invoke.getManagedServiceProfiles({ id: managerIdForServiceProfiles, ...queryOptionsMock });
-  console.log(`Managed Service Profiles for manager ${managerIdForServiceProfiles}:`, managedServiceProfiles);
+    // Get profiles managed by the current user
+    const managedProfiles = await learnCard.invoke.getManagedProfiles({
+        query: profileQueryMock,
+        ...queryOptionsMock,
+    });
+    console.log('Managed Profiles:', managedProfiles);
 
+    // Get service profiles managed by the user (or by a specific manager ID if provided)
+    const managerIdForServiceProfiles = 'manager-abc';
+    const managedServiceProfiles = await learnCard.invoke.getManagedServiceProfiles({
+        id: managerIdForServiceProfiles,
+        ...queryOptionsMock,
+    });
+    console.log(
+        `Managed Service Profiles for manager ${managerIdForServiceProfiles}:`,
+        managedServiceProfiles
+    );
 } catch (error) {
-  console.error('Error retrieving profiles:', error);
+    console.error('Error retrieving profiles:', error);
 }
 ```
 
@@ -524,33 +552,33 @@ try {
 ```typescript
 // --- Updating & Deleting Profiles ---
 const profileUpdates = {
-  displayName: 'Johnathan Doe',
-  bio: 'Updated bio information.',
-  // ... other fields to update
+    displayName: 'Johnathan Doe',
+    bio: 'Updated bio information.',
+    // ... other fields to update
 };
 
 const managerUpdates = {
     displayName: 'Senior Manager',
     // ... other fields
-}
+};
 
 try {
-  // Update the current authenticated user's profile
-  // Note: updateProfile typically updates the profile associated with the current learnCard instance's DID
-  const updateSuccess = await learnCard.invoke.updateProfile(profileUpdates);
-  console.log('Profile update success:', updateSuccess);
+    // Update the current authenticated user's profile
+    // Note: updateProfile typically updates the profile associated with the current learnCard instance's DID
+    const updateSuccess = await learnCard.invoke.updateProfile(profileUpdates);
+    console.log('Profile update success:', updateSuccess);
 
-  // Update a profile manager's profile
-  // Assuming managerUpdates includes the manager's identifier or is for the current profile manager context
-  const managerUpdateSuccess = await learnCard.invoke.updateProfileManagerProfile(managerUpdates);
-  console.log('Manager profile update success:', managerUpdateSuccess);
+    // Update a profile manager's profile
+    // Assuming managerUpdates includes the manager's identifier or is for the current profile manager context
+    const managerUpdateSuccess = await learnCard.invoke.updateProfileManagerProfile(managerUpdates);
+    console.log('Manager profile update success:', managerUpdateSuccess);
 
-  // Delete the current authenticated user's profile
-  // Be very careful with this operation!
-  // const deleteSuccess = await learnCard.invoke.deleteProfile();
-  // console.log('Profile delete success:', deleteSuccess);
+    // Delete the current authenticated user's profile
+    // Be very careful with this operation!
+    // const deleteSuccess = await learnCard.invoke.deleteProfile();
+    // console.log('Profile delete success:', deleteSuccess);
 } catch (error) {
-  console.error('Error updating/deleting profile:', error);
+    console.error('Error updating/deleting profile:', error);
 }
 ```
 
@@ -604,65 +632,67 @@ const targetProfileId = 'jane.doe.connections'; // Example target profile ID for
 const connectionRequestProfileId = 'john.wayne.connections'; // Example profile ID of an incoming connection request
 
 try {
-  // --- Connection Operations ---
-  // Send a connection request
-  const connectSuccess = await learnCard.invoke.connectWith(targetProfileId);
-  console.log(`Connection request to ${targetProfileId} success:`, connectSuccess);
+    // --- Connection Operations ---
+    // Send a connection request
+    const connectSuccess = await learnCard.invoke.connectWith(targetProfileId);
+    console.log(`Connection request to ${targetProfileId} success:`, connectSuccess);
 
-  // Accept an incoming connection request
-  const acceptSuccess = await learnCard.invoke.acceptConnectionRequest(connectionRequestProfileId);
-  console.log(`Accepted connection request ${connectionRequestProfileId}:`, acceptSuccess);
+    // Accept an incoming connection request
+    const acceptSuccess = await learnCard.invoke.acceptConnectionRequest(
+        connectionRequestProfileId
+    );
+    console.log(`Accepted connection request ${connectionRequestProfileId}:`, acceptSuccess);
 
-  // Disconnect with a connected profile
-  const disconnectSuccess = await learnCard.invoke.disconnectWith(targetProfileId);
-  console.log(`Disconnected from ${targetProfileId}:`, disconnectSuccess);
+    // Disconnect with a connected profile
+    const disconnectSuccess = await learnCard.invoke.disconnectWith(targetProfileId);
+    console.log(`Disconnected from ${targetProfileId}:`, disconnectSuccess);
 
-  // Cancel an outgoing connection request you previously sent
-  const cancelSuccess = await learnCard.invoke.cancelConnectionRequest(targetProfileId);
-  console.log(`Cancelled connection request to ${targetProfileId}:`, cancelSuccess);
+    // Cancel an outgoing connection request you previously sent
+    const cancelSuccess = await learnCard.invoke.cancelConnectionRequest(targetProfileId);
+    console.log(`Cancelled connection request to ${targetProfileId}:`, cancelSuccess);
 
+    // --- Connection Invitations ---
+    // Generate an invitation
+    const inviteDetails = await learnCard.invoke.generateInvite('optional-challenge-string', 3600); // Expires in 1 hour
+    console.log('Generated Invite:', inviteDetails);
+    // (Off-band: share inviteDetails.profileId and inviteDetails.challenge with another user)
 
-  // --- Connection Invitations ---
-  // Generate an invitation
-  const inviteDetails = await learnCard.invoke.generateInvite('optional-challenge-string', 3600); // Expires in 1 hour
-  console.log('Generated Invite:', inviteDetails);
-  // (Off-band: share inviteDetails.profileId and inviteDetails.challenge with another user)
+    // Another user connects using the invitation
+    // This would typically be called by a different learnCard instance/user
+    // const connectingProfileId = inviteDetails.profileId;
+    // const challengeFromInvite = inviteDetails.challenge;
+    // const connectInviteSuccess = await otherLearnCard.invoke.connectWithInvite(connectingProfileId, challengeFromInvite);
+    // console.log('Connected via invite:', connectInviteSuccess);
 
-  // Another user connects using the invitation
-  // This would typically be called by a different learnCard instance/user
-  // const connectingProfileId = inviteDetails.profileId; 
-  // const challengeFromInvite = inviteDetails.challenge;
-  // const connectInviteSuccess = await otherLearnCard.invoke.connectWithInvite(connectingProfileId, challengeFromInvite);
-  // console.log('Connected via invite:', connectInviteSuccess);
-  
+    // --- Retrieving Connections ---
+    const paginationOptions = { limit: 10 };
 
-  // --- Retrieving Connections ---
-  const paginationOptions = { limit: 10 };
+    const connections = await learnCard.invoke.getPaginatedConnections(paginationOptions);
+    console.log('My Connections:', connections.records);
 
-  const connections = await learnCard.invoke.getPaginatedConnections(paginationOptions);
-  console.log('My Connections:', connections.records);
+    const pendingRequests = await learnCard.invoke.getPaginatedPendingConnections(
+        paginationOptions
+    );
+    console.log('My Pending Outgoing Requests:', pendingRequests.records);
 
-  const pendingRequests = await learnCard.invoke.getPaginatedPendingConnections(paginationOptions);
-  console.log('My Pending Outgoing Requests:', pendingRequests.records);
+    const incomingRequests = await learnCard.invoke.getPaginatedConnectionRequests(
+        paginationOptions
+    );
+    console.log('My Incoming Connection Requests:', incomingRequests.records);
 
-  const incomingRequests = await learnCard.invoke.getPaginatedConnectionRequests(paginationOptions);
-  console.log('My Incoming Connection Requests:', incomingRequests.records);
+    // --- Blocking Profiles ---
+    const profileToBlock = 'annoying.user';
+    const blockSuccess = await learnCard.invoke.blockProfile(profileToBlock);
+    console.log(`Blocked ${profileToBlock}:`, blockSuccess);
 
+    const blockedProfiles = await learnCard.invoke.getBlockedProfiles();
+    console.log('Blocked Profiles:', blockedProfiles);
 
-  // --- Blocking Profiles ---
-  const profileToBlock = 'annoying.user';
-  const blockSuccess = await learnCard.invoke.blockProfile(profileToBlock);
-  console.log(`Blocked ${profileToBlock}:`, blockSuccess);
-
-  const blockedProfiles = await learnCard.invoke.getBlockedProfiles();
-  console.log('Blocked Profiles:', blockedProfiles);
-
-  // Unblock a profile
-  // const unblockSuccess = await learnCard.invoke.unblockProfile(profileToBlock);
-  // console.log(`Unblocked ${profileToBlock}:`, unblockSuccess);
-
+    // Unblock a profile
+    // const unblockSuccess = await learnCard.invoke.unblockProfile(profileToBlock);
+    // console.log(`Unblocked ${profileToBlock}:`, unblockSuccess);
 } catch (error) {
-  console.error('Error in connection management:', error);
+    console.error('Error in connection management:', error);
 }
 ```
 
@@ -715,56 +745,63 @@ await learnCard.invoke.sendPresentation(profileId, vp, encrypt);
 
 ```typescript
 // Assume vcMock and vpMock are properly structured Verifiable Credential and Presentation objects
-const vcMock = await learnCard.invoke.issueCredential(learnCard.invoke.getTestVc())
-const vpMock = await learnCard.invoke.issuePresentation(await learnCard.invoke.getTestVp())
+const vcMock = await learnCard.invoke.issueCredential(learnCard.invoke.getTestVc());
+const vpMock = await learnCard.invoke.issuePresentation(await learnCard.invoke.getTestVp());
 
 const recipientProfileId = 'bob.the.receiver';
 const credentialUriToManage = 'uri:credential:xyz789'; // Example URI of a received/sent credential
 
 try {
-  // --- Sending Credentials & Presentations ---
-  const sentCredentialUri = await learnCard.invoke.sendCredential(recipientProfileId, vcMock, true); // Encrypt = true
-  console.log('Sent Credential URI:', sentCredentialUri);
+    // --- Sending Credentials & Presentations ---
+    const sentCredentialUri = await learnCard.invoke.sendCredential(
+        recipientProfileId,
+        vcMock,
+        true
+    ); // Encrypt = true
+    console.log('Sent Credential URI:', sentCredentialUri);
 
-  const sentPresentationUri = await learnCard.invoke.sendPresentation(recipientProfileId, vpMock, true); // Encrypt = true
-  console.log('Sent Presentation URI:', sentPresentationUri);
+    const sentPresentationUri = await learnCard.invoke.sendPresentation(
+        recipientProfileId,
+        vpMock,
+        true
+    ); // Encrypt = true
+    console.log('Sent Presentation URI:', sentPresentationUri);
 
-  // --- Accepting Credentials & Presentations ---
-  // (This would typically be called by the recipient's learnCard instance)
-  // const receivedCredentialUri = 'uri:credential:abc123'; // URI from notification or shared link
-  // const acceptCredentialSuccess = await recipientLearnCard.invoke.acceptCredential(receivedCredentialUri);
-  // console.log('Accepted Credential:', acceptCredentialSuccess);
+    // --- Accepting Credentials & Presentations ---
+    // (This would typically be called by the recipient's learnCard instance)
+    // const receivedCredentialUri = 'uri:credential:abc123'; // URI from notification or shared link
+    // const acceptCredentialSuccess = await recipientLearnCard.invoke.acceptCredential(receivedCredentialUri);
+    // console.log('Accepted Credential:', acceptCredentialSuccess);
 
-  // const receivedPresentationUri = 'uri:presentation:def456';
-  // const acceptPresentationSuccess = await recipientLearnCard.invoke.acceptPresentation(receivedPresentationUri);
-  // console.log('Accepted Presentation:', acceptPresentationSuccess);
+    // const receivedPresentationUri = 'uri:presentation:def456';
+    // const acceptPresentationSuccess = await recipientLearnCard.invoke.acceptPresentation(receivedPresentationUri);
+    // console.log('Accepted Presentation:', acceptPresentationSuccess);
 
+    // --- Retrieving Information ---
+    // Assuming 'did:example:sender' is the DID of a profile that sent you credentials
+    const receivedCredentials = await learnCard.invoke.getReceivedCredentials('did:example:sender');
+    console.log('Received Credentials:', receivedCredentials);
 
-  // --- Retrieving Information ---
-  // Assuming 'did:example:sender' is the DID of a profile that sent you credentials
-  const receivedCredentials = await learnCard.invoke.getReceivedCredentials('did:example:sender');
-  console.log('Received Credentials:', receivedCredentials);
+    const sentCredentials = await learnCard.invoke.getSentCredentials(recipientProfileId);
+    console.log('Sent Credentials:', sentCredentials);
 
-  const sentCredentials = await learnCard.invoke.getSentCredentials(recipientProfileId);
-  console.log('Sent Credentials:', sentCredentials);
-  
-  const incomingCredentials = await learnCard.invoke.getIncomingCredentials(); // Get all pending incoming
-  console.log('Incoming Credentials (pending acceptance):', incomingCredentials);
+    const incomingCredentials = await learnCard.invoke.getIncomingCredentials(); // Get all pending incoming
+    console.log('Incoming Credentials (pending acceptance):', incomingCredentials);
 
-  // Similar retrieval for presentations
-  const receivedPresentations = await learnCard.invoke.getReceivedPresentations('did:example:sender');
-  console.log('Received Presentations:', receivedPresentations);
+    // Similar retrieval for presentations
+    const receivedPresentations = await learnCard.invoke.getReceivedPresentations(
+        'did:example:sender'
+    );
+    console.log('Received Presentations:', receivedPresentations);
 
+    // --- Deleting ---
+    // const deleteCredentialSuccess = await learnCard.invoke.deleteCredential(credentialUriToManage);
+    // console.log('Deleted Credential:', deleteCredentialSuccess);
 
-  // --- Deleting ---
-  // const deleteCredentialSuccess = await learnCard.invoke.deleteCredential(credentialUriToManage);
-  // console.log('Deleted Credential:', deleteCredentialSuccess);
-  
-  // const deletePresentationSuccess = await learnCard.invoke.deletePresentation(credentialUriToManage); // Assuming a presentation URI
-  // console.log('Deleted Presentation:', deletePresentationSuccess);
-
+    // const deletePresentationSuccess = await learnCard.invoke.deletePresentation(credentialUriToManage); // Assuming a presentation URI
+    // console.log('Deleted Presentation:', deletePresentationSuccess);
 } catch (error) {
-  console.error('Error in credential/presentation exchange:', error);
+    console.error('Error in credential/presentation exchange:', error);
 }
 ```
 
@@ -779,8 +816,8 @@ To create a boost, use the `createBoost` method. This method accepts a `credenti
 ```javascript
 const credential = your_credential;
 const metadata = {
-  name: 'Your Boost Name',
-  description: 'Your Boost Description',
+    name: 'Your Boost Name',
+    description: 'Your Boost Description',
 };
 
 await learnCard.invoke.createBoost(credential, metadata);
@@ -812,7 +849,7 @@ These are the API calls related to boosts management in the LearnCard Network AP
 
 ```typescript
 // Assume vcForBoost is a Verifiable Credential object for the boost content
-const vcForBoost = await learnCard.invoke.issueCredential(learnCard.invoke.getTestVc())
+const vcForBoost = await learnCard.invoke.issueCredential(learnCard.invoke.getTestVc());
 const boostMetadataMock = { name: 'My First Boost', category: 'Achievement' };
 const parentBoostUri = 'uri:boost:parent123'; // Example
 const childBoostUri = 'uri:boost:child456'; // Example
@@ -821,74 +858,97 @@ const profileIdForBoost = 'carol.manager';
 const boostQueryMock = { category: 'Education' };
 const paginationOptions = { limit: 5 };
 
-
 try {
-  // --- Creating Boosts ---
-  const boostUri = await learnCard.invoke.createBoost(vcForBoost, boostMetadataMock);
-  console.log('Created Boost URI:', boostUri);
+    // --- Creating Boosts ---
+    const boostUri = await learnCard.invoke.createBoost(vcForBoost, boostMetadataMock);
+    console.log('Created Boost URI:', boostUri);
 
-  const newChildBoostUri = await learnCard.invoke.createChildBoost(parentBoostUri, vcForBoost, { name: 'Child Boost 1' });
-  console.log('Created Child Boost URI:', newChildBoostUri);
+    const newChildBoostUri = await learnCard.invoke.createChildBoost(parentBoostUri, vcForBoost, {
+        name: 'Child Boost 1',
+    });
+    console.log('Created Child Boost URI:', newChildBoostUri);
 
+    // --- Retrieving Boosts ---
+    const boostDetails = await learnCard.invoke.getBoost(boostUri);
+    console.log('Boost Details:', boostDetails);
 
-  // --- Retrieving Boosts ---
-  const boostDetails = await learnCard.invoke.getBoost(boostUri);
-  console.log('Boost Details:', boostDetails);
+    const allBoosts = await learnCard.invoke.getPaginatedBoosts({
+        query: boostQueryMock,
+        ...paginationOptions,
+    });
+    console.log('Paginated Boosts:', allBoosts.records);
 
-  const allBoosts = await learnCard.invoke.getPaginatedBoosts({ query: boostQueryMock, ...paginationOptions });
-  console.log('Paginated Boosts:', allBoosts.records);
+    const boostCount = await learnCard.invoke.countBoosts(boostQueryMock);
+    console.log('Total Boosts matching query:', boostCount);
 
-  const boostCount = await learnCard.invoke.countBoosts(boostQueryMock);
-  console.log('Total Boosts matching query:', boostCount);
+    // --- Boost Hierarchy ---
+    const children = await learnCard.invoke.getBoostChildren(parentBoostUri, {
+        numberOfGenerations: 1,
+        ...paginationOptions,
+    });
+    console.log(`Children of ${parentBoostUri}:`, children.records);
 
+    const parents = await learnCard.invoke.getBoostParents(newChildBoostUri, {
+        numberOfGenerations: 1,
+        ...paginationOptions,
+    });
+    console.log(`Parents of ${newChildBoostUri}:`, parents.records);
 
-  // --- Boost Hierarchy ---
-  const children = await learnCard.invoke.getBoostChildren(parentBoostUri, { numberOfGenerations: 1, ...paginationOptions });
-  console.log(`Children of ${parentBoostUri}:`, children.records);
+    const makeParentSuccess = await learnCard.invoke.makeBoostParent({
+        parentUri: parentBoostUri,
+        childUri: newChildBoostUri,
+    });
+    console.log('Made parent successful:', makeParentSuccess);
 
-  const parents = await learnCard.invoke.getBoostParents(newChildBoostUri, { numberOfGenerations: 1, ...paginationOptions });
-  console.log(`Parents of ${newChildBoostUri}:`, parents.records);
+    // const removeParentSuccess = await learnCard.invoke.removeBoostParent({ parentUri: parentBoostUri, childUri: newChildBoostUri });
+    // console.log('Removed parent successful:', removeParentSuccess);
 
-  const makeParentSuccess = await learnCard.invoke.makeBoostParent({ parentUri: parentBoostUri, childUri: newChildBoostUri });
-  console.log('Made parent successful:', makeParentSuccess);
-  
-  // const removeParentSuccess = await learnCard.invoke.removeBoostParent({ parentUri: parentBoostUri, childUri: newChildBoostUri });
-  // console.log('Removed parent successful:', removeParentSuccess);
+    // --- Boost Recipients & Permissions ---
+    const recipients = await learnCard.invoke.getPaginatedBoostRecipients(
+        someBoostUri,
+        10,
+        undefined,
+        true
+    );
+    console.log(`Recipients for ${someBoostUri}:`, recipients.records);
 
+    const admins = await learnCard.invoke.getBoostAdmins(someBoostUri, { includeSelf: true });
+    console.log(`Admins for ${someBoostUri}:`, admins.records);
 
-  // --- Boost Recipients & Permissions ---
-  const recipients = await learnCard.invoke.getPaginatedBoostRecipients(someBoostUri, 10, undefined, true);
-  console.log(`Recipients for ${someBoostUri}:`, recipients.records);
+    const addAdminSuccess = await learnCard.invoke.addBoostAdmin(someBoostUri, profileIdForBoost);
+    console.log(`Added ${profileIdForBoost} as admin to ${someBoostUri}:`, addAdminSuccess);
 
-  const admins = await learnCard.invoke.getBoostAdmins(someBoostUri, { includeSelf: true });
-  console.log(`Admins for ${someBoostUri}:`, admins.records);
-  
-  const addAdminSuccess = await learnCard.invoke.addBoostAdmin(someBoostUri, profileIdForBoost);
-  console.log(`Added ${profileIdForBoost} as admin to ${someBoostUri}:`, addAdminSuccess);
+    const permissions = await learnCard.invoke.getBoostPermissions(someBoostUri, profileIdForBoost);
+    console.log(`Permissions for ${profileIdForBoost} on ${someBoostUri}:`, permissions);
 
-  const permissions = await learnCard.invoke.getBoostPermissions(someBoostUri, profileIdForBoost);
-  console.log(`Permissions for ${profileIdForBoost} on ${someBoostUri}:`, permissions);
+    const updatePermsSuccess = await learnCard.invoke.updateBoostPermissions(
+        someBoostUri,
+        { canEdit: true },
+        profileIdForBoost
+    );
+    console.log('Updated permissions:', updatePermsSuccess);
 
-  const updatePermsSuccess = await learnCard.invoke.updateBoostPermissions(someBoostUri, { canEdit: true }, profileIdForBoost);
-  console.log('Updated permissions:', updatePermsSuccess);
+    // --- Updating & Deleting Boosts ---
+    const boostUpdates = { description: 'Updated description for this amazing boost!' };
+    const updateBoostSuccess = await learnCard.invoke.updateBoost(someBoostUri, boostUpdates);
+    console.log('Boost update success:', updateBoostSuccess);
 
+    // const deleteBoostSuccess = await learnCard.invoke.deleteBoost(someBoostUri);
+    // console.log('Boost delete success:', deleteBoostSuccess);
 
-  // --- Updating & Deleting Boosts ---
-  const boostUpdates = { description: 'Updated description for this amazing boost!' };
-  const updateBoostSuccess = await learnCard.invoke.updateBoost(someBoostUri, boostUpdates);
-  console.log('Boost update success:', updateBoostSuccess);
-
-  // const deleteBoostSuccess = await learnCard.invoke.deleteBoost(someBoostUri);
-  // console.log('Boost delete success:', deleteBoostSuccess);
-
-  
-  // --- Sending Boosts ---
-  const targetProfileForBoost = 'dave.recipient';
-  const sentBoostCredentialUri = await learnCard.invoke.sendBoost(targetProfileForBoost, someBoostUri, { encrypt: true });
-  console.log(`Sent boost ${someBoostUri} to ${targetProfileForBoost}. Credential URI:`, sentBoostCredentialUri);
-
+    // --- Sending Boosts ---
+    const targetProfileForBoost = 'dave.recipient';
+    const sentBoostCredentialUri = await learnCard.invoke.sendBoost(
+        targetProfileForBoost,
+        someBoostUri,
+        { encrypt: true }
+    );
+    console.log(
+        `Sent boost ${someBoostUri} to ${targetProfileForBoost}. Credential URI:`,
+        sentBoostCredentialUri
+    );
 } catch (error) {
-  console.error('Error in boost management:', error);
+    console.error('Error in boost management:', error);
 }
 ```
 
@@ -903,39 +963,48 @@ const authorityDid = 'did:example:authority123'; // DID of the signing authority
 const boostUriForClaimLink = 'uri:boost:claimable123';
 
 // LCNBoostClaimLinkSigningAuthorityType
-const claimLinkSigningAuthorityConfig = { 
-  endpoint: authorityEndpoint, 
-  name: authorityName,
-  did: authorityDid
-}; 
+const claimLinkSigningAuthorityConfig = {
+    endpoint: authorityEndpoint,
+    name: authorityName,
+    did: authorityDid,
+};
 
 // LCNBoostClaimLinkOptionsType
 const claimLinkOptions = { ttlSeconds: 86400, totalUses: 10 }; // e.g., expires in 24 hours, 10 max claims
 
 try {
-  // --- Signing Authorities ---
-  const registerSuccess = await learnCard.invoke.registerSigningAuthority(authorityEndpoint, authorityName, authorityDid);
-  console.log('Registered Signing Authority:', registerSuccess);
+    // --- Signing Authorities ---
+    const registerSuccess = await learnCard.invoke.registerSigningAuthority(
+        authorityEndpoint,
+        authorityName,
+        authorityDid
+    );
+    console.log('Registered Signing Authority:', registerSuccess);
 
-  const authorities = await learnCard.invoke.getRegisteredSigningAuthorities();
-  console.log('Retrieved Signing Authorities:', authorities);
+    const authorities = await learnCard.invoke.getRegisteredSigningAuthorities();
+    console.log('Retrieved Signing Authorities:', authorities);
 
-  const singleAuthority = await learnCard.invoke.getRegisteredSigningAuthority(authorityEndpoint, authorityName);
-  console.log('Single Retrieved Authority:', singleAuthority);
+    const singleAuthority = await learnCard.invoke.getRegisteredSigningAuthority(
+        authorityEndpoint,
+        authorityName
+    );
+    console.log('Single Retrieved Authority:', singleAuthority);
 
+    // --- Claim Links ---
+    const claimLinkData = await learnCard.invoke.generateClaimLink(
+        boostUriForClaimLink,
+        claimLinkSigningAuthorityConfig,
+        claimLinkOptions
+    );
+    console.log('Generated Claim Link Data:', claimLinkData);
+    // (Off-band: share this link/data with a user)
 
-  // --- Claim Links ---
-  const claimLinkData = await learnCard.invoke.generateClaimLink(boostUriForClaimLink, claimLinkSigningAuthorityConfig, claimLinkOptions);
-  console.log('Generated Claim Link Data:', claimLinkData);
-  // (Off-band: share this link/data with a user)
-
-  // User claims the boost using the link data
-  // This would typically be called by a different learnCard instance/user
-  // const claimedCredentialUri = await otherLearnCard.invoke.claimBoostWithLink(claimLinkData.boostUri, claimLinkData.challenge);
-  // console.log('Boost claimed via link, Credential URI:', claimedCredentialUri);
-
+    // User claims the boost using the link data
+    // This would typically be called by a different learnCard instance/user
+    // const claimedCredentialUri = await otherLearnCard.invoke.claimBoostWithLink(claimLinkData.boostUri, claimLinkData.challenge);
+    // console.log('Boost claimed via link, Credential URI:', claimedCredentialUri);
 } catch (error) {
-  console.error('Error with Signing Authorities or Claim Links:', error);
+    console.error('Error with Signing Authorities or Claim Links:', error);
 }
 ```
 
@@ -945,7 +1014,11 @@ Examples for creating and managing Consent Flow Contracts, user consent, and dat
 
 ```typescript
 // Assume consentFlowContractDefinition, consentTermsObjectMock are defined according to your types
-const consentFlowContractDefinition = { contract: { read: { personal: { name: { required: true } } }, write: {} }, name: "Data Sharing Agreement", description: "Share basic profile info." };
+const consentFlowContractDefinition = {
+    contract: { read: { personal: { name: { required: true } } }, write: {} },
+    name: 'Data Sharing Agreement',
+    description: 'Share basic profile info.',
+};
 const consentTermsObjectMock = { read: { personal: { name: 'Consented Name' } }, write: {} }; // User's specific terms based on contract
 
 const contractUriToManage = 'uri:contract:xyz789';
@@ -954,81 +1027,113 @@ const userDidForConsentData = 'did:example:user123';
 const queryOptions = { limit: 10 };
 
 try {
-  // --- Contract Management (by Owner) ---
-  const newContractUri = await learnCard.invoke.createContract(consentFlowContractDefinition);
-  console.log('Created Contract URI:', newContractUri);
+    // --- Contract Management (by Owner) ---
+    const newContractUri = await learnCard.invoke.createContract(consentFlowContractDefinition);
+    console.log('Created Contract URI:', newContractUri);
 
-  // const autoBoostConfigs = [{ boostUri: 'uri:boost:auto123', signingAuthority: { endpoint: '...', name: '...' } }];
-  // const addAutoBoostSuccess = await learnCard.invoke.addAutoBoostsToContract(newContractUri, autoBoostConfigs);
-  // console.log('Added Auto-Boosts:', addAutoBoostSuccess);
-  
-  const contractDetails = await learnCard.invoke.getContract(newContractUri);
-  console.log('Contract Details:', contractDetails);
-  
-  const allMyContracts = await learnCard.invoke.getContracts(queryOptions);
-  console.log('My Contracts:', allMyContracts.records);
+    // const autoBoostConfigs = [{ boostUri: 'uri:boost:auto123', signingAuthority: { endpoint: '...', name: '...' } }];
+    // const addAutoBoostSuccess = await learnCard.invoke.addAutoBoostsToContract(newContractUri, autoBoostConfigs);
+    // console.log('Added Auto-Boosts:', addAutoBoostSuccess);
 
-  // const deleteContractSuccess = await learnCard.invoke.deleteContract(newContractUri);
-  // console.log('Deleted Contract:', deleteContractSuccess);
+    const contractDetails = await learnCard.invoke.getContract(newContractUri);
+    console.log('Contract Details:', contractDetails);
 
+    const allMyContracts = await learnCard.invoke.getContracts(queryOptions);
+    console.log('My Contracts:', allMyContracts.records);
 
-  // --- User Consent Actions ---
-  // (User consents to a contract)
-  const consentTermsDetails = { terms: consentTermsObjectMock, expiresAt: new Date(Date.now() + 3600 * 1000 * 24 * 30).toISOString() }; // Expires in 30 days
-  const consentedTermsUri = await learnCard.invoke.consentToContract(contractUriToManage, consentTermsDetails);
-  console.log('Consented to Contract, Terms URI:', consentedTermsUri);
+    // const deleteContractSuccess = await learnCard.invoke.deleteContract(newContractUri);
+    // console.log('Deleted Contract:', deleteContractSuccess);
 
-  // (User retrieves their consented contracts)
-  const myConsentedContracts = await learnCard.invoke.getConsentedContracts(queryOptions);
-  console.log('My Consented Contracts (Terms):', myConsentedContracts.records);
+    // --- User Consent Actions ---
+    // (User consents to a contract)
+    const consentTermsDetails = {
+        terms: consentTermsObjectMock,
+        expiresAt: new Date(Date.now() + 3600 * 1000 * 24 * 30).toISOString(),
+    }; // Expires in 30 days
+    const consentedTermsUri = await learnCard.invoke.consentToContract(
+        contractUriToManage,
+        consentTermsDetails
+    );
+    console.log('Consented to Contract, Terms URI:', consentedTermsUri);
 
-  // (User updates their terms for a specific consent)
-  const updatedTermsDetails = { terms: { ...consentTermsObjectMock, read: { personal: { name: 'Updated Name' }}}, oneTime: true };
-  const updateTermsSuccess = await learnCard.invoke.updateContractTerms(termsUriToManage, updatedTermsDetails);
-  console.log('Updated Contract Terms:', updateTermsSuccess);
+    // (User retrieves their consented contracts)
+    const myConsentedContracts = await learnCard.invoke.getConsentedContracts(queryOptions);
+    console.log('My Consented Contracts (Terms):', myConsentedContracts.records);
 
-  // (User withdraws consent)
-  // const withdrawSuccess = await learnCard.invoke.withdrawConsent(termsUriToManage);
-  // console.log('Withdrew Consent:', withdrawSuccess);
+    // (User updates their terms for a specific consent)
+    const updatedTermsDetails = {
+        terms: { ...consentTermsObjectMock, read: { personal: { name: 'Updated Name' } } },
+        oneTime: true,
+    };
+    const updateTermsSuccess = await learnCard.invoke.updateContractTerms(
+        termsUriToManage,
+        updatedTermsDetails
+    );
+    console.log('Updated Contract Terms:', updateTermsSuccess);
 
+    // (User withdraws consent)
+    // const withdrawSuccess = await learnCard.invoke.withdrawConsent(termsUriToManage);
+    // console.log('Withdrew Consent:', withdrawSuccess);
 
-  // --- Data Access & Transactions (by Contract Owner or authorized profiles) ---
-  const consentDataForContract = await learnCard.invoke.getConsentFlowData(contractUriToManage, queryOptions);
-  console.log('Consented Data for Contract:', consentDataForContract.records);
+    // --- Data Access & Transactions (by Contract Owner or authorized profiles) ---
+    const consentDataForContract = await learnCard.invoke.getConsentFlowData(
+        contractUriToManage,
+        queryOptions
+    );
+    console.log('Consented Data for Contract:', consentDataForContract.records);
 
-  const consentDataForDid = await learnCard.invoke.getConsentFlowDataForDid(userDidForConsentData, queryOptions);
-  console.log(`Consented Data involving DID ${userDidForConsentData}:`, consentDataForDid.records);
-  
-  // const allConsentData = await learnCard.invoke.getAllConsentFlowData({}, queryOptions);
-  // console.log('All Consented Data for my contracts:', allConsentData.records);
+    const consentDataForDid = await learnCard.invoke.getConsentFlowDataForDid(
+        userDidForConsentData,
+        queryOptions
+    );
+    console.log(
+        `Consented Data involving DID ${userDidForConsentData}:`,
+        consentDataForDid.records
+    );
 
-  const transactions = await learnCard.invoke.getConsentFlowTransactions(termsUriToManage, queryOptions);
-  console.log('Consent Transactions for Terms:', transactions.records);
-  
-  const credentialsForContractTerms = await learnCard.invoke.getCredentialsForContract(termsUriToManage, queryOptions);
-  console.log('Credentials related to Contract Terms:', credentialsForContractTerms.records);
+    // const allConsentData = await learnCard.invoke.getAllConsentFlowData({}, queryOptions);
+    // console.log('All Consented Data for my contracts:', allConsentData.records);
 
+    const transactions = await learnCard.invoke.getConsentFlowTransactions(
+        termsUriToManage,
+        queryOptions
+    );
+    console.log('Consent Transactions for Terms:', transactions.records);
 
-  // --- Writing & Syncing Credentials based on Consent ---
-  // (Owner writes a credential to a consented user for a specific boost related to the contract)
-  const didOfConsentedUser = 'did:example:consenter123';
-  const boostUriRelatedToContract = 'uri:boost:contractRelatedBoost456';
-  // const writtenCredentialUri = await learnCard.invoke.writeCredentialToContract(didOfConsentedUser, contractUriToManage, vcMock, boostUriRelatedToContract);
-  // console.log('Credential written to contract for user:', writtenCredentialUri);
-  
-  // (Consenter syncs their credentials to the contract terms)
-  const credentialsToSyncByCategory = { "Achievement": ["uri:credential:ach1", "uri:credential:ach2"] };
-  const syncSuccess = await learnCard.invoke.syncCredentialsToContract(termsUriToManage, credentialsToSyncByCategory);
-  console.log('Synced credentials to contract:', syncSuccess);
+    const credentialsForContractTerms = await learnCard.invoke.getCredentialsForContract(
+        termsUriToManage,
+        queryOptions
+    );
+    console.log('Credentials related to Contract Terms:', credentialsForContractTerms.records);
 
-  
-  // --- Verifying Consent ---
-  const isConsentValid = await learnCard.invoke.verifyConsent(termsUriToManage, userDidForConsentData); // Check if userDidForConsentData has valid consent for termsUriToManage
-  console.log(`Consent valid for ${userDidForConsentData} on ${termsUriToManage}:`, isConsentValid);
-  
+    // --- Writing & Syncing Credentials based on Consent ---
+    // (Owner writes a credential to a consented user for a specific boost related to the contract)
+    const didOfConsentedUser = 'did:example:consenter123';
+    const boostUriRelatedToContract = 'uri:boost:contractRelatedBoost456';
+    // const writtenCredentialUri = await learnCard.invoke.writeCredentialToContract(didOfConsentedUser, contractUriToManage, vcMock, boostUriRelatedToContract);
+    // console.log('Credential written to contract for user:', writtenCredentialUri);
 
+    // (Consenter syncs their credentials to the contract terms)
+    const credentialsToSyncByCategory = {
+        'Achievement': ['uri:credential:ach1', 'uri:credential:ach2'],
+    };
+    const syncSuccess = await learnCard.invoke.syncCredentialsToContract(
+        termsUriToManage,
+        credentialsToSyncByCategory
+    );
+    console.log('Synced credentials to contract:', syncSuccess);
+
+    // --- Verifying Consent ---
+    const isConsentValid = await learnCard.invoke.verifyConsent(
+        termsUriToManage,
+        userDidForConsentData
+    ); // Check if userDidForConsentData has valid consent for termsUriToManage
+    console.log(
+        `Consent valid for ${userDidForConsentData} on ${termsUriToManage}:`,
+        isConsentValid
+    );
 } catch (error) {
-  console.error('Error in Consent Flow management:', error);
+    console.error('Error in Consent Flow management:', error);
 }
 ```
 
@@ -1038,30 +1143,45 @@ Examples for adding, retrieving, updating, and deleting DID metadata.
 
 ```typescript
 // Assume didDocumentPartial is an object with some DID Document properties
-const didDocumentPartial = { service: [{ id: '#service-1', type: 'MyService', serviceEndpoint: 'https://example.com/service' }] };
+const didDocumentPartial = {
+    service: [
+        { id: '#service-1', type: 'MyService', serviceEndpoint: 'https://example.com/service' },
+    ],
+};
 const metadataIdToManage = 'some-metadata-id'; // This would be an ID returned by addDidMetadata or associated with a DID
 
 try {
-  const addMetadataSuccess = await learnCard.invoke.addDidMetadata(didDocumentPartial);
-  console.log('Added DID Metadata Success (or ID):', addMetadataSuccess); // Might return ID or boolean
+    const addMetadataSuccess = await learnCard.invoke.addDidMetadata(didDocumentPartial);
+    console.log('Added DID Metadata Success (or ID):', addMetadataSuccess); // Might return ID or boolean
 
-  const myDidMetadataList = await learnCard.invoke.getMyDidMetadata();
-  console.log('My DID Metadata Records:', myDidMetadataList);
+    const myDidMetadataList = await learnCard.invoke.getMyDidMetadata();
+    console.log('My DID Metadata Records:', myDidMetadataList);
 
-  if (myDidMetadataList.length > 0) {
-    const firstMetadataId = myDidMetadataList[0].id;
-    const specificMetadata = await learnCard.invoke.getDidMetadata(firstMetadataId);
-    console.log(`Specific DID Metadata for ${firstMetadataId}:`, specificMetadata);
+    if (myDidMetadataList.length > 0) {
+        const firstMetadataId = myDidMetadataList[0].id;
+        const specificMetadata = await learnCard.invoke.getDidMetadata(firstMetadataId);
+        console.log(`Specific DID Metadata for ${firstMetadataId}:`, specificMetadata);
 
-    const updatesToMetadata = { service: [{ id: '#service-1', type: 'UpdatedService', serviceEndpoint: 'https://new.example.com/service' }] };
-    const updateMetadataSuccess = await learnCard.invoke.updateDidMetadata(firstMetadataId, updatesToMetadata);
-    console.log('Updated DID Metadata:', updateMetadataSuccess);
+        const updatesToMetadata = {
+            service: [
+                {
+                    id: '#service-1',
+                    type: 'UpdatedService',
+                    serviceEndpoint: 'https://new.example.com/service',
+                },
+            ],
+        };
+        const updateMetadataSuccess = await learnCard.invoke.updateDidMetadata(
+            firstMetadataId,
+            updatesToMetadata
+        );
+        console.log('Updated DID Metadata:', updateMetadataSuccess);
 
-    // const deleteMetadataSuccess = await learnCard.invoke.deleteDidMetadata(firstMetadataId);
-    // console.log('Deleted DID Metadata:', deleteMetadataSuccess);
-  }
+        // const deleteMetadataSuccess = await learnCard.invoke.deleteDidMetadata(firstMetadataId);
+        // console.log('Deleted DID Metadata:', deleteMetadataSuccess);
+    }
 } catch (error) {
-  console.error('Error managing DID Metadata:', error);
+    console.error('Error managing DID Metadata:', error);
 }
 ```
 
@@ -1076,16 +1196,17 @@ Examples for managing claim hooks for Boosts.
 // This hook would grant specific permissions on 'targetBoostUri'
 // when 'sourceBoostClaimUri' is successfully claimed.
 const grantPermissionsHookDefinition: ClaimHook = {
-  type: 'GRANT_PERMISSIONS', // As per ClaimHookTypeValidator
-  data: {
-    claimUri: 'uri:boost:sourceBoostClaimUri123', // The boost that, when claimed, triggers this hook
-    targetUri: 'uri:boost:targetBoostUri456',   // The boost on which permissions will be granted
-    permissions: {                              // Partial<BoostPermissions> from BoostPermissionsValidator
-      canEdit: true,
-      canIssue: false,
-      // Add other permission fields as needed, e.g., canViewAnalytics: true
+    type: 'GRANT_PERMISSIONS', // As per ClaimHookTypeValidator
+    data: {
+        claimUri: 'uri:boost:sourceBoostClaimUri123', // The boost that, when claimed, triggers this hook
+        targetUri: 'uri:boost:targetBoostUri456', // The boost on which permissions will be granted
+        permissions: {
+            // Partial<BoostPermissions> from BoostPermissionsValidator
+            canEdit: true,
+            canIssue: false,
+            // Add other permission fields as needed, e.g., canViewAnalytics: true
+        },
     },
-  },
 };
 
 // Example 2: Creating an 'ADD_ADMIN' Claim Hook
@@ -1099,7 +1220,6 @@ const addAdminHookDefinition: ClaimHook = {
     },
 };
 
-
 const boostUriToQueryHooksFor = 'uri:boost:sourceBoostClaimUri123';
 const paginationOptions = { limit: 10 };
 
@@ -1110,39 +1230,43 @@ const specificClaimHookQuery: ClaimHookQuery = {
         targetUri: 'uri:boost:targetBoostUri456', // Further filter by the targetUri in the hook's data
         // You could also add filters for permissions if your BoostPermissionsQueryValidator supports it
         // permissions: { canEdit: true }
-    }
+    },
 };
 
 try {
-  // Create the 'GRANT_PERMISSIONS' hook
-  const grantPermissionsHookId = await learnCard.invoke.createClaimHook(grantPermissionsHookDefinition);
-  console.log('Created GRANT_PERMISSIONS Claim Hook ID:', grantPermissionsHookId);
+    // Create the 'GRANT_PERMISSIONS' hook
+    const grantPermissionsHookId = await learnCard.invoke.createClaimHook(
+        grantPermissionsHookDefinition
+    );
+    console.log('Created GRANT_PERMISSIONS Claim Hook ID:', grantPermissionsHookId);
 
-  // Create the 'ADD_ADMIN' hook
-  const addAdminHookId = await learnCard.invoke.createClaimHook(addAdminHookDefinition);
-  console.log('Created ADD_ADMIN Claim Hook ID:', addAdminHookId);
+    // Create the 'ADD_ADMIN' hook
+    const addAdminHookId = await learnCard.invoke.createClaimHook(addAdminHookDefinition);
+    console.log('Created ADD_ADMIN Claim Hook ID:', addAdminHookId);
 
-  // Get all claim hooks for a specific boost URI with pagination
-  const allHooksForBoost = await learnCard.invoke.getClaimHooksForBoost({ 
-    uri: boostUriToQueryHooksFor, 
-    ...paginationOptions 
-  });
-  console.log(`All Claim Hooks for ${boostUriToQueryHooksFor}:`, allHooksForBoost.records);
+    // Get all claim hooks for a specific boost URI with pagination
+    const allHooksForBoost = await learnCard.invoke.getClaimHooksForBoost({
+        uri: boostUriToQueryHooksFor,
+        ...paginationOptions,
+    });
+    console.log(`All Claim Hooks for ${boostUriToQueryHooksFor}:`, allHooksForBoost.records);
 
-  // Get claim hooks for a specific boost URI with a query and pagination
-  const filteredHooksForBoost = await learnCard.invoke.getClaimHooksForBoost({
-    uri: boostUriToQueryHooksFor,
-    query: specificClaimHookQuery,
-    ...paginationOptions,
-  });
-  console.log(`Filtered Claim Hooks for ${boostUriToQueryHooksFor}:`, filteredHooksForBoost.records);
+    // Get claim hooks for a specific boost URI with a query and pagination
+    const filteredHooksForBoost = await learnCard.invoke.getClaimHooksForBoost({
+        uri: boostUriToQueryHooksFor,
+        query: specificClaimHookQuery,
+        ...paginationOptions,
+    });
+    console.log(
+        `Filtered Claim Hooks for ${boostUriToQueryHooksFor}:`,
+        filteredHooksForBoost.records
+    );
 
-  // Delete a claim hook (e.g., the first one we created)
-  // const deleteGrantPermissionsHookSuccess = await learnCard.invoke.deleteClaimHook(grantPermissionsHookId);
-  // console.log('Deleted GRANT_PERMISSIONS Claim Hook:', deleteGrantPermissionsHookSuccess);
-
+    // Delete a claim hook (e.g., the first one we created)
+    // const deleteGrantPermissionsHookSuccess = await learnCard.invoke.deleteClaimHook(grantPermissionsHookId);
+    // console.log('Deleted GRANT_PERMISSIONS Claim Hook:', deleteGrantPermissionsHookSuccess);
 } catch (error) {
-  console.error('Error managing Claim Hooks:', error);
+    console.error('Error managing Claim Hooks:', error);
 }
 ```
 
@@ -1155,37 +1279,43 @@ Click here for more information on [Auth Grants and Scopes](../../core-concepts/
 {% endhint %}
 
 ```typescript
-const authGrantPartial = { name: "External Service XYZ", description: "Auth Grant for XYZ Service", scope: 'read:profile write:boosts', expiresAt: new Date(Date.now() + 3600000).toISOString() };
+const authGrantPartial = {
+    name: 'External Service XYZ',
+    description: 'Auth Grant for XYZ Service',
+    scope: 'read:profile write:boosts',
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+};
 const authGrantIdToManage = 'grant-id-xyz'; // Example ID of an existing grant
 
 try {
-  const newAuthGrantId = await learnCard.invoke.addAuthGrant(authGrantPartial);
-  console.log('Added Auth Grant ID:', newAuthGrantId);
+    const newAuthGrantId = await learnCard.invoke.addAuthGrant(authGrantPartial);
+    console.log('Added Auth Grant ID:', newAuthGrantId);
 
-  const specificAuthGrant = await learnCard.invoke.getAuthGrant(newAuthGrantId);
-  console.log('Specific Auth Grant:', specificAuthGrant);
+    const specificAuthGrant = await learnCard.invoke.getAuthGrant(newAuthGrantId);
+    console.log('Specific Auth Grant:', specificAuthGrant);
 
-  const allAuthGrants = await learnCard.invoke.getAuthGrants({ limit: 10 });
-  console.log('All Auth Grants:', allAuthGrants);
+    const allAuthGrants = await learnCard.invoke.getAuthGrants({ limit: 10 });
+    console.log('All Auth Grants:', allAuthGrants);
 
-  const updatesToAuthGrant = { description: 'Updated grant for special access' };
-  const updateGrantSuccess = await learnCard.invoke.updateAuthGrant(newAuthGrantId, updatesToAuthGrant);
-  console.log('Updated Auth Grant:', updateGrantSuccess);
-  
-  const apiToken = await learnCard.invoke.getAPITokenForAuthGrant(newAuthGrantId);
-  console.log('API Token for Auth Grant:', apiToken);
+    const updatesToAuthGrant = { description: 'Updated grant for special access' };
+    const updateGrantSuccess = await learnCard.invoke.updateAuthGrant(
+        newAuthGrantId,
+        updatesToAuthGrant
+    );
+    console.log('Updated Auth Grant:', updateGrantSuccess);
 
-  // const revokeGrantSuccess = await learnCard.invoke.revokeAuthGrant(newAuthGrantId);
-  // console.log('Revoked Auth Grant:', revokeGrantSuccess);
+    const apiToken = await learnCard.invoke.getAPITokenForAuthGrant(newAuthGrantId);
+    console.log('API Token for Auth Grant:', apiToken);
 
-  // const deleteGrantSuccess = await learnCard.invoke.deleteAuthGrant(newAuthGrantId);
-  // console.log('Deleted Auth Grant:', deleteGrantSuccess);
+    // const revokeGrantSuccess = await learnCard.invoke.revokeAuthGrant(newAuthGrantId);
+    // console.log('Revoked Auth Grant:', revokeGrantSuccess);
+
+    // const deleteGrantSuccess = await learnCard.invoke.deleteAuthGrant(newAuthGrantId);
+    // console.log('Deleted Auth Grant:', deleteGrantSuccess);
 } catch (error) {
-  console.error('Error managing Auth Grants:', error);
+    console.error('Error managing Auth Grants:', error);
 }
 ```
-
-
 
 #### Create an AuthGrant
 
@@ -1193,29 +1323,29 @@ Use the LearnCard SDK's `addAuthGrant` method to create a new AuthGrant:
 
 ```javascript
 const authGrantID = await learnCard.invoke.addAuthGrant({
-    name: "Example Auth Grant",
-    description: "Full Access Auth Grant",
+    name: 'Example Auth Grant',
+    description: 'Full Access Auth Grant',
     scope: '*:*',
-})
+});
 ```
 
 #### AuthGrant Properties
 
-* `id`: Unique identifier (auto-generated if not provided)
-* `name`: Name of the AuthGrant
-* `description`: (Optional) Description of the purpose or use case
-* `challenge`: Security challenge string (must start with AuthGrant prefix)
-* `status`: Either 'active' or 'revoked'
-* `scope`: Permission scope string
-* `createdAt`: ISO 8601 datetime string of creation (auto-generated if not provided)
-* `expiresAt`: (Optional) ISO 8601 datetime string for expiration
+-   `id`: Unique identifier (auto-generated if not provided)
+-   `name`: Name of the AuthGrant
+-   `description`: (Optional) Description of the purpose or use case
+-   `challenge`: Security challenge string (must start with AuthGrant prefix)
+-   `status`: Either 'active' or 'revoked'
+-   `scope`: Permission scope string
+-   `createdAt`: ISO 8601 datetime string of creation (auto-generated if not provided)
+-   `expiresAt`: (Optional) ISO 8601 datetime string for expiration
 
 #### Generating an API Token
 
 Once you have an AuthGrant, you can generate an API token using the `getAPITokenForAuthGrant` method:
 
 ```javascript
-const apiToken = await learnCard.invoke.getAPITokenForAuthGrant(authGrantID)
+const apiToken = await learnCard.invoke.getAPITokenForAuthGrant(authGrantID);
 ```
 
 This token encapsulates the permissions defined in the AuthGrant and should be used for authentication in API requests.
@@ -1249,8 +1379,8 @@ Here's a complete example showing how to:
 ```javascript
 // Step 1: Create an AuthGrant with specific permissions
 const grantId = await learnCard.invoke.addAuthGrant({
-    name: "Boost Sender Auth",
-    description: "Permission to send boosts",
+    name: 'Boost Sender Auth',
+    description: 'Permission to send boosts',
     scope: 'boosts:write',
 });
 
@@ -1259,8 +1389,8 @@ const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
 
 // Step 3: Prepare the payload for your API request
 const payload = {
-    boostUri: "uri-of-the-boost-to-send",
-    signingAuthority: "your-signing-authority"
+    boostUri: 'uri-of-the-boost-to-send',
+    signingAuthority: 'your-signing-authority',
 };
 
 // Step 4: Make an authenticated HTTP request using the token
@@ -1297,8 +1427,8 @@ const authGrant = await learnCard.invoke.getAuthGrant(authGrantID);
 const authGrants = await learnCard.invoke.getAuthGrants({
     query: {
         status: 'active',
-        name: { contains: 'API' }
-    }
+        name: { contains: 'API' },
+    },
 });
 ```
 
@@ -1307,7 +1437,7 @@ const authGrants = await learnCard.invoke.getAuthGrants({
 ```javascript
 // Update an existing AuthGrant
 const updatedGrant = await learnCard.invoke.updateAuthGrant(authGrantID, {
-    description: "Updated description",
+    description: 'Updated description',
 });
 ```
 
@@ -1327,17 +1457,16 @@ await learnCard.invoke.deleteAuthGrant(authGrantID);
 const someLearnCardNetworkUri = 'uri:boost:abc123'; // Example URI
 
 try {
-  // Resolve any LCN URI to its underlying object (VC, VP, Contract, etc.)
-  const resolvedObject = await learnCard.invoke.resolveFromLCN(someLearnCardNetworkUri);
-  console.log(`Resolved object for ${someLearnCardNetworkUri}:`, resolvedObject);
+    // Resolve any LCN URI to its underlying object (VC, VP, Contract, etc.)
+    const resolvedObject = await learnCard.invoke.resolveFromLCN(someLearnCardNetworkUri);
+    console.log(`Resolved object for ${someLearnCardNetworkUri}:`, resolvedObject);
 
-  // Get the underlying LCN Client instance (if advanced usage is needed)
-  const lcnClient = await learnCard.invoke.getLCNClient();
-  console.log('LCN Client instance retrieved.');
-  // Now you could potentially use methods directly on lcnClient if necessary,
-  // though most operations should be covered by learnCard.invoke wrappers.
+    // Get the underlying LCN Client instance (if advanced usage is needed)
+    const lcnClient = await learnCard.invoke.getLCNClient();
+    console.log('LCN Client instance retrieved.');
+    // Now you could potentially use methods directly on lcnClient if necessary,
+    // though most operations should be covered by learnCard.invoke wrappers.
 } catch (error) {
-  console.error('Error with LCN utilities:', error);
+    console.error('Error with LCN utilities:', error);
 }
 ```
-

@@ -1,12 +1,13 @@
 {
     "name": "@learncard/vc-templates-plugin",
-    "version": "1.1.23",
+    "version": "1.1.24",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/vc-templates-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/vc-templates-plugin.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",

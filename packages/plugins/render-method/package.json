@@ -1,12 +1,13 @@
 {
     "name": "@learncard/render-method-plugin",
-    "version": "3.0.3",
+    "version": "3.0.4",
     "description": "LearnCard plugin for attaching W3C renderMethod to Verifiable Credentials",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/render-method-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/render-method-plugin.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",

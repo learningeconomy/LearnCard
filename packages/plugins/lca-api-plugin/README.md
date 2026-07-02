@@ -3,16 +3,18 @@
 # @welibraryos/lca-api-plugin
 
 ## Documentation
+
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
 ## Install
 
 ```bash
-pnpm i @welibraryos/lca-api-plugin
+bun add @welibraryos/lca-api-plugin
 ```
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.

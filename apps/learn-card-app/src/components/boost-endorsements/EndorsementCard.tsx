@@ -2,7 +2,7 @@ import React from 'react';
 
 import EndorsementButton from './EndorsementButton';
 import EndorsementsList from './EndorsementsList/EndorsementsList';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 
 import {
     CredentialCategoryEnum,
@@ -47,7 +47,7 @@ export const EndorsementCard: React.FC<{
     return isCurrentUserSubject ? (
         <div className="py-4 pr-4 gap-4 bg-white flex flex-col items-start rounded-[20px] w-full shadow-bottom-2-4">
             <div className="flex items-center w-full">
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}
