@@ -257,9 +257,9 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                                             />
                                         )}
                                         {(search ? filteredBoostPack : hardcodedBoostPack)?.map(
-                                            boostPackItem => (
+                                            (boostPackItem, index) => (
                                                 <NewBoostSelectMenuBoostPackItem
-                                                    key={boostPackItem.id}
+                                                    key={`${boostPackItem.type}-${boostPackItem.title}-${index}`}
                                                     category={category}
                                                     parentUri={_parentUri}
                                                     useCMSModal={useCMSModal}

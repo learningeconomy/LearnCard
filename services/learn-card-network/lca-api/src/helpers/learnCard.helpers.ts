@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { initLearnCard } from '@learncard/init';
 import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from '@learncard/init';
@@ -18,6 +20,19 @@ const saCardsCache = getLRUCache<
 >();
 const didWebCardsCache = getLRUCache<DidWebLearnCardFromSeed['returnValue']>();
 const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
+
+// The DIDKit WASM is copied next to the compiled handler at build time (see
+// esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
+// require.resolve expects (the package is a hoisted workspace symlink), so prefer the
+// co-located copy and fall back to package resolution for local dev / Docker.
+const DIDKIT_WASM_SPECIFIER = '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm';
+
+const resolveDidkitWasmPath = (): string => {
+    const colocated = join(__dirname, 'didkit_wasm_bg.wasm');
+    if (existsSync(colocated)) return colocated;
+
+    return require.resolve(DIDKIT_WASM_SPECIFIER);
+};
 
 // Try native plugin first, fall back to WASM
 let didKitInitPromise: Promise<'node' | Buffer> | null = null;
@@ -39,9 +54,7 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
 
     didKitInitPromise = (async () => {
         if (process.env.SKIP_DIDKIT_NAPI) {
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
             return wasmBuffer;
         }
 
@@ -51,9 +64,7 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
             await getNativePlugin();
             return 'node' as const;
         } catch {
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
             return wasmBuffer;
         }
     })();

@@ -11,6 +11,7 @@
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "types": "./dist/index.d.ts",
             "node": {
                 "import": "./dist/partner-connect.mjs",
@@ -53,6 +54,7 @@
         "typescript": "^5.4.5"
     },
     "files": [
-        "dist/**"
+        "dist/**",
+        "src"
     ]
 }

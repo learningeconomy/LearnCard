@@ -44,10 +44,13 @@ jobs:
                   openapi-url: https://network.learncard.com/docs/openapi.json
                   command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
 
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+
             - name: Get version from package.json
               id: package-version
               run: |
-                  PACKAGE_VERSION="$(node -p "require('./services/learn-card-network/brain-service/package.json').version")"
+                  PACKAGE_VERSION="$(bun -e "console.log(require('./services/learn-card-network/brain-service/package.json').version)")"
                   echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Create or update PR

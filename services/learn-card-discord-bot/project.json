@@ -1,9 +1,9 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "discord-bot",
-    "sourceRoot": "services/lean-card-discord-bot/src",
+    "sourceRoot": "services/learn-card-discord-bot/src",
     "projectType": "application",
-    "root": "services/lean-card-discord-bot",
+    "root": "services/learn-card-discord-bot",
     "tags": [],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],

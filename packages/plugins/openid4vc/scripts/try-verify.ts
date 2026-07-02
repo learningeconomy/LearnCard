@@ -15,7 +15,7 @@
  *   6. With --submit, sign the VP and POST it to the verifier.
  *
  * Usage:
- *   pnpm try-verify <oid4vp-uri> --credentials <path.json> [options]
+ *   bun run try-verify <oid4vp-uri> --credentials <path.json> [options]
  */
 
 /* eslint-disable no-console */
@@ -25,9 +25,7 @@ import { resolve as resolvePath } from 'node:path';
 
 import type { JWKWithPrivateKey } from '@learncard/types';
 
-import {
-    resolveAuthorizationRequest,
-} from '../src/vp/parse';
+import { resolveAuthorizationRequest } from '../src/vp/parse';
 import { RequestObjectError } from '../src/vp/request-object';
 import {
     selectCredentials,
@@ -36,10 +34,7 @@ import {
     CandidateCredential,
     SelectedDescriptor,
 } from '../src/vp/select';
-import type {
-    AuthorizationRequest,
-    PresentationDefinition,
-} from '../src/vp/types';
+import type { AuthorizationRequest, PresentationDefinition } from '../src/vp/types';
 import { VpError } from '../src/vp/types';
 import { buildPresentation, ChosenCredential, VpFormat } from '../src/vp/present';
 import { signPresentation } from '../src/vp/sign';
@@ -71,7 +66,7 @@ const printUsage = (): void => {
         [
             '',
             'Usage:',
-            '  pnpm try-verify <oid4vp-uri> --credentials <path.json> [options]',
+            '  bun run try-verify <oid4vp-uri> --credentials <path.json> [options]',
             '',
             'Arguments:',
             '  <oid4vp-uri>          OpenID4VP Authorization Request URI (openid4vp://..., haip://..., https://...)',
@@ -80,7 +75,7 @@ const printUsage = (): void => {
             '  --credentials <path>      JSON file containing a VC or an array of VCs.',
             '                            Each entry may be a W3C VC object or a compact JWT-VC string.',
             '  --submit                  After PEX selection, build + sign a VerifiablePresentation and',
-            '                            POST it to the verifier\'s response_uri (direct_post, OID4VP §8).',
+            "                            POST it to the verifier's response_uri (direct_post, OID4VP §8).",
             '                            Requires a holder sidecar at <credentials-path>.holder.json',
             '                            (written automatically by `try-offer --save`) or an explicit',
             '                            --holder path.',
@@ -88,7 +83,7 @@ const printUsage = (): void => {
             '                              { did, kid, privateJwk, alg? }',
             '                            Default: <credentials-path>.holder.json',
             '  --envelope <format>       Override the VP envelope format. One of: jwt_vp_json | ldp_vp.',
-            '                            Default: inferred from verifier\'s pd.format + VC formats.',
+            "                            Default: inferred from verifier's pd.format + VC formats.",
             '  --trusted-root <path>     PEM file containing a trusted X.509 root certificate. Repeat',
             '                            to add multiple. Required for client_id_scheme=x509_san_dns',
             '                            unless --unsafe-allow-self-signed is set.',
@@ -100,15 +95,15 @@ const printUsage = (): void => {
             '',
             'Examples:',
             '  # by_value request, walt.id-style',
-            '  pnpm try-verify "openid4vp://?client_id=...&presentation_definition=..." \\',
+            '  bun run try-verify "openid4vp://?client_id=...&presentation_definition=..." \\',
             '                  --credentials ./vc.json --submit',
             '',
             '  # signed Request Object via did:web / did:jwk (verified automatically)',
-            '  pnpm try-verify "openid4vp://?request_uri=https://verifier.example/req" \\',
+            '  bun run try-verify "openid4vp://?request_uri=https://verifier.example/req" \\',
             '                  --credentials ./vc.json',
             '',
             '  # signed Request Object via x509_san_dns with a pinned trust root',
-            '  pnpm try-verify "openid4vp://?request_uri=https://eudi.example/req" \\',
+            '  bun run try-verify "openid4vp://?request_uri=https://eudi.example/req" \\',
             '                  --credentials ./vc.json --trusted-root ./eu-digital-id.pem',
             '',
         ].join('\n')
@@ -180,7 +175,9 @@ const parseArgs = (argv: string[]): CliArgs => {
                     process.exit(2);
                 }
                 if (requestUri) {
-                    console.error('Multiple positional arguments — only one OID4VP URI is expected');
+                    console.error(
+                        'Multiple positional arguments — only one OID4VP URI is expected'
+                    );
                     process.exit(2);
                 }
                 requestUri = a;
@@ -310,8 +307,7 @@ const main = async (): Promise<void> => {
     /* 3. Print what we learned about the verifier's ask. */
     console.log('\n--- Verifier Authorization Request ---');
     console.log(`client_id:       ${request.client_id}`);
-    if (request.client_id_scheme)
-        console.log(`client_id_scheme: ${request.client_id_scheme}`);
+    if (request.client_id_scheme) console.log(`client_id_scheme: ${request.client_id_scheme}`);
     console.log(`response_type:   ${request.response_type}`);
     if (request.response_mode) console.log(`response_mode:   ${request.response_mode}`);
     console.log(`response_uri:    ${request.response_uri ?? request.redirect_uri ?? '(none)'}`);
@@ -326,7 +322,7 @@ const main = async (): Promise<void> => {
     const pd = request.presentation_definition;
     if (!pd) {
         console.log('\nNo presentation_definition resolved — nothing to match against.');
-        console.log('(SIOPv2-only flows and scope-based PD lookups aren\'t covered by Slice 6.)');
+        console.log("(SIOPv2-only flows and scope-based PD lookups aren't covered by Slice 6.)");
         return;
     }
 
@@ -377,7 +373,9 @@ const main = async (): Promise<void> => {
         console.log(`\nDescriptor ${label}: ${descriptor.candidates.length} match(es)`);
         for (const match of descriptor.candidates) {
             console.log(
-                `  - [${match.candidateIndex}] id=${match.candidate.id}  format=${match.candidate.format ?? '(unknown)'}`
+                `  - [${match.candidateIndex}] id=${match.candidate.id}  format=${
+                    match.candidate.format ?? '(unknown)'
+                }`
             );
 
             if (args.verbose) {

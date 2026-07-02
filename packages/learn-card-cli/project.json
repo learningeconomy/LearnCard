@@ -35,7 +35,7 @@
             "executor": "./tools/executors/workspace:run-command",
             "dependsOn": ["^build"],
             "options": {
-                "command": "pnpm start",
+                "command": "bun run start",
                 "cwd": "{root}/packages/learn-card-cli"
             }
         }

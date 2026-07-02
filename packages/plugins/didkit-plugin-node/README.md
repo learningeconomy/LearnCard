@@ -4,15 +4,15 @@ Node-native N-API DIDKit plugin for LearnCard. Provides cryptographic operations
 
 ## Features
 
-- **Native Performance**: Uses N-API to eliminate WASM cold start overhead
-- **Cross-Platform**: Prebuilt binaries for Linux (x64/arm64, glibc/musl) and macOS (x64/arm64)
-- **Drop-in Replacement**: Compatible with existing `@learncard/didkit-plugin` API
-- **Lambda-Optimized**: Designed specifically for serverless environments
+-   **Native Performance**: Uses N-API to eliminate WASM cold start overhead
+-   **Cross-Platform**: Prebuilt binaries for Linux (x64/arm64, glibc/musl) and macOS (x64/arm64)
+-   **Drop-in Replacement**: Compatible with existing `@learncard/didkit-plugin` API
+-   **Lambda-Optimized**: Designed specifically for serverless environments
 
 ## Installation
 
 ```bash
-pnpm add @learncard/didkit-plugin-node
+bun add @learncard/didkit-plugin-node
 ```
 
 Prebuilt binaries will be automatically installed for your platform via `optionalDependencies`.
@@ -25,8 +25,8 @@ Prebuilt binaries will be automatically installed for your platform via `optiona
 import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({
-  seed: 'your-seed-here',
-  didkit: 'node', // Use native plugin instead of WASM
+    seed: 'your-seed-here',
+    didkit: 'node', // Use native plugin instead of WASM
 });
 ```
 
@@ -45,45 +45,47 @@ If prebuilt binaries aren't available for your platform:
 
 ```bash
 cd packages/plugins/didkit-plugin-node
-pnpm install
-pnpm build
+bun install
+bun run build
 ```
 
 ### Requirements
 
-- Rust toolchain (stable)
-- Node.js 16+
-- Platform-specific build tools (gcc, clang, etc.)
+-   Rust toolchain (stable)
+-   Node.js 16+
+-   Platform-specific build tools (gcc, clang, etc.)
 
 ## Supported Platforms
 
-- `x86_64-unknown-linux-gnu` (glibc-based Linux, x64)
-- `aarch64-unknown-linux-gnu` (glibc-based Linux, ARM64)
-- `x86_64-unknown-linux-musl` (musl-based Linux, x64, e.g., Alpine)
-- `aarch64-unknown-linux-musl` (musl-based Linux, ARM64)
-- `x86_64-apple-darwin` (macOS Intel)
-- `aarch64-apple-darwin` (macOS Apple Silicon)
+-   `x86_64-unknown-linux-gnu` (glibc-based Linux, x64)
+-   `aarch64-unknown-linux-gnu` (glibc-based Linux, ARM64)
+-   `x86_64-unknown-linux-musl` (musl-based Linux, x64, e.g., Alpine)
+-   `aarch64-unknown-linux-musl` (musl-based Linux, ARM64)
+-   `x86_64-apple-darwin` (macOS Intel)
+-   `aarch64-apple-darwin` (macOS Apple Silicon)
 
 ## Implementation Status
 
 ### ✅ Implemented
-- `generateEd25519KeyFromBytes`
-- `keyToDID`
+
+-   `generateEd25519KeyFromBytes`
+-   `keyToDID`
 
 ### 🚧 Planned
-- `generateSecp256k1KeyFromBytes`
-- `keyToVerificationMethod`
-- `didToVerificationMethod`
-- `issueCredential`
-- `verifyCredential`
-- `issuePresentation`
-- `verifyPresentation`
-- `contextLoader`
-- `resolveDID`
-- `didResolver`
-- `createJwe` / `decryptJwe`
-- `createDagJwe` / `decryptDagJwe`
-- `clearDidWebCache`
+
+-   `generateSecp256k1KeyFromBytes`
+-   `keyToVerificationMethod`
+-   `didToVerificationMethod`
+-   `issueCredential`
+-   `verifyCredential`
+-   `issuePresentation`
+-   `verifyPresentation`
+-   `contextLoader`
+-   `resolveDID`
+-   `didResolver`
+-   `createJwe` / `decryptJwe`
+-   `createDagJwe` / `decryptDagJwe`
+-   `clearDidWebCache`
 
 ## Contributing
 

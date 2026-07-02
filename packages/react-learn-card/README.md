@@ -11,6 +11,7 @@
 ![learn-card](https://user-images.githubusercontent.com/2185016/201373744-058bef30-dec8-46cf-9552-408b7bc43532.gif)
 
 ## Documentation
+
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
@@ -20,34 +21,34 @@ https://docs.learncard.com/learn-card-sdk/learncard-ux
 ## Install
 
 ```bash
-pnpm install @learncard/react
+bun install @learncard/react
 ```
 
 ## Usage
 
 ```ts
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import '@learncard/react/dist/base.css'; // if not already using tailwind
 import '@learncard/react/dist/main.css';
-import { initLearnCard } from "@learncard/core";
-import { VCCard } from "@learncard/react";
-import { VC } from "@learncard/types";
+import { initLearnCard } from '@learncard/core';
+import { VCCard } from '@learncard/react';
+import { VC } from '@learncard/types';
 
 const Test = () => {
     const [vc, setVc] = useState<VC | null>(null);
-    
+
     useEffect(() => {
         const getVc = async () => {
             const wallet = await initLearnCard({ seed: 'a' }); // Bad practice! You should be generating keys...
             const uvc = wallet.invoke.getTestVc();
             setVc(await wallet.invoke.issueCredential(uvc));
         };
-        
+
         getVc();
     }, []);
-    
+
     if (!vc) return <>Generating Credential...</>; // Loading placeholder while credential is generated
-    
+
     return <VCCard credential={vc} />; // Show card for the generated credential with validation results
 };
 ```
@@ -86,4 +87,3 @@ Please make sure to update tests as appropriate.
 ## License
 
 MIT © [Learning Economy Foundation](https://github.com/Learning-Economy-Foundation)
-

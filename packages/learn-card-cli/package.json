@@ -5,7 +5,9 @@
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
-        "start": "rollup -c && node --enable-source-maps dist/index.js",
+        "start": "bun --conditions=development src/index.tsx",
+        "start:built": "rollup -c && node --enable-source-maps dist/index.js",
+        "dev": "bun --conditions=development src/index.tsx",
         "build": "rollup -c",
         "test": "vitest run"
     },
