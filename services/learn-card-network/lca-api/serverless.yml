@@ -105,15 +105,15 @@ package:
         - '!node_modules/**'
         - 'src/swagger-ui'
 
-# Ships @learncard/didkit-plugin-node (JS wrapper + linux-x64 napi binary) at
-# /opt/nodejs/node_modules so the native-first DIDKit path in learnCard.helpers.ts
-# resolves in Lambda instead of silently falling back to WASM. Assembled by
-# scripts/prepare-didkit-native-layer.cjs (see the serverless-deploy npm script).
+# Ships @learncard/didkit-plugin-node (JS wrapper + linux-x64 napi binary) and
+# its runtime @learncard/didkit-plugin dependency at /opt/nodejs/node_modules so
+# the native-first DIDKit path in learnCard.helpers.ts resolves in Lambda instead
+# of silently falling back to WASM. Assembled by scripts/prepare-didkit-native-layer.cjs.
 layers:
     didkitNative:
         path: didkit-native-layer
         name: ${self:service}-${opt:stage, 'dev'}-didkit-native
-        description: Native DIDKit napi addon (@learncard/didkit-plugin-node)
+        description: Native DIDKit napi addon and runtime DIDKit dependency
         compatibleRuntimes:
             - nodejs20.x
         compatibleArchitectures:
