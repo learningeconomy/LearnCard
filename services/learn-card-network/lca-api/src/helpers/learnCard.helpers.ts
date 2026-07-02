@@ -63,7 +63,10 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
             await getNativePlugin();
             return 'node' as const;
-        } catch {
+        } catch (error) {
+            // Surface the fallback — a silent catch here hid a months-long "native never
+            // actually loads in Lambda" gap (see PR #1341 investigation).
+            console.warn('[didkit] native plugin unavailable, falling back to WASM:', error);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
             return wasmBuffer;
         }
