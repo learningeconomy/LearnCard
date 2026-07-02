@@ -28,6 +28,7 @@ __all__ = [
     "ContractsApi",
     "CredentialsApi",
     "DIDMetadataApi",
+    "FederationApi",
     "IntegrationsApi",
     "PresentationsApi",
     "ProfileManagersApi",
@@ -62,6 +63,22 @@ __all__ = [
     "AppStoreAdminUpdateListingStatusRequest",
     "AppStoreAdminUpdatePromotionLevelRequest",
     "AppStoreAppEventRequest",
+    "AppStoreAppEventRequestEvent",
+    "AppStoreAppEventRequestEventOneOf",
+    "AppStoreAppEventRequestEventOneOf1",
+    "AppStoreAppEventRequestEventOneOf2",
+    "AppStoreAppEventRequestEventOneOf3",
+    "AppStoreAppEventRequestEventOneOf4",
+    "AppStoreAppEventRequestEventOneOf5",
+    "AppStoreAppEventRequestEventOneOf5SummaryData",
+    "AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner",
+    "AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords",
+    "AppStoreAppEventRequestEventOneOf5SummaryDataSkillsInner",
+    "AppStoreAppEventRequestEventOneOf6",
+    "AppStoreAppEventRequestEventOneOf7",
+    "AppStoreAppEventRequestEventOneOf8",
+    "AppStoreAppEventRequestEventOneOf9",
+    "AppStoreAssociateListingWithSigningAuthorityRequest",
     "AppStoreBrowseListedAppsRequest",
     "AppStoreCreateListingRequest",
     "AppStoreCreateListingRequestListing",
@@ -69,10 +86,17 @@ __all__ = [
     "AppStoreGetInstalledApps200Response",
     "AppStoreGetInstalledApps200ResponseRecordsInner",
     "AppStoreGetListing200Response",
+    "AppStoreGetListing200ResponseSubmitter",
+    "AppStoreGetListingSigningAuthority200Response",
     "AppStoreGetListingsForIntegration200Response",
     "AppStoreGetListingsForIntegration200ResponseRecordsInner",
+    "AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter",
     "AppStoreGetListingsForIntegrationRequest",
+    "AppStoreGetMyCredentialsFromApp200Response",
+    "AppStoreGetMyCredentialsFromApp200ResponseRecordsInner",
     "AppStoreRemoveBoostFromListingRequest",
+    "AppStoreSendAppNotification200Response",
+    "AppStoreSendAppNotificationRequest",
     "AppStoreUpdateListingRequest",
     "AppStoreUpdateListingRequestUpdates",
     "AuthGrantsAddAuthGrantRequest",
@@ -85,6 +109,8 @@ __all__ = [
     "BoostAddBoostAdminRequest",
     "BoostAlignBoostSkillsRequest",
     "BoostAlignBoostSkillsRequestSkillsInner",
+    "BoostAllocateCredentialStatus200ResponseInner",
+    "BoostAllocateCredentialStatusRequest",
     "BoostAttachFrameworkToBoostRequest",
     "BoostClaimBoostWithLinkRequest",
     "BoostCountBoostChildrenRequest",
@@ -111,6 +137,13 @@ __all__ = [
     "BoostGetBoost200ResponseBoostIssuerAnyOfImage",
     "BoostGetBoost200ResponseBoostIssuerAnyOfImageAnyOf",
     "BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner",
+    "BoostGetBoost200ResponseBoostRenderMethod",
+    "BoostGetBoost200ResponseBoostRenderMethodAnyOf",
+    "BoostGetBoost200ResponseBoostRenderMethodAnyOf1Inner",
+    "BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOf",
+    "BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference",
+    "BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOf",
+    "BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOfOutputPreference",
     "BoostGetBoost200ResponseClaimPermissions",
     "BoostGetBoost200ResponseDefaultPermissions",
     "BoostGetBoostAdmins200Response",
@@ -126,10 +159,16 @@ __all__ = [
     "BoostGetBoostParentsRequest",
     "BoostGetBoostRecipients200ResponseInner",
     "BoostGetBoostRecipients200ResponseInnerTo",
-    "BoostGetBoostRecipients200ResponseInnerToDisplay",
+    "BoostGetBoostRecipients200ResponseInnerToAnyOf",
+    "BoostGetBoostRecipients200ResponseInnerToAnyOf1",
+    "BoostGetBoostRecipients200ResponseInnerToAnyOf1Display",
+    "BoostGetBoostRecipients200ResponseInnerToAnyOf2",
+    "BoostGetBoostRecipients200ResponseInnerToAnyOf3",
+    "BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay",
     "BoostGetBoostRecipientsWithChildrenCountRequest",
     "BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations",
     "BoostGetBoostSiblingsRequest",
+    "BoostGetBoostSkills200ResponseInner",
     "BoostGetBoosts200ResponseInner",
     "BoostGetBoostsRequest",
     "BoostGetBoostsRequestQuery",
@@ -146,7 +185,7 @@ __all__ = [
     "BoostGetPaginatedBoostRecipients200Response",
     "BoostGetPaginatedBoostRecipients200ResponseRecordsInner",
     "BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo",
-    "BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToDisplay",
+    "BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf",
     "BoostGetPaginatedBoostRecipientsRequest",
     "BoostGetPaginatedBoostRecipientsRequestQuery",
     "BoostGetPaginatedBoostRecipientsWithChildren200Response",
@@ -162,6 +201,7 @@ __all__ = [
     "BoostMakeBoostParentRequest",
     "BoostRemoveBoostAdminRequest",
     "BoostRemoveBoostParentRequest",
+    "BoostRevokeBoostRecipientRequest",
     "BoostSearchSkillsAvailableForBoost200Response",
     "BoostSearchSkillsAvailableForBoost200ResponseRecordsInner",
     "BoostSearchSkillsAvailableForBoostRequest",
@@ -175,11 +215,9 @@ __all__ = [
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1",
-    "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOfAnyOf",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1",
-    "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOfAnyOf",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement",
     "BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus",
@@ -220,6 +258,13 @@ __all__ = [
     "BoostSendBoostRequestCredentialAnyOfRefreshService",
     "BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf",
     "BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethod",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1Inner",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOf",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf",
+    "BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference",
     "BoostSendBoostRequestCredentialAnyOfTermsOfUse",
     "BoostSendBoostRequestOptions",
     "BoostSendBoostViaSigningAuthorityRequest",
@@ -245,8 +290,10 @@ __all__ = [
     "BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType",
     "BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType",
     "BoostSendRequestTemplateCredentialAnyOfProof",
+    "BoostSendRequestTemplateCredentialAnyOfRenderMethod",
     "BoostSendRequestTemplateDefaultPermissions",
     "BoostSendRequestTemplateSkillsInner",
+    "BoostSuspendBoostRecipientRequest",
     "BoostUpdateBoostPermissionsRequest",
     "BoostUpdateBoostPermissionsRequestUpdates",
     "BoostUpdateBoostRequest",
@@ -313,13 +360,13 @@ __all__ = [
     "ContractsCreateConsentFlowContractRequestContractReadCredentials",
     "ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue",
     "ContractsCreateConsentFlowContractRequestContractWrite",
+    "ContractsDeleteCredentialFromAllContracts200Response",
+    "ContractsDeleteCredentialFromAllContractsRequest",
     "ContractsForwardContractRequestToProfileRequest",
     "ContractsGetAllContractRequestsForProfile200ResponseInner",
     "ContractsGetAllContractRequestsForProfile200ResponseInnerContract",
     "ContractsGetAllCredentialsForTermsRequest",
     "ContractsGetConsentFlowContract200Response",
-    "ContractsGetConsentFlowContract200ResponseContract",
-    "ContractsGetConsentFlowContract200ResponseContractRead",
     "ContractsGetConsentFlowContracts200Response",
     "ContractsGetConsentFlowContracts200ResponseRecordsInner",
     "ContractsGetConsentFlowContractsRequest",
@@ -330,18 +377,12 @@ __all__ = [
     "ContractsGetConsentFlowContractsRequestQueryWrite",
     "ContractsGetConsentedContracts200Response",
     "ContractsGetConsentedContracts200ResponseRecordsInner",
-    "ContractsGetConsentedContracts200ResponseRecordsInnerTerms",
-    "ContractsGetConsentedContracts200ResponseRecordsInnerTermsRead",
-    "ContractsGetConsentedContracts200ResponseRecordsInnerTermsReadCredentials",
-    "ContractsGetConsentedContracts200ResponseRecordsInnerTermsReadCredentialsCategoriesValue",
     "ContractsGetConsentedContractsRequest",
     "ContractsGetConsentedContractsRequestQuery",
     "ContractsGetConsentedContractsRequestQueryRead",
     "ContractsGetConsentedContractsRequestQueryReadCredentials",
     "ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue",
     "ContractsGetConsentedContractsRequestQueryWrite",
-    "ContractsGetConsentedData200Response",
-    "ContractsGetConsentedData200ResponseRecordsInner",
     "ContractsGetConsentedDataForContract200Response",
     "ContractsGetConsentedDataForContract200ResponseRecordsInner",
     "ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials",
@@ -359,11 +400,9 @@ __all__ = [
     "ContractsGetCredentialsForContract200ResponseRecordsInner",
     "ContractsGetCredentialsForContractRequest",
     "ContractsGetRequestStatusForProfile200Response",
+    "ContractsGetSharedInsightsRequestsForProfile200ResponseInner",
     "ContractsGetTermsTransactionHistory200Response",
     "ContractsGetTermsTransactionHistory200ResponseRecordsInner",
-    "ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms",
-    "ContractsGetTermsTransactionHistory200ResponseRecordsInnerTermsWrite",
-    "ContractsGetTermsTransactionHistory200ResponseRecordsInnerTermsWriteCredentials",
     "ContractsGetTermsTransactionHistoryRequest",
     "ContractsGetTermsTransactionHistoryRequestQuery",
     "ContractsGetTermsTransactionHistoryRequestQueryAction",
@@ -393,6 +432,28 @@ __all__ = [
     "ContractsWriteCredentialToContractViaSigningAuthorityRequest",
     "CredentialAcceptCredentialRequest",
     "CredentialAcceptCredentialRequestOptions",
+    "CredentialGetHolderExportMetadata200Response",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInner",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContract",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractRead",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentials",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentialsCategoriesValue",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials",
+    "CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue",
+    "CredentialGetHolderExportMetadata200ResponseLimits",
     "CredentialReceivedCredentials200ResponseInner",
     "CredentialSendCredentialRequest",
     "CredentialSendCredentialRequestCredential",
@@ -426,14 +487,26 @@ __all__ = [
     "ErrorINTERNALSERVERERROR",
     "ErrorNOTFOUND",
     "ErrorUNAUTHORIZED",
+    "FederationGetTrustedServices200ResponseInner",
+    "FederationReceive200Response",
+    "FederationReceiveRequest",
+    "FederationReceiveRequestConfiguration",
+    "InboxApproveGuardianCredential200Response",
+    "InboxApproveGuardianCredentialInApp200Response",
+    "InboxApproveGuardianCredentialInAppRequest",
+    "InboxApproveGuardianCredentialRequest",
     "InboxApproveGuardianRequestRequest",
     "InboxClaim200Response",
     "InboxClaim200ResponseInboxCredential",
     "InboxClaim200ResponseInboxCredentialSigningAuthority",
+    "InboxClaimPendingGuardianLinks200ResponseInner",
     "InboxClaimRequest",
     "InboxClaimRequestConfiguration",
     "InboxClaimRequestCredential",
+    "InboxClaimRequestCredentialAnyOf",
     "InboxFinalize200Response",
+    "InboxGetGuardianPendingCredential200Response",
+    "InboxGetGuardianPendingCredential200ResponseIssuer",
     "InboxGetMyIssuedCredentials200Response",
     "InboxGetMyIssuedCredentials200ResponseRecordsInner",
     "InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority",
@@ -459,12 +532,13 @@ __all__ = [
     "InboxIssueRequestRecipient",
     "InboxIssueRequestRecipientOneOf",
     "InboxIssueRequestRecipientOneOf1",
+    "InboxRejectGuardianCredentialInAppRequest",
+    "InboxRejectGuardianCredentialRequest",
     "InboxSendGuardianApprovalEmail200Response",
     "InboxSendGuardianApprovalEmailRequest",
     "InboxSendGuardianApprovalEmailRequestTemplate",
     "IntegrationsAddIntegrationRequest",
     "IntegrationsAddIntegrationRequestWhitelistedDomainsInner",
-    "IntegrationsAssociateIntegrationWithSigningAuthorityRequest",
     "IntegrationsCountIntegrationsRequest",
     "IntegrationsGetIntegration200Response",
     "IntegrationsGetIntegrations200Response",
@@ -488,12 +562,15 @@ __all__ = [
     "ProfileGetAvailableProfiles200ResponseRecordsInner",
     "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
     "ProfileGetAvailableProfilesRequest",
+    "ProfileGetManagedServiceProfiles200Response",
     "ProfileListInvites200ResponseInner",
     "ProfileManagerCreateChildProfileManagerRequest",
     "ProfileManagerCreateChildProfileManagerRequestProfile",
     "ProfileManagerCreateManagedProfileRequest",
     "ProfileManagerCreateProfileManagerRequest",
     "ProfileManagerGetManagedProfilesRequest",
+    "ProfileManagerRemoveManagesRelationshipRequest",
+    "ProfileManagerUpdateProfileManagerRequest",
     "ProfileRegisterSigningAuthorityRequest",
     "ProfileSearchProfiles200ResponseInner",
     "ProfileSetPrimarySigningAuthorityRequest",
@@ -506,13 +583,13 @@ __all__ = [
     "ProfileUpdateProfileRequest",
     "Schema0",
     "Schema1",
-    "SkillFrameworksAddFrameworkAdmin200Response",
     "SkillFrameworksAddFrameworkAdminRequest",
     "SkillFrameworksCountBoostsThatUseFramework200Response",
     "SkillFrameworksCreateManagedBatchRequest",
     "SkillFrameworksCreateManagedBatchRequestFrameworksInner",
     "SkillFrameworksCreateManagedRequest",
     "SkillFrameworksCreateRequest",
+    "SkillFrameworksGetAllAvailableFrameworksRequest",
     "SkillFrameworksGetBoostsThatUseFrameworkRequest",
     "SkillFrameworksGetById200Response",
     "SkillFrameworksGetById200ResponseSkills",
@@ -536,24 +613,20 @@ __all__ = [
     "SkillsSearchFrameworkSkillsRequest",
     "SkillsSearchFrameworkSkillsRequestQuery",
     "SkillsSearchFrameworkSkillsRequestQueryAnyOf",
+    "SkillsSemanticSearchSkills200Response",
+    "SkillsSemanticSearchSkills200ResponseRecordsInner",
+    "SkillsSemanticSearchSkillsRequest",
     "SkillsSyncFrameworkSkills200Response",
     "SkillsUpdateRequest",
     "StorageResolve200Response",
     "StorageResolve200ResponseAnyOf",
     "StorageResolve200ResponseAnyOf1",
     "StorageResolve200ResponseAnyOf1Read",
-    "StorageResolve200ResponseAnyOf1ReadCredentials",
-    "StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue",
     "StorageResolve200ResponseAnyOf1Write",
     "StorageResolve200ResponseAnyOf1WriteCredentials",
     "StorageResolve200ResponseAnyOfAnyOf",
     "StorageResolve200ResponseAnyOfAnyOf1",
     "StorageResolve200ResponseAnyOfAnyOf1Read",
-    "StorageResolve200ResponseAnyOfAnyOf1ReadCredentials",
-    "StorageResolve200ResponseAnyOfAnyOf1ReadCredentialsCategoriesValue",
-    "StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue",
-    "StorageResolve200ResponseAnyOfAnyOf1Write",
-    "StorageResolve200ResponseAnyOfAnyOf1WriteCredentials",
     "StorageResolve200ResponseAnyOfAnyOfAnyOf",
     "StorageResolve200ResponseAnyOfAnyOfAnyOf1",
     "StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner",
@@ -564,17 +637,22 @@ __all__ = [
     "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential",
     "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf",
     "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOf",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfAddress",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfAddressGeo",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfImage",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfImageAnyOf",
-    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfOtherIdentifierInner",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOf",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddressGeo",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImageAnyOf",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner",
+    "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod",
     "StorageStoreRequest",
     "StorageStoreRequestItem",
     "StorageStoreRequestItemAnyOf",
+    "StorageStoreRequestItemAnyOf1",
     "StorageStoreRequestItemAnyOfAnyOf",
+    "StorageStoreRequestItemAnyOfAnyOfAnyOf",
     "WorkflowsParticipateInExchange200Response",
     "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest",
     "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner",
@@ -593,6 +671,7 @@ from openapi_client.api.contact_methods_api import ContactMethodsApi as ContactM
 from openapi_client.api.contracts_api import ContractsApi as ContractsApi
 from openapi_client.api.credentials_api import CredentialsApi as CredentialsApi
 from openapi_client.api.did_metadata_api import DIDMetadataApi as DIDMetadataApi
+from openapi_client.api.federation_api import FederationApi as FederationApi
 from openapi_client.api.integrations_api import IntegrationsApi as IntegrationsApi
 from openapi_client.api.presentations_api import PresentationsApi as PresentationsApi
 from openapi_client.api.profile_managers_api import ProfileManagersApi as ProfileManagersApi
@@ -631,6 +710,22 @@ from openapi_client.models.app_store_admin_get_all_listings_request import AppSt
 from openapi_client.models.app_store_admin_update_listing_status_request import AppStoreAdminUpdateListingStatusRequest as AppStoreAdminUpdateListingStatusRequest
 from openapi_client.models.app_store_admin_update_promotion_level_request import AppStoreAdminUpdatePromotionLevelRequest as AppStoreAdminUpdatePromotionLevelRequest
 from openapi_client.models.app_store_app_event_request import AppStoreAppEventRequest as AppStoreAppEventRequest
+from openapi_client.models.app_store_app_event_request_event import AppStoreAppEventRequestEvent as AppStoreAppEventRequestEvent
+from openapi_client.models.app_store_app_event_request_event_one_of import AppStoreAppEventRequestEventOneOf as AppStoreAppEventRequestEventOneOf
+from openapi_client.models.app_store_app_event_request_event_one_of1 import AppStoreAppEventRequestEventOneOf1 as AppStoreAppEventRequestEventOneOf1
+from openapi_client.models.app_store_app_event_request_event_one_of2 import AppStoreAppEventRequestEventOneOf2 as AppStoreAppEventRequestEventOneOf2
+from openapi_client.models.app_store_app_event_request_event_one_of3 import AppStoreAppEventRequestEventOneOf3 as AppStoreAppEventRequestEventOneOf3
+from openapi_client.models.app_store_app_event_request_event_one_of4 import AppStoreAppEventRequestEventOneOf4 as AppStoreAppEventRequestEventOneOf4
+from openapi_client.models.app_store_app_event_request_event_one_of5 import AppStoreAppEventRequestEventOneOf5 as AppStoreAppEventRequestEventOneOf5
+from openapi_client.models.app_store_app_event_request_event_one_of5_summary_data import AppStoreAppEventRequestEventOneOf5SummaryData as AppStoreAppEventRequestEventOneOf5SummaryData
+from openapi_client.models.app_store_app_event_request_event_one_of5_summary_data_next_steps_inner import AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner as AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInner
+from openapi_client.models.app_store_app_event_request_event_one_of5_summary_data_next_steps_inner_keywords import AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords as AppStoreAppEventRequestEventOneOf5SummaryDataNextStepsInnerKeywords
+from openapi_client.models.app_store_app_event_request_event_one_of5_summary_data_skills_inner import AppStoreAppEventRequestEventOneOf5SummaryDataSkillsInner as AppStoreAppEventRequestEventOneOf5SummaryDataSkillsInner
+from openapi_client.models.app_store_app_event_request_event_one_of6 import AppStoreAppEventRequestEventOneOf6 as AppStoreAppEventRequestEventOneOf6
+from openapi_client.models.app_store_app_event_request_event_one_of7 import AppStoreAppEventRequestEventOneOf7 as AppStoreAppEventRequestEventOneOf7
+from openapi_client.models.app_store_app_event_request_event_one_of8 import AppStoreAppEventRequestEventOneOf8 as AppStoreAppEventRequestEventOneOf8
+from openapi_client.models.app_store_app_event_request_event_one_of9 import AppStoreAppEventRequestEventOneOf9 as AppStoreAppEventRequestEventOneOf9
+from openapi_client.models.app_store_associate_listing_with_signing_authority_request import AppStoreAssociateListingWithSigningAuthorityRequest as AppStoreAssociateListingWithSigningAuthorityRequest
 from openapi_client.models.app_store_browse_listed_apps_request import AppStoreBrowseListedAppsRequest as AppStoreBrowseListedAppsRequest
 from openapi_client.models.app_store_create_listing_request import AppStoreCreateListingRequest as AppStoreCreateListingRequest
 from openapi_client.models.app_store_create_listing_request_listing import AppStoreCreateListingRequestListing as AppStoreCreateListingRequestListing
@@ -638,10 +733,17 @@ from openapi_client.models.app_store_get_boosts_for_listing200_response_inner im
 from openapi_client.models.app_store_get_installed_apps200_response import AppStoreGetInstalledApps200Response as AppStoreGetInstalledApps200Response
 from openapi_client.models.app_store_get_installed_apps200_response_records_inner import AppStoreGetInstalledApps200ResponseRecordsInner as AppStoreGetInstalledApps200ResponseRecordsInner
 from openapi_client.models.app_store_get_listing200_response import AppStoreGetListing200Response as AppStoreGetListing200Response
+from openapi_client.models.app_store_get_listing200_response_submitter import AppStoreGetListing200ResponseSubmitter as AppStoreGetListing200ResponseSubmitter
+from openapi_client.models.app_store_get_listing_signing_authority200_response import AppStoreGetListingSigningAuthority200Response as AppStoreGetListingSigningAuthority200Response
 from openapi_client.models.app_store_get_listings_for_integration200_response import AppStoreGetListingsForIntegration200Response as AppStoreGetListingsForIntegration200Response
 from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner import AppStoreGetListingsForIntegration200ResponseRecordsInner as AppStoreGetListingsForIntegration200ResponseRecordsInner
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_submitter import AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter as AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter
 from openapi_client.models.app_store_get_listings_for_integration_request import AppStoreGetListingsForIntegrationRequest as AppStoreGetListingsForIntegrationRequest
+from openapi_client.models.app_store_get_my_credentials_from_app200_response import AppStoreGetMyCredentialsFromApp200Response as AppStoreGetMyCredentialsFromApp200Response
+from openapi_client.models.app_store_get_my_credentials_from_app200_response_records_inner import AppStoreGetMyCredentialsFromApp200ResponseRecordsInner as AppStoreGetMyCredentialsFromApp200ResponseRecordsInner
 from openapi_client.models.app_store_remove_boost_from_listing_request import AppStoreRemoveBoostFromListingRequest as AppStoreRemoveBoostFromListingRequest
+from openapi_client.models.app_store_send_app_notification200_response import AppStoreSendAppNotification200Response as AppStoreSendAppNotification200Response
+from openapi_client.models.app_store_send_app_notification_request import AppStoreSendAppNotificationRequest as AppStoreSendAppNotificationRequest
 from openapi_client.models.app_store_update_listing_request import AppStoreUpdateListingRequest as AppStoreUpdateListingRequest
 from openapi_client.models.app_store_update_listing_request_updates import AppStoreUpdateListingRequestUpdates as AppStoreUpdateListingRequestUpdates
 from openapi_client.models.auth_grants_add_auth_grant_request import AuthGrantsAddAuthGrantRequest as AuthGrantsAddAuthGrantRequest
@@ -654,6 +756,8 @@ from openapi_client.models.auth_grants_update_auth_grant_request_updates import 
 from openapi_client.models.boost_add_boost_admin_request import BoostAddBoostAdminRequest as BoostAddBoostAdminRequest
 from openapi_client.models.boost_align_boost_skills_request import BoostAlignBoostSkillsRequest as BoostAlignBoostSkillsRequest
 from openapi_client.models.boost_align_boost_skills_request_skills_inner import BoostAlignBoostSkillsRequestSkillsInner as BoostAlignBoostSkillsRequestSkillsInner
+from openapi_client.models.boost_allocate_credential_status200_response_inner import BoostAllocateCredentialStatus200ResponseInner as BoostAllocateCredentialStatus200ResponseInner
+from openapi_client.models.boost_allocate_credential_status_request import BoostAllocateCredentialStatusRequest as BoostAllocateCredentialStatusRequest
 from openapi_client.models.boost_attach_framework_to_boost_request import BoostAttachFrameworkToBoostRequest as BoostAttachFrameworkToBoostRequest
 from openapi_client.models.boost_claim_boost_with_link_request import BoostClaimBoostWithLinkRequest as BoostClaimBoostWithLinkRequest
 from openapi_client.models.boost_count_boost_children_request import BoostCountBoostChildrenRequest as BoostCountBoostChildrenRequest
@@ -680,6 +784,13 @@ from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_addre
 from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_image import BoostGetBoost200ResponseBoostIssuerAnyOfImage as BoostGetBoost200ResponseBoostIssuerAnyOfImage
 from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_image_any_of import BoostGetBoost200ResponseBoostIssuerAnyOfImageAnyOf as BoostGetBoost200ResponseBoostIssuerAnyOfImageAnyOf
 from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_other_identifier_inner import BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner as BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner
+from openapi_client.models.boost_get_boost200_response_boost_render_method import BoostGetBoost200ResponseBoostRenderMethod as BoostGetBoost200ResponseBoostRenderMethod
+from openapi_client.models.boost_get_boost200_response_boost_render_method_any_of import BoostGetBoost200ResponseBoostRenderMethodAnyOf as BoostGetBoost200ResponseBoostRenderMethodAnyOf
+from openapi_client.models.boost_get_boost200_response_boost_render_method_any_of1_inner import BoostGetBoost200ResponseBoostRenderMethodAnyOf1Inner as BoostGetBoost200ResponseBoostRenderMethodAnyOf1Inner
+from openapi_client.models.boost_get_boost200_response_boost_render_method_any_of1_inner_any_of import BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOf as BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOf
+from openapi_client.models.boost_get_boost200_response_boost_render_method_any_of1_inner_any_of_output_preference import BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference as BoostGetBoost200ResponseBoostRenderMethodAnyOf1InnerAnyOfOutputPreference
+from openapi_client.models.boost_get_boost200_response_boost_render_method_any_of_any_of import BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOf as BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOf
+from openapi_client.models.boost_get_boost200_response_boost_render_method_any_of_any_of_output_preference import BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOfOutputPreference as BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOfOutputPreference
 from openapi_client.models.boost_get_boost200_response_claim_permissions import BoostGetBoost200ResponseClaimPermissions as BoostGetBoost200ResponseClaimPermissions
 from openapi_client.models.boost_get_boost200_response_default_permissions import BoostGetBoost200ResponseDefaultPermissions as BoostGetBoost200ResponseDefaultPermissions
 from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response as BoostGetBoostAdmins200Response
@@ -695,10 +806,16 @@ from openapi_client.models.boost_get_boost_frameworks_request_query_any_of_or_in
 from openapi_client.models.boost_get_boost_parents_request import BoostGetBoostParentsRequest as BoostGetBoostParentsRequest
 from openapi_client.models.boost_get_boost_recipients200_response_inner import BoostGetBoostRecipients200ResponseInner as BoostGetBoostRecipients200ResponseInner
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo as BoostGetBoostRecipients200ResponseInnerTo
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to_display import BoostGetBoostRecipients200ResponseInnerToDisplay as BoostGetBoostRecipients200ResponseInnerToDisplay
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of import BoostGetBoostRecipients200ResponseInnerToAnyOf as BoostGetBoostRecipients200ResponseInnerToAnyOf
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of1 import BoostGetBoostRecipients200ResponseInnerToAnyOf1 as BoostGetBoostRecipients200ResponseInnerToAnyOf1
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of1_display import BoostGetBoostRecipients200ResponseInnerToAnyOf1Display as BoostGetBoostRecipients200ResponseInnerToAnyOf1Display
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of2 import BoostGetBoostRecipients200ResponseInnerToAnyOf2 as BoostGetBoostRecipients200ResponseInnerToAnyOf2
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3 as BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of_display import BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay as BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request import BoostGetBoostRecipientsWithChildrenCountRequest as BoostGetBoostRecipientsWithChildrenCountRequest
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request_number_of_generations import BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations as BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations
 from openapi_client.models.boost_get_boost_siblings_request import BoostGetBoostSiblingsRequest as BoostGetBoostSiblingsRequest
+from openapi_client.models.boost_get_boost_skills200_response_inner import BoostGetBoostSkills200ResponseInner as BoostGetBoostSkills200ResponseInner
 from openapi_client.models.boost_get_boosts200_response_inner import BoostGetBoosts200ResponseInner as BoostGetBoosts200ResponseInner
 from openapi_client.models.boost_get_boosts_request import BoostGetBoostsRequest as BoostGetBoostsRequest
 from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery as BoostGetBoostsRequestQuery
@@ -715,7 +832,7 @@ from openapi_client.models.boost_get_familial_boosts_request import BoostGetFami
 from openapi_client.models.boost_get_paginated_boost_recipients200_response import BoostGetPaginatedBoostRecipients200Response as BoostGetPaginatedBoostRecipients200Response
 from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner import BoostGetPaginatedBoostRecipients200ResponseRecordsInner as BoostGetPaginatedBoostRecipients200ResponseRecordsInner
 from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo as BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to_display import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToDisplay as BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToDisplay
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to_any_of import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf as BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf
 from openapi_client.models.boost_get_paginated_boost_recipients_request import BoostGetPaginatedBoostRecipientsRequest as BoostGetPaginatedBoostRecipientsRequest
 from openapi_client.models.boost_get_paginated_boost_recipients_request_query import BoostGetPaginatedBoostRecipientsRequestQuery as BoostGetPaginatedBoostRecipientsRequestQuery
 from openapi_client.models.boost_get_paginated_boost_recipients_with_children200_response import BoostGetPaginatedBoostRecipientsWithChildren200Response as BoostGetPaginatedBoostRecipientsWithChildren200Response
@@ -731,6 +848,7 @@ from openapi_client.models.boost_get_skills_available_for_boost200_response_inne
 from openapi_client.models.boost_make_boost_parent_request import BoostMakeBoostParentRequest as BoostMakeBoostParentRequest
 from openapi_client.models.boost_remove_boost_admin_request import BoostRemoveBoostAdminRequest as BoostRemoveBoostAdminRequest
 from openapi_client.models.boost_remove_boost_parent_request import BoostRemoveBoostParentRequest as BoostRemoveBoostParentRequest
+from openapi_client.models.boost_revoke_boost_recipient_request import BoostRevokeBoostRecipientRequest as BoostRevokeBoostRecipientRequest
 from openapi_client.models.boost_search_skills_available_for_boost200_response import BoostSearchSkillsAvailableForBoost200Response as BoostSearchSkillsAvailableForBoost200Response
 from openapi_client.models.boost_search_skills_available_for_boost200_response_records_inner import BoostSearchSkillsAvailableForBoost200ResponseRecordsInner as BoostSearchSkillsAvailableForBoost200ResponseRecordsInner
 from openapi_client.models.boost_search_skills_available_for_boost_request import BoostSearchSkillsAvailableForBoostRequest as BoostSearchSkillsAvailableForBoostRequest
@@ -744,11 +862,9 @@ from openapi_client.models.boost_search_skills_available_for_boost_request_query
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner_any_of1 import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1 as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner_any_of1_regex import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner_any_of_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOfAnyOf as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOfAnyOf
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of1 import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1 as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of1_regex import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOf1Regex
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of_any_of_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOfAnyOf as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOfAnyOf
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_status import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus as BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus
@@ -789,6 +905,13 @@ from openapi_client.models.boost_send_boost_request_credential_any_of_proof_any_
 from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service import BoostSendBoostRequestCredentialAnyOfRefreshService as BoostSendBoostRequestCredentialAnyOfRefreshService
 from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service_any_of import BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf as BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf
 from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service_any_of1_inner import BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner as BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method import BoostSendBoostRequestCredentialAnyOfRenderMethod as BoostSendBoostRequestCredentialAnyOfRenderMethod
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method_any_of import BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf as BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method_any_of1_inner import BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1Inner as BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1Inner
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method_any_of1_inner_any_of import BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOf as BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOf
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method_any_of1_inner_any_of_output_preference import BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference as BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOf1InnerAnyOfOutputPreference
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method_any_of_any_of import BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf as BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method_any_of_any_of_output_preference import BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference as BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference
 from openapi_client.models.boost_send_boost_request_credential_any_of_terms_of_use import BoostSendBoostRequestCredentialAnyOfTermsOfUse as BoostSendBoostRequestCredentialAnyOfTermsOfUse
 from openapi_client.models.boost_send_boost_request_options import BoostSendBoostRequestOptions as BoostSendBoostRequestOptions
 from openapi_client.models.boost_send_boost_via_signing_authority_request import BoostSendBoostViaSigningAuthorityRequest as BoostSendBoostViaSigningAuthorityRequest
@@ -814,8 +937,10 @@ from openapi_client.models.boost_send_request_template_credential_any_of_issuer_
 from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType as BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
 from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType as BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
 from openapi_client.models.boost_send_request_template_credential_any_of_proof import BoostSendRequestTemplateCredentialAnyOfProof as BoostSendRequestTemplateCredentialAnyOfProof
+from openapi_client.models.boost_send_request_template_credential_any_of_render_method import BoostSendRequestTemplateCredentialAnyOfRenderMethod as BoostSendRequestTemplateCredentialAnyOfRenderMethod
 from openapi_client.models.boost_send_request_template_default_permissions import BoostSendRequestTemplateDefaultPermissions as BoostSendRequestTemplateDefaultPermissions
 from openapi_client.models.boost_send_request_template_skills_inner import BoostSendRequestTemplateSkillsInner as BoostSendRequestTemplateSkillsInner
+from openapi_client.models.boost_suspend_boost_recipient_request import BoostSuspendBoostRecipientRequest as BoostSuspendBoostRecipientRequest
 from openapi_client.models.boost_update_boost_permissions_request import BoostUpdateBoostPermissionsRequest as BoostUpdateBoostPermissionsRequest
 from openapi_client.models.boost_update_boost_permissions_request_updates import BoostUpdateBoostPermissionsRequestUpdates as BoostUpdateBoostPermissionsRequestUpdates
 from openapi_client.models.boost_update_boost_request import BoostUpdateBoostRequest as BoostUpdateBoostRequest
@@ -882,13 +1007,13 @@ from openapi_client.models.contracts_create_consent_flow_contract_request_contra
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials import ContractsCreateConsentFlowContractRequestContractReadCredentials as ContractsCreateConsentFlowContractRequestContractReadCredentials
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value import ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue as ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract_write import ContractsCreateConsentFlowContractRequestContractWrite as ContractsCreateConsentFlowContractRequestContractWrite
+from openapi_client.models.contracts_delete_credential_from_all_contracts200_response import ContractsDeleteCredentialFromAllContracts200Response as ContractsDeleteCredentialFromAllContracts200Response
+from openapi_client.models.contracts_delete_credential_from_all_contracts_request import ContractsDeleteCredentialFromAllContractsRequest as ContractsDeleteCredentialFromAllContractsRequest
 from openapi_client.models.contracts_forward_contract_request_to_profile_request import ContractsForwardContractRequestToProfileRequest as ContractsForwardContractRequestToProfileRequest
 from openapi_client.models.contracts_get_all_contract_requests_for_profile200_response_inner import ContractsGetAllContractRequestsForProfile200ResponseInner as ContractsGetAllContractRequestsForProfile200ResponseInner
 from openapi_client.models.contracts_get_all_contract_requests_for_profile200_response_inner_contract import ContractsGetAllContractRequestsForProfile200ResponseInnerContract as ContractsGetAllContractRequestsForProfile200ResponseInnerContract
 from openapi_client.models.contracts_get_all_credentials_for_terms_request import ContractsGetAllCredentialsForTermsRequest as ContractsGetAllCredentialsForTermsRequest
 from openapi_client.models.contracts_get_consent_flow_contract200_response import ContractsGetConsentFlowContract200Response as ContractsGetConsentFlowContract200Response
-from openapi_client.models.contracts_get_consent_flow_contract200_response_contract import ContractsGetConsentFlowContract200ResponseContract as ContractsGetConsentFlowContract200ResponseContract
-from openapi_client.models.contracts_get_consent_flow_contract200_response_contract_read import ContractsGetConsentFlowContract200ResponseContractRead as ContractsGetConsentFlowContract200ResponseContractRead
 from openapi_client.models.contracts_get_consent_flow_contracts200_response import ContractsGetConsentFlowContracts200Response as ContractsGetConsentFlowContracts200Response
 from openapi_client.models.contracts_get_consent_flow_contracts200_response_records_inner import ContractsGetConsentFlowContracts200ResponseRecordsInner as ContractsGetConsentFlowContracts200ResponseRecordsInner
 from openapi_client.models.contracts_get_consent_flow_contracts_request import ContractsGetConsentFlowContractsRequest as ContractsGetConsentFlowContractsRequest
@@ -899,18 +1024,12 @@ from openapi_client.models.contracts_get_consent_flow_contracts_request_query_re
 from openapi_client.models.contracts_get_consent_flow_contracts_request_query_write import ContractsGetConsentFlowContractsRequestQueryWrite as ContractsGetConsentFlowContractsRequestQueryWrite
 from openapi_client.models.contracts_get_consented_contracts200_response import ContractsGetConsentedContracts200Response as ContractsGetConsentedContracts200Response
 from openapi_client.models.contracts_get_consented_contracts200_response_records_inner import ContractsGetConsentedContracts200ResponseRecordsInner as ContractsGetConsentedContracts200ResponseRecordsInner
-from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms import ContractsGetConsentedContracts200ResponseRecordsInnerTerms as ContractsGetConsentedContracts200ResponseRecordsInnerTerms
-from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms_read import ContractsGetConsentedContracts200ResponseRecordsInnerTermsRead as ContractsGetConsentedContracts200ResponseRecordsInnerTermsRead
-from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms_read_credentials import ContractsGetConsentedContracts200ResponseRecordsInnerTermsReadCredentials as ContractsGetConsentedContracts200ResponseRecordsInnerTermsReadCredentials
-from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms_read_credentials_categories_value import ContractsGetConsentedContracts200ResponseRecordsInnerTermsReadCredentialsCategoriesValue as ContractsGetConsentedContracts200ResponseRecordsInnerTermsReadCredentialsCategoriesValue
 from openapi_client.models.contracts_get_consented_contracts_request import ContractsGetConsentedContractsRequest as ContractsGetConsentedContractsRequest
 from openapi_client.models.contracts_get_consented_contracts_request_query import ContractsGetConsentedContractsRequestQuery as ContractsGetConsentedContractsRequestQuery
 from openapi_client.models.contracts_get_consented_contracts_request_query_read import ContractsGetConsentedContractsRequestQueryRead as ContractsGetConsentedContractsRequestQueryRead
 from openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials import ContractsGetConsentedContractsRequestQueryReadCredentials as ContractsGetConsentedContractsRequestQueryReadCredentials
 from openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value import ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue as ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue
 from openapi_client.models.contracts_get_consented_contracts_request_query_write import ContractsGetConsentedContractsRequestQueryWrite as ContractsGetConsentedContractsRequestQueryWrite
-from openapi_client.models.contracts_get_consented_data200_response import ContractsGetConsentedData200Response as ContractsGetConsentedData200Response
-from openapi_client.models.contracts_get_consented_data200_response_records_inner import ContractsGetConsentedData200ResponseRecordsInner as ContractsGetConsentedData200ResponseRecordsInner
 from openapi_client.models.contracts_get_consented_data_for_contract200_response import ContractsGetConsentedDataForContract200Response as ContractsGetConsentedDataForContract200Response
 from openapi_client.models.contracts_get_consented_data_for_contract200_response_records_inner import ContractsGetConsentedDataForContract200ResponseRecordsInner as ContractsGetConsentedDataForContract200ResponseRecordsInner
 from openapi_client.models.contracts_get_consented_data_for_contract200_response_records_inner_credentials import ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials as ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials
@@ -928,11 +1047,9 @@ from openapi_client.models.contracts_get_credentials_for_contract200_response im
 from openapi_client.models.contracts_get_credentials_for_contract200_response_records_inner import ContractsGetCredentialsForContract200ResponseRecordsInner as ContractsGetCredentialsForContract200ResponseRecordsInner
 from openapi_client.models.contracts_get_credentials_for_contract_request import ContractsGetCredentialsForContractRequest as ContractsGetCredentialsForContractRequest
 from openapi_client.models.contracts_get_request_status_for_profile200_response import ContractsGetRequestStatusForProfile200Response as ContractsGetRequestStatusForProfile200Response
+from openapi_client.models.contracts_get_shared_insights_requests_for_profile200_response_inner import ContractsGetSharedInsightsRequestsForProfile200ResponseInner as ContractsGetSharedInsightsRequestsForProfile200ResponseInner
 from openapi_client.models.contracts_get_terms_transaction_history200_response import ContractsGetTermsTransactionHistory200Response as ContractsGetTermsTransactionHistory200Response
 from openapi_client.models.contracts_get_terms_transaction_history200_response_records_inner import ContractsGetTermsTransactionHistory200ResponseRecordsInner as ContractsGetTermsTransactionHistory200ResponseRecordsInner
-from openapi_client.models.contracts_get_terms_transaction_history200_response_records_inner_terms import ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms as ContractsGetTermsTransactionHistory200ResponseRecordsInnerTerms
-from openapi_client.models.contracts_get_terms_transaction_history200_response_records_inner_terms_write import ContractsGetTermsTransactionHistory200ResponseRecordsInnerTermsWrite as ContractsGetTermsTransactionHistory200ResponseRecordsInnerTermsWrite
-from openapi_client.models.contracts_get_terms_transaction_history200_response_records_inner_terms_write_credentials import ContractsGetTermsTransactionHistory200ResponseRecordsInnerTermsWriteCredentials as ContractsGetTermsTransactionHistory200ResponseRecordsInnerTermsWriteCredentials
 from openapi_client.models.contracts_get_terms_transaction_history_request import ContractsGetTermsTransactionHistoryRequest as ContractsGetTermsTransactionHistoryRequest
 from openapi_client.models.contracts_get_terms_transaction_history_request_query import ContractsGetTermsTransactionHistoryRequestQuery as ContractsGetTermsTransactionHistoryRequestQuery
 from openapi_client.models.contracts_get_terms_transaction_history_request_query_action import ContractsGetTermsTransactionHistoryRequestQueryAction as ContractsGetTermsTransactionHistoryRequestQueryAction
@@ -962,6 +1079,28 @@ from openapi_client.models.contracts_write_credential_to_contract_request_creden
 from openapi_client.models.contracts_write_credential_to_contract_via_signing_authority_request import ContractsWriteCredentialToContractViaSigningAuthorityRequest as ContractsWriteCredentialToContractViaSigningAuthorityRequest
 from openapi_client.models.credential_accept_credential_request import CredentialAcceptCredentialRequest as CredentialAcceptCredentialRequest
 from openapi_client.models.credential_accept_credential_request_options import CredentialAcceptCredentialRequestOptions as CredentialAcceptCredentialRequestOptions
+from openapi_client.models.credential_get_holder_export_metadata200_response import CredentialGetHolderExportMetadata200Response as CredentialGetHolderExportMetadata200Response
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner import CredentialGetHolderExportMetadata200ResponseConsentRecordsInner as CredentialGetHolderExportMetadata200ResponseConsentRecordsInner
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContract
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContract as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContract
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractRead as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractRead
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_read_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentials as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentials
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_read_credentials_categories_value import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentialsCategoriesValue as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadCredentialsCategoriesValue
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_read_personal_value import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_write_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTerms
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsRead
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_read_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_read_credentials_categories_value import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentialsCategoriesValue
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInner
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read_credentials_categories_value import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue as CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentialsCategoriesValue
+from openapi_client.models.credential_get_holder_export_metadata200_response_limits import CredentialGetHolderExportMetadata200ResponseLimits as CredentialGetHolderExportMetadata200ResponseLimits
 from openapi_client.models.credential_received_credentials200_response_inner import CredentialReceivedCredentials200ResponseInner as CredentialReceivedCredentials200ResponseInner
 from openapi_client.models.credential_send_credential_request import CredentialSendCredentialRequest as CredentialSendCredentialRequest
 from openapi_client.models.credential_send_credential_request_credential import CredentialSendCredentialRequestCredential as CredentialSendCredentialRequestCredential
@@ -995,14 +1134,26 @@ from openapi_client.models.error_forbidden import ErrorFORBIDDEN as ErrorFORBIDD
 from openapi_client.models.error_internalservererror import ErrorINTERNALSERVERERROR as ErrorINTERNALSERVERERROR
 from openapi_client.models.error_notfound import ErrorNOTFOUND as ErrorNOTFOUND
 from openapi_client.models.error_unauthorized import ErrorUNAUTHORIZED as ErrorUNAUTHORIZED
+from openapi_client.models.federation_get_trusted_services200_response_inner import FederationGetTrustedServices200ResponseInner as FederationGetTrustedServices200ResponseInner
+from openapi_client.models.federation_receive200_response import FederationReceive200Response as FederationReceive200Response
+from openapi_client.models.federation_receive_request import FederationReceiveRequest as FederationReceiveRequest
+from openapi_client.models.federation_receive_request_configuration import FederationReceiveRequestConfiguration as FederationReceiveRequestConfiguration
+from openapi_client.models.inbox_approve_guardian_credential200_response import InboxApproveGuardianCredential200Response as InboxApproveGuardianCredential200Response
+from openapi_client.models.inbox_approve_guardian_credential_in_app200_response import InboxApproveGuardianCredentialInApp200Response as InboxApproveGuardianCredentialInApp200Response
+from openapi_client.models.inbox_approve_guardian_credential_in_app_request import InboxApproveGuardianCredentialInAppRequest as InboxApproveGuardianCredentialInAppRequest
+from openapi_client.models.inbox_approve_guardian_credential_request import InboxApproveGuardianCredentialRequest as InboxApproveGuardianCredentialRequest
 from openapi_client.models.inbox_approve_guardian_request_request import InboxApproveGuardianRequestRequest as InboxApproveGuardianRequestRequest
 from openapi_client.models.inbox_claim200_response import InboxClaim200Response as InboxClaim200Response
 from openapi_client.models.inbox_claim200_response_inbox_credential import InboxClaim200ResponseInboxCredential as InboxClaim200ResponseInboxCredential
 from openapi_client.models.inbox_claim200_response_inbox_credential_signing_authority import InboxClaim200ResponseInboxCredentialSigningAuthority as InboxClaim200ResponseInboxCredentialSigningAuthority
+from openapi_client.models.inbox_claim_pending_guardian_links200_response_inner import InboxClaimPendingGuardianLinks200ResponseInner as InboxClaimPendingGuardianLinks200ResponseInner
 from openapi_client.models.inbox_claim_request import InboxClaimRequest as InboxClaimRequest
 from openapi_client.models.inbox_claim_request_configuration import InboxClaimRequestConfiguration as InboxClaimRequestConfiguration
 from openapi_client.models.inbox_claim_request_credential import InboxClaimRequestCredential as InboxClaimRequestCredential
+from openapi_client.models.inbox_claim_request_credential_any_of import InboxClaimRequestCredentialAnyOf as InboxClaimRequestCredentialAnyOf
 from openapi_client.models.inbox_finalize200_response import InboxFinalize200Response as InboxFinalize200Response
+from openapi_client.models.inbox_get_guardian_pending_credential200_response import InboxGetGuardianPendingCredential200Response as InboxGetGuardianPendingCredential200Response
+from openapi_client.models.inbox_get_guardian_pending_credential200_response_issuer import InboxGetGuardianPendingCredential200ResponseIssuer as InboxGetGuardianPendingCredential200ResponseIssuer
 from openapi_client.models.inbox_get_my_issued_credentials200_response import InboxGetMyIssuedCredentials200Response as InboxGetMyIssuedCredentials200Response
 from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner import InboxGetMyIssuedCredentials200ResponseRecordsInner as InboxGetMyIssuedCredentials200ResponseRecordsInner
 from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner_signing_authority import InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority as InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority
@@ -1028,12 +1179,13 @@ from openapi_client.models.inbox_issue_request_credential_any_of import InboxIss
 from openapi_client.models.inbox_issue_request_recipient import InboxIssueRequestRecipient as InboxIssueRequestRecipient
 from openapi_client.models.inbox_issue_request_recipient_one_of import InboxIssueRequestRecipientOneOf as InboxIssueRequestRecipientOneOf
 from openapi_client.models.inbox_issue_request_recipient_one_of1 import InboxIssueRequestRecipientOneOf1 as InboxIssueRequestRecipientOneOf1
+from openapi_client.models.inbox_reject_guardian_credential_in_app_request import InboxRejectGuardianCredentialInAppRequest as InboxRejectGuardianCredentialInAppRequest
+from openapi_client.models.inbox_reject_guardian_credential_request import InboxRejectGuardianCredentialRequest as InboxRejectGuardianCredentialRequest
 from openapi_client.models.inbox_send_guardian_approval_email200_response import InboxSendGuardianApprovalEmail200Response as InboxSendGuardianApprovalEmail200Response
 from openapi_client.models.inbox_send_guardian_approval_email_request import InboxSendGuardianApprovalEmailRequest as InboxSendGuardianApprovalEmailRequest
 from openapi_client.models.inbox_send_guardian_approval_email_request_template import InboxSendGuardianApprovalEmailRequestTemplate as InboxSendGuardianApprovalEmailRequestTemplate
 from openapi_client.models.integrations_add_integration_request import IntegrationsAddIntegrationRequest as IntegrationsAddIntegrationRequest
 from openapi_client.models.integrations_add_integration_request_whitelisted_domains_inner import IntegrationsAddIntegrationRequestWhitelistedDomainsInner as IntegrationsAddIntegrationRequestWhitelistedDomainsInner
-from openapi_client.models.integrations_associate_integration_with_signing_authority_request import IntegrationsAssociateIntegrationWithSigningAuthorityRequest as IntegrationsAssociateIntegrationWithSigningAuthorityRequest
 from openapi_client.models.integrations_count_integrations_request import IntegrationsCountIntegrationsRequest as IntegrationsCountIntegrationsRequest
 from openapi_client.models.integrations_get_integration200_response import IntegrationsGetIntegration200Response as IntegrationsGetIntegration200Response
 from openapi_client.models.integrations_get_integrations200_response import IntegrationsGetIntegrations200Response as IntegrationsGetIntegrations200Response
@@ -1057,12 +1209,15 @@ from openapi_client.models.profile_get_available_profiles200_response import Pro
 from openapi_client.models.profile_get_available_profiles200_response_records_inner import ProfileGetAvailableProfiles200ResponseRecordsInner as ProfileGetAvailableProfiles200ResponseRecordsInner
 from openapi_client.models.profile_get_available_profiles200_response_records_inner_manager import ProfileGetAvailableProfiles200ResponseRecordsInnerManager as ProfileGetAvailableProfiles200ResponseRecordsInnerManager
 from openapi_client.models.profile_get_available_profiles_request import ProfileGetAvailableProfilesRequest as ProfileGetAvailableProfilesRequest
+from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response as ProfileGetManagedServiceProfiles200Response
 from openapi_client.models.profile_list_invites200_response_inner import ProfileListInvites200ResponseInner as ProfileListInvites200ResponseInner
 from openapi_client.models.profile_manager_create_child_profile_manager_request import ProfileManagerCreateChildProfileManagerRequest as ProfileManagerCreateChildProfileManagerRequest
 from openapi_client.models.profile_manager_create_child_profile_manager_request_profile import ProfileManagerCreateChildProfileManagerRequestProfile as ProfileManagerCreateChildProfileManagerRequestProfile
 from openapi_client.models.profile_manager_create_managed_profile_request import ProfileManagerCreateManagedProfileRequest as ProfileManagerCreateManagedProfileRequest
 from openapi_client.models.profile_manager_create_profile_manager_request import ProfileManagerCreateProfileManagerRequest as ProfileManagerCreateProfileManagerRequest
 from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest as ProfileManagerGetManagedProfilesRequest
+from openapi_client.models.profile_manager_remove_manages_relationship_request import ProfileManagerRemoveManagesRelationshipRequest as ProfileManagerRemoveManagesRelationshipRequest
+from openapi_client.models.profile_manager_update_profile_manager_request import ProfileManagerUpdateProfileManagerRequest as ProfileManagerUpdateProfileManagerRequest
 from openapi_client.models.profile_register_signing_authority_request import ProfileRegisterSigningAuthorityRequest as ProfileRegisterSigningAuthorityRequest
 from openapi_client.models.profile_search_profiles200_response_inner import ProfileSearchProfiles200ResponseInner as ProfileSearchProfiles200ResponseInner
 from openapi_client.models.profile_set_primary_signing_authority_request import ProfileSetPrimarySigningAuthorityRequest as ProfileSetPrimarySigningAuthorityRequest
@@ -1075,13 +1230,13 @@ from openapi_client.models.profile_signing_authority200_response_signing_authori
 from openapi_client.models.profile_update_profile_request import ProfileUpdateProfileRequest as ProfileUpdateProfileRequest
 from openapi_client.models.schema0 import Schema0 as Schema0
 from openapi_client.models.schema1 import Schema1 as Schema1
-from openapi_client.models.skill_frameworks_add_framework_admin200_response import SkillFrameworksAddFrameworkAdmin200Response as SkillFrameworksAddFrameworkAdmin200Response
 from openapi_client.models.skill_frameworks_add_framework_admin_request import SkillFrameworksAddFrameworkAdminRequest as SkillFrameworksAddFrameworkAdminRequest
 from openapi_client.models.skill_frameworks_count_boosts_that_use_framework200_response import SkillFrameworksCountBoostsThatUseFramework200Response as SkillFrameworksCountBoostsThatUseFramework200Response
 from openapi_client.models.skill_frameworks_create_managed_batch_request import SkillFrameworksCreateManagedBatchRequest as SkillFrameworksCreateManagedBatchRequest
 from openapi_client.models.skill_frameworks_create_managed_batch_request_frameworks_inner import SkillFrameworksCreateManagedBatchRequestFrameworksInner as SkillFrameworksCreateManagedBatchRequestFrameworksInner
 from openapi_client.models.skill_frameworks_create_managed_request import SkillFrameworksCreateManagedRequest as SkillFrameworksCreateManagedRequest
 from openapi_client.models.skill_frameworks_create_request import SkillFrameworksCreateRequest as SkillFrameworksCreateRequest
+from openapi_client.models.skill_frameworks_get_all_available_frameworks_request import SkillFrameworksGetAllAvailableFrameworksRequest as SkillFrameworksGetAllAvailableFrameworksRequest
 from openapi_client.models.skill_frameworks_get_boosts_that_use_framework_request import SkillFrameworksGetBoostsThatUseFrameworkRequest as SkillFrameworksGetBoostsThatUseFrameworkRequest
 from openapi_client.models.skill_frameworks_get_by_id200_response import SkillFrameworksGetById200Response as SkillFrameworksGetById200Response
 from openapi_client.models.skill_frameworks_get_by_id200_response_skills import SkillFrameworksGetById200ResponseSkills as SkillFrameworksGetById200ResponseSkills
@@ -1105,24 +1260,20 @@ from openapi_client.models.skills_list_skill_tags200_response_inner import Skill
 from openapi_client.models.skills_search_framework_skills_request import SkillsSearchFrameworkSkillsRequest as SkillsSearchFrameworkSkillsRequest
 from openapi_client.models.skills_search_framework_skills_request_query import SkillsSearchFrameworkSkillsRequestQuery as SkillsSearchFrameworkSkillsRequestQuery
 from openapi_client.models.skills_search_framework_skills_request_query_any_of import SkillsSearchFrameworkSkillsRequestQueryAnyOf as SkillsSearchFrameworkSkillsRequestQueryAnyOf
+from openapi_client.models.skills_semantic_search_skills200_response import SkillsSemanticSearchSkills200Response as SkillsSemanticSearchSkills200Response
+from openapi_client.models.skills_semantic_search_skills200_response_records_inner import SkillsSemanticSearchSkills200ResponseRecordsInner as SkillsSemanticSearchSkills200ResponseRecordsInner
+from openapi_client.models.skills_semantic_search_skills_request import SkillsSemanticSearchSkillsRequest as SkillsSemanticSearchSkillsRequest
 from openapi_client.models.skills_sync_framework_skills200_response import SkillsSyncFrameworkSkills200Response as SkillsSyncFrameworkSkills200Response
 from openapi_client.models.skills_update_request import SkillsUpdateRequest as SkillsUpdateRequest
 from openapi_client.models.storage_resolve200_response import StorageResolve200Response as StorageResolve200Response
 from openapi_client.models.storage_resolve200_response_any_of import StorageResolve200ResponseAnyOf as StorageResolve200ResponseAnyOf
 from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1 as StorageResolve200ResponseAnyOf1
 from openapi_client.models.storage_resolve200_response_any_of1_read import StorageResolve200ResponseAnyOf1Read as StorageResolve200ResponseAnyOf1Read
-from openapi_client.models.storage_resolve200_response_any_of1_read_credentials import StorageResolve200ResponseAnyOf1ReadCredentials as StorageResolve200ResponseAnyOf1ReadCredentials
-from openapi_client.models.storage_resolve200_response_any_of1_read_credentials_categories_value import StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue as StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue
 from openapi_client.models.storage_resolve200_response_any_of1_write import StorageResolve200ResponseAnyOf1Write as StorageResolve200ResponseAnyOf1Write
 from openapi_client.models.storage_resolve200_response_any_of1_write_credentials import StorageResolve200ResponseAnyOf1WriteCredentials as StorageResolve200ResponseAnyOf1WriteCredentials
 from openapi_client.models.storage_resolve200_response_any_of_any_of import StorageResolve200ResponseAnyOfAnyOf as StorageResolve200ResponseAnyOfAnyOf
 from openapi_client.models.storage_resolve200_response_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOf1 as StorageResolve200ResponseAnyOfAnyOf1
 from openapi_client.models.storage_resolve200_response_any_of_any_of1_read import StorageResolve200ResponseAnyOfAnyOf1Read as StorageResolve200ResponseAnyOfAnyOf1Read
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_read_credentials import StorageResolve200ResponseAnyOfAnyOf1ReadCredentials as StorageResolve200ResponseAnyOfAnyOf1ReadCredentials
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_read_credentials_categories_value import StorageResolve200ResponseAnyOfAnyOf1ReadCredentialsCategoriesValue as StorageResolve200ResponseAnyOfAnyOf1ReadCredentialsCategoriesValue
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_read_personal_value import StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue as StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_write import StorageResolve200ResponseAnyOfAnyOf1Write as StorageResolve200ResponseAnyOfAnyOf1Write
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_write_credentials import StorageResolve200ResponseAnyOfAnyOf1WriteCredentials as StorageResolve200ResponseAnyOfAnyOf1WriteCredentials
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOf
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOf1 as StorageResolve200ResponseAnyOfAnyOfAnyOf1
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of1_recipients_inner import StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner as StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner
@@ -1133,17 +1284,22 @@ from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of1_verifiable_credential import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1 as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOf
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer_any_of_address import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfAddress as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfAddress
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer_any_of_address_geo import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfAddressGeo as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfAddressGeo
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer_any_of_image import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfImage as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfImage
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer_any_of_image_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfImageAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfImageAnyOf
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer_any_of_other_identifier_inner import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfOtherIdentifierInner as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfOtherIdentifierInner
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1 as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOf
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_address import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddress
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_address_geo import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddressGeo as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfAddressGeo
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_image import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImage
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_image_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImageAnyOf as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfImageAnyOf
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer_any_of_other_identifier_inner import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1IssuerAnyOfOtherIdentifierInner
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_render_method import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod as StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod
 from openapi_client.models.storage_store_request import StorageStoreRequest as StorageStoreRequest
 from openapi_client.models.storage_store_request_item import StorageStoreRequestItem as StorageStoreRequestItem
 from openapi_client.models.storage_store_request_item_any_of import StorageStoreRequestItemAnyOf as StorageStoreRequestItemAnyOf
+from openapi_client.models.storage_store_request_item_any_of1 import StorageStoreRequestItemAnyOf1 as StorageStoreRequestItemAnyOf1
 from openapi_client.models.storage_store_request_item_any_of_any_of import StorageStoreRequestItemAnyOfAnyOf as StorageStoreRequestItemAnyOfAnyOf
+from openapi_client.models.storage_store_request_item_any_of_any_of_any_of import StorageStoreRequestItemAnyOfAnyOfAnyOf as StorageStoreRequestItemAnyOfAnyOfAnyOf
 from openapi_client.models.workflows_participate_in_exchange200_response import WorkflowsParticipateInExchange200Response as WorkflowsParticipateInExchange200Response
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner

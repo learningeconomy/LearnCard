@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 
 # **storage_resolve**
-> StorageResolve200Response storage_resolve(uri)
+> StorageResolve200Response storage_resolve(uri, challenge=challenge)
 
 Resolves a URI to a Credential/Presentation
 
@@ -46,10 +46,11 @@ with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.StorageApi(api_client)
     uri = 'uri_example' # str | 
+    challenge = 'challenge_example' # str |  (optional)
 
     try:
         # Resolves a URI to a Credential/Presentation
-        api_response = api_instance.storage_resolve(uri)
+        api_response = api_instance.storage_resolve(uri, challenge=challenge)
         print("The response of StorageApi->storage_resolve:\n")
         pprint(api_response)
     except Exception as e:
@@ -64,6 +65,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uri** | **str**|  | 
+ **challenge** | **str**|  | [optional] 
 
 ### Return type
 

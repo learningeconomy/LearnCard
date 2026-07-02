@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**regex** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex.md) |  | 
+**regex** | **str** |  | [optional] 
 
 ## Example
 

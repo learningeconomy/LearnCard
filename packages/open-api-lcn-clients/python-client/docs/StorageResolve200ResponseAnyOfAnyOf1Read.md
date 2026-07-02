@@ -6,8 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **anonymize** | **bool** |  | [optional] 
-**credentials** | [**StorageResolve200ResponseAnyOfAnyOf1ReadCredentials**](StorageResolve200ResponseAnyOfAnyOf1ReadCredentials.md) |  | 
-**personal** | [**Dict[str, StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue]**](StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue.md) |  | 
+**credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials.md) |  | 
+**personal** | [**Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue.md) |  | 
 
 ## Example
 

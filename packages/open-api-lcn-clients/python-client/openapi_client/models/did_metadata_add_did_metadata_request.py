@@ -27,6 +27,7 @@ from openapi_client.models.did_metadata_add_did_metadata_request_service_inner i
 from openapi_client.models.did_metadata_add_did_metadata_request_verification_method_inner import DidMetadataAddDidMetadataRequestVerificationMethodInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class DidMetadataAddDidMetadataRequest(BaseModel):
     """
@@ -49,7 +50,8 @@ class DidMetadataAddDidMetadataRequest(BaseModel):
     __properties: ClassVar[List[str]] = ["@context", "id", "alsoKnownAs", "controller", "verificationMethod", "authentication", "assertionMethod", "keyAgreement", "capabilityInvocation", "capabilityDelegation", "publicKey", "service", "proof"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -61,8 +63,7 @@ class DidMetadataAddDidMetadataRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
