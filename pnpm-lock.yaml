@@ -628,6 +628,12 @@ importers:
       '@ionic/cli':
         specifier: ^7.2.1
         version: 7.2.1
+      '@learncard/learn-cloud-service':
+        specifier: workspace:^
+        version: link:../../services/learn-card-network/learn-cloud-service
+      '@learncard/network-brain-service':
+        specifier: workspace:^
+        version: link:../../services/learn-card-network/brain-service
       '@netlify/edge-functions':
         specifier: ^2.15.1
         version: 2.19.0
