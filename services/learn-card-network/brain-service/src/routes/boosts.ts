@@ -1678,7 +1678,7 @@ export const boostsRouter = t.router({
                 hasMore,
                 records: records
                     .map(boost => {
-                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+                        const { id, boost: _boost, ...remaining } = boost;
 
                         return { ...remaining, uri: getBoostUri(id, ctx.domain) };
                     })

@@ -45,6 +45,7 @@ const CredentialStorageGet = lazyWithRetry(
 const AddressBook = lazyWithRetry(() => import('./pages/addressBook/AddressBook'));
 const BoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/BoostCMS'));
 const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/UpdateBoostCMS'));
+const IssueCredentialPage = lazyWithRetry(() => import('./pages/issue/IssueCredentialPage'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
 const PrivacySettingsPage = lazyWithRetry(
@@ -313,6 +314,7 @@ export const Routes: React.FC = () => {
                         />
                         <PrivateRoute exact path="/boost" component={BoostCMS} />
                         <PrivateRoute exact path="/boost/update" component={UpdateBoostCMS} />
+                        <PrivateRoute exact path="/issue" component={IssueCredentialPage} />
                         <PrivateRoute exact path="/test" component={VprQueryByExample} />
                         <SentryRoute exact path="/wallet-worker" component={WalletServiceWorker} />
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
@@ -498,6 +500,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/notifications': () => NotificationsPage.preload(),
     // Mobile navbar / wallet header.
     '/boost': () => BoostCMS.preload(),
+    '/issue': () => IssueCredentialPage.preload(),
     // Other commonly side-menu-linked routes.
     '/privacy-and-data': () => PrivacySettingsPage.preload(),
     '/resume-builder': () => ResumeBuilderPage.preload(),

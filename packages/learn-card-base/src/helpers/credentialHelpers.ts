@@ -146,7 +146,6 @@ export const CATEGORY_MAP: Record<
     MovieTicketCredential: 'Achievement',
 
     // extending ( Achievement ) category
-    Degree: 'Achievement',
     Certificate: 'Achievement',
     'ext:CourseCompletion': 'Achievement',
     'ext:Attendance': 'Achievement',
@@ -162,7 +161,7 @@ export const CATEGORY_MAP: Record<
     'ext:Upskilling': 'Achievement',
 
     License: 'ID',
-    Membership: 'Membership',
+    Membership: 'ID',
     'Student Buckcard': 'ID',
     PermanentResidentCard: 'ID',
     AlumniCredential: 'ID',
@@ -211,6 +210,7 @@ export const CATEGORY_MAP: Record<
     'ext:Board': 'Work History',
 
     Assignment: 'Learning History',
+    Degree: 'Learning History',
     AssociateDegree: 'Learning History',
     BachelorDegree: 'Learning History',
     CertificateOfCompletion: 'Learning History',
@@ -796,6 +796,10 @@ export const getFallBackImage = (credCategory: string) => {
         return 'https://cdn.filestackcontent.com/F9yva92WQ0CPisIeQRmr';
     if (credCategory === 'Accommodation')
         return 'https://cdn.filestackcontent.com/cHt9WgJQdCMWMnLFFQh1';
+    if (credCategory === 'Membership')
+        return 'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH';
+    if (credCategory === 'Course') return 'https://cdn.filestackcontent.com/zBtHw5EqTJDb5r6Pw7cg';
+    if (credCategory === 'Job') return 'https://cdn.filestackcontent.com/2eR985mSrur9mK4V4mzQ';
     if (credCategory === 'Family') return 'https://cdn.filestackcontent.com/9HELycBJSKGEhQtiu9Is';
 };
 
