@@ -11,6 +11,9 @@ export const inflateGroup = (flat: FlatGroupType): GroupType => {
         try {
             parsedCriteria = JSON.parse(computedCriteria);
         } catch {
+            console.warn(
+                `Failed to parse computedCriteria for group ${flat.id}; defaulting to undefined`
+            );
             parsedCriteria = undefined;
         }
     }

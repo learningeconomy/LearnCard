@@ -8,7 +8,19 @@ export const EcosystemStatusEnum = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
 export type EcosystemStatus = z.infer<typeof EcosystemStatusEnum>;
 
 // DNS label rules: 1–64 chars, lowercase alphanumeric + hyphen, no leading/trailing hyphen
-export const ECOSYSTEM_SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+export const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+
+export const EcosystemBrandingValidator = z.object({
+    name: z.string().optional().describe('Display name for the Ecosystem operator.'),
+    shortName: z.string().optional().describe('Short display name.'),
+    logoUrl: z.string().optional().describe('Primary logo URL.'),
+    faviconUrl: z.string().optional().describe('Favicon URL.'),
+    primaryColor: z.string().optional().describe('Primary brand color.'),
+    accentColor: z.string().optional().describe('Accent brand color.'),
+    fontColor: z.string().optional().describe('Default text color.'),
+    backgroundColor: z.string().optional().describe('Default background color.'),
+});
+export type EcosystemBranding = z.infer<typeof EcosystemBrandingValidator>;
 
 export const EcosystemCatalogPolicyValidator = z
     .object({
@@ -41,10 +53,9 @@ export type EcosystemLearnCloudPolicy = z.infer<typeof EcosystemLearnCloudPolicy
 
 export const EcosystemSettingsValidator = z
     .object({
-        branding: z
-            .record(z.string(), z.unknown())
-            .optional()
-            .describe('Ecosystem-level branding overrides (shape mirrors tenant branding config).'),
+        branding: EcosystemBrandingValidator.optional().describe(
+            'Ecosystem-level branding overrides.'
+        ),
         catalogPolicy: EcosystemCatalogPolicyValidator.optional(),
         learnCloudPolicy: EcosystemLearnCloudPolicyValidator.optional(),
     })
@@ -58,7 +69,7 @@ export const EcosystemValidator = z.object({
     name: z.string().describe('Human-readable Ecosystem name.'),
     slug: z
         .string()
-        .regex(ECOSYSTEM_SLUG_REGEX)
+        .regex(SLUG_REGEX)
         .describe(
             'URL-safe slug, unique among siblings under the same parent (ADR-001-followups Q1).'
         ),

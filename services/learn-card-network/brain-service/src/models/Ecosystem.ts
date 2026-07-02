@@ -8,6 +8,7 @@ import { Profile, ProfileInstance } from './Profile';
 import { ProfileManager, ProfileManagerInstance } from './ProfileManager';
 import { AppStoreListing, AppStoreListingInstance } from './AppStoreListing';
 import { Boost, BoostInstance } from './Boost';
+import { Group, GroupInstance } from './Group';
 import { FlatEcosystemType } from 'types/ecosystem';
 
 export type EcosystemRelationships = {
@@ -26,10 +27,10 @@ export type EcosystemRelationships = {
         { installedAt: string }
     >;
     endorses: ModelRelatedNodesI<typeof Boost, BoostInstance>;
-    owns: ModelRelatedNodesI<any, any>;
+    owns: ModelRelatedNodesI<typeof Group, GroupInstance>;
     references: ModelRelatedNodesI<
-        any,
-        any,
+        typeof Group,
+        GroupInstance,
         { mode: string; grantedAt: string; grantedByProfileId: string; expiresAt?: string },
         { mode: string; grantedAt: string; grantedByProfileId: string; expiresAt?: string }
     >;

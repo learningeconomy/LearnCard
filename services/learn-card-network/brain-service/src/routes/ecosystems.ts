@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { EcosystemValidator } from '@learncard/types';
 
-import { t, openRoute } from '@routes';
+import { t, didAndChallengeRoute } from '@routes';
 import {
     getEcosystemById,
     getChildEcosystems,
@@ -10,9 +10,10 @@ import {
 } from '@accesslayer/ecosystem/read';
 
 export const ecosystemsRouter = t.router({
-    getEcosystem: openRoute
+    getEcosystem: didAndChallengeRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/ecosystem/{id}',
                 tags: ['Ecosystems'],
@@ -30,9 +31,10 @@ export const ecosystemsRouter = t.router({
             return ecosystem;
         }),
 
-    getChildEcosystems: openRoute
+    getChildEcosystems: didAndChallengeRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/ecosystem/{id}/children',
                 tags: ['Ecosystems'],
@@ -46,9 +48,10 @@ export const ecosystemsRouter = t.router({
             return getChildEcosystems(input.id);
         }),
 
-    getRootEcosystems: openRoute
+    getRootEcosystems: didAndChallengeRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/ecosystem/root/{rootEcosystemId}',
                 tags: ['Ecosystems'],

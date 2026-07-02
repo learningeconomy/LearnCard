@@ -11,6 +11,7 @@ export const inflateEcosystem = (flat: FlatEcosystemType): EcosystemType => {
         try {
             parsedSettings = JSON.parse(settings) as EcosystemSettings;
         } catch {
+            console.warn(`Failed to parse settings for ecosystem ${flat.id}; defaulting to {}`);
             parsedSettings = {};
         }
     }

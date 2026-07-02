@@ -1,7 +1,7 @@
 import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
-import { ECOSYSTEM_SLUG_REGEX, EcosystemStatusEnum } from './ecosystem';
+import { SLUG_REGEX, EcosystemStatusEnum } from './ecosystem';
 
 export const GroupTypeEnum = z.enum([
     'geographic',
@@ -27,7 +27,7 @@ export const GroupValidator = z.object({
     name: z.string().describe('Human-readable Group name.'),
     slug: z
         .string()
-        .regex(ECOSYSTEM_SLUG_REGEX)
+        .regex(SLUG_REGEX)
         .describe('URL-safe slug, unique among siblings under the same parent Group.'),
     type: GroupTypeEnum.describe('Curated-collection taxonomy type (ADR-001 D11).'),
     description: z.string().optional().describe('Optional Group description.'),

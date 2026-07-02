@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { getClient } from './helpers/getClient';
 import { Ecosystem, Group } from '@models';
+import { createEcosystem } from '@accesslayer/ecosystem/create';
 import { createGroup } from '@accesslayer/group/create';
 import { getGroupById, getGroupsOwnedByEcosystem, getChildGroups } from '@accesslayer/group/read';
 
+const client = getClient({ did: 'did:key:z6MkGroupTester', isChallengeValid: true });
 const noAuthClient = getClient();
 
 const OWNER_ECO = 'eco_owner_ca';
@@ -98,6 +100,39 @@ describe('Groups', () => {
                 })
             ).rejects.toBeDefined();
         });
+
+        it('rejects COMPUTED without criteria and EXPLICIT with criteria', async () => {
+            await expect(
+                createGroup({ ...baseInput, slug: 'bad-computed', membershipMode: 'COMPUTED' })
+            ).rejects.toBeDefined();
+
+            await expect(
+                createGroup({
+                    ...baseInput,
+                    slug: 'bad-explicit',
+                    membershipMode: 'EXPLICIT',
+                    computedCriteria: { field: 'x' },
+                })
+            ).rejects.toBeDefined();
+        });
+
+        it('creates an OWNS edge when the owner Ecosystem exists', async () => {
+            const ecosystem = await createEcosystem({
+                name: 'CA DOE',
+                slug: 'ca-doe',
+                description: undefined,
+                parentEcosystemId: null,
+                ownerProfileId: 'owner-1',
+                settings: {},
+                status: 'ACTIVE',
+            });
+
+            const group = await createGroup({ ...baseInput, ownerEcosystemId: ecosystem.id });
+
+            const owned = await ecosystem.findRelationships({ alias: 'owns' });
+            expect(owned).toHaveLength(1);
+            expect(owned[0]!.target.id).toBe(group.id);
+        });
     });
 
     describe('read access layer', () => {
@@ -133,23 +168,29 @@ describe('Groups', () => {
     });
 
     describe('read-only tRPC routes', () => {
+        it('rejects unauthenticated callers', async () => {
+            const created = await createGroup(baseInput);
+
+            await expect(noAuthClient.group.getGroup({ id: created.id })).rejects.toThrow();
+        });
+
         it('getGroup returns the group by id', async () => {
             const created = await createGroup(baseInput);
 
-            const result = await noAuthClient.group.getGroup({ id: created.id });
+            const result = await client.group.getGroup({ id: created.id });
 
             expect(result?.id).toBe(created.id);
             expect(result?.type).toBe('geographic');
         });
 
         it('getGroup throws NOT_FOUND for an unknown id', async () => {
-            await expect(noAuthClient.group.getGroup({ id: 'grp_missing' })).rejects.toThrow();
+            await expect(client.group.getGroup({ id: 'grp_missing' })).rejects.toThrow();
         });
 
         it('getGroupsOwnedByEcosystem returns owned groups', async () => {
             await createGroup(baseInput);
 
-            const result = await noAuthClient.group.getGroupsOwnedByEcosystem({
+            const result = await client.group.getGroupsOwnedByEcosystem({
                 ecosystemId: OWNER_ECO,
             });
 

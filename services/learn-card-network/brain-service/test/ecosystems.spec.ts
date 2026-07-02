@@ -9,6 +9,7 @@ import {
     getRootEcosystemsForTenant,
 } from '@accesslayer/ecosystem/read';
 
+const client = getClient({ did: 'did:key:z6MkEcosystemTester', isChallengeValid: true });
 const noAuthClient = getClient();
 
 const baseInput = {
@@ -154,26 +155,30 @@ describe('Ecosystems', () => {
     });
 
     describe('read-only tRPC routes', () => {
+        it('rejects unauthenticated callers', async () => {
+            const created = await createEcosystem(baseInput);
+
+            await expect(noAuthClient.ecosystem.getEcosystem({ id: created.id })).rejects.toThrow();
+        });
+
         it('getEcosystem returns the ecosystem by id', async () => {
             const created = await createEcosystem(baseInput);
 
-            const result = await noAuthClient.ecosystem.getEcosystem({ id: created.id });
+            const result = await client.ecosystem.getEcosystem({ id: created.id });
 
             expect(result?.id).toBe(created.id);
             expect(result?.slug).toBe('lef');
         });
 
         it('getEcosystem throws NOT_FOUND for an unknown id', async () => {
-            await expect(
-                noAuthClient.ecosystem.getEcosystem({ id: 'eco_missing' })
-            ).rejects.toThrow();
+            await expect(client.ecosystem.getEcosystem({ id: 'eco_missing' })).rejects.toThrow();
         });
 
         it('getChildEcosystems returns direct children', async () => {
             const root = await createEcosystem(baseInput);
             await createEcosystem({ ...baseInput, slug: 'edu', parentEcosystemId: root.id });
 
-            const result = await noAuthClient.ecosystem.getChildEcosystems({ id: root.id });
+            const result = await client.ecosystem.getChildEcosystems({ id: root.id });
 
             expect(result.map(c => c.slug)).toEqual(['edu']);
         });

@@ -2,13 +2,14 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { GroupValidator } from '@learncard/types';
 
-import { t, openRoute } from '@routes';
+import { t, didAndChallengeRoute } from '@routes';
 import { getGroupById, getGroupsOwnedByEcosystem, getChildGroups } from '@accesslayer/group/read';
 
 export const groupsRouter = t.router({
-    getGroup: openRoute
+    getGroup: didAndChallengeRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/group/{id}',
                 tags: ['Groups'],
@@ -26,9 +27,10 @@ export const groupsRouter = t.router({
             return group;
         }),
 
-    getGroupsOwnedByEcosystem: openRoute
+    getGroupsOwnedByEcosystem: didAndChallengeRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/group/owned-by/{ecosystemId}',
                 tags: ['Groups'],
@@ -42,9 +44,10 @@ export const groupsRouter = t.router({
             return getGroupsOwnedByEcosystem(input.ecosystemId);
         }),
 
-    getChildGroups: openRoute
+    getChildGroups: didAndChallengeRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/group/{id}/children',
                 tags: ['Groups'],
