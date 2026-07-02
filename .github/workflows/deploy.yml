@@ -1249,7 +1249,7 @@ jobs:
         steps:
             - name: Generate GitHub App Token
               id: app-token
-              uses: actions/create-github-app-token@v2
+              uses: actions/create-github-app-token@v3
               with:
                   app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
                   private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
@@ -1262,6 +1262,19 @@ jobs:
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
+
+            # 2026-07-02: Pin only the Changesets subprocess to Node 24.16.0.
+            # Newer runner Node 24 builds can make node-fetch@2 report false
+            # ERR_STREAM_PREMATURE_CLOSE failures while @changesets/changelog-github
+            # fetches GitHub GraphQL changelog data.
+            # Node regression: https://github.com/nodejs/node/issues/63989
+            # Our failed deploy: https://github.com/learningeconomy/LearnCard/actions/runs/28558778835/job/84673047463
+            # Owner: release CI. Revisit after Node's fix is on the runner or Changesets stops using node-fetch@2:
+            # https://github.com/nodejs/node/pull/64004
+            - name: Use Node.js 24.16 for Changesets
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24.16.0
 
             - name: Create Release Pull Request
               uses: changesets/action@v1
