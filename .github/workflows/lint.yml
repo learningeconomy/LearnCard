@@ -13,7 +13,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
                   fetch-depth: 0
@@ -45,7 +45,7 @@ jobs:
               if: steps.changed.outputs.has_files == 'true'
               run: |
                   # Respects .prettierignore; fails the job if any changed file is mis-formatted.
-                  echo "${{ steps.changed.outputs.files }}" | xargs -d '\n' pnpm exec prettier --check
+                  echo "${{ steps.changed.outputs.files }}" | xargs -d '\n' bunx prettier --check
 
             - name: No files to check
               if: steps.changed.outputs.has_files != 'true'

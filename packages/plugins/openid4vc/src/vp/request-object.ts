@@ -36,19 +36,12 @@
  * `did:jwk` (inline) and `did:web` (over the caller's fetch). Callers
  * plug in their own resolver to support `did:key`, `did:ion`, etc.
  */
-import * as x509 from '@peculiar/x509';
+import type * as X509 from '@peculiar/x509';
 
 import { importJWK, importX509, jwtVerify, JWK } from 'jose';
 
-import {
-    AuthorizationRequest,
-    PresentationDefinition,
-    VpError,
-} from './types';
-import {
-    deriveClientIdPrefix,
-    type ClientIdPrefix,
-} from './client-id-prefix';
+import { AuthorizationRequest, PresentationDefinition, VpError } from './types';
+import { deriveClientIdPrefix, type ClientIdPrefix } from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
 
@@ -70,11 +63,7 @@ export type RequestObjectErrorCode =
 export class RequestObjectError extends Error {
     readonly code: RequestObjectErrorCode;
 
-    constructor(
-        code: RequestObjectErrorCode,
-        message: string,
-        options?: { cause?: unknown }
-    ) {
+    constructor(code: RequestObjectErrorCode, message: string, options?: { cause?: unknown }) {
         super(message);
         this.name = 'RequestObjectError';
         this.code = code;
@@ -83,6 +72,16 @@ export class RequestObjectError extends Error {
         }
     }
 }
+
+type X509Module = typeof import('@peculiar/x509');
+
+declare const require: ((id: string) => X509Module) | undefined;
+
+const loadX509 = async (): Promise<X509Module> => {
+    if (typeof require === 'function') return require('@peculiar/x509');
+
+    return import('@peculiar/x509');
+};
 
 /**
  * Minimal DID Document shape the resolver surface consumes. We avoid
@@ -205,10 +204,7 @@ export const verifyAndDecodeRequestObject = async (
     // prefixes we don't handle is raised below where the trust
     // context is known, not in the parser.
     const legacyScheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
-    const { prefix, value: prefixValue } = deriveClientIdPrefix(
-        clientId,
-        legacyScheme
-    );
+    const { prefix, value: prefixValue } = deriveClientIdPrefix(clientId, legacyScheme);
 
     // Defense-in-depth: the outer URL's client_id (when present) MUST
     // match the signed claim. Otherwise an attacker could wrap someone
@@ -459,24 +455,17 @@ const verifyWithDid = async (ctx: VerifyCtx): Promise<void> => {
     }
 };
 
-const findVerificationMethod = (
-    doc: DidDocument,
-    kid: string
-): VerificationMethod | undefined => {
+const findVerificationMethod = (doc: DidDocument, kid: string): VerificationMethod | undefined => {
     const pool: VerificationMethod[] = [];
 
     for (const vm of doc.verificationMethod ?? []) pool.push(vm);
-    for (const ref of doc.authentication ?? [])
-        if (typeof ref === 'object') pool.push(ref);
-    for (const ref of doc.assertionMethod ?? [])
-        if (typeof ref === 'object') pool.push(ref);
+    for (const ref of doc.authentication ?? []) if (typeof ref === 'object') pool.push(ref);
+    for (const ref of doc.assertionMethod ?? []) if (typeof ref === 'object') pool.push(ref);
 
     // Match either the fully-qualified VM id or just the fragment.
     const fragment = kid.includes('#') ? kid.split('#').pop()! : kid;
 
-    return pool.find(
-        vm => vm.id === kid || vm.id.split('#').pop() === fragment
-    );
+    return pool.find(vm => vm.id === kid || vm.id.split('#').pop() === fragment);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -494,10 +483,21 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
         );
     }
 
-    // Defensive DER → X509Certificate construction (cross-platform via @peculiar/x509).
-    let chain: x509.X509Certificate[];
+    let x509: X509Module;
     try {
-        chain = buildCertChain(x5c as string[]);
+        x509 = await loadX509();
+    } catch (e) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `Failed to load X.509 parser: ${describe(e)}`,
+            { cause: e }
+        );
+    }
+
+    // Defensive DER → X509Certificate construction (cross-platform via @peculiar/x509).
+    let chain: X509.X509Certificate[];
+    try {
+        chain = buildCertChain(x5c as string[], x509);
     } catch (e) {
         throw new RequestObjectError(
             'invalid_request_object',
@@ -508,12 +508,23 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
 
     const leaf = chain[0]!;
 
-    // SAN DNS binding: client_id (as URL host) MUST appear in leaf SAN.
     const expectedHost = hostFromClientId(clientId);
-    if (!leafCoversHost(leaf, expectedHost)) {
+    try {
+        if (!leafCoversHost(leaf, expectedHost, x509)) {
+            throw new RequestObjectError(
+                'client_id_mismatch',
+                `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${
+                    listLeafSanDnsNames(leaf, x509).join(',') || 'none'
+                })`
+            );
+        }
+    } catch (e) {
+        if (e instanceof RequestObjectError) throw e;
+
         throw new RequestObjectError(
-            'client_id_mismatch',
-            `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${listLeafSanDnsNames(leaf).join(',') || 'none'})`
+            'invalid_request_object',
+            `Failed to inspect leaf certificate SAN: ${describe(e)}`,
+            { cause: e }
         );
     }
 
@@ -529,7 +540,7 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 
     if (trusted.length > 0) {
-        await verifyChainToTrustedRoots(chain, trusted);
+        await verifyChainToTrustedRoots(chain, trusted, x509);
     }
 
     // JWS signature must verify against the leaf cert's public key.
@@ -557,9 +568,7 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 };
 
-const buildCertChain = (
-    x5c: string[]
-): x509.X509Certificate[] =>
+const buildCertChain = (x5c: string[], x509: X509Module): X509.X509Certificate[] =>
     // peculiar's constructor accepts base64/PEM strings or BufferSource.
     // x5c entries are base64-DER per RFC 7515 §4.1.6 (no PEM wrapper);
     // we wrap them so peculiar's base64 detection works reliably across
@@ -575,8 +584,9 @@ const buildCertChain = (
  * Web Crypto's `subtle.verify` (which is async by spec).
  */
 const verifyChainToTrustedRoots = async (
-    chain: x509.X509Certificate[],
-    trustedPems: readonly string[]
+    chain: X509.X509Certificate[],
+    trustedPems: readonly string[],
+    x509: X509Module
 ): Promise<void> => {
     const trusted = trustedPems.map(pem => new x509.X509Certificate(pem));
 
@@ -621,8 +631,8 @@ const verifyChainToTrustedRoots = async (
 // against algorithm mismatches that throw inside Web Crypto rather
 // than returning false.
 const safeVerify = async (
-    child: x509.X509Certificate,
-    parent: x509.X509Certificate
+    child: X509.X509Certificate,
+    parent: X509.X509Certificate
 ): Promise<boolean> => {
     try {
         return await child.verify({ publicKey: parent.publicKey });
@@ -631,7 +641,7 @@ const safeVerify = async (
     }
 };
 
-const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
+const fingerprintHex = async (cert: X509.X509Certificate): Promise<string> => {
     const buf = await cert.getThumbprint('SHA-256');
     const bytes = new Uint8Array(buf);
     let hex = '';
@@ -647,18 +657,15 @@ const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
  * Honours wildcard certs (`*.example.com` covers `foo.example.com`
  * but not `example.com` or `bar.foo.example.com`), per RFC 6125 §6.4.3.
  */
-const leafCoversHost = (
-    cert: x509.X509Certificate,
-    host: string
-): boolean => {
+const leafCoversHost = (cert: X509.X509Certificate, host: string, x509: X509Module): boolean => {
     const lower = host.toLowerCase();
-    for (const dns of listLeafSanDnsNames(cert)) {
+    for (const dns of listLeafSanDnsNames(cert, x509)) {
         if (matchesDnsName(dns, lower)) return true;
     }
     return false;
 };
 
-const listLeafSanDnsNames = (cert: x509.X509Certificate): string[] => {
+const listLeafSanDnsNames = (cert: X509.X509Certificate, x509: X509Module): string[] => {
     const ext = cert.getExtension(x509.SubjectAlternativeNameExtension);
     if (!ext) return [];
     return ext.names
@@ -780,9 +787,7 @@ const hostFromClientId = (clientId: string): string => {
     // client_id can be a hostname, URL, or URL with path. Pull a DNS
     // name out in every reasonable shape.
     try {
-        const url = new URL(
-            clientId.includes('://') ? clientId : `https://${clientId}`
-        );
+        const url = new URL(clientId.includes('://') ? clientId : `https://${clientId}`);
         return url.hostname;
     } catch {
         return clientId;
@@ -811,7 +816,10 @@ export const builtInDidResolver = (
         }
         throw new RequestObjectError(
             'did_resolution_failed',
-            `Built-in resolver does not support ${did.split(':').slice(0, 2).join(':')} — pass a custom didResolver`
+            `Built-in resolver does not support ${did
+                .split(':')
+                .slice(0, 2)
+                .join(':')} — pass a custom didResolver`
         );
     };
 };
@@ -919,10 +927,9 @@ const buildRequestFromClaims = (
     clientIdPrefix: ClientIdPrefix,
     claims: Record<string, unknown>
 ): AuthorizationRequest => {
-    const presentationDefinition =
-        isObject(claims.presentation_definition)
-            ? (claims.presentation_definition as unknown as PresentationDefinition)
-            : undefined;
+    const presentationDefinition = isObject(claims.presentation_definition)
+        ? (claims.presentation_definition as unknown as PresentationDefinition)
+        : undefined;
 
     const presentationDefinitionUri = asString(claims.presentation_definition_uri);
 
@@ -944,10 +951,9 @@ const buildRequestFromClaims = (
         dcqlQuery = parseDcqlQuery(claims.dcql_query);
     }
 
-    const clientMetadata =
-        isObject(claims.client_metadata)
-            ? (claims.client_metadata as Record<string, unknown>)
-            : undefined;
+    const clientMetadata = isObject(claims.client_metadata)
+        ? (claims.client_metadata as Record<string, unknown>)
+        : undefined;
 
     return {
         client_id: clientId,

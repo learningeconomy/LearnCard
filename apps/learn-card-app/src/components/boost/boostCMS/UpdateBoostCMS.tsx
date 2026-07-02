@@ -15,7 +15,7 @@ import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
@@ -630,7 +630,7 @@ const UpdateBoostCMS: React.FC = () => {
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

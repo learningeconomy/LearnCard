@@ -6,11 +6,11 @@ A fictional AWS Cloud Practitioner prep platform built to demo the LearnCard **p
 
 The pathway at `apps/learn-card-app/src/pages/pathways/dev/devSeed.ts :: buildAwsCloudPractitionerDemo` has seven nodes. Three of them point at Northstar listings and use `requirement-satisfied` terminations, each with a different matcher kind:
 
-| Northstar page | VC type                            | Pathway node | Matcher kind                | What the matcher reads                                                   |
-| -------------- | ---------------------------------- | ------------ | --------------------------- | ------------------------------------------------------------------------ |
-| `/course`      | `AWSCloudEssentialsCompletion`     | Node 1       | `credential-type`           | VC `type` array contains the expected string                             |
-| `/practice`    | `AWSPracticeExamScore`             | Node 2       | `score-threshold`           | `credentialSubject.practiceScore` is a number and `>= 80`                |
-| `/coaching`    | `OpenBadgeCredential` (OBv3-shape) | Node 3       | `ob-achievement`            | `credentialSubject.achievement.id` equals the configured URL             |
+| Northstar page | VC type                            | Pathway node | Matcher kind      | What the matcher reads                                       |
+| -------------- | ---------------------------------- | ------------ | ----------------- | ------------------------------------------------------------ |
+| `/course`      | `AWSCloudEssentialsCompletion`     | Node 1       | `credential-type` | VC `type` array contains the expected string                 |
+| `/practice`    | `AWSPracticeExamScore`             | Node 2       | `score-threshold` | `credentialSubject.practiceScore` is a number and `>= 80`    |
+| `/coaching`    | `OpenBadgeCredential` (OBv3-shape) | Node 3       | `ob-achievement`  | `credentialSubject.achievement.id` equals the configured URL |
 
 The remaining four pathway nodes (IAM tutor, VPC tutor, Pearson scheduling, terminal credential) already demo `session-completed`, `self-attest`, `artifact-count`, and `any-of [boost-uri, credential-type]` respectively. **Six of the eight matcher kinds in the LearnCard matcher registry get a live end-to-end demo in one pathway.**
 
@@ -38,11 +38,11 @@ cp examples/app-store-apps/5-northstar-learning/.env.example \
 openssl rand -hex 32
 # Paste the output as LEARNCARD_ISSUER_SEED in the .env file
 
-pnpm install
-pnpm nx dev @learncard/app-store-demo-northstar-learning
+bun install
+bunx nx dev @learncard/app-store-demo-northstar-learning
 ```
 
-By default the Astro dev server runs on `http://localhost:4321`. The LearnCard app-listing launcher references this URL through the brain-service preset seed (`services/learn-card-network/brain-service/scripts/seed-dev-app.ts`). If you change the port, update that file and re-run `pnpm nx seed brain-service` (or your equivalent) so the in-app listings point at the right place.
+By default the Astro dev server runs on `http://localhost:4321`. The LearnCard app-listing launcher references this URL through the brain-service preset seed (`services/learn-card-network/brain-service/scripts/seed-dev-app.ts`). If you change the port, update that file and re-run `bunx nx seed brain-service` (or your equivalent) so the in-app listings point at the right place.
 
 ## Architecture in one paragraph
 
@@ -52,17 +52,17 @@ The app is a standard Astro server build with the Netlify adapter. Each page's A
 
 Vanilla CSS in `src/styles/main.css`. Northstar's palette is:
 
-- **Deep navy** (`--brand-900: #0F1F3D`) for brand anchors, primary buttons, hero surfaces.
-- **Emerald** (`--emerald-500` / `600` / `700`) for success / progress / issuance affordances.
-- **Grayscale** (`--ink-50` … `--ink-900`) for text, borders, neutral surfaces.
-- **Inter** font across the board; `rounded-[20px]` pills on buttons; `rounded-[28px]` on cards.
+-   **Deep navy** (`--brand-900: #0F1F3D`) for brand anchors, primary buttons, hero surfaces.
+-   **Emerald** (`--emerald-500` / `600` / `700`) for success / progress / issuance affordances.
+-   **Grayscale** (`--ink-50` … `--ink-900`) for text, borders, neutral surfaces.
+-   **Inter** font across the board; `rounded-[20px]` pills on buttons; `rounded-[28px]` on cards.
 
 The palette intentionally rhymes with the host LearnCard app (same emerald-for-success convention, same rounded corners) so the demo feels continuous across the partner boundary.
 
 ## Related files outside this directory
 
-- `apps/learn-card-app/src/pages/pathways/dev/devSeed.ts` — the pathway itself. The `buildAwsCloudPractitionerDemo` function is the source of truth for termination shapes.
-- `apps/learn-card-app/src/pages/pathways/core/nodeRequirementMatcher.ts` — the matchers the VCs above satisfy.
-- `apps/learn-card-app/src/pages/pathways/core/credentialIdentity.ts` — extracts the structural fingerprint from incoming VCs that the matchers read.
-- `services/learn-card-network/brain-service/scripts/seed-dev-app.ts` — brain-service listing seed. Owns the launch URLs the app-listing cards route to.
-- `apps/learn-card-app/src/pages/pathways/dev/presetListings.ts` — shared slug constants (must stay in lockstep with the brain-service seed).
+-   `apps/learn-card-app/src/pages/pathways/dev/devSeed.ts` — the pathway itself. The `buildAwsCloudPractitionerDemo` function is the source of truth for termination shapes.
+-   `apps/learn-card-app/src/pages/pathways/core/nodeRequirementMatcher.ts` — the matchers the VCs above satisfy.
+-   `apps/learn-card-app/src/pages/pathways/core/credentialIdentity.ts` — extracts the structural fingerprint from incoming VCs that the matchers read.
+-   `services/learn-card-network/brain-service/scripts/seed-dev-app.ts` — brain-service listing seed. Owns the launch URLs the app-listing cards route to.
+-   `apps/learn-card-app/src/pages/pathways/dev/presetListings.ts` — shared slug constants (must stay in lockstep with the brain-service seed).

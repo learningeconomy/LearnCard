@@ -42,7 +42,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
 
     return (
         <div className="flex justify-center w-full font-poppins">
-            <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6">
+            <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6 safe-area-top-margin">
                 <GenericErrorBoundary>
                     <DashboardHeaderCard
                         brandName={brandName}

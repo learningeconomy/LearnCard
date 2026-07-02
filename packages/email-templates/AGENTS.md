@@ -66,7 +66,7 @@ Service call → renderEmail(templateId, branding, data)
 
 ### When NOT to Modify This Package
 
--   Changing how emails are *sent* (that's in PostmarkAdapter in brain-service/lca-api)
+-   Changing how emails are _sent_ (that's in PostmarkAdapter in brain-service/lca-api)
 -   Adding business logic around when to send emails (belongs in service routes)
 -   Modifying Postmark API configuration (belongs in service adapters)
 
@@ -118,7 +118,7 @@ Never mix these — `contact-method-verification` receives a UUID token, not a 6
 4. Export the data type from `src/index.ts`
 5. Map the template ID in the service's PostmarkAdapter (`LOCAL_TEMPLATE_MAP`)
 6. Add test fixtures and assertions to `src/__tests__/render.test.ts`
-7. Run `pnpm test` and `pnpm typecheck`
+7. Run `bun run test` and `bun run typecheck`
 
 ### Adding a New Tenant
 
@@ -136,10 +136,10 @@ Never mix these — `contact-method-verification` receives a UUID token, not a 6
 
 ## Build & Test Commands
 
--   **Preview**: `pnpm --filter @learncard/email-templates dev` (opens http://localhost:3333)
--   **Type check**: `pnpm --filter @learncard/email-templates typecheck`
--   **Test**: `pnpm --filter @learncard/email-templates test`
--   **Test (watch)**: `pnpm --filter @learncard/email-templates test:watch`
+-   **Preview**: `bun --filter @learncard/email-templates run dev` (opens http://localhost:3333)
+-   **Type check**: `bun --filter @learncard/email-templates run typecheck`
+-   **Test**: `bun --filter @learncard/email-templates run test`
+-   **Test (watch)**: `bun --filter @learncard/email-templates run test:watch`
 
 ## Testing Strategy
 
@@ -188,15 +188,18 @@ Both adapters:
 ### Common Issues
 
 1. **Template renders but content is missing**
+
     - Check that `mapTemplateModel()` in the service adapter correctly maps the model fields
     - Verify the data interface in `render.ts` matches what the adapter produces
 
 2. **Brand name shows "LearnCard" for a custom tenant**
+
     - Check `TENANT_EMAIL_BRANDING` in `tenant-registry.ts`
     - Verify the service passes `branding` to the adapter's `send()` method
     - Check `resolveBranding()` is called before rendering
 
 3. **react-email dev server ENOENT errors**
+
     - The dev server scans `src/` recursively — ensure no broken symlinks or references to deleted directories
     - Non-React files (`.ts` without JSX) are fine; only `.tsx` files with default exports show as previews
 

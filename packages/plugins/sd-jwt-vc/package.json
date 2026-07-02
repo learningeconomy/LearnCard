@@ -1,12 +1,13 @@
 {
     "name": "@learncard/sd-jwt-vc-plugin",
-    "version": "0.2.0",
+    "version": "0.2.2",
     "description": "SD-JWT-VC holder + verifier support for LearnCard. Implements RFC 9901 (SD-JWT) and draft-ietf-oauth-sd-jwt-vc.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/sd-jwt-vc-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/sd-jwt-vc-plugin.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",

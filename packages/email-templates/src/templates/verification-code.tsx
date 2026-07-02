@@ -31,39 +31,45 @@ export interface VerificationCodeProps {
     variant: VerificationCodeVariant;
 }
 
-const VARIANT_CONFIG: Record<VerificationCodeVariant, {
-    subject: (brandName: string) => string;
-    heading: (brandName: string) => string;
-    description: (email: string | undefined, brandName: string) => string;
-    expiry: string;
-}> = {
+const VARIANT_CONFIG: Record<
+    VerificationCodeVariant,
+    {
+        subject: (brandName: string) => string;
+        heading: (brandName: string) => string;
+        description: (email: string | undefined, brandName: string) => string;
+        expiry: string;
+    }
+> = {
     login: {
-        subject: (b) => `Your ${b} login code`,
-        heading: (b) => `Your ${b} Login Code`,
-        description: (email, b) => email
-            ? `Here's your secure 6-digit code to log into ${b}`
-            : `Here's your secure 6-digit code to log into ${b}`,
+        subject: b => `Your ${b} login code`,
+        heading: b => `Your ${b} Login Code`,
+        description: (email, b) =>
+            email
+                ? `Here's your secure 6-digit code to log into ${b}`
+                : `Here's your secure 6-digit code to log into ${b}`,
         expiry: 'This code will expire in 5 minutes. If you didn\u2019t request this, you can safely ignore this email.',
     },
     'recovery-email': {
         subject: () => 'Verify your recovery email',
-        heading: (b) => `Your ${b} Verification Code`,
-        description: (email, b) => email
-            ? `Here's your secure 6-digit code to add ${email} as a recovery method for ${b}`
-            : `Here's your secure 6-digit code to add a recovery method for ${b}`,
+        heading: b => `Your ${b} Verification Code`,
+        description: (email, b) =>
+            email
+                ? `Here's your secure 6-digit code to add ${email} as a recovery method for ${b}`
+                : `Here's your secure 6-digit code to add a recovery method for ${b}`,
         expiry: 'This code will expire in 5 minutes. If you didn\u2019t request this, you can safely ignore this email.',
     },
     'embed-verification': {
-        subject: (b) => `Your ${b} verification code`,
-        heading: (b) => `Your ${b} Verification Code`,
-        description: (email) => email
-            ? `Enter this code to verify ${email} and claim your credential:`
-            : 'Enter this code to verify your email address and claim your credential:',
+        subject: b => `Your ${b} verification code`,
+        heading: b => `Your ${b} Verification Code`,
+        description: email =>
+            email
+                ? `Enter this code to verify ${email} and claim your credential:`
+                : 'Enter this code to verify your email address and claim your credential:',
         expiry: 'This code will expire in 10 minutes. If you didn\u2019t request this, you can safely ignore this email.',
     },
     'contact-method': {
-        subject: (b) => `Your ${b} verification code`,
-        heading: (b) => `Your ${b} Verification Code`,
+        subject: b => `Your ${b} verification code`,
+        heading: b => `Your ${b} Verification Code`,
         description: () => 'Enter this code in the app to verify your contact information.',
         expiry: 'This code will expire in 24 hours. If you didn\u2019t request this, you can safely ignore this email.',
     },
@@ -83,19 +89,23 @@ export const VerificationCode: React.FC<VerificationCodeProps> = ({
 
             <Text style={paragraph}>Hello,</Text>
 
-            <Text style={paragraph}>{config.description(verificationEmail, branding.brandName)}</Text>
+            <Text style={paragraph}>
+                {config.description(verificationEmail, branding.brandName)}
+            </Text>
 
             <CodeBlock code={verificationCode} label="Verification code" />
 
             <Text style={muted}>{config.expiry}</Text>
 
             <Text style={paragraph}>
-                {branding.brandName} is your private, digital passport for learning and work.
-                It lets you securely collect and share your verified skills and achievements online.
+                {branding.brandName} is your private, digital passport for learning and work. It
+                lets you securely collect and share your verified skills and achievements online.
             </Text>
 
             <Text style={signOff}>
-                Sincerely,<br />The {branding.brandName} Team
+                Sincerely,
+                <br />
+                The {branding.brandName} Team
             </Text>
         </Layout>
     );
@@ -103,7 +113,7 @@ export const VerificationCode: React.FC<VerificationCodeProps> = ({
 
 export const getVerificationCodeSubject = (
     branding: TenantBranding,
-    variant: VerificationCodeVariant,
+    variant: VerificationCodeVariant
 ): string => VARIANT_CONFIG[variant].subject(branding.brandName);
 
 // ---------------------------------------------------------------------------
@@ -139,7 +149,7 @@ const signOff: React.CSSProperties = {
 };
 
 // ---------------------------------------------------------------------------
-// Preview (used by `pnpm dev` / react-email dev server)
+// Preview (used by `bun run dev` / react-email dev server)
 // ---------------------------------------------------------------------------
 
 export default function Preview() {

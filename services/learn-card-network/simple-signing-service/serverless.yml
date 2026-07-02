@@ -16,12 +16,12 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
-      packager: pnpm
-      plugins: esbuildPlugins.cjs
-      external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
-      sourcemap: external
-      watch:
-        pattern: ['src/**/*.ts', 'dids.ts']
+        packager: bun
+        plugins: esbuildPlugins.cjs
+        external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
+        sourcemap: external
+        watch:
+            pattern: ['src/**/*.ts', 'dids.ts']
 
     domains:
         # References to 'prod' stage
@@ -66,12 +66,12 @@ custom:
         apiType: http
 
 package:
-  patterns: 
-    - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
-    - 'node_modules/@learncard/didkit-plugin-node/*.node'
-    - 'node_modules/@learncard/didkit-plugin-node/package.json'
-    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
+    patterns:
+        - '!node_modules/**'
+        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+        - 'node_modules/@learncard/didkit-plugin-node/*.node'
+        - 'node_modules/@learncard/didkit-plugin-node/package.json'
+        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
 
 provider:
     name: aws

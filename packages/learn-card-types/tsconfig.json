@@ -8,7 +8,7 @@
         "outDir": "dist",
         "strict": true,
         "esModuleInterop": true,
-        "lib": ["es5"],
+        "lib": ["es5", "es2015", "dom"],
         "noLib": false,
         "rootDir": "src",
         "skipLibCheck": true,

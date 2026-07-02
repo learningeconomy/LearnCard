@@ -30,7 +30,10 @@ import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsTe
 import AiInsightsInlineConsentFlowRequest from './AiInsights/AiInsightsInlineConsentFlowRequest';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
-import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
+import {
+    getAllCredentialUrisForCategory,
+    getMinimumTermsForContract,
+} from '../../helpers/contract.helpers';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
@@ -130,16 +133,10 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                     const wallet = await initWallet();
 
                     const updatedTerms = cloneDeep(terms);
-                    await Promise.all(
-                        categoriesWithLiveSync.map(async category => {
-                            const allCategoryCredUris = (
-                                await wallet.index.LearnCloud.get({ category })
-                            ).map(item => item.uri);
-
-                            updatedTerms.read.credentials.categories[category].shared =
-                                allCategoryCredUris;
-                        })
-                    );
+                    for (const category of categoriesWithLiveSync) {
+                        updatedTerms.read.credentials.categories[category].shared =
+                            await getAllCredentialUrisForCategory(wallet, category);
+                    }
 
                     const isUpdated = !isEqual(terms, updatedTerms);
 

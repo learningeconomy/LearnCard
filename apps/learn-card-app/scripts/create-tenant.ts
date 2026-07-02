@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -14,8 +14,8 @@ const log = getLogger();
  *   - Optional theme.json scaffold
  *
  * Usage:
- *   npx tsx scripts/create-tenant.ts
- *   npx tsx scripts/create-tenant.ts --id=mytenant    # skip the ID prompt
+ *   bun scripts/create-tenant.ts
+ *   bun scripts/create-tenant.ts --id=mytenant    # skip the ID prompt
  *
  * Designed for non-technical users — every step has clear prompts and defaults.
  */
@@ -436,16 +436,16 @@ const main = async () => {
     log.info(`     ${dim('• desktop-login-bg.png — Desktop login background')}`);
     log.info('');
     log.info(`  3. ${bold('Validate')} your config:`);
-    log.info(`     ${cyan('npx tsx scripts/validate-tenant-configs.ts')}`);
+    log.info(`     ${cyan('bun scripts/validate-tenant-configs.ts')}`);
     log.info('');
     log.info(`  4. ${bold('Start dev server')} with your tenant:`);
-    log.info(`     ${cyan(`TENANT=${tenantId} pnpm docker-start:tenant`)}`);
+    log.info(`     ${cyan(`TENANT=${tenantId} bun run docker-start:tenant`)}`);
     log.info('');
 
     if (createCustomTheme) {
         log.info(`  5. ${bold('Customize your theme')} colors and styles:`);
         log.info(`     ${dim(`src/theme/schemas/${tenantId}/theme.json`)}`);
-        log.info(`     ${cyan('npx tsx scripts/validate-theme-schemas.ts')}`);
+        log.info(`     ${cyan('bun scripts/validate-theme-schemas.ts')}`);
         log.info('');
     }
 

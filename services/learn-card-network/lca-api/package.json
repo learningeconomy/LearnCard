@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.2.13",
+    "version": "1.2.16",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -11,10 +11,8 @@
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --config serverless-local.yml",
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --config serverless-local.yml",
         "start-p-5000": "PORT=5000 serverless offline --httpPort 5000 --websocketPort 5001 --lambdaPort 5002 --albPort 5003 --config serverless-local.yml",
-        "dev": "nodemon --config nodemon.docker.json",
-        "dev:legacy": "nodemon --watch src -e ts,js --ignore \"**/*.d.ts\" --exec \"pnpm build:docker && node dist/docker-entry.js\"",
-        "dev:docker": "nodemon --watch src --watch ../../../packages/plugins --watch ../../../packages/learn-card-core --watch ../../../packages/learn-card-types --watch ../../../packages/learn-card-helpers -e ts,js --ignore \"../../**/*.d.ts\" --exec \"pnpm exec nx start:docker lca-api-service\"",
-        "start:docker": "pnpm build:docker && node dist/docker-entry.js",
+        "dev": "bun --conditions=development --watch src/docker-entry.ts",
+        "start:docker": "bun --conditions=development src/docker-entry.ts",
         "serverless-deploy": "serverless deploy",
         "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml"
     },
@@ -29,7 +27,6 @@
         "@types/uuid": "^9.0.0",
         "esbuild": "^0.27.1",
         "mongodb-memory-server": "^9.2.0",
-        "nodemon": "^2.0.16",
         "openapi-types": "^12.1.0",
         "serverless": "3.40.0",
         "serverless-certificate-creator": "^1.6.0",
