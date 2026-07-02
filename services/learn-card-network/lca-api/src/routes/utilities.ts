@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 
 import { getChallenges } from '@helpers/challenges.helpers';
 import { getLearnCard, getDidKitEngine } from '@helpers/learnCard.helpers';
@@ -23,7 +24,29 @@ export const utilitiesRouter = t.router({
         .input(z.void())
         .output(z.string())
         .query(async () => {
-            return `Healthy and well! (Version ${packageJson.version})`;
+            // Exercise DIDKit on every health probe: issue a DID auth VP with the
+            // service keypair and verify it in-process. The signed VP is intentionally
+            // NOT returned — an unbound (no challenge/domain) auth VP handed to
+            // anonymous callers would be a free impersonation artifact for any
+            // verifier that skips challenge binding. See /health-check/deep for full
+            // diagnostics.
+            const learnCard = await getLearnCard();
+
+            const vp = await learnCard.invoke.getDidAuthVp();
+            const result = await learnCard.invoke.verifyPresentation(vp);
+
+            const errors = result.errors ?? [];
+
+            if (errors.length > 0) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: `DIDKit health check failed verification: ${errors.join('; ')}`,
+                });
+            }
+
+            return `Healthy and well! (Version ${
+                packageJson.version
+            }) — DIDKit ok (${getDidKitEngine()} engine, DID auth VP issued + verified)`;
         }),
 
     deepHealthCheck: openRoute
