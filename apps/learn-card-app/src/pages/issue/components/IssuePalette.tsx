@@ -12,6 +12,7 @@ import {
 } from './MediaAttachments';
 import { mediaToEvidenceTemplates } from './mediaEvidence';
 import { SkillsSection } from './SkillsSection';
+import { AlignmentsShowcase } from './AlignmentsShowcase';
 import { TypePicker } from './TypePicker';
 import { StartFromExisting } from './StartFromExisting';
 import { ActivityFields } from './ActivityFields';
@@ -133,6 +134,14 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         [template, onChangeTemplate]
     );
 
+    const handleRemoveAlignment = useCallback(
+        (id: string) => {
+            const remaining = (ach?.alignment ?? []).filter(a => a.id !== id);
+            patchAchievement({ alignment: remaining.length > 0 ? remaining : undefined });
+        },
+        [ach, patchAchievement]
+    );
+
     return (
         <div className="space-y-5 animate-fade-in-up">
             <section className={CARD_CLASS}>
@@ -217,6 +226,11 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         resolvedSkills={resolvedSkills}
                         onSelectedSkillsChange={onSelectedSkillsChange}
                         onResolvedSkillsChange={onResolvedSkillsChange}
+                    />
+
+                    <AlignmentsShowcase
+                        alignments={ach?.alignment ?? []}
+                        onRemove={handleRemoveAlignment}
                     />
 
                     <section className={CARD_CLASS}>

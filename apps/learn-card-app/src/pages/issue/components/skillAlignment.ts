@@ -26,6 +26,11 @@ export const buildSkillTargetUrl = (frameworkId: string, skillId: string): strin
         frameworkId
     )}/skills/${encodeURIComponent(skillId)}`;
 
+const SKILL_TARGET_URL_PATTERN = /\/frameworks\/[^/]+\/skills\//;
+
+export const isSkillAlignment = (alignment: AlignmentTemplate): boolean =>
+    alignment.id.includes('::') || SKILL_TARGET_URL_PATTERN.test(alignment.targetUrl?.value ?? '');
+
 export const skillsToAlignmentTemplates = (skills: ResolvedSkill[]): AlignmentTemplate[] =>
     skills.map(skill => ({
         id: `${skill.frameworkId}::${skill.id}`,
@@ -37,3 +42,11 @@ export const skillsToAlignmentTemplates = (skills: ResolvedSkill[]): AlignmentTe
             ? { targetDescription: staticField(skill.targetDescription) }
             : {}),
     }));
+
+export const mergeSkillAlignments = (
+    existing: AlignmentTemplate[] | undefined,
+    resolved: ResolvedSkill[]
+): AlignmentTemplate[] => {
+    const preserved = (existing ?? []).filter(a => !isSkillAlignment(a));
+    return [...preserved, ...skillsToAlignmentTemplates(resolved)];
+};

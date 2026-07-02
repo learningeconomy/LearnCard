@@ -39,7 +39,7 @@ import { applyVariableValues } from './components/variableSubstitution';
 import { attachmentsToEvidence } from './components/mediaEvidence';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
-import { skillsToAlignmentTemplates, type ResolvedSkill } from './components/skillAlignment';
+import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
 
@@ -313,14 +313,17 @@ const IssueCredentialPage: React.FC = () => {
         setResolvedSkills(resolved);
         setTemplate(prev => {
             if (!prev) return prev;
-            const alignment = skillsToAlignmentTemplates(resolved);
+            const next = mergeSkillAlignments(
+                prev.credentialSubject.achievement.alignment,
+                resolved
+            );
             return {
                 ...prev,
                 credentialSubject: {
                     ...prev.credentialSubject,
                     achievement: {
                         ...prev.credentialSubject.achievement,
-                        alignment: alignment.length > 0 ? alignment : undefined,
+                        alignment: next.length > 0 ? next : undefined,
                     },
                 },
             };
