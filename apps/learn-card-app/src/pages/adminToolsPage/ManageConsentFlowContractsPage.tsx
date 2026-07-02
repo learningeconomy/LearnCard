@@ -19,14 +19,17 @@ const ManageConsentFlowContractsPage: React.FC = () => {
     const isServiceProfile = currentLCNUser?.isServiceProfile;
 
     const { data: paginatedContracts, refetch, isLoading: contractsLoading } = useGetContracts();
-    const contracts = paginatedContracts?.records;
+    const contracts = Array.isArray(paginatedContracts)
+        ? paginatedContracts
+        : (paginatedContracts as { records?: ConsentFlowContractDetails[] } | undefined)?.records ??
+          [];
 
     const openNewContractModal = () => {
         newModal(<CreateContractModal onSuccess={() => refetch()} />);
     };
 
     const openViewContractDataModal = (contract: ConsentFlowContractDetails) => {
-        newModal(<ViewContractDataModal contract={contract} />);
+        newModal(<ViewContractDataModal contract={contract} onCreateSuccess={() => refetch()} />);
     };
 
     const openShareContractModal = (contract: ConsentFlowContractDetails) => {

@@ -40,15 +40,15 @@
  * export CE_API_KEY=...
  *
  * # 1. List every published pathway (tab-separated: CTID<TAB>name<TAB>owner).
- * pnpm tsx scripts/build-ctdl-catalog.ts search --take 200 > ctids.tsv
+ * bun scripts/build-ctdl-catalog.ts search --take 200 > ctids.tsv
  *
  * # 2. Edit ctids.tsv, keep only the rows you want.
  *
  * # 3. Pipe CTIDs back in to produce TS entries:
- * cut -f1 ctids.tsv | pnpm tsx scripts/build-ctdl-catalog.ts enrich > entries.ts
+ * cut -f1 ctids.tsv | bun scripts/build-ctdl-catalog.ts enrich > entries.ts
  *
  * # Or skip the review step and do it all in one go:
- * pnpm tsx scripts/build-ctdl-catalog.ts all --take 200 > entries.ts
+ * bun scripts/build-ctdl-catalog.ts all --take 200 > entries.ts
  *
  * # Then paste the contents of entries.ts into CATALOG[] in catalog.ts.
  * ```
@@ -77,8 +77,7 @@
 // ---------------------------------------------------------------------------
 
 const DEFAULT_SEARCH_URL =
-    process.env.CE_SEARCH_URL ??
-    'https://apps.credentialengine.org/assistant/search/ctdl';
+    process.env.CE_SEARCH_URL ?? 'https://apps.credentialengine.org/assistant/search/ctdl';
 
 const DEFAULT_REGISTRY_URL =
     process.env.CE_REGISTRY_URL ?? 'https://credentialengineregistry.org/resources';
@@ -122,9 +121,8 @@ const parseArgs = (argv: string[]): Args => {
         }
     }
 
-    const normalized = (command === 'search' || command === 'enrich' || command === 'all')
-        ? command
-        : 'help';
+    const normalized =
+        command === 'search' || command === 'enrich' || command === 'all' ? command : 'help';
 
     return { command: normalized, take, skip, positional };
 };
@@ -186,7 +184,7 @@ type SearchHit = {
 const search = async (take: number, skip: number): Promise<SearchHit[]> => {
     if (!API_KEY) {
         throw new Error(
-            'CE_API_KEY is not set. Export your CE Registry Assistant key before running `search` / `all`.',
+            'CE_API_KEY is not set. Export your CE Registry Assistant key before running `search` / `all`.'
         );
     }
 
@@ -208,9 +206,7 @@ const search = async (take: number, skip: number): Promise<SearchHit[]> => {
 
     if (!res.ok) {
         const text = await res.text();
-        throw new Error(
-            `CE search failed: ${res.status} ${res.statusText}\n${text.slice(0, 500)}`,
-        );
+        throw new Error(`CE search failed: ${res.status} ${res.statusText}\n${text.slice(0, 500)}`);
     }
 
     const json: unknown = await res.json();
@@ -220,8 +216,8 @@ const search = async (take: number, skip: number): Promise<SearchHit[]> => {
     const records = Array.isArray(json)
         ? json
         : Array.isArray((json as { data?: unknown }).data)
-          ? ((json as { data: unknown[] }).data)
-          : [];
+        ? (json as { data: unknown[] }).data
+        : [];
 
     const hits: SearchHit[] = [];
 
@@ -277,9 +273,7 @@ const fetchEntry = async (ctid: string): Promise<CatalogEntryDraft | null> => {
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
 
     if (!res.ok) {
-        process.stderr.write(
-            `[skip] ${ctid}: HTTP ${res.status} ${res.statusText}\n`,
-        );
+        process.stderr.write(`[skip] ${ctid}: HTTP ${res.status} ${res.statusText}\n`);
         return null;
     }
 
@@ -288,12 +282,12 @@ const fetchEntry = async (ctid: string): Promise<CatalogEntryDraft | null> => {
     // Registry serves one of two envelopes: either the raw resource or
     // a `{ ..., "@graph": [ resource, ... ] }` wrapper. Unwrap.
     const resource = Array.isArray(json['@graph'])
-        ? ((json['@graph'] as unknown[]).find(
+        ? (json['@graph'] as unknown[]).find(
               (n): n is Record<string, unknown> =>
                   !!n &&
                   typeof n === 'object' &&
-                  (n as Record<string, unknown>)['@type'] === 'ceterms:Pathway',
-          ) ?? null)
+                  (n as Record<string, unknown>)['@type'] === 'ceterms:Pathway'
+          ) ?? null
         : json;
 
     if (!resource) {
@@ -306,7 +300,7 @@ const fetchEntry = async (ctid: string): Promise<CatalogEntryDraft | null> => {
 
     if (!name || !description) {
         process.stderr.write(
-            `[skip] ${ctid}: missing name or description (name=${!!name}, desc=${!!description})\n`,
+            `[skip] ${ctid}: missing name or description (name=${!!name}, desc=${!!description})\n`
         );
         return null;
     }
@@ -337,13 +331,9 @@ const fetchEntry = async (ctid: string): Promise<CatalogEntryDraft | null> => {
     return { ctid, name, description, issuer, issuerUrl, image, componentCount };
 };
 
-const fetchOwner = async (
-    ref: string,
-): Promise<{ name: string; url?: string } | null> => {
+const fetchOwner = async (ref: string): Promise<{ name: string; url?: string } | null> => {
     const ownerCtid = extractCtid(ref);
-    const url = ownerCtid
-        ? `${DEFAULT_REGISTRY_URL}/${encodeURIComponent(ownerCtid)}`
-        : ref;
+    const url = ownerCtid ? `${DEFAULT_REGISTRY_URL}/${encodeURIComponent(ownerCtid)}` : ref;
 
     try {
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -352,9 +342,9 @@ const fetchOwner = async (
         const json = (await res.json()) as Record<string, unknown>;
 
         const resource = Array.isArray(json['@graph'])
-            ? ((json['@graph'] as unknown[]).find(
-                  (n): n is Record<string, unknown> => !!n && typeof n === 'object',
-              ) ?? json)
+            ? (json['@graph'] as unknown[]).find(
+                  (n): n is Record<string, unknown> => !!n && typeof n === 'object'
+              ) ?? json
             : json;
 
         const name = pickLangString(resource, ['ceterms:name', 'name']);
@@ -374,10 +364,7 @@ const fetchOwner = async (
 // CTDL field extraction helpers
 // ---------------------------------------------------------------------------
 
-const pickString = (
-    obj: Record<string, unknown>,
-    keys: string[],
-): string | null => {
+const pickString = (obj: Record<string, unknown>, keys: string[]): string | null => {
     for (const key of keys) {
         const value = obj[key];
         if (typeof value === 'string' && value.trim()) return value.trim();
@@ -390,10 +377,7 @@ const pickString = (
  * `{ "en": "value" }` map, or an array of the former. Flatten to a
  * single English-preferred string.
  */
-const pickLangString = (
-    obj: Record<string, unknown>,
-    keys: string[],
-): string | null => {
+const pickLangString = (obj: Record<string, unknown>, keys: string[]): string | null => {
     for (const key of keys) {
         const value = obj[key];
 
@@ -458,7 +442,12 @@ const formatEntry = (e: CatalogEntryDraft): string => {
 
 /** Safe TS string literal — single-quoted, escapes \\ and '. */
 const str = (s: string): string => {
-    return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()}'`;
+    return `'${s
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()}'`;
 };
 
 // ---------------------------------------------------------------------------
@@ -468,7 +457,7 @@ const str = (s: string): string => {
 const mapWithConcurrency = async <T, R>(
     items: T[],
     limit: number,
-    fn: (item: T) => Promise<R>,
+    fn: (item: T) => Promise<R>
 ): Promise<R[]> => {
     const results: R[] = new Array(items.length);
     let nextIndex = 0;
@@ -511,16 +500,14 @@ const runSearch = async (take: number, skip: number): Promise<SearchHit[]> => {
 
 const runEnrich = async (ctids: string[]): Promise<CatalogEntryDraft[]> => {
     const cleaned = Array.from(
-        new Set(
-            ctids
-                .map(extractCtid)
-                .filter((c): c is string => c !== null),
-        ),
+        new Set(ctids.map(extractCtid).filter((c): c is string => c !== null))
     );
 
     if (cleaned.length !== ctids.length) {
         process.stderr.write(
-            `[info] ${ctids.length - cleaned.length} input line(s) did not contain a CTID; skipping.\n`,
+            `[info] ${
+                ctids.length - cleaned.length
+            } input line(s) did not contain a CTID; skipping.\n`
         );
     }
 
@@ -536,7 +523,7 @@ const collectCtidInputs = async (positional: string[]): Promise<string[]> => {
     const piped = await readStdin();
     if (!piped.trim()) {
         throw new Error(
-            'No CTIDs supplied. Pass CTIDs as args, or pipe them on stdin (one per line).',
+            'No CTIDs supplied. Pass CTIDs as args, or pipe them on stdin (one per line).'
         );
     }
 
@@ -570,7 +557,7 @@ const main = async () => {
                 process.stdout.write(`${formatEntry(draft)}\n`);
             }
             process.stderr.write(
-                `[ok] ${drafts.length} entry/entries written (of ${inputs.length} input line(s)).\n`,
+                `[ok] ${drafts.length} entry/entries written (of ${inputs.length} input line(s)).\n`
             );
             break;
         }
@@ -584,7 +571,7 @@ const main = async () => {
                 process.stdout.write(`${formatEntry(draft)}\n`);
             }
             process.stderr.write(
-                `[ok] ${drafts.length} entry/entries written (of ${hits.length} search hits).\n`,
+                `[ok] ${drafts.length} entry/entries written (of ${hits.length} search hits).\n`
             );
             break;
         }

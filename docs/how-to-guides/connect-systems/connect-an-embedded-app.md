@@ -10,17 +10,17 @@ Build apps that run inside LearnCard and issue credentials directly to users. Th
 
 The LearnCard App Store allows third-party applications to be embedded within the LearnCard app. These embedded apps can:
 
-- **Authenticate users** via Single Sign-On (SSO)
-- **Issue credentials** directly to the user's wallet
-- **Request credentials** for verification or gating
-- **Request consent** for data sharing agreements and terms acceptance
+-   **Authenticate users** via Single Sign-On (SSO)
+-   **Issue credentials** directly to the user's wallet
+-   **Request credentials** for verification or gating
+-   **Request consent** for data sharing agreements and terms acceptance
 
 This is ideal for:
 
-- Learning platforms awarding course completion badges
-- Games issuing achievement credentials
-- Assessment tools providing certification
-- Any app that wants to reward users with verifiable credentials
+-   Learning platforms awarding course completion badges
+-   Games issuing achievement credentials
+-   Assessment tools providing certification
+-   Any app that wants to reward users with verifiable credentials
 
 ## Architecture
 
@@ -59,10 +59,10 @@ npm install @learncard/partner-connect
 
 {% endtab %}
 
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
 
 ```bash
-pnpm add @learncard/partner-connect
+bun add @learncard/partner-connect
 ```
 
 {% endtab %}
@@ -111,11 +111,11 @@ That's it! The user will see a claim modal and can accept the credential into th
 
 In the LearnCard Developer Portal, create a new app listing with:
 
-- **Name & Description** - What your app does
-- **Launch URL** - Where your embedded app is hosted
-- **Permissions** - Request `credentials:write` to issue credentials
-- **Age Rating** - Content rating for your app (optional)
-- **Minimum Age** - Minimum user age required to access your app (optional)
+-   **Name & Description** - What your app does
+-   **Launch URL** - Where your embedded app is hosted
+-   **Permissions** - Request `credentials:write` to issue credentials
+-   **Age Rating** - Content rating for your app (optional)
+-   **Minimum Age** - Minimum user age required to access your app (optional)
 
 #### Age Restrictions
 
@@ -133,10 +133,10 @@ Age restrictions are enforced based on the user's date of birth in their profile
 {% hint style="warning" %}
 **Hard vs soft enforcement**
 
-- **`min_age`** is a hard minimum age requirement. If a user's age is known and below `min_age`, the user is blocked from installing the app (including for managed/child profiles).
-- **`age_rating`** is a content rating. For managed/child profiles, installs that would violate the rating will require guardian approval.
-- If a managed/child profile's age is **unknown** (no valid DOB on the profile), the install flow will require the guardian to verify age (e.g., by entering DOB) before continuing.
-  {% endhint %}
+-   **`min_age`** is a hard minimum age requirement. If a user's age is known and below `min_age`, the user is blocked from installing the app (including for managed/child profiles).
+-   **`age_rating`** is a content rating. For managed/child profiles, installs that would violate the rating will require guardian approval.
+-   If a managed/child profile's age is **unknown** (no valid DOB on the profile), the install flow will require the guardian to verify age (e.g., by entering DOB) before continuing.
+    {% endhint %}
 
 {% hint style="info" %}
 **Contract-based listings and managed profiles**
@@ -384,15 +384,15 @@ When `redirect: true` is set and the user grants consent:
 
 The redirect URL will include:
 
-- `did` - The user's DID
-- `vp` - A signed Verifiable Presentation (JWT format)
+-   `did` - The user's DID
+-   `vp` - A signed Verifiable Presentation (JWT format)
 
 **Use Cases:**
 
-- **Terms of Service** - Require users to accept terms before accessing features
-- **Data Sharing Agreements** - Get explicit consent before sharing data with third parties
-- **Privacy Policies** - Track user acknowledgment of privacy policies
-- **OAuth-like Flows** - Use redirect mode for server-side consent verification
+-   **Terms of Service** - Require users to accept terms before accessing features
+-   **Data Sharing Agreements** - Get explicit consent before sharing data with third parties
+-   **Privacy Policies** - Track user acknowledgment of privacy policies
+-   **OAuth-like Flows** - Use redirect mode for server-side consent verification
 
 {% hint style="info" %}
 If the user has already consented to a contract, calling `requestConsent` will return `{ granted: true }` immediately without showing the consent modal again.
@@ -436,10 +436,10 @@ Embedded apps can request comprehensive learner context to power AI-driven exper
 
 ### When to Use Learner Context
 
-- **AI Tutors** - Adapt explanations based on learner's existing skills
-- **Personalized Recommendations** - Suggest content based on credential history
-- **Smart Assessments** - Adjust difficulty based on demonstrated competencies
-- **Learning Pathways** - Build custom paths from existing achievements
+-   **AI Tutors** - Adapt explanations based on learner's existing skills
+-   **Personalized Recommendations** - Suggest content based on credential history
+-   **Smart Assessments** - Adjust difficulty based on demonstrated competencies
+-   **Learning Pathways** - Build custom paths from existing achievements
 
 ### Prerequisites
 
@@ -573,10 +573,10 @@ After using learner context to personalize an AI tutoring experience, you can re
 
 ### When to Record Sessions
 
-- **After AI Tutoring** - Document what was learned during the session
-- **Skill Demonstrations** - Record when the user shows competency
-- **Learning Milestones** - Mark significant learning achievements
-- **Progress Tracking** - Build a history of learning interactions
+-   **After AI Tutoring** - Document what was learned during the session
+-   **Skill Demonstrations** - Record when the user shows competency
+-   **Learning Milestones** - Mark significant learning achievements
+-   **Progress Tracking** - Build a history of learning interactions
 
 ### Session Structure
 
@@ -717,36 +717,36 @@ await tutor.conductSession('How do I learn advanced TypeScript?');
 
 **`title`:**
 
-- Short, scannable headline for the session
-- Reuse across `sessionTitle` if you have nothing fancier
+-   Short, scannable headline for the session
+-   Reuse across `sessionTitle` if you have nothing fancier
 
 **`summary`:**
 
-- One paragraph capturing what happened in the session
-- Written so the user (and the AI) can re-orient at a glance
+-   One paragraph capturing what happened in the session
+-   Written so the user (and the AI) can re-orient at a glance
 
 **`learned` (string array):**
 
-- 3–5 main concepts gained, one per bullet
-- Use clear, concise language
-- Connect to practical applications
+-   3–5 main concepts gained, one per bullet
+-   Use clear, concise language
+-   Connect to practical applications
 
 **`skills` (array of `{ title, description }`):**
 
-- Group related competencies under a category title
-- Description explains what the user can now do
-- Use standard skill taxonomy when possible
+-   Group related competencies under a category title
+-   Description explains what the user can now do
+-   Use standard skill taxonomy when possible
 
 **`nextSteps` (array of `{ title, description, keywords? }`):**
 
-- Recommend specific follow-up activities
-- Vary types (courses, practice, assessments)
-- `keywords` is **optional** — only include it if you actually have taxonomy data; otherwise omit the field entirely
+-   Recommend specific follow-up activities
+-   Vary types (courses, practice, assessments)
+-   `keywords` is **optional** — only include it if you actually have taxonomy data; otherwise omit the field entirely
 
 **`reflections` (array of `{ title, description }`):**
 
-- Capture learner insights and "aha moments"
-- Record self-assessments
+-   Capture learner insights and "aha moments"
+-   Record self-assessments
 
 ### 🎉 Use `isNewTopic` for first-run UX
 
@@ -768,10 +768,10 @@ if (session.isNewTopic) {
 
 For a complete, runnable AI Tutor walkthrough that wires `requestConsent → requestLearnerContext → sendAiSessionCredential → sendNotification` together, see the working example app at [`examples/app-store-apps/4-request-learner-context-app`](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/4-request-learner-context-app). It demonstrates:
 
-- Resolving the consent contract automatically from your App Store listing
-- Caching `requestLearnerContext` (it takes 2–5s in production — cache, render, revalidate)
-- Mapping AI tutor outputs to the real `summaryData` schema
-- Bridging notifications back into the wallet via the `actionPath` + `launchFeature` pattern
+-   Resolving the consent contract automatically from your App Store listing
+-   Caching `requestLearnerContext` (it takes 2–5s in production — cache, render, revalidate)
+-   Mapping AI tutor outputs to the real `summaryData` schema
+-   Bridging notifications back into the wallet via the `actionPath` + `launchFeature` pattern
 
 ## Tracking App State with Counters
 
@@ -779,29 +779,29 @@ Many embedded apps need to remember small bits of per-user state across sessions
 
 ### When to use counters
 
-- **Progress tracking** — lessons completed, quizzes passed, sessions recorded
-- **Streaks** — daily-use streaks, consecutive-correct streaks
-- **Threshold-gated credential issuance** — "issue the badge after 10 sessions"
-- **Lightweight feature flags** — "has this user seen the onboarding tour?" (use `0` / `1`)
+-   **Progress tracking** — lessons completed, quizzes passed, sessions recorded
+-   **Streaks** — daily-use streaks, consecutive-correct streaks
+-   **Threshold-gated credential issuance** — "issue the badge after 10 sessions"
+-   **Lightweight feature flags** — "has this user seen the onboarding tour?" (use `0` / `1`)
 
 ### When **not** to use counters
 
-- **Anything not an integer** — values must be whole numbers. Pre-aggregate fractional state.
-- **High-cardinality keys** — there's a hard cap of **50 distinct keys per (user, app)**. If you'd need a counter per lesson ID, consolidate instead (e.g. one `lessons_completed` counter, plus a separate credential or `sendAiSessionCredential` call to record specifics).
-- **High-frequency writes** — there's a **100 writes/minute per (user, app)** rate limit. Don't increment a counter on every keystroke; debounce or batch on the client and increment once per meaningful event.
-- **Cross-user state** — counters are scoped per-user. There is no shared/global counter.
-- **Sensitive or large data** — counters store integers only.
+-   **Anything not an integer** — values must be whole numbers. Pre-aggregate fractional state.
+-   **High-cardinality keys** — there's a hard cap of **50 distinct keys per (user, app)**. If you'd need a counter per lesson ID, consolidate instead (e.g. one `lessons_completed` counter, plus a separate credential or `sendAiSessionCredential` call to record specifics).
+-   **High-frequency writes** — there's a **100 writes/minute per (user, app)** rate limit. Don't increment a counter on every keystroke; debounce or batch on the client and increment once per meaningful event.
+-   **Cross-user state** — counters are scoped per-user. There is no shared/global counter.
+-   **Sensitive or large data** — counters store integers only.
 
 ### Limits (load-bearing — design around these)
 
-| Limit                       | Value                                            |
-| --------------------------- | ------------------------------------------------ |
-| Distinct keys per user-app  | **50**                                           |
-| Writes per minute per user-app | **100**                                       |
-| Value type                  | Signed integer only                              |
-| Key character set           | `^[a-zA-Z0-9_-]+$` (alphanumeric, `_`, `-`)      |
-| Key length                  | 1–64 characters                                  |
-| Batch read (`getCounters`)  | Up to 50 keys per call                           |
+| Limit                          | Value                                       |
+| ------------------------------ | ------------------------------------------- |
+| Distinct keys per user-app     | **50**                                      |
+| Writes per minute per user-app | **100**                                     |
+| Value type                     | Signed integer only                         |
+| Key character set              | `^[a-zA-Z0-9_-]+$` (alphanumeric, `_`, `-`) |
+| Key length                     | 1–64 characters                             |
+| Batch read (`getCounters`)     | Up to 50 keys per call                      |
 
 ### API
 
@@ -880,13 +880,12 @@ A common pattern is "issue a badge once the user crosses a threshold". Because `
 ```typescript
 async function recordSessionAndMaybeAwardBadge() {
     // Record the session credential first
-    await learnCard.sendAiSessionCredential({ /* ... */ });
+    await learnCard.sendAiSessionCredential({
+        /* ... */
+    });
 
     // Then bump the counter and check the threshold in one call
-    const { previousValue, newValue } = await learnCard.incrementCounter(
-        'sessions_completed',
-        1
-    );
+    const { previousValue, newValue } = await learnCard.incrementCounter('sessions_completed', 1);
 
     // Use the *previous* value to make this idempotent: only issue when
     // we just crossed the threshold, not every call after it.
@@ -967,11 +966,11 @@ try {
 
 ### Best practices
 
-- **Pick stable, well-named keys.** Treat counter keys like database column names — once your app is in production, renaming a key effectively zeroes out everyone's history.
-- **Consolidate aggressively.** Prefer one `lessons_completed` counter over `lesson_1_complete`, `lesson_2_complete`, … (the 50-key cap is unforgiving).
-- **Pair counters with credentials, don't replace them.** Counters are for cheap aggregate state. The actual record of what the user did should still be a credential (`sendCredential`, `sendAiSessionCredential`).
-- **Debounce writes on the client.** If a user can tap a button 30 times in 5 seconds, increment once with `amount: 30` instead of calling 30 times.
-- **Use `incrementCounter`'s return value** rather than read-then-write — it's atomic, so you avoid race conditions and save a round-trip.
+-   **Pick stable, well-named keys.** Treat counter keys like database column names — once your app is in production, renaming a key effectively zeroes out everyone's history.
+-   **Consolidate aggressively.** Prefer one `lessons_completed` counter over `lesson_1_complete`, `lesson_2_complete`, … (the 50-key cap is unforgiving).
+-   **Pair counters with credentials, don't replace them.** Counters are for cheap aggregate state. The actual record of what the user did should still be a credential (`sendCredential`, `sendAiSessionCredential`).
+-   **Debounce writes on the client.** If a user can tap a button 30 times in 5 seconds, increment once with `amount: 30` instead of calling 30 times.
+-   **Use `incrementCounter`'s return value** rather than read-then-write — it's atomic, so you avoid race conditions and save a round-trip.
 
 ## Complete Example
 
@@ -1034,28 +1033,28 @@ Here's a full example of a simple embedded app:
 
 ### 1. Design Meaningful Credentials
 
-- Use clear, descriptive names
-- Include relevant achievement details
-- Add appealing images/icons
-- Set appropriate achievement types (Badge, Certificate, etc.)
+-   Use clear, descriptive names
+-   Include relevant achievement details
+-   Add appealing images/icons
+-   Set appropriate achievement types (Badge, Certificate, etc.)
 
 ### 2. Issue at the Right Moment
 
-- Award credentials immediately after achievement
-- Don't spam users with too many credentials
-- Consider combining small achievements into milestone badges
+-   Award credentials immediately after achievement
+-   Don't spam users with too many credentials
+-   Consider combining small achievements into milestone badges
 
 ### 3. Handle Errors Gracefully
 
-- Always wrap credential issuance in try/catch
-- Provide feedback to users on success/failure
-- Log errors for debugging
+-   Always wrap credential issuance in try/catch
+-   Provide feedback to users on success/failure
+-   Log errors for debugging
 
 ### 4. Test Thoroughly
 
-- Use the App Preview feature in the Developer Portal
-- Test with different user states (logged in, logged out)
-- Verify credentials appear correctly in the wallet
+-   Use the App Preview feature in the Developer Portal
+-   Test with different user states (logged in, logged out)
+-   Verify credentials appear correctly in the wallet
 
 ## Testing Your Integration
 
@@ -1072,7 +1071,7 @@ For local development, use the Developer Portal's **Preview App** feature which 
 
 ## Related Documentation
 
-- [Partner Connect SDK](../../sdks/partner-connect.md) - Full SDK reference
-- [Boost Credentials](../../core-concepts/credentials-and-data/boost-credentials.md) - Understanding boosts
-- [Connect a Website](./connect-a-website.md) - Alternative: server-side issuance via ConsentFlow
-- [Connect a Game](./connect-a-game.md) - Game-specific integration patterns
+-   [Partner Connect SDK](../../sdks/partner-connect.md) - Full SDK reference
+-   [Boost Credentials](../../core-concepts/credentials-and-data/boost-credentials.md) - Understanding boosts
+-   [Connect a Website](./connect-a-website.md) - Alternative: server-side issuance via ConsentFlow
+-   [Connect a Game](./connect-a-game.md) - Game-specific integration patterns

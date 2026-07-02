@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flipped } from 'react-flip-toolkit';
+import { Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 
@@ -13,6 +13,14 @@ import VerifierStateBadgeAndText, {
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 import { BoostAchievementCredential } from '../../types';
 import { KnownDIDRegistryType } from '../../types';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 type VC2FrontFaceInfoProps = {
     credential: VC | BoostAchievementCredential;

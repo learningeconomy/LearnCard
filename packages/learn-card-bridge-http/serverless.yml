@@ -10,7 +10,7 @@ plugins:
 
 custom:
     esbuild:
-        packager: pnpm
+        packager: bun
         plugins: esbuildWasmPlugin.cjs
     warmup:
         default:

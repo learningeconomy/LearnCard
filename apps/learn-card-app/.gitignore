@@ -27,7 +27,7 @@ node_modules
 .idea
 
 npm-debug.log*
-.pnpm-debug.log
+bun-debug.log*
 yarn-debug.log*
 yarn-error.log*
 

@@ -2,9 +2,56 @@
 lib/didkit/target
 lib/ssi/target
 
+scripts/siwa-migration
+reference
+examples/openid4vc-playground
+
 # Dependencies (copied selectively in Dockerfiles)
 node_modules
 **/node_modules
+node_modules/**
+**/node_modules/**
+# Docker Desktop/BuildKit can still traverse package-local Bun workspace
+# symlinks during path-specific COPY instructions unless the workspace
+# node_modules directories are matched explicitly.
+**/node_modules/
+**/node_modules/*
+packages/*/node_modules
+packages/*/node_modules/**
+packages/*/*/node_modules
+packages/*/*/node_modules/**
+packages/*/*/*/node_modules
+packages/*/*/*/node_modules/**
+packages/plugins/learn-cloud/node_modules
+packages/plugins/learn-cloud/node_modules/**
+packages/plugins/linked-claims/node_modules
+packages/plugins/linked-claims/node_modules/**
+packages/plugins/learn-cloud/**
+!packages/plugins/learn-cloud/
+!packages/plugins/learn-cloud/package.json
+!packages/plugins/learn-cloud/project.json
+!packages/plugins/learn-cloud/jest.config.cjs
+!packages/plugins/learn-cloud/tsconfig.json
+!packages/plugins/learn-cloud/scripts/
+!packages/plugins/learn-cloud/scripts/**
+!packages/plugins/learn-cloud/src/
+!packages/plugins/learn-cloud/src/**
+packages/plugins/linked-claims/**
+!packages/plugins/linked-claims/
+!packages/plugins/linked-claims/package.json
+!packages/plugins/linked-claims/project.json
+!packages/plugins/linked-claims/jest.config.cjs
+!packages/plugins/linked-claims/tsconfig.json
+!packages/plugins/linked-claims/scripts/
+!packages/plugins/linked-claims/scripts/**
+!packages/plugins/linked-claims/src/
+!packages/plugins/linked-claims/src/**
+apps/*/node_modules
+apps/*/node_modules/**
+services/*/node_modules
+services/*/node_modules/**
+services/*/*/node_modules
+services/*/*/node_modules/**
 
 # Build outputs
 **/dist

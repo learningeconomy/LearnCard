@@ -1,7 +1,7 @@
 {
     "name": "@learncard/snap-chapi-example",
     "type": "module",
-    "version": "1.1.30",
+    "version": "1.1.33",
     "private": true,
     "scripts": {
         "dev": "astro dev",
@@ -11,7 +11,7 @@
         "astro": "astro"
     },
     "dependencies": {
-        "@astrojs/react": "^5.0.1",
+        "@astrojs/react": "^5.0.7",
         "@astrojs/tailwind": "^6.0.2",
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:*",
@@ -21,15 +21,15 @@
         "@metamask/providers": "^9.0.0",
         "@nanostores/persistent": "^0.7.0",
         "@nanostores/react": "^0.2.0",
-        "astro": "^6.0.6",
+        "astro": "^6.4.8",
         "nanostores": "^0.5.13",
         "react": "^18.0.0",
         "react-dom": "^18.0.0",
         "tailwindcss": "^3.0.24"
     },
     "devDependencies": {
-        "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
-        "@vitejs/plugin-basic-ssl": "^0.1.2",
+        "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+        "@vitejs/plugin-basic-ssl": "^1.0.1",
         "node-stdlib-browser": "^1.2.0",
         "prettier-plugin-astro": "^0.5.4"
     }

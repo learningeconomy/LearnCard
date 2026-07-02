@@ -11,7 +11,7 @@ services:
         ports:
             - '4000:4000'
 
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
 
         depends_on:
             neo4j:
@@ -62,7 +62,7 @@ services:
         ports:
             - '4001:4001'
 
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
 
         depends_on:
             neo4j:

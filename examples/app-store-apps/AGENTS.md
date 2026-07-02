@@ -324,7 +324,7 @@ BOOST_URI=lc:network:network.learncard.com/trpc:boost:...
 
 ```toml
 [build]
-  command = "pnpm build"
+  command = "bun run build"
   publish = "dist"
 
 [[redirects]]
@@ -361,10 +361,10 @@ cp .env.example .env
 # Edit .env with your values
 
 # 2. Install dependencies (from repo root)
-pnpm install
+bun install
 
 # 3. Run the app
-pnpm --filter @learncard/app-store-demo-your-app dev
+bun --filter @learncard/app-store-demo-your-app run dev
 ```
 
 #### Testing SDK Integration
