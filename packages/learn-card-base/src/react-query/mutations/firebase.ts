@@ -11,11 +11,15 @@ export const useSendLoginVerificationCode = () => {
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
 
-    return useMutation<{ success: boolean; message?: string }, Error, { email: string }>({
-        mutationFn: async ({ email }: { email: string }) => {
+    return useMutation<
+        { success: boolean; message?: string },
+        Error,
+        { email: string; locale?: string }
+    >({
+        mutationFn: async ({ email, locale }: { email: string; locale?: string }) => {
             try {
                 const wallet = await initWallet('aaa');
-                const data = await wallet?.invoke?.sendLoginVerificationCode(email);
+                const data = await wallet?.invoke?.sendLoginVerificationCode(email, locale);
 
                 return data;
             } catch (error) {
