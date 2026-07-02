@@ -26,6 +26,12 @@ custom:
         bundle: true
         # minify: true
         external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
+        # didkit-plugin-node ships via the didkitNative Lambda Layer. `exclude` both
+        # marks it esbuild-external AND stops the packager from installing a
+        # binary-less registry copy into the artifact (which would shadow the layer,
+        # since /var/task/node_modules wins over NODE_PATH). 'aws-sdk' is the
+        # serverless-esbuild default and must be preserved when overriding.
+        exclude: ['aws-sdk', '@learncard/didkit-plugin-node']
         sourcemap: external
         target: 'node16'
         watch:
@@ -85,9 +91,26 @@ package:
         - 'node_modules/@learncard/didkit-plugin-node/package.json'
         - 'node_modules/@learncard/didkit-plugin-node/dist/**'
 
+# Ships @learncard/didkit-plugin-node (JS wrapper + linux-x64 napi binary) at
+# /opt/nodejs/node_modules so the native-first DIDKit path in learnCard.helpers.ts
+# resolves in Lambda instead of silently falling back to WASM. Assembled by
+# scripts/prepare-didkit-native-layer.cjs (see the serverless-deploy npm script).
+layers:
+    didkitNative:
+        path: didkit-native-layer
+        name: ${self:service}-${opt:stage, 'dev'}-didkit-native
+        description: Native DIDKit napi addon (@learncard/didkit-plugin-node)
+        compatibleRuntimes:
+            - nodejs20.x
+        compatibleArchitectures:
+            - x86_64
+
 provider:
     name: aws
     runtime: nodejs20.x
+    # Attach the native DIDKit layer to every function in this service.
+    layers:
+        - { Ref: DidkitNativeLambdaLayer }
     memorySize: 4096
     timeout: 29
     stage: ${opt:stage, "dev"}
