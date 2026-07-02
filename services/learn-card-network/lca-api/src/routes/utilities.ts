@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { getChallenges } from '@helpers/challenges.helpers';
+import { getLearnCard } from '@helpers/learnCard.helpers';
 
 import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
 import { setValidChallengesForDid } from '@cache/challenges';
@@ -22,7 +23,13 @@ export const utilitiesRouter = t.router({
         .input(z.void())
         .output(z.string())
         .query(async () => {
-            return `Healthy and well! (Version ${packageJson.version})`;
+            const learnCard = await getLearnCard();
+
+            const vp = await learnCard.invoke.getDidAuthVp();
+
+            return `Healthy and well! (Version ${
+                packageJson.version
+            })\n\nHere's a VP!\n\n${JSON.stringify(vp, null, 2)}`;
         }),
 
     getChallenges: didRoute
