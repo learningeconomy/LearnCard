@@ -89,6 +89,11 @@ jobs:
                   script_stop: true
                   command_timeout: 50m
                   script: |
+                      # appleboy/ssh-action runs a non-interactive shell that does not source
+                      # ~/.bashrc, so bun/bunx are not on PATH and run-tests.sh dies with
+                      # `bunx: command not found` (exit 127). Add bun's default install dir.
+                      export BUN_INSTALL="$HOME/.bun"
+                      export PATH="$BUN_INSTALL/bin:$PATH"
                       cd ~/learncard-e2e-runner
                       git pull origin main
                       ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
