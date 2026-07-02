@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { generateLearnCard } from '@learncard/core';
 import type { LearnCard } from '@learncard/core';
@@ -18,6 +20,19 @@ import type { ExpirationPlugin } from '@learncard/expiration-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { isTest } from './test.helpers';
+
+// The DIDKit WASM is copied next to the compiled handler at build time (see
+// esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
+// require.resolve expects (the package is a hoisted workspace symlink), so prefer the
+// co-located copy and fall back to package resolution for local dev / Docker.
+const DIDKIT_WASM_SPECIFIER = '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm';
+
+const resolveDidkitWasmPath = (): string => {
+    const colocated = join(__dirname, 'didkit_wasm_bg.wasm');
+    if (existsSync(colocated)) return colocated;
+
+    return require.resolve(DIDKIT_WASM_SPECIFIER);
+};
 
 // Try native plugin first, fall back to WASM
 let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
@@ -43,9 +58,7 @@ const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
         if (process.env.SKIP_DIDKIT_NAPI) {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
             return await getWasmPlugin(wasmBuffer);
         }
 
@@ -56,9 +69,7 @@ const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
         } catch {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
             return await getWasmPlugin(wasmBuffer);
         }
     })();
