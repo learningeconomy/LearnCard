@@ -21,9 +21,7 @@ const fillName = (page: Page, name: string) => page.getByPlaceholder(NAME_PLACEH
 // Recipient-tab labels are viewport-gated (full text on desktop, short text on
 // mobile), so every tab selector tolerates both forms.
 const addPersonRecipient = async (page: Page, profileId: string) => {
-    await page
-        .getByRole('button', { name: /specific people|^people$/i })
-        .click({ timeout: 30_000 });
+    await page.getByRole('button', { name: /specific people/i }).click({ timeout: 30_000 });
     const search = page.getByPlaceholder('Search people...');
     await expect(search).toBeVisible({ timeout: 30_000 });
     await search.fill(profileId);
@@ -52,7 +50,8 @@ test.describe('Issue Credential Page (/issue)', () => {
             timeout: 30_000,
         });
         await expect(issueButton(page)).toBeDisabled();
-        await expect(page.getByText('Pick a type to begin')).toBeVisible();
+        // The hint renders twice (desktop + mobile variants toggled by CSS).
+        await expect(page.getByText('Pick a type to begin').first()).toBeVisible();
     });
 
     test('selecting a type unfolds the form and enables issuing only after a name', async ({
@@ -61,7 +60,7 @@ test.describe('Issue Credential Page (/issue)', () => {
         await selectBadgeType(page);
 
         await expect(issueButton(page)).toBeDisabled();
-        await expect(page.getByText('Add a name to continue')).toBeVisible();
+        await expect(page.getByText('Add a name to continue').first()).toBeVisible();
 
         await fillName(page, 'E2E Badge');
         await expect(issueButton(page)).toBeEnabled();
@@ -70,14 +69,10 @@ test.describe('Issue Credential Page (/issue)', () => {
     test('recipient mode tabs switch the recipient controls', async ({ page }) => {
         await selectBadgeType(page);
 
-        await page
-            .getByRole('button', { name: /anyone with a link|^link$/i })
-            .click({ timeout: 30_000 });
+        await page.getByRole('button', { name: /anyone with a link/i }).click({ timeout: 30_000 });
         await expect(page.getByText(/create a shareable link when you issue/i)).toBeVisible();
 
-        await page
-            .getByRole('button', { name: /specific people|^people$/i })
-            .click({ timeout: 30_000 });
+        await page.getByRole('button', { name: /specific people/i }).click({ timeout: 30_000 });
         await expect(page.getByPlaceholder('Search people...')).toBeVisible();
     });
 
@@ -108,7 +103,9 @@ test.describe('Issue Credential Page (/issue)', () => {
         // Self-issued credentials route to their category page (Badge → /socialBadges),
         // falling back to /wallet; either confirms we left the success screen.
         await page.getByRole('button', { name: /view in wallet/i }).click();
-        await page.waitForURL(/\/(socialBadges|wallet)/, { timeout: 30_000 });
+        // "View in Wallet" is an SPA history.push (no load event), so assert we
+        // leave the success route rather than waiting for navigation load.
+        await expect(page).not.toHaveURL(/\/issue/, { timeout: 30_000 });
     });
 
     test('issues to a specific person and shows the Sent screen', async ({ page, browser }) => {
@@ -141,9 +138,7 @@ test.describe('Issue Credential Page (/issue)', () => {
         await selectBadgeType(page);
         await fillName(page, 'E2E Link Badge');
 
-        await page
-            .getByRole('button', { name: /anyone with a link|^link$/i })
-            .click({ timeout: 30_000 });
+        await page.getByRole('button', { name: /anyone with a link/i }).click({ timeout: 30_000 });
 
         const button = issueButton(page);
         await expect(button).toBeEnabled();

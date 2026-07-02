@@ -23,7 +23,7 @@ type Handler = (input: unknown) => unknown | typeof ABORT;
 /**
  * Minimal tRPC mock for Playwright. Both brain-service and learn-cloud speak
  * tRPC v11 over httpBatchLink at `/trpc` with an IDENTITY output transformer,
- * so responses are plain JSON: a batch of ops keyed by index, each shaped
+ * so a batch response is a plain JSON array positioned by op index, each shaped
  * `{ result: { data } }`. Procedure names arrive comma-joined in the URL path
  * (`/trpc/proc.a,proc.b`); inputs (unused here) arrive in the POST body.
  */
@@ -53,12 +53,12 @@ export const createTrpcMock = (page: Page) => {
                 body = {};
             }
 
-            const payload: Record<string, { result: { data: unknown } }> = {};
+            const payload: Array<{ result: { data: unknown } }> = [];
             for (let i = 0; i < procedures.length; i++) {
                 const handler = handlers.get(procedures[i])!;
                 const out = handler(body[String(i)]?.input);
                 if (out === ABORT) return route.abort('failed');
-                payload[String(i)] = { result: { data: out } };
+                payload.push({ result: { data: out } });
             }
 
             await route.fulfill({

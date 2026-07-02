@@ -9,7 +9,15 @@ import base from './playwright.config';
  */
 const config: PlaywrightTestConfig = {
     ...base,
-    grep: /@mocked/,
+    // Only load the mocked specs. Collecting the full suite would pull heavy
+    // app source (e.g. learn-card-base → @ionic/react) that breaks under the
+    // test loader and isn't needed for this backend-free tier.
+    testMatch: /\.mocked\.spec\.ts$/,
+    // Clear base's grepInvert (which excludes @mocked) — this tier RUNS them.
+    grepInvert: undefined,
+    // The mocked specs self-authenticate via the HAR baseline; base's globalSetup
+    // does a real demo email login against the backend, which this tier avoids.
+    globalSetup: undefined,
     retries: 0,
     use: {
         ...base.use,

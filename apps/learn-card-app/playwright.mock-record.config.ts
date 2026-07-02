@@ -9,6 +9,9 @@ import base from './playwright.config';
  */
 const config: PlaywrightTestConfig = {
     ...base,
+    // Only load the mocked specs (see playwright.mock.config.ts) — collecting
+    // the full suite pulls app source that breaks under the test loader.
+    testMatch: /\.mocked\.spec\.ts$/,
     grep: /@mocked/,
     grepInvert: undefined,
     retries: 0,

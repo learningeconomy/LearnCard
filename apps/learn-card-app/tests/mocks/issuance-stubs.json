@@ -1,0 +1,65 @@
+{
+    "boost.createBoost": "lc:network:localhost%3A4000/trpc:boost:d4bcda5c-f32c-4b2f-984b-aa1e40de9790",
+    "boost.getBoost": {
+        "name": "Mocked Snapshot Badge",
+        "category": "Achievement",
+        "status": "LIVE",
+        "defaultPermissions": {
+            "role": "empty",
+            "canView": true,
+            "canEdit": false,
+            "canIssue": false,
+            "canRevoke": false,
+            "canManagePermissions": false,
+            "canIssueChildren": "",
+            "canCreateChildren": "",
+            "canEditChildren": "",
+            "canRevokeChildren": "",
+            "canManageChildrenPermissions": "",
+            "canManageChildrenProfiles": false,
+            "canViewAnalytics": false
+        },
+        "uri": "lc:network:localhost%3A4000/trpc:boost:d4bcda5c-f32c-4b2f-984b-aa1e40de9790",
+        "boost": {
+            "@context": [
+                "https://www.w3.org/ns/credentials/v2",
+                "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+            ],
+            "type": ["VerifiableCredential", "OpenBadgeCredential"],
+            "issuer": "did:web:localhost%3A4000:users:e2e-test-user-1",
+            "credentialSubject": {
+                "id": "did:example:123",
+                "achievement": {
+                    "achievementType": "Badge",
+                    "criteria": {
+                        "narrative": ""
+                    },
+                    "description": "",
+                    "name": "Mocked Snapshot Badge",
+                    "type": ["Achievement"]
+                },
+                "type": ["AchievementSubject"]
+            },
+            "name": "Mocked Snapshot Badge",
+            "validFrom": "2026-07-02T19:07:25.563Z"
+        }
+    },
+    "boost.allocateCredentialStatus": [
+        {
+            "id": "http://localhost:4000/status-lists/54117ecb-c611-4d37-8abc-9d7ab7b5d7d9#5",
+            "type": "BitstringStatusListEntry",
+            "statusPurpose": "revocation",
+            "statusListIndex": "5",
+            "statusListCredential": "http://localhost:4000/status-lists/54117ecb-c611-4d37-8abc-9d7ab7b5d7d9"
+        }
+    ],
+    "boost.send": {
+        "type": "boost",
+        "credentialUri": "lc:network:localhost%3A4000/trpc:credential:50a567ac-38e7-47cb-9810-4065470eb4ae",
+        "uri": "lc:network:localhost%3A4000/trpc:boost:d4bcda5c-f32c-4b2f-984b-aa1e40de9790",
+        "activityId": "bc7db868-9809-4a19-a358-e9f5e9d6cdbc"
+    },
+    "credential.acceptCredential": true,
+    "storage.store": "lc:cloud:localhost%3A4100/trpc:credential:6a46b6ee8a0a13798583f9cf",
+    "index.add": true
+}

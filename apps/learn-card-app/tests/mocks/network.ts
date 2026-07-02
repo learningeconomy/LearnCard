@@ -1,8 +1,25 @@
 import type { Page } from '@playwright/test';
+import fs from 'fs';
 import path from 'path';
 import { createTrpcMock, type TrpcMock } from './trpc';
 
-const HAR_PATH = path.resolve(__dirname, 'har/issue.har');
+// Faithful recorded responses for the issuance mutations (captured from the HAR).
+// tRPC batches these mutations as timing-dependent, single-proc requests, so their
+// batch URLs don't reliably match on HAR replay — serving them by procedure name
+// (batch-agnostic) is deterministic. Reads/boot still replay from the HAR.
+const ISSUANCE_STUBS = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, 'issuance-stubs.json'), 'utf8')
+) as Record<string, unknown>;
+
+const registerIssuanceStubs = (mock: TrpcMock): void => {
+    for (const [procedure, data] of Object.entries(ISSUANCE_STUBS)) {
+        mock.on(procedure, () => data);
+    }
+};
+
+// A .zip HAR is a single self-contained artifact (manifest + response bodies).
+// A plain .har path would instead scatter each body into a hash-named file.
+const HAR_PATH = path.resolve(__dirname, 'har/issue.har.zip');
 
 // Set PWHAR=update and run against the real docker stack to (re)record the HAR.
 const RECORDING = process.env.PWHAR === 'update';
@@ -31,7 +48,10 @@ export const installNetwork = async (page: Page): Promise<TrpcMock> => {
     });
 
     const trpc = createTrpcMock(page);
-    if (!RECORDING) await trpc.install();
+    if (!RECORDING) {
+        registerIssuanceStubs(trpc);
+        await trpc.install();
+    }
     return trpc;
 };
 
