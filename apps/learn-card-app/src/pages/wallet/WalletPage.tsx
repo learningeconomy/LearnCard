@@ -11,7 +11,6 @@ import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import {
     useModal,
     ModalTypes,
-    useGetCredentialList,
     CredentialCategoryEnum,
     newCredsStore,
     lazyWithRetry,
@@ -31,6 +30,8 @@ import { IonPage, IonContent, IonRow, IonCol, IonModal } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import WalletPageItemWrapper from './WalletPageItemWrapper';
+import { filterPassportCategories } from './passportCategories';
+import PassportActivityFeed from './activity-feed/PassportActivityFeed';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -56,7 +57,7 @@ const WalletPage: React.FC = () => {
 
     const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
-    const categories = theme.categories;
+    const categories = filterPassportCategories(theme.categories ?? []);
 
     const passportBgColor = colors?.defaults?.passportBgColor;
     const passportTextColor = colors?.defaults?.passportTextColor ?? 'text-grayscale-900';
@@ -67,22 +68,12 @@ const WalletPage: React.FC = () => {
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
-    const { data: records } = useGetCredentialList(CredentialCategoryEnum.family);
-
-    const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
-    const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
-    const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
-    const showAiInsights = flags?.showAiInsights;
-    const hideAiPathways = flags?.hideAiPathways;
     const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
     const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
     const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
+    const showActivityFeed = Boolean(flags?.enablePassportActivityFeed);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
-    const placeholderCategories = [
-        CredentialCategoryEnum.aiPathway,
-        CredentialCategoryEnum.aiInsight,
-    ];
 
     useEffect(() => {
         prefetchRoutes({ aiEnabled: isAiEnabled });
@@ -161,34 +152,14 @@ const WalletPage: React.FC = () => {
         history.push(path);
     };
 
-    const renderWalletList = categories?.map(category => {
-        const { categoryId: categoryType } = category;
-
-        if (categoryType === CredentialCategoryEnum.family && !canCreateFamilies) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.resume) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.aiInsight && !showAiInsights) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.aiPathway && hideAiPathways) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        return (
-            <GenericErrorBoundary key={categoryType}>
-                <WalletPageItemWrapper
-                    handleClickSquare={handleClickSquare}
-                    walletPageItem={category}
-                />
-            </GenericErrorBoundary>
-        );
-    });
+    const renderWalletList = categories?.map(category => (
+        <GenericErrorBoundary key={category.categoryId}>
+            <WalletPageItemWrapper
+                handleClickSquare={handleClickSquare}
+                walletPageItem={category}
+            />
+        </GenericErrorBoundary>
+    ));
 
     const isGrid = viewMode === PassportPageViewMode.grid;
     const isList = viewMode === PassportPageViewMode.list;
@@ -306,6 +277,7 @@ const WalletPage: React.FC = () => {
                                     {renderWalletList}
                                 </IonCol>
                             </IonRow>
+                            {showActivityFeed && <PassportActivityFeed />}
                         </div>
                     </div>
                 </IonContent>
