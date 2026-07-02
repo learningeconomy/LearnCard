@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -9,24 +9,24 @@ const log = getLogger();
  * A single entry point for all common dev tasks. Discovers tenants
  * and themes automatically, presents clear options, and runs the
  * right commands. Designed so a developer who just pulled the repo
- * can type `pnpm lc` and be productive immediately.
+ * can type `bun run lc` and be productive immediately.
  *
  * Usage:
- *   pnpm lc                    # interactive menu
- *   pnpm lc help                # cheat sheet of common commands
+ *   bun run lc                    # interactive menu
+ *   bun run lc help                # cheat sheet of common commands
  *
  * ⚡ Golden paths:
- *   pnpm lc dev vetpass alpha       # web dev server (prompts for run mode)
- *   pnpm lc dev vetpass alpha app   # app only — skip the mode menu
- *   pnpm lc dev vetpass alpha full  # full stack — skip the mode menu
- *   pnpm lc sync vetpass alpha      # cap sync + tenant config patching
- *   pnpm lc open vetpass ios        # sync tenant + open Xcode / Android Studio
+ *   bun run lc dev vetpass alpha       # web dev server (prompts for run mode)
+ *   bun run lc dev vetpass alpha app   # app only — skip the mode menu
+ *   bun run lc dev vetpass alpha full  # full stack — skip the mode menu
+ *   bun run lc sync vetpass alpha      # cap sync + tenant config patching
+ *   bun run lc open vetpass ios        # sync tenant + open Xcode / Android Studio
  *
  * Other shortcuts:
- *   pnpm lc start               # Vite only (no Docker)
- *   pnpm lc validate            # run all validators
- *   pnpm lc resolve vetpass     # print final merged config
- *   pnpm lc native build vetpass ios beta  # sync + fastlane build
+ *   bun run lc start               # Vite only (no Docker)
+ *   bun run lc validate            # run all validators
+ *   bun run lc resolve vetpass     # print final merged config
+ *   bun run lc native build vetpass ios beta  # sync + fastlane build
  */
 
 import { createInterface } from 'readline';
@@ -164,9 +164,9 @@ const runCommand = (cmd: string, label: string, shortcut?: string, cwd?: string)
 
 const launchCredentialViewer = () => {
     runCommand(
-        'pnpm nx dev credential-viewer',
+        'bunx nx dev credential-viewer',
         'Launching Credential Viewer',
-        'pnpm lc viewer',
+        'bun run lc viewer',
         MONOREPO_ROOT
     );
 };
@@ -183,7 +183,7 @@ const seedAppStoreListing = async () => {
     log.info('');
     log.info(bold('🌱 Seed App Store Listing'));
     log.info(dim('   Creates a dev partner app, profile, and listing in your local DB.'));
-    log.info(dim('   Requires Neo4j + Redis + MongoDB running (e.g. pnpm lc dev ... full).'));
+    log.info(dim('   Requires Neo4j + Redis + MongoDB running (e.g. bun run lc dev ... full).'));
     log.info('');
     log.info(dim('   Press Enter on any field to accept the default.'));
     log.info('');
@@ -231,12 +231,12 @@ const seedAppStoreListing = async () => {
     }
 
     const flagStr = flagParts.join(' ');
-    const cmd = `npx tsx scripts/seed-dev-app.ts${flagStr ? ` ${flagStr}` : ''}`;
+    const cmd = `bun scripts/seed-dev-app.ts${flagStr ? ` ${flagStr}` : ''}`;
 
     runCommand(
         cmd,
         'Seeding app store listing into local database',
-        `pnpm lc seed app${flagStr ? ` ${flagStr}` : ''}`,
+        `bun run lc seed app${flagStr ? ` ${flagStr}` : ''}`,
         BRAIN_SERVICE_ROOT
     );
 };
@@ -277,12 +277,12 @@ const seedPathwayDemoBundle = async () => {
     if (installFor) flagParts.push(`--install-for ${installFor}`);
 
     const flagStr = flagParts.join(' ');
-    const cmd = `npx tsx scripts/seed-dev-app.ts ${flagStr}`;
+    const cmd = `bun scripts/seed-dev-app.ts ${flagStr}`;
 
     runCommand(
         cmd,
         'Seeding Pathways demo bundle into local database',
-        `pnpm lc seed pathway-demo${ownerProfileId ? ` --profile ${ownerProfileId}` : ''}`,
+        `bun run lc seed pathway-demo${ownerProfileId ? ` --profile ${ownerProfileId}` : ''}`,
         BRAIN_SERVICE_ROOT
     );
 };
@@ -453,7 +453,7 @@ const startDev = async (
         log.info('');
         log.info(
             `  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim(
-                '(pnpm dev)'
+                '(bun run dev)'
             )}`
         );
         log.info(
@@ -463,7 +463,7 @@ const startDev = async (
         );
         log.info(
             `  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim(
-                '(pnpm dev:services)'
+                '(bun run dev:services)'
             )}`
         );
         log.info('');
@@ -496,9 +496,9 @@ const startDev = async (
     switch (devMode) {
         case 'app':
             runCommand(
-                `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
+                `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
                 `Starting ${displayName}${stageLabel} — app only`,
-                `pnpm lc dev ${tenantId}${stageArg} app`
+                `bun run lc dev ${tenantId}${stageArg} app`
             );
             break;
 
@@ -506,7 +506,7 @@ const startDev = async (
             runCommand(
                 `${dockerUidEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
                 `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
-                `pnpm lc dev ${tenantId}${stageArg} services${fastArg}`
+                `bun run lc dev ${tenantId}${stageArg} services${fastArg}`
             );
             break;
 
@@ -517,7 +517,7 @@ const startDev = async (
                 `Starting ${displayName}${stageLabel} — full stack${
                     noBuild ? ' (skipping rebuild)' : ''
                 }`,
-                `pnpm lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}${fastArg}`
+                `bun run lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}${fastArg}`
             );
             break;
     }
@@ -556,17 +556,17 @@ const pickTenantAndPrepare = async () => {
     const stageArg = stageId === 'local' ? '' : ` ${stageId}`;
 
     runCommand(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         `Preparing config for ${getTenantDisplayName(tenantId)} (${tenantId}, ${stageId})`,
-        `pnpm lc switch ${tenantId}${stageArg}`
+        `bun run lc switch ${tenantId}${stageArg}`
     );
 };
 
 const runValidators = () => {
     runCommand(
-        'npx tsx scripts/validate-tenant-configs.ts && npx tsx scripts/validate-theme-schemas.ts',
+        'bun scripts/validate-tenant-configs.ts && bun scripts/validate-theme-schemas.ts',
         'Validating all tenant configs + theme schemas',
-        'pnpm lc validate'
+        'bun run lc validate'
     );
 };
 
@@ -727,8 +727,8 @@ const generateAssets = async () => {
     );
 
     // Build command
-    let cmd = `npx tsx scripts/generate-tenant-assets.ts ${tenantId} ${JSON.stringify(logoPath)}`;
-    let shortcut = `pnpm lc generate ${tenantId} ${JSON.stringify(logoPath)}`;
+    let cmd = `bun scripts/generate-tenant-assets.ts ${tenantId} ${JSON.stringify(logoPath)}`;
+    let shortcut = `bun run lc generate ${tenantId} ${JSON.stringify(logoPath)}`;
 
     cmd += ` --bg "${bgHex}"`;
     shortcut += ` --bg "${bgHex}"`;
@@ -991,7 +991,7 @@ const unpatchCapConfigSource = (): void => {
  *
  * The platform JSONs are gitignored and regenerated on the next
  * `prepare-native-config.ts` run, so no manual cleanup is needed —
- * the next normal `pnpm lc` invocation lands us back on the canonical
+ * the next normal `bun run lc` invocation lands us back on the canonical
  * tenant config.
  */
 const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
@@ -1025,7 +1025,7 @@ const patchPlatformJsonsForLiveReload = (serverUrl: string): void => {
 
 /**
  * Set Vite env vars that differ between production and non-production native builds.
- * In dev mode (`pnpm lc dev`), `import.meta.env.DEV` is true so the debug widget
+ * In dev mode (`bun run lc dev`), `import.meta.env.DEV` is true so the debug widget
  * shows automatically. But `vite build` always produces a production bundle where
  * `DEV` is false, so we must explicitly enable the widget via env var for non-prod stages.
  */
@@ -1066,7 +1066,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
 
     // 1. Populate public/ with tenant config + assets (so vite build picks them up)
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Preparing tenant config (public/)'
     );
 
@@ -1075,18 +1075,20 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
     execBlocking('npx vite build', 'Building web app');
 
     // 3. Copy fresh build/ into native projects
-    execBlocking('npx cap sync', 'Running Capacitor sync');
+    execBlocking('bunx cap sync', 'Running Capacitor sync');
 
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
 
     log.info('');
     log.info(green('✅ Native sync complete.'));
     log.info(
-        dim('   Run `pnpm lc native open ios` or `pnpm lc native open android` to open the IDE.')
+        dim(
+            '   Run `bun run lc native open ios` or `bun run lc native open android` to open the IDE.'
+        )
     );
     log.info('');
 
@@ -1112,7 +1114,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
 
         // 1. Populate public/ with tenant config + assets
         execBlocking(
-            `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+            `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Preparing tenant config (public/)'
         );
 
@@ -1121,11 +1123,11 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
         execBlocking('npx vite build', 'Building web app');
 
         // 3. Copy fresh build/ into native projects
-        execBlocking('npx cap sync', 'Running Capacitor sync');
+        execBlocking('bunx cap sync', 'Running Capacitor sync');
 
         // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
         execBlocking(
-            `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+            `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
             'Patching native projects with tenant config'
         );
     }
@@ -1134,12 +1136,12 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
 
     const label = platform === 'ios' ? 'Opening Xcode' : 'Opening Android Studio';
     const hint = tenantId
-        ? `pnpm lc native open ${platform} ${tenantId}${
+        ? `bun run lc native open ${platform} ${tenantId}${
               stageId && stageId !== 'local' ? ` ${stageId}` : ''
           }`
-        : `pnpm lc native open ${platform}`;
+        : `bun run lc native open ${platform}`;
 
-    runCommand(`npx cap open ${platform}`, label, hint);
+    runCommand(`bunx cap open ${platform}`, label, hint);
 };
 
 const nativeRun = async (tenantId?: string, platform?: Platform) => {
@@ -1159,7 +1161,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
 
     // 1. Populate public/ with tenant config + assets
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Preparing tenant config (public/)'
     );
 
@@ -1168,11 +1170,11 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     execBlocking('npx vite build', 'Building web app');
 
     // 3. Copy fresh build/ into native projects
-    execBlocking('npx cap sync', 'Running Capacitor sync');
+    execBlocking('bunx cap sync', 'Running Capacitor sync');
 
     // 4. Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
         'Patching native projects with tenant config'
     );
 
@@ -1181,9 +1183,9 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
     rl.close();
 
     runCommand(
-        `npx cap run ${platform}${runFlag}`,
+        `bunx cap run ${platform}${runFlag}`,
         `Running on ${platform}`,
-        `pnpm lc native run ${tenantId} ${platform}`
+        `bun run lc native run ${tenantId} ${platform}`
     );
 };
 
@@ -1221,7 +1223,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     patchCapConfigSource(serverUrl);
 
     // Step 2: Cap sync (reads from the patched TS source → generates platform JSONs with server.url)
-    execBlocking('npx cap sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
+    execBlocking('bunx cap sync', 'Step 2/6 — Capacitor sync (with live-reload URL)');
 
     // Step 3: Restore the original capacitor.config.ts so git stays clean
     log.info('');
@@ -1233,7 +1235,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     // which drops the live-reload `server` block and restores Capgo
     // `autoUpdate: true`. Step 5 below re-applies both directly.
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage local`,
+        `bun scripts/prepare-native-config.ts ${tenantId} --stage local`,
         'Step 4/6 — Patching native projects with tenant config'
     );
 
@@ -1260,7 +1262,7 @@ const nativeDev = async (tenantId?: string, platform?: Platform) => {
     rl.close();
 
     // Open the native IDE in background, then start vite in foreground
-    const openCmd = platform === 'ios' ? 'npx cap open ios' : 'npx cap open android';
+    const openCmd = platform === 'ios' ? 'bunx cap open ios' : 'bunx cap open android';
 
     const child = spawn('sh', ['-c', `${openCmd} & vite --host --port ${vitePort}`], {
         cwd: APP_ROOT,
@@ -1368,7 +1370,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
 
     // Step 1: Populate public/ with tenant config + assets
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
+        `bun scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
         `Preparing tenant config (${stage})`
     );
 
@@ -1377,11 +1379,11 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     execBlocking('npx vite build', 'Building web app');
 
     // Step 3: Cap sync (copies fresh build/ into native projects)
-    execBlocking('npx cap sync', 'Running Capacitor sync');
+    execBlocking('bunx cap sync', 'Running Capacitor sync');
 
     // Step 4: Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
     execBlocking(
-        `npx tsx scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
+        `bun scripts/prepare-native-config.ts ${tenantId} --stage ${stage}`,
         `Patching native projects with tenant config (${stage})`
     );
 
@@ -1419,7 +1421,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     log.info('');
 
     const laneLabel = lane === 'upload_to_appetize' ? 'appetize' : lane;
-    const shortcut = `pnpm lc native build ${tenantId} ${platform} ${laneLabel}`;
+    const shortcut = `bun run lc native build ${tenantId} ${platform} ${laneLabel}`;
 
     log.info(green(`▶ Running: fastlane ${platform} ${lane}`));
     log.info(dim(`  $ cd tools/fastlane && bundle exec fastlane ${platform} ${lane}`));
@@ -1469,7 +1471,7 @@ const nativeMenu = async () => {
     log.info('');
     log.info(
         dim(
-            '  Or run directly: pnpm lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'
+            '  Or run directly: bun run lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'
         )
     );
     log.info('');
@@ -1522,7 +1524,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
 
     switch (subcommand) {
         case 'dev': {
-            // pnpm lc native dev [tenant] [ios|android]
+            // bun run lc native dev [tenant] [ios|android]
             const platform = asPlatform(arg2) ?? asPlatform(arg1);
             const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
 
@@ -1531,7 +1533,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
         }
 
         case 'sync': {
-            // pnpm lc native sync [tenant] [stage]
+            // bun run lc native sync [tenant] [stage]
             const allArgs = [arg1, arg2];
 
             const stage = allArgs.reduce<string | undefined>(
@@ -1546,7 +1548,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
         }
 
         case 'open': {
-            // pnpm lc native open [ios|android] [tenant] [stage]
+            // bun run lc native open [ios|android] [tenant] [stage]
             const arg3 = args[3];
             const allArgs = [arg1, arg2, arg3];
 
@@ -1567,7 +1569,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
         }
 
         case 'run': {
-            // pnpm lc native run [tenant] [ios|android]
+            // bun run lc native run [tenant] [ios|android]
             const platform = asPlatform(arg2) ?? asPlatform(arg1);
             const tenant = arg1 && !asPlatform(arg1) ? arg1 : undefined;
 
@@ -1576,7 +1578,7 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
         }
 
         case 'build': {
-            // pnpm lc native build [tenant] [ios|android] [beta|release|appetize]
+            // bun run lc native build [tenant] [ios|android] [beta|release|appetize]
             const arg3 = args[3];
 
             // Parse flexible arg order: tenant, platform, and lane can appear in any position
@@ -1621,7 +1623,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
 
         case 'editor':
-            runCommand('npx tsx scripts/config-editor.ts', 'Config editor');
+            runCommand('bun scripts/config-editor.ts', 'Config editor');
             return true;
 
         case 'switch': {
@@ -1630,14 +1632,14 @@ const handleShortcuts = async (): Promise<boolean> => {
             const switchStageFlag = switchStage === 'production' ? '' : ` --stage ${switchStage}`;
 
             runCommand(
-                `npx tsx scripts/prepare-native-config.ts ${switchTenant}${switchStageFlag}`,
+                `bun scripts/prepare-native-config.ts ${switchTenant}${switchStageFlag}`,
                 `Preparing config for ${switchTenant} (${switchStage})`
             );
             return true;
         }
 
         case 'dev': {
-            // pnpm lc dev [tenant] [stage] [full|app|services] [fast|no-build]
+            // bun run lc dev [tenant] [stage] [full|app|services] [fast|no-build]
             const devAllArgs = [arg, arg2, args[3], args[4]];
 
             const devModeArg = devAllArgs.reduce<DevMode | undefined>(
@@ -1666,7 +1668,7 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'sync': {
-            // pnpm lc sync [tenant] [stage]  — top-level alias for native sync
+            // bun run lc sync [tenant] [stage]  — top-level alias for native sync
             const syncAllArgs = [arg, arg2];
 
             const syncStage = syncAllArgs.reduce<string | undefined>(
@@ -1681,7 +1683,7 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'open': {
-            // pnpm lc open [tenant] [ios|android] [stage]
+            // bun run lc open [tenant] [ios|android] [stage]
             const openArg3 = args[3];
             const openAllArgs = [arg, arg2, openArg3];
 
@@ -1712,7 +1714,7 @@ const handleShortcuts = async (): Promise<boolean> => {
             const stageFlag = stage === 'production' ? '' : ` --stage ${stage}`;
 
             runCommand(
-                `npx tsx scripts/prepare-native-config.ts ${tenant}${stageFlag} && vite --host`,
+                `bun scripts/prepare-native-config.ts ${tenant}${stageFlag} && vite --host`,
                 `Starting ${tenant} (${stage}) — app only`
             );
             return true;
@@ -1723,13 +1725,13 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
 
         case 'generate': {
-            // pnpm lc generate <tenant> <logo> [--bg ...] [--name ...] etc.
+            // bun run lc generate <tenant> <logo> [--bg ...] [--name ...] etc.
             // Pass all args directly to generate-tenant-assets.ts
             if (arg) {
                 const passthrough = args.slice(1).join(' ');
 
                 runCommand(
-                    `npx tsx scripts/generate-tenant-assets.ts ${passthrough}`,
+                    `bun scripts/generate-tenant-assets.ts ${passthrough}`,
                     `Generating assets for ${arg}`
                 );
             } else {
@@ -1740,7 +1742,7 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'native': {
-            // pnpm lc native [dev|sync|open|run] [tenant] [ios|android]
+            // bun run lc native [dev|sync|open|run] [tenant] [ios|android]
             const nativeArgs = args.slice(1);
             const handled = await handleNativeShortcut(nativeArgs);
 
@@ -1754,14 +1756,14 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'resolve': {
-            // pnpm lc resolve [tenant] [stage]
+            // bun run lc resolve [tenant] [stage]
             const resolveTenant = arg ?? 'learncard';
             const resolveStage = arg2;
 
             const resolveStageFlag = resolveStage ? ` --stage ${resolveStage}` : '';
 
             runCommand(
-                `npx tsx scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
+                `bun scripts/resolve-tenant-config.ts ${resolveTenant}${resolveStageFlag}`,
                 `Resolving final config for ${resolveTenant}${
                     resolveStage ? ` (${resolveStage})` : ''
                 }`
@@ -1770,24 +1772,24 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'create':
-            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant');
+            runCommand('bun scripts/create-tenant.ts', 'Create a new tenant');
             return true;
 
         case 'create-theme':
-            runCommand('npx tsx scripts/create-theme.ts', 'Create a new theme');
+            runCommand('bun scripts/create-theme.ts', 'Create a new theme');
             return true;
 
         case 'bump-default-capgo-channel':
         case 'bump-capgo-channel': {
-            // pnpm lc bump-default-capgo-channel [newChannel]
+            // bun run lc bump-default-capgo-channel [newChannel]
             const newChannel = arg ? ` ${arg}` : '';
 
             runCommand(
-                `npx tsx scripts/bump-default-capgo-channel.ts${newChannel}`,
+                `bun scripts/bump-default-capgo-channel.ts${newChannel}`,
                 'Bump Capgo defaultChannel in capacitor.config.ts',
                 arg
-                    ? `pnpm lc bump-default-capgo-channel ${arg}`
-                    : 'pnpm lc bump-default-capgo-channel'
+                    ? `bun run lc bump-default-capgo-channel ${arg}`
+                    : 'bun run lc bump-default-capgo-channel'
             );
             return true;
         }
@@ -1797,12 +1799,12 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
 
         case 'seed': {
-            // pnpm lc seed app [flags...]
+            // bun run lc seed app [flags...]
             if (arg === 'app') {
                 const passthrough = args.slice(2).join(' ');
 
                 runCommand(
-                    `npx tsx scripts/seed-dev-app.ts${passthrough ? ` ${passthrough}` : ''}`,
+                    `bun scripts/seed-dev-app.ts${passthrough ? ` ${passthrough}` : ''}`,
                     'Seeding app store listing into local database',
                     undefined,
                     BRAIN_SERVICE_ROOT
@@ -1875,85 +1877,93 @@ const printHelp = () => {
     log.info(bold('  ⚡ Start'));
     log.info('');
     log.info(
-        `  ${cyan('pnpm lc dev <tenant> [stage] [mode] [fast]')}  ${dim(
+        `  ${cyan('bun run lc dev <tenant> [stage] [mode] [fast]')}  ${dim(
             'Web dev server (mode: full|app|services)'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm lc sync <tenant> [stage]')}              ${dim(
+        `  ${cyan('bun run lc sync <tenant> [stage]')}              ${dim(
             'Cap sync + tenant config patching'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm lc open <tenant> [platform]')}           ${dim(
+        `  ${cyan('bun run lc open <tenant> [platform]')}           ${dim(
             'Sync tenant + open Xcode / Android Studio'
         )}`
     );
     log.info('');
     log.info(dim('  Examples:'));
-    log.info(dim('    pnpm lc dev vetpass alpha                # prompts for run mode + rebuild'));
-    log.info(dim('    pnpm lc dev vetpass alpha app            # app only, no prompt'));
-    log.info(dim('    pnpm lc dev vetpass alpha full           # full stack, no prompt'));
-    log.info(dim('    pnpm lc dev vetpass alpha full fast      # full stack, skip docker --build'));
     log.info(
-        dim('    pnpm lc dev vetpass alpha services fast  # services only, skip docker --build')
+        dim('    bun run lc dev vetpass alpha                # prompts for run mode + rebuild')
     );
-    log.info(dim('    pnpm lc sync vetpass alpha'));
-    log.info(dim('    pnpm lc open vetpass ios'));
+    log.info(dim('    bun run lc dev vetpass alpha app            # app only, no prompt'));
+    log.info(dim('    bun run lc dev vetpass alpha full           # full stack, no prompt'));
+    log.info(
+        dim('    bun run lc dev vetpass alpha full fast      # full stack, skip docker --build')
+    );
+    log.info(
+        dim('    bun run lc dev vetpass alpha services fast  # services only, skip docker --build')
+    );
+    log.info(dim('    bun run lc sync vetpass alpha'));
+    log.info(dim('    bun run lc open vetpass ios'));
     log.info('');
     log.info(bold('  🛠 Tools'));
     log.info('');
     log.info(
-        `  ${cyan('pnpm lc viewer')}                     ${dim('Launch the Credential Viewer')}`
+        `  ${cyan('bun run lc viewer')}                     ${dim('Launch the Credential Viewer')}`
     );
     log.info(
-        `  ${cyan('pnpm lc seed app [flags]')}           ${dim(
+        `  ${cyan('bun run lc seed app [flags]')}           ${dim(
             'Seed app store listing into local DB'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm skill-frameworks seed [stage]')} ${dim('Seed default skill frameworks')}`
+        `  ${cyan('bun run skill-frameworks seed [stage]')} ${dim('Seed default skill frameworks')}`
     );
     log.info(
-        `  ${cyan('pnpm skill-frameworks add-admin [stage] [profileId]')} ${dim(
+        `  ${cyan('bun run skill-frameworks add-admin [stage] [profileId]')} ${dim(
             'Grant framework admin access to an existing profile'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm lc native')}                     ${dim(
+        `  ${cyan('bun run lc native')}                     ${dim(
             'Full native menu (dev, run, build)'
         )}`
     );
     log.info('');
     log.info(bold('  🔧 Setup'));
     log.info('');
-    log.info(`  ${cyan('pnpm lc create')}                     ${dim('Scaffold a new tenant')}`);
-    log.info(`  ${cyan('pnpm lc create-theme')}               ${dim('Scaffold a new theme')}`);
+    log.info(`  ${cyan('bun run lc create')}                     ${dim('Scaffold a new tenant')}`);
+    log.info(`  ${cyan('bun run lc create-theme')}               ${dim('Scaffold a new theme')}`);
     log.info(
-        `  ${cyan('pnpm lc bump-default-capgo-channel')} ${dim(
+        `  ${cyan('bun run lc bump-default-capgo-channel')} ${dim(
             'Bump Capgo OTA channel (native compat break)'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm lc generate <tenant> <logo>')}   ${dim(
+        `  ${cyan('bun run lc generate <tenant> <logo>')}   ${dim(
             'Generate icons/splash from a logo'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm lc validate')}                   ${dim(
+        `  ${cyan('bun run lc validate')}                   ${dim(
             'Run all config + theme validators'
         )}`
     );
     log.info(
-        `  ${cyan('pnpm lc switch <tenant> [stage]')}    ${dim('Prepare config without starting')}`
+        `  ${cyan('bun run lc switch <tenant> [stage]')}    ${dim(
+            'Prepare config without starting'
+        )}`
     );
     log.info(
-        `  ${cyan('pnpm lc editor')}                     ${dim('Visual config editor on :4400')}`
+        `  ${cyan('bun run lc editor')}                     ${dim('Visual config editor on :4400')}`
     );
-    log.info(`  ${cyan('pnpm lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`);
-    log.info(`  ${cyan('pnpm lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
     log.info(
-        `  ${cyan('pnpm lc tenants')}                    ${dim(
+        `  ${cyan('bun run lc resolve <tenant> [stage]')}   ${dim('Print final merged config')}`
+    );
+    log.info(`  ${cyan('bun run lc start <tenant> [stage]')}     ${dim('Vite only (no Docker)')}`);
+    log.info(
+        `  ${cyan('bun run lc tenants')}                    ${dim(
             'List all tenants, stages, and themes'
         )}`
     );
@@ -2011,14 +2021,14 @@ const configAndScaffoldingMenu = async () => {
 
     switch (sub) {
         case 'a':
-            runCommand('npx tsx scripts/create-tenant.ts', 'Create a new tenant', 'pnpm lc create');
+            runCommand('bun scripts/create-tenant.ts', 'Create a new tenant', 'bun run lc create');
             break;
 
         case 'b':
             runCommand(
-                'npx tsx scripts/create-theme.ts',
+                'bun scripts/create-theme.ts',
                 'Create a new theme',
-                'pnpm lc create-theme'
+                'bun run lc create-theme'
             );
             break;
 
@@ -2035,7 +2045,7 @@ const configAndScaffoldingMenu = async () => {
             break;
 
         case 'f':
-            runCommand('npx tsx scripts/config-editor.ts', 'Config editor', 'pnpm lc editor');
+            runCommand('bun scripts/config-editor.ts', 'Config editor', 'bun run lc editor');
             break;
 
         case 'g': {
@@ -2044,9 +2054,9 @@ const configAndScaffoldingMenu = async () => {
             const stageFlag = stage === 'local' ? '' : ` --stage ${stage}`;
 
             runCommand(
-                `npx tsx scripts/resolve-tenant-config.ts ${tenant}${stageFlag}`,
+                `bun scripts/resolve-tenant-config.ts ${tenant}${stageFlag}`,
                 `Resolving final config for ${tenant}${stage !== 'local' ? ` (${stage})` : ''}`,
-                `pnpm lc resolve ${tenant}${stage !== 'local' ? ` ${stage}` : ''}`
+                `bun run lc resolve ${tenant}${stage !== 'local' ? ` ${stage}` : ''}`
             );
             break;
         }

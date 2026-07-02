@@ -14,7 +14,7 @@ import { IonCol } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { BoostSmallCard } from '@learncard/react';
 
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -137,7 +137,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
                         </div>
                     }
                     customThumbComponent={
-                        <CredentialBadge
+                        <CredentialBadgeNew
                             achievementType={subType}
                             boostType={categoryType}
                             displayType={displayType}

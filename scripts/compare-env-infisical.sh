@@ -7,7 +7,7 @@
 # same service target.
 #
 # Usage:
-#   pnpm env:compare-infisical
+#   bun run env:compare-infisical
 # ============================================================================
 
 set -euo pipefail

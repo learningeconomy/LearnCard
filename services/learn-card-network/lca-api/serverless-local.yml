@@ -14,7 +14,7 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
-        packager: pnpm
+        packager: bun
         plugins: esbuildPlugins.cjs
         external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
         sourcemap: external

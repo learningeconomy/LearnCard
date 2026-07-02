@@ -1,14 +1,19 @@
 declare module 'preact/dist/preact.min.umd.js' {
-  const content: string;
-  export default content;
+    const content: string;
+    export default content;
 }
 
 declare module './iframe/island.js' {
-  const content: string;
-  export default content;
+    const content: string;
+    export default content;
 }
 
 declare module './iframe/island-vanilla.js' {
-  const content: string;
-  export default content;
+    const content: string;
+    export default content;
+}
+
+declare module '*?raw' {
+    const content: string;
+    export default content;
 }

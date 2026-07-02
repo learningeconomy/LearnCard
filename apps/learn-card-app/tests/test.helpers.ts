@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 import { TEST_USER_SEED } from './constants';
 
 // This is basically expect(locator).toBeVisible() except it'll actually wait for the timeout if the element isn't visible yet
@@ -31,7 +31,9 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
         await userIdInput.fill(profileId);
         await page.getByRole('button', { name: "Let's Go!" }).click({ timeout: 30_000 });
         // Wait for "Joining Network..." to finish and modal to close
-        await page.getByRole('button', { name: "Let's Go!" }).waitFor({ state: 'hidden', timeout: 60_000 });
+        await page
+            .getByRole('button', { name: "Let's Go!" })
+            .waitFor({ state: 'hidden', timeout: 60_000 });
     }
 };
 
@@ -56,6 +58,28 @@ export const openAddToLearnCardMenu = async (page: Page) => {
 };
 
 /**
+ * After clicking "Next" in the boost flow, clicks "Publish & Issue" when it is
+ * shown.
+ *
+ * When the `skipPublishStep` flag is enabled (current E2E config), "Next" lands
+ * directly on the "Issue To" screen and the publish step is absent — see
+ * BoostCMS.tsx. We wait for whichever screen renders first (the publish button
+ * or the "Issue To" Plus button) and only click publish when it is present.
+ * Racing the two screens avoids a fixed dead-wait when the step is skipped and
+ * avoids silently skipping a required click if the button renders slowly.
+ */
+export const clickPublishAndIssueIfPresent = async (page: Page) => {
+    const publishButton = page.getByRole('button', { name: /publish & issue/i });
+    const issueToPlusButton = page.getByRole('button', { name: 'Plus' });
+
+    await expect(publishButton.or(issueToPlusButton).first()).toBeVisible({ timeout: 30_000 });
+
+    if (await publishButton.isVisible()) {
+        await publishButton.click({ timeout: 30_000 });
+    }
+};
+
+/**
  * Issues a credential to the current user via the UI.
  *
  * Flow: Add to LearnCard → Boost Someone → pick template → fill form →
@@ -72,19 +96,24 @@ export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
 
     // Fill in credential title and description
     await page.getByRole('textbox', { name: /0\// }).fill(TEST_CREDENTIAL_TITLE);
-    await page.locator('textarea[placeholder="What is this boost for?"]').fill('Test credential description');
+    await page
+        .locator('textarea[placeholder="What is this boost for?"]')
+        .fill('Test credential description');
 
     // Click Next to proceed to publish
     await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
 
-    // Click Publish & Issue
-    await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
+    // Click Publish & Issue (skipped when the skipPublishStep flag is enabled)
+    await clickPublishAndIssueIfPresent(page);
 
     // Click Plus to open recipient selection
     await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });
 
     // Click Boost Myself
-    await page.getByRole('button', { name: /boost myself/i }).first().click({ timeout });
+    await page
+        .getByRole('button', { name: /boost myself/i })
+        .first()
+        .click({ timeout });
 
     // Click Save to issue the boost
     await page.getByRole('button', { name: 'Save' }).click({ timeout: 30_000 });
@@ -113,18 +142,25 @@ export const waitForAuthenticatedState = async (
     timeout = 30000
 ) => {
     // Parse options
-    const options = typeof pathOrOptions === 'string'
-        ? { path: pathOrOptions, seed: TEST_USER_SEED, profileId: undefined as string | undefined }
-        : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? TEST_USER_SEED, profileId: pathOrOptions.profileId };
+    const options =
+        typeof pathOrOptions === 'string'
+            ? {
+                  path: pathOrOptions,
+                  seed: TEST_USER_SEED,
+                  profileId: undefined as string | undefined,
+              }
+            : {
+                  path: pathOrOptions.path ?? '/',
+                  seed: pathOrOptions.seed ?? TEST_USER_SEED,
+                  profileId: pathOrOptions.profileId,
+              };
 
     // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
     // opens the menu rather than the OnboardingContainer. Tolerate timeout
     // for cache-hit paths where no fresh request fires.
     const profileFetchPromise = page
         .waitForResponse(
-            response =>
-                /profile\.getProfile/.test(response.url()) &&
-                response.status() < 500,
+            response => /profile\.getProfile/.test(response.url()) && response.status() < 500,
             { timeout }
         )
         .catch(() => undefined);

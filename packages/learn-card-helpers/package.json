@@ -1,12 +1,13 @@
 {
     "name": "@learncard/helpers",
-    "version": "1.3.4",
+    "version": "1.3.6",
     "description": "Shared helpers for LearnCard packages",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/helpers.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/helpers.d.ts",
                 "default": "./dist/helpers.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && dts-bundle-generator src/index.ts -o dist/helpers.d.ts --no-check && shx cp ./dist/helpers.d.ts ./dist/helpers.d.cts",
@@ -61,7 +63,7 @@
         "@trpc/server": "11.7.1",
         "immer": "^10.0.3",
         "use-immer": "^0.9.0",
-        "zod": "^3.23.8"
+        "zod": "4.1.13"
     },
     "sideEffects": false
 }

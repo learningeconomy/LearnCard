@@ -3,9 +3,9 @@
 Real-vendor interop tests for the `@learncard/openid4vc-plugin`. Drives
 the plugin end-to-end against:
 
-- **Tier 1**: a locally-hosted [walt.id Community Stack](https://github.com/walt-id/waltid-identity) issuer + verifier in Docker (lenient real vendor, real-network, **PEX**).
-- **Tier 2**: an in-process strict verifier built on two reference TypeScript libraries from independent teams — [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX) for **PEX** evaluation and [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts) (OWF Labs, by the spec's author) for **DCQL** matching, plus `jose` for shared JWT/nonce/audience checks.
-- **Tier 2.C**: the [EU Digital Identity Wallet reference verifier](https://github.com/eu-digital-identity-wallet/eudi-srv-verifier-endpoint) (OID4VP 1.0, **DCQL**, mso_mdoc / dc+sd-jwt only) running in Docker. Now runs three active parsing-side interop tests plus one documented-skip full-roundtrip test gated on plugin SD-JWT-VC presentation support.
+-   **Tier 1**: a locally-hosted [walt.id Community Stack](https://github.com/walt-id/waltid-identity) issuer + verifier in Docker (lenient real vendor, real-network, **PEX**).
+-   **Tier 2**: an in-process strict verifier built on two reference TypeScript libraries from independent teams — [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX) for **PEX** evaluation and [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts) (OWF Labs, by the spec's author) for **DCQL** matching, plus `jose` for shared JWT/nonce/audience checks.
+-   **Tier 2.C**: the [EU Digital Identity Wallet reference verifier](https://github.com/eu-digital-identity-wallet/eudi-srv-verifier-endpoint) (OID4VP 1.0, **DCQL**, mso_mdoc / dc+sd-jwt only) running in Docker. Now runs three active parsing-side interop tests plus one documented-skip full-roundtrip test gated on plugin SD-JWT-VC presentation support.
 
 The three tiers complement each other: walt.id catches real-vendor
 wire-level spec drift, Sphereon catches the spec-compliance gaps
@@ -24,9 +24,9 @@ implementation I didn't write** — catching spec drift at the wire
 level (exact error codes, header casing, timing windows, nonce
 semantics, etc.) that a self-rolled harness cannot see.
 
-| Suite | What it catches | Speed |
-|---|---|---|
-| `tests/openid4vc-e2e/` (in-process) | Plugin code paths, refactor regressions | ~600ms |
+| Suite                                     | What it catches                         | Speed                  |
+| ----------------------------------------- | --------------------------------------- | ---------------------- |
+| `tests/openid4vc-e2e/` (in-process)       | Plugin code paths, refactor regressions | ~600ms                 |
 | `tests/openid4vc-interop-e2e/` (this one) | Wire-level spec drift vs. a real vendor | 30–120s cold, ~5s warm |
 
 Run the in-process suite on every PR. Run this one on merge-to-main
@@ -34,18 +34,18 @@ or on-demand before a release.
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) daemon running
-- [`docker compose`](https://docs.docker.com/compose/) v2
-- Ports `7002`, `7003`, and `7004` free on the host
+-   [Docker](https://docs.docker.com/get-docker/) daemon running
+-   [`docker compose`](https://docs.docker.com/compose/) v2
+-   Ports `7002`, `7003`, and `7004` free on the host
 
 ## Running
 
 ```bash
 # From the monorepo root — brings up walt.id, runs all specs, tears down
-pnpm --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
+bun --filter @workspace/openid4vc-interop-e2e-tests run test:interop:e2e
 
 # Or from this folder
-pnpm test:interop:e2e
+bun run test:interop:e2e
 ```
 
 ### Iterating without cold-starting docker each time
@@ -56,51 +56,51 @@ it once yourself and then run:
 
 ```bash
 docker compose up -d                              # one time
-pnpm test:interop:no-docker                       # as many times as you want
+bun run test:interop:no-docker                       # as many times as you want
 docker compose down -v                            # when finished
 ```
 
 ### Tailing vendor logs
 
 ```bash
-pnpm logs
+bun run logs
 ```
 
 ## What the specs cover
 
 ### Tier 1 — walt.id (real vendor, real wire)
 
-| File | Tests | Flow under test |
-|---|---|---|
-| `tests/issue.spec.ts` | 1 | Pre-auth OID4VCI: walt.id mints offer → plugin accepts → walt.id-signed JWT-VC bound to holder DID. |
-| `tests/present.spec.ts` | 1 | OID4VP request resolution: plugin parses walt.id-generated `openid4vp://authorize?...` into spec-shaped fields (`response_type`, `nonce`, `state`, `response_uri`, `presentation_definition`). |
-| `tests/roundtrip.spec.ts` | 1 | **Interop ground-truth.** Full loop: walt.id issues → plugin holds → plugin presents back → walt.id verifier returns `verificationResult: true`. |
-| `tests/multi-credential.spec.ts` | 1 | Multi-input-descriptor PD. Two distinct VC types (`UniversityDegree` + `OpenBadgeCredential`) issued separately, then presented together in a single VP that satisfies both descriptors. Exercises the plugin's selector + descriptor-map emission. |
-| `tests/auth-code.spec.ts` | 1 | OID4VCI **Slice 4** (authorization_code + PKCE). walt.id mints an offer with `authorization_code` grant, plugin builds the authorization URL with PKCE S256, the harness simulates the user-agent redirect to capture the `code`, plugin exchanges code → token → credential. |
-| `tests/sd-jwt.spec.ts` | 1 | SD-JWT VC issuance. Dynamically discovers any `vc+sd-jwt` / `dc+sd-jwt` / `sd-jwt-vc` config from walt.id's running metadata (no hard-coded type id), then validates the plugin can run the credential request and surface the format. SD-JWT *presentation* (key binding + selective disclosure) is intentionally out of scope here. |
-| `tests/negative.spec.ts` | 0 + 2 skipped | Both negative tests against walt.id are `it.skip`d — see *Walt.id quirks* below. The strict versions live in Tier 2 against Sphereon. |
+| File                             | Tests         | Flow under test                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/issue.spec.ts`            | 1             | Pre-auth OID4VCI: walt.id mints offer → plugin accepts → walt.id-signed JWT-VC bound to holder DID.                                                                                                                                                                                                                                   |
+| `tests/present.spec.ts`          | 1             | OID4VP request resolution: plugin parses walt.id-generated `openid4vp://authorize?...` into spec-shaped fields (`response_type`, `nonce`, `state`, `response_uri`, `presentation_definition`).                                                                                                                                        |
+| `tests/roundtrip.spec.ts`        | 1             | **Interop ground-truth.** Full loop: walt.id issues → plugin holds → plugin presents back → walt.id verifier returns `verificationResult: true`.                                                                                                                                                                                      |
+| `tests/multi-credential.spec.ts` | 1             | Multi-input-descriptor PD. Two distinct VC types (`UniversityDegree` + `OpenBadgeCredential`) issued separately, then presented together in a single VP that satisfies both descriptors. Exercises the plugin's selector + descriptor-map emission.                                                                                   |
+| `tests/auth-code.spec.ts`        | 1             | OID4VCI **Slice 4** (authorization_code + PKCE). walt.id mints an offer with `authorization_code` grant, plugin builds the authorization URL with PKCE S256, the harness simulates the user-agent redirect to capture the `code`, plugin exchanges code → token → credential.                                                         |
+| `tests/sd-jwt.spec.ts`           | 1             | SD-JWT VC issuance. Dynamically discovers any `vc+sd-jwt` / `dc+sd-jwt` / `sd-jwt-vc` config from walt.id's running metadata (no hard-coded type id), then validates the plugin can run the credential request and surface the format. SD-JWT _presentation_ (key binding + selective disclosure) is intentionally out of scope here. |
+| `tests/negative.spec.ts`         | 0 + 2 skipped | Both negative tests against walt.id are `it.skip`d — see _Walt.id quirks_ below. The strict versions live in Tier 2 against Sphereon.                                                                                                                                                                                                 |
 
 ### Tier 2 — Sphereon (strict spec compliance, in-process)
 
 In-process strict verifier built on **two** reference TypeScript
 libraries from independent teams:
 
-- **PEX path**: [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX)
-  by Sphereon for DIF Presentation Exchange v2 evaluation.
-- **DCQL path**: [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts)
-  (OWF Labs) by Martin Auer (DCQL spec author, SPRIN-D-funded) for
-  OID4VP 1.0 §6 Digital Credentials Query Language matching.
+-   **PEX path**: [`@sphereon/pex`](https://github.com/Sphereon-Opensource/PEX)
+    by Sphereon for DIF Presentation Exchange v2 evaluation.
+-   **DCQL path**: [`dcql`](https://github.com/openwallet-foundation-labs/dcql-ts)
+    (OWF Labs) by Martin Auer (DCQL spec author, SPRIN-D-funded) for
+    OID4VP 1.0 §6 Digital Credentials Query Language matching.
 
 The harness branches on `session.kind` (`pex` | `dcql`) and routes
 each submission through the corresponding strict matcher.
 
-| File | Tests | Flow under test |
-|---|---|---|
-| `tests/sphereon-roundtrip.spec.ts` | 1 | **PEX cross-vendor roundtrip.** walt.id issues a credential → our plugin holds it → Sphereon's strict PEX evaluator (`@sphereon/pex`) accepts the VP. Proves a credential from one vendor passes a different vendor's verifier — the canonical interop signal. |
-| `tests/sphereon-dcql-roundtrip.spec.ts` | 1 | **DCQL cross-vendor roundtrip.** Same flow, DCQL routing: walt.id issues → plugin holds → plugin auto-routes to its DCQL pipeline (per `request.dcql_query`) → Sphereon's `dcql.DcqlPresentationResult` matcher accepts. Pins the OID4VP 1.0 §6.4 wire shape (object-form `vp_token` keyed by `credential_query_id`, no `presentation_submission`) end-to-end. |
-| `tests/sphereon-strict-binding.spec.ts` | 4 | Strict checks walt.id can't enforce, **PEX route**: **(a)** nonce binding — a VP signed for session A's nonce, replayed to session B with `state` rewritten, is rejected with `nonce mismatch`. **(b)** Audience binding — a VP with the wrong `aud` claim is rejected with `audience mismatch`. **(c)** Inner-VC tamper detection — a single bit flipped in a JWT-VC signature causes deterministic rejection at `jose.jwtVerify`. **(d)** Clean positive — the foil that proves the strict checks gate on real failures, not always-reject. |
-| `tests/sphereon-strict-binding-dcql.spec.ts` | 4 | Same strict check matrix on the **DCQL route** (object-keyed `vp_token`, no `presentation_submission`). Without DCQL parity coverage, a regression in the plugin's per-query JWT-VP signing (e.g., the verifier's nonce not threading through to each per-query envelope) would slip past the PEX strict-binding tests entirely. The replay forges `state` against an object-form `vp_token` to exercise the full OID4VP 1.0 §6.4 wire shape. |
-| `tests/sphereon-jarm.spec.ts` | 4 | **`direct_post.jwt` (JARM) response encryption** — OID4VP §8.3. Sphereon mints sessions whose `client_metadata` advertises an ECDH-ES P-256 enc key + JWE algs; the plugin packs `vp_token`/`presentation_submission`/`state` into a JSON payload, encrypts to the verifier's key (binding the JWE to the session via `apv`=base64url(nonce) per ¶6), and POSTs as a single `response` form field. Covers PEX-over-JARM, DCQL-over-JARM, nested signed-then-encrypted (`authorization_signed_response_alg=EdDSA` so the wallet's `did:jwk` Ed25519 signs the response object before encryption), and apv-binding isolation across concurrent sessions. |
+| File                                         | Tests | Flow under test                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tests/sphereon-roundtrip.spec.ts`           | 1     | **PEX cross-vendor roundtrip.** walt.id issues a credential → our plugin holds it → Sphereon's strict PEX evaluator (`@sphereon/pex`) accepts the VP. Proves a credential from one vendor passes a different vendor's verifier — the canonical interop signal.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `tests/sphereon-dcql-roundtrip.spec.ts`      | 1     | **DCQL cross-vendor roundtrip.** Same flow, DCQL routing: walt.id issues → plugin holds → plugin auto-routes to its DCQL pipeline (per `request.dcql_query`) → Sphereon's `dcql.DcqlPresentationResult` matcher accepts. Pins the OID4VP 1.0 §6.4 wire shape (object-form `vp_token` keyed by `credential_query_id`, no `presentation_submission`) end-to-end.                                                                                                                                                                                                                                                                                         |
+| `tests/sphereon-strict-binding.spec.ts`      | 4     | Strict checks walt.id can't enforce, **PEX route**: **(a)** nonce binding — a VP signed for session A's nonce, replayed to session B with `state` rewritten, is rejected with `nonce mismatch`. **(b)** Audience binding — a VP with the wrong `aud` claim is rejected with `audience mismatch`. **(c)** Inner-VC tamper detection — a single bit flipped in a JWT-VC signature causes deterministic rejection at `jose.jwtVerify`. **(d)** Clean positive — the foil that proves the strict checks gate on real failures, not always-reject.                                                                                                          |
+| `tests/sphereon-strict-binding-dcql.spec.ts` | 4     | Same strict check matrix on the **DCQL route** (object-keyed `vp_token`, no `presentation_submission`). Without DCQL parity coverage, a regression in the plugin's per-query JWT-VP signing (e.g., the verifier's nonce not threading through to each per-query envelope) would slip past the PEX strict-binding tests entirely. The replay forges `state` against an object-form `vp_token` to exercise the full OID4VP 1.0 §6.4 wire shape.                                                                                                                                                                                                          |
+| `tests/sphereon-jarm.spec.ts`                | 4     | **`direct_post.jwt` (JARM) response encryption** — OID4VP §8.3. Sphereon mints sessions whose `client_metadata` advertises an ECDH-ES P-256 enc key + JWE algs; the plugin packs `vp_token`/`presentation_submission`/`state` into a JSON payload, encrypts to the verifier's key (binding the JWE to the session via `apv`=base64url(nonce) per ¶6), and POSTs as a single `response` form field. Covers PEX-over-JARM, DCQL-over-JARM, nested signed-then-encrypted (`authorization_signed_response_alg=EdDSA` so the wallet's `did:jwk` Ed25519 signs the response object before encryption), and apv-binding isolation across concurrent sessions. |
 
 The Sphereon harness lives in `setup/sphereon-verifier.ts` — a tiny
 Node `http.createServer` listener on a dynamic port that mimics OID4VP
@@ -110,7 +110,7 @@ DCQL matcher] → inner VC).
 
 Spec-misshapen submissions are rejected at the door: a PEX session
 that receives a body without `presentation_submission` 400s, and a
-DCQL session that receives one *with* `presentation_submission` 400s
+DCQL session that receives one _with_ `presentation_submission` 400s
 (OID4VP 1.0 §6.4 mandates the field be absent for DCQL responses).
 A JARM session that receives a cleartext form body 400s for the same
 reason — mode mismatch is a session-config error, not a transport
@@ -120,12 +120,12 @@ fallback.
 
 The [EU Digital Identity Wallet reference verifier](https://github.com/eu-digital-identity-wallet/eudi-srv-verifier-endpoint)
 is the EU Commission's authoritative OID4VP 1.0 implementation.
-Used primarily for what *can't* yet be tested end-to-end against it,
+Used primarily for what _can't_ yet be tested end-to-end against it,
 so plugin gaps that block production wallet integration surface
 locally instead of in EU pilots.
 
-| File | Tests | What it covers |
-|---|---|---|
+| File                         | Tests                | What it covers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tests/eudi-parsing.spec.ts` | 3 active + 1 skipped | **Active**: (1) EUDI is reachable, accepts a DCQL session creation, and emits an OID4VP 1.0 spec-shape response (signed Request Object inlined as `request`, parsed-back DCQL query round-trips). (2) The plugin resolves EUDI's signed Request Object end-to-end — prefix derivation, JWS decoding, claim binding all clean. (3) The selector reports `canSatisfy=false` with a structured format-gap reason when EUDI requests `dc+sd-jwt` and we hold only `jwt_vc_json`, so UIs can render "no matching credential" without crashing. **Skipped**: full credential roundtrip (blocked by plugin SD-JWT-VC presentation support). |
 
 **Documented gaps surfaced by EUDI integration** (the plugin's
@@ -146,7 +146,7 @@ prioritized backlog):
    to the plugin.
 3. **Verifier signing-key resolution gap.** EUDI in `pre-registered`
    mode signs Request Objects with a `kid` referencing a keystore
-   *inside* the verifier container, with no JWKS endpoint, no
+   _inside_ the verifier container, with no JWKS endpoint, no
    `x5c` header, no JWKS URI in client_metadata. Production
    wallets need an out-of-band registry binding `client_id` →
    public key. The plugin currently exposes a clearly-named
@@ -162,22 +162,22 @@ emulated boots.
 
 ### Cross-vendor enforcement matrix
 
-| Spec property | walt.id `1.0.0-SNAPSHOT` | Sphereon (strict, PEX) | Sphereon (strict, DCQL) | Sphereon (strict, JARM) | EUDI reference (DCQL) |
-|---|---|---|---|---|---|
-| Outer VP JWT signature | ✅ enforced | ✅ enforced | ✅ enforced (per-query VP) | ✅ enforced | ✅ enforced (gated⁰) |
-| Inner VC JWT signature | ⚠️ non-deterministic | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
-| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced | ✅ enforced | ✅ enforced (per-query) | ✅ enforced (also `apv` JWE KDF input) | ✅ enforced (gated⁰) |
-| Audience binding (`aud` claim = `client_id`) | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced | ✅ enforced (gated⁰) |
-| Response confidentiality | ❌ cleartext | ❌ cleartext | ❌ cleartext | ✅ ECDH-ES + A256GCM JWE; opt nested EdDSA JWS | ⚠️ cleartext in interop (production EUDI requires JARM) |
-| Request Object signature verification | n/a | n/a | n/a | n/a | ⚠️ bypassed in interop (no in-band JWKS; plugin opts in via `unsafeSkipRequestObjectSignatureVerification`) |
-| PEX descriptor-map evaluation | ✅ (lenient) | ✅ (strict, by `@sphereon/pex`) | n/a | ✅ (strict, post-decrypt) | n/a |
-| DCQL `credential_matches` evaluation | n/a | n/a | ✅ (strict, by `dcql`) | ✅ (strict, post-decrypt) | ✅ (strict, native EUDI Kotlin impl) |
-| `presentation_submission` field presence | required | required | **forbidden** (must be absent) | required (PEX) / forbidden (DCQL) | **forbidden** (must be absent) |
-| `vp_token` shape | string OR object | string OR object | object keyed by `credential_query_id` | both shapes (encrypted) | object keyed by `credential_query_id` |
-| Accepted credential formats | `jwt_vc_json`, `ldp_vc`, SD-JWT issuance | `jwt_vc_json`, `ldp_vc` | `jwt_vc_json`, `ldp_vc` | `jwt_vc_json`, `ldp_vc` | **`mso_mdoc` + `dc+sd-jwt` only** |
-| OID4VP version | Draft 22 (`presentation_definition`) | Draft 22 (PEX) / 1.0 (DCQL) | Draft 22 (PEX) / 1.0 (DCQL) | 1.0 (JARM) | 1.0 |
-| `client_id` style | bare string + `client_id_scheme` | bare string + `client_id_scheme` | bare string + `client_id_scheme` | bare string + `client_id_scheme` | OID4VP 1.0 client-id-prefix |
-| Pre-auth code validation (issuer side) | ❌ accepts any | n/a (Sphereon is verify-only) | n/a | n/a | n/a |
+| Spec property                                 | walt.id `1.0.0-SNAPSHOT`                 | Sphereon (strict, PEX)           | Sphereon (strict, DCQL)               | Sphereon (strict, JARM)                        | EUDI reference (DCQL)                                                                                       |
+| --------------------------------------------- | ---------------------------------------- | -------------------------------- | ------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Outer VP JWT signature                        | ✅ enforced                              | ✅ enforced                      | ✅ enforced (per-query VP)            | ✅ enforced                                    | ✅ enforced (gated⁰)                                                                                        |
+| Inner VC JWT signature                        | ⚠️ non-deterministic                     | ✅ enforced                      | ✅ enforced                           | ✅ enforced                                    | ✅ enforced (gated⁰)                                                                                        |
+| Nonce binding (`nonce` claim = session nonce) | ❌ not enforced                          | ✅ enforced                      | ✅ enforced (per-query)               | ✅ enforced (also `apv` JWE KDF input)         | ✅ enforced (gated⁰)                                                                                        |
+| Audience binding (`aud` claim = `client_id`)  | ✅ enforced                              | ✅ enforced                      | ✅ enforced                           | ✅ enforced                                    | ✅ enforced (gated⁰)                                                                                        |
+| Response confidentiality                      | ❌ cleartext                             | ❌ cleartext                     | ❌ cleartext                          | ✅ ECDH-ES + A256GCM JWE; opt nested EdDSA JWS | ⚠️ cleartext in interop (production EUDI requires JARM)                                                     |
+| Request Object signature verification         | n/a                                      | n/a                              | n/a                                   | n/a                                            | ⚠️ bypassed in interop (no in-band JWKS; plugin opts in via `unsafeSkipRequestObjectSignatureVerification`) |
+| PEX descriptor-map evaluation                 | ✅ (lenient)                             | ✅ (strict, by `@sphereon/pex`)  | n/a                                   | ✅ (strict, post-decrypt)                      | n/a                                                                                                         |
+| DCQL `credential_matches` evaluation          | n/a                                      | n/a                              | ✅ (strict, by `dcql`)                | ✅ (strict, post-decrypt)                      | ✅ (strict, native EUDI Kotlin impl)                                                                        |
+| `presentation_submission` field presence      | required                                 | required                         | **forbidden** (must be absent)        | required (PEX) / forbidden (DCQL)              | **forbidden** (must be absent)                                                                              |
+| `vp_token` shape                              | string OR object                         | string OR object                 | object keyed by `credential_query_id` | both shapes (encrypted)                        | object keyed by `credential_query_id`                                                                       |
+| Accepted credential formats                   | `jwt_vc_json`, `ldp_vc`, SD-JWT issuance | `jwt_vc_json`, `ldp_vc`          | `jwt_vc_json`, `ldp_vc`               | `jwt_vc_json`, `ldp_vc`                        | **`mso_mdoc` + `dc+sd-jwt` only**                                                                           |
+| OID4VP version                                | Draft 22 (`presentation_definition`)     | Draft 22 (PEX) / 1.0 (DCQL)      | Draft 22 (PEX) / 1.0 (DCQL)           | 1.0 (JARM)                                     | 1.0                                                                                                         |
+| `client_id` style                             | bare string + `client_id_scheme`         | bare string + `client_id_scheme` | bare string + `client_id_scheme`      | bare string + `client_id_scheme`               | OID4VP 1.0 client-id-prefix                                                                                 |
+| Pre-auth code validation (issuer side)        | ❌ accepts any                           | n/a (Sphereon is verify-only)    | n/a                                   | n/a                                            | n/a                                                                                                         |
 
 ⁰ Gated tests: `it.skip` until plugin SD-JWT-VC presentation
 support ships. The plugin's parsing-side interop with EUDI is
@@ -230,10 +230,10 @@ languages with a single API surface (`presentCredentials`,
 `prepareVerifiablePresentation`). Routing is driven entirely by
 the verifier's Authorization Request:
 
-- `presentation_definition` set → PEX route (legacy, OID4VP draft 22
-  and earlier, every walt.id-class vendor today).
-- `dcql_query` set → DCQL route (OID4VP 1.0+, EUDI reference
-  verifier, the future).
+-   `presentation_definition` set → PEX route (legacy, OID4VP draft 22
+    and earlier, every walt.id-class vendor today).
+-   `dcql_query` set → DCQL route (OID4VP 1.0+, EUDI reference
+    verifier, the future).
 
 Mutual exclusion is enforced at parse time per OID4VP 1.0 §5.3
 (`VpError('both_pex_and_dcql', ...)`).
@@ -241,14 +241,14 @@ Mutual exclusion is enforced at parse time per OID4VP 1.0 §5.3
 DCQL implementation is split into focused modules under
 `packages/plugins/openid4vc/src/dcql/`:
 
-| Module | Responsibility |
-|---|---|
-| `parse.ts` | Wraps `dcql.DcqlQuery.parse` + `validate` behind the plugin's stable `VpError` taxonomy. |
-| `adapt.ts` | Held credential (JWT-VC string / LD-VC object) → `DcqlW3cVcCredential`. Drops sd-jwt-vc / mso_mdoc cleanly. |
-| `select.ts` | Holder selector via `DcqlQuery.query`. Returns `DcqlSelectionResult` mirroring the PEX `SelectionResult` shape (different keying, same intent). |
-| `build.ts` | One unsigned VP per `credential_query_id` in chosen[]. Pure / synchronous. |
-| `respond.ts` | Sign each unsigned VP, assemble the OID4VP §6.4 `vp_token` object. |
-| `compose.ts` | Verifier-side: `requestW3cVc(spec)` builds spec-correct DCQL queries from domain-shaped intent. |
+| Module       | Responsibility                                                                                                                                  |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parse.ts`   | Wraps `dcql.DcqlQuery.parse` + `validate` behind the plugin's stable `VpError` taxonomy.                                                        |
+| `adapt.ts`   | Held credential (JWT-VC string / LD-VC object) → `DcqlW3cVcCredential`. Drops sd-jwt-vc / mso_mdoc cleanly.                                     |
+| `select.ts`  | Holder selector via `DcqlQuery.query`. Returns `DcqlSelectionResult` mirroring the PEX `SelectionResult` shape (different keying, same intent). |
+| `build.ts`   | One unsigned VP per `credential_query_id` in chosen[]. Pure / synchronous.                                                                      |
+| `respond.ts` | Sign each unsigned VP, assemble the OID4VP §6.4 `vp_token` object.                                                                              |
+| `compose.ts` | Verifier-side: `requestW3cVc(spec)` builds spec-correct DCQL queries from domain-shaped intent.                                                 |
 
 The plugin's `dcql` library bind uses a namespace import
 (`import * as dcql from 'dcql'`) so live-binding works through the
@@ -266,7 +266,7 @@ adding new walt.id-only tests.
 
 ### 1. Internal listen port is `3000`, not `7002`/`7003`
 
-The `baseUrl` config field controls the *advertised* origin
+The `baseUrl` config field controls the _advertised_ origin
 (embedded in metadata, `response_uri`, etc.) but is decoupled from
 the actual listen port — walt.id always binds to container `:3000`.
 The compose file maps `7002:3000` and `7003:3000` accordingly.
@@ -346,10 +346,10 @@ Rather than patch the plugin with a "dev-mode bypass" that risks
 shipping to production, `setup/walt-id-client.ts` exposes two
 rewriters:
 
-- `resolveOfferToByValue(uri)` — fetches the referenced offer JSON and
-  repackages it as `openid-credential-offer://?credential_offer=<json>`
-- `resolveAuthorizationRequestToByValue(uri)` — fetches the referenced
-  PD and inlines it as `presentation_definition=<json>`
+-   `resolveOfferToByValue(uri)` — fetches the referenced offer JSON and
+    repackages it as `openid-credential-offer://?credential_offer=<json>`
+-   `resolveAuthorizationRequestToByValue(uri)` — fetches the referenced
+    PD and inlines it as `presentation_definition=<json>`
 
 The rewritten URL exercises the same downstream plugin code paths
 (token exchange, credential request, VP build + submit) against real
@@ -391,17 +391,17 @@ interop harness but wrong for release blockers.
 First check `docker logs oid4vc-interop-issuer --tail 80`. Common
 failure modes and fixes:
 
-- **`'baseUrl': Missing String from config`** — the config volume
-  isn't being mounted, or the file inside is empty. Verify with
-  `docker exec oid4vc-interop-issuer ls -la /waltid-issuer-api/config/`.
-- **Container shows `(health: starting)` forever** — the JVM is
-  alive but the app failed to load a feature. Logs will show
-  which.
-- **Port 7002 / 7003 in use** — `lsof -i :7002` to find the holder.
+-   **`'baseUrl': Missing String from config`** — the config volume
+    isn't being mounted, or the file inside is empty. Verify with
+    `docker exec oid4vc-interop-issuer ls -la /waltid-issuer-api/config/`.
+-   **Container shows `(health: starting)` forever** — the JVM is
+    alive but the app failed to load a feature. Logs will show
+    which.
+-   **Port 7002 / 7003 in use** — `lsof -i :7002` to find the holder.
 
 ### Curl returns 000 / connection refused
 
-The app is bound to *container* port 3000 — host port 7002/7003
+The app is bound to _container_ port 3000 — host port 7002/7003
 only works if the compose file maps `7002:3000` (which it does,
 but a stale `7002:7002` mapping from an older checkout will silently
 fail). Verify with `docker port oid4vc-interop-issuer`.

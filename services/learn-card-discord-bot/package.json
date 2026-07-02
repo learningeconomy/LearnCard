@@ -1,12 +1,11 @@
 {
     "name": "learn-card-discord-bot",
     "private": true,
-    "version": "1.1.227",
+    "version": "1.1.230",
     "description": "",
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
-        "preinstall": "npx only-allow pnpm",
         "start": "rollup -c & pm2-runtime dist/index.js",
         "build": "rollup -c"
     },

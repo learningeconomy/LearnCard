@@ -2,71 +2,71 @@
 
 OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 
-- **OID4VCI** — accept credential offers, exchange pre-authorized / authorization codes for access tokens, request credentials from issuers.
-- **OID4VP** — parse Authorization Requests, match held credentials against Presentation Definitions (DIF PEX v2), build and sign VP tokens.
-- **SIOPv2** — issue self-issued ID tokens for holder authentication.
+-   **OID4VCI** — accept credential offers, exchange pre-authorized / authorization codes for access tokens, request credentials from issuers.
+-   **OID4VP** — parse Authorization Requests, match held credentials against Presentation Definitions (DIF PEX v2), build and sign VP tokens.
+-   **SIOPv2** — issue self-issued ID tokens for holder authentication.
 
 ## Status
 
-**Holder surface feature-complete.** Every slice that touches the wire — offer intake, both VCI flows, OID4VP with PEX *and* DCQL, JARM-encrypted responses, SIOPv2 — is implemented and verified live against walt.id, Sphereon, and Animo Paradym. The remaining work is wallet-app UI integration (Slice 10) and CI infrastructure (Slice 11).
+**Holder surface feature-complete.** Every slice that touches the wire — offer intake, both VCI flows, OID4VP with PEX _and_ DCQL, JARM-encrypted responses, SIOPv2 — is implemented and verified live against walt.id, Sphereon, and Animo Paradym. The remaining work is wallet-app UI integration (Slice 10) and CI infrastructure (Slice 11).
 
 ### OID4VCI — issuance side
 
-| Capability | Status |
-|---|---|
-| Credential Offer URI parsing (by-value + by-reference) | ✅ Slice 1 |
-| Draft 11 → Draft 13 normalization | ✅ Slice 1 |
-| Issuer + authorization-server metadata fetching | ✅ Slice 2 |
-| Pre-authorized code flow (`jwt_vc_json`) | ✅ Slice 2 |
-| Proof-of-possession JWT (EdDSA, default signer from host LearnCard) | ✅ Slice 2 |
-| Wallet index / LearnCloud integration (one-call `acceptAndStoreCredentialOffer`) | ✅ Slice 3 |
-| JWT VC → W3C VC reconstruction (VCDM §6.3.1) with raw JWT preserved under `proof.jwt` | ✅ Slice 3 |
-| Partial-failure reporting (one bad credential doesn't abort a batch) | ✅ Slice 3 |
-| Authorization code flow + PKCE (`beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode`) | ✅ Slice 4 |
-| `ldp_vc` issuance format | ⏳ Slice 5 — `jwt_vc_json` covers every issuer we test against; revisit when a partner needs LD-proof issuance. |
+| Capability                                                                                          | Status                                                                                                          |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Credential Offer URI parsing (by-value + by-reference)                                              | ✅ Slice 1                                                                                                      |
+| Draft 11 → Draft 13 normalization                                                                   | ✅ Slice 1                                                                                                      |
+| Issuer + authorization-server metadata fetching                                                     | ✅ Slice 2                                                                                                      |
+| Pre-authorized code flow (`jwt_vc_json`)                                                            | ✅ Slice 2                                                                                                      |
+| Proof-of-possession JWT (EdDSA, default signer from host LearnCard)                                 | ✅ Slice 2                                                                                                      |
+| Wallet index / LearnCloud integration (one-call `acceptAndStoreCredentialOffer`)                    | ✅ Slice 3                                                                                                      |
+| JWT VC → W3C VC reconstruction (VCDM §6.3.1) with raw JWT preserved under `proof.jwt`               | ✅ Slice 3                                                                                                      |
+| Partial-failure reporting (one bad credential doesn't abort a batch)                                | ✅ Slice 3                                                                                                      |
+| Authorization code flow + PKCE (`beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode`) | ✅ Slice 4                                                                                                      |
+| `ldp_vc` issuance format                                                                            | ⏳ Slice 5 — `jwt_vc_json` covers every issuer we test against; revisit when a partner needs LD-proof issuance. |
 
 ### OID4VP — presentation side
 
-| Capability | Status |
-|---|---|
-| OID4VP Authorization Request URI parsing (inline + `presentation_definition_uri`) | ✅ Slice 6 |
-| DIF PEX v2 matcher (JSONPath subset + JSON Schema filter subset) | ✅ Slice 6 |
-| Candidate selection + `submission_requirements` (`all` / `pick` / `from_nested`) | ✅ Slice 6 |
-| Presentation Submission `descriptor_map` builder | ✅ Slice 6 |
-| Format designation matching (`jwt_vc_json` / `ldp_vc` / `ldp`) | ✅ Slice 6 |
-| VP construction (`buildPresentation`): unsigned VP + PresentationSubmission | ✅ Slice 7a |
-| VP signing (`signPresentation`): `jwt_vp_json` (JWS) + `ldp_vp` (LD proof via host) | ✅ Slice 7b |
-| `direct_post` VP response (`submitPresentation`) | ✅ Slice 7c |
-| End-to-end `presentCredentials()` verified against **walt.id**, **Sphereon**, **Animo Paradym** | ✅ Slice 7 |
-| Signed Request Objects (`request` / `request_uri` JWS) — `client_id_scheme=did` (did:jwk, did:web) + `x509_san_dns` (trusted-roots or self-signed-dev) | ✅ Slice 7.5 |
-| **DCQL query** — W3C OID4VP Draft 22 alternative to PEX. Same `prepareVerifiablePresentation` / `presentCredentials` entry points; DCQL takes precedence when both `dcql_query` and `presentation_definition` are present. | ✅ |
-| **JARM** — encrypted `direct_post.jwt` responses (JWE A128CBC-HS256 / ECDH-ES). Selected automatically when the verifier requests `response_mode=direct_post.jwt`. | ✅ |
+| Capability                                                                                                                                                                                                                 | Status       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| OID4VP Authorization Request URI parsing (inline + `presentation_definition_uri`)                                                                                                                                          | ✅ Slice 6   |
+| DIF PEX v2 matcher (JSONPath subset + JSON Schema filter subset)                                                                                                                                                           | ✅ Slice 6   |
+| Candidate selection + `submission_requirements` (`all` / `pick` / `from_nested`)                                                                                                                                           | ✅ Slice 6   |
+| Presentation Submission `descriptor_map` builder                                                                                                                                                                           | ✅ Slice 6   |
+| Format designation matching (`jwt_vc_json` / `ldp_vc` / `ldp`)                                                                                                                                                             | ✅ Slice 6   |
+| VP construction (`buildPresentation`): unsigned VP + PresentationSubmission                                                                                                                                                | ✅ Slice 7a  |
+| VP signing (`signPresentation`): `jwt_vp_json` (JWS) + `ldp_vp` (LD proof via host)                                                                                                                                        | ✅ Slice 7b  |
+| `direct_post` VP response (`submitPresentation`)                                                                                                                                                                           | ✅ Slice 7c  |
+| End-to-end `presentCredentials()` verified against **walt.id**, **Sphereon**, **Animo Paradym**                                                                                                                            | ✅ Slice 7   |
+| Signed Request Objects (`request` / `request_uri` JWS) — `client_id_scheme=did` (did:jwk, did:web) + `x509_san_dns` (trusted-roots or self-signed-dev)                                                                     | ✅ Slice 7.5 |
+| **DCQL query** — W3C OID4VP Draft 22 alternative to PEX. Same `prepareVerifiablePresentation` / `presentCredentials` entry points; DCQL takes precedence when both `dcql_query` and `presentation_definition` are present. | ✅           |
+| **JARM** — encrypted `direct_post.jwt` responses (JWE A128CBC-HS256 / ECDH-ES). Selected automatically when the verifier requests `response_mode=direct_post.jwt`.                                                         | ✅           |
 
 ### SIOPv2 + cross-cutting
 
-| Capability | Status |
-|---|---|
-| SIOPv2 ID token (`signIdToken`) standalone + auto-bundled when `response_type` includes `id_token` | ✅ Slice 8 |
-| Browser-safe runtime (no `node:crypto` / `node:zlib`) — bundles cleanly into `apps/learn-card-app` | ✅ Slice 7.6 |
-| Auto-wired into every seed-based `@learncard/init` function | ✅ Slice 7.6 |
-| Bitstring Status List checking | Handled by `@learncard/didkit-plugin`. `lc.invoke.verifyCredential(vc)` automatically checks `BitstringStatusListEntry` / `StatusList2021Entry` / `RevocationList2020` when the credential carries a `credentialStatus` field. |
-| Deep-link / QR entry points in `learn-card-app` | ⏳ Slice 9 |
-| UI adapter for consent + selection in `learn-card-app` / `learn-card-base` | ⏳ Slice 10 |
-| Self-hosted issuer + verifier in CI | ⏳ Slice 11 |
+| Capability                                                                                         | Status                                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SIOPv2 ID token (`signIdToken`) standalone + auto-bundled when `response_type` includes `id_token` | ✅ Slice 8                                                                                                                                                                                                                     |
+| Browser-safe runtime (no `node:crypto` / `node:zlib`) — bundles cleanly into `apps/learn-card-app` | ✅ Slice 7.6                                                                                                                                                                                                                   |
+| Auto-wired into every seed-based `@learncard/init` function                                        | ✅ Slice 7.6                                                                                                                                                                                                                   |
+| Bitstring Status List checking                                                                     | Handled by `@learncard/didkit-plugin`. `lc.invoke.verifyCredential(vc)` automatically checks `BitstringStatusListEntry` / `StatusList2021Entry` / `RevocationList2020` when the credential carries a `credentialStatus` field. |
+| Deep-link / QR entry points in `learn-card-app`                                                    | ⏳ Slice 9                                                                                                                                                                                                                     |
+| UI adapter for consent + selection in `learn-card-app` / `learn-card-base`                         | ⏳ Slice 10                                                                                                                                                                                                                    |
+| Self-hosted issuer + verifier in CI                                                                | ⏳ Slice 11                                                                                                                                                                                                                    |
 
 See the California RFP epic for full scope.
 
 ## Spec versions
 
-- **OID4VCI**: [Draft 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html). Draft 11 offers are accepted and normalized on ingest.
-- **OID4VP**: [Draft 22](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html).
-- **SIOPv2**: [final](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html).
-- **PEX**: DIF Presentation Exchange v2.
+-   **OID4VCI**: [Draft 13](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html). Draft 11 offers are accepted and normalized on ingest.
+-   **OID4VP**: [Draft 22](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html).
+-   **SIOPv2**: [final](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html).
+-   **PEX**: DIF Presentation Exchange v2.
 
 ## Installation
 
 ```bash
-pnpm add @learncard/openid4vc-plugin
+bun add @learncard/openid4vc-plugin
 ```
 
 Required peer plugins: `@learncard/vc-plugin`, `@learncard/didkit-plugin`.
@@ -106,9 +106,7 @@ import { initLearnCard } from '@learncard/init';
 const lc = await initLearnCard({ seed: 'a'.repeat(64) });
 
 // Slice 1 — parse a credential offer URI without hitting the network:
-const parsed = lc.invoke.parseCredentialOffer(
-    'openid-credential-offer://?credential_offer=...'
-);
+const parsed = lc.invoke.parseCredentialOffer('openid-credential-offer://?credential_offer=...');
 
 if (parsed.kind === 'by_value') {
     console.log('Issuer:', parsed.offer.credential_issuer);
@@ -177,15 +175,12 @@ When an offer's `grants` carries `authorization_code` (with or without an `issue
 // 1. Offer in hand. Build the authorize URL + persist a flow handle
 //    (PKCE verifier, nonce, etc.). Open `authorizationUrl` in a popup
 //    or top-level redirect.
-const { authorizationUrl, flowHandle } = await lc.invoke.beginCredentialOfferAuthCode(
-    offerUri,
-    {
-        redirectUri: 'https://wallet.example.com/callback',
-        clientId: 'wallet.example.com',
-        scope: ['openid'],            // optional
-        // userHint: 'alice@example.com', // optional `login_hint`
-    }
-);
+const { authorizationUrl, flowHandle } = await lc.invoke.beginCredentialOfferAuthCode(offerUri, {
+    redirectUri: 'https://wallet.example.com/callback',
+    clientId: 'wallet.example.com',
+    scope: ['openid'], // optional
+    // userHint: 'alice@example.com', // optional `login_hint`
+});
 
 localStorage.setItem('vci.flow', JSON.stringify(flowHandle));
 window.location.href = authorizationUrl;
@@ -252,16 +247,16 @@ const parsed = lc.invoke.parseAuthorizationRequest(
 
 if (parsed.kind === 'by_value') {
     console.log('Verifier:', parsed.request.client_id);
-    console.log('Nonce:',    parsed.request.nonce);
+    console.log('Nonce:', parsed.request.nonce);
     console.log('Return to:', parsed.request.response_uri);
 }
 ```
 
 Three discriminated variants:
 
-- **`by_value`** — every param was inline; the returned `request` is ready for matching.
-- **`by_reference_request_uri`** — the verifier delegated the request to a signed JWS fetched from `request_uri`. Slice 7.5 verifies the signature per `client_id_scheme` (see below) and inlines the claims.
-- **`by_reference_request_jwt`** — same thing but the JWS is embedded directly via the `request` param.
+-   **`by_value`** — every param was inline; the returned `request` is ready for matching.
+-   **`by_reference_request_uri`** — the verifier delegated the request to a signed JWS fetched from `request_uri`. Slice 7.5 verifies the signature per `client_id_scheme` (see below) and inlines the claims.
+-   **`by_reference_request_jwt`** — same thing but the JWS is embedded directly via the `request` param.
 
 ### Slice 6b — resolve `presentation_definition_uri` over HTTP
 
@@ -280,15 +275,12 @@ import type { CandidateCredential } from '@learncard/openid4vc-plugin';
 
 // Your wallet's credentials, in whatever shape they live in today.
 const candidates: CandidateCredential[] = myRecords.map(r => ({
-    credential: r.vc,              // JSON-LD object, or a JWT-VC string
-    format: r.format,              // optional; inferred from shape when absent
-    id: r.uri,                     // optional caller-side id for audit/UI
+    credential: r.vc, // JSON-LD object, or a JWT-VC string
+    format: r.format, // optional; inferred from shape when absent
+    id: r.uri, // optional caller-side id for audit/UI
 }));
 
-const { request, selection } = await lc.invoke.prepareVerifiablePresentation(
-    uri,
-    candidates
-);
+const { request, selection } = await lc.invoke.prepareVerifiablePresentation(uri, candidates);
 
 if (!selection.canSatisfy) {
     // UI shows a "We couldn't satisfy this request" state.
@@ -334,10 +326,10 @@ const submission = buildPresentationSubmission(request.presentation_definition!,
 
 The matcher is spec-correct for the vast majority of Presentation Definitions seen in the wild. It covers:
 
-- **JSONPath (`field.path[]`)** — root (`$`), dotted (`$.a.b.c`), bracketed (`$['foo bar']`), numeric index (`$.a[0]`), wildcard (`$.a[*]`, `$.a.*`), recursive descent (`$..foo`). Filter predicates (`[?(@.x=='y')]`) and array slicing (`[0:2]`) throw a descriptive error rather than silently missing.
-- **JSON Schema filter (`field.filter`)** — `type`, `const`, `enum`, `pattern`, `minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`, `minLength` / `maxLength`, `contains`, `items`, `minItems` / `maxItems`. Unknown keywords pass by default (lenient mode) so verifiers introducing new keywords don't block wallet upgrades.
-- **`submission_requirements`** — `rule: 'all'`, `rule: 'pick'` with `count` / `min` / (soft) `max`, and nested `from_nested` groups.
-- **Format designations** — `descriptor.format` takes precedence over `pd.format`; candidates are filtered before JSONPath runs. `jwt_vc_json` credentials are transparently base64url-decoded for matching (paths like `$.credentialSubject.id` work even when the raw credential is a compact JWS).
+-   **JSONPath (`field.path[]`)** — root (`$`), dotted (`$.a.b.c`), bracketed (`$['foo bar']`), numeric index (`$.a[0]`), wildcard (`$.a[*]`, `$.a.*`), recursive descent (`$..foo`). Filter predicates (`[?(@.x=='y')]`) and array slicing (`[0:2]`) throw a descriptive error rather than silently missing.
+-   **JSON Schema filter (`field.filter`)** — `type`, `const`, `enum`, `pattern`, `minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`, `minLength` / `maxLength`, `contains`, `items`, `minItems` / `maxItems`. Unknown keywords pass by default (lenient mode) so verifiers introducing new keywords don't block wallet upgrades.
+-   **`submission_requirements`** — `rule: 'all'`, `rule: 'pick'` with `count` / `min` / (soft) `max`, and nested `from_nested` groups.
+-   **Format designations** — `descriptor.format` takes precedence over `pd.format`; candidates are filtered before JSONPath runs. `jwt_vc_json` credentials are transparently base64url-decoded for matching (paths like `$.credentialSubject.id` work even when the raw credential is a compact JWS).
 
 If your verifier lands a PEX feature we haven't modeled, open an issue with the Presentation Definition — the matcher layer is designed to swap for a full `ajv`-backed implementation without touching the plugin surface.
 
@@ -347,10 +339,7 @@ DCQL (Digital Credentials Query Language) is OID4VP Draft 22's spec-native alter
 
 ```ts
 // Same call as before — no caller-side change needed for DCQL.
-const { request, selection } = await lc.invoke.prepareVerifiablePresentation(
-    uri,
-    candidates
-);
+const { request, selection } = await lc.invoke.prepareVerifiablePresentation(uri, candidates);
 
 if (request.dcql_query) {
     // selection.descriptors[i].descriptorId === credential_query.id
@@ -368,51 +357,51 @@ VCI errors are thrown as `CredentialOfferParseError` / `VciError`; VP errors as 
 
 ### `CredentialOfferParseError.code`
 
-| `code` | Meaning |
-|---|---|
-| `invalid_uri` | URI is malformed, non-https reference, or network fetch failed |
-| `missing_offer` | Neither `credential_offer` nor `credential_offer_uri` present |
-| `both_offer_and_uri` | Both parameters present (spec violation) |
-| `invalid_json` | Offer payload or by-reference response was not valid JSON |
-| `missing_issuer` | Offer has no `credential_issuer` |
-| `missing_credentials` | Offer has no resolvable credential identifiers |
-| `invalid_grants` | `grants` object is malformed |
+| `code`                | Meaning                                                        |
+| --------------------- | -------------------------------------------------------------- |
+| `invalid_uri`         | URI is malformed, non-https reference, or network fetch failed |
+| `missing_offer`       | Neither `credential_offer` nor `credential_offer_uri` present  |
+| `both_offer_and_uri`  | Both parameters present (spec violation)                       |
+| `invalid_json`        | Offer payload or by-reference response was not valid JSON      |
+| `missing_issuer`      | Offer has no `credential_issuer`                               |
+| `missing_credentials` | Offer has no resolvable credential identifiers                 |
+| `invalid_grants`      | `grants` object is malformed                                   |
 
 ### `VpError.code`
 
-| `code` | Meaning |
-|---|---|
-| `invalid_uri` | Authorization Request URI is malformed or has no query string |
-| `invalid_json` | `presentation_definition` / `client_metadata` / resolved PD was not valid JSON |
-| `missing_client_id` | Authorization Request has no `client_id` |
-| `missing_nonce` | Authorization Request has no `nonce` (replay-protection required by spec) |
-| `missing_response_type` | Authorization Request has no `response_type` |
-| `unsupported_response_type` | `response_type` is neither `vp_token` nor `id_token` |
-| `missing_response_target` | Neither `response_uri` (Draft 22+) nor legacy `redirect_uri` is present |
-| `missing_presentation_definition` | `vp_token` request carries no `presentation_definition`, `presentation_definition_uri`, or `scope` |
-| `invalid_presentation_definition` | PD is structurally malformed (missing `id`, empty `input_descriptors`, descriptor without `constraints`) |
-| `both_definition_and_uri` | Both `presentation_definition` and `presentation_definition_uri` supplied (spec violation) |
-| `presentation_definition_fetch_failed` | Fetching `presentation_definition_uri` timed out, returned non-2xx, or disallowed by scheme |
+| `code`                                 | Meaning                                                                                                  |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `invalid_uri`                          | Authorization Request URI is malformed or has no query string                                            |
+| `invalid_json`                         | `presentation_definition` / `client_metadata` / resolved PD was not valid JSON                           |
+| `missing_client_id`                    | Authorization Request has no `client_id`                                                                 |
+| `missing_nonce`                        | Authorization Request has no `nonce` (replay-protection required by spec)                                |
+| `missing_response_type`                | Authorization Request has no `response_type`                                                             |
+| `unsupported_response_type`            | `response_type` is neither `vp_token` nor `id_token`                                                     |
+| `missing_response_target`              | Neither `response_uri` (Draft 22+) nor legacy `redirect_uri` is present                                  |
+| `missing_presentation_definition`      | `vp_token` request carries no `presentation_definition`, `presentation_definition_uri`, or `scope`       |
+| `invalid_presentation_definition`      | PD is structurally malformed (missing `id`, empty `input_descriptors`, descriptor without `constraints`) |
+| `both_definition_and_uri`              | Both `presentation_definition` and `presentation_definition_uri` supplied (spec violation)               |
+| `presentation_definition_fetch_failed` | Fetching `presentation_definition_uri` timed out, returned non-2xx, or disallowed by scheme              |
 
 Signed Request Objects surface a separate typed error, `RequestObjectError`, with these codes:
 
-| `code` | Meaning |
-|---|---|
-| `invalid_request_object` | JWS couldn't be decoded, or the payload was missing required claims (`client_id` in particular) |
-| `request_fetch_failed` | Fetching `request_uri` failed or returned non-2xx |
-| `missing_client_id_scheme` | Neither URL params nor JWS claims supplied `client_id_scheme` |
+| `code`                         | Meaning                                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `invalid_request_object`       | JWS couldn't be decoded, or the payload was missing required claims (`client_id` in particular)                                                        |
+| `request_fetch_failed`         | Fetching `request_uri` failed or returned non-2xx                                                                                                      |
+| `missing_client_id_scheme`     | Neither URL params nor JWS claims supplied `client_id_scheme`                                                                                          |
 | `unsupported_client_id_scheme` | Scheme is one we don't yet implement (`pre-registered`, `verifier_attestation`), or a forbidden scheme (`redirect_uri`) was combined with a signed JWS |
-| `client_id_mismatch` | Outer URL `client_id` disagrees with signed `client_id`, OR (for x509) the leaf cert SAN doesn't cover the `client_id` host |
-| `request_signature_invalid` | JWS signature failed to verify against the resolved key |
-| `request_signer_untrusted` | DID resolver couldn't find the `kid`; or the x509 chain didn't root into `trustedX509Roots` |
-| `did_resolution_failed` | DID resolver couldn't produce a document (network error for `did:web`, unsupported method for others) |
+| `client_id_mismatch`           | Outer URL `client_id` disagrees with signed `client_id`, OR (for x509) the leaf cert SAN doesn't cover the `client_id` host                            |
+| `request_signature_invalid`    | JWS signature failed to verify against the resolved key                                                                                                |
+| `request_signer_untrusted`     | DID resolver couldn't find the `kid`; or the x509 chain didn't root into `trustedX509Roots`                                                            |
+| `did_resolution_failed`        | DID resolver couldn't produce a document (network error for `did:web`, unsupported method for others)                                                  |
 
 ## Testing
 
 ### Unit tests
 
 ```bash
-pnpm --filter @learncard/openid4vc-plugin test
+bun --filter @learncard/openid4vc-plugin run test
 ```
 
 ### Driving a real issuer end-to-end — `try-offer` harness
@@ -421,23 +410,23 @@ pnpm --filter @learncard/openid4vc-plugin test
 
 ```bash
 # from repo root
-pnpm --filter @learncard/openid4vc-plugin try-offer "<offer-uri>"
+bun --filter @learncard/openid4vc-plugin run try-offer "<offer-uri>"
 
 # or from the plugin dir
 cd packages/plugins/openid4vc
-pnpm try-offer "<offer-uri>"
+bun run try-offer "<offer-uri>"
 ```
 
 Flags:
 
-| Flag | Purpose |
-|---|---|
-| `--tx-code <code>` | PIN the issuer delivered out-of-band (if the offer carries `tx_code`) |
-| `--client-id <id>` | Client identifier, if the authorization server requires one |
-| `--only <id1,id2>` | Comma-separated subset of `credential_configuration_ids` to request |
-| `--save <path>` | Write the issued credential(s) as JSON at `<path>` — single VC as an object, multiple as an array. Feed it straight into `try-verify --credentials <path>`. `*.vc.json`, `my-vc*.json`, and `issued-credentials*.json` are gitignored by default so real holder credentials never get committed. |
-| `--verbose`, `-v` | Log the full resolved offer and each credential's raw JWT |
-| `--help`, `-h` | Show usage |
+| Flag               | Purpose                                                                                                                                                                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--tx-code <code>` | PIN the issuer delivered out-of-band (if the offer carries `tx_code`)                                                                                                                                                                                                                            |
+| `--client-id <id>` | Client identifier, if the authorization server requires one                                                                                                                                                                                                                                      |
+| `--only <id1,id2>` | Comma-separated subset of `credential_configuration_ids` to request                                                                                                                                                                                                                              |
+| `--save <path>`    | Write the issued credential(s) as JSON at `<path>` — single VC as an object, multiple as an array. Feed it straight into `try-verify --credentials <path>`. `*.vc.json`, `my-vc*.json`, and `issued-credentials*.json` are gitignored by default so real holder credentials never get committed. |
+| `--verbose`, `-v`  | Log the full resolved offer and each credential's raw JWT                                                                                                                                                                                                                                        |
+| `--help`, `-h`     | Show usage                                                                                                                                                                                                                                                                                       |
 
 Output on success: the decoded W3C VC for each issued credential plus the issuer's `notification_id` (if supplied). On failure: the `VciError` code, HTTP status, error body, and cause — so you can distinguish `metadata_fetch_failed` from `token_request_failed` from `credential_request_failed` at a glance.
 
@@ -450,7 +439,7 @@ All of these expose pre-authorized-code offers, so the harness works as-is.
 1. Visit `https://dev.issuer.eudiw.dev/`.
 2. Pick a credential (PID, mDL, etc.), start the issuance flow.
 3. Instead of scanning the QR with a wallet app, copy the `openid-credential-offer://...` URI the page displays.
-4. Run: `pnpm try-offer "openid-credential-offer://?credential_offer_uri=..."`
+4. Run: `bun run try-offer "openid-credential-offer://?credential_offer_uri=..."`
 5. If prompted for a PIN, pass it via `--tx-code`.
 
 **WaltID Portal** — friendliest UI.
@@ -472,37 +461,37 @@ When you want deterministic iteration (same offer twice, offline, step-through d
 ```bash
 docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:latest
 # in another terminal, POST an offer config to http://localhost:7002/...
-# then feed the returned offer URI to pnpm try-offer
+# then feed the returned offer URI to bun run try-offer
 ```
 
 #### What the harness does NOT cover
 
-- **No wallet integration.** Credentials are decoded and printed, not persisted. Once Slice 10 wires `acceptAndStoreCredentialOffer` into the wallet UI, use the learn-card-app instead for that part of the flow.
-- **No signature verification.** The harness trusts the issuer's response. Verifying the credential JWT against the issuer's published key is a separate concern handled by the VC plugin on read.
-- **Pre-authorized code only.** The harness drives the pre-authorized flow because it's headless. The plugin itself supports the authorization code flow via `beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode` (Slice 4); exercising it requires a real browser to bounce through the issuer's authorization endpoint, so it's covered by the wallet app's e2e tests rather than this harness.
+-   **No wallet integration.** Credentials are decoded and printed, not persisted. Once Slice 10 wires `acceptAndStoreCredentialOffer` into the wallet UI, use the learn-card-app instead for that part of the flow.
+-   **No signature verification.** The harness trusts the issuer's response. Verifying the credential JWT against the issuer's published key is a separate concern handled by the VC plugin on read.
+-   **Pre-authorized code only.** The harness drives the pre-authorized flow because it's headless. The plugin itself supports the authorization code flow via `beginCredentialOfferAuthCode` / `completeCredentialOfferAuthCode` (Slice 4); exercising it requires a real browser to bounce through the issuer's authorization endpoint, so it's covered by the wallet app's e2e tests rather than this harness.
 
 ### Driving a real verifier end-to-end — `try-verify` harness
 
 `scripts/try-verify.ts` is the OID4VP counterpart to `try-offer`: it takes a verifier's Authorization Request URI, resolves the Presentation Definition, runs the PEX matcher + selector against credentials you supply, and prints the exact `presentation_submission` the wallet would POST back. Slice 6's entire surface gets exercised in one command.
 
 ```bash
-pnpm --filter @learncard/openid4vc-plugin try-verify \
+bun --filter @learncard/openid4vc-plugin run try-verify \
     "<oid4vp-uri>" \
     --credentials ./my-vc.json
 ```
 
 Flags:
 
-| Flag | Purpose |
-|---|---|
-| `--credentials <path>` | JSON file containing a W3C VC object, a compact JWT-VC string, or an array of either |
-| `--holder <path>` | Sidecar written by `try-offer --save` — carries the holder `did` / `kid` / private JWK. Default: `<credentials>.holder.json` |
-| `--submit` | After PEX selection, sign the VP and POST it via `direct_post` |
-| `--envelope <fmt>` | Force `jwt_vp_json` or `ldp_vp` (default: inferred from PD + VC formats) |
-| `--trusted-root <path>` | PEM file with a trusted X.509 root — required for `client_id_scheme=x509_san_dns` verifiers. Repeatable. |
-| `--unsafe-allow-self-signed` | Dev-only: accept self-signed x509 chains. Disables the chain-to-trust-root check. **Never production.** |
-| `--verbose`, `-v` | Log the full resolved request + per-field JSONPath matches |
-| `--help`, `-h` | Show usage |
+| Flag                         | Purpose                                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--credentials <path>`       | JSON file containing a W3C VC object, a compact JWT-VC string, or an array of either                                         |
+| `--holder <path>`            | Sidecar written by `try-offer --save` — carries the holder `did` / `kid` / private JWK. Default: `<credentials>.holder.json` |
+| `--submit`                   | After PEX selection, sign the VP and POST it via `direct_post`                                                               |
+| `--envelope <fmt>`           | Force `jwt_vp_json` or `ldp_vp` (default: inferred from PD + VC formats)                                                     |
+| `--trusted-root <path>`      | PEM file with a trusted X.509 root — required for `client_id_scheme=x509_san_dns` verifiers. Repeatable.                     |
+| `--unsafe-allow-self-signed` | Dev-only: accept self-signed x509 chains. Disables the chain-to-trust-root check. **Never production.**                      |
+| `--verbose`, `-v`            | Log the full resolved request + per-field JSONPath matches                                                                   |
+| `--help`, `-h`               | Show usage                                                                                                                   |
 
 The harness drives the full Slice 7 pipeline when `--submit` is set: build → sign → POST. Without it, it stops after previewing the `presentation_submission` so you can inspect what would be sent.
 
@@ -515,11 +504,12 @@ The quickest path to a real OID4VP URI.
 3. The portal shows a QR and a clickable `openid4vp://...` URL. Copy the URL.
 4. Run:
 
-   ```bash
-   pnpm try-verify "openid4vp://?..." --credentials ./my-vc.json --submit
-   ```
+    ```bash
+    bun run try-verify "openid4vp://?..." --credentials ./my-vc.json --submit
+    ```
 
-   walt.id's default verifier flow uses `client_id_scheme=redirect_uri` with inline PD — no trust-anchor setup required. If you pick a flow that wraps the request in a signed JWS, the harness automatically verifies it via the configured DID resolver (did:jwk / did:web out of the box).
+    walt.id's default verifier flow uses `client_id_scheme=redirect_uri` with inline PD — no trust-anchor setup required. If you pick a flow that wraps the request in a signed JWS, the harness automatically verifies it via the configured DID resolver (did:jwk / did:web out of the box).
+
 5. If `canSatisfy: ✓ YES`, the harness signs a JWT-VP, POSTs to the verifier's `response_uri`, and prints the `redirect_uri` the walt.id portal hands back. If `✗ NO`, each descriptor's `reason` field explains why (wrong format, missing type, filter mismatch).
 
 #### Recipe: walt.id Verifier REST API (scripted flow)
@@ -548,7 +538,7 @@ curl -s -X POST https://verifier.demo.walt.id/openid4vc/verify \
 # → returns a plain openid4vp://... URI in the response body.
 
 # 2. Run the harness against it.
-pnpm try-verify "openid4vp://..." --credentials ./my-vc.json --submit
+bun run try-verify "openid4vp://..." --credentials ./my-vc.json --submit
 ```
 
 This path is perfect for regression-testing after we change the PEX matcher — you can keep a single PD template and rerun it after every selector change.
@@ -559,7 +549,7 @@ Sphereon's reference verifier (`https://ssi.sphereon.com`) emits both by-value U
 
 1. Visit the Sphereon demo verifier, pick a flow (e.g. "Request University Degree").
 2. Copy the `openid4vp://` URI.
-3. `pnpm try-verify "openid4vp://..." --credentials ./my-vc.json`.
+3. `bun run try-verify "openid4vp://..." --credentials ./my-vc.json`.
 
 #### Recipe: Animo Paradym
 
@@ -571,10 +561,10 @@ The fastest loop is `try-offer --save` → `try-verify --credentials`:
 
 ```bash
 # 1. Issue a credential from walt.id / Animo / EUDI and write it to disk.
-pnpm try-offer "<offer-uri>" --save ./my-vc.json
+bun run try-offer "<offer-uri>" --save ./my-vc.json
 
 # 2. Point a real verifier at the same file.
-pnpm try-verify "<oid4vp-uri>" --credentials ./my-vc.json --submit
+bun run try-verify "<oid4vp-uri>" --credentials ./my-vc.json --submit
 ```
 
 `try-offer` writes the credential in its normalized W3C VC shape (JWT-VCs keep their compact JWS under `proof.jwt`), which `try-verify`'s `inferCredentialFormat` classifies correctly in both directions — so a single `./my-vc.json` round-trips through matchers for either format.
@@ -583,9 +573,9 @@ The plugin's `.gitignore` excludes `my-vc.json`, `my-vc*.json`, `*.vc.json`, and
 
 #### What the harness does NOT cover
 
-- **No `client_id_scheme=pre-registered` / `verifier_attestation`.** Both surface `unsupported_client_id_scheme` from the Slice 7.5 verifier. `did` (did:jwk + did:web built-in, others via custom `didResolver`) and `x509_san_dns` (with `trustedX509Roots`) are the supported schemes.
+-   **No `client_id_scheme=pre-registered` / `verifier_attestation`.** Both surface `unsupported_client_id_scheme` from the Slice 7.5 verifier. `did` (did:jwk + did:web built-in, others via custom `didResolver`) and `x509_san_dns` (with `trustedX509Roots`) are the supported schemes.
 
-  JARM (encrypted `direct_post.jwt`) and DCQL queries are both supported in the plugin and exercised through the wallet's e2e suite, not via this harness.
+    JARM (encrypted `direct_post.jwt`) and DCQL queries are both supported in the plugin and exercised through the wallet's e2e suite, not via this harness.
 
 ## License
 
