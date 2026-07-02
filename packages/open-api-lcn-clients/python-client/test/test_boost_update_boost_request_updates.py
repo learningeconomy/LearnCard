@@ -47,6 +47,7 @@ class TestBoostUpdateBoostRequestUpdates(unittest.TestCase):
                 credential = None,
                 default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 

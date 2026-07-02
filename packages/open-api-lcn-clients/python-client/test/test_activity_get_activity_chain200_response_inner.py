@@ -50,6 +50,7 @@ class TestActivityGetActivityChain200ResponseInner(unittest.TestCase):
                 metadata = {
                     'key' : null
                     },
+                status = 'active',
                 boost = openapi_client.models.activity_get_activity_200_response_boost.activity_getActivity_200_response_boost(
                     id = '', 
                     name = '', 
@@ -64,7 +65,6 @@ class TestActivityGetActivityChain200ResponseInner(unittest.TestCase):
                 activity_id = '',
                 event_type = 'CREATED',
                 timestamp = '',
-                actor_profile_id = '',
                 recipient_type = 'profile',
                 recipient_identifier = '',
                 source = 'send',

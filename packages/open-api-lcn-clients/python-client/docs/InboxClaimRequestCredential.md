@@ -1,6 +1,6 @@
 # InboxClaimRequestCredential
 
-The credential to issue.
+The credential to issue, or a { name } reference to resolve a boost template.
 
 ## Properties
 
@@ -16,13 +16,14 @@ Name | Type | Description | Notes
 **issuance_date** | **str** |  | [optional] 
 **expiration_date** | **str** |  | [optional] 
 **credential_status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
-**name** | **str** |  | [optional] 
+**name** | **str** |  | 
 **description** | **str** |  | [optional] 
 **valid_from** | **str** |  | [optional] 
 **valid_until** | **str** |  | [optional] 
 **status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
 **terms_of_use** | [**BoostSendBoostRequestCredentialAnyOfTermsOfUse**](BoostSendBoostRequestCredentialAnyOfTermsOfUse.md) |  | [optional] 
 **evidence** | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md) |  | [optional] 
+**render_method** | [**BoostSendRequestTemplateCredentialAnyOfRenderMethod**](BoostSendRequestTemplateCredentialAnyOfRenderMethod.md) |  | [optional] 
 **proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
 **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
 **holder** | **str** |  | [optional] 

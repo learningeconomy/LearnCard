@@ -41,6 +41,7 @@ class TestClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf(unitte
                     target_uri = '', 
                     permissions = openapi_client.models.claim_hook_get_claim_hooks_for_boost_200_response_records_inner_all_of_one_of_data_permissions.claimHook_getClaimHooksForBoost_200_response_records_inner_allOf_oneOf_data_permissions(
                         role = '', 
+                        can_view = True, 
                         can_edit = True, 
                         can_issue = True, 
                         can_revoke = True, 
@@ -61,6 +62,7 @@ class TestClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf(unitte
                     target_uri = '', 
                     permissions = openapi_client.models.claim_hook_get_claim_hooks_for_boost_200_response_records_inner_all_of_one_of_data_permissions.claimHook_getClaimHooksForBoost_200_response_records_inner_allOf_oneOf_data_permissions(
                         role = '', 
+                        can_view = True, 
                         can_edit = True, 
                         can_issue = True, 
                         can_revoke = True, 

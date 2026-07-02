@@ -6,8 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **anonymize** | **bool** |  | [optional] 
-**credentials** | [**StorageResolve200ResponseAnyOf1ReadCredentials**](StorageResolve200ResponseAnyOf1ReadCredentials.md) |  | 
-**personal** | **Dict[str, Optional[str]]** |  | 
+**credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials.md) |  | 
+**personal** | **Dict[str, str]** |  | 
 
 ## Example
 

@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **contract** | [**ContractsGetAllContractRequestsForProfile200ResponseInnerContract**](ContractsGetAllContractRequestsForProfile200ResponseInnerContract.md) |  | 
-**profile** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
+**profile** | [**BoostGetBoostRecipients200ResponseInnerToAnyOf3**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |  | 
 **status** | **str** |  | 
 **read_status** | **str** |  | [optional] 
 
