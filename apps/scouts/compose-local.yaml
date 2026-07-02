@@ -190,6 +190,7 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+            POSTMARK_FROM_EMAIL: ${POSTMARK_FROM_EMAIL:-scoutnetwork.org}
 
     neo4j:
         image: neo4j:latest
