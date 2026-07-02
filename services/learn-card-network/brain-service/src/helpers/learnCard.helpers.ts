@@ -36,6 +36,11 @@ const resolveDidkitWasmPath = (): string => {
     return require.resolve(DIDKIT_WASM_SPECIFIER);
 };
 
+// Which DIDKit engine actually loaded — exposed via the deep health check so
+// native-vs-wasm is observable from an HTTP probe instead of CloudWatch spelunking.
+let didKitEngine: 'native' | 'wasm' | 'unloaded' = 'unloaded';
+export const getDidKitEngine = (): 'native' | 'wasm' | 'unloaded' => didKitEngine;
+
 // Try native plugin first, fall back to WASM
 const didKitPluginPromises = new Map<boolean, Promise<DIDKitPlugin>>();
 
@@ -63,13 +68,17 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
-            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            const plugin = await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            didKitEngine = 'wasm';
+            return plugin;
         }
 
         try {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
-            return await getNativePlugin(undefined, allowRemoteContexts);
+            const plugin = await getNativePlugin(undefined, allowRemoteContexts);
+            didKitEngine = 'native';
+            return plugin;
         } catch (error) {
             // Surface the fallback — a silent catch here hid a months-long "native never
             // actually loads in Lambda" gap (see PR #1341 investigation).
@@ -77,7 +86,9 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
-            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            const plugin = await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            didKitEngine = 'wasm';
+            return plugin;
         }
     })();
 
