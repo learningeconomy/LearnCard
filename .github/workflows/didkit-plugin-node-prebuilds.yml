@@ -189,6 +189,12 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
 
+            - name: Use Node.js 24 for npm trusted publishing
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  package-manager-cache: false
+
             - name: Setup Bun cache
               uses: actions/cache@v6
               with:
@@ -246,7 +252,7 @@ jobs:
               working-directory: packages/plugins/didkit-plugin-node
               run: bun run prepublishOnly
 
-            # Use Bun for npm-registry tarball creation/publication alongside the workspace install/build.
+            # Use Bun for npm-registry tarball creation alongside the workspace install/build.
             - name: Pack package
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
@@ -266,8 +272,8 @@ jobs:
                     exit 1
                   fi
 
-            # Publish the prepared npm-registry tarball with Bun.
+            # Publish the prepared npm-registry tarball with npm's OIDC trusted publishing path.
             - name: Publish to npm
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: bun publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public
+              run: npm publish "${{ runner.temp }}"/didkit-plugin-node-pack/*.tgz --access public
