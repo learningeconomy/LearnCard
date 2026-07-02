@@ -33,7 +33,7 @@ import { createInterface } from 'readline';
 import { readdirSync, existsSync, readFileSync, writeFileSync, statSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { spawn, execSync } from 'child_process';
+import { spawn, execSync, execFileSync } from 'child_process';
 import { networkInterfaces } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1062,6 +1062,31 @@ const execBlocking = (cmd: string, label: string, cwd: string = APP_ROOT): void 
     }
 };
 
+/**
+ * Argument-array exec (no shell). Use this whenever any argument is derived from
+ * user input or config (tenant, stage, channel, appId, version) so values are
+ * passed verbatim to the binary and never parsed by a shell — closes the
+ * command-injection surface that string interpolation into `execBlocking` opens.
+ */
+const execFileBlocking = (
+    file: string,
+    args: string[],
+    label: string,
+    cwd: string = APP_ROOT
+): void => {
+    log.info('');
+    log.info(green(`▶ ${label}`));
+    log.info(dim(`  $ ${file} ${args.join(' ')}`));
+    log.info('');
+
+    try {
+        execFileSync(file, args, { cwd, stdio: 'inherit' });
+    } catch (err) {
+        log.error(`\n❌ Command failed: ${file} ${args.join(' ')}`);
+        throw err;
+    }
+};
+
 const nativeSync = async (tenantId?: string, stageId?: string) => {
     if (!tenantId) {
         tenantId = await pickTenant();
@@ -1518,8 +1543,10 @@ const parseCapgoArgs = (parts: Array<string | undefined>): CapgoArgs => {
     for (const p of parts) {
         if (!p) continue;
 
-        if (!result.stage && asStage(p)) {
-            result.stage = asStage(p);
+        const stage = asStage(p);
+
+        if (!result.stage && stage) {
+            result.stage = stage;
             continue;
         }
 
@@ -1535,11 +1562,25 @@ const parseCapgoArgs = (parts: Array<string | undefined>): CapgoArgs => {
 };
 
 const RESERVED_CHANNEL_RE = /^\d+\.\d+\.\d+$/;
+const VALID_CHANNEL_RE = /^[A-Za-z0-9._-]+$/;
 
 const isReservedChannel = (name: string): boolean =>
     RESERVED_CHANNEL_RE.test(name) || name === 'staging' || name === 'production';
 
-const logReservedChannelRefusal = (name: string): void => {
+const rejectChannel = (name: string): 'invalid' | 'reserved' | undefined => {
+    if (!VALID_CHANNEL_RE.test(name)) return 'invalid';
+    if (isReservedChannel(name)) return 'reserved';
+
+    return undefined;
+};
+
+const logChannelRejection = (name: string): void => {
+    if (!VALID_CHANNEL_RE.test(name)) {
+        log.error(red(`❌ Invalid channel name "${name}".`));
+        log.error(dim('   Use only letters, numbers, and . _ - (e.g. `pr-123`, `pr-local`).'));
+        return;
+    }
+
     log.error(red(`❌ Refusing to target channel "${name}".`));
     log.error(dim('   Semver channels (e.g. 1.0.9) are the live production OTA channels and'));
     log.error(dim('   `staging` is CI-managed — targeting them would replace the bundle real'));
@@ -1576,6 +1617,13 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
         tenantId = await pickTenant();
     }
 
+    if (!discoverTenants().includes(tenantId)) {
+        log.error(red(`\n❌ Unknown tenant "${tenantId}".`));
+        log.error(dim(`   Available: ${discoverTenants().join(', ')}`));
+        rl.close();
+        process.exit(1);
+    }
+
     // Default to production config — the whole point of a local Capgo build is
     // to skip CI's production-branch gating.
     if (!stageId) {
@@ -1587,9 +1635,9 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
 
     let channel = channelArg?.trim();
 
-    if (channel && isReservedChannel(channel)) {
+    if (channel && rejectChannel(channel)) {
         log.error('');
-        logReservedChannelRefusal(channel);
+        logChannelRejection(channel);
         rl.close();
         process.exit(1);
     }
@@ -1607,8 +1655,8 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
             const answer = await ask(`Channel name ${dim(`(default: ${suggested})`)}: `);
             const candidate = (answer || suggested).trim();
 
-            if (isReservedChannel(candidate)) {
-                logReservedChannelRefusal(candidate);
+            if (rejectChannel(candidate)) {
+                logChannelRejection(candidate);
                 log.info('');
                 continue;
             }
@@ -1617,7 +1665,7 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
         }
     }
 
-    const stageFlag = stageId === 'production' ? '' : ` --stage ${stageId}`;
+    const stageArgs = stageId === 'production' ? [] : ['--stage', stageId];
     const stageLabel = stageId;
     const bundleVersion = `${getAppVersion()}-${channel}.${getShortSha()}`;
 
@@ -1627,20 +1675,21 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
     log.info(`   Config:  ${cyan(`${tenantId} (${stageLabel})`)}`);
     log.info(`   Bundle:  ${cyan(bundleVersion)}`);
 
-    execBlocking(
-        `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}`,
+    execFileBlocking(
+        'bun',
+        ['scripts/prepare-native-config.ts', tenantId, ...stageArgs],
         `Step 1/4 — Preparing tenant config (${stageLabel})`
     );
 
     setNativeBuildEnv(stageId);
-    execBlocking('npx vite build', 'Step 2/4 — Building web app');
+    execFileBlocking('npx', ['vite', 'build'], 'Step 2/4 — Building web app');
 
     log.info('');
     log.info(green('▶ Step 3/4 — Ensuring Capgo channel exists'));
     log.info(dim(`  $ bunx @capgo/cli@latest channel add ${channel} ${appId}`));
 
     try {
-        execSync(`bunx @capgo/cli@latest channel add "${channel}" "${appId}"`, {
+        execFileSync('bunx', ['@capgo/cli@latest', 'channel', 'add', channel, appId], {
             cwd: MONOREPO_ROOT,
             stdio: 'pipe',
             env: { ...process.env, CAPGO_TOKEN: token },
@@ -1660,29 +1709,41 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
         }
     }
 
-    execBlocking(
+    execFileBlocking(
+        'bunx',
         [
-            'bunx @capgo/cli@latest bundle upload',
+            '@capgo/cli@latest',
+            'bundle',
+            'upload',
             appId,
             '--delta',
-            '--path apps/learn-card-app/build',
-            `--channel "${channel}"`,
-            `--bundle "${bundleVersion}"`,
-            '--package-json apps/learn-card-app/package.json',
-            '--node-modules node_modules',
-        ].join(' '),
+            '--path',
+            'apps/learn-card-app/build',
+            '--channel',
+            channel,
+            '--bundle',
+            bundleVersion,
+            '--package-json',
+            'apps/learn-card-app/package.json',
+            '--node-modules',
+            'node_modules',
+        ],
         'Step 4/4 — Uploading bundle to Capgo',
         MONOREPO_ROOT
     );
 
-    execBlocking(
+    execFileBlocking(
+        'bunx',
         [
-            'bunx @capgo/cli@latest channel set',
-            `"${channel}"`,
-            `--bundle "${bundleVersion}"`,
+            '@capgo/cli@latest',
+            'channel',
+            'set',
+            channel,
+            '--bundle',
+            bundleVersion,
             '--self-assign',
             appId,
-        ].join(' '),
+        ],
         'Setting channel default (self-assign)',
         MONOREPO_ROOT
     );
