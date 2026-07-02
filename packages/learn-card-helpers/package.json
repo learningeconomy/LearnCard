@@ -48,7 +48,7 @@
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.1",
         "esbuild-jest": "^0.5.0",
         "jest": "^28.1.3",
         "jest-environment-jsdom": "^28.1.3",
@@ -60,7 +60,7 @@
         "@noble/hashes": "^1.8.0",
         "@sd-jwt/decode": "^0.19.0",
         "@learncard/types": "workspace:*",
-        "@trpc/server": "11.7.1",
+        "@trpc/server": "11.8.0",
         "immer": "^10.0.3",
         "use-immer": "^0.9.0",
         "zod": "4.1.13"
