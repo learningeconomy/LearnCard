@@ -1676,8 +1676,16 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         currentUserStore.set.currentUserPK(null);
         currentUserStore.set.currentUserIsLoggedIn(false);
 
+        // Preserve the user's chosen UI language across logout — it's a display
+        // preference, not session/secure data. Wiping it reset logged-out screens
+        // to English and, worse, let the post-logout default overwrite the saved
+        // profile locale on the next login. The profile locale is restored on
+        // login regardless (see useSyncLocaleToProfile); this keeps the logged-out
+        // UI in the user's language too.
+        const preservedLocale = window.localStorage.getItem('i18n.language');
         window.localStorage.clear();
         window.sessionStorage.clear();
+        if (preservedLocale) window.localStorage.setItem('i18n.language', preservedLocale);
 
         firstStartupStore.set.introSlidesCompleted(true);
         firstStartupStore.set.firstStart(false);

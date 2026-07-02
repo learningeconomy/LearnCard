@@ -50,6 +50,7 @@ import { useSentryIdentify } from './constants/sentry';
 import { Modals, getLogger } from 'learn-card-base';
 import { LocaleProvider } from './i18n';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
+import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
@@ -414,6 +415,11 @@ const AppRouter: React.FC = () => {
     return (
         <LocaleProvider>
             <SharedI18nProvider>
+                {/* Best-effort mirror of the active locale to the LCN profile
+                    so the backend can localize server-sent notifications/emails.
+                    Render-less; mounted here (inside LocaleProvider + the
+                    authenticated subtree) so useLocale()/useGetProfile() work. */}
+                <LocaleProfileSync />
                 <GenericErrorBoundary>
                     {initLoading ? (
                         <LoginLoadingPage />
