@@ -3124,10 +3124,13 @@
         "noPermissions": "No permissions",
         "revokeConfirm": {
             "title": "Revoke Access?",
-            "body": "<0>{{name}}</0> will no longer be able to access your {{brand}} data."
+            "aiTitle": "Disable AI features?",
+            "body": "<0>{{name}}</0> will no longer be able to access your {{brand}} data.",
+            "aiBody": "This will revoke LearnCard AI access and turn off AI features."
         },
         "revoking": "Revoking...",
         "confirmRevoke": "Yes, Revoke Access",
+        "disableAiRevoke": "Disable AI & Revoke",
         "appDetails": "App Details",
         "dataAccessPermissions": "Data Access Permissions",
         "opening": "Opening...",

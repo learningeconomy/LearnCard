@@ -89,6 +89,7 @@ serve `[]`.
 
 -   **Dashboard Home Screen** (`src/pages/dashboard/`, LC-1831) — fully localized
     under the `dashboard.*` namespace (~130 keys). Notes for future edits there:
+
     -   `helpers/greeting.ts` is intentionally id-based: `getTimeOfDay()` returns
         `'morning' | 'afternoon' | 'evening'` and `getFirstName()` returns `''`
         when there's no name, so `DashboardHeaderCard` maps to a localized greeting
@@ -101,6 +102,21 @@ serve `[]`.
         translated label.
     -   `DashboardView.stories.tsx` + `dashboard.personas.ts` are Storybook-only
         fixtures (not imported by production) — left untranslated as test data.
+
+-   **Manage Data Sharing modal** (`src/components/data-sharing/ManageDataSharingModal.tsx`
+    and `consentSummary.ts`, LC-1831) — localized under the `dataSharing.*` namespace.
+    Re-i18n'd on top of main's PR #1310 refactor after the bun-migration merge took
+    main's hardcoded-English version wholesale. Notes for future edits there:
+
+    -   AI-consent-toggle copy switches on the stable `isLearnCardAiContract` id
+        (`contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI`), never the label:
+        `dataSharing.revokeConfirm.aiTitle` / `.aiBody` / `dataSharing.disableAiRevoke`.
+    -   The non-AI revoke body is a `TransP` (`dataSharing.revokeConfirm.body`) with a
+        bolded app name spliced in via `components={[<span className="font-medium" />]}`.
+    -   `buildPermissionText` in `consentSummary.ts` calls `m` at render time to build
+        the "N read, M write" row summary (`dataSharing.readCount`/`writeCount`/
+        `noPermissions`) — fine because it only runs inside the row render.
+    -   Cancel / Back reuse `common.cancel` / `common.back`.
 
 ## Adding a new language
 

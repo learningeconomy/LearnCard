@@ -3124,10 +3124,13 @@
         "noPermissions": "Aucune autorisation",
         "revokeConfirm": {
             "title": "Révoquer l'accès ?",
-            "body": "<0>{{name}}</0> ne pourra plus accéder à vos données {{brand}}."
+            "aiTitle": "Désactiver les fonctionnalités d'IA ?",
+            "body": "<0>{{name}}</0> ne pourra plus accéder à vos données {{brand}}.",
+            "aiBody": "Cela révoquera l'accès de LearnCard AI et désactivera les fonctionnalités d'IA."
         },
         "revoking": "Révocation...",
         "confirmRevoke": "Oui, révoquer l'accès",
+        "disableAiRevoke": "Désactiver l'IA et révoquer",
         "appDetails": "Détails de l'application",
         "dataAccessPermissions": "Autorisations d'accès aux données",
         "opening": "Ouverture...",
