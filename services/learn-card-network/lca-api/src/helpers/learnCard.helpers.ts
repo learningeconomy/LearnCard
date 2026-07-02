@@ -34,6 +34,11 @@ const resolveDidkitWasmPath = (): string => {
     return require.resolve(DIDKIT_WASM_SPECIFIER);
 };
 
+// Which DIDKit engine actually loaded — exposed via the deep health check so
+// native-vs-wasm is observable from an HTTP probe instead of CloudWatch spelunking.
+let didKitEngine: 'native' | 'wasm' | 'unloaded' = 'unloaded';
+export const getDidKitEngine = (): 'native' | 'wasm' | 'unloaded' => didKitEngine;
+
 // Try native plugin first, fall back to WASM
 let didKitInitPromise: Promise<'node' | Buffer> | null = null;
 
@@ -55,6 +60,7 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
     didKitInitPromise = (async () => {
         if (process.env.SKIP_DIDKIT_NAPI) {
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            didKitEngine = 'wasm';
             return wasmBuffer;
         }
 
@@ -62,12 +68,14 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
             await getNativePlugin();
+            didKitEngine = 'native';
             return 'node' as const;
         } catch (error) {
             // Surface the fallback — a silent catch here hid a months-long "native never
             // actually loads in Lambda" gap (see PR #1341 investigation).
             console.warn('[didkit] native plugin unavailable, falling back to WASM:', error);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            didKitEngine = 'wasm';
             return wasmBuffer;
         }
     })();
