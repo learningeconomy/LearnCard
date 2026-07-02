@@ -36,7 +36,7 @@ import {
 } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { aiRoutes } from '../../AppRouter';
+import { AI_ROUTES } from '../../constants/aiRoutes';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
@@ -94,7 +94,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     }, [location.pathname]);
 
     useEffect(() => {
-        if (!aiRoutes.includes(location.pathname)) {
+        if (!AI_ROUTES.includes(location.pathname as (typeof AI_ROUTES)[number])) {
             sideMenuStore.set.isCollapsed(false);
         }
     }, [location.pathname]);
