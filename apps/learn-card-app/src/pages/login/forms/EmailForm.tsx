@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
 import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
@@ -169,7 +171,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 setIsLoading(false);
             } catch (e) {
                 setIsLoading(false);
-                setCodeError('Unable to verify code. Please try again.');
+                setCodeError(m['login.email.verification.error']());
             }
         }
     };
@@ -297,7 +299,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
         setEmail('');
     };
 
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText: string = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
@@ -332,7 +336,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 <input
                     aria-label="Email"
                     className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
-                    placeholder="Email address"
+                    placeholder={m['login.email.placeholder']()}
                     onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
@@ -346,24 +350,21 @@ const EmailForm: React.FC<EmailFormProps> = ({
             </div>
         );
         // buttonTitle = 'Continue';
-        buttonTitle = buttonTitleOverride ?? 'Sign in with Email';
-        if (isLoading) buttonTitle = 'Sending Code...';
+        buttonTitle = buttonTitleOverride ?? m['login.email.button']();
+        if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
         formTitle = (
-            <p
-                className={`w-full ${
-                    formTitleClassNameOverride ?? 'text-white text-lg'
-                } text-center`}
-            >
-                Enter verification code or{' '}
-                <span
-                    className={startOverClassNameOverride ?? 'text-white underline font-bold'}
-                    onClick={resetForm}
-                >
-                    start over
-                </span>
-            </p>
+            <TransP
+                m={m['common.enterVerificationCode']}
+                components={[
+                    <span
+                        key="0"
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                        onClick={resetForm}
+                    />,
+                ]}
+            />
         );
         activeStep = (
             <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
@@ -387,7 +388,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading;
     }
 
@@ -449,7 +450,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                         'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
-                                    Resend in {seconds}s
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }

@@ -7,6 +7,8 @@ import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentia
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
+import * as m from '../../../paraglide/messages.js';
+
 type LearnCardTemplateListItemProps = {
     categoryType: CredentialCategory;
     userToBoostProfileId?: string;
@@ -57,7 +59,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
                     {achievementTypeDisplay}
                 </h3>
                 <p className="text-[13.5px] font-[600] text-grayscale-700 line-clamp-1">
-                    {brandingConfig?.name} Template
+                    {m['boost.template.brandTemplate']({ brand: brandingConfig?.name })}
                 </p>
             </div>
             <button

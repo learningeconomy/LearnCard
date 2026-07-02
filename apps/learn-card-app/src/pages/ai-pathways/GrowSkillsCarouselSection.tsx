@@ -2,6 +2,8 @@ import React, { ReactNode } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
+import * as m from '../../paraglide/messages.js';
+
 type GrowSkillsCarouselSectionProps<T> = {
     title: ReactNode;
     items?: T[];
@@ -19,7 +21,7 @@ const GrowSkillsCarouselSection = <T,>({
     renderItem,
     getItemKey,
     onViewAll,
-    viewAllLabel = 'View All',
+    viewAllLabel,
     className = '',
     slideClassName = 'flex !h-auto overflow-visible',
 }: GrowSkillsCarouselSectionProps<T>) => {
@@ -39,7 +41,7 @@ const GrowSkillsCarouselSection = <T,>({
                         onClick={onViewAll}
                         className="text-[14px] font-poppins text-indigo-500 font-bold leading-[130%] ml-auto transition-colors hover:text-grayscale-900"
                     >
-                        {viewAllLabel}
+                        {viewAllLabel ?? m['skills.search.viewAll']()}
                     </button>
                 )}
             </div>

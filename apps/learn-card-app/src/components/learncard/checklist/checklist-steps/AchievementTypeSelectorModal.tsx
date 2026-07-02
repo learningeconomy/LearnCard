@@ -9,6 +9,7 @@ import {
     getCategoryTypeFromCustomType,
     replaceUnderscoresWithWhiteSpace,
 } from 'learn-card-base/helpers/boostCustomTypeHelpers';
+import * as m from '../../../../paraglide/messages.js';
 
 const LOWERCASE_WORDS = new Set(['of', 'and', 'the', 'in', 'for', 'or', 'a', 'an']);
 
@@ -122,14 +123,16 @@ const AchievementTypeSelectorModal: React.FC<AchievementTypeSelectorModalProps> 
             <div className="bg-white text-grayscale-800 w-full rounded-[20px] shadow-3xl z-50 font-notoSans max-w-[600px] h-[600px] max-h-[85vh] flex flex-col">
                 <div className="px-4 py-3 border-b border-grayscale-100">
                     <h2 className="font-notoSans font-semibold text-[16px] normal-case">
-                        Select Achievement Type
+                        {m['passport.buildMyLearnCard.achievementModal.title']()}
                     </h2>
                 </div>
                 <div className="p-4">
                     <IonInput
                         type="text"
                         value={query}
-                        placeholder="Search achievement types..."
+                        placeholder={m[
+                            'passport.buildMyLearnCard.achievementModal.searchPlaceholder'
+                        ]()}
                         onIonInput={e => setQuery(e.detail.value ?? '')}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[12px] !py-[5px] font-normal text-base !pl-[15px]"
                     />
@@ -158,7 +161,7 @@ const AchievementTypeSelectorModal: React.FC<AchievementTypeSelectorModalProps> 
                     ))}
                     {filtered.length === 0 && (
                         <p className="text-center text-grayscale-400 text-sm py-4">
-                            No matching types found
+                            {m['passport.buildMyLearnCard.achievementModal.noMatches']()}
                         </p>
                     )}
                 </div>

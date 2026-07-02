@@ -21,6 +21,7 @@ import {
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+import * as m from '../../paraglide/messages.js';
 
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
@@ -103,17 +104,32 @@ const PrivacySettingsModal: React.FC = () => {
 
     const visibilityOptions = useMemo(
         () => [
-            { value: ProfileVisibilityEnum.enum.public, label: 'Public' },
-            { value: ProfileVisibilityEnum.enum.connections_only, label: 'Connections only' },
-            { value: ProfileVisibilityEnum.enum.private, label: 'Private' },
+            {
+                value: ProfileVisibilityEnum.enum.public,
+                label: m['settings.privacy.visibilityPublic'](),
+            },
+            {
+                value: ProfileVisibilityEnum.enum.connections_only,
+                label: m['settings.privacy.visibilityConnectionsOnly'](),
+            },
+            {
+                value: ProfileVisibilityEnum.enum.private,
+                label: m['settings.privacy.visibilityPrivate'](),
+            },
         ],
         []
     );
 
     const connectionRequestOptions = useMemo(
         () => [
-            { value: AllowConnectionRequestsEnum.enum.anyone, label: 'Anyone' },
-            { value: AllowConnectionRequestsEnum.enum.invite_only, label: 'Invite only' },
+            {
+                value: AllowConnectionRequestsEnum.enum.anyone,
+                label: m['settings.privacy.connectionRequestsAnyone'](),
+            },
+            {
+                value: AllowConnectionRequestsEnum.enum.invite_only,
+                label: m['settings.privacy.connectionRequestsInviteOnly'](),
+            },
         ],
         []
     );
@@ -126,7 +142,7 @@ const PrivacySettingsModal: React.FC = () => {
                 await wallet?.invoke?.updateProfile(updates);
                 await refetch?.();
             } catch (error: any) {
-                presentToast(error?.message ?? 'Unable to update privacy settings.', {
+                presentToast(error?.message ?? m['settings.privacy.unableToUpdate'](), {
                     type: ToastTypeEnum.Error,
                 });
             } finally {
@@ -263,35 +279,35 @@ const PrivacySettingsModal: React.FC = () => {
                 <button onClick={() => closeModal()} className="p-1 -ml-1">
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
                 </button>
-                <h1 className="text-xl font-semibold text-grayscale-900">Privacy & Data</h1>
+                <h1 className="text-xl font-semibold text-grayscale-900">
+                    {m['settings.privacyTitle']()}
+                </h1>
             </div>
 
             <div className="modal-scrollable flex flex-col gap-4">
                 {isMinor && (
                     <div className="bg-sky-50 border border-sky-200 rounded-[16px] p-4">
-                        <p className="text-sm text-sky-800">
-                            AI Features are restricted for users under 18.
-                        </p>
+                        <p className="text-sm text-sky-800">{m['settings.minorWarning']()}</p>
                     </div>
                 )}
 
                 <div className="bg-white rounded-[16px] overflow-hidden shadow-sm p-5">
                     <div className="mb-4">
                         <p className="text-[15px] font-medium text-grayscale-900">
-                            Profile Privacy
+                            {m['settings.privacy.profilePrivacy']()}
                         </p>
                         <p className="text-sm text-grayscale-500 mt-0.5">
-                            Control how your {brandName} profile appears to others in the network.
+                            {m['settings.privacy.profilePrivacyDesc']({ brand: brandName })}
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-5">
                         <div className="flex flex-col gap-2">
                             <p className="text-[14px] font-medium text-grayscale-900">
-                                Profile visibility
+                                {m['settings.privacy.profileVisibility']()}
                             </p>
                             <p className="text-sm text-grayscale-500">
-                                Choose who can view the details on your profile.
+                                {m['settings.privacy.profileVisibilityDesc']()}
                             </p>
                             <RadioGroup
                                 name="profile-visibility"
@@ -309,10 +325,10 @@ const PrivacySettingsModal: React.FC = () => {
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 pr-4">
                                 <p className="text-[15px] font-medium text-grayscale-900">
-                                    Show email to connections
+                                    {m['settings.privacy.showEmail']()}
                                 </p>
                                 <p className="text-sm text-grayscale-500 mt-0.5">
-                                    Let connected users see your email address on your profile.
+                                    {m['settings.privacy.showEmailDesc']()}
                                 </p>
                             </div>
                             <IonToggle
@@ -327,10 +343,10 @@ const PrivacySettingsModal: React.FC = () => {
 
                         <div className="flex flex-col gap-2">
                             <p className="text-[14px] font-medium text-grayscale-900">
-                                Connection requests
+                                {m['settings.privacy.connectionRequests']()}
                             </p>
                             <p className="text-sm text-grayscale-500">
-                                Decide who can send you new connection requests.
+                                {m['settings.privacy.connectionRequestsDesc']()}
                             </p>
                             <RadioGroup
                                 name="allow-connection-requests"
@@ -350,11 +366,10 @@ const PrivacySettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
-                                AI Features
+                                {m['settings.aiFeatures']()}
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                AI tutoring sessions, insights, and personalization. This may share
-                                relevant messages and records with AI providers.
+                                {m['settings.aiFeaturesDesc']()}
                             </p>
                         </div>
                         <IonToggle
@@ -422,10 +437,10 @@ const PrivacySettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
-                                Usage Analytics
+                                {m['settings.analytics']()}
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                Help improve {brandName} by sharing anonymous app usage data
+                                {m['settings.analyticsDesc']({ brand: brandName })}
                             </p>
                         </div>
                         <IonToggle
@@ -441,11 +456,10 @@ const PrivacySettingsModal: React.FC = () => {
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
-                                Crash Reports
+                                {m['settings.bugReports']()}
                             </p>
                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                Share technical details if the app crashes so we can fix issues
-                                faster
+                                {m['settings.bugReportsDesc']()}
                             </p>
                         </div>
                         <IonToggle

@@ -23,6 +23,7 @@ import { useAddCredentialToWallet } from '../boost/mutations';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from './resume-builder.helpers';
 import { switchedProfileStore } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type ResumeSelfAttestModalProps = {
     category: ResumeSectionKey;
@@ -49,7 +50,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
     const handleSelfIssue = async () => {
         if (!profile?.profileId) {
-            presentToast('Unable to self issue without a profile.', {
+            presentToast(m['toasts.resume.selfIssueNoProfile'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -112,7 +113,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             closeModal();
         } catch (error) {
             log.error('resume self issue error', error);
-            presentToast('Unable to self issue credential', {
+            presentToast(m['toasts.resume.selfIssueFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -121,7 +122,10 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
         }
     };
 
-    const heading = useMemo(() => metadata?.titleSingular ?? 'Credential', [metadata]);
+    const heading = useMemo(
+        () => metadata?.titleSingular ?? m['passport.resumeBuilder.credential'](),
+        [metadata]
+    );
 
     return (
         <div className="flex flex-col gap-[10px] items-center w-full max-w-[340px] mx-auto">
@@ -138,7 +142,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     )}
                 </div>
                 <h2 className="font-poppins text-[22px] leading-[100%] text-grayscale-900">
-                    Add {heading}
+                    {m['passport.resumeBuilder.selfAttest.addTitle']({ type: heading })}
                 </h2>
 
                 <div className="flex flex-col gap-[12px] w-full">
@@ -146,7 +150,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                         autoCapitalize="on"
                         value={name}
                         onChange={event => setName(event.target.value)}
-                        placeholder="Name..."
+                        placeholder={m['passport.resumeBuilder.selfAttest.namePlaceholder']()}
                         className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-none"
                         maxLength={60}
                     />
@@ -154,7 +158,9 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                         autoCapitalize="on"
                         value={description}
                         onChange={event => setDescription(event.target.value)}
-                        placeholder="Description..."
+                        placeholder={m[
+                            'passport.resumeBuilder.selfAttest.descriptionPlaceholder'
+                        ]()}
                         className="w-full min-h-[108px] max-h-[180px] overflow-y-auto resize-none bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-none"
                         rows={4}
                     />
@@ -166,14 +172,18 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     onClick={closeModal}
                     disabled={isLoading}
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     className={`flex items-center justify-center gap-2 flex-1 py-[10px] px-[20px] rounded-[30px] font-poppins text-[17px] leading-[130%] tracking-[-0.25px] shadow-bottom-4-4 text-white disabled:bg-grayscale-300 bg-${metadata?.color}`}
                     onClick={handleSelfIssue}
                     disabled={continueDisabled}
                 >
-                    {isLoading ? <IonSpinner name="crescent" className="w-4 h-4" /> : 'Add'}
+                    {isLoading ? (
+                        <IonSpinner name="crescent" className="w-4 h-4" />
+                    ) : (
+                        m['common.add']()
+                    )}
                 </button>
             </div>
         </div>

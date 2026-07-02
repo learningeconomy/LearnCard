@@ -7,8 +7,10 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
-import { CredentialCategoryEnum } from 'learn-card-base';
+import { getEmptySectionCopy } from '../resumeBuilderI18n';
 import ResumeSelfAttestModal from '../ResumeSelfAttestModal';
+
+import * as m from '../../../paraglide/messages.js';
 
 export const ResumePreviewSectionPlaceholder: React.FC<{
     category: ResumeSectionKey;
@@ -19,50 +21,13 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
     const brandingConfig = useBrandingConfig();
     const brandingName = brandingConfig?.name ?? 'LearnCard';
     const { colors, icons } = getThemedCategory(category);
-    const EMPTY_SECTION_COPY: Partial<
-        Record<
-            CredentialCategoryEnum,
-            {
-                actionLabel: string;
-                description: string;
-                emphasis: string;
-            }
-        >
-    > = {
-        [CredentialCategoryEnum.workHistory]: {
-            actionLabel: 'Add Experience',
-            description: `Add Work Experiences to your ${brandingName} passport to automatically populate this section.`,
-            emphasis: 'Add Work Experiences',
-        },
-        [CredentialCategoryEnum.learningHistory]: {
-            actionLabel: 'Add Study',
-            description: `Add Studies to your ${brandingName} passport to automatically populate this section.`,
-            emphasis: 'Add Studies',
-        },
-        [CredentialCategoryEnum.achievement]: {
-            actionLabel: 'Add Achievement',
-            description: `Add Achievements to your ${brandingName} passport to automatically populate this section.`,
-            emphasis: 'Add Achievements',
-        },
-        [CredentialCategoryEnum.accomplishment]: {
-            actionLabel: 'Add Accomplishment',
-            description: `Add Accomplishments to your ${brandingName} passport to automatically populate this section.`,
-            emphasis: 'Add Accomplishments',
-        },
-        [CredentialCategoryEnum.accommodation]: {
-            actionLabel: 'Add Assistance',
-            description: `Add Assistances to your ${brandingName} passport to automatically populate this section.`,
-            emphasis: 'Add Assistances',
-        },
-    };
 
     const section = RESUME_SECTIONS.find(section => section.key === category);
-    const copy = EMPTY_SECTION_COPY[category];
+    const copy = getEmptySectionCopy(category, brandingName);
 
     if (!section || !copy) return null;
 
     const IconComponent = icons.IconWithLightShape ?? icons.IconWithShape ?? icons.Icon;
-    const emphasizedDescription = copy.description.replace(copy.emphasis, '');
 
     return (
         <div className={className} data-pdf-screen-only>
@@ -72,12 +37,14 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
                         {IconComponent && <IconComponent className="h-[64px] w-[64px]" />}
                     </div>
                     <div className="min-w-0">
-                        <p className="text-xl font-bold text-grayscale-900">No credentials found</p>
+                        <p className="text-xl font-bold text-grayscale-900">
+                            {m['passport.resumeBuilder.emptySection.noCredentials']()}
+                        </p>
                         <p className="mt-2 text-sm text-grayscale-600 max-w-[520px]">
                             <span className="font-semibold text-grayscale-800">
                                 {copy.emphasis}
-                            </span>
-                            {emphasizedDescription}
+                            </span>{' '}
+                            {copy.descriptionSuffix}
                         </p>
                     </div>
                 </div>

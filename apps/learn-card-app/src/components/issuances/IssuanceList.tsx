@@ -15,6 +15,7 @@ import {
 import type { AppStoreListing } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import type { CredentialTemplate } from 'src/pages/appStoreDeveloper/dashboards/types';
 import {
@@ -268,8 +269,8 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                                     }`}
                                                 >
                                                     {rowStatus === 'revoked'
-                                                        ? 'Revoked'
-                                                        : 'Suspended'}
+                                                        ? m['issue.revoked']()
+                                                        : m['issue.suspended']()}
                                                 </span>
                                             )}
 

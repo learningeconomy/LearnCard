@@ -21,6 +21,7 @@ import {
     useMarkAllNotificationsRead,
 } from 'learn-card-base';
 
+// i18n: no user-facing strings — delegates to NotificationsSubHeader + NewNotificationsList
 const NotificationNavTabsContainer: React.FC<{
     isEmptyState: boolean;
     setIsEmptyState: React.Dispatch<React.SetStateAction<boolean>>;

@@ -11,6 +11,7 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { UserNotificationTypeStyles, UserNotificationTypeEnum } from './types';
+import * as m from '../../../paraglide/messages.js';
 
 type ConnectionRequestCardProps = {
     title: string;
@@ -61,9 +62,9 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     let buttonText: string = '';
 
     if (isAccepted) {
-        buttonText = 'Accepted';
+        buttonText = m['alerts.accepted']();
     } else if (!isAccepted) {
-        buttonText = 'Accept';
+        buttonText = m['common.accept']();
     }
 
     const handleAcceptConnection = async () => {
@@ -136,7 +137,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
-                            {isLoading ? 'Loading...' : buttonText}
+                            {isLoading ? m['common.loading']() : buttonText}
                             {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 

@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../paraglide/messages.js';
+
 import { getAllowedThemes, isThemeSwitchingEnabled } from '../store/themeStore';
 
 import { applyTheme, useTheme } from '../hooks/useTheme';
@@ -94,11 +96,11 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         <div className="w-full px-4">
             <div className="w-full flex bg-white flex-col items-center justify-start py-4 rounded-[16px] gap-2">
                 <div className="w-full px-4 flex flex-col gap-2">
-                    <h4 className="w-full text-grayscale-900 text-[17px]">Choose Your Theme</h4>
+                    <h4 className="w-full text-grayscale-900 text-[17px]">{m['theme.title']()}</h4>
                     <p className="w-full text-grayscale-600 text-xs">
                         {allowedThemeIds.includes('colorful') && allowedThemeIds.includes('formal')
-                            ? 'Switch between our signature, colorful experience and a classic, formal style.'
-                            : 'Choose your preferred visual style.'}
+                            ? m['theme.subtitleColorfulFormal']()
+                            : m['theme.subtitleGeneric']()}
                     </p>
                 </div>
 
@@ -130,7 +132,14 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                             className="w-[30px] h-[30px] object-contain"
                                         />
                                     )}
-                                    <span className="ml-1">{btn.label}</span>
+                                    <span className="ml-1">
+                                        {{
+                                            colorful: m['theme.names.colorful'],
+                                            formal: m['theme.names.formal'],
+                                            vetpass: m['theme.names.vetpass'],
+                                        }[btn.theme as 'colorful' | 'formal' | 'vetpass']?.() ??
+                                            btn.label}
+                                    </span>
                                 </button>
                             );
                         })}

@@ -32,6 +32,7 @@ import { publishWalletEvent } from '../pathways/events/walletEventBus';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 interface ExchangeAcceptCredentialsProps {
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
@@ -87,7 +88,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
-            presentToast('Please select at least one credential to claim.', {
+            presentToast(m['toasts.selectCredential'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

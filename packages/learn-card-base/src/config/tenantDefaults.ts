@@ -144,6 +144,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'openid4vp',
         ],
     },
+
+    i18n: {
+        defaultLanguage: 'en',
+        supportedLanguages: ['en'],
+    },
 };
 
 // -----------------------------------------------------------------

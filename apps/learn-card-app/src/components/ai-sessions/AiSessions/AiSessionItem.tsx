@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { IonSpinner } from '@ionic/react';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 import AiSessionAssessmentPreviewContainer from '../../ai-assessment/AiSessionAssessmentPreviewContainer';
@@ -85,7 +87,7 @@ export const AiSessionItem: React.FC<{
               month: 'short',
               day: 'numeric',
           })
-        : 'Unfinished';
+        : m['ai.unfinished']();
 
     return (
         <button
@@ -109,7 +111,7 @@ export const AiSessionItem: React.FC<{
                 </div>
                 <div className="flex flex-col items-start w-full min-w-0">
                     <p className="w-full text-grayscale-900 text-[17px] leading-tight font-poppins font-semibold text-left line-clamp-1 ml-3">
-                        {getAiSessionTitle(sessionCredential as any) || 'Untitled Session'}
+                        {getAiSessionTitle(sessionCredential as any) || m['ai.untitledSession']()}
                     </p>
                     <p className="text-grayscale-600 text-sm font-poppins text-left line-clamp-1 ml-3">
                         <span className="font-semibold text-grayscale-700">{subtitleTopic}</span>

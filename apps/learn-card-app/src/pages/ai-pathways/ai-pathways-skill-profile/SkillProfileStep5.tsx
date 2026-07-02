@@ -24,6 +24,7 @@ import {
     SESSION_START_KEY,
 } from '@analytics';
 import { useSkillProfileStepFunnel, trackSkillProfileCompleted } from './useSkillProfileStepFunnel';
+import * as m from '../../../paraglide/messages.js';
 
 type SkillProfileStep5Props = {
     handleNext: () => void;
@@ -101,7 +102,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            presentToast(m['toasts.skills.savedSuccess'](), {
                 type: ToastTypeEnum.Success,
             });
 
@@ -128,9 +129,14 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
             handleNext();
         } catch (error: any) {
             log.error('Error creating or updating skills:', error);
-            presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
-                type: ToastTypeEnum.Error,
-            });
+            presentToast(
+                `${m['skillProfile.step5.toastErrorSaving']()}${
+                    error?.message ? ` ${error?.message}` : ''
+                }`,
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
         } finally {
             setIsUpdating(false);
         }
@@ -146,7 +152,9 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
 
             <div className="flex flex-col gap-[10px]">
                 <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                    {skillsExist ? 'Manage your current skills' : 'Choose your current skills'}
+                    {skillsExist
+                        ? m['skillProfile.step5.manageSkills']()
+                        : m['skillProfile.step5.chooseSkills']()}
                 </h3>
             </div>
 
@@ -166,14 +174,14 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                     onClick={handleBack}
                     disabled={isUpdating}
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px] disabled:bg-grayscale-300"
                     onClick={handleFinish}
                     disabled={isUpdating}
                 >
-                    Finish
+                    {m['skillProfile.step5.finish']()}
                 </button>
             </div>
         </div>

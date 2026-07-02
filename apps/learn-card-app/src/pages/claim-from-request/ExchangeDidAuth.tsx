@@ -6,6 +6,7 @@ import { useHistory } from 'react-router-dom';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 import { Gift, Shield, ChevronRight, X, Loader2, CheckCircle, Info } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('exchange-did-auth');
 
 interface ExchangeDidAuthProps {
@@ -38,7 +39,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
         const wallet = await initWallet();
 
         if (!isLoggedIn || !wallet) {
-            setError('Please log in to continue.');
+            setError(m['claim.didAuth.loginRequired']());
             setIsLoading(false);
             return;
         }
@@ -56,7 +57,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
             }
         } catch (err) {
             log.error('Failed to create DID Auth VP:', err);
-            setError('Something went wrong. Please try again.');
+            setError(m['error.generic']());
             setIsLoading(false);
         }
     };
@@ -81,11 +82,11 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                             </div>
 
                             <h1 className="text-2xl font-bold text-white mb-2">
-                                You've Been Sent a Credential!
+                                {m['claim.didAuth.title']()}
                             </h1>
 
                             <p className="text-emerald-100 text-sm">
-                                Someone wants to issue you a verifiable credential
+                                {m['claim.didAuth.subtitle']()}
                             </p>
                         </div>
 
@@ -93,19 +94,17 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                         <div className="p-6">
                             <div className="space-y-4 mb-6">
                                 <h2 className="text-lg font-semibold text-gray-900 text-center">
-                                    Ready to claim it?
+                                    {m['claim.didAuth.ready']()}
                                 </h2>
 
                                 <p className="text-gray-600 text-center text-sm">
-                                    To receive this credential, you'll need to confirm your
-                                    identity. This lets the issuer securely deliver it to your
-                                    wallet.
+                                    {m['claim.didAuth.intro']()}
                                 </p>
 
                                 {/* What happens section */}
                                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        What happens when you continue:
+                                        {m['claim.didAuth.whatHappens']()}
                                     </p>
 
                                     <div className="flex items-start gap-3">
@@ -114,7 +113,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                         </div>
 
                                         <p className="text-sm text-gray-700">
-                                            Your wallet confirms your identity to the issuer
+                                            {m['claim.didAuth.step1']()}
                                         </p>
                                     </div>
 
@@ -124,7 +123,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                         </div>
 
                                         <p className="text-sm text-gray-700">
-                                            The credential is securely delivered to your wallet
+                                            {m['claim.didAuth.step2']()}
                                         </p>
                                     </div>
 
@@ -134,7 +133,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                         </div>
 
                                         <p className="text-sm text-gray-700">
-                                            You own and control this credential forever
+                                            {m['claim.didAuth.step3']()}
                                         </p>
                                     </div>
                                 </div>
@@ -143,10 +142,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 <div className="flex items-start gap-2 text-xs text-gray-500">
                                     <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
 
-                                    <p>
-                                        Your identity is only shared with the issuer to complete
-                                        this exchange. You're always in control of your data.
-                                    </p>
+                                    <p>{m['claim.didAuth.privacy']()}</p>
                                 </div>
                             </div>
 
@@ -168,11 +164,11 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="w-5 h-5 animate-spin" />
-                                            Connecting...
+                                            {m['claim.didAuth.connecting']()}
                                         </>
                                     ) : (
                                         <>
-                                            Claim My Credential
+                                            {m['claim.didAuth.claimButton']()}
                                             <ChevronRight className="w-5 h-5" />
                                         </>
                                     )}
@@ -184,7 +180,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                     className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     <X className="w-4 h-4" />
-                                    No thanks, take me home
+                                    {m['claim.didAuth.decline']()}
                                 </button>
                             </div>
                         </div>

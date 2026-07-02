@@ -22,6 +22,7 @@ import {
     PushNotificationsSettingsState,
 } from '../push-notification-settings/pushNotifications.helpers';
 
+// i18n: no user-facing strings — composition/state component
 export enum UserProfileFormStateEnum {
     Account = 'account',
     Permissions = 'permissions',

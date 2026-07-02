@@ -49,6 +49,7 @@ export enum SideMenuLinksEnum {
 
     // secondary links
     wallet = 'wallet',
+    passport = 'passport',
     aiTopics = CredentialCategoryEnum.aiTopic,
     aiInsights = CredentialCategoryEnum.aiInsight,
     aiPathways = CredentialCategoryEnum.aiPathway,
@@ -75,6 +76,49 @@ export enum SideMenuLinksEnum {
     // `apps/learn-card-app/src/pages/dashboard/DashboardPage.tsx`.
     dashboard = 'dashboard',
 }
+
+/**
+ * Returns the stable i18n lookup key for a given side-menu link.
+ *
+ * Most enum members have a value that equals their key (e.g. `contacts =
+ * 'contacts'`), but the wallet-category members alias to CredentialCategoryEnum
+ * values like `'AI Topic'` or `'Social Badge'`. The i18n JSON resources are
+ * keyed by the enum *key name* (`'aiTopics'`, `'socialBadges'`) for
+ * cleanliness, so callers reverse-lookup the enum to find the right key.
+ *
+ * Example: getSideMenuTranslationKey('AI Topic')  -> 'aiTopics'
+ *          getSideMenuTranslationKey('launchPad') -> 'launchPad'
+ *          getSideMenuTranslationKey('unknown')   -> 'unknown' (passthrough)
+ */
+export const getSideMenuTranslationKey = (linkId: string | undefined): string => {
+    if (!linkId) return '';
+    const entry = (Object.entries(SideMenuLinksEnum) as [string, string][]).find(
+        ([_k, v]) => v === linkId
+    );
+    return entry ? entry[0] : linkId;
+};
+
+/**
+ * Resolve a side-menu link's display label from the Paraglide message map,
+ * falling back to the link's static `label` when no translation key exists.
+ *
+ * Side-menu link sets are theme/config-driven, so the translation key is built
+ * dynamically (`sidemenu.links.${getSideMenuTranslationKey(link.id)}`) and is
+ * invisible to the static missing-key build guards. If a link's key is absent
+ * from the active locale, the raw `m[key]` is `undefined` — calling it throws
+ * "m[...] is not a function" and crashes the whole menu. Degrade to `link.label`
+ * instead. `messages` is passed in (rather than imported) to keep this package
+ * decoupled from the app's generated Paraglide module.
+ */
+export const getSideMenuLinkLabel = (
+    messages: Record<string, unknown>,
+    link: { id?: string | number | null; label?: string | null }
+): string => {
+    const translationKey = getSideMenuTranslationKey(link.id == null ? undefined : String(link.id));
+    const message = messages[`sidemenu.links.${translationKey}`];
+
+    return typeof message === 'function' ? (message as () => string)() : link.label ?? '';
+};
 
 export type SideMenuLinks = {
     id: number;

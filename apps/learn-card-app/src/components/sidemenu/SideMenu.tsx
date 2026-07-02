@@ -18,8 +18,10 @@ import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
 import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import ThemeSelector from '../../theme/components/ThemeSelector';
+import LanguagePicker from './LanguagePicker';
 import AddToLearnCardMenu from '../add-to-learncard-menu/AddToLearnCardMenu';
 import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 import NewAiSessionButton, {
@@ -185,10 +187,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     role="button"
                                     autoHide={false}
                                     onClick={handleBoost}
-                                    className={`text-[17px] flex items-center justify-center font-semibold py-[5px] rounded-full w-full max-w-[90%] border-solid border-[2px] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
+                                    className={`text-[17px] flex items-center justify-center text-center leading-tight font-semibold py-[8px] px-[12px] rounded-full w-full max-w-[90%] border-solid border-[2px] min-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
                                 >
-                                    Add to {brandingConfig.name}
-                                    <GearPlusIcon className="ml-1 text-grayscale-800" />
+                                    {m['sidemenu.addTo']({ brand: brandingConfig.name })}
+                                    <GearPlusIcon className="ml-1 shrink-0 text-grayscale-800" />
                                 </IonMenuToggle>
                             </div>
                         </div>
@@ -210,6 +212,8 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                         </GenericErrorBoundary>
 
                         <ThemeSelector />
+
+                        <LanguagePicker />
 
                         <GenericErrorBoundary>
                             <SideMenuFooter version={version} />

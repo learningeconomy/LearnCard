@@ -8,6 +8,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 type GameAccessSuccessPromptProps = {
     user: LCNProfile;
@@ -102,8 +103,8 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                {isFromGame && 'Continue Playing'}
-                {!isFromGame && returnTo && 'Continue to Game'}
+                {isFromGame && m['consentFlow.continuePlaying']()}
+                {!isFromGame && returnTo && m['consentFlow.continueToGame']()}
                 {!isFromGame && !returnTo && `Return to ${brandingConfig?.name}`}
             </button>
         </div>

@@ -1,3 +1,5 @@
+import { m } from '../../../paraglide/messages.js';
+
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { currentUserStore } from 'learn-card-base';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
@@ -17,27 +19,22 @@ export enum RequestInsightStatusEnum {
     pending = 'pending',
 }
 
-export const requestInsightsOptions: {
-    id: number;
-    label: string;
-    icon: React.FC<{ className?: string; version?: 'thick' | 'thin' }>;
-    type: RequestInsightsOptionsEnum;
-}[] = [
+export const getRequestInsightsOptions = () => [
     {
         id: 1,
-        label: 'Insights Request Reminder',
+        label: m['aiInsights.insightsRequestReminder'](),
         icon: ConnectIcon,
         type: RequestInsightsOptionsEnum.requestReminder,
     },
     {
         id: 2,
-        label: 'Cancel Insights Request',
+        label: m['aiInsights.cancelInsightsRequest'](),
         icon: TrashBin,
         type: RequestInsightsOptionsEnum.cancelRequest,
     },
     {
         id: 3,
-        label: 'Remove Insights',
+        label: m['aiInsights.removeInsights'](),
         icon: TrashBin,
         type: RequestInsightsOptionsEnum.removeConnection,
     },
@@ -46,7 +43,7 @@ export const requestInsightsOptions: {
 export const buildTeacherStudentContract = ({
     image = '',
     expiresAt = '',
-    reasonForAccessing = 'Your teacher needs this data to view your progress and provide feedback.',
+    reasonForAccessing = m['aiInsights.teacherReasonForAccessing'](),
 }: {
     image?: string;
     expiresAt?: string;
@@ -82,8 +79,8 @@ export const buildTeacherStudentContract = ({
             },
         },
         name: 'AI Insights',
-        subtitle: 'Share learning progress with your teacher',
-        description: 'Allows your teacher to view selected insights',
+        subtitle: m['aiInsights.contractSubtitle'](),
+        description: m['aiInsights.contractDescription'](),
         image,
         expiresAt,
         reasonForAccessing,
@@ -111,8 +108,7 @@ export const createTeacherStudentContract = async ({
     const contractDefinition = buildTeacherStudentContract({
         image: teacherProfile?.image,
         expiresAt: '',
-        reasonForAccessing:
-            'Your teacher needs this data to view your progress and provide feedback.',
+        reasonForAccessing: m['aiInsights.teacherReasonForAccessing'](),
     });
 
     const contractUri = await teacherWallet.invoke.createContract({

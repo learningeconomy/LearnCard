@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -229,7 +230,7 @@ const WalletPage: React.FC = () => {
                                         <h2
                                             className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}
                                         >
-                                            Passport
+                                            {m['sidemenu.links.passport']()}
                                         </h2>
 
                                         {/* 

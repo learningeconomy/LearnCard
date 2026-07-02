@@ -7,25 +7,70 @@ import { ConsentFlowTerms, VC } from '@learncard/types';
 import { CredentialCategory, GenericCardWrapper, useVerifiableData } from 'learn-card-base';
 
 import { curriedStateSlice } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
 
-const vcDisplayWord: Partial<Record<CredentialCategory, { singular: string; plural: string }>> = {
+const getVcDisplayWord = (): Partial<
+    Record<CredentialCategory, { singular: string; plural: string }>
+> => ({
     ID: { singular: 'ID', plural: 'IDs' },
-    Achievement: { singular: 'Achievement', plural: 'Achievements' },
-    Skill: { singular: 'Skill', plural: 'Skills' },
-    Membership: { singular: 'Membership', plural: 'Memberships' },
-    'Work History': { singular: 'Work History', plural: 'Work History' },
-    'Learning History': { singular: 'Learning History', plural: 'Learning History' },
-    'Social Badge': { singular: 'Social Badge', plural: 'Social Badges' },
-    Goals: { singular: 'Goal', plural: 'Goals' },
-    'Professional Title': { singular: 'Professional Title', plural: 'Professional Titles' },
-    'Role Experience': { singular: 'Role Experience', plural: 'Role Experiences' },
-    'Work Experience': { singular: 'Work Experience', plural: 'Work Experiences' },
-    'Pay Rate': { singular: 'Pay Rate', plural: 'Pay Rates' },
-    'Work Life Balance': { singular: 'Work Life Balance', plural: 'Work Life Balance' },
-    'Job Stability': { singular: 'Job Stability', plural: 'Job Stability' },
-    'Self-Assigned Skills': { singular: 'Self-Assigned Skill', plural: 'Self-Assigned Skills' },
+    Achievement: {
+        singular: m['consentFlow.credentialType.achievement'](),
+        plural: m['consentFlow.credentialType.achievementPlural'](),
+    },
+    Skill: {
+        singular: m['consentFlow.credentialType.skill'](),
+        plural: m['consentFlow.credentialType.skillPlural'](),
+    },
+    Membership: {
+        singular: m['consentFlow.credentialType.membership'](),
+        plural: m['consentFlow.credentialType.membershipPlural'](),
+    },
+    'Work History': {
+        singular: m['consentFlow.credentialType.workHistory'](),
+        plural: m['consentFlow.credentialType.workHistoryPlural'](),
+    },
+    'Learning History': {
+        singular: m['consentFlow.credentialType.learningHistory'](),
+        plural: m['consentFlow.credentialType.learningHistoryPlural'](),
+    },
+    'Social Badge': {
+        singular: m['consentFlow.credentialType.socialBadge'](),
+        plural: m['consentFlow.credentialType.socialBadgePlural'](),
+    },
+    Goals: {
+        singular: m['consentFlow.credentialType.goals'](),
+        plural: m['consentFlow.credentialType.goalsPlural'](),
+    },
+    'Professional Title': {
+        singular: m['consentFlow.credentialType.professionalTitle'](),
+        plural: m['consentFlow.credentialType.professionalTitlePlural'](),
+    },
+    'Role Experience': {
+        singular: m['consentFlow.credentialType.roleExperience'](),
+        plural: m['consentFlow.credentialType.roleExperiencePlural'](),
+    },
+    'Work Experience': {
+        singular: m['consentFlow.credentialType.workExperience'](),
+        plural: m['consentFlow.credentialType.workExperiencePlural'](),
+    },
+    'Pay Rate': {
+        singular: m['consentFlow.credentialType.payRate'](),
+        plural: m['consentFlow.credentialType.payRatePlural'](),
+    },
+    'Work Life Balance': {
+        singular: m['consentFlow.credentialType.workLifeBalance'](),
+        plural: m['consentFlow.credentialType.workLifeBalancePlural'](),
+    },
+    'Job Stability': {
+        singular: m['consentFlow.credentialType.jobStability'](),
+        plural: m['consentFlow.credentialType.jobStabilityPlural'](),
+    },
+    'Self-Assigned Skills': {
+        singular: m['consentFlow.credentialType.selfAssignedSkill'](),
+        plural: m['consentFlow.credentialType.selfAssignedSkillPlural'](),
+    },
     VerifiableData: { singular: 'Verifiable Data', plural: 'Verifiable Data' },
-};
+});
 
 const vcColor: Partial<Record<CredentialCategory, string>> = {
     'Learning History': 'emerald-600',
@@ -133,7 +178,7 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
     const updateSlice = curriedStateSlice(setCategories);
 
     const getTitle = (type: CredentialCategory, count: number) => {
-        const displayWord = vcDisplayWord[type] ?? { singular: type, plural: type };
+        const displayWord = getVcDisplayWord()[type] ?? { singular: type, plural: type };
         return `${count} ${count === 1 ? displayWord.singular : displayWord.plural}`;
     };
 

@@ -1,5 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import X from 'learn-card-base/svgs/X';
 import { IonInput } from '@ionic/react';
 import { IonSpinner } from '@ionic/react';
@@ -49,7 +51,9 @@ export const ShareChildInsightsModal: React.FC<{
                 {/* header */}
                 <div className="w-full ion-padding flex flex-col gap-2">
                     <div className="w-full flex items-center justify-between">
-                        <h1 className="text-3xl text-indigo-500 font-semibold">Share Insights</h1>
+                        <h1 className="text-3xl text-indigo-500 font-semibold">
+                            {m['aiInsights.shareInsights']()}
+                        </h1>
                         <button
                             type="button"
                             onClick={() => closeModal()}
@@ -76,8 +80,7 @@ export const ShareChildInsightsModal: React.FC<{
                         </div>
                     </div>
                     <p className="text-grayscale-700 text-sm">
-                        Share {name}'s Top Skills, Learning Snapshots, and Suggested Pathways. You
-                        will also be able to receive learning pathway suggestions.
+                        {m['aiInsights.shareInsightsDescription']()}
                     </p>
                 </div>
 
@@ -91,7 +94,7 @@ export const ShareChildInsightsModal: React.FC<{
                 <div className="flex items-center justify-start w-full ion-padding">
                     <IonInput
                         autocapitalize="on"
-                        placeholder="Search by name..."
+                        placeholder={m['aiInsights.searchByName']()}
                         value={search}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
                         onIonInput={e => handleSearch(e?.detail?.value)}
@@ -105,13 +108,15 @@ export const ShareChildInsightsModal: React.FC<{
                 <div className="w-full px-4">
                     <div className="w-full flex flex-col items-center justify-between">
                         <p className="text-grayscale-900 text-lg font-semibold border-b border-grayscale-200 pb-4 w-full">
-                            Contacts
+                            {m['aiInsights.contacts']()}
                         </p>
                         <div className="w-full flex flex-col gap-2">
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-8">
                                     <IonSpinner color="grayscale-900" />
-                                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                                    <p className="mt-2 font-bold text-lg">
+                                        {m['aiInsights.loading']()}
+                                    </p>
                                 </section>
                             )}
 
@@ -140,7 +145,7 @@ export const ShareChildInsightsModal: React.FC<{
                                 <section className="flex flex-col items-center justify-center my-[30px]">
                                     <FloatingBottleIcon />
                                     <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                                        No Contacts
+                                        {m['aiInsights.noContacts']()}
                                     </p>
                                 </section>
                             )}
@@ -150,7 +155,7 @@ export const ShareChildInsightsModal: React.FC<{
                             <section className="flex flex-col items-center justify-center my-[30px]">
                                 <FloatingBottleIcon />
                                 <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                                    No Search Results
+                                    {m['aiInsights.noSearchResults']()}
                                 </p>
                             </section>
                         )}

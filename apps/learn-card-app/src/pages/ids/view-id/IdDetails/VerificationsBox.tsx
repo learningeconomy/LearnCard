@@ -8,6 +8,7 @@ import { VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 type VerificationsBoxProps = {
     verificationItems: VerificationItem[];
@@ -27,7 +28,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
     return (
         <div className="verifications-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom-2-4 px-[15px] py-[20px] w-full relative">
             <h3 className="text-[17px] font-notoSans text-grayscale-900">
-                Credential Verifications
+                {m['sdk.verification.title']()}
             </h3>
             <button
                 className="absolute top-[17px] right-[17px]"
@@ -42,7 +43,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
             </button>
             {showInfo && (
                 <InfoBox
-                    text="Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy."
+                    text={m['sdk.verification.infoText']()}
                     handleClose={() => setShowInfo(false)}
                 />
             )}

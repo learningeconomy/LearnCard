@@ -19,6 +19,7 @@ import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 type NotificationCardProps = {
     className?: string;
@@ -186,10 +187,10 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                         presentAlert({
                             backdropDismiss: false,
                             cssClass: 'boost-confirmation-alert',
-                            header: 'You are already connected.',
+                            header: m['alerts.alreadyConnected'](),
                             buttons: [
                                 {
-                                    text: 'Okay',
+                                    text: m['alerts.okay'](),
                                     role: 'confirm',
                                     handler: async () => {
                                         //extract to helper function....

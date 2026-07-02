@@ -48,6 +48,8 @@ import { useFirebase } from './hooks/useFirebase';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
+import { LocaleProvider } from './i18n';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
@@ -410,32 +412,39 @@ const AppRouter: React.FC = () => {
     // Keeping it as a persistent sibling of the loader/app content preserves the
     // live modal instance across the transition.
     return (
-        <GenericErrorBoundary>
-            {initLoading ? (
-                <LoginLoadingPage />
-            ) : (
-                <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                    <IonSplitPane
-                        contentId="main"
-                        className={
-                            collapsed
-                                ? 'side-menu-split-pane-container-collapsed'
-                                : 'side-menu-split-pane-container-visible'
-                        }
-                    >
-                        <GenericErrorBoundary>
-                            {isLoggedIn && !hideSideMenu && (
-                                <SideMenu branding={BrandingEnum.learncard} />
-                            )}
-                            <div id="main" className="w-full">
-                                <MobileNavBar />
-                            </div>
-                        </GenericErrorBoundary>
-                    </IonSplitPane>
-                </div>
-            )}
-            <Modals />
-        </GenericErrorBoundary>
+        <LocaleProvider>
+            <SharedI18nProvider>
+                <GenericErrorBoundary>
+                    {initLoading ? (
+                        <LoginLoadingPage />
+                    ) : (
+                        <div
+                            id="app-router"
+                            style={{ display: `${showScanner ? 'none' : 'block'}` }}
+                        >
+                            <IonSplitPane
+                                contentId="main"
+                                className={
+                                    collapsed
+                                        ? 'side-menu-split-pane-container-collapsed'
+                                        : 'side-menu-split-pane-container-visible'
+                                }
+                            >
+                                <GenericErrorBoundary>
+                                    {isLoggedIn && !hideSideMenu && (
+                                        <SideMenu branding={BrandingEnum.learncard} />
+                                    )}
+                                    <div id="main" className="w-full">
+                                        <MobileNavBar />
+                                    </div>
+                                </GenericErrorBoundary>
+                            </IonSplitPane>
+                        </div>
+                    )}
+                    <Modals />
+                </GenericErrorBoundary>
+            </SharedI18nProvider>
+        </LocaleProvider>
     );
 };
 

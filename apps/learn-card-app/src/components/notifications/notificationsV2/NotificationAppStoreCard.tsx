@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from '@sentry/react';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { CheckCircle, XCircle, Send, Store } from 'lucide-react';
+import * as m from '../../../paraglide/messages.js';
 
 type NotificationAppStoreCardProps = {
     notification: NotificationType;
@@ -16,19 +17,19 @@ const VARIANT_CONFIG = {
         bgColor: 'bg-green-50',
         iconColor: 'text-green-600',
         Icon: CheckCircle,
-        label: 'App Approved',
+        getLabel: () => m['alerts.appApproved'](),
     },
     rejected: {
         bgColor: 'bg-amber-50',
         iconColor: 'text-amber-600',
         Icon: XCircle,
-        label: 'Review Required',
+        getLabel: () => m['alerts.reviewRequired'](),
     },
     submitted: {
         bgColor: 'bg-indigo-50',
         iconColor: 'text-indigo-600',
         Icon: Send,
-        label: 'New Submission',
+        getLabel: () => m['alerts.newSubmission'](),
     },
 };
 
@@ -42,7 +43,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
     const config = VARIANT_CONFIG[variant];
-    const { Icon, bgColor, iconColor, label } = config;
+    const { Icon, bgColor, iconColor, getLabel } = config;
 
     const listingId = notification.data?.metadata?.listingId as string | undefined;
 
@@ -72,7 +73,9 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
                 className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity`}
             >
                 {/* Icon */}
-                <div className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-white/60 flex items-center justify-center ${iconColor}`}>
+                <div
+                    className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-white/60 flex items-center justify-center ${iconColor}`}
+                >
                     <Icon className="w-7 h-7" />
                 </div>
 
@@ -90,7 +93,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
                         data-testid="notification-type"
                     >
                         <Store className="w-3 h-3 inline-block mr-1" />
-                        {label}
+                        {getLabel()}
                         {transactionDate && (
                             <span className="text-gray-400 normal-case font-normal text-[12px] ml-1">
                                 • {formattedDate}

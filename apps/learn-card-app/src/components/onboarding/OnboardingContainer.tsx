@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 import { ModalTypes, useModal, useGetProfile, useUpdatePreferences } from 'learn-card-base';
 import { calculateAge, isFutureDate } from 'learn-card-base/helpers/dateHelpers';
@@ -140,15 +142,6 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
         // Set the open flag eagerly; this container's unmount cleanup owns the reset.
         // This also keeps AppListingPage's auto-trigger from firing while onboarding is active.
         redirectStore.set.isOnboardingOpen(true);
-
-        // LC-1853 (review #8): stamp the onboarding-entry timestamp at the very
-        // first onboarding screen (this container, which renders selectRole
-        // before the network form) so ONBOARDING_COMPLETED.msSinceMethodStarted
-        // reports time-in-flow rather than time-on-final-form. Set only if not
-        // already set, so a back-and-forth between steps doesn't reset it.
-        if (!localStorage.getItem(ONBOARDING_STARTED_AT_KEY)) {
-            localStorage.setItem(ONBOARDING_STARTED_AT_KEY, String(Date.now()));
-        }
 
         // Claim installIntent — must happen after setting isOnboardingOpen
         const intent = redirectStore.get.installIntent();
@@ -518,12 +511,15 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
                             />
                         )}
                         <p className="text-sm text-indigo-800 font-medium">
-                            After creating your account, you'll be able to install{' '}
-                            <span className="font-semibold">{pendingInstall.appName}</span>
+                            <TransP
+                                m={m['onboarding.profile.installBanner']}
+                                values={{ appName: pendingInstall.appName }}
+                                components={[<span className="font-semibold" key="a" />]}
+                            />
                         </p>
                     </div>
                 )}
-                <OnboardingHeader text="Select what best describes you!" />
+                <OnboardingHeader text={m['onboarding.selectRole.header']()} />
                 <OnboardingRoles role={role} setRole={setRole} />
             </div>
 

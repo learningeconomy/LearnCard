@@ -13,67 +13,26 @@ import 'swiper/css/autoplay';
 import { UploadTypesEnum, useModal } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
-const fileTypeQuotes: Record<UploadTypesEnum, string[]> = {
-    [UploadTypesEnum.Resume]: [
-        'Scanning your resume for hidden gems...',
-        'Extracting your work history — one line at a time.',
-        'Highlighting your accomplishments...',
-        'Polishing your achievements into credentials...',
-        'Turning experience into verifiable skills...',
-        'Giving your resume the credential treatment...',
-        'Building your learning and work timeline...',
-        'Parsing education and work history...',
-        'Verifying your resume for smart records...',
-        'Creating digital proof of your career journey...',
-    ],
-    [UploadTypesEnum.Certificate]: [
-        'Reading your certificate details...',
-        'Extracting certified skills and knowledge...',
-        'Identifying your issuing authority...',
-        'Verifying your certification date...',
-        'Translating your certificate into a credential...',
-        'Generating a smart badge for your expertise...',
-        'Recognizing your certified accomplishments...',
-        'Checking for expiration or renewal status...',
-        'Transforming paper credentials into digital records...',
-        'Capturing verified skills from your certificate...',
-    ],
-    [UploadTypesEnum.Transcript]: [
-        'Parsing your academic transcript...',
-        'Extracting course history and grades...',
-        'Mapping your educational timeline...',
-        'Reading earned credits and GPA (if available)...',
-        'Converting course data into credentials...',
-        'Tracking your learning progress...',
-        'Translating transcripts into verifiable records...',
-        'Analyzing your academic performance...',
-        'Identifying completed programs or majors...',
-        'Building smart records from your coursework...',
-    ],
-    [UploadTypesEnum.Diploma]: [
-        'Analyzing your diploma...',
-        'Verifying institution and degree type...',
-        'Recognizing your awarded qualification...',
-        'Converting your diploma into a verifiable record...',
-        'Recording your academic milestone...',
-        'Extracting awarded date and field of study...',
-        'Documenting your graduation achievement...',
-        'Preserving proof of your education...',
-        'Digitizing your academic honor...',
-        'Building a portable credential from your diploma...',
-    ],
-    [UploadTypesEnum.RawVC]: [
-        'Parsing your raw JSON credential...',
-        'Extracting credential details...',
-        'Verifying credential signature...',
-        'Converting JSON into a verifiable credential...',
-        'Generating a smart badge for your expertise...',
-        'Recognizing your verified accomplishments...',
-        'Checking for expiration or renewal status...',
-        'Transforming paper credentials into digital records...',
-        'Capturing verified skills from your credential...',
-    ],
+// Dotted catalog key prefixes for each upload type's rotating loader quotes.
+// Quotes are resolved at RENDER time via the message function (not module load)
+// so they stay in sync with the active locale. Each type has q0..qN keys in the catalog.
+const QUOTE_KEY_PREFIX: Record<UploadTypesEnum, string> = {
+    [UploadTypesEnum.Resume]: 'passport.buildMyLearnCard.loader.quotes.resume',
+    [UploadTypesEnum.Certificate]: 'passport.buildMyLearnCard.loader.quotes.certificate',
+    [UploadTypesEnum.Transcript]: 'passport.buildMyLearnCard.loader.quotes.transcript',
+    [UploadTypesEnum.Diploma]: 'passport.buildMyLearnCard.loader.quotes.diploma',
+    [UploadTypesEnum.RawVC]: 'passport.buildMyLearnCard.loader.quotes.rawVC',
+};
+
+// Number of catalog quote keys per type (must match translation.json).
+const QUOTE_COUNT: Record<UploadTypesEnum, number> = {
+    [UploadTypesEnum.Resume]: 10,
+    [UploadTypesEnum.Certificate]: 10,
+    [UploadTypesEnum.Transcript]: 10,
+    [UploadTypesEnum.Diploma]: 10,
+    [UploadTypesEnum.RawVC]: 9,
 };
 
 export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: () => void }> = ({
@@ -81,7 +40,13 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
     onDismiss,
 }) => {
     const { closeModal } = useModal();
-    const activeQuotes = fileTypeQuotes?.[fileType ?? UploadTypesEnum.Resume];
+    const activeType = fileType ?? UploadTypesEnum.Resume;
+    // Resolve quotes at render time so they reflect the current locale
+    // (calling the message function at module load would freeze the load-time locale).
+    const quotePrefix = QUOTE_KEY_PREFIX[activeType];
+    const activeQuotes = Array.from({ length: QUOTE_COUNT[activeType] }, (_, i) =>
+        m[`${quotePrefix}.q${i}`]()
+    );
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -126,7 +91,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
                         onClick={() => (onDismiss ? onDismiss() : closeModal())}
                         className={`px-6 py-2 rounded-full text-white font-semibold bg-${primaryColor}`}
                     >
-                        Notify me when it's ready
+                        {m['passport.buildMyLearnCard.loader.notifyWhenReady']()}
                     </button>
                 </div>
             </div>

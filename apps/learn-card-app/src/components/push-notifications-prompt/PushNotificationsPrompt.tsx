@@ -11,6 +11,7 @@ import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
@@ -29,7 +30,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 </div>
                 <div className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black font-poppins text-xl">
-                        Stay in the Loop?
+                        {m['settings.notifications.prompt.title']()}
                     </h6>
                 </div>
             </div>
@@ -44,11 +45,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 <div className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         <span className="font-bold text-grayscale-800">
-                            Receive push notifications for:
+                            {m['settings.notifications.prompt.description']()}
                         </span>
                         <br />
-                        New connection requests, New boosts (like achievements, credentials, and
-                        badges).
+                        {m['settings.notifications.prompt.details']()}
                     </p>
                     <br />
                 </div>
@@ -102,7 +102,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                         type="button"
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal max-w-[320px]"
                     >
-                        Continue
+                        {m['settings.notifications.prompt.continue']()}
                     </button>
 
                     <div className="w-full flex items-center justify-center m-4">
@@ -112,7 +112,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
                         >
-                            Not Yet
+                            {m['settings.notifications.prompt.notYet']()}
                         </button>
                     </div>
                 </div>
@@ -120,11 +120,11 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             <div className="flex items-center justify-center mt-4 w-full">
                 <div className="flex items-center justify-center">
                     <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
-                        Privacy Policy
+                        {m['settings.notifications.prompt.privacyPolicy']()}
                     </button>
                     <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                     <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
-                        Terms of Service
+                        {m['settings.notifications.prompt.termsOfService']()}
                     </button>
                 </div>
             </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import { ConsentFlowTransaction, ConsentFlowTransactionAction, LCNProfile } from '@learncard/types';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import * as m from '../../paraglide/messages.js';
 
 type TransactionHistoryItemProps = {
     transaction: ConsentFlowTransaction;
@@ -19,9 +20,9 @@ const ACTION_COLOR: Record<ConsentFlowTransactionAction, string> = {
 const ACTION_TEXT: Record<ConsentFlowTransactionAction, string> = {
     consent: 'Consent',
     sync: 'Sync',
-    update: 'Update',
-    withdraw: 'Withdraw',
-    write: 'Write',
+    update: m['common.update'](),
+    withdraw: m['consentFlow.withdraw'](),
+    write: m['consentFlow.write'](),
 };
 
 const getDescriptiveText = (
@@ -40,13 +41,13 @@ const getDescriptiveText = (
         return `You have shared a new credential with ${contractOwner?.displayName}.`;
     }
 
-    if (transaction.action === 'update') return 'You have updated your terms.';
+    if (transaction.action === 'update') return m['consentFlow.updatedTerms']();
 
     if (transaction.action === 'withdraw') {
         return `You have disconnected your data sharing with ${contractOwner?.displayName}.`;
     }
 
-    if (transaction.action === 'write') return 'You have received a credential.';
+    if (transaction.action === 'write') return m['consentFlow.receivedCredential']();
 
     return '';
 };
@@ -73,9 +74,9 @@ const TransactionHistoryItem: React.FC<TransactionHistoryItemProps> = ({
                 <section className="text-xs font-poppins text-grayscale-700">
                     {(transaction.action === 'write'
                         ? transaction.uris ?? []
-                        : Object.values(transaction.terms?.read?.credentials?.categories ?? {}).flatMap(
-                              category => category.shared ?? []
-                          )
+                        : Object.values(
+                              transaction.terms?.read?.credentials?.categories ?? {}
+                          ).flatMap(category => category.shared ?? [])
                     ).map(uri => (
                         <BoostEarnedCard key={uri} record={{ uri }} boostPageViewMode="list" />
                     ))}

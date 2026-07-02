@@ -30,6 +30,7 @@
  */
 
 import React from 'react';
+import * as m from '../../../../paraglide/messages.js';
 
 import { ribbonOutline } from 'ionicons/icons';
 
@@ -67,7 +68,7 @@ const TRUST_TIER_OPTIONS: ReadonlyArray<{
     },
     {
         value: 'institution',
-        label: 'Institution',
+        label: m['pathways.institution'](),
         hint: 'Accredited issuer',
     },
 ];
