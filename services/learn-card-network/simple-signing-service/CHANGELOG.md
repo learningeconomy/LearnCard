@@ -1,5 +1,23 @@
 # @welibraryos/lca-api-service
 
+## 1.2.24
+
+### Patch Changes
+
+-   [#1341](https://github.com/learningeconomy/LearnCard/pull/1341) [`69ef21bda3e003e83f4d842c52e037acf528af09`](https://github.com/learningeconomy/LearnCard/commit/69ef21bda3e003e83f4d842c52e037acf528af09) Thanks [@goblincore](https://github.com/goblincore)! - 🐛 Bundle DIDKit WASM into Lambda artifacts (fix staging 500s)
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/helpers@1.3.7
+    -   @learncard/types@5.17.5
+    -   @learncard/did-web-plugin@1.1.25
+    -   @learncard/didkey-plugin@1.1.25
+    -   @learncard/didkit-plugin@1.9.5
+    -   @learncard/dynamic-loader-plugin@1.1.25
+    -   @learncard/expiration-plugin@1.2.25
+    -   @learncard/learn-card-plugin@1.2.25
+    -   @learncard/vc-plugin@1.5.5
+
 ## 1.2.23
 
 ### Patch Changes
