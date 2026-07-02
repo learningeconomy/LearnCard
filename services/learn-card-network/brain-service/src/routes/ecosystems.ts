@@ -8,6 +8,7 @@ import {
     getChildEcosystems,
     getRootEcosystemsForTenant,
 } from '@accesslayer/ecosystem/read';
+import { getTenantRootEcosystem } from '@accesslayer/tenant/read';
 
 export const ecosystemsRouter = t.router({
     getEcosystem: didAndChallengeRoute
@@ -63,6 +64,32 @@ export const ecosystemsRouter = t.router({
         .output(z.array(EcosystemValidator))
         .query(async ({ input }) => {
             return getRootEcosystemsForTenant(input.rootEcosystemId);
+        }),
+
+    getMyTenantRoot: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/ecosystem/tenant/root',
+                tags: ['Ecosystems'],
+                summary: "Get the calling tenant's shadow root Ecosystem",
+                description:
+                    'Resolves the root Ecosystem bound (via SERVES) to the tenant on the request.',
+            },
+        })
+        .input(z.object({}).default({}))
+        .output(EcosystemValidator.optional())
+        .query(async ({ ctx }) => {
+            const tenantId = ctx.tenant?.id;
+
+            if (!tenantId) throw new TRPCError({ code: 'NOT_FOUND' });
+
+            const root = await getTenantRootEcosystem(tenantId);
+
+            if (!root) throw new TRPCError({ code: 'NOT_FOUND' });
+
+            return root;
         }),
 });
 

@@ -15,6 +15,9 @@ import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
 import { Ecosystem } from './Ecosystem';
 import { Group } from './Group';
+import { Tenant } from './Tenant';
+
+void Tenant;
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
@@ -199,6 +202,7 @@ const indexQueries = [
     'CREATE INDEX group_owner_idx IF NOT EXISTS FOR (g:Group) ON (g.ownerEcosystemId)',
     'CREATE INDEX group_type_idx IF NOT EXISTS FOR (g:Group) ON (g.type)',
     'CREATE CONSTRAINT group_slug_unique_in_parent IF NOT EXISTS FOR (g:Group) REQUIRE (g.parentGroupId, g.slug) IS UNIQUE',
+    'CREATE CONSTRAINT tenant_id_unique IF NOT EXISTS FOR (t:Tenant) REQUIRE (t.tenantId) IS UNIQUE',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -265,3 +269,4 @@ export * from './CredentialActivity';
 export * from './StatusList';
 export * from './Ecosystem';
 export * from './Group';
+export * from './Tenant';
