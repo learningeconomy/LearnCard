@@ -21,10 +21,10 @@ which prevents infinite reload loops.
 
 ```bash
 # Run just the lazyWithRetry tests
-pnpm --filter learn-card-base test -- --run src/helpers/__tests__/lazyWithRetry.test.ts
+bun --filter learn-card-base run test -- --run src/helpers/__tests__/lazyWithRetry.test.ts
 
 # Run all learn-card-base tests
-pnpm --filter learn-card-base test
+bun --filter learn-card-base run test
 ```
 
 The unit tests cover: first-try success, non-chunk error passthrough, retry success, reload on double failure, sessionStorage reload guard, TTL expiry reset, and mixed error types.
@@ -40,14 +40,15 @@ In `apps/learn-card-app/src/Routes.tsx`, temporarily change one lazy import:
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 
 // With this:
-const SkillsPage = lazyWithRetry(
-    () => Promise.reject(new TypeError('Importing a module script failed.'))
+const SkillsPage = lazyWithRetry(() =>
+    Promise.reject(new TypeError('Importing a module script failed.'))
 );
 ```
 
-Start the dev server (`pnpm nx run learn-card-app:serve`), log in, and navigate to `/skills`.
+Start the dev server (`bunx nx run learn-card-app:serve`), log in, and navigate to `/skills`.
 
 **Expected behavior:**
+
 1. Page reloads automatically (up to 2 times within 30 seconds)
 2. After reloads are exhausted, shows the "Something went wrong" error UI
 3. `sessionStorage.__chunk_reload__` contains `{"count":2,"ts":...}`
@@ -90,7 +91,7 @@ sessionStorage.removeItem('__chunk_reload__');
 
 ## Capacitor / iOS testing
 
-1. Build: `pnpm nx run learn-card-app:build`
+1. Build: `bunx nx run learn-card-app:build`
 2. Sync: `npx cap sync ios`
 3. Open in Xcode: `npx cap open ios`
 4. In the built `build/assets/` folder, rename or delete one chunk file (e.g., `SkillsPage-xxxxx.js`)
@@ -100,12 +101,12 @@ sessionStorage.removeItem('__chunk_reload__');
 
 ## Key files
 
-| File | Role |
-|------|------|
-| `packages/learn-card-base/src/helpers/lazyWithRetry.ts` | Retry + reload + sessionStorage guard |
-| `packages/learn-card-base/src/components/ErrorBoundary/index.tsx` | `ChunkBoundary` — second line of defense |
-| `apps/learn-card-app/src/components/generic/GenericErrorBoundary.tsx` | Final safety net — auto-reloads on stale chunk |
-| `apps/learn-card-app/src/Routes.tsx` | Where `lazyWithRetry` and `ChunkBoundary` are used |
+| File                                                                  | Role                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------- |
+| `packages/learn-card-base/src/helpers/lazyWithRetry.ts`               | Retry + reload + sessionStorage guard              |
+| `packages/learn-card-base/src/components/ErrorBoundary/index.tsx`     | `ChunkBoundary` — second line of defense           |
+| `apps/learn-card-app/src/components/generic/GenericErrorBoundary.tsx` | Final safety net — auto-reloads on stale chunk     |
+| `apps/learn-card-app/src/Routes.tsx`                                  | Where `lazyWithRetry` and `ChunkBoundary` are used |
 
 ## Sentry issue
 

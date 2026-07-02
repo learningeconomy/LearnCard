@@ -8,12 +8,12 @@ type InfoProps = {
 };
 
 const Info: React.FC<InfoProps> = ({ path }) => {
-    const [pnpm, setPnpm] = useState(true);
+    const [bun, setBun] = useState(true);
     const [aws, setAws] = useState(true);
 
     useEffect(() => {
         const checkForBinaries = async () => {
-            setPnpm(!!(await lookpath('pnpm')));
+            setBun(!!(await lookpath('bun')));
             setAws(!!(await lookpath('aws')));
         };
 
@@ -50,10 +50,10 @@ const Info: React.FC<InfoProps> = ({ path }) => {
             )}
 
             <Box borderStyle="round" flexDirection="column">
-                {!pnpm && (
+                {!bun && (
                     <Text>
                         <Text color="green">{'$ '}</Text>
-                        <SyntaxHighlight code="npm i -g pnpm # must use pnpm!" language="bash" />
+                        <SyntaxHighlight code="npm i -g bun@1.3.14" language="bash" />
                     </Text>
                 )}
                 <Text>
@@ -65,11 +65,11 @@ const Info: React.FC<InfoProps> = ({ path }) => {
                 </Text>
                 <Text>
                     <Text color="green">{'$ '}</Text>
-                    <SyntaxHighlight code="pnpm i" language="bash" />
+                    <SyntaxHighlight code="bun install" language="bash" />
                 </Text>
                 <Text>
                     <Text color="green">{'$ '}</Text>
-                    <SyntaxHighlight code="pnpm serverless-deploy" language="bash" />
+                    <SyntaxHighlight code="bun run serverless-deploy" language="bash" />
                 </Text>
             </Box>
         </Box>

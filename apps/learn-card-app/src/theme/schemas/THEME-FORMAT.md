@@ -73,9 +73,9 @@ A theme can extend another theme by setting `"extends": "<parentId>"`. This perf
 }
 ```
 
-- Circular extends are detected and will throw an error.
-- The `id` and `displayName` of the child always win (never inherited).
-- Multi-level inheritance works: A → B → C.
+-   Circular extends are detected and will throw an error.
+-   The `id` and `displayName` of the child always win (never inherited).
+-   Multi-level inheritance works: A → B → C.
 
 ## Colors
 
@@ -111,31 +111,31 @@ Override specific categories on top of `categoryBase`. Keys are **camelCase enum
 
 **Valid category keys:**
 
-| JSON Key | Display Name | Enum Value |
-|----------|-------------|------------|
-| `aiTopic` | AI Sessions | `"AI Topic"` |
-| `aiPathway` | AI Pathways | `"AI Pathway"` |
-| `aiInsight` | AI Insights | `"AI Insight"` |
-| `skill` | Skills | `"Skill"` |
-| `socialBadge` | Boosts | `"Social Badge"` |
-| `achievement` | Achievements | `"Achievement"` |
-| `learningHistory` | Studies | `"Learning History"` |
-| `accomplishment` | Portfolio | `"Accomplishment"` |
-| `accommodation` | Assistance | `"Accommodation"` |
-| `workHistory` | Experiences | `"Work History"` |
-| `family` | Families | `"Family"` |
-| `id` | IDs | `"ID"` |
+| JSON Key          | Display Name | Enum Value           |
+| ----------------- | ------------ | -------------------- |
+| `aiTopic`         | AI Sessions  | `"AI Topic"`         |
+| `aiPathway`       | AI Pathways  | `"AI Pathway"`       |
+| `aiInsight`       | AI Insights  | `"AI Insight"`       |
+| `skill`           | Skills       | `"Skill"`            |
+| `socialBadge`     | Boosts       | `"Social Badge"`     |
+| `achievement`     | Achievements | `"Achievement"`      |
+| `learningHistory` | Studies      | `"Learning History"` |
+| `accomplishment`  | Portfolio    | `"Accomplishment"`   |
+| `accommodation`   | Assistance   | `"Accommodation"`    |
+| `workHistory`     | Experiences  | `"Work History"`     |
+| `family`          | Families     | `"Family"`           |
+| `id`              | IDs          | `"ID"`               |
 
 ### Color Value Formats
 
 Theme JSON uses several color value formats depending on the context:
 
-| Format | Example | Usage |
-|--------|---------|-------|
-| **Tailwind token** | `"cyan-301"` | Custom palette tokens defined in `tailwind.config.js` |
-| **Tailwind utility** | `"!bg-cyan-400"` | Full Tailwind class (the `!` prefix means `!important`) |
-| **Hex color** | `"#18224E"` | Direct hex values for non-Tailwind contexts |
-| **Platform string** | `"light"` or `"dark"` | Status bar style (iOS/Android) |
+| Format               | Example               | Usage                                                   |
+| -------------------- | --------------------- | ------------------------------------------------------- |
+| **Tailwind token**   | `"cyan-301"`          | Custom palette tokens defined in `tailwind.config.js`   |
+| **Tailwind utility** | `"!bg-cyan-400"`      | Full Tailwind class (the `!` prefix means `!important`) |
+| **Hex color**        | `"#18224E"`           | Direct hex values for non-Tailwind contexts             |
+| **Platform string**  | `"light"` or `"dark"` | Status bar style (iOS/Android)                          |
 
 > **Convention:** `primaryColor` fields typically use Tailwind tokens. `backgroundPrimaryColor` fields use Tailwind utility classes prefixed with `!bg-`. `statusBarColor` uses `"light"` or `"dark"`.
 
@@ -235,10 +235,11 @@ Override icon colors for specific credential categories. Keys match the palette 
 **Available palette keys:** `AiSessions`, `AiPathways`, `AiInsights`, `Skills`, `Boosts`, `Achievements`, `Studies`, `Portfolio`, `Assistance`, `Experiences`, `Families`, `IDs`
 
 **Palette fields:**
-- `primary` — Main icon color
-- `primaryLight` — Lighter variant (backgrounds, fills)
-- `accent` — Secondary highlight color
-- `stroke` — Outline/stroke color
+
+-   `primary` — Main icon color
+-   `primaryLight` — Lighter variant (backgrounds, fills)
+-   `accent` — Secondary highlight color
+-   `stroke` — Outline/stroke color
 
 Palettes are merged onto compiled defaults — you only need to specify the fields you're changing.
 
@@ -264,10 +265,10 @@ Override Tailwind utility classes for specific UI components:
 
 Each theme directory should contain:
 
-| File | Purpose | Required? |
-|------|---------|-----------|
-| `assets/switcher-icon.png` | Icon in the ThemeSelector toggle | Yes |
-| `assets/blocks-icon.png` | "Build My LearnCard" feature icon | Yes |
+| File                       | Purpose                           | Required? |
+| -------------------------- | --------------------------------- | --------- |
+| `assets/switcher-icon.png` | Icon in the ThemeSelector toggle  | Yes       |
+| `assets/blocks-icon.png`   | "Build My LearnCard" feature icon | Yes       |
 
 Themes that `extend` another theme can omit these — they'll inherit from the parent's resolved values.
 
@@ -280,11 +281,12 @@ npx tsx scripts/validate-theme-schemas.ts
 ```
 
 This checks:
-- JSON structure validity
-- `id` matches directory name
-- `extends` references exist (no dangling/circular references)
-- `iconSet` references a known icon set
-- Required assets exist
+
+-   JSON structure validity
+-   `id` matches directory name
+-   `extends` references exist (no dangling/circular references)
+-   `iconSet` references a known icon set
+-   Required assets exist
 
 The full runtime validation (`ThemeSchema.parse()`) happens at app boot when themes are loaded via `loadAllJsonThemes()`.
 
@@ -293,7 +295,7 @@ The full runtime validation (`ThemeSchema.parse()`) happens at app boot when the
 The easiest way is to use the interactive scaffolding tool:
 
 ```bash
-pnpm create-tenant
+bun run create-tenant
 # Select "Create a custom theme for this tenant" → Yes
 ```
 
@@ -303,4 +305,4 @@ Or manually:
 2. Create `src/theme/schemas/<id>/assets/` with `switcher-icon.png` and `blocks-icon.png`
 3. Set `"extends": "formal"` (or `"colorful"`) to inherit defaults
 4. Override only the colors/styles you need
-5. Run `pnpm validate-themes` to check validity
+5. Run `bun run validate-themes` to check validity

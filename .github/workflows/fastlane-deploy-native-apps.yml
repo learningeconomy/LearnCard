@@ -83,16 +83,16 @@ jobs:
         steps:
             - uses: actions/checkout@v7
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
-              id: pnpm-install
+            - name: Setup Bun cache
+              uses: actions/cache@v6
               with:
-                  run_install: false
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
 
             # - name: Set up Homebrew
             #   run: |
@@ -102,18 +102,6 @@ jobs:
             # - name: Install xcodes
             #   run: brew install --cask xcodes
 
-            # - name: Get pnpm store directory
-            #  id: pnpm-cache
-            # run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-            #- name: Setup pnpm cache
-            # uses: actions/cache@v6
-            #with:
-            #   path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-            #  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-            # restore-keys: |
-            #    ${{ runner.os }}-pnpm-store-
-
             #- name: Restore nx cache
             # id: restore-nx-cache
             #uses: actions/cache/restore@v3
@@ -122,11 +110,11 @@ jobs:
             #  key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
             - name: Install Workspace dependencies
-              run: pnpm i && pnpm exec nx build learn-card-app
+              run: bun install --frozen-lockfile && bunx nx build learn-card-app
 
             - name: Install dependencies
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             # Prepare tenant config before building.
             # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
@@ -140,11 +128,11 @@ jobs:
                     STAGE_FLAG="--stage $STAGE"
                   fi
                   echo "Preparing tenant config: $TENANT $STAGE_FLAG"
-                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
             - name: Build App Files
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: pnpm build
+              run: bun run build
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
@@ -165,7 +153,7 @@ jobs:
 
             - name: Sync Capacitor Files to iOS
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: npx cap sync ios
+              run: bunx cap sync ios
 
             # Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
             - name: Re-patch tenant config (post-sync)
@@ -178,7 +166,7 @@ jobs:
                     STAGE_FLAG="--stage $STAGE"
                   fi
                   echo "Re-patching tenant config after cap sync: $TENANT $STAGE_FLAG"
-                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
             - name: Select Xcode 26.x
               uses: maxim-lobanov/setup-xcode@v1
@@ -239,28 +227,16 @@ jobs:
         steps:
             - uses: actions/checkout@v7
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+
+            - name: Setup Bun cache
+              uses: actions/cache@v6
               with:
-                  node-version-file: .nvmrc
-
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
-              id: pnpm-install
-              with:
-                  run_install: false
-
-            #- name: Get pnpm store directory
-            # id: pnpm-cache
-            # run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-            #- name: Setup pnpm cache
-            # uses: actions/cache@v6
-            # with:
-            #  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-            #  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-            #  restore-keys: |
-            #    ${{ runner.os }}-pnpm-store-
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
 
             #- name: Restore nx cache
             #  id: restore-nx-cache
@@ -270,11 +246,11 @@ jobs:
             #   key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
             - name: Install Workspace dependencies
-              run: pnpm i && pnpm exec nx build learn-card-app
+              run: bun install --frozen-lockfile && bunx nx build learn-card-app
 
             - name: Install dependencies
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             # Prepare tenant config before building.
             # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
@@ -288,11 +264,11 @@ jobs:
                     STAGE_FLAG="--stage $STAGE"
                   fi
                   echo "Preparing tenant config: $TENANT $STAGE_FLAG"
-                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
             - name: Build App Files
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: pnpm build
+              run: bun run build
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
@@ -313,7 +289,7 @@ jobs:
 
             - name: Sync Capacitor Files to Android
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
-              run: npx cap sync android
+              run: bunx cap sync android
 
             # Re-patch native files that cap sync overwrites (capacitor.config.json, etc.)
             - name: Re-patch tenant config (post-sync)
@@ -326,7 +302,7 @@ jobs:
                     STAGE_FLAG="--stage $STAGE"
                   fi
                   echo "Re-patching tenant config after cap sync: $TENANT $STAGE_FLAG"
-                  npx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
             - name: Setup JDK
               uses: actions/setup-java@v4

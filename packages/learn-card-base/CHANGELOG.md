@@ -1,5 +1,22 @@
 # learn-card-base
 
+## 0.2.3
+
+### Patch Changes
+
+-   [#1325](https://github.com/learningeconomy/LearnCard/pull/1325) [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e) Thanks [@smurflo2](https://github.com/smurflo2)! - Zod v4
+
+-   [#1328](https://github.com/learningeconomy/LearnCard/pull/1328) [`922903508ffcd15f0644617a0ac9566c2735a68a`](https://github.com/learningeconomy/LearnCard/commit/922903508ffcd15f0644617a0ac9566c2735a68a) Thanks [@goblincore](https://github.com/goblincore)! - fix(boost): use new credential badge in LCA, hide meaningless "GENERIC" subtype label
+
+-   Updated dependencies [[`9853f6a89fa9103975ec855367e789746aee5387`](https://github.com/learningeconomy/LearnCard/commit/9853f6a89fa9103975ec855367e789746aee5387), [`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/ler-rs-plugin@0.1.15
+    -   @learncard/types@5.17.4
+    -   @learncard/helpers@1.3.6
+    -   @learncard/lca-api-plugin@1.2.16
+    -   @learncard/learn-card-plugin@1.2.24
+    -   @learncard/render-method-plugin@3.0.4
+    -   @learncard/sss-key-manager@0.1.14
+
 ## 0.2.2
 
 ### Patch Changes
@@ -567,7 +584,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

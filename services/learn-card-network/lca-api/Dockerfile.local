@@ -8,7 +8,7 @@ ENV SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
 
-# Install build dependencies and pnpm in one layer
+# Install build dependencies and Bun in one layer
 
 # Copy root workspace files
 
@@ -16,4 +16,4 @@ WORKDIR /app
 EXPOSE 3000
 EXPOSE 4200
 
-CMD ["sh", "-c", "cd services/learn-card-network/lca-api && pnpm dev"]
+CMD ["sh", "-c", "cd services/learn-card-network/lca-api && bun run dev"]
