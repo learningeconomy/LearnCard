@@ -1,0 +1,51 @@
+# Runs the mocked-network Playwright tier (tests/*.mocked.spec.ts) on PRs.
+# This tier has NO backend — it serves boot/reads from a recorded HAR and
+# issuance mutations from typed stubs, so it runs against the vite dev server
+# alone. nx affected scopes it to run only when learn-card-app is touched; the
+# real-backend E2E stays on the gated EC2 job in test.yml.
+
+name: Mock E2E
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+
+concurrency:
+    group: mock-e2e-${{ github.head_ref || github.ref }}
+    cancel-in-progress: true
+
+env:
+    CI: true
+
+jobs:
+    mock-e2e:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+                  fetch-depth: 0
+
+            - name: Fetch main for NX comparison
+              run: git fetch --no-tags --prune origin main
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Install Playwright browser
+              working-directory: apps/learn-card-app
+              run: pnpm exec playwright install --with-deps firefox
+
+            - name: Run affected mocked E2E
+              run: pnpm exec nx affected --target=test-mock --base=origin/main --head=HEAD
+
+            - name: Upload Playwright report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: mock-e2e-report
+                  path: |
+                      apps/learn-card-app/playwright-report/
+                      apps/learn-card-app/test-results/
+                  retention-days: 14
