@@ -331,6 +331,9 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Install Serverless packager
+              run: npm install -g pnpm@9.12.3
+
             - name: Validate deployment target
               run: |
                   echo "========================================"
@@ -375,6 +378,7 @@ jobs:
             - name: Deploy Brain Service Lambda
               run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
                   CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
                   POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
@@ -442,6 +446,9 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Install Serverless packager
+              run: npm install -g pnpm@9.12.3
+
             - name: Validate deployment target
               run: |
                   echo "========================================"
@@ -486,6 +493,7 @@ jobs:
             - name: Deploy LearnCloud Lambda
               run: bunx nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
                   SERVER_URL: ${{ vars.SERVER_URL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
@@ -533,6 +541,9 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Install Serverless packager
+              run: npm install -g pnpm@9.12.3
+
             - name: Validate deployment target
               run: |
                   echo "========================================"
@@ -577,6 +588,7 @@ jobs:
             - name: Deploy LCA API Service Lambda
               run: bunx nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
