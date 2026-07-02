@@ -257,22 +257,20 @@ const EmailForm: React.FC = () => {
         );
         const emailError = errors.email?.[0];
         activeStep = (
-            <IonCol size="12" className="w-full">
-                <div className="w-full flex flex-col justify-center">
-                    <input
-                        aria-label="Email"
-                        autoCapitalize="on"
-                        className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-wide text-base text-grayscale-800 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
-                            emailError ? 'border-red-300' : 'border-grayscale-200'
-                        } ${emailError ? 'login-input-email-error' : ''}`}
-                        placeholder="Email address"
-                        onChange={e => setEmail(e.target.value)}
-                        value={email}
-                        type="text"
-                    />
-                    {emailError && <p className="login-input-error-msg">{emailError}</p>}
-                </div>
-            </IonCol>
+            <div className="w-full flex items-center justify-center">
+                <input
+                    aria-label="Email"
+                    autoCapitalize="on"
+                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        emailError ? 'border-red-300' : 'border-grayscale-200'
+                    } ${emailError ? 'login-input-email-error' : ''}`}
+                    placeholder="Email address"
+                    onChange={e => setEmail(e.target.value)}
+                    value={email}
+                    type="text"
+                />
+                {emailError && <p className="login-input-error-msg">{emailError}</p>}
+            </div>
         );
         // buttonTitle = 'Continue';
         buttonTitle = 'Send Login Code';
