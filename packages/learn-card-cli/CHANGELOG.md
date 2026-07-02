@@ -1,5 +1,23 @@
 # @learncard/cli
 
+## 3.4.7
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/init@2.4.5
+    -   @learncard/holder-continuity@0.2.7
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/learn-cloud-plugin@2.3.31
+    -   @learncard/simple-signing-plugin@1.1.30
+    -   @learncard/open-badge-v2-plugin@1.1.27
+    -   @learncard/linked-claims-plugin@0.2.26
+    -   @learncard/ler-rs-plugin@0.1.17
+    -   @learncard/render-method-plugin@3.0.6
+
 ## 3.4.6
 
 ### Patch Changes
