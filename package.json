@@ -150,5 +150,8 @@
         "*.{ts,tsx,js,jsx,json,md,yml,yaml,css,html}": [
             "prettier --write"
         ]
+    },
+    "patchedDependencies": {
+        "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch"
     }
 }
