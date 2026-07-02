@@ -1153,6 +1153,9 @@ jobs:
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
                   '
 
+            - name: Prepare publish dependency versions
+              run: node scripts/prepare-publish-workspace-deps.mjs
+
             - name: Publish Registry Packages
               run: bunx changeset publish
     # ============================================================================
