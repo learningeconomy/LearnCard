@@ -5,6 +5,8 @@ export * from './did';
 export * from './obv3';
 export * from './clr';
 export * from './credential-format';
+export * from './ecosystem';
+export * from './group';
 export * from './learncard';
 export * from './learncloud';
 export * from './lcn';

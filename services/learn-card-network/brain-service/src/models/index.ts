@@ -13,6 +13,8 @@ import { Integration } from './Integration';
 import { CredentialActivity } from './CredentialActivity';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
+import { Ecosystem } from './Ecosystem';
+import { Group } from './Group';
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
@@ -109,6 +111,24 @@ ContactMethod.addRelationships({
     profile: { model: Profile, direction: 'in', name: 'HAS_CONTACT_METHOD' },
 });
 
+Ecosystem.addRelationships({
+    owns: { model: Group, direction: 'out', name: 'OWNS' },
+    references: {
+        model: Group,
+        direction: 'out',
+        name: 'REFERENCES',
+        properties: {
+            mode: { property: 'mode', schema: { type: 'string', required: true } },
+            grantedAt: { property: 'grantedAt', schema: { type: 'string', required: true } },
+            grantedByProfileId: {
+                property: 'grantedByProfileId',
+                schema: { type: 'string', required: true },
+            },
+            expiresAt: { property: 'expiresAt', schema: { type: 'string', required: false } },
+        },
+    },
+});
+
 const shouldCreateIndices =
     process.env.NODE_ENV === 'production' ||
     (process.env.NEO4J_SKIP_INDICES !== 'true' && process.env.NEO4J_SKIP_INDICES !== '1');
@@ -170,6 +190,15 @@ const indexQueries = [
     'CREATE INDEX bitstring_status_list_url_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.statusListCredential)',
     'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE',
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
+    'CREATE CONSTRAINT ecosystem_id_unique IF NOT EXISTS FOR (e:Ecosystem) REQUIRE (e.id) IS UNIQUE',
+    'CREATE INDEX ecosystem_root_idx IF NOT EXISTS FOR (e:Ecosystem) ON (e.rootEcosystemId)',
+    'CREATE INDEX ecosystem_owner_idx IF NOT EXISTS FOR (e:Ecosystem) ON (e.ownerProfileId)',
+    'CREATE CONSTRAINT ecosystem_slug_unique_in_parent IF NOT EXISTS FOR (e:Ecosystem) REQUIRE (e.parentEcosystemId, e.slug) IS UNIQUE',
+    'CREATE CONSTRAINT group_id_unique IF NOT EXISTS FOR (g:Group) REQUIRE (g.id) IS UNIQUE',
+    'CREATE INDEX group_root_idx IF NOT EXISTS FOR (g:Group) ON (g.rootGroupId)',
+    'CREATE INDEX group_owner_idx IF NOT EXISTS FOR (g:Group) ON (g.ownerEcosystemId)',
+    'CREATE INDEX group_type_idx IF NOT EXISTS FOR (g:Group) ON (g.type)',
+    'CREATE CONSTRAINT group_slug_unique_in_parent IF NOT EXISTS FOR (g:Group) REQUIRE (g.parentGroupId, g.slug) IS UNIQUE',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -234,3 +263,5 @@ export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './StatusList';
+export * from './Ecosystem';
+export * from './Group';

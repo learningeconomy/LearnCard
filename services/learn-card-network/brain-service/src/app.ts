@@ -19,6 +19,8 @@ import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
 import { activityRouter, ActivityRouter } from '@routes/activity';
 import { federationRouter, FederationRouter } from '@routes/federation';
+import { ecosystemsRouter, EcosystemsRouter } from '@routes/ecosystems';
+import { groupsRouter, GroupsRouter } from '@routes/groups';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -49,6 +51,8 @@ export const appRouter = t.router<{
     appStore: AppStoreRouter;
     activity: ActivityRouter;
     federation: FederationRouter;
+    ecosystem: EcosystemsRouter;
+    group: GroupsRouter;
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
@@ -72,6 +76,8 @@ export const appRouter = t.router<{
     appStore: appStoreRouter,
     activity: activityRouter,
     federation: federationRouter,
+    ecosystem: ecosystemsRouter,
+    group: groupsRouter,
     test: process.env.IS_E2E_TEST ? testRouter : undefined,
     bench: process.env.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });
