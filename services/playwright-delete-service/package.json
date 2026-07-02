@@ -9,7 +9,7 @@
         "dev": "nodemon index.js"
     },
     "dependencies": {
-        "fastify": "5.7.2",
+        "fastify": "5.8.5",
         "ioredis": "^5.2.2",
         "mongodb": "^6.2.0",
         "neo4j-driver": "^4.4.5"
