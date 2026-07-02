@@ -99,19 +99,145 @@ const localName = (value: unknown): string | undefined => {
     return afterColon.includes('/') ? afterColon.split('/').pop()! : afterColon;
 };
 
-const CTDL_TYPE_ALIASES: Record<string, string> = {
+const OBV3_TYPE_SET = new Set<string>(OBV3_ACHIEVEMENT_TYPES as readonly string[]);
+
+/**
+ * Explicit map from every CTDL credential (and learning-opportunity) subclass to
+ * the closest OBv3 `AchievementType`. CTDL's vocabulary is strictly finer-grained
+ * than OBv3's — it encodes the field of study (`BachelorOfArtsDegree`) where OBv3
+ * only encodes the level (`BachelorDegree`) — so this is a deliberate many-to-one
+ * collapse. The lost specificity is preserved elsewhere: the exact CTDL class
+ * round-trips via the Credential Engine alignment, and field-of-study survives in
+ * the CIP/SOC alignments. Keyed by the bare local name (post-`localName`).
+ *
+ * Sources: https://credreg.net/ctdl/terms  •  https://www.imsglobal.org/spec/ob/v3p0#AchievementType
+ */
+const CTDL_TO_OBV3_TYPE: Record<string, string> = {
+    Badge: 'Badge',
     DigitalBadge: 'Badge',
     OpenBadge: 'Badge',
     DigitalBadgeCredential: 'Badge',
+
+    AssociateDegree: 'AssociateDegree',
+    AssociateOfArtsDegree: 'AssociateDegree',
+    AssociateOfScienceDegree: 'AssociateDegree',
+    AssociateOfAppliedArtsDegree: 'AssociateDegree',
+    AssociateOfAppliedScienceDegree: 'AssociateDegree',
+
+    BachelorDegree: 'BachelorDegree',
+    BachelorOfArtsDegree: 'BachelorDegree',
+    BachelorOfScienceDegree: 'BachelorDegree',
+
+    MasterDegree: 'MasterDegree',
+    MasterOfArtsDegree: 'MasterDegree',
+    MasterOfScienceDegree: 'MasterDegree',
+
+    DoctoralDegree: 'DoctoralDegree',
+    ResearchDoctorate: 'ResearchDoctorate',
+    ProfessionalDoctorate: 'ProfessionalDoctorate',
+
+    Degree: 'Degree',
+    SpecialistDegree: 'Degree',
+
+    Certificate: 'Certificate',
+    AcademicCertificate: 'Certificate',
+    BasicTechnicalCertificate: 'Certificate',
+    CertificateOfCompletion: 'CertificateOfCompletion',
+    CertificateOfParticipation: 'Certificate',
+    PostBaccalaureateCertificate: 'Certificate',
+    PostMasterCertificate: 'Certificate',
+    ProfessionalCertificate: 'Certificate',
+    ProficiencyCertificate: 'Certificate',
+    WorkBasedLearningCertificate: 'Certificate',
+    SecondaryEducationCertificate: 'Certificate',
+    MasterCertificate: 'MasterCertificate',
+
+    ApprenticeshipCertificate: 'ApprenticeshipCertificate',
+    PreApprenticeshipCertificate: 'ApprenticeshipCertificate',
+    JourneymanCertificate: 'JourneymanCertificate',
+
+    Diploma: 'Diploma',
+    SecondarySchoolDiploma: 'SecondarySchoolDiploma',
+
+    Certification: 'Certification',
+    License: 'License',
+    MicroCredential: 'MicroCredential',
+    GeneralEducationDevelopment: 'GeneralEducationDevelopment',
+    QualityAssuranceCredential: 'QualityAssuranceCredential',
+
+    Course: 'Course',
+    LearningProgram: 'LearningProgram',
+    LearningOpportunityProfile: 'LearningProgram',
+    Assessment: 'Assessment',
+    Competency: 'Competency',
 };
 
-const inferAchievementType = (ctdl: Record<string, unknown>): string => {
-    for (const candidate of [ctdl['@type'], ctdl['ceterms:credentialType']]) {
-        const term = localName(candidate);
-        if (!term) continue;
-        const mapped = CTDL_TYPE_ALIASES[term] ?? term;
-        if ((OBV3_ACHIEVEMENT_TYPES as readonly string[]).includes(mapped)) return mapped;
+/**
+ * Suffix-based fallback for CTDL classes not enumerated above (the registry adds
+ * new subclasses over time). Collapses any `*Degree` / `*Certificate` / etc. to
+ * the right OBv3 bucket by inspecting the level prefix and the trailing noun.
+ */
+const heuristicObv3Type = (term: string): string | undefined => {
+    if (/Degree$/i.test(term)) {
+        if (/^Associate/i.test(term)) return 'AssociateDegree';
+        if (/^Bachelor|^Baccalaureate/i.test(term)) return 'BachelorDegree';
+        if (/^Master/i.test(term)) return 'MasterDegree';
+        if (/Doctor|Doctoral|Phd/i.test(term)) return 'DoctoralDegree';
+        return 'Degree';
     }
+    if (/SecondarySchoolDiploma$/i.test(term)) return 'SecondarySchoolDiploma';
+    if (/Diploma$/i.test(term)) return 'Diploma';
+    if (/Certification$/i.test(term)) return 'Certification';
+    if (/Certificate$/i.test(term)) return 'Certificate';
+    if (/MicroCredential$/i.test(term)) return 'MicroCredential';
+    if (/License$/i.test(term)) return 'License';
+    if (/Badge$/i.test(term)) return 'Badge';
+    return undefined;
+};
+
+/**
+ * Collect candidate type terms from a CTDL type-bearing value. Handles plain
+ * strings (`"ceterms:BachelorDegree"`), arrays, and `CredentialAlignmentObject`
+ * wrappers (`ceterms:credentialType` is often `{ ceterms:targetNode: "…" }`) —
+ * for objects we read `targetNode`, never the wrapper's own `@type`.
+ */
+const typeTerms = (value: unknown): string[] => {
+    if (value == null) return [];
+    if (typeof value === 'string') {
+        const name = localName(value);
+        return name ? [name] : [];
+    }
+    if (Array.isArray(value)) return value.flatMap(typeTerms);
+    if (isObject(value)) {
+        const target = value['ceterms:targetNode'] ?? value['targetNode'] ?? value['@id'];
+        return typeof target === 'string' ? typeTerms(target) : [];
+    }
+    return [];
+};
+
+/**
+ * Resolve a CTDL resource's OBv3 `achievementType`. Tries, in order of
+ * specificity: the explicit `ceterms:credentialType`, then the RDF `@type`/`type`.
+ * For each candidate: exact OBv3 match → explicit alias table → suffix heuristic.
+ * Falls back to the generic `'Achievement'` only when nothing resolves.
+ */
+const inferAchievementType = (ctdl: Record<string, unknown>): string => {
+    const candidates = [
+        ...typeTerms(ctdl['ceterms:credentialType']),
+        ...typeTerms(ctdl['@type']),
+        ...typeTerms(ctdl['type']),
+    ];
+
+    for (const term of candidates) {
+        if (OBV3_TYPE_SET.has(term)) return term;
+
+        const mapped = CTDL_TO_OBV3_TYPE[term];
+        if (mapped && OBV3_TYPE_SET.has(mapped)) return mapped;
+
+        const heuristic = heuristicObv3Type(term);
+        if (heuristic && OBV3_TYPE_SET.has(heuristic)) return heuristic;
+    }
+
     return 'Achievement';
 };
 

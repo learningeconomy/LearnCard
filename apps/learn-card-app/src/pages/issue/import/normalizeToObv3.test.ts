@@ -179,6 +179,62 @@ describe('ctdlToObv3Json — real registry data enrichment', () => {
     });
 });
 
+describe('achievementType mapping — CTDL classes → OBv3 AchievementType', () => {
+    const typeFor = (ctdlType: string, extra: Record<string, unknown> = {}): string => {
+        const { obv3Json } = ctdlToObv3Json({
+            '@type': ctdlType,
+            'ceterms:name': { 'en-US': 'X' },
+            ...extra,
+        });
+        return (obv3Json.credentialSubject as any).achievement.achievementType;
+    };
+
+    it('maps the real BA/MAEd credential (ce-9437231a) to BachelorDegree, not Achievement', () => {
+        expect(typeFor('ceterms:BachelorOfArtsDegree')).toBe('BachelorDegree');
+    });
+
+    it.each([
+        ['ceterms:BachelorOfArtsDegree', 'BachelorDegree'],
+        ['ceterms:BachelorOfScienceDegree', 'BachelorDegree'],
+        ['ceterms:AssociateOfAppliedScienceDegree', 'AssociateDegree'],
+        ['ceterms:MasterOfScienceDegree', 'MasterDegree'],
+        ['ceterms:ResearchDoctorate', 'ResearchDoctorate'],
+        ['ceterms:ProfessionalDoctorate', 'ProfessionalDoctorate'],
+        ['ceterms:SpecialistDegree', 'Degree'],
+        ['ceterms:AcademicCertificate', 'Certificate'],
+        ['ceterms:CertificateOfCompletion', 'CertificateOfCompletion'],
+        ['ceterms:MasterCertificate', 'MasterCertificate'],
+        ['ceterms:PreApprenticeshipCertificate', 'ApprenticeshipCertificate'],
+        ['ceterms:SecondarySchoolDiploma', 'SecondarySchoolDiploma'],
+        ['ceterms:DigitalBadge', 'Badge'],
+        ['ceterms:License', 'License'],
+        ['ceterms:MicroCredential', 'MicroCredential'],
+        ['ceterms:LearningProgram', 'LearningProgram'],
+    ])('maps %s → %s', (ctdlType, expected) => {
+        expect(typeFor(ctdlType)).toBe(expected);
+    });
+
+    it('falls back on the suffix heuristic for unenumerated CTDL degree subclasses', () => {
+        expect(typeFor('ceterms:BachelorOfFineArtsDegree')).toBe('BachelorDegree');
+        expect(typeFor('ceterms:DoctorOfMedicineDegree')).toBe('DoctoralDegree');
+    });
+
+    it('prefers ceterms:credentialType, reading its targetNode wrapper', () => {
+        expect(
+            typeFor('ceterms:Credential', {
+                'ceterms:credentialType': {
+                    '@type': 'ceterms:CredentialAlignmentObject',
+                    'ceterms:targetNode': 'credentialType:MasterDegree',
+                },
+            })
+        ).toBe('MasterDegree');
+    });
+
+    it('defaults to Achievement when nothing resolves', () => {
+        expect(typeFor('ceterms:Credential')).toBe('Achievement');
+    });
+});
+
 describe('org provenance helpers', () => {
     const org = {
         '@id': 'https://credentialengineregistry.org/resources/ce-org',
