@@ -154,8 +154,9 @@ jobs:
               if: github.event_name != 'workflow_dispatch'
               id: affected
               run: |
-                  affected=$(bunx nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-                  echo "affected=$affected" >> $GITHUB_OUTPUT
+                  set -o pipefail
+                  affected="$(bunx nx show projects --affected --base=HEAD~1 --head=HEAD | paste -sd, -)"
+                  echo "affected=$affected" >> "$GITHUB_OUTPUT"
                   echo "Affected projects: $affected"
 
             - name: Check version changes for release
@@ -746,7 +747,7 @@ jobs:
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
                     --bundle ${{ steps.app-version.outputs.version }} \
                     --package-json apps/${{ steps.vars.outputs.project_name }}/package.json \
-                    --node-modules apps/${{ steps.vars.outputs.project_name }}/node_modules
+                    --node-modules node_modules
 
             - name: Set CapGo Channel
               run: |

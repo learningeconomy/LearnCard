@@ -26,6 +26,7 @@ node_modules
 *.sw?
 
 .nx-cache/
+.nx/
 
 # Generated tenant config (from prepare scripts — assets are tracked as source of truth)
 **/public/tenant-config.json

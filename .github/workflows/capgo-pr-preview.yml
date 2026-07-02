@@ -155,7 +155,7 @@ jobs:
             version: ${{ needs.gate.outputs.bundle_version }}
             build_path: apps/learn-card-app/build
             package_json: apps/learn-card-app/package.json
-            node_modules_path: apps/learn-card-app/node_modules
+            node_modules_path: node_modules
             environment: learn-card-app-staging
             channel: ${{ needs.gate.outputs.channel }}
             ref: ${{ needs.gate.outputs.head_sha }}
