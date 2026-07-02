@@ -2162,6 +2162,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch",
+  },
   "overrides": {
     "@ceramicnetwork/streamid": "2.7.0",
     "@ionic/react": "8.7.2",

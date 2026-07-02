@@ -45,6 +45,9 @@ internal-docs/*
 .worktrees/
 CLAUDE.local.md
 
+# Assembled at deploy time by scripts/prepare-didkit-native-layer.cjs
+services/learn-card-network/*/didkit-native-layer/
+
 # Local Netlify folder
 .netlify
 # Local environment configuration
