@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { getChallenges } from '@helpers/challenges.helpers';
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getLearnCard, getDidKitEngine } from '@helpers/learnCard.helpers';
 
 import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
 import { setValidChallengesForDid } from '@cache/challenges';
@@ -23,13 +23,55 @@ export const utilitiesRouter = t.router({
         .input(z.void())
         .output(z.string())
         .query(async () => {
+            return `Healthy and well! (Version ${packageJson.version})`;
+        }),
+
+    deepHealthCheck: openRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/health-check/deep',
+                tags: ['Utilities'],
+                summary: 'Deep health check (exercises DIDKit end to end)',
+                description:
+                    'Issues and verifies a test credential + presentation with the service keypair, proving the full DIDKit crypto path (plugin load, signing, and the runtime delegation inside the native plugin) works. Reports which DIDKit engine loaded. Added after the 2026-07-02 incidents, where shallow health checks stayed green while DIDKit paths were broken.',
+            },
+        })
+        .input(z.void())
+        .output(
+            z.object({
+                healthy: z.boolean(),
+                version: z.string(),
+                didkitEngine: z.enum(['native', 'wasm', 'unloaded']),
+                did: z.string(),
+                vpVerified: z.boolean(),
+                verificationErrors: z.string().array(),
+                ms: z.number(),
+            })
+        )
+        .query(async () => {
+            const start = Date.now();
+
             const learnCard = await getLearnCard();
+            // getTestVp issues a test VC internally, so this round-trip exercises
+            // issueCredential, issuePresentation, AND verifyPresentation — including
+            // both lazy delegation call sites in the native plugin.
+            const unsignedVp = await learnCard.invoke.getTestVp();
+            const vp = await learnCard.invoke.issuePresentation(unsignedVp);
+            const result = await learnCard.invoke.verifyPresentation(vp);
 
-            const vp = await learnCard.invoke.getDidAuthVp();
+            const verificationErrors = result.errors ?? [];
+            const vpVerified = verificationErrors.length === 0;
 
-            return `Healthy and well! (Version ${
-                packageJson.version
-            })\n\nHere's a VP!\n\n${JSON.stringify(vp, null, 2)}`;
+            return {
+                healthy: vpVerified,
+                version: packageJson.version,
+                didkitEngine: getDidKitEngine(),
+                did: learnCard.id.did(),
+                vpVerified,
+                verificationErrors,
+                ms: Date.now() - start,
+            };
         }),
 
     getChallenges: didRoute
