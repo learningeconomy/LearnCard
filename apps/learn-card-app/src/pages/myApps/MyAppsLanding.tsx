@@ -3,6 +3,8 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { useModal, ModalTypes } from 'learn-card-base';
 
+import Search from 'learn-card-base/svgs/Search';
+
 import MainHeader from '../../components/main-header/MainHeader';
 import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import AppGrid from './AppGrid';
@@ -114,13 +116,16 @@ const MyAppsLanding: React.FC = () => {
                                 Browse More <span className="text-[18px] leading-none">+</span>
                             </button>
                         </div>
-                        <input
-                            value={searchInput}
-                            onChange={e => setSearchInput(e.target.value)}
-                            placeholder="Search..."
-                            aria-label="Search apps"
-                            className="w-full rounded-[10px] bg-[#E2E3E9] px-4 py-2.5 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none md:order-2 md:max-w-[320px] md:flex-1"
-                        />
+                        <div className="relative w-full md:order-2 md:max-w-[320px] md:flex-1">
+                            <Search className="pointer-events-none absolute left-4 top-1/2 h-[20px] w-[20px] -translate-y-1/2 text-[#6F7590]" />
+                            <input
+                                value={searchInput}
+                                onChange={e => setSearchInput(e.target.value)}
+                                placeholder="Search..."
+                                aria-label="Search apps"
+                                className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
+                            />
+                        </div>
                     </div>
 
                     {isSearching ? (
