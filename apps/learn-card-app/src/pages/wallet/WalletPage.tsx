@@ -27,6 +27,7 @@ import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal
 import { IonPage, IonContent, IonRow, IonCol, IonModal } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import WalletPageItemWrapper from './WalletPageItemWrapper';
 import { filterPassportCategories } from './passportCategories';
 import PassportActivityFeed from './activity-feed/PassportActivityFeed';
@@ -165,27 +166,21 @@ const WalletPage: React.FC = () => {
             className="bg-grayscale-100"
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
-            <MainHeader
-                // Mobile: white frosted-glass bar (matches the bottom nav). Desktop:
-                // transparent bar so it doesn't chop tiles scrolling under it — the
-                // gray content shows through and the island floats as its own pill
-                // (or the themed passport color when set).
-                customClassName=""
-                style={
-                    isMobile
-                        ? {
-                              background:
-                                  'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
-                              backdropFilter: 'blur(5px)',
-                              WebkitBackdropFilter: 'blur(5px)',
-                              borderBottom: '1px solid white',
-                          }
-                        : passportBgColor
-                        ? { backgroundColor: passportBgColor }
-                        : ({ '--background': 'transparent' } as React.CSSProperties)
-                }
-                notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
-            />
+            {/* Desktop hides the header bar entirely (the sidebar carries the LEARNCARD
+                wordmark) and renders the profile/alerts island in the content row below;
+                mobile keeps the frosted MainHeader bar. */}
+            {isMobile && (
+                <MainHeader
+                    customClassName=""
+                    style={{
+                        background:
+                            'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                        backdropFilter: 'blur(5px)',
+                        WebkitBackdropFilter: 'blur(5px)',
+                        borderBottom: '1px solid white',
+                    }}
+                />
+            )}
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
@@ -198,7 +193,7 @@ const WalletPage: React.FC = () => {
                             : undefined
                     }
                 >
-                    <div className={`px-[20px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
+                    <div className={`px-[20px] md:pt-[24px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full gap-[10px]">
@@ -240,6 +235,7 @@ const WalletPage: React.FC = () => {
                                                 />
                                             </div>
                                         )}
+                                        {!isMobile && <ProfileAlertsIsland className="shrink-0" />}
                                     </div>
                                 </div>
                             </IonRow>
