@@ -18,10 +18,10 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         environment:
-            LCN_URL: http://localhost:4000/trpc
-            LCN_API_URL: http://localhost:4000/api
-            CLOUD_URL: http://localhost:4100/trpc
-            API_URL: http://localhost:5100/trpc
+            LCN_URL: ${LCN_URL:-http://localhost:4000/trpc}
+            LCN_API_URL: ${LCN_API_URL:-http://localhost:4000/api}
+            CLOUD_URL: ${CLOUD_URL:-http://localhost:4100/trpc}
+            API_URL: ${API_URL:-http://localhost:5100/trpc}
 
     delete-service:
         build: ../../services/playwright-delete-service
