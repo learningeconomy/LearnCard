@@ -17,7 +17,44 @@ const CONTEXT_MAP: Record<string, unknown> = {
 
 const REMOTE_CONTEXT_TIMEOUT_MS = 8000;
 
+const PRIVATE_HOSTNAME = /^(localhost|.*\.local)$/i;
+
+const isPrivateIpv4 = (host: string): boolean => {
+    const parts = host.split('.').map(Number);
+    if (parts.length !== 4 || parts.some(p => Number.isNaN(p) || p < 0 || p > 255)) return false;
+    const [a, b] = parts;
+    return (
+        a === 0 ||
+        a === 10 ||
+        a === 127 ||
+        (a === 169 && b === 254) ||
+        (a === 172 && b >= 16 && b <= 31) ||
+        (a === 192 && b === 168)
+    );
+};
+
+// User-supplied credential @context URLs are fetched live from the browser, so a
+// crafted credential could point at internal/loopback/link-local hosts (e.g. the
+// cloud metadata endpoint 169.254.169.254) to probe the private network or leak
+// data. Restrict remote contexts to https on public hosts before fetching.
+const assertSafeRemoteContextUrl = (url: string): void => {
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        throw new Error(`Invalid JSON-LD context URL: ${url}`);
+    }
+    if (parsed.protocol !== 'https:') {
+        throw new Error(`Refusing to load non-https JSON-LD context: ${url}`);
+    }
+    const host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    if (PRIVATE_HOSTNAME.test(host) || host === '::1' || isPrivateIpv4(host)) {
+        throw new Error(`Refusing to load JSON-LD context from a private host: ${url}`);
+    }
+};
+
 const fetchRemoteContext = async (url: string) => {
+    assertSafeRemoteContextUrl(url);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REMOTE_CONTEXT_TIMEOUT_MS);
     try {

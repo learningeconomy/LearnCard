@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, X, Mail, Loader2, Calendar } from 'lucide-react';
 import { useGetSearchProfiles, useGetConnections } from 'learn-card-base';
 import useDebounce from '../../../hooks/useDebounce';
@@ -61,6 +61,8 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     const [query, setQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
+    const blurTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+    useEffect(() => () => clearTimeout(blurTimeoutRef.current), []);
 
     const updateDebounced = useDebounce(() => setDebouncedQuery(query), 300);
     useEffect(() => {
@@ -271,7 +273,10 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             onFocus={() => setIsFocused(true)}
-                            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                            onBlur={() => {
+                                clearTimeout(blurTimeoutRef.current);
+                                blurTimeoutRef.current = setTimeout(() => setIsFocused(false), 200);
+                            }}
                             placeholder="Search people..."
                             spellCheck={false}
                             autoCapitalize="none"

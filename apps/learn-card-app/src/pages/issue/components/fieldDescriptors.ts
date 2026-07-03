@@ -50,7 +50,15 @@ const patchAchievement = (
 });
 
 export const dateValue = (iso?: string): string => (iso ? iso.slice(0, 10) : '');
-export const toIso = (date: string): string => (date ? new Date(date).toISOString() : '');
+export const toIso = (date: string): string => {
+    if (!date) return '';
+    // HTML <input type="date"> yields a date-only string ("YYYY-MM-DD"), which
+    // `new Date(str)` parses as UTC midnight — shifting to the previous calendar
+    // day in negative-offset time zones. Construct from local parts to preserve
+    // the date the user actually picked.
+    const [y, m, d] = date.split('-').map(Number);
+    return new Date(y, m - 1, d).toISOString();
+};
 
 const subjectDateDescriptor = (
     key: ActivityField,

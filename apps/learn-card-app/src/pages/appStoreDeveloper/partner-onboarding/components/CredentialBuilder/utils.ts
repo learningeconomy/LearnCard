@@ -142,7 +142,9 @@ const serializeCreatorProfile = (
     if (image) profile.image = image;
     const email = fieldToJson(creator.email);
     if (email) profile.email = email;
-    return profile.id || profile.name || profile.url || profile.image ? profile : undefined;
+    return profile.id || profile.name || profile.url || profile.image || profile.email
+        ? profile
+        : undefined;
 };
 
 /**

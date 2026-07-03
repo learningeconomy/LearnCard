@@ -199,10 +199,7 @@ const IssueCredentialPage: React.FC = () => {
             const evidence = attachmentsToEvidence(recipientEvidence[key] ?? []);
             const data: Record<string, unknown> = { ...values };
             if (evidence.length > 0) {
-                data.evidence = evidence.map((entry, index) => ({
-                    ...entry,
-                    last: index === evidence.length - 1,
-                }));
+                data.evidence = evidence;
             }
             out[key] = data;
         }
