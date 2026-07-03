@@ -181,6 +181,13 @@ const WalletPage: React.FC = () => {
                     }}
                 />
             )}
+            {/* Desktop: profile/alerts island pinned to the page's top-right corner
+                (like the other pages), independent of the centered content column. */}
+            {!isMobile && (
+                <div className="absolute right-5 top-4 z-20 md:right-8 md:top-6">
+                    <ProfileAlertsIsland />
+                </div>
+            )}
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
@@ -235,7 +242,6 @@ const WalletPage: React.FC = () => {
                                                 />
                                             </div>
                                         )}
-                                        {!isMobile && <ProfileAlertsIsland className="shrink-0" />}
                                     </div>
                                 </div>
                             </IonRow>
