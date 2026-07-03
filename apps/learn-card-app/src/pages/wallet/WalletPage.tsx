@@ -184,7 +184,10 @@ const WalletPage: React.FC = () => {
             {/* Desktop: profile/alerts island pinned to the page's top-right corner
                 (like the other pages), independent of the centered content column. */}
             {!isMobile && (
-                <div className="absolute right-5 top-4 z-20 md:right-8 md:top-6">
+                // Pinned to the exact inset of MainHeader's native island so it
+                // doesn't shift when navigating to/from pages that keep the header:
+                // Ionic grid padding (5px) + col padding (5px) = 10px on each axis.
+                <div className="absolute right-[10px] top-[10px] z-20">
                     <ProfileAlertsIsland />
                 </div>
             )}
