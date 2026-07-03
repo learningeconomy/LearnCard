@@ -26,3 +26,18 @@
 .sb-main-centered {
     align-items: safe center !important;
 }
+
+/* Many components animate in with `animate-fade-in-up` (0.5s, starts at
+   opacity:0). Play functions assert immediately, so mid-animation elements read
+   as opacity:0 and fail `toBeVisible()`. The @storybook/test-runner disables
+   animations via test-runner.ts, but Chromatic runs play functions itself and
+   never applies that hook — so the durations must be zeroed here, in the preview
+   CSS that Chromatic actually loads, to keep interaction tests deterministic. */
+*,
+*::before,
+*::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+}
