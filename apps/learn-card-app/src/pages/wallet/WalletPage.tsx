@@ -162,7 +162,7 @@ const WalletPage: React.FC = () => {
 
     return (
         <IonPage
-            className="bg-white"
+            className="bg-grayscale-100"
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
             <MainHeader
