@@ -26,27 +26,15 @@ export const IDDisplayCard: React.FC<{ credential: VC; backgroundColor?: string 
         backgroundStyles.backgroundImage = `url(${defaultIDCardImage})`;
     }
 
-    // Create a true transparent cutout at the bottom center for the icon bubble to nest into
-    // 26px radius creates a 52px diameter hole, perfect for a 40px bubble with a 6px gap
-    backgroundStyles.WebkitMaskImage =
-        'radial-gradient(circle at 50% 100%, transparent 26px, black 26.5px)';
-    backgroundStyles.maskImage =
-        'radial-gradient(circle at 50% 100%, transparent 26px, black 26.5px)';
-
     return (
-        <div
-            className="w-full aspect-[335/180] relative"
-            style={{ filter: 'drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.08))' }}
-        >
+        <div className="w-full aspect-[335/180] relative">
+            {/* Header Image with generous rounding and hairline border */}
             <div
                 style={backgroundStyles}
-                className="w-full h-full relative flex-col rounded-[20px] pl-4 pt-6 bg-cover bg-center bg-no-repeat"
+                className="absolute inset-0 rounded-t-[16px] bg-cover bg-center bg-no-repeat overflow-hidden border border-white/30"
             >
-                <ProfilePicture
-                    customContainerClass="flex justify-center items-center h-[60px] w-[60px] rounded-full overflow-hidden text-white font-medium text-4xl min-w-[60px] min-h-[60px] absolute top-[-15px] left-[-5px]"
-                    customImageClass="flex justify-center items-center h-[60px] w-[60px] rounded-full overflow-hidden object-cover min-w-[60px] min-h-[60px]"
-                    customSize={500}
-                />
+                {/* Subtle frosted scrim at the bottom edge for depth to seat the photo/notch */}
+                <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black/40 via-black/5 to-transparent pointer-events-none" />
             </div>
         </div>
     );
@@ -60,17 +48,46 @@ export const CredentialIDBadge: React.FC<{
 }> = ({ credential, backgroundColor, badgeContainerCustomClass }) => {
     return (
         <div className={`relative w-full mt-8 mb-8 select-none ${badgeContainerCustomClass ?? ''}`}>
-            <div className="relative w-full z-0 px-2 pt-5 pb-5">
+            {/* bg-blue-500 frames the header image on top.
+                Removed px-2 so the header image and glass shelf span the full width,
+                eliminating any awkward blue side-slivers. */}
+            <div className="relative w-full z-0 pt-5 pb-0 bg-blue-500 rounded-t-[20px] overflow-hidden">
                 {/* 1) Background card at z-0 */}
-                <IDDisplayCard credential={credential} backgroundColor={backgroundColor} />
+                <div className="relative w-full">
+                    <IDDisplayCard credential={credential} backgroundColor={backgroundColor} />
+                </div>
 
-                {/* 2) ID icon bubble at z-20, nested perfectly into the mask cutout */}
-                {/* The container has pb-5 (20px). The card ends at bottom: 20px. */}
-                {/* To center a 40px bubble on the bottom edge, its center should be at 20px. */}
-                {/* So its bottom should be at 20px - 20px = 0px. */}
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="w-[40px] h-[40px] rounded-full bg-white flex items-center justify-center shadow-sm border border-grayscale-100">
-                        <IDsIconSolid className="w-[20px] h-[20px] text-grayscale-500" />
+                {/* 2) Frosted glass shelf spanning full width.
+                       It blurs the bottom of the header image, transitioning smoothly into the white card body below. */}
+                <div className="absolute bottom-0 left-0 w-full h-[36px]">
+                    <div
+                        className="w-full h-full bg-white/70 backdrop-blur-md border-t border-white/50 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
+                        style={{
+                            // Scalloped notch cut into the glass shelf for the ID icon bubble
+                            // Center is at calc(100% - 38px) to align with the bubble
+                            maskImage:
+                                'radial-gradient(circle 24px at calc(100% - 38px) 0px, transparent 100%, black 100%)',
+                            WebkitMaskImage:
+                                'radial-gradient(circle 24px at calc(100% - 38px) 0px, transparent 100%, black 100%)',
+                        }}
+                    />
+                    {/* Gradient to solid white to blend perfectly into the card body below */}
+                    <div className="absolute bottom-0 left-0 w-full h-[16px] bg-gradient-to-b from-white/0 to-white pointer-events-none" />
+                </div>
+
+                {/* 3) Prominent circular profile photo straddling the header/glass boundary */}
+                <div className="absolute bottom-[36px] left-[24px] transform translate-y-1/2 z-20">
+                    <ProfilePicture
+                        customContainerClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden text-white font-medium text-3xl bg-grayscale-100 border-[4px] border-white shadow-sm"
+                        customImageClass="flex justify-center items-center h-full w-full rounded-full overflow-hidden object-cover"
+                        customSize={500}
+                    />
+                </div>
+
+                {/* 4) Frosted-glass ID icon bubble nested into the scalloped notch */}
+                <div className="absolute bottom-[36px] right-[20px] transform translate-y-1/2 z-20">
+                    <div className="w-[36px] h-[36px] rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/60">
+                        <IDsIconSolid className="w-[18px] h-[18px] text-grayscale-800" />
                     </div>
                 </div>
             </div>
