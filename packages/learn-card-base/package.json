@@ -65,7 +65,7 @@
         "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5"
     },
     "peerDependencies": {
-        "@tanstack/react-query": "^5.80.3"
+        "@tanstack/react-query": "^5.0.0"
     },
     "devDependencies": {
         "@tanstack/react-query": "^5.80.3",
