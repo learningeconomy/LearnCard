@@ -2,7 +2,12 @@ import React, { useCallback } from 'react';
 import ModalLayout from '../../../layout/ModalLayout';
 import JoinNetworkPrompt from '../JoinNetworkPrompt';
 import NewJoinNetworkPrompt from '../NewJoinNetworkPrompt';
-import { useIsCurrentUserLCNUser, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useAuthStatus,
+    shouldPromptProfileOnboarding,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 
 import { closeAll } from '../../../helpers/uiHelpers';
@@ -25,9 +30,7 @@ export const useJoinLCNetworkModal = (
     showNotificationsModal: boolean = false,
     onDismiss?: () => void
 ) => {
-    const { data, isLoading } = useIsCurrentUserLCNUser();
-
-    const isLoggedIn = useIsLoggedIn();
+    const authStatus = useAuthStatus();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -52,18 +55,17 @@ export const useJoinLCNetworkModal = (
         if (deletingAccount) {
             return { prompted: false };
         }
-        if (!isLoading && !data && isLoggedIn) {
+        if (shouldPromptProfileOnboarding(authStatus)) {
             openNetworkModal();
             return { prompted: true };
         }
         return { prompted: false };
-    }, [isLoading, data, isLoggedIn, openNetworkModal]);
+    }, [authStatus, openNetworkModal]);
 
     return {
         handlePresentJoinNetworkModal,
         dismissNetworkModal: closeModal,
     };
 };
-
 
 export default useJoinLCNetworkModal;
