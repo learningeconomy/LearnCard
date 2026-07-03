@@ -5,16 +5,21 @@ import { cloudOfflineOutline } from 'ionicons/icons';
 import { Network } from '@capacitor/network';
 import { connectivityStore } from 'learn-card-base';
 
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
+
 export const OfflineBootGate: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
+    const { initialize } = useAuthCoordinator();
 
     const handleTryAgain = async () => {
         setIsLoading(true);
         try {
-            // Add a small delay so the user sees the spinner
-            await new Promise(resolve => setTimeout(resolve, 600));
             const status = await Network.getStatus();
             connectivityStore.set.report(status.connected);
+            // Re-run boot: this re-attempts the private-key-first path, which
+            // reads the cached key from disk and can land the user in the app
+            // even while still offline (no network needed once we have the key).
+            await initialize();
         } finally {
             setIsLoading(false);
         }

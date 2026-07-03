@@ -117,38 +117,47 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
 
     if (!db) return null;
 
-    try {
-        await db.open();
+    const user = currentUserStore.get.currentUser();
+    let where = '';
+    if (user?.uid) where = `WHERE uid="${user.uid}"`;
+    else if (
+        user &&
+        'verifierId' in user &&
+        typeof (user as { verifierId?: string }).verifierId === 'string' &&
+        (user as { verifierId?: string }).verifierId
+    )
+        where = `WHERE verifierId="${(user as { verifierId?: string }).verifierId}"`;
+    else if (user?.email) where = `WHERE email="${user.email}"`;
 
-        const user = currentUserStore.get.currentUser();
-        let where = '';
-        if (user?.uid) where = `WHERE uid="${user.uid}"`;
-        else if (
-            user &&
-            'verifierId' in user &&
-            typeof (user as { verifierId?: string }).verifierId === 'string' &&
-            (user as { verifierId?: string }).verifierId
-        )
-            where = `WHERE verifierId="${(user as { verifierId?: string }).verifierId}"`;
-        else if (user?.email) where = `WHERE email="${user.email}"`;
+    // Prefer the current user's row, but always fall back to ANY row that
+    // actually holds a key — the current-user identifiers may not be rehydrated
+    // yet at cold start, and a plain `LIMIT 1` can hit a keyless row.
+    const keyedQuery = where ? `SELECT privateKey FROM users ${where} LIMIT 1` : null;
+    const anyKeyQuery = `SELECT privateKey FROM users WHERE privateKey IS NOT NULL AND privateKey != '' LIMIT 1`;
 
-        const query = where
-            ? `SELECT privateKey FROM users ${where} LIMIT 1`
-            : 'SELECT privateKey FROM users LIMIT 1';
-
-        const res = await db.query(query);
-        const pk = res?.values?.[0]?.privateKey ?? null;
-
-        if (typeof pk === 'string' && pk.length > 0) return pk;
-        return null;
-    } catch (e) {
-        log.warn('getPlatformPrivateKey: sqlite error', e);
-        return null;
-    } finally {
+    // The shared SQLite connection can transiently return empty right after a
+    // cold start (open/close races with concurrent reads). The key IS on disk,
+    // so retry a few times before giving up — otherwise pk-first boot falls
+    // through to a network login and strands the user on the offline gate.
+    for (let attempt = 0; attempt < 3; attempt++) {
         try {
-            if ((await db?.isDBOpen())?.result) await db?.close();
-        } catch {}
+            await db.open();
+
+            if (keyedQuery) {
+                const keyed = (await db.query(keyedQuery))?.values?.[0]?.privateKey ?? null;
+                if (typeof keyed === 'string' && keyed.length > 0) return keyed;
+            }
+
+            const any = (await db.query(anyKeyQuery))?.values?.[0]?.privateKey ?? null;
+            if (typeof any === 'string' && any.length > 0) return any;
+        } catch (e) {
+            log.warn(`getPlatformPrivateKey: sqlite error (attempt ${attempt + 1})`, e);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 150));
     }
+
+    return null;
 }
 
 export async function clearPlatformPrivateKey(): Promise<void> {
