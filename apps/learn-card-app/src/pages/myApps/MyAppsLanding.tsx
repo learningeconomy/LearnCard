@@ -103,7 +103,7 @@ const MyAppsLanding: React.FC = () => {
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">
-                            <h1 className="font-poppins text-[28px] font-semibold text-[#18224E] md:order-1 md:text-[30px]">
+                            <h1 className="font-poppins text-[30px] font-normal text-[#18224E] md:order-1">
                                 My Apps
                             </h1>
                             <button
