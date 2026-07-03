@@ -591,16 +591,17 @@ export const getDefaultCategoryForCredential = (
         }
     }
 
-    // Not OBv3 credential, default category to achievement
+    // Strict validation can fail for reasons unrelated to categorization — e.g. a
+    // reusable template whose numeric field holds a `{{mustache}}` placeholder, or
+    // an LER embedded credential without full @context. In those cases the
+    // achievementType is still the canonical category signal, so fall back to it
+    // rather than discarding it and defaulting everything to Achievement.
     if (!verificationResult.success) {
-        // For LER embedded credentials without full @context, extract achievementType as fallback
-        if (options?.skipValidation) {
-            const lerAchievementType = Array.isArray(_credential?.credentialSubject)
-                ? _credential.credentialSubject[0]?.achievement?.achievementType
-                : _credential?.credentialSubject?.achievement?.achievementType;
-            if (lerAchievementType && CATEGORY_MAP[lerAchievementType]) {
-                return CATEGORY_MAP[lerAchievementType];
-            }
+        const fallbackAchievementType = Array.isArray(_credential?.credentialSubject)
+            ? _credential.credentialSubject[0]?.achievement?.achievementType
+            : _credential?.credentialSubject?.achievement?.achievementType;
+        if (fallbackAchievementType && CATEGORY_MAP[fallbackAchievementType]) {
+            return CATEGORY_MAP[fallbackAchievementType];
         }
         return 'Achievement';
     }
