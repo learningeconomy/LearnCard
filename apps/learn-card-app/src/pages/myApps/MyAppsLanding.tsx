@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
 
 import Search from 'learn-card-base/svgs/Search';
 
@@ -15,11 +15,22 @@ import useMoreApps from './useMoreApps';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 
+// On mobile the header sits over the content as a frosted-glass bar (white
+// gradient + backdrop blur), matching the bottom nav; on desktop it's the flat
+// gray content background.
+const MOBILE_HEADER_STYLE: React.CSSProperties = {
+    background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+    backdropFilter: 'blur(5px)',
+    WebkitBackdropFilter: 'blur(5px)',
+    borderBottom: '1px solid white',
+};
+
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
     // Initialize with a modal type so newModal renders (mirrors AppStoreListItem).
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
+    const { isMobile } = useDeviceTypeByWidth();
     const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
@@ -100,7 +111,10 @@ const MyAppsLanding: React.FC = () => {
     return (
         <IonPage className="bg-white">
             {/* Gray header so it blends with the grayscale-100 content (no white bar). */}
-            <MainHeader customClassName="bg-grayscale-100" />
+            <MainHeader
+                customClassName={isMobile ? '' : 'bg-grayscale-100'}
+                style={isMobile ? MOBILE_HEADER_STYLE : undefined}
+            />
             <IonContent fullscreen color="grayscale-100">
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
