@@ -5,7 +5,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
 import useDebounce from '../../hooks/useDebounce';
-import { useGetProfile, walletStore } from 'learn-card-base';
+import { useGetProfile } from 'learn-card-base';
 import { useWallet } from 'learn-card-base';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -126,7 +126,6 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 
     const generateBoostClaimLink = useDebounce(async () => {
         try {
-            walletStore.set.wallet(null);
             const wallet = await initWallet();
             const rsas = await wallet?.invoke?.getRegisteredSigningAuthorities();
 
