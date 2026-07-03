@@ -1,0 +1,9 @@
+[
+    {
+        "tenantId": "learncard",
+        "rootEcosystemId": "eco_dev_root",
+        "allowJit": true,
+        "defaultRole": "MEMBER",
+        "providers": [{ "providerId": "lef-wallet", "kind": "auth-coordinator", "enabled": true }]
+    }
+]

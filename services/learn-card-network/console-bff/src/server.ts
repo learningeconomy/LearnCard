@@ -42,7 +42,8 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
         app.get<{ Params: { profileId: string } }>(
             '/p/:profileId/did.json',
             async (request, reply) => {
-                const did = didWebFromDomain(request.hostname, request.params.profileId);
+                const authority = request.host ?? request.hostname;
+                const did = didWebFromDomain(authority, request.params.profileId);
                 const doc = await didDocuments.resolve(did);
 
                 if (!doc) return reply.code(404).send({ error: 'not_found' });
@@ -73,11 +74,19 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
     app.post<{ Body: { providerId: string; params: Record<string, string> } }>(
         '/auth/callback',
         async (request, reply) => {
-            const session = await config.authService.completeLogin({
-                tenantId: tenantIdOf(request),
-                providerId: request.body.providerId,
-                params: request.body.params,
-            });
+            let session;
+
+            try {
+                session = await config.authService.completeLogin({
+                    tenantId: tenantIdOf(request),
+                    providerId: request.body.providerId,
+                    params: request.body.params,
+                });
+            } catch (error) {
+                request.log.warn({ err: error }, 'login callback rejected');
+
+                return reply.code(401).send({ error: 'login_failed' });
+            }
 
             reply.setCookie(
                 SESSION_COOKIE_NAME,

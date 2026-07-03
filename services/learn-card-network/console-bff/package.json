@@ -8,7 +8,11 @@
         "test": "vitest",
         "test:watch": "vitest --watch",
         "build": "shx rm -rf dist && tsc --p tsconfig.json",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "dev": "CONSOLE_BFF_DEV_INSECURE_AUTH=true bun --watch src/main.ts",
+        "start": "bun src/main.ts",
+        "dev:services": "docker compose -f docker-compose.dev.yml up -d",
+        "dev:services:down": "docker compose -f docker-compose.dev.yml down"
     },
     "keywords": [],
     "author": "Learning Economy Foundation",
@@ -25,6 +29,7 @@
         "@fastify/cookie": "^11.0.2",
         "@learncard/types": "workspace:*",
         "fastify": "^5.7.2",
+        "ioredis": "^5.2.2",
         "mongodb": "^6.2.0"
     },
     "repository": {
