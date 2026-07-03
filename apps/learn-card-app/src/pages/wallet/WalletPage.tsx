@@ -20,12 +20,10 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import CheckListButton from '../../components/learncard/checklist/CheckListButton';
 import { IonPage, IonContent, IonRow, IonCol, IonModal } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -68,9 +66,6 @@ const WalletPage: React.FC = () => {
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
-    const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
-    const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
-    const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
     const showActivityFeed = Boolean(flags?.enablePassportActivityFeed);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
@@ -161,8 +156,9 @@ const WalletPage: React.FC = () => {
         </GenericErrorBoundary>
     ));
 
-    const isGrid = viewMode === PassportPageViewMode.grid;
     const isList = viewMode === PassportPageViewMode.list;
+    // The list/grid switcher is mobile-only; desktop is always the tiled grid.
+    const effectiveIsList = isMobile && isList;
 
     return (
         <IonPage
@@ -189,6 +185,7 @@ const WalletPage: React.FC = () => {
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
+                    color="grayscale-100"
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                     style={
@@ -198,34 +195,28 @@ const WalletPage: React.FC = () => {
                     }
                 >
                     <div className={`px-[20px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
-                        <div className="flex flex-col max-w-[600px] mx-auto">
+                        <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
-                                <div className="flex justify-between items-center w-full">
-                                    <div className="flex items-center gap-[10px] w-full">
-                                        <h2
-                                            className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}
-                                        >
-                                            Passport
-                                        </h2>
+                                <div className="flex justify-between items-center w-full gap-[10px]">
+                                    <h2
+                                        className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}
+                                    >
+                                        Passport
+                                    </h2>
 
-                                        {/* 
-                                        // TODOS:
-                                        - add support for new items count based on categories
-                                        */}
+                                    <div className="wallet-header-menu-options items-center flex gap-[15px]">
                                         {totalNewCredentialsCount > 0 && (
                                             <p
                                                 className={`${
                                                     passportBgColor
                                                         ? 'text-white/80'
                                                         : 'text-emerald-700'
-                                                } font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]`}
+                                                } font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px] whitespace-nowrap`}
                                             >
                                                 <DotIcon className="w-[10px] h-[10px]" />{' '}
-                                                {totalNewCredentialsCount} New
+                                                {totalNewCredentialsCount} New Credentials
                                             </p>
                                         )}
-                                    </div>
-                                    <div className="wallet-header-menu-options items-center flex gap-[10px]">
                                         {flags?.boostBundleMenu && (
                                             <WalletActionButton
                                                 location={location}
@@ -234,44 +225,24 @@ const WalletPage: React.FC = () => {
                                             />
                                         )}
 
-                                        <div className="flex items-center justify-end">
-                                            <WalletPageViewModeSelector />
-                                            <ThemeSelector viewMode={themeSelectorViewMode.Mini} />
-                                        </div>
+                                        {/* View switcher + theme picker are mobile-only; on
+                                            desktop the grid is fixed and the theme is set from
+                                            the side menu (Colorful Mode). */}
+                                        {isMobile && (
+                                            <div className="flex items-center justify-end">
+                                                <WalletPageViewModeSelector />
+                                                <ThemeSelector
+                                                    viewMode={themeSelectorViewMode.Mini}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </IonRow>
-                            {isMobile ? (
-                                <>
-                                    <CheckListButton className="mb-[10px] mt-[16px]" />
-                                    <ResumeBuilderController className="mb-[16px]" />
-                                </>
-                            ) : (
-                                <div
-                                    className={`w-full flex gap-[10px] pt-[6px] pb-[16px] ${
-                                        showInlineWalletActions ? 'flex-row' : 'flex-col'
-                                    }`}
-                                >
-                                    {showChecklistButton && (
-                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
-                                            <CheckListButton
-                                                mode={
-                                                    showInlineWalletActions ? 'inline' : 'default'
-                                                }
-                                            />
-                                        </div>
-                                    )}
-                                    {showResumeBuilderButton && (
-                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
-                                            <ResumeBuilderController mode="inline" />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
+                            <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
                                 <IonCol
                                     className={`wallet-squares-container ${
-                                        isList ? 'list' : 'grid'
+                                        effectiveIsList ? 'list' : 'grid'
                                     }`}
                                 >
                                     {renderWalletList}

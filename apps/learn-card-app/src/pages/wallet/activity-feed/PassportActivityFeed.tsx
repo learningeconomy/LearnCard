@@ -45,76 +45,87 @@ export const PassportActivityFeed: React.FC = () => {
     const isEmpty = !isPending && !isError && groups.length === 0;
 
     return (
-        <section className="w-full max-w-[600px] mx-auto mt-[24px]">
+        <section className="w-full max-w-[840px] mx-auto mt-[24px]">
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
                 ACTIVITY
             </h3>
-            <div className="flex items-center gap-2 mb-3 relative">
-                <input
-                    type="search"
-                    aria-label="Search activity"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search..."
-                    className="flex-1 rounded-full border border-grayscale-300 px-4 py-2 font-poppins text-[14px]"
-                />
-                <button
-                    type="button"
-                    onClick={() => setFilterOpen(o => !o)}
-                    className="rounded-[10px] border border-grayscale-300 px-3 py-2 font-poppins text-[14px]"
-                >
-                    Filter
-                </button>
-                {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
-                {filterOpen && (
-                    <div className="absolute right-0 top-[110%] z-10">
-                        <ActivityFilterPopover
-                            selected={filter}
-                            onApply={id => {
-                                setFilter(id);
-                                setFilterOpen(false);
-                            }}
-                            onReset={() => {
-                                setFilter('all');
-                                setFilterOpen(false);
-                            }}
-                        />
-                    </div>
-                )}
+            <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm p-[16px]">
+                <div className="flex items-center gap-2 mb-3 relative">
+                    <input
+                        type="search"
+                        aria-label="Search activity"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search..."
+                        className="flex-1 rounded-full border border-grayscale-300 px-4 py-2 font-poppins text-[14px]"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setFilterOpen(o => !o)}
+                        className="rounded-[10px] border border-grayscale-300 px-3 py-2 font-poppins text-[14px]"
+                    >
+                        Filter
+                    </button>
+                    {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
+                    {filterOpen && (
+                        <div className="absolute right-0 top-[110%] z-10">
+                            <ActivityFilterPopover
+                                selected={filter}
+                                onApply={id => {
+                                    setFilter(id);
+                                    setFilterOpen(false);
+                                }}
+                                onReset={() => {
+                                    setFilter('all');
+                                    setFilterOpen(false);
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Min-height keeps the card a consistent size with only a few
+                    items; empty/loading/error states center within it. */}
+                <div className="min-h-[400px] flex flex-col border-t border-grayscale-100 pt-[8px]">
+                    {isError && (
+                        <div className="flex-1 flex items-center justify-center">
+                            <p className="font-poppins text-[14px] text-rose-600 text-center">
+                                Something went wrong — we couldn’t load your activity.
+                            </p>
+                        </div>
+                    )}
+                    {isPending && (
+                        <div className="flex-1 flex items-center justify-center">
+                            <IonSpinner name="lines" />
+                        </div>
+                    )}
+                    {isEmpty && (
+                        <div className="flex-1 flex items-center justify-center">
+                            <p className="font-poppins text-[14px] text-grayscale-500 text-center">
+                                No activity yet.
+                            </p>
+                        </div>
+                    )}
+                    {groups.map(group => (
+                        <div key={group.label} className="mb-2">
+                            <p className="font-poppins text-[12px] tracking-[1px] text-grayscale-400 py-2">
+                                {group.label}
+                            </p>
+                            <ol className="flex flex-col">
+                                {group.items.map(item => (
+                                    <ActivityFeedItem key={item.id} item={item} />
+                                ))}
+                            </ol>
+                        </div>
+                    ))}
+                    <div role="presentation" ref={sentinelRef} />
+                    {isFetching && !isPending && (
+                        <div className="flex justify-center py-4">
+                            <IonSpinner name="lines" />
+                        </div>
+                    )}
+                </div>
             </div>
-            {isError && (
-                <p className="font-poppins text-[14px] text-rose-600 py-6 text-center">
-                    Something went wrong — we couldn’t load your activity.
-                </p>
-            )}
-            {isPending && (
-                <div className="flex justify-center py-8">
-                    <IonSpinner name="lines" />
-                </div>
-            )}
-            {isEmpty && (
-                <p className="font-poppins text-[14px] text-grayscale-500 py-8 text-center">
-                    No activity yet.
-                </p>
-            )}
-            {groups.map(group => (
-                <div key={group.label} className="mb-2">
-                    <p className="font-poppins text-[12px] tracking-[1px] text-grayscale-400 py-2">
-                        {group.label}
-                    </p>
-                    <ol className="flex flex-col">
-                        {group.items.map(item => (
-                            <ActivityFeedItem key={item.id} item={item} />
-                        ))}
-                    </ol>
-                </div>
-            ))}
-            <div role="presentation" ref={sentinelRef} />
-            {isFetching && !isPending && (
-                <div className="flex justify-center py-4">
-                    <IonSpinner name="lines" />
-                </div>
-            )}
         </section>
     );
 };
