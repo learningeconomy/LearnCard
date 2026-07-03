@@ -43,6 +43,13 @@ export interface AuthStatusInput {
      * stale/empty cache), so it must never authorize onboarding.
      */
     isOffline: boolean;
+    /**
+     * Whether the active wallet is a full networked wallet ('full') vs the
+     * local offline fallback ('offline'/null). The network plugin's getProfile
+     * swallows errors and returns undefined, so a "no profile" result is only a
+     * trustworthy absence when a networked wallet could actually answer.
+     */
+    walletMode: 'full' | 'offline' | null;
 }
 
 /**
@@ -55,7 +62,14 @@ export interface AuthStatusInput {
  * window maps to `resolving`, which can never authorize onboarding.
  */
 export const deriveAuthStatus = (input: AuthStatusInput): AuthGateState => {
-    const { coordinatorStatus, walletReady, profileQueryStatus, hasProfile, isOffline } = input;
+    const {
+        coordinatorStatus,
+        walletReady,
+        profileQueryStatus,
+        hasProfile,
+        isOffline,
+        walletMode,
+    } = input;
 
     switch (coordinatorStatus) {
         case 'idle':
@@ -87,15 +101,19 @@ export const deriveAuthStatus = (input: AuthStatusInput): AuthGateState => {
                     return { tag: 'ready', profile: { tag: 'loading' } };
                 case 'error':
                     return { tag: 'ready', profile: { tag: 'error' } };
-                case 'success':
+                case 'success': {
                     if (hasProfile) return { tag: 'ready', profile: { tag: 'present' } };
-                    // A "no profile" success while offline is settled but not a
-                    // trustworthy absence — surface `unconfirmed` so onboarding
-                    // can't fire, without spinning the UI forever.
+                    // A "no profile" success is only a trustworthy absence when a
+                    // full networked wallet is up AND we're online. The offline/
+                    // local wallet's getProfile returns undefined without erroring,
+                    // so treat that as `unconfirmed` — settled (no spinner) but
+                    // never authorizing onboarding.
+                    const trustworthyAbsence = !isOffline && walletMode === 'full';
                     return {
                         tag: 'ready',
-                        profile: isOffline ? { tag: 'unconfirmed' } : { tag: 'absent' },
+                        profile: trustworthyAbsence ? { tag: 'absent' } : { tag: 'unconfirmed' },
                     };
+                }
             }
         }
     }

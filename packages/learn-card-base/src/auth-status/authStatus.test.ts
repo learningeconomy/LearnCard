@@ -26,6 +26,8 @@ const ALL_COORDINATOR_STATUSES: CoordinatorStatus[] = [
 
 const ALL_QUERY_STATUSES: AuthStatusInput['profileQueryStatus'][] = ['pending', 'error', 'success'];
 
+const ALL_WALLET_MODES: AuthStatusInput['walletMode'][] = ['full', 'offline', null];
+
 const everyInput = (): AuthStatusInput[] => {
     const inputs: AuthStatusInput[] = [];
 
@@ -34,13 +36,16 @@ const everyInput = (): AuthStatusInput[] => {
             for (const profileQueryStatus of ALL_QUERY_STATUSES) {
                 for (const hasProfile of [true, false]) {
                     for (const isOffline of [true, false]) {
-                        inputs.push({
-                            coordinatorStatus,
-                            walletReady,
-                            profileQueryStatus,
-                            hasProfile,
-                            isOffline,
-                        });
+                        for (const walletMode of ALL_WALLET_MODES) {
+                            inputs.push({
+                                coordinatorStatus,
+                                walletReady,
+                                profileQueryStatus,
+                                hasProfile,
+                                isOffline,
+                                walletMode,
+                            });
+                        }
                     }
                 }
             }
@@ -60,7 +65,8 @@ describe('deriveAuthStatus — onboarding invariant (exhaustive)', () => {
                 input.walletReady === true &&
                 input.profileQueryStatus === 'success' &&
                 input.hasProfile === false &&
-                input.isOffline === false;
+                input.isOffline === false &&
+                input.walletMode === 'full';
 
             expect(onboarding, JSON.stringify(input)).toBe(shouldBeAllowed);
         }
@@ -102,6 +108,7 @@ describe('deriveAuthStatus — state mapping', () => {
         profileQueryStatus: 'success',
         hasProfile: true,
         isOffline: false,
+        walletMode: 'full',
     } as const;
 
     it('maps idle → unauthenticated', () => {
@@ -155,6 +162,7 @@ describe('deriveAuthStatus — state mapping', () => {
                 profileQueryStatus: 'pending',
                 hasProfile: false,
                 isOffline: false,
+                walletMode: 'full',
             })
         ).toEqual({ tag: 'ready', profile: { tag: 'loading' } });
 
@@ -165,6 +173,7 @@ describe('deriveAuthStatus — state mapping', () => {
                 profileQueryStatus: 'error',
                 hasProfile: false,
                 isOffline: false,
+                walletMode: 'full',
             })
         ).toEqual({ tag: 'ready', profile: { tag: 'error' } });
 
@@ -175,6 +184,7 @@ describe('deriveAuthStatus — state mapping', () => {
                 profileQueryStatus: 'success',
                 hasProfile: true,
                 isOffline: false,
+                walletMode: 'full',
             })
         ).toEqual({ tag: 'ready', profile: { tag: 'present' } });
 
@@ -185,6 +195,7 @@ describe('deriveAuthStatus — state mapping', () => {
                 profileQueryStatus: 'success',
                 hasProfile: false,
                 isOffline: false,
+                walletMode: 'full',
             })
         ).toEqual({ tag: 'ready', profile: { tag: 'absent' } });
     });
@@ -197,8 +208,24 @@ describe('deriveAuthStatus — state mapping', () => {
                 profileQueryStatus: 'success',
                 hasProfile: false,
                 isOffline: true,
+                walletMode: 'full',
             })
         ).toEqual({ tag: 'ready', profile: { tag: 'unconfirmed' } });
+    });
+
+    it('maps ready + wallet + success + no-profile on the offline-fallback wallet → unconfirmed', () => {
+        for (const walletMode of ['offline', null] as const) {
+            expect(
+                deriveAuthStatus({
+                    coordinatorStatus: 'ready',
+                    walletReady: true,
+                    profileQueryStatus: 'success',
+                    hasProfile: false,
+                    isOffline: false,
+                    walletMode,
+                })
+            ).toEqual({ tag: 'ready', profile: { tag: 'unconfirmed' } });
+        }
     });
 });
 
@@ -219,12 +246,13 @@ describe('predicates', () => {
 
     it('isProfileResolved is true only for ready + (present | absent), never unconfirmed', () => {
         for (const input of everyInput()) {
-            // offline + success + no-profile → unconfirmed, which is NOT resolved
+            // A no-profile success is only "resolved" (absent) when online on a
+            // full networked wallet; otherwise it's unconfirmed (NOT resolved).
             const expected =
                 input.coordinatorStatus === 'ready' &&
                 input.walletReady &&
                 input.profileQueryStatus === 'success' &&
-                (input.hasProfile || !input.isOffline);
+                (input.hasProfile || (!input.isOffline && input.walletMode === 'full'));
 
             expect(isProfileResolved(deriveAuthStatus(input)), JSON.stringify(input)).toBe(
                 expected
@@ -234,6 +262,15 @@ describe('predicates', () => {
 
     it('never authorizes onboarding while offline', () => {
         for (const input of everyInput().filter(i => i.isOffline)) {
+            expect(
+                shouldPromptProfileOnboarding(deriveAuthStatus(input)),
+                JSON.stringify(input)
+            ).toBe(false);
+        }
+    });
+
+    it('never authorizes onboarding on the offline-fallback wallet (mode !== full)', () => {
+        for (const input of everyInput().filter(i => i.walletMode !== 'full')) {
             expect(
                 shouldPromptProfileOnboarding(deriveAuthStatus(input)),
                 JSON.stringify(input)

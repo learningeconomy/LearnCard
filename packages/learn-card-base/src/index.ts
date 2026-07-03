@@ -91,6 +91,7 @@ export * from './auth-status/useAuthGateState';
 // Offline resilience - connectivity model + boot-time deadline utility
 export * from './stores/connectivityStore';
 export * from './stores/walletModeStore';
+export * from './hooks/useConnectivity';
 export * from './helpers/withDeadline';
 export * from './helpers/networkFault';
 export * from './key-derivation';
