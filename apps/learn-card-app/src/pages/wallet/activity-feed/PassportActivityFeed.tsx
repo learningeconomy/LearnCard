@@ -61,7 +61,7 @@ export const PassportActivityFeed: React.FC = () => {
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder="Search..."
-                            className="w-full rounded-[12px] bg-[#E2E3E9] py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-500 focus:outline-none"
+                            className="w-full rounded-[12px] bg-grayscale-100 py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-500 focus:outline-none"
                         />
                     </div>
                     <button
