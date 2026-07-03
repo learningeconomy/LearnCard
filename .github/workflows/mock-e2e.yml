@@ -35,10 +35,10 @@ jobs:
 
             - name: Install Playwright browser
               working-directory: apps/learn-card-app
-              run: pnpm exec playwright install --with-deps firefox
+              run: bunx playwright install --with-deps firefox
 
             - name: Run affected mocked E2E
-              run: pnpm exec nx affected --target=test-mock --base=origin/main --head=HEAD
+              run: bunx nx affected --target=test-mock --base=origin/main --head=HEAD
 
             - name: Upload Playwright report
               if: always()

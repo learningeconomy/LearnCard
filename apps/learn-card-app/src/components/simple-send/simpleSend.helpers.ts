@@ -188,20 +188,25 @@ const deliverBoost = async (
             }
         }
     } else if (options.mode === 'people') {
-        for (const recipient of options.recipients) {
-            const recipientIdentifier =
-                recipient.kind === 'profile' ? recipient.profileId : recipient.email;
-            const recipientData =
-                options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
-            await wallet.invoke.send({
-                type: 'boost',
-                recipient: recipientIdentifier,
-                templateUri: boostUri,
-                ...(recipientData && Object.keys(recipientData).length > 0
-                    ? { templateData: recipientData }
-                    : {}),
-            });
-        }
+        // Sends are independent per recipient, so issue them concurrently rather
+        // than blocking on each network round-trip in turn. Per-recipient
+        // templateData (e.g. evidence) is still resolved individually below.
+        await Promise.all(
+            options.recipients.map(recipient => {
+                const recipientIdentifier =
+                    recipient.kind === 'profile' ? recipient.profileId : recipient.email;
+                const recipientData =
+                    options.variableValuesByRecipient?.[recipientIdentifier] ?? templateData;
+                return wallet.invoke.send({
+                    type: 'boost',
+                    recipient: recipientIdentifier,
+                    templateUri: boostUri,
+                    ...(recipientData && Object.keys(recipientData).length > 0
+                        ? { templateData: recipientData }
+                        : {}),
+                });
+            })
+        );
     } else if (options.mode === 'link') {
         if (!options.claimLinkSA || !options.claimLinkSA.name || !options.claimLinkSA.endpoint) {
             throw new Error(
