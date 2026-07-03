@@ -122,7 +122,20 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                     isLoading ? 'opacity-100' : 'opacity-0'
                 }`}
             />
-            <IonToolbar className="ion-no-border" color={statusBarColor}>
+            <IonToolbar
+                className="ion-no-border"
+                color={statusBarColor}
+                // A page can override the toolbar background via a `--background`
+                // in its `style` prop (e.g. 'transparent' so content shows through);
+                // otherwise the themed status-bar color is used.
+                style={
+                    style && '--background' in style
+                        ? ({
+                              '--background': (style as Record<string, string>)['--background'],
+                          } as React.CSSProperties)
+                        : undefined
+                }
+            >
                 <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
                     <IonRow>
                         <IonCol size="2" className="flex justify-start items-center">
