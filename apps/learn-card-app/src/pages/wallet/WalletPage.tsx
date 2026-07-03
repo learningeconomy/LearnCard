@@ -167,8 +167,10 @@ const WalletPage: React.FC = () => {
         >
             <MainHeader
                 // Mobile: white frosted-glass bar (matches the bottom nav). Desktop:
-                // flat gray content bg (or the themed passport color when set).
-                customClassName={isMobile || passportBgColor ? '' : 'bg-grayscale-100'}
+                // transparent bar so it doesn't chop tiles scrolling under it — the
+                // gray content shows through and the island floats as its own pill
+                // (or the themed passport color when set).
+                customClassName=""
                 style={
                     isMobile
                         ? {
@@ -180,7 +182,7 @@ const WalletPage: React.FC = () => {
                           }
                         : passportBgColor
                         ? { backgroundColor: passportBgColor }
-                        : undefined
+                        : { background: 'transparent' }
                 }
                 notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
             />
