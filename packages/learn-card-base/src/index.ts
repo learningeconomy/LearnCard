@@ -81,6 +81,11 @@ export * from './hooks/useTermsTransactions';
 export * from './auth-coordinator';
 export * from './auth-providers';
 export * from './auth-adapters';
+
+// Auth Status - canonical race-safe auth-gate selector for all gating decisions
+export * from './auth-status/authStatus';
+export * from './auth-status/useAuthStatus';
+export * from './auth-status/useAuthGateState';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
