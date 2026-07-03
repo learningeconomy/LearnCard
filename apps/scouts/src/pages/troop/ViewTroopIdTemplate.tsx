@@ -71,8 +71,8 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
     const { credentialWithEdits } = useGetCredentialWithEdits(credential);
     credential = credentialWithEdits ?? credential;
 
-    const network = useGetTroopNetwork(credential, boostUri);
-    const networkName = network?.name ?? '...';
+    const { network: networkData } = useGetTroopNetwork({ credential, uri: boostUri });
+    const networkName = networkData?.name;
 
     const { scoutCount, leaderCount, currentBoostCount } = useTroopMembers(
         credential,
