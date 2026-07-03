@@ -19,6 +19,7 @@ export type ProfileResolution =
     | { tag: 'loading' }
     | { tag: 'error' }
     | { tag: 'absent' }
+    | { tag: 'unconfirmed' }
     | { tag: 'present' };
 
 export type AuthGateState =
@@ -36,6 +37,12 @@ export interface AuthStatusInput {
     profileQueryStatus: 'pending' | 'error' | 'success';
     /** Whether that query resolved to an actual profile. */
     hasProfile: boolean;
+    /**
+     * Whether the device is positively known to be offline. A "no profile"
+     * read while offline can't be trusted as a genuine absence (it may be a
+     * stale/empty cache), so it must never authorize onboarding.
+     */
+    isOffline: boolean;
 }
 
 /**
@@ -48,7 +55,7 @@ export interface AuthStatusInput {
  * window maps to `resolving`, which can never authorize onboarding.
  */
 export const deriveAuthStatus = (input: AuthStatusInput): AuthGateState => {
-    const { coordinatorStatus, walletReady, profileQueryStatus, hasProfile } = input;
+    const { coordinatorStatus, walletReady, profileQueryStatus, hasProfile, isOffline } = input;
 
     switch (coordinatorStatus) {
         case 'idle':
@@ -81,9 +88,13 @@ export const deriveAuthStatus = (input: AuthStatusInput): AuthGateState => {
                 case 'error':
                     return { tag: 'ready', profile: { tag: 'error' } };
                 case 'success':
+                    if (hasProfile) return { tag: 'ready', profile: { tag: 'present' } };
+                    // A "no profile" success while offline is settled but not a
+                    // trustworthy absence — surface `unconfirmed` so onboarding
+                    // can't fire, without spinning the UI forever.
                     return {
                         tag: 'ready',
-                        profile: hasProfile ? { tag: 'present' } : { tag: 'absent' },
+                        profile: isOffline ? { tag: 'unconfirmed' } : { tag: 'absent' },
                     };
             }
         }
@@ -112,7 +123,9 @@ export const isProfileResolved = (state: AuthGateState): boolean =>
  * loading forever.
  */
 export const isAuthSettled = (state: AuthGateState): boolean =>
-    state.tag === 'unauthenticated' || isProfileResolved(state);
+    state.tag === 'unauthenticated' ||
+    isProfileResolved(state) ||
+    (state.tag === 'ready' && state.profile.tag === 'unconfirmed');
 
 /** True while the user genuinely has a network profile. */
 export const hasNetworkProfile = (state: AuthGateState): boolean =>

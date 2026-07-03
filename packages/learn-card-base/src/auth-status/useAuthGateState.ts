@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { useOptionalAuthCoordinator } from '../auth-coordinator/AuthCoordinatorProvider';
 import { walletStore } from '../stores/walletStore';
+import { connectivityStore } from '../stores/connectivityStore';
 import { useIsLoggedIn } from '../stores/currentUserStore';
 
 import { deriveAuthStatus, type AuthGateState, type CoordinatorStatus } from './authStatus';
@@ -35,6 +36,7 @@ export const useAuthGateState = (
     const coordinator = useOptionalAuthCoordinator();
     const wallet = walletStore.use.wallet();
     const isLoggedIn = useIsLoggedIn();
+    const isOffline = connectivityStore.use.status() === 'offline';
 
     const walletReady = !!wallet;
     const coordinatorStatus = resolveCoordinatorStatus(
@@ -50,8 +52,9 @@ export const useAuthGateState = (
                 walletReady,
                 profileQueryStatus,
                 hasProfile,
+                isOffline,
             }),
-        [coordinatorStatus, walletReady, profileQueryStatus, hasProfile]
+        [coordinatorStatus, walletReady, profileQueryStatus, hasProfile, isOffline]
     );
 };
 

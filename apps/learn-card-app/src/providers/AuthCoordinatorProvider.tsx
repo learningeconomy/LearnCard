@@ -94,6 +94,9 @@ import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { withDeadline, isDeadlineError, connectivityStore } from 'learn-card-base';
+
+const WALLET_INIT_TIMEOUT_MS = 15000;
 
 import { auth } from '../firebase/firebase';
 import {
@@ -457,6 +460,11 @@ const AuthSessionManager: React.FC<{
     const [lcnProfileLoading, setLcnProfileLoading] = useState(false);
 
     const walletInitRef = useRef(false);
+    // Monotonic token guarding against a slow/stale wallet init resolving late
+    // and clobbering a newer attempt (e.g. after logout or a profile switch).
+    const walletInitGenerationRef = useRef(0);
+
+    const isOffline = connectivityStore.use.status() === 'offline';
 
     // Delay showing the stalled-migration overlay so the async Web3Auth
     // extraction has time to complete before we flash the "stalled" UI.
@@ -883,16 +891,26 @@ const AuthSessionManager: React.FC<{
         const { privateKey, did } = coordinator.state;
 
         walletInitRef.current = true;
+        const generation = ++walletInitGenerationRef.current;
+        const isStale = () => walletInitGenerationRef.current !== generation;
 
         const initializeWallet = async () => {
             try {
                 // Restore switched profile from localStorage so hard refresh
                 // keeps the user on the org/child account they selected.
                 const persistedSwitchedDid = switchedProfileStore.get.switchedDid();
-                const newWallet = await getBespokeLearnCard(privateKey, persistedSwitchedDid);
+                // Bounded so a stalled network can't hang boot indefinitely.
+                const newWallet = await withDeadline(
+                    getBespokeLearnCard(privateKey, persistedSwitchedDid),
+                    { ms: WALLET_INIT_TIMEOUT_MS, label: 'getBespokeLearnCard' }
+                );
+
+                // A newer attempt (logout / profile switch) superseded us.
+                if (isStale()) return;
 
                 if (!newWallet) {
                     log.error('Failed to initialize wallet from private key');
+                    walletInitRef.current = false;
                     return;
                 }
 
@@ -974,13 +992,18 @@ const AuthSessionManager: React.FC<{
                     }
                 }
             } catch (e) {
-                log.error('Wallet initialization failed', e);
-                walletInitRef.current = false;
+                if (isDeadlineError(e)) {
+                    log.warn('Wallet initialization timed out — will retry on next change', e);
+                } else {
+                    log.error('Wallet initialization failed', e);
+                }
+                // Clear the guard so a reconnect / state change re-attempts init.
+                if (!isStale()) walletInitRef.current = false;
             }
         };
 
         initializeWallet();
-    }, [coordinator.state, authProvider, keyDerivation, showEmailLinkGate]);
+    }, [coordinator.state, authProvider, keyDerivation, showEmailLinkGate, isOffline]);
 
     // --- Reset wallet when coordinator leaves 'ready' (e.g. on logout) ---
     useEffect(() => {

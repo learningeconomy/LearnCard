@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
 
 import { useNetworkStatus } from './useNetworkStatus';
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum, connectivityStore } from 'learn-card-base';
 
 export const NetworkListener = () => {
     const isConnected = useNetworkStatus();
     const { presentToast, dismissToast } = useToast();
+
+    // Feed the shared connectivity model that boot/auth-gate logic reads.
+    useEffect(() => {
+        if (isConnected !== undefined) connectivityStore.set.report(isConnected);
+    }, [isConnected]);
 
     useEffect(() => {
         if (!isConnected && isConnected !== undefined) {

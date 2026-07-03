@@ -16,7 +16,12 @@ const log = getLogger('auth-coordinator');
  * to the KeyDerivationStrategy, keeping itself a pure state machine.
  */
 
+import { withDeadline, withDeadlineOr } from '../helpers/withDeadline';
+
 import { AuthSessionError } from './types';
+
+const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
+const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
 
 import type {
     AuthProvider,
@@ -81,13 +86,18 @@ export class AuthCoordinator {
                         const did = await this.config.didFromPrivateKey(cachedKey);
 
                         if (did) {
-                            let authUser: AuthUser | null = null;
-
-                            try {
-                                authUser = await this.config.authProvider.getCurrentUser();
-                            } catch {
-                                // Auth session unavailable — that's fine, we have the key
-                            }
+                            // Opportunistic + bounded: offline/slow auth must not
+                            // block a cached-key resume from reaching `ready`.
+                            const authUser: AuthUser | null = await withDeadlineOr(
+                                this.config.authProvider.getCurrentUser(),
+                                null,
+                                {
+                                    ms:
+                                        this.config.authSessionTimeoutMs ??
+                                        DEFAULT_AUTH_SESSION_TIMEOUT_MS,
+                                    label: 'getCurrentUser(pk-first)',
+                                }
+                            );
 
                             // Scope storage even on pk-first path so getLocalKey works later
                             if (authUser && this.keyDerivation.setActiveUser) {
@@ -101,12 +111,22 @@ export class AuthCoordinator {
                             // so it's protected by split shares + recovery methods.
                             if (authUser && this.keyDerivation.capabilities?.recovery) {
                                 try {
-                                    const { token, providerType } = await this.getAuthCredentials();
-                                    const serverStatus =
-                                        await this.keyDerivation.fetchServerKeyStatus(
-                                            token,
-                                            providerType
-                                        );
+                                    const serverStatus = await withDeadline(
+                                        (async () => {
+                                            const { token, providerType } =
+                                                await this.getAuthCredentials();
+                                            return this.keyDerivation.fetchServerKeyStatus(
+                                                token,
+                                                providerType
+                                            );
+                                        })(),
+                                        {
+                                            ms:
+                                                this.config.serverStatusTimeoutMs ??
+                                                DEFAULT_SERVER_STATUS_TIMEOUT_MS,
+                                            label: 'fetchServerKeyStatus(pk-first)',
+                                        }
+                                    );
 
                                     if (!serverStatus.exists || serverStatus.needsMigration) {
                                         this.setState({
@@ -146,7 +166,13 @@ export class AuthCoordinator {
             // --- Standard auth-provider-first path ---
             this.setState({ status: 'authenticating' });
 
-            const authUser = await this.config.authProvider.getCurrentUser();
+            // Bound the probe so a stalled network can't hang boot; a timeout
+            // surfaces as a retryable error (via the outer catch), while real
+            // provider errors propagate unchanged to preserve existing handling.
+            const authUser = await withDeadline(this.config.authProvider.getCurrentUser(), {
+                ms: this.config.authSessionTimeoutMs ?? DEFAULT_AUTH_SESSION_TIMEOUT_MS,
+                label: 'getCurrentUser(standard)',
+            });
 
             if (!authUser) {
                 this.setState({ status: 'idle' });
@@ -165,7 +191,13 @@ export class AuthCoordinator {
             const { token, providerType } = await this.getAuthCredentials();
 
             const hasLocalKey = await this.keyDerivation.hasLocalKey();
-            const serverStatus = await this.keyDerivation.fetchServerKeyStatus(token, providerType);
+            const serverStatus = await withDeadline(
+                this.keyDerivation.fetchServerKeyStatus(token, providerType),
+                {
+                    ms: this.config.serverStatusTimeoutMs ?? DEFAULT_SERVER_STATUS_TIMEOUT_MS,
+                    label: 'fetchServerKeyStatus(standard)',
+                }
+            );
 
             // Resolve recovery methods through the strategy (which may inject
             // client-side-only methods like email backup) when available,

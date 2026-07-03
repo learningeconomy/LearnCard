@@ -86,6 +86,10 @@ export * from './auth-adapters';
 export * from './auth-status/authStatus';
 export * from './auth-status/useAuthStatus';
 export * from './auth-status/useAuthGateState';
+
+// Offline resilience - connectivity model + boot-time deadline utility
+export * from './stores/connectivityStore';
+export * from './helpers/withDeadline';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
