@@ -114,7 +114,7 @@ const MyAppsLanding: React.FC = () => {
     if (hasDeepLink) return null;
 
     return (
-        <IonPage className="bg-white">
+        <IonPage className="bg-grayscale-100">
             {/* Gray header so it blends with the grayscale-100 content (no white bar). */}
             <MainHeader
                 customClassName=""
