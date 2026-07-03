@@ -1,6 +1,6 @@
 {
     "name": "learn-card-base",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "private": true,
     "description": "LearnCard Apps shared components",
     "main": "src/index.ts",
@@ -64,7 +64,11 @@
         "zustand": "^3.7.2",
         "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5"
     },
+    "peerDependencies": {
+        "@tanstack/react-query": "^5.0.0"
+    },
     "devDependencies": {
+        "@tanstack/react-query": "^5.80.3",
         "@types/async": "^3.2.24",
         "@types/lodash": "^4.14.191",
         "@types/uuid": "^9.0.0",

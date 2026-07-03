@@ -247,6 +247,10 @@ jobs:
               if: steps.published.outputs.exists != 'true'
               run: bunx nx run didkit-plugin-node:build
 
+            - name: Prepare publish dependency versions
+              if: steps.published.outputs.exists != 'true'
+              run: node scripts/prepare-publish-workspace-deps.mjs
+
             - name: Publish platform packages
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
