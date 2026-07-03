@@ -75,3 +75,29 @@ export const WithImage: Story = {
         hasImage: true,
     },
 };
+
+const ID_CREDENTIAL: Record<string, unknown> = {
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: { id: 'did:example:issuer', name: 'Learning Economy' },
+    credentialSubject: {
+        type: ['AchievementSubject'],
+        achievement: {
+            type: ['Achievement'],
+            achievementType: 'License',
+            name: 'Pro License',
+            description: 'A professional license.',
+        },
+    },
+};
+
+export const WithIDCredential: Story = {
+    args: {
+        credential: ID_CREDENTIAL,
+        credentialType: 'id',
+        cardTitle: 'Pro License',
+    },
+};
