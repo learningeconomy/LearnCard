@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { useGetCurrentLCNUser } from 'learn-card-base';
+import Search from 'learn-card-base/svgs/Search';
+import SortButton from 'learn-card-base/svgs/SortButton';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { usePassportActivities } from './usePassportActivities';
 import {
@@ -49,22 +51,26 @@ export const PassportActivityFeed: React.FC = () => {
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
                 ACTIVITY
             </h3>
-            <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm p-[16px]">
-                <div className="flex items-center gap-2 mb-3 relative">
-                    <input
-                        type="search"
-                        aria-label="Search activity"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="Search..."
-                        className="flex-1 rounded-full border border-grayscale-300 px-4 py-2 font-poppins text-[14px]"
-                    />
+            <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm px-[16px] pt-[16px] pb-[8px]">
+                <div className="flex items-center gap-2 mb-4 relative">
+                    <div className="relative flex-1">
+                        <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-grayscale-500" />
+                        <input
+                            type="search"
+                            aria-label="Search activity"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search..."
+                            className="w-full rounded-[12px] bg-[#E2E3E9] py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-500 focus:outline-none"
+                        />
+                    </div>
                     <button
                         type="button"
                         onClick={() => setFilterOpen(o => !o)}
-                        className="rounded-[10px] border border-grayscale-300 px-3 py-2 font-poppins text-[14px]"
+                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] text-[#5457C7]"
                     >
                         Filter
+                        <SortButton className="h-[18px] w-[18px]" />
                     </button>
                     {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
                     {filterOpen && (
@@ -86,7 +92,7 @@ export const PassportActivityFeed: React.FC = () => {
 
                 {/* Min-height keeps the card a consistent size with only a few
                     items; empty/loading/error states center within it. */}
-                <div className="min-h-[400px] flex flex-col border-t border-grayscale-100 pt-[8px]">
+                <div className="min-h-[400px] flex flex-col border-t border-grayscale-100 pt-[8px] pb-[12px]">
                     {isError && (
                         <div className="flex-1 flex items-center justify-center">
                             <p className="font-poppins text-[14px] text-rose-600 text-center">

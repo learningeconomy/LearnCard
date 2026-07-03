@@ -1,6 +1,10 @@
 vi.mock('learn-card-base', async () =>
     (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()
 );
+// Chip icons come from the theme store; stub it (no ThemeProvider in this test).
+vi.mock('../../../theme/hooks/useTheme', () => ({
+    useTheme: () => ({ getThemedCategory: () => ({ icons: {} }) }),
+}));
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';

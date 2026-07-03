@@ -2,6 +2,14 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 
 export type ActivityDirection = 'sent' | 'received';
 
+export type ActivityAvatar = {
+    displayName?: string;
+    profileId?: string;
+    /** STUB: not yet returned by getMyActivities — falls back to an initials
+     *  circle until the backend resolves counterparty/actor profile images. */
+    image?: string;
+};
+
 export type ActivityFeedItemVM = {
     id: string;
     direction: ActivityDirection;
@@ -12,6 +20,9 @@ export type ActivityFeedItemVM = {
     credentialType?: string;
     timestamp: string;
     unread: boolean;
+    /** Whose avatar leads the row: the recipient for sent items, the sender for
+     *  received items (mirrors the Figma "person → credential" row). */
+    avatar: ActivityAvatar;
 };
 
 export type ActivityMonthGroup = { label: string; items: ActivityFeedItemVM[] };
@@ -69,6 +80,11 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
         direction === 'sent'
             ? `You sent ${article} ${label} to ${recipientName}`
             : `${actorName} sent you ${article} ${label}`;
+    // Row avatar = the *other* party: recipient for sent, sender for received.
+    const avatar: ActivityAvatar =
+        direction === 'sent'
+            ? { displayName: recipientName, profileId: record.recipientProfile?.profileId }
+            : { displayName: actorName, profileId: record.actorProfileId };
     return {
         id: record.id,
         direction,
@@ -81,6 +97,7 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
         // STUB: the activity feed is actor-scoped today, so direction resolves to
         // 'sent' for the current user, and `unread` has no backing read-state yet.
         unread: false,
+        avatar,
     };
 };
 

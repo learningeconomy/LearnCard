@@ -10,6 +10,11 @@ vi.mock('learn-card-base', async () => ({
     useGetCurrentLCNUser: () => ({ currentLCNUser: { profileId: 'me' } }),
 }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
+// The row's presentation (avatar/category icon) is covered by ActivityFeedItem's
+// own test; here we only assert the feed renders a row per record.
+vi.mock('./ActivityFeedItem', () => ({
+    ActivityFeedItem: ({ item }: { item: { title: string } }) => <div>{item.title}</div>,
+}));
 
 import { PassportActivityFeed } from './PassportActivityFeed';
 

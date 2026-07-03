@@ -203,7 +203,11 @@ const WalletPage: React.FC = () => {
                             : undefined
                     }
                 >
-                    <div className={`px-[20px] md:pt-[24px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
+                    <div
+                        className={`px-[20px] pb-[32px] md:pt-[24px] md:pb-[48px] ${
+                            passportBgColor ? 'pt-[12px]' : ''
+                        }`}
+                    >
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full gap-[10px]">

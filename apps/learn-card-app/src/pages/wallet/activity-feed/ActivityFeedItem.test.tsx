@@ -1,6 +1,12 @@
-vi.mock('learn-card-base', async () =>
-    (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()
-);
+vi.mock('learn-card-base', async () => ({
+    ...(await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock(),
+    UserProfilePicture: () => null,
+}));
+// Category icon comes from the theme store; stub it so the row renders without a
+// ThemeProvider (this test only cares about the title/date/unread rendering).
+vi.mock('../../../theme/hooks/useTheme', () => ({
+    useTheme: () => ({ getThemedCategory: () => ({ icons: {} }) }),
+}));
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
@@ -18,6 +24,7 @@ const vm = (over: Partial<ActivityFeedItemVM> = {}): ActivityFeedItemVM => ({
     credentialType: 'Coding 101',
     timestamp: '2026-06-23T10:00:00Z',
     unread: false,
+    avatar: { displayName: 'Justin Smith', profileId: 'justin' },
     ...over,
 });
 
