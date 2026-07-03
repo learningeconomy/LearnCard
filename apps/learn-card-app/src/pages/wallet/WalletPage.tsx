@@ -20,7 +20,6 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
@@ -238,15 +237,12 @@ const WalletPage: React.FC = () => {
                                             />
                                         )}
 
-                                        {/* View switcher + theme picker are mobile-only; on
-                                            desktop the grid is fixed and the theme is set from
-                                            the side menu (Colorful Mode). */}
+                                        {/* View switcher is mobile-only; on desktop the grid is
+                                            fixed. Theme switching now lives in the side menu
+                                            (Colorful Mode), so there's no per-page theme picker. */}
                                         {isMobile && (
                                             <div className="flex items-center justify-end">
                                                 <WalletPageViewModeSelector />
-                                                <ThemeSelector
-                                                    viewMode={themeSelectorViewMode.Mini}
-                                                />
                                             </div>
                                         )}
                                     </div>
