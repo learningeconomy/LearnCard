@@ -26,7 +26,9 @@ const MOBILE_HEADER_STYLE: React.CSSProperties = {
     borderBottom: '1px solid white',
 };
 
-const DESKTOP_HEADER_STYLE: React.CSSProperties = { background: 'transparent' };
+// `--background` targets the Ionic toolbar (MainHeader forwards it) so the whole
+// desktop header bar is transparent, not just the inner grid.
+const DESKTOP_HEADER_STYLE = { '--background': 'transparent' } as React.CSSProperties;
 
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
