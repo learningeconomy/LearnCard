@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Wifi, WifiOff, Zap } from 'lucide-react';
+import { Wifi, WifiOff, Zap, Key } from 'lucide-react';
 
 import {
     connectivityStore,
@@ -12,6 +12,13 @@ import {
     networkFaultStore,
 } from 'learn-card-base';
 import type { NetworkFaultMode } from 'learn-card-base';
+import {
+    getPlatformPrivateKey,
+    setPlatformPrivateKey,
+} from 'learn-card-base/security/platformPrivateKeyStorage';
+import { sqliteStore } from 'learn-card-base/stores/sqliteStore';
+
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
 import { KVRow, Section, useCopyToClipboard } from './debugComponents';
 
@@ -22,6 +29,37 @@ export const OfflineDebugTab: React.FC = () => {
     const authGate = useAuthStatus();
     const faultMode = networkFaultStore.use.mode();
     const faultDelay = networkFaultStore.use.delayMs();
+
+    const { state } = useAuthCoordinator();
+    const sqliteDb = sqliteStore.use.db();
+    const [diskKey, setDiskKey] = React.useState<string>('(not checked)');
+    const [persisting, setPersisting] = React.useState(false);
+
+    const checkDiskKey = async () => {
+        try {
+            const k = await getPlatformPrivateKey();
+            setDiskKey(k ? `found — ${k.length} chars` : 'null (not on disk)');
+        } catch (e) {
+            setDiskKey(`error: ${e instanceof Error ? e.message : String(e)}`);
+        }
+    };
+
+    const rePersist = async () => {
+        const pk = state.status === 'ready' ? state.privateKey : null;
+        if (!pk) {
+            setDiskKey('no in-memory key to persist (not ready)');
+            return;
+        }
+        setPersisting(true);
+        try {
+            await setPlatformPrivateKey(pk);
+            await checkDiskKey();
+        } catch (e) {
+            setDiskKey(`persist error: ${e instanceof Error ? e.message : String(e)}`);
+        } finally {
+            setPersisting(false);
+        }
+    };
 
     const connectivityBadge = (
         <span
@@ -118,6 +156,58 @@ export const OfflineDebugTab: React.FC = () => {
                         </button>
                     ))}
                 </div>
+            </Section>
+
+            <Section
+                title="Key Persistence"
+                icon={<Key className="w-3 h-3 text-gray-500" />}
+                defaultOpen
+            >
+                <div className="space-y-0">
+                    <KVRow
+                        label="SQLite db present"
+                        value={!!sqliteDb}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="In-memory key"
+                        value={state.status === 'ready' ? !!state.privateKey : false}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                    <KVRow
+                        label="On-disk key"
+                        value={diskKey}
+                        mono={false}
+                        copied={copied}
+                        onCopy={copyToClipboard}
+                    />
+                </div>
+
+                <div className="flex gap-1.5 mt-2">
+                    <button
+                        type="button"
+                        onClick={checkDiskKey}
+                        className="flex-1 py-1.5 rounded-md text-[10px] font-semibold bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
+                    >
+                        Check disk key
+                    </button>
+                    <button
+                        type="button"
+                        onClick={rePersist}
+                        disabled={persisting || state.status !== 'ready'}
+                        className="flex-1 py-1.5 rounded-md text-[10px] font-semibold bg-sky-950/50 text-sky-300 ring-1 ring-sky-800 hover:bg-sky-900/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        {persisting ? 'Persisting…' : 'Re-persist key'}
+                    </button>
+                </div>
+
+                <p className="text-[9px] text-gray-500 mt-2">
+                    While logged in + online, tap “Check disk key” — it should say “found”. If it
+                    says “null”, the key never persisted (that’s the offline-boot bug). Reads
+                    straight from native SQLite / web secure storage.
+                </p>
             </Section>
 
             <Section
