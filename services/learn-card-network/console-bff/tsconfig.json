@@ -1,0 +1,53 @@
+{
+    "compilerOptions": {
+        "lib": ["es2022", "DOM"],
+        "module": "esnext",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "strict": true,
+        "alwaysStrict": true,
+        "strictNullChecks": true,
+        "noUncheckedIndexedAccess": true,
+
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "allowUnreachableCode": false,
+        "noFallthroughCasesInSwitch": true,
+
+        "target": "es2022",
+        "outDir": "dist",
+        "declaration": true,
+        "sourceMap": true,
+        "rootDir": ".",
+        "baseUrl": ".",
+        "paths": {
+            "@kms": ["src/kms/index.ts"],
+            "@kms/*": ["src/kms/*"],
+            "@did": ["src/did/index.ts"],
+            "@did/*": ["src/did/*"],
+            "@brain": ["src/brain/index.ts"],
+            "@brain/*": ["src/brain/*"],
+            "@session": ["src/session/index.ts"],
+            "@session/*": ["src/session/*"],
+            "@providers": ["src/providers/index.ts"],
+            "@providers/*": ["src/providers/*"],
+            "@provisioning": ["src/provisioning/index.ts"],
+            "@provisioning/*": ["src/provisioning/*"],
+            "@helpers/*": ["src/helpers/*"],
+            "types/*": ["src/types/*"]
+        },
+
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "allowJs": false,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": ["src", "test"],
+    "exclude": ["./dist/**/*", "./node_modules/**/*"]
+}

@@ -94,13 +94,16 @@ export const createContext = async (
     const domain = process.env.DOMAIN_NAME || _domain;
 
     // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
-    const rawHeaders = 'event' in options
-        ? (options.event.headers as Record<string, string | undefined>)
-        : 'get' in event.headers
+    const rawHeaders =
+        'event' in options
+            ? (options.event.headers as Record<string, string | undefined>)
+            : 'get' in event.headers
             ? Object.fromEntries(event.headers as Map<string, string>)
             : (event.headers as Record<string, string | string[] | undefined>);
 
-    const tenant = resolveTenantFromRequest(rawHeaders as Record<string, string | string[] | undefined>);
+    const tenant = resolveTenantFromRequest(
+        rawHeaders as Record<string, string | string[] | undefined>
+    );
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');
@@ -161,7 +164,12 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain, tenant, _guardianApprovalToken };
+                return {
+                    user: { did, isChallengeValid, scope },
+                    domain,
+                    tenant,
+                    _guardianApprovalToken,
+                };
             }
         }
     }
@@ -235,6 +243,23 @@ export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
     if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
     return next({ ctx: { ...ctx, user: ctx.user } });
+});
+
+// Service-to-service caller: a challenge-fresh DID-Auth VP whose holder is on the exact
+// AUTHORIZED_SERVICE_DIDS allowlist. Used by trusted backends (e.g. console-bff) for narrow
+// provisioning operations. Deliberately built on didAndChallengeRoute so a stale/replayed
+// presentation cannot authenticate a privileged service call.
+export const serviceDidRoute = didAndChallengeRoute.use(({ ctx, next }) => {
+    const allowlist = process.env.AUTHORIZED_SERVICE_DIDS?.split(' ').filter(Boolean) ?? [];
+
+    if (!ctx.user?.did || !allowlist.includes(ctx.user.did)) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Caller is not an authorized service DID',
+        });
+    }
+
+    return next({ ctx });
 });
 
 export const scopedRoute = didAndChallengeRoute.use(({ ctx, next, meta }) => {

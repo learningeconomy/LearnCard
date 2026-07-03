@@ -1,0 +1,30 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "console-bff-service",
+    "sourceRoot": "services/learn-card-network/console-bff/src",
+    "projectType": "application",
+    "root": "services/learn-card-network/console-bff",
+    "tags": [],
+    "implicitDependencies": ["nx-run-command"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test"
+            }
+        }
+    }
+}

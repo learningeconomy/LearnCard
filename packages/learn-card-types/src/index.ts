@@ -7,6 +7,7 @@ export * from './clr';
 export * from './credential-format';
 export * from './ecosystem';
 export * from './group';
+export * from './console-auth';
 export * from './learncard';
 export * from './learncloud';
 export * from './lcn';
