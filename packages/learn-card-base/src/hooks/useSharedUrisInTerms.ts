@@ -167,7 +167,40 @@ const getOrCreateSharedUriFromCategoryRecords = async (
     return { sharedUri: false, status: 'missing' };
 };
 
+/**
+ * In-flight shared URI creations, keyed by profile, credential, and contract owner.
+ * Concurrent callers (e.g. the background contract sync worker and lazy
+ * materialization in getCredentialById) await the same promise instead of
+ * each uploading a shared URI, which would orphan all but the last one.
+ */
+const inFlightSharedUriCreations = new Map<string, Promise<string | false>>();
+
 export const getOrCreateSharedUriForWallet = async (
+    wallet: BespokeLearnCard,
+    contractOwnerDid: string,
+    queryClient: QueryClient,
+    credUri: string,
+    category: string
+): Promise<string | false> => {
+    const didWeb = switchedProfileStore.get.switchedDid();
+    const inFlightKey = [didWeb, credUri, contractOwnerDid].filter(Boolean).join('|');
+    const inFlight = inFlightSharedUriCreations.get(inFlightKey);
+    if (inFlight) return inFlight;
+
+    const creation = createSharedUriForWallet(
+        wallet,
+        contractOwnerDid,
+        queryClient,
+        credUri,
+        category
+    ).finally(() => inFlightSharedUriCreations.delete(inFlightKey));
+
+    inFlightSharedUriCreations.set(inFlightKey, creation);
+
+    return creation;
+};
+
+const createSharedUriForWallet = async (
     wallet: BespokeLearnCard,
     contractOwnerDid: string,
     queryClient: QueryClient,

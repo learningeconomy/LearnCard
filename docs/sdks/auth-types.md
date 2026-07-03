@@ -9,7 +9,7 @@ The auth types are defined in `@learncard/types` (in `src/auth.ts`) and provide 
 ## Installation
 
 ```bash
-pnpm add @learncard/types
+bun add @learncard/types
 ```
 
 ## Interfaces
@@ -177,7 +177,11 @@ These types are re-exported by both `@learncard/sss-key-manager` and `learn-card
 
 ```typescript
 // From sss-key-manager (SSS-specific types + auth-types re-exports)
-import type { AuthProvider, KeyDerivationStrategy, ContactMethod } from '@learncard/sss-key-manager';
+import type {
+    AuthProvider,
+    KeyDerivationStrategy,
+    ContactMethod,
+} from '@learncard/sss-key-manager';
 
 // From learn-card-base (coordinator types + auth-types re-exports)
 import type { AuthProvider, UnifiedAuthState } from 'learn-card-base';

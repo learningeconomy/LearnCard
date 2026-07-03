@@ -11,7 +11,7 @@ The DID Key plugin is responsible for generating DIDs and keypairs on the fly us
 ### Install
 
 ```bash
-pnpm i @learncard/didkey-plugin
+bun add @learncard/didkey-plugin
 ```
 
 ### Use Cases
@@ -25,8 +25,10 @@ Instantiation is straightforward—simply pass in a random 32 Bytes to use as en
 ```typescript
 const randomBytes = 'a'.repeat(64); // Please actually randomly generate your bytes!
 
-// DIDKit is needed to satisfy the Did Key plugin's dependent methods   
-const didkitLearnCard = await (await initLearnCard({ custom: true })).addPlugin(await getDidKitPlugin());
+// DIDKit is needed to satisfy the Did Key plugin's dependent methods
+const didkitLearnCard = await(await initLearnCard({ custom: true })).addPlugin(
+    await getDidKitPlugin()
+);
 
 const learnCard = await didkitLearnCard.addPlugin(
     await getDidKeyPlugin(didkitLearnCard, randomBytes, 'key')

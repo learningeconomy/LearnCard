@@ -31,7 +31,7 @@ fi
 projects="$NX_PROJECT_NAME"
 
 if [ -z "$projects" ] && [ -n "$filtered_files" ]; then
-  projects=$(pnpm exec nx print-affected --files="$filtered_files" --select=projects | tr ',' ' ')
+  projects=$(bunx nx print-affected --files="$filtered_files" --select=projects | tr ',' ' ')
 fi
 
 for project in $projects; do
@@ -40,5 +40,5 @@ for project in $projects; do
   fi
 
   echo "[nx-watch] rebuilding $project"
-  pnpm exec nx run "$project:build"
+  bunx nx run "$project:build"
 done

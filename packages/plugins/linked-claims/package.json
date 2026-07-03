@@ -1,12 +1,13 @@
 {
     "name": "@learncard/linked-claims-plugin",
-    "version": "0.2.24",
+    "version": "0.2.26",
     "description": "LinkedClaims plugin to create, verify, store, and query endorsement credentials.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/linked-claims-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/linked-claims-plugin.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",

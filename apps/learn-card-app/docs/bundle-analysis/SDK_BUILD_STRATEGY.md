@@ -33,25 +33,25 @@ When Vite bundles the app, it imports both `@learncard/init` (8.4 MB) and `@lear
 
 ### Plugin Dist Sizes (JS only)
 
-| Plugin | Workspace Deps | Dist Size | Notes |
-|--------|---------------|-----------|-------|
-| `@learncard/crypto-plugin` | 1 | 52 KB | Leaf — small |
-| `@learncard/did-web-plugin` | 2 | 52 KB | Leaf — small |
-| `@learncard/didkit-plugin` | 2 | 41 KB JS + 9.3 MB WASM | JS is fine, WASM is separate |
-| `@learncard/vc-plugin` | 3 | 252 KB | |
-| `@learncard/vpqr-plugin` | 2 | 1.4 MB | |
-| `@learncard/claimable-boosts-plugin` | 2 | 3.7 MB | Starting to re-bundle heavily |
-| `@learncard/vc-api-plugin` | 2 | 4.2 MB | |
-| `@learncard/simple-signing-plugin` | 1 | 4.4 MB | |
-| `@learncard/learn-card-plugin` | 3 | 4.7 MB | |
-| `@learncard/ethereum-plugin` | 1 | 8.1 MB | |
-| `@learncard/didkey-plugin` | 3 | 9.1 MB | |
-| `@learncard/learn-cloud-plugin` | 6 | 13 MB | |
-| `@learncard/ceramic-plugin` | 3 | 18 MB | |
-| `@learncard/network-plugin` | 7 | 20 MB | |
-| `@learncard/idx-plugin` | 3 | 25 MB | |
-| **`@learncard/init`** | **19** | **8.4 MB** | Contains all plugins |
-| **`@learncard/lca-api-plugin`** | **5** | **9.3 MB** | Re-bundles `init` |
+| Plugin                               | Workspace Deps | Dist Size              | Notes                         |
+| ------------------------------------ | -------------- | ---------------------- | ----------------------------- |
+| `@learncard/crypto-plugin`           | 1              | 52 KB                  | Leaf — small                  |
+| `@learncard/did-web-plugin`          | 2              | 52 KB                  | Leaf — small                  |
+| `@learncard/didkit-plugin`           | 2              | 41 KB JS + 9.3 MB WASM | JS is fine, WASM is separate  |
+| `@learncard/vc-plugin`               | 3              | 252 KB                 |                               |
+| `@learncard/vpqr-plugin`             | 2              | 1.4 MB                 |                               |
+| `@learncard/claimable-boosts-plugin` | 2              | 3.7 MB                 | Starting to re-bundle heavily |
+| `@learncard/vc-api-plugin`           | 2              | 4.2 MB                 |                               |
+| `@learncard/simple-signing-plugin`   | 1              | 4.4 MB                 |                               |
+| `@learncard/learn-card-plugin`       | 3              | 4.7 MB                 |                               |
+| `@learncard/ethereum-plugin`         | 1              | 8.1 MB                 |                               |
+| `@learncard/didkey-plugin`           | 3              | 9.1 MB                 |                               |
+| `@learncard/learn-cloud-plugin`      | 6              | 13 MB                  |                               |
+| `@learncard/ceramic-plugin`          | 3              | 18 MB                  |                               |
+| `@learncard/network-plugin`          | 7              | 20 MB                  |                               |
+| `@learncard/idx-plugin`              | 3              | 25 MB                  |                               |
+| **`@learncard/init`**                | **19**         | **8.4 MB**             | Contains all plugins          |
+| **`@learncard/lca-api-plugin`**      | **5**          | **9.3 MB**             | Re-bundles `init`             |
 
 ---
 
@@ -80,7 +80,8 @@ const buildOptions = {
     sourcemap: true,
     external: [
         // Existing externals
-        'isomorphic-fetch', 'isomorphic-webcrypto',
+        'isomorphic-fetch',
+        'isomorphic-webcrypto',
         // ADD: All workspace packages
         '@learncard/core',
         '@learncard/types',
@@ -110,18 +111,20 @@ plugins: [nodeResolveExternal], // currently: plugins: []
 ```
 
 **Impact on npm consumers:**
-- Users who install packages independently via npm would need to also install peer dependencies
-- Change `dependencies` to `peerDependencies` in each plugin's `package.json`
-- Add `peerDependenciesMeta` to mark them as optional where appropriate
-- The `dist/*.esm.js` files would become tiny (just the plugin's own code), with import statements pointing to the peer deps
+
+-   Users who install packages independently via npm would need to also install peer dependencies
+-   Change `dependencies` to `peerDependencies` in each plugin's `package.json`
+-   Add `peerDependenciesMeta` to mark them as optional where appropriate
+-   The `dist/*.esm.js` files would become tiny (just the plugin's own code), with import statements pointing to the peer deps
 
 **Impact on the app:**
-- Vite would resolve each `@learncard/*` import to its own small module
-- Shared deps (core, types, didkit, etc.) would be resolved **once** and deduped automatically
-- Expected savings: **~9-12 MB** (from ~19.3 MB to ~7-10 MB), since the duplicated SDK code would be eliminated
-- Further gains from tree-shaking unused exports
 
-**Risk:** Medium — requires testing that all published packages still work correctly when installed via npm. The monorepo app would work immediately since pnpm workspace handles resolution.
+-   Vite would resolve each `@learncard/*` import to its own small module
+-   Shared deps (core, types, didkit, etc.) would be resolved **once** and deduped automatically
+-   Expected savings: **~9-12 MB** (from ~19.3 MB to ~7-10 MB), since the duplicated SDK code would be eliminated
+-   Further gains from tree-shaking unused exports
+
+**Risk:** Medium — requires testing that all published packages still work correctly when installed via npm. The monorepo app would work immediately since Bun workspaces handle resolution.
 
 ---
 
@@ -141,15 +144,17 @@ resolve: {
 ```
 
 **Pros:**
-- No changes to the SDK build scripts
-- Vite handles deduplication and tree-shaking at the source level
-- Would immediately reduce the main chunk significantly
+
+-   No changes to the SDK build scripts
+-   Vite handles deduplication and tree-shaking at the source level
+-   Would immediately reduce the main chunk significantly
 
 **Cons:**
-- Only fixes the monorepo app, not external consumers
-- Build times increase (Vite now compiles all plugin source from scratch)
-- May hit TypeScript config issues (different tsconfig between packages)
-- Fragile — must keep aliases in sync with monorepo structure
+
+-   Only fixes the monorepo app, not external consumers
+-   Build times increase (Vite now compiles all plugin source from scratch)
+-   May hit TypeScript config issues (different tsconfig between packages)
+-   Fragile — must keep aliases in sync with monorepo structure
 
 ---
 
@@ -169,7 +174,7 @@ This gives immediate relief while properly fixing the root cause over time.
 1. **It fixes the problem everywhere** — not just this app, but any future app, the scouts app, and external npm consumers who use multiple packages
 2. **It's how every major SDK monorepo works** — packages like `@tanstack/react-query`, `@sentry/react`, `@ionic/react` all externalize their own sub-packages and list them as peer deps
 3. **The hard part is already done** — `learn-card-init` already has the `nodeResolveExternal` plugin written and ready, it just needs to be wired up
-4. **The risk is manageable** — the monorepo's pnpm workspace resolves deps automatically, so the change is transparent there. For npm consumers, a major version bump with updated peer dep documentation would be appropriate.
+4. **The risk is manageable** — the monorepo's Bun workspace resolves deps automatically, so the change is transparent there. For npm consumers, a major version bump with updated peer dep documentation would be appropriate.
 
 ### Implementation Order
 
@@ -182,12 +187,12 @@ This gives immediate relief while properly fixing the root cause over time.
 
 ### Expected Result
 
-| Metric | Before | After (estimated) |
-|--------|--------|-------------------|
-| `index.js` | 19.3 MB | ~3-5 MB |
-| `index.js` (gzip) | 5.5 MB | ~1-1.5 MB |
-| Total vendor chunks | ~6 MB | ~6 MB (unchanged) |
-| Build time | 3.5 min | Similar or slightly faster |
+| Metric              | Before  | After (estimated)          |
+| ------------------- | ------- | -------------------------- |
+| `index.js`          | 19.3 MB | ~3-5 MB                    |
+| `index.js` (gzip)   | 5.5 MB  | ~1-1.5 MB                  |
+| Total vendor chunks | ~6 MB   | ~6 MB (unchanged)          |
+| Build time          | 3.5 min | Similar or slightly faster |
 
 ---
 
@@ -196,6 +201,7 @@ This gives immediate relief while properly fixing the root cause over time.
 Every plugin with a `scripts/build.mjs` file needs its `external` list updated. There are approximately **24 plugins** plus `learn-card-init` and `lca-api-plugin` (26 total build scripts).
 
 The change per file is mechanical:
+
 1. Add workspace package names to `external` array
 2. Or: use the `nodeResolveExternal` plugin (mark all `node_modules` as external)
 3. Move workspace deps from `dependencies` to `peerDependencies` in `package.json`

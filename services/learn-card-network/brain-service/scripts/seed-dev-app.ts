@@ -7,28 +7,28 @@
  * that break under tsx's CJS transform).
  *
  * Prerequisites:
- *   - Neo4j running (e.g. `pnpm dev:services` from apps/learn-card-app)
+ *   - Neo4j running (e.g. `bun run dev:services` from apps/learn-card-app)
  *   - OR a .env here with NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
  *
  * Two modes:
  *
  *   1. Single-app (default) — seeds one listing from CLI flags.
- *      pnpm seed:dev-app
- *      pnpm seed:dev-app --app-url http://localhost:4321
- *      pnpm seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
- *      pnpm seed:dev-app --app-name "My Game" --domain localhost
- *      pnpm seed:dev-app --app-image https://example.com/my-icon.png
- *      pnpm seed:dev-app --template-alias my-badge
- *      pnpm seed:dev-app --sa-endpoint http://localhost:5100/api
- *      pnpm seed:dev-app --permissions request_identity,send_credential
- *      pnpm seed:dev-app --launch-type DIRECT_LINK        (default: EMBEDDED_IFRAME)
- *      pnpm seed:dev-app --promotion FEATURED_CAROUSEL
- *      pnpm seed:dev-app --reset-rate-limits
+ *      bun run seed:dev-app
+ *      bun run seed:dev-app --app-url http://localhost:4321
+ *      bun run seed:dev-app --app-url http://localhost:4321 --profile dev-user --install-for test-user
+ *      bun run seed:dev-app --app-name "My Game" --domain localhost
+ *      bun run seed:dev-app --app-image https://example.com/my-icon.png
+ *      bun run seed:dev-app --template-alias my-badge
+ *      bun run seed:dev-app --sa-endpoint http://localhost:5100/api
+ *      bun run seed:dev-app --permissions request_identity,send_credential
+ *      bun run seed:dev-app --launch-type DIRECT_LINK        (default: EMBEDDED_IFRAME)
+ *      bun run seed:dev-app --promotion FEATURED_CAROUSEL
+ *      bun run seed:dev-app --reset-rate-limits
  *
  *   2. Preset bundle — seeds a curated set of listings in one go. Used to
  *      scaffold the demo data the Pathways v0.5 ActionDescriptor flow depends
  *      on (see `apps/learn-card-app/src/pages/pathways/dev/devSeed.ts`).
- *      pnpm seed:dev-app --preset pathway-demo
+ *      bun run seed:dev-app --preset pathway-demo
  *
  * Preset listings use **deterministic UUIDs** (`uuidv5(slug, NAMESPACE)`) so
  * the in-app dev seed can reference listing_ids without a lookup round-trip.
@@ -65,8 +65,7 @@ const PRESET_LISTING_NAMESPACE = '5b9f3a24-7c1e-4d6a-9f2b-8e4c3a1d5f6b';
  * Helper: deterministic listing_id for preset entries. Exposed so the
  * in-app dev seed can reproduce the same mapping from its own constants file.
  */
-export const presetListingId = (slug: string): string =>
-    uuidv5(slug, PRESET_LISTING_NAMESPACE);
+export const presetListingId = (slug: string): string => uuidv5(slug, PRESET_LISTING_NAMESPACE);
 
 interface PresetEntry {
     slug: string;
@@ -142,7 +141,7 @@ const PRESETS: Record<string, PresetEntry[]> = {
 };
 
 // Fall back to local docker-compose defaults so the script works without a .env
-// when services are already running via `pnpm dev:services` from learn-card-app.
+// when services are already running via `bun run dev:services` from learn-card-app.
 const NEO4J_URI = process.env.NEO4J_URI ?? 'bolt://localhost:7687';
 const NEO4J_USERNAME = process.env.NEO4J_USERNAME ?? 'neo4j';
 const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD ?? 'this-is-the-password';
@@ -240,7 +239,7 @@ const buildSingleListingConfig = (): ListingConfig => {
         tagline: getArg('--tagline', `Dev app at ${appUrl}`),
         fullDescription: getArg(
             '--full-description',
-            `Locally seeded partner app pointing at ${appUrl}`,
+            `Locally seeded partner app pointing at ${appUrl}`
         ),
         promotionLevel: getArg('--promotion', 'FEATURED_CAROUSEL'),
         permissions: permissionsRaw
@@ -356,15 +355,21 @@ const buildCredentialTemplate = (name: string): string =>
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-    const neogma = new Neogma({ url: NEO4J_URI, username: NEO4J_USERNAME, password: NEO4J_PASSWORD });
+    const neogma = new Neogma({
+        url: NEO4J_URI,
+        username: NEO4J_USERNAME,
+        password: NEO4J_PASSWORD,
+    });
 
     try {
-        const configs = presetName
-            ? buildPresetConfigs(presetName)
-            : [buildSingleListingConfig()];
+        const configs = presetName ? buildPresetConfigs(presetName) : [buildSingleListingConfig()];
 
         if (presetName) {
-            console.log(`\n🔧 Seeding preset "${presetName}" (${configs.length} listing${configs.length === 1 ? '' : 's'})...\n`);
+            console.log(
+                `\n🔧 Seeding preset "${presetName}" (${configs.length} listing${
+                    configs.length === 1 ? '' : 's'
+                })...\n`
+            );
         } else {
             console.log('\n🔧 Seeding dev partner app...\n');
         }
@@ -433,7 +438,10 @@ async function seedListing(neogma: Neogma, config: ListingConfig): Promise<void>
     );
 
     const existingId = existingResult.records[0]?.get('listing_id');
-    const launchConfigJson = JSON.stringify({ url: config.appUrl, permissions: config.permissions });
+    const launchConfigJson = JSON.stringify({
+        url: config.appUrl,
+        permissions: config.permissions,
+    });
 
     if (existingId) {
         console.log(`  Listing already exists for slug "${config.slug}": ${existingId}`);
@@ -720,7 +728,11 @@ async function ensureMongoSigningAuthority(ownerDid: string, saSeed: string): Pr
         const existing = await collection.findOne({ ownerDid, name: 'default' });
 
         if (!existing) {
-            const did = `did:key:z${crypto.createHash('sha256').update(saSeed).digest('hex').slice(0, 48)}`;
+            const did = `did:key:z${crypto
+                .createHash('sha256')
+                .update(saSeed)
+                .digest('hex')
+                .slice(0, 48)}`;
 
             await collection.insertOne({
                 _id: uuid(),
@@ -735,8 +747,12 @@ async function ensureMongoSigningAuthority(ownerDid: string, saSeed: string): Pr
             console.log(`  MongoDB SA exists:   ownerDid=${ownerDid}`);
         }
     } catch (err) {
-        console.warn(`\n\u26A0\uFE0F  Could not connect to MongoDB at ${MONGO_URI} — skipping SA setup.`);
-        console.warn('  Credential issuance (sendCredential) will not work without the LCA API signing authority.');
+        console.warn(
+            `\n\u26A0\uFE0F  Could not connect to MongoDB at ${MONGO_URI} — skipping SA setup.`
+        );
+        console.warn(
+            '  Credential issuance (sendCredential) will not work without the LCA API signing authority.'
+        );
     } finally {
         await client?.close();
     }
@@ -752,7 +768,9 @@ async function clearRateLimits(listingId: string): Promise<void> {
     try {
         await redis.connect();
     } catch (err) {
-        console.warn(`\n⚠️  Could not connect to Redis at ${REDIS_HOST}:${REDIS_PORT} — skipping rate-limit reset.`);
+        console.warn(
+            `\n⚠️  Could not connect to Redis at ${REDIS_HOST}:${REDIS_PORT} — skipping rate-limit reset.`
+        );
         return;
     }
 

@@ -1,12 +1,13 @@
 {
     "name": "@learncard/vc-api-plugin",
-    "version": "1.1.24",
+    "version": "1.1.26",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/vc-api-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/vc-api-plugin.esm.js"
@@ -18,7 +19,8 @@
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
