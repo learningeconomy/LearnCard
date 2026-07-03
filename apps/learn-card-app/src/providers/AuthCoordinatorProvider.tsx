@@ -94,7 +94,13 @@ import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createNativeSSSStorage } from 'learn-card-base/security/nativeSSSStorage';
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { withDeadline, isDeadlineError, connectivityStore } from 'learn-card-base';
+import {
+    withDeadline,
+    isDeadlineError,
+    connectivityStore,
+    withNetworkFault,
+    walletModeStore,
+} from 'learn-card-base';
 
 const WALLET_INIT_TIMEOUT_MS = 15000;
 
@@ -463,8 +469,14 @@ const AuthSessionManager: React.FC<{
     // Monotonic token guarding against a slow/stale wallet init resolving late
     // and clobbering a newer attempt (e.g. after logout or a profile switch).
     const walletInitGenerationRef = useRef(0);
+    // Tracks whether the current wallet was built networked ('full') or as a
+    // local offline fallback ('offline'), so we can upgrade it on reconnect.
+    const walletModeRef = useRef<'full' | 'offline' | null>(null);
 
     const isOffline = connectivityStore.use.status() === 'offline';
+    const walletUpgradeNonce = walletModeStore.use.upgradeNonce();
+    const prevIsOfflineRef = useRef(isOffline);
+    const prevUpgradeNonceRef = useRef(walletUpgradeNonce);
 
     // Delay showing the stalled-migration overlay so the async Web3Auth
     // extraction has time to complete before we flash the "stalled" UI.
@@ -883,7 +895,19 @@ const AuthSessionManager: React.FC<{
 
     // --- Wallet initialization when coordinator reaches 'ready' ---
     useEffect(() => {
-        if (coordinator.state.status !== 'ready' || walletInitRef.current) return;
+        if (coordinator.state.status !== 'ready') return;
+
+        const inOfflineMode = walletModeRef.current === 'offline';
+        const justReconnected = prevIsOfflineRef.current && !isOffline;
+        const upgradeRequested = walletUpgradeNonce !== prevUpgradeNonceRef.current;
+        prevIsOfflineRef.current = isOffline;
+        prevUpgradeNonceRef.current = walletUpgradeNonce;
+
+        // Re-attempt a networked build only on a real trigger (reconnect, or an
+        // explicit "reconnect" tap) while running the offline fallback — never
+        // spin doomed rebuilds on unrelated re-renders or while still offline.
+        const shouldUpgrade = inOfflineMode && !isOffline && (justReconnected || upgradeRequested);
+        if (walletInitRef.current && !shouldUpgrade) return;
 
         // Block wallet init until phone-only user has linked an email
         if (showEmailLinkGate) return;
@@ -895,115 +919,137 @@ const AuthSessionManager: React.FC<{
         const isStale = () => walletInitGenerationRef.current !== generation;
 
         const initializeWallet = async () => {
+            const persistedSwitchedDid = switchedProfileStore.get.switchedDid();
+
+            // Build the networked wallet, bounded so a stalled network can't hang
+            // boot. On timeout/failure, fall back to a fully-local offline wallet
+            // so the user still lands in the app (read-only from local cache)
+            // instead of an infinite loader.
+            let newWallet: BespokeLearnCard | undefined;
+            let mode: 'full' | 'offline' = 'full';
+
             try {
-                // Restore switched profile from localStorage so hard refresh
-                // keeps the user on the org/child account they selected.
-                const persistedSwitchedDid = switchedProfileStore.get.switchedDid();
-                // Bounded so a stalled network can't hang boot indefinitely.
-                const newWallet = await withDeadline(
-                    getBespokeLearnCard(privateKey, persistedSwitchedDid),
+                newWallet = await withDeadline(
+                    withNetworkFault('getBespokeLearnCard', () =>
+                        getBespokeLearnCard(privateKey, persistedSwitchedDid)
+                    ),
                     { ms: WALLET_INIT_TIMEOUT_MS, label: 'getBespokeLearnCard' }
                 );
-
-                // A newer attempt (logout / profile switch) superseded us.
-                if (isStale()) return;
-
-                if (!newWallet) {
-                    log.error('Failed to initialize wallet from private key');
-                    walletInitRef.current = false;
-                    return;
-                }
-
-                // Bridge to legacy stores for backward compatibility
-                walletStore.set.wallet(newWallet);
-
-                // Persist the private key in secure storage (skip in public
-                // computer mode — key stays in memory only so nothing
-                // survives tab close).
-                if (!isPublicComputerMode()) {
-                    try {
-                        await setPlatformPrivateKey(privateKey);
-                    } catch (e) {
-                        log.warn('Failed to persist private key to secure storage', e);
-                    }
-                }
-
-                // Set currentUserStore for backward compatibility
-                const authUser =
-                    coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
-
-                currentUserStore.set.currentUser({
-                    uid: authUser?.id ?? '',
-                    email: authUser?.email ?? '',
-                    phoneNumber: authUser?.phone ?? '',
-                    name: '',
-                    profileImage: '',
-                    privateKey,
-                    baseColor: getRandomBaseColor(),
-                });
-
-                // Sync push tokens
-                try {
-                    await pushUtilities.syncPushToken();
-                } catch (e) {
-                    log.warn('Push token sync failed', e);
-                }
-
-                setWallet(newWallet);
-
-                emitAuthSuccess(
-                    'auth:wallet_ready',
-                    `Wallet initialized — DID: ${did.slice(0, 30)}...`
-                );
-
-                // Check recovery methods for all users
-                // (only relevant for strategies that support recovery)
-                if (
-                    keyDerivation.capabilities.recovery &&
-                    authProvider &&
-                    keyDerivation.getAvailableRecoveryMethods
-                ) {
-                    wasNewUserRef.current = false;
-
-                    try {
-                        const token = await authProvider.getIdToken();
-                        const providerType = authProvider.getProviderType();
-                        const methods = await keyDerivation.getAvailableRecoveryMethods(
-                            token,
-                            providerType
-                        );
-
-                        // Only count user-configured methods (password, passkey, phrase, backup).
-                        // The silently-sent email share is injected by the strategy and isn't
-                        // something the user explicitly set up, so exclude it from the count.
-                        const userConfiguredCount = methods.filter(m => m.type !== 'email').length;
-
-                        setRecoveryMethodCount(userConfiguredCount);
-
-                        // Show recovery setup modal only on public computers
-                        // where no recovery methods exist. For new users on
-                        // personal devices, the RecoveryBanner on the LaunchPad
-                        // provides a non-blocking nudge instead.
-                        if (userConfiguredCount === 0 && isPublicComputerMode()) {
-                            setShowRecoverySetup(true);
-                        }
-                    } catch {
-                        // Non-critical — don't block the user
-                    }
-                }
             } catch (e) {
                 if (isDeadlineError(e)) {
-                    log.warn('Wallet initialization timed out — will retry on next change', e);
+                    log.warn('Networked wallet init timed out — building offline wallet', e);
                 } else {
-                    log.error('Wallet initialization failed', e);
+                    log.warn('Networked wallet init failed — building offline wallet', e);
                 }
-                // Clear the guard so a reconnect / state change re-attempts init.
-                if (!isStale()) walletInitRef.current = false;
+
+                try {
+                    newWallet = await getBespokeLearnCard(privateKey, persistedSwitchedDid, {
+                        offline: true,
+                    });
+                    mode = 'offline';
+                } catch (e2) {
+                    log.error('Offline wallet init also failed', e2);
+                    if (!isStale()) walletInitRef.current = false;
+                    return;
+                }
+            }
+
+            // A newer attempt (logout / profile switch / upgrade) superseded us.
+            if (isStale()) return;
+
+            if (!newWallet) {
+                log.error('Failed to initialize wallet from private key');
+                walletInitRef.current = false;
+                return;
+            }
+
+            // Flip readiness FIRST — the network tail (push sync, recovery
+            // methods) must never gate the app shell, or a stalled call offline
+            // would leave the user stuck on the loader with a valid wallet.
+            walletStore.set.wallet(newWallet);
+            setWallet(newWallet);
+            walletModeRef.current = mode;
+            walletModeStore.set.mode(mode);
+
+            const authUser =
+                coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
+
+            currentUserStore.set.currentUser({
+                uid: authUser?.id ?? '',
+                email: authUser?.email ?? '',
+                phoneNumber: authUser?.phone ?? '',
+                name: '',
+                profileImage: '',
+                privateKey,
+                baseColor: getRandomBaseColor(),
+            });
+
+            emitAuthSuccess(
+                'auth:wallet_ready',
+                `Wallet initialized (${mode}) — DID: ${did.slice(0, 30)}...`
+            );
+
+            // Persist the private key in secure storage (skip in public computer
+            // mode — key stays in memory only so nothing survives tab close).
+            if (!isPublicComputerMode()) {
+                try {
+                    await setPlatformPrivateKey(privateKey);
+                } catch (e) {
+                    log.warn('Failed to persist private key to secure storage', e);
+                }
+            }
+
+            // Network tail — best-effort, must NOT block readiness. Skipped in
+            // offline mode; runs in the background otherwise.
+            if (mode === 'full') {
+                void (async () => {
+                    try {
+                        await pushUtilities.syncPushToken();
+                    } catch (e) {
+                        log.warn('Push token sync failed', e);
+                    }
+
+                    if (
+                        keyDerivation.capabilities.recovery &&
+                        authProvider &&
+                        keyDerivation.getAvailableRecoveryMethods
+                    ) {
+                        wasNewUserRef.current = false;
+
+                        try {
+                            const token = await authProvider.getIdToken();
+                            const providerType = authProvider.getProviderType();
+                            const methods = await keyDerivation.getAvailableRecoveryMethods(
+                                token,
+                                providerType
+                            );
+
+                            const userConfiguredCount = methods.filter(
+                                m => m.type !== 'email'
+                            ).length;
+
+                            setRecoveryMethodCount(userConfiguredCount);
+
+                            if (userConfiguredCount === 0 && isPublicComputerMode()) {
+                                setShowRecoverySetup(true);
+                            }
+                        } catch {
+                            // Non-critical — don't block the user
+                        }
+                    }
+                })();
             }
         };
 
         initializeWallet();
-    }, [coordinator.state, authProvider, keyDerivation, showEmailLinkGate, isOffline]);
+    }, [
+        coordinator.state,
+        authProvider,
+        keyDerivation,
+        showEmailLinkGate,
+        isOffline,
+        walletUpgradeNonce,
+    ]);
 
     // --- Reset wallet when coordinator leaves 'ready' (e.g. on logout) ---
     useEffect(() => {
@@ -1012,6 +1058,8 @@ const AuthSessionManager: React.FC<{
             setLcnProfile(null);
             setRecoveryMethodCount(null);
             walletInitRef.current = false;
+            walletModeRef.current = null;
+            walletModeStore.set.mode(null);
         }
     }, [coordinator.state.status, wallet]);
 

@@ -715,7 +715,7 @@
         "vitest": "^1.0.0",
       },
       "peerDependencies": {
-        "@tanstack/react-query": "^5.80.3",
+        "@tanstack/react-query": "^5.0.0",
       },
     },
     "packages/learn-card-bridge-http": {

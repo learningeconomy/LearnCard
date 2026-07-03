@@ -17,6 +17,7 @@ const log = getLogger('auth-coordinator');
  */
 
 import { withDeadline, withDeadlineOr } from '../helpers/withDeadline';
+import { withNetworkFault } from '../helpers/networkFault';
 
 import { AuthSessionError } from './types';
 
@@ -89,7 +90,9 @@ export class AuthCoordinator {
                             // Opportunistic + bounded: offline/slow auth must not
                             // block a cached-key resume from reaching `ready`.
                             const authUser: AuthUser | null = await withDeadlineOr(
-                                this.config.authProvider.getCurrentUser(),
+                                withNetworkFault('getCurrentUser(pk-first)', () =>
+                                    this.config.authProvider.getCurrentUser()
+                                ),
                                 null,
                                 {
                                     ms:
@@ -112,14 +115,17 @@ export class AuthCoordinator {
                             if (authUser && this.keyDerivation.capabilities?.recovery) {
                                 try {
                                     const serverStatus = await withDeadline(
-                                        (async () => {
-                                            const { token, providerType } =
-                                                await this.getAuthCredentials();
-                                            return this.keyDerivation.fetchServerKeyStatus(
-                                                token,
-                                                providerType
-                                            );
-                                        })(),
+                                        withNetworkFault(
+                                            'fetchServerKeyStatus(pk-first)',
+                                            async () => {
+                                                const { token, providerType } =
+                                                    await this.getAuthCredentials();
+                                                return this.keyDerivation.fetchServerKeyStatus(
+                                                    token,
+                                                    providerType
+                                                );
+                                            }
+                                        ),
                                         {
                                             ms:
                                                 this.config.serverStatusTimeoutMs ??
@@ -169,10 +175,15 @@ export class AuthCoordinator {
             // Bound the probe so a stalled network can't hang boot; a timeout
             // surfaces as a retryable error (via the outer catch), while real
             // provider errors propagate unchanged to preserve existing handling.
-            const authUser = await withDeadline(this.config.authProvider.getCurrentUser(), {
-                ms: this.config.authSessionTimeoutMs ?? DEFAULT_AUTH_SESSION_TIMEOUT_MS,
-                label: 'getCurrentUser(standard)',
-            });
+            const authUser = await withDeadline(
+                withNetworkFault('getCurrentUser(standard)', () =>
+                    this.config.authProvider.getCurrentUser()
+                ),
+                {
+                    ms: this.config.authSessionTimeoutMs ?? DEFAULT_AUTH_SESSION_TIMEOUT_MS,
+                    label: 'getCurrentUser(standard)',
+                }
+            );
 
             if (!authUser) {
                 this.setState({ status: 'idle' });
@@ -192,7 +203,9 @@ export class AuthCoordinator {
 
             const hasLocalKey = await this.keyDerivation.hasLocalKey();
             const serverStatus = await withDeadline(
-                this.keyDerivation.fetchServerKeyStatus(token, providerType),
+                withNetworkFault('fetchServerKeyStatus(standard)', () =>
+                    this.keyDerivation.fetchServerKeyStatus(token, providerType)
+                ),
                 {
                     ms: this.config.serverStatusTimeoutMs ?? DEFAULT_SERVER_STATUS_TIMEOUT_MS,
                     label: 'fetchServerKeyStatus(standard)',

@@ -41,11 +41,25 @@ export const getSigningLearnCard = async (seed: string) => {
     return lc;
 };
 
+export interface GetBespokeLearnCardOptions {
+    /**
+     * Build a network-free wallet for offline use. Skips the `network`/`cloud`
+     * connection in `initLearnCard` (which is what depends on connectivity),
+     * but keeps the full plugin stack so the returned wallet is still a valid
+     * `BespokeLearnCard`: local planes (SQLite read/store/index/cache, signing,
+     * verification, render) work, and network-only methods degrade gracefully.
+     * Previously-viewed credentials remain readable from the SQLite cache plane.
+     */
+    offline?: boolean;
+}
+
 export const getBespokeLearnCard = async (
     seed: string,
-    didWeb?: string
+    didWeb?: string,
+    options?: GetBespokeLearnCardOptions
 ): Promise<BespokeLearnCard> => {
-    const cacheKey = [seed, didWeb].toString();
+    const offline = options?.offline ?? false;
+    const cacheKey = [seed, didWeb, offline ? 'offline' : 'full'].toString();
 
     if (LEARN_CARDS[cacheKey]) return LEARN_CARDS[cacheKey];
 
@@ -59,15 +73,23 @@ export const getBespokeLearnCard = async (
     const tenantId = networkStore.get.tenantId();
     const extraHeaders = tenantId ? { 'X-Tenant-Id': tenantId } : undefined;
 
-    const networkLearnCard = await initLearnCard({
-        seed,
-        network: network,
-        cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
-        allowRemoteContexts: true,
-        guardianApprovalGetter: getGuardianApprovalVP,
-        extraHeaders,
-        ...(didWeb && { didWeb }),
-    });
+    const networkLearnCard = offline
+        ? await initLearnCard({
+              seed,
+              allowRemoteContexts: true,
+              guardianApprovalGetter: getGuardianApprovalVP,
+              extraHeaders,
+              ...(didWeb && { didWeb }),
+          })
+        : await initLearnCard({
+              seed,
+              network: network,
+              cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
+              allowRemoteContexts: true,
+              guardianApprovalGetter: getGuardianApprovalVP,
+              extraHeaders,
+              ...(didWeb && { didWeb }),
+          });
 
     const lcaLearnCard = await networkLearnCard.addPlugin(
         await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb), extraHeaders)

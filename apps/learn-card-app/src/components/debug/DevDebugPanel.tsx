@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bug, X, Shield, Settings, Palette, GitBranch } from 'lucide-react';
+import { Bug, X, Shield, Settings, Palette, GitBranch, WifiOff } from 'lucide-react';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
@@ -8,12 +8,13 @@ import { AuthDebugTab, getMeta } from './AuthDebugTab';
 import { ConfigDebugTab } from './ConfigDebugTab';
 import { ThemeDebugTab } from './ThemeDebugTab';
 import { PathwaysDebugTab } from './PathwaysDebugTab';
+import { OfflineDebugTab } from './OfflineDebugTab';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
 // ---------------------------------------------------------------------------
 
-type TabId = 'auth' | 'config' | 'theme' | 'pathways';
+type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline';
 
 interface TabDef {
     id: TabId;
@@ -26,6 +27,7 @@ const TABS: TabDef[] = [
     { id: 'config', label: 'Config', icon: <Settings className="w-3 h-3" /> },
     { id: 'theme', label: 'Theme', icon: <Palette className="w-3 h-3" /> },
     { id: 'pathways', label: 'Pathways', icon: <GitBranch className="w-3 h-3" /> },
+    { id: 'offline', label: 'Offline', icon: <WifiOff className="w-3 h-3" /> },
 ];
 
 // ---------------------------------------------------------------------------
@@ -45,10 +47,10 @@ export const DevDebugPanel: React.FC = () => {
     const fabBg = isOpen
         ? 'bg-gray-700 hover:bg-gray-600'
         : isReady
-            ? 'bg-emerald-600 hover:bg-emerald-500'
-            : state.status === 'error'
-                ? 'bg-red-600 hover:bg-red-500'
-                : 'bg-sky-600 hover:bg-sky-500';
+        ? 'bg-emerald-600 hover:bg-emerald-500'
+        : state.status === 'error'
+        ? 'bg-red-600 hover:bg-red-500'
+        : 'bg-sky-600 hover:bg-sky-500';
 
     return (
         <React.Fragment>
@@ -58,29 +60,43 @@ export const DevDebugPanel: React.FC = () => {
                 className={`fixed bottom-24 right-4 z-[2147483647] w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${fabBg}`}
                 title={`Dev Debug — ${meta.label}`}
             >
-                {isOpen
-                    ? <X className="w-4.5 h-4.5 text-white" />
-                    : <Bug className="w-4.5 h-4.5 text-white" />}
+                {isOpen ? (
+                    <X className="w-4.5 h-4.5 text-white" />
+                ) : (
+                    <Bug className="w-4.5 h-4.5 text-white" />
+                )}
             </button>
 
             {/* Panel */}
             {isOpen && (
                 <div className="fixed bottom-40 right-4 z-[2147483646] w-[340px] max-h-[70vh] bg-gray-950 rounded-xl shadow-2xl border border-gray-800 overflow-hidden flex flex-col">
-
                     {/* ── Header ── */}
                     <div className="px-3 py-2.5 bg-gray-900 border-b border-gray-800">
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                                 <Bug className="w-3.5 h-3.5 text-gray-400" />
-                                <span className="text-[12px] font-bold text-gray-200 tracking-wide">Dev Debug</span>
+                                <span className="text-[12px] font-bold text-gray-200 tracking-wide">
+                                    Dev Debug
+                                </span>
                             </div>
 
-                            <div className={`w-2 h-2 rounded-full ${meta.dot} ${['authenticating', 'checking_key_status', 'deriving_key'].includes(state.status) ? 'animate-pulse' : ''}`} title={meta.label} />
+                            <div
+                                className={`w-2 h-2 rounded-full ${meta.dot} ${
+                                    [
+                                        'authenticating',
+                                        'checking_key_status',
+                                        'deriving_key',
+                                    ].includes(state.status)
+                                        ? 'animate-pulse'
+                                        : ''
+                                }`}
+                                title={meta.label}
+                            />
                         </div>
 
                         {/* Tab bar */}
                         <div className="flex gap-1">
-                            {TABS.map((tab) => {
+                            {TABS.map(tab => {
                                 const isActive = tab.id === activeTab;
 
                                 return (
@@ -107,6 +123,7 @@ export const DevDebugPanel: React.FC = () => {
                         {activeTab === 'config' && <ConfigDebugTab />}
                         {activeTab === 'theme' && <ThemeDebugTab />}
                         {activeTab === 'pathways' && <PathwaysDebugTab />}
+                        {activeTab === 'offline' && <OfflineDebugTab />}
                     </div>
 
                     {/* ── Footer ── */}
