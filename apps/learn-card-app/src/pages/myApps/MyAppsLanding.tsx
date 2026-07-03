@@ -15,15 +15,18 @@ import useMoreApps from './useMoreApps';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 
-// On mobile the header sits over the content as a frosted-glass bar (white
-// gradient + backdrop blur), matching the bottom nav; on desktop it's the flat
-// gray content background.
+// Mobile: the header is a frosted-glass bar (white gradient + backdrop blur),
+// matching the bottom nav. Desktop: the header bar is transparent so it doesn't
+// chop the tops of tiles that scroll under it — the gray content shows through,
+// and the profile island floats as its own white pill (see header.scss).
 const MOBILE_HEADER_STYLE: React.CSSProperties = {
     background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
     backdropFilter: 'blur(5px)',
     WebkitBackdropFilter: 'blur(5px)',
     borderBottom: '1px solid white',
 };
+
+const DESKTOP_HEADER_STYLE: React.CSSProperties = { background: 'transparent' };
 
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
@@ -112,8 +115,8 @@ const MyAppsLanding: React.FC = () => {
         <IonPage className="bg-white">
             {/* Gray header so it blends with the grayscale-100 content (no white bar). */}
             <MainHeader
-                customClassName={isMobile ? '' : 'bg-grayscale-100'}
-                style={isMobile ? MOBILE_HEADER_STYLE : undefined}
+                customClassName=""
+                style={isMobile ? MOBILE_HEADER_STYLE : DESKTOP_HEADER_STYLE}
             />
             <IonContent fullscreen color="grayscale-100">
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12">
