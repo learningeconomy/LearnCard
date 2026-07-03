@@ -27,7 +27,12 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
         return;
     }
 
-    // Native: store in SQLite (encrypted DB). Prefer updating current user's row.
+    // Native: store in SQLite (encrypted DB). Wait for the SQLite plugin to be
+    // ready first — symmetric with getPlatformPrivateKey. Without this, a write
+    // during the login race hits the null-db fallback below and only lands in
+    // memory, so the key is lost on hard close (the offline-boot regression).
+    await waitForSQLiteReady();
+
     const db = sqliteStore.get.db();
 
     if (!db) {
@@ -36,30 +41,37 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
         return;
     }
 
+    const user = currentUserStore.get.currentUser();
+    const uid = user?.uid || '';
+    const verifierId =
+        user && typeof (user as { verifierId?: string }).verifierId === 'string'
+            ? (user as { verifierId?: string }).verifierId || ''
+            : '';
+    const email = user?.email || '';
+
+    let where = '';
+    if (uid) where = `WHERE uid="${uid}"`;
+    else if (verifierId) where = `WHERE verifierId="${verifierId}"`;
+    else if (email) where = `WHERE email="${email}"`;
+
     try {
         await db.open();
 
-        const user = currentUserStore.get.currentUser();
-        let where = '';
-        if (user?.uid) where = `WHERE uid="${user.uid}"`;
-        else if (
-            user &&
-            'verifierId' in user &&
-            typeof (user as { verifierId?: string }).verifierId === 'string' &&
-            (user as { verifierId?: string }).verifierId
-        )
-            where = `WHERE verifierId="${(user as { verifierId?: string }).verifierId}"`;
-        else if (user?.email) where = `WHERE email="${user.email}"`;
+        await db.execute(`UPDATE users SET privateKey="${pk}" ${where}`);
 
-        if (where) {
-            await db.execute(`UPDATE users SET privateKey="${pk}" ${where}`);
-        } else {
-            // Fallback: update any existing row, else insert minimal row
-            const rows = await db.query('SELECT rowid as id FROM users');
-            if ((rows?.values ?? []).length > 0) {
-                await db.execute(`UPDATE users SET privateKey="${pk}"`);
-            } else {
-                await db.execute(`INSERT INTO users (
+        // A keyed UPDATE matches nothing when the row doesn't exist yet, and
+        // SQLite reports no error — verify the write actually landed, and insert
+        // a row keyed to this user if it didn't. Otherwise the key silently
+        // vanishes and offline boot can't reconstruct the wallet.
+        const check = await db.query(
+            where
+                ? `SELECT privateKey FROM users ${where} LIMIT 1`
+                : 'SELECT privateKey FROM users LIMIT 1'
+        );
+        const persisted = check?.values?.[0]?.privateKey;
+
+        if (persisted !== pk) {
+            await db.execute(`INSERT INTO users (
                     email,
                     name,
                     profileImage,
@@ -73,9 +85,8 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
                     uid,
                     phoneNumber
                 ) VALUES (
-                    '', '', '', '', '', '', '', '', '${pk}', '', '', ''
+                    '${email}', '', '', '', '', '${verifierId}', '', '', '${pk}', '', '${uid}', ''
                 )`);
-            }
         }
     } catch (e) {
         log.warn('setPlatformPrivateKey: sqlite error', e);

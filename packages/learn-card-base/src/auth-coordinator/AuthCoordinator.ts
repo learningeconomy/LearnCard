@@ -16,13 +16,42 @@ const log = getLogger('auth-coordinator');
  * to the KeyDerivationStrategy, keeping itself a pure state machine.
  */
 
-import { withDeadline, withDeadlineOr } from '../helpers/withDeadline';
+import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
 import { withNetworkFault } from '../helpers/networkFault';
 
 import { AuthSessionError } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
 const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
+
+/**
+ * Whether a thrown error is a transient connectivity failure rather than a real
+ * fault. Offline boot must treat these as "no session yet" (→ idle) instead of
+ * a hard `error`, which would otherwise surface an error overlay and drive a
+ * re-init loop while the device is offline. Covers Firebase's
+ * `auth/network-request-failed`, our own deadline timeouts, and common fetch
+ * failure messages across browsers/webviews.
+ */
+const isNetworkError = (e: unknown): boolean => {
+    if (isDeadlineError(e)) return true;
+
+    if (typeof (e as { code?: unknown })?.code === 'string') {
+        const code = (e as { code: string }).code.toLowerCase();
+        if (code.includes('network-request-failed') || code.includes('network_error')) return true;
+    }
+
+    const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
+
+    return (
+        msg.includes('network-request-failed') ||
+        msg.includes('network request failed') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror') ||
+        msg.includes('network error') ||
+        msg.includes('err_internet_disconnected') ||
+        msg.includes('load failed')
+    );
+};
 
 import type {
     AuthProvider,
@@ -315,6 +344,15 @@ export class AuthCoordinator {
             // Typed auth session errors → idle (not error)
             if (e instanceof AuthSessionError) {
                 log.warn('Auth session expired or missing — returning to idle');
+                this.setState({ status: 'idle' });
+                return this.state;
+            }
+
+            // Connectivity failures are not hard errors: fall back to idle so
+            // the offline UI (banner / boot gate) owns the UX and initialize()
+            // re-runs cleanly on reconnect — never an error overlay + retry loop.
+            if (isNetworkError(e)) {
+                log.warn('Network unavailable during init — returning to idle', e);
                 this.setState({ status: 'idle' });
                 return this.state;
             }
