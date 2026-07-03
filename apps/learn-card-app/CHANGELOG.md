@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.96.5
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/helpers@1.3.8
+    -   @learncard/react@2.10.5
+    -   @learncard/sss-key-manager@0.1.16
+    -   @learncard/credential-library@1.0.12
+    -   @learncard/open-badge-v2-plugin@1.1.27
+    -   @learncard/lca-api-plugin@1.2.18
+    -   @learncard/ler-rs-plugin@0.1.17
+    -   @learncard/render-method-plugin@3.0.6
+
+## 1.96.4
+
+### Patch Changes
+
+-   [#1338](https://github.com/learningeconomy/LearnCard/pull/1338) [`8008ddf76f84338e8893a128789ee420765279ce`](https://github.com/learningeconomy/LearnCard/commit/8008ddf76f84338e8893a128789ee420765279ce) Thanks [@Custard7](https://github.com/Custard7)! - fix: Add safe-margin to Dashboard
+
+-   [#1300](https://github.com/learningeconomy/LearnCard/pull/1300) [`9e0f0db6c1ca818176d9153b45e96390dba5171d`](https://github.com/learningeconomy/LearnCard/commit/9e0f0db6c1ca818176d9153b45e96390dba5171d) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1871] - Move Consent Flow Sync Off Critical Path
+
+-   [#1336](https://github.com/learningeconomy/LearnCard/pull/1336) [`7dc73ba5068df0cfb1b0cc05eac36376ce5387dc`](https://github.com/learningeconomy/LearnCard/commit/7dc73ba5068df0cfb1b0cc05eac36376ce5387dc) Thanks [@Custard7](https://github.com/Custard7)! - fix: AI Passport Contract, Local Dev
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/credential-library@1.0.11
+    -   @learncard/embed-sdk@0.1.4
+    -   @learncard/helpers@1.3.7
+    -   @learncard/lca-api-plugin@1.2.17
+    -   @learncard/ler-rs-plugin@0.1.16
+    -   @learncard/open-badge-v2-plugin@1.1.26
+    -   @learncard/render-method-plugin@3.0.5
+    -   @learncard/react@2.10.4
+    -   @learncard/sss-key-manager@0.1.15
+
 ## 1.96.3
 
 ### Patch Changes
