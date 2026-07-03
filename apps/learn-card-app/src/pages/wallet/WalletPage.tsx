@@ -166,7 +166,7 @@ const WalletPage: React.FC = () => {
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
             <MainHeader
-                customClassName={passportBgColor ? '' : 'bg-white'}
+                customClassName={passportBgColor ? '' : 'bg-grayscale-100'}
                 style={
                     passportBgColor
                         ? isMobile
