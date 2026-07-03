@@ -199,7 +199,7 @@ const WalletPage: React.FC = () => {
                             <IonRow>
                                 <div className="flex justify-between items-center w-full gap-[10px]">
                                     <h2
-                                        className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}
+                                        className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
                                     >
                                         Passport
                                     </h2>
