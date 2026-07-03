@@ -6,6 +6,7 @@ import { useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
@@ -25,10 +26,6 @@ const MOBILE_HEADER_STYLE: React.CSSProperties = {
     WebkitBackdropFilter: 'blur(5px)',
     borderBottom: '1px solid white',
 };
-
-// `--background` targets the Ionic toolbar (MainHeader forwards it) so the whole
-// desktop header bar is transparent, not just the inner grid.
-const DESKTOP_HEADER_STYLE = { '--background': 'transparent' } as React.CSSProperties;
 
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
@@ -115,13 +112,12 @@ const MyAppsLanding: React.FC = () => {
 
     return (
         <IonPage className="bg-grayscale-100">
-            {/* Gray header so it blends with the grayscale-100 content (no white bar). */}
-            <MainHeader
-                customClassName=""
-                style={isMobile ? MOBILE_HEADER_STYLE : DESKTOP_HEADER_STYLE}
-            />
+            {/* Desktop hides the header bar entirely (the sidebar carries the LEARNCARD
+                wordmark) and renders the profile/alerts island in the content row below;
+                mobile keeps the frosted MainHeader bar. */}
+            {isMobile && <MainHeader customClassName="" style={MOBILE_HEADER_STYLE} />}
             <IonContent fullscreen color="grayscale-100">
-                <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12">
+                <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12 md:pt-6">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">
                             <h1 className="font-poppins text-[30px] font-normal text-[#18224E] md:order-1">
@@ -145,6 +141,7 @@ const MyAppsLanding: React.FC = () => {
                                 className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
                             />
                         </div>
+                        {!isMobile && <ProfileAlertsIsland className="shrink-0 md:order-4" />}
                     </div>
 
                     {isSearching ? (

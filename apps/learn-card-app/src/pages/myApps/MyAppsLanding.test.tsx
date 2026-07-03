@@ -12,6 +12,7 @@ vi.mock('react-router-dom', async orig => {
 });
 
 vi.mock('../../components/main-header/MainHeader', () => ({ default: () => null }));
+vi.mock('../../components/main-header/ProfileAlertsIsland', () => ({ default: () => null }));
 vi.mock('../launchPad/AppStoreDetailModal', () => ({ default: () => null }));
 vi.mock('./useMoreApps', () => ({
     default: () => ({ apps: [], isSuggested: true, isLoading: false }),
