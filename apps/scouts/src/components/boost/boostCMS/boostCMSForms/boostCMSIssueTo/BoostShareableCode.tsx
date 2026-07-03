@@ -141,7 +141,7 @@ export const BoostShareableCode: React.FC<{
                     );
 
                     setBoostClaimLink(
-                        `https://pass.scout.org/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${window.location.origin}/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
                     );
                     logAnalyticsEvent('generate_claim_link', {
                         category: state?.basicInfo?.type,

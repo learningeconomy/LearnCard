@@ -140,7 +140,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                 );
 
                 setClaimLink(
-                    `https://pass.scout.org/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
+                    `${window.location.origin}/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
                 );
             } else {
                 // Handle new signing authority creation
@@ -167,7 +167,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                     );
 
                     setClaimLink(
-                        `https://pass.scout.org/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
+                        `${window.location.origin}/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
                     );
                 }
             }
