@@ -2,12 +2,15 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 
-const { usePassportActivities } = vi.hoisted(() => ({ usePassportActivities: vi.fn() }));
+const { usePassportActivities, lcn } = vi.hoisted(() => ({
+    usePassportActivities: vi.fn(),
+    lcn: { currentLCNUser: { profileId: 'me' } as any, currentLCNUserLoading: false },
+}));
 vi.mock('./usePassportActivities', () => ({ usePassportActivities }));
 vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
     useWallet: () => ({ initWallet: vi.fn() }),
-    useGetCurrentLCNUser: () => ({ currentLCNUser: { profileId: 'me' } }),
+    useGetCurrentLCNUser: () => lcn,
 }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
 // The row's presentation (avatar/category icon) is covered by ActivityFeedItem's
@@ -26,7 +29,20 @@ const baseQuery = {
     hasNextPage: false,
     fetchNextPage: vi.fn(),
 };
-beforeEach(() => usePassportActivities.mockReset());
+const recordFixture = {
+    id: 'a1',
+    eventType: 'CREATED',
+    timestamp: '2026-06-23T00:00:00Z',
+    actorProfileId: 'me',
+    recipientIdentifier: 'justin',
+    boost: { id: 'b', name: 'Coding 101', category: 'socialBadge' },
+    recipientProfile: { profileId: 'justin', displayName: 'Justin Smith' },
+};
+beforeEach(() => {
+    usePassportActivities.mockReset();
+    lcn.currentLCNUser = { profileId: 'me' };
+    lcn.currentLCNUserLoading = false;
+});
 
 describe('PassportActivityFeed', () => {
     it('shows the ACTIVITY header', () => {
@@ -74,5 +90,18 @@ describe('PassportActivityFeed', () => {
         usePassportActivities.mockReturnValue({ ...baseQuery, isError: true });
         const { getByText } = render(<PassportActivityFeed />);
         expect(getByText(/couldn’t load|couldn't load|Something went wrong/i)).toBeTruthy();
+    });
+    it('holds rows until the profile resolves (no sent/received flash)', () => {
+        // Records are loaded, but the profile is still resolving: direction is
+        // unknown, so the feed must not paint rows yet (they'd all read "sent").
+        lcn.currentLCNUser = null;
+        lcn.currentLCNUserLoading = true;
+        usePassportActivities.mockReturnValue({
+            ...baseQuery,
+            data: { pages: [{ records: [recordFixture], hasMore: false }] },
+        });
+        const { queryByText } = render(<PassportActivityFeed />);
+        expect(queryByText('You sent a Badge to Justin Smith')).toBeNull();
+        expect(queryByText(/No activity yet/i)).toBeNull();
     });
 });

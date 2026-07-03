@@ -14,7 +14,7 @@ import { ActivityFeedItem } from './ActivityFeedItem';
 import { ActivityFilterPopover } from './ActivityFilterPopover';
 
 export const PassportActivityFeed: React.FC = () => {
-    const { currentLCNUser } = useGetCurrentLCNUser();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const myProfileId = currentLCNUser?.profileId;
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<ActivityFilterId>('all');
@@ -44,7 +44,12 @@ export const PassportActivityFeed: React.FC = () => {
         return groupActivitiesByMonth(vms);
     }, [data, myProfileId, filter, search]);
 
-    const isEmpty = !isPending && !isError && groups.length === 0;
+    // Item direction (sent/received) depends on myProfileId. Until the profile
+    // resolves, toActivityFeedVM falls back to 'sent' for everything, so
+    // rendering early flashes received items with the wrong title. Treat the
+    // profile still loading as part of the pending state and hold the rows.
+    const waiting = isPending || currentLCNUserLoading;
+    const isEmpty = !waiting && !isError && groups.length === 0;
 
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
@@ -100,7 +105,7 @@ export const PassportActivityFeed: React.FC = () => {
                             </p>
                         </div>
                     )}
-                    {isPending && (
+                    {waiting && (
                         <div className="flex-1 flex items-center justify-center">
                             <IonSpinner name="lines" />
                         </div>
@@ -112,20 +117,21 @@ export const PassportActivityFeed: React.FC = () => {
                             </p>
                         </div>
                     )}
-                    {groups.map(group => (
-                        <div key={group.label} className="mb-2">
-                            <p className="font-poppins text-[12px] tracking-[1px] text-grayscale-400 py-2">
-                                {group.label}
-                            </p>
-                            <ol className="flex flex-col">
-                                {group.items.map(item => (
-                                    <ActivityFeedItem key={item.id} item={item} />
-                                ))}
-                            </ol>
-                        </div>
-                    ))}
+                    {!waiting &&
+                        groups.map(group => (
+                            <div key={group.label} className="mb-2">
+                                <p className="font-poppins text-[12px] tracking-[1px] text-grayscale-400 py-2">
+                                    {group.label}
+                                </p>
+                                <ol className="flex flex-col">
+                                    {group.items.map(item => (
+                                        <ActivityFeedItem key={item.id} item={item} />
+                                    ))}
+                                </ol>
+                            </div>
+                        ))}
                     <div role="presentation" ref={sentinelRef} />
-                    {isFetching && !isPending && (
+                    {isFetching && !waiting && (
                         <div className="flex justify-center py-4">
                             <IonSpinner name="lines" />
                         </div>
