@@ -10,6 +10,7 @@ import type {
     PromotionLevel,
 } from '@learncard/types';
 import { getAppDidFromSlug } from './utils/appDid';
+import { APP_SIGNING_AUTHORITY_PREFIX } from 'apps/learn-card-app/src/helpers/signingAuthority.helpers';
 
 // Type for integration signing authority info
 export type ListingSigningAuthorityInfo = {
@@ -26,7 +27,6 @@ export const useDeveloperPortal = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    const APP_SIGNING_AUTHORITY_PREFIX = 'app-';
     const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
 
     const buildAppSigningAuthorityName = (slug: string): string => {
