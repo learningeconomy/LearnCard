@@ -166,18 +166,20 @@ const WalletPage: React.FC = () => {
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
             <MainHeader
-                customClassName={passportBgColor ? '' : 'bg-grayscale-100'}
+                // Mobile: white frosted-glass bar (matches the bottom nav). Desktop:
+                // flat gray content bg (or the themed passport color when set).
+                customClassName={isMobile || passportBgColor ? '' : 'bg-grayscale-100'}
                 style={
-                    passportBgColor
-                        ? isMobile
-                            ? {
-                                  background:
-                                      'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
-                                  backdropFilter: 'blur(5px)',
-                                  WebkitBackdropFilter: 'blur(5px)',
-                                  borderBottom: '1px solid white',
-                              }
-                            : { backgroundColor: passportBgColor }
+                    isMobile
+                        ? {
+                              background:
+                                  'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                              backdropFilter: 'blur(5px)',
+                              WebkitBackdropFilter: 'blur(5px)',
+                              borderBottom: '1px solid white',
+                          }
+                        : passportBgColor
+                        ? { backgroundColor: passportBgColor }
                         : undefined
                 }
                 notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
