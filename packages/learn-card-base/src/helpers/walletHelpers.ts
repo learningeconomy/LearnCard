@@ -34,7 +34,10 @@ export const clearLearnCardCache = () => {
 export const getSigningLearnCard = async (seed: string) => {
     if (SIGNING_LEARN_CARDS[seed]) return SIGNING_LEARN_CARDS[seed];
 
-    const lc = await initLearnCard({ seed, allowRemoteContexts: true });
+    // Pass the locally-bundled DIDKit WASM so did:key derivation works offline.
+    // Without it DIDKit fetches its WASM from the network and lc.id.did() throws
+    // on a cold offline start — breaking the private-key-first boot path.
+    const lc = await initLearnCard({ seed, didkit, allowRemoteContexts: true });
 
     SIGNING_LEARN_CARDS[seed] = lc;
 
@@ -76,6 +79,7 @@ export const getBespokeLearnCard = async (
     const networkLearnCard = offline
         ? await initLearnCard({
               seed,
+              didkit,
               allowRemoteContexts: true,
               guardianApprovalGetter: getGuardianApprovalVP,
               extraHeaders,
@@ -83,6 +87,7 @@ export const getBespokeLearnCard = async (
           })
         : await initLearnCard({
               seed,
+              didkit,
               network: network,
               cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
               allowRemoteContexts: true,
