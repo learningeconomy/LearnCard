@@ -116,6 +116,13 @@ const MyAppsLanding: React.FC = () => {
                 wordmark) and renders the profile/alerts island in the content row below;
                 mobile keeps the frosted MainHeader bar. */}
             {isMobile && <MainHeader customClassName="" style={MOBILE_HEADER_STYLE} />}
+            {/* Desktop: profile/alerts island pinned to the page's top-right corner
+                (like the other pages), independent of the centered content column. */}
+            {!isMobile && (
+                <div className="absolute right-5 top-4 z-20 md:right-8 md:top-6">
+                    <ProfileAlertsIsland />
+                </div>
+            )}
             <IonContent fullscreen color="grayscale-100">
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12 md:pt-6">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
@@ -141,7 +148,6 @@ const MyAppsLanding: React.FC = () => {
                                 className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
                             />
                         </div>
-                        {!isMobile && <ProfileAlertsIsland className="shrink-0 md:order-4" />}
                     </div>
 
                     {isSearching ? (
