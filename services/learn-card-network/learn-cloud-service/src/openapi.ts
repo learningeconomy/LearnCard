@@ -1,5 +1,5 @@
 import { generateOpenApiDocument } from 'trpc-to-openapi';
-import express from 'express';
+import express, { type Express } from 'express';
 
 import { appRouter } from './app';
 
@@ -13,7 +13,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     tags: ['Storage', 'Index', 'User', 'Custom Storage', 'Utilities'],
 });
 
-export const app = express();
+export const app: Express = express();
 app.use('/', express.static('src/swagger-ui'));
 app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
 

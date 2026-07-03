@@ -433,4 +433,40 @@ describe('Custom Storage', () => {
             expect(retrievedItems.records[0]).toMatchObject({ test: 'test' });
         });
     });
+
+    describe('server-side-JavaScript operator rejection', () => {
+        beforeEach(async () => {
+            await CustomDocuments.deleteMany({});
+        });
+
+        afterAll(async () => {
+            await CustomDocuments.deleteMany({});
+        });
+
+        it.each(['read', 'count', 'delete'] as const)(
+            'rejects a $where query on %s with BAD_REQUEST',
+            async route => {
+                await expect(
+                    userA.clients.fullAuth.customStorage[route]({ query: { $where: '1' } } as any)
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            }
+        );
+
+        it('rejects a $where query on update with BAD_REQUEST', async () => {
+            await expect(
+                userA.clients.fullAuth.customStorage.update({
+                    query: { $where: '1' } as any,
+                    update: {},
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it('rejects a nested $function operator', async () => {
+            await expect(
+                userA.clients.fullAuth.customStorage.read({
+                    query: { $and: [{ $expr: { $function: {} } }] },
+                } as any)
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+    });
 });

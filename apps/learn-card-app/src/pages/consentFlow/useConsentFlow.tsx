@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import {
     useModal,
     useContract,
     useUpdateTerms,
     ModalTypes,
     LaunchPadAppListItem,
+    useConsentedContracts,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -57,7 +57,7 @@ export const useConsentFlow = (
         if (hasConsented && false) {
             // handled by FullScreenConsentFlow with isPostConsent
             //   this is removable, just keeping it around as a reference for now
-            newModal(<PostConsentFlowSyncCard consentedContract={consentedContract} />, {
+            newModal(<PostConsentFlowSyncCard consentedContract={consentedContract!} />, {
                 sectionClassName: '!max-w-[400px]',
             });
         } else if (contract?.needsGuardianConsent && !hasConsented) {

@@ -8,6 +8,12 @@ import {
     ModalTypes,
     LEARNCARD_AI_URL,
     getOrFetchIntegrationForListing,
+    pendingContractSyncStore,
+    getCategoryForCredential,
+    getOrCreateSharedUriForWallet,
+    contractCategoryNameToCategoryMetadata,
+    isJobTerminal,
+    MAX_JOB_RETRIES,
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -94,6 +100,77 @@ const getStringValue = (
 ): string | undefined => {
     const value = record?.[key];
     return typeof value === 'string' ? value : undefined;
+};
+
+const getPendingSyncStatus = (contractUri?: string) => {
+    const allJobs = Object.values(pendingContractSyncStore.get.jobs());
+    // When a contractUri is provided (a partner app asking about its own
+    // contract), only consider that contract's jobs so an unrelated contract's
+    // sync can't make this app appear to be syncing or skew its progress
+    // totals. With no contractUri we fall back to the store-global view.
+    const jobs = contractUri ? allJobs.filter(job => job.contractUri === contractUri) : allJobs;
+    // A job that just errored but still has retries left is not terminal — it
+    // will be retried by the worker — so treat it as active. Otherwise a
+    // waitForSync caller could see a premature "ready" during the retry window.
+    const activeJobs = jobs.filter(
+        job =>
+            job.status === 'queued' ||
+            job.status === 'running' ||
+            (job.status === 'error' && job.retryCount < MAX_JOB_RETRIES)
+    );
+    const latestTerminalJob = jobs
+        .filter(isJobTerminal)
+        .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+
+    const relevantJobs =
+        activeJobs.length > 0 ? activeJobs : latestTerminalJob ? [latestTerminalJob] : [];
+
+    const progress = relevantJobs.reduce(
+        (summary, job) => ({
+            totalCredentials: summary.totalCredentials + job.totalCredentials,
+            completedCredentials: summary.completedCredentials + job.completedCredentials,
+            failedCredentials: summary.failedCredentials + job.failedCredentials,
+            retryCount: summary.retryCount + job.retryCount,
+        }),
+        {
+            totalCredentials: 0,
+            completedCredentials: 0,
+            failedCredentials: 0,
+            retryCount: 0,
+        }
+    );
+
+    if (activeJobs.length > 0) {
+        return {
+            status: 'syncing' as const,
+            progress,
+        };
+    }
+
+    if (latestTerminalJob?.status === 'error') {
+        return {
+            status: 'error' as const,
+            progress,
+            lastError: latestTerminalJob.lastError,
+        };
+    }
+
+    return {
+        status: 'ready' as const,
+        progress,
+    };
+};
+
+const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const status = getPendingSyncStatus(contractUri);
+        if (status.status !== 'syncing') return status;
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    return getPendingSyncStatus(contractUri);
 };
 
 /**
@@ -284,6 +361,31 @@ export function useLearnCardMessageHandlers({
 
     type LearnCardWallet = NonNullable<Awaited<ReturnType<typeof initWallet>>>;
 
+    const getConfiguredContractUri = async () => {
+        const launchConfigContractUri = launchConfig?.contractUri as string | undefined;
+        if (launchConfigContractUri) return launchConfigContractUri;
+        if (!appId) return undefined;
+
+        const integration = await getIntegrationForListing(appId);
+        const guideState = integration?.guideState as
+            | {
+                  config?: {
+                      consentFlowConfig?: { contractUri?: string };
+                      embedAppConfig?: {
+                          featureConfig?: {
+                              'request-data-consent'?: { contractUri?: string };
+                          };
+                      };
+                  };
+              }
+            | undefined;
+
+        return (
+            guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
+                ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
+        );
+    };
+
     const normalizeLearnerContextOptions = useCallback(
         (options: LearnerContextRequestOptions = {}): LearnerContextRequestOptions => ({
             includeCredentials: options.includeCredentials ?? true,
@@ -291,6 +393,7 @@ export function useLearnCardMessageHandlers({
             format: options.format ?? 'prompt',
             instructions: options.instructions,
             detailLevel: options.detailLevel ?? 'compact',
+            waitForSync: options.waitForSync,
         }),
         []
     );
@@ -650,26 +753,7 @@ export function useLearnCardMessageHandlers({
                 },
                 getContractUri: () => launchConfig?.contractUri as string | undefined,
                 getIntegrationContractUri: async () => {
-                    if (!appId) return undefined;
-
-                    const integration = await getIntegrationForListing(appId);
-                    const guideState = integration?.guideState as
-                        | {
-                              config?: {
-                                  consentFlowConfig?: { contractUri?: string };
-                                  embedAppConfig?: {
-                                      featureConfig?: {
-                                          'request-data-consent'?: { contractUri?: string };
-                                      };
-                                  };
-                              };
-                          }
-                        | undefined;
-
-                    return (
-                        guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
-                            ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
-                    );
+                    return getConfiguredContractUri();
                 },
                 prewarmLearnerContext,
 
@@ -799,6 +883,52 @@ export function useLearnCardMessageHandlers({
                     }
 
                     const credential = await learnCard.read.get(id);
+
+                    try {
+                        const contractUri = await getConfiguredContractUri();
+                        const consentedContract = consentedContracts?.find(
+                            contract => contract.contract.uri === contractUri
+                        );
+                        const category = credential
+                            ? await getCategoryForCredential(credential, learnCard, false)
+                            : undefined;
+                        const categoryInfo = category
+                            ? consentedContract?.terms.read.credentials.categories[category]
+                            : undefined;
+
+                        if (
+                            contractUri &&
+                            consentedContract &&
+                            category &&
+                            typeof categoryInfo === 'object' &&
+                            categoryInfo.shareAll &&
+                            categoryInfo.sharing &&
+                            (!categoryInfo.shareUntil ||
+                                categoryInfo.shareUntil > new Date().toISOString())
+                        ) {
+                            const credentialCategory =
+                                contractCategoryNameToCategoryMetadata(category)?.credentialType ??
+                                category;
+                            const sharedUri = await getOrCreateSharedUriForWallet(
+                                learnCard,
+                                consentedContract.contract.owner.did,
+                                queryClient,
+                                id,
+                                credentialCategory
+                            );
+
+                            if (sharedUri) {
+                                await learnCard.invoke.syncCredentialsToContract(
+                                    consentedContract.uri,
+                                    {
+                                        [category]: [sharedUri],
+                                    }
+                                );
+                            }
+                        }
+                    } catch (error) {
+                        logError('Failed to lazily materialize credential share:', error);
+                    }
 
                     log('Fetched credential:', credential);
                     sdkActivityStore.set.endActivity();
@@ -1377,6 +1507,30 @@ export function useLearnCardMessageHandlers({
                               totalMs: 0,
                           };
                           const options = normalizeLearnerContextOptions(inputOptions);
+
+                          const appContractUri = await getConfiguredContractUri();
+
+                          if (options.waitForSync) {
+                              const syncStatus = await waitForPendingSync(appContractUri);
+
+                              if (syncStatus.status === 'syncing') {
+                                  return {
+                                      status: 'syncing' as const,
+                                      progress: syncStatus.progress,
+                                      prompt: '',
+                                      raw:
+                                          options.format === 'structured'
+                                              ? { credentials: [] }
+                                              : undefined,
+                                      did: '',
+                                  };
+                              }
+
+                              if (syncStatus.status === 'error') {
+                                  throw new Error(syncStatus.lastError ?? 'Data sync failed');
+                              }
+                          }
+
                           const learnCard = await initWallet();
 
                           if (!learnCard) throw new Error('Wallet not initialized');
@@ -1452,6 +1606,7 @@ export function useLearnCardMessageHandlers({
                           };
                       }
                     : undefined,
+                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
             }),
         [
             isLoggedIn,
@@ -1469,6 +1624,8 @@ export function useLearnCardMessageHandlers({
             log,
             logError,
             launchConfig,
+            consentedContracts,
+            queryClient,
             getIntegrationForListing,
             fetchLearnerContextSource,
             fillLearnerContextCache,

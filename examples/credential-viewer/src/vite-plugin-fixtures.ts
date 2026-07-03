@@ -9,11 +9,8 @@ import path from 'node:path';
 
 import type { Plugin, ViteDevServer } from 'vite';
 
-// process.cwd() is the credential-viewer directory when running `pnpm dev`
-const FIXTURES_ROOT = path.resolve(
-    process.cwd(),
-    '../../packages/credential-library/src/fixtures',
-);
+// process.cwd() is the credential-viewer directory when running `bun run dev`
+const FIXTURES_ROOT = path.resolve(process.cwd(), '../../packages/credential-library/src/fixtures');
 
 const INDEX_PATH = path.join(FIXTURES_ROOT, 'index.ts');
 
@@ -36,9 +33,7 @@ function idToExportName(fixtureId: string): string {
         .replace(/[^a-zA-Z0-9/\-_]/g, '')
         .split(/[/\-_]+/)
         .map((seg, i) =>
-            i === 0
-                ? seg.toLowerCase()
-                : seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase(),
+            i === 0 ? seg.toLowerCase() : seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase()
         )
         .join('');
 }
@@ -56,7 +51,7 @@ function idToFilename(fixtureId: string): string {
 function generateFixtureSource(
     exportName: string,
     metadata: Record<string, unknown>,
-    credential: Record<string, unknown>,
+    credential: Record<string, unknown>
 ): string {
     const lines: string[] = [];
 
@@ -89,12 +84,7 @@ function generateFixtureSource(
 /**
  * Append a new fixture import + entry to fixtures/index.ts.
  */
-function updateIndex(
-    folder: string,
-    filename: string,
-    exportName: string,
-    comment?: string,
-): void {
+function updateIndex(folder: string, filename: string, exportName: string, comment?: string): void {
     let src = fs.readFileSync(INDEX_PATH, 'utf-8');
 
     const importLine = `import { ${exportName} } from './${folder}/${filename}';`;
@@ -124,20 +114,14 @@ function updateIndex(
     const closingBracket = src.lastIndexOf('];');
 
     if (closingBracket >= 0) {
-        src =
-            src.slice(0, closingBracket) +
-            `    ${exportName},\n` +
-            src.slice(closingBracket);
+        src = src.slice(0, closingBracket) + `    ${exportName},\n` + src.slice(closingBracket);
     }
 
     // Add to the named re-exports — insert before the closing };
     const reExportClose = src.lastIndexOf('};');
 
     if (reExportClose >= 0) {
-        src =
-            src.slice(0, reExportClose) +
-            `    ${exportName},\n` +
-            src.slice(reExportClose);
+        src = src.slice(0, reExportClose) + `    ${exportName},\n` + src.slice(reExportClose);
     }
 
     fs.writeFileSync(INDEX_PATH, src, 'utf-8');
@@ -166,7 +150,9 @@ export default function fixtureWriterPlugin(): Plugin {
 
                 let body = '';
 
-                req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+                req.on('data', (chunk: Buffer) => {
+                    body += chunk.toString();
+                });
 
                 req.on('end', () => {
                     try {
@@ -202,7 +188,11 @@ export default function fixtureWriterPlugin(): Plugin {
 
                         if (fs.existsSync(filePath)) {
                             res.statusCode = 409;
-                            res.end(JSON.stringify({ error: `File already exists: ${folder}/${filename}.ts` }));
+                            res.end(
+                                JSON.stringify({
+                                    error: `File already exists: ${folder}/${filename}.ts`,
+                                })
+                            );
 
                             return;
                         }
@@ -214,16 +204,20 @@ export default function fixtureWriterPlugin(): Plugin {
                         updateIndex(folder, filename, exportName);
 
                         res.setHeader('Content-Type', 'application/json');
-                        res.end(JSON.stringify({
-                            ok: true,
-                            path: `${folder}/${filename}.ts`,
-                            exportName,
-                        }));
+                        res.end(
+                            JSON.stringify({
+                                ok: true,
+                                path: `${folder}/${filename}.ts`,
+                                exportName,
+                            })
+                        );
                     } catch (err) {
                         res.statusCode = 500;
-                        res.end(JSON.stringify({
-                            error: err instanceof Error ? err.message : String(err),
-                        }));
+                        res.end(
+                            JSON.stringify({
+                                error: err instanceof Error ? err.message : String(err),
+                            })
+                        );
                     }
                 });
             });

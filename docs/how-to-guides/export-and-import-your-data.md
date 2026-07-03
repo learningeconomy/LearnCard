@@ -38,7 +38,7 @@ Everything sensitive is encrypted per-file using **Argon2id + AES-256-GCM**. The
 -   The `@learncard/holder-continuity` package installed:
 
 ```bash
-pnpm add @learncard/holder-continuity
+bun add @learncard/holder-continuity
 ```
 
 ---

@@ -62,6 +62,8 @@ export const AnalyticsEvents = {
     // Consent Flow
     CONSENT_FLOW_STARTED: 'consent_flow_started',
     CONSENT_FLOW_ACCEPTED: 'consent_flow_accepted',
+    CONSENT_FLOW_INSTALL_COMPLETED: 'consent_flow.installCompleted',
+    CONSENT_FLOW_SYNC_JOB: 'consent_flow.syncJob',
 
     // LaunchPad
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
@@ -292,6 +294,25 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.CONSENT_FLOW_ACCEPTED]: {
         contractName?: string;
         alreadyConsented: boolean;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED]: {
+        contractUri: string;
+        ownerDid: string;
+        elapsedMs: number;
+        status: 'success' | 'error' | 'already_consented';
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_SYNC_JOB]: {
+        contractUri: string;
+        termsUri: string;
+        ownerDid: string;
+        phase: 'queued' | 'running' | 'done' | 'error';
+        elapsedMs?: number;
+        totalCredentials?: number;
+        completedCredentials?: number;
+        failedCredentials?: number;
+        retryCount?: number;
     };
 
     [AnalyticsEvents.LAUNCHPAD_APP_CLICKED]: {

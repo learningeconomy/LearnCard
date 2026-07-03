@@ -34,6 +34,7 @@ export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
 export * from './components/headerBranding/headerBrandingHelpers';
+export * from './components/headerBranding/HeaderBranding';
 export * from './components/CredentialSubjectDisplay/CredentialSubjectDisplay';
 export * from './components/RadioButton';
 export * from './components/launchpad-app-list/LaunchPadAppList';
@@ -80,6 +81,11 @@ export * from './hooks/useTermsTransactions';
 export * from './auth-coordinator';
 export * from './auth-providers';
 export * from './auth-adapters';
+
+// Auth Status - canonical race-safe auth-gate selector for all gating decisions
+export * from './auth-status/authStatus';
+export * from './auth-status/useAuthStatus';
+export * from './auth-status/useAuthGateState';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
@@ -92,7 +98,7 @@ export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapt
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
 export * from './hooks/useSQLiteStorage';
-export * from './hooks/useGetCurrentUser';
+export { useCurrentUser } from './hooks/useGetCurrentUser';
 export * from './hooks/useGetCurrentLCNUser';
 export * from './hooks/useScreenWidth';
 export * from './hooks/useOnScreen';
@@ -126,6 +132,9 @@ export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
 export * from './hooks/useSharedUrisInTerms';
+export * from './hooks/usePendingContractSync';
+export * from './hooks/useConsentedContracts';
+export * from './hooks/useLaunchDarklyIdentify';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -156,6 +165,7 @@ export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
 export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
+export * from './stores/pendingContractSyncStore';
 export * from './stores/boostPreviewStore';
 export {
     messages,
@@ -195,6 +205,7 @@ export * from './components/openid4vc/ExchangeErrorDisplay';
 export * from './components/openid4vc/IssuerHeader';
 export * from './components/openid4vc/VerifierHeader';
 export * from './helpers/web3AuthHelpers';
+export * from './helpers/networkHelpers';
 export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';
@@ -225,6 +236,7 @@ export * from './constants/gdprAgeLimits';
 export * from './constants/aiPassport';
 
 export * from './filestack/useFilestack';
+export * from './filestack/constants/filestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
 export * from './types/careerOneStop';

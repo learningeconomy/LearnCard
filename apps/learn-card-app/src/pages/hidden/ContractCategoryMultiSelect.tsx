@@ -121,19 +121,11 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
 
         const settings = values[category];
 
-        let settingsDisplayText = null;
-
-        if (settings.required && settings.defaultEnabled) {
-            settingsDisplayText = 'Required';
-        }
-
-        if (!settings.required && !settings.defaultEnabled) {
-            settingsDisplayText = 'Opt-in';
-        }
-
-        if (!settings.required && settings.defaultEnabled) {
-            settingsDisplayText = 'Opt-out';
-        }
+        const settingsDisplayText = settings.required
+            ? 'Required'
+            : settings.defaultEnabled
+            ? 'Opt-out'
+            : 'Opt-in';
 
         return (
             <div

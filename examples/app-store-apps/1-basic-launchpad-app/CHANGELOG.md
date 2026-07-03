@@ -1,5 +1,46 @@
 # @learncard/app-store-demo-basic-launchpad
 
+## 0.0.32
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/init@2.4.5
+    -   @learncard/partner-connect@0.3.9
+
+## 0.0.31
+
+### Patch Changes
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/init@2.4.4
+    -   @learncard/partner-connect@0.3.8
+
+## 0.0.30
+
+### Patch Changes
+
+-   [#1327](https://github.com/learningeconomy/LearnCard/pull/1327) [`9853f6a89fa9103975ec855367e789746aee5387`](https://github.com/learningeconomy/LearnCard/commit/9853f6a89fa9103975ec855367e789746aee5387) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Upgrade Astro example apps to the Zod 4-compatible Astro 6 line, remove the Astro-specific Zod 3 override, and keep package builds compatible with the updated esbuild runtime.
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.3
+    -   @learncard/partner-connect@0.3.7
+
+## 0.0.29
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.2
+    -   @learncard/partner-connect@0.3.6
+
+## 0.0.28
+
+### Patch Changes
+
+-   Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
+    -   @learncard/init@2.4.1
+
 ## 0.0.27
 
 ### Patch Changes

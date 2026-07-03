@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useImmer, Updater } from 'use-immer';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
@@ -16,9 +16,10 @@ import {
     ModalTypes,
     useToast,
     ToastTypeEnum,
-    getOrCreateSharedUriForWallet,
+    enqueuePendingContractSync,
 } from 'learn-card-base';
 import { checkAppInstallEligibility } from '@learncard/helpers';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
@@ -95,6 +96,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     const { newModal } = useModal();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const analytics = useAnalytics();
     const currentUser = useCurrentUser();
     const [isConsenting, setIsConsenting] = useState(false);
 
@@ -138,71 +140,6 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
         contractDetails?.owner?.did ?? ''
     );
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
-    const queryClient = useQueryClient();
-
-    /**
-     * Generates consent terms with shared URIs for existing credentials in enabled categories.
-     * This ensures that when a user installs an app with a contract, their existing credentials
-     * are properly shared with the app owner, similar to the network signup flow.
-     */
-    const generateTermsWithSharedUris = async (
-        baseTerms: ConsentFlowTerms,
-        contract: ConsentFlowContractDetails
-    ): Promise<ConsentFlowTerms> => {
-        const wallet = await initWallet();
-        const ownerDid = contract.owner.did;
-
-        const updatedTerms = JSON.parse(JSON.stringify(baseTerms)) as ConsentFlowTerms;
-
-        const enabledCategories = Object.entries(updatedTerms.read.credentials.categories).filter(
-            ([_, config]) => {
-                if (typeof config === 'boolean') return config;
-                return config.sharing !== false && config.shareAll !== false;
-            }
-        );
-
-        for (const [categoryName, categoryConfig] of enabledCategories) {
-            const categoryInfo = contractCategoryNameToCategoryMetadata(categoryName);
-            const credentialCategory = categoryInfo?.credentialType;
-
-            if (!credentialCategory) continue;
-
-            try {
-                const credentials = await wallet.index.LearnCloud.get({
-                    category: credentialCategory,
-                });
-
-                const sharedUris: string[] = [];
-                for (const credential of credentials) {
-                    try {
-                        const sharedUri = await getOrCreateSharedUriForWallet(
-                            wallet,
-                            ownerDid,
-                            queryClient,
-                            credential.uri,
-                            credentialCategory
-                        );
-                        if (sharedUri) {
-                            sharedUris.push(sharedUri);
-                        }
-                    } catch (error) {
-                        log.error(
-                            `Failed to generate shared URI for credential ${credential.uri}:`,
-                            error
-                        );
-                    }
-                }
-
-                if (typeof categoryConfig === 'object') {
-                    categoryConfig.shared = sharedUris;
-                }
-            } catch (error) {
-                log.error(`Failed to fetch credentials for category ${credentialCategory}:`, error);
-            }
-        }
-
-        return updatedTerms;
-    };
 
     // Contract permissions display - show what the user has actually accepted in their terms
     // Filter to only show categories where sharing is enabled
@@ -263,21 +200,41 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     };
 
     const doInstall = async () => {
+        const installStartedAt = Date.now();
+
         // If there's a contract, consent to it first
         if (contractUri && contractDetails && terms) {
             setIsConsenting(true);
 
             try {
-                // Generate shared URIs for existing credentials in enabled categories
-                const termsWithSharedUris = await generateTermsWithSharedUris(
+                // consent with minimal data for no latency
+                const consentResult = await consentToContract({
                     terms,
-                    contractDetails
-                );
-
-                await consentToContract({
-                    terms: termsWithSharedUris,
                     expiresAt: undefined,
                     oneTime: false,
+                    skipSharedUriMaterialization: true,
+                });
+
+                try {
+                    const wallet = await initWallet();
+                    const profileDid = await wallet.id.did();
+
+                    // enqueue background contract sync
+                    enqueuePendingContractSync({
+                        profileDid,
+                        contractUri,
+                        termsUri: consentResult.termsUri,
+                        ownerDid: contractDetails.owner.did,
+                    });
+                } catch (error) {
+                    log.error('Failed to enqueue background contract sync:', error);
+                }
+
+                analytics.track(AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED, {
+                    contractUri,
+                    ownerDid: contractDetails.owner.did,
+                    elapsedMs: Date.now() - installStartedAt,
+                    status: 'success',
                 });
 
                 // Sync any auto-boost credentials
@@ -304,6 +261,12 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                 }
 
                 if (!isAlreadyConsented) {
+                    analytics.track(AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED, {
+                        contractUri,
+                        ownerDid: contractDetails.owner.did,
+                        elapsedMs: Date.now() - installStartedAt,
+                        status: 'error',
+                    });
                     setIsConsenting(false);
                     presentToast('Unable to install app, please try again.', {
                         type: ToastTypeEnum.Error,
@@ -311,6 +274,13 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     });
                     return;
                 }
+
+                analytics.track(AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED, {
+                    contractUri,
+                    ownerDid: contractDetails.owner.did,
+                    elapsedMs: Date.now() - installStartedAt,
+                    status: 'already_consented',
+                });
             }
 
             setIsConsenting(false);

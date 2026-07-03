@@ -14,14 +14,13 @@ concurrency:
 
 env:
     CI: true
-    NODE_OPTIONS: '--max_old_space_size=4096'
 
 jobs:
     chromatic-deployment:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
                   # Chromatic needs full git history to compare against the baseline.
@@ -38,13 +37,13 @@ jobs:
               run: |
                   {
                       echo "AFFECTED<<EOF"
-                      pnpm exec nx show projects --affected --base=origin/main --head=HEAD
+                      bunx nx show projects --affected --base=origin/main --head=HEAD
                       echo "EOF"
                   } >> "$GITHUB_ENV"
 
             - name: Build @learncard/react
               if: contains(env.AFFECTED, 'react')
-              run: pnpm exec nx build react
+              run: bunx nx build react
 
             - name: Publish to Chromatic
               if: contains(env.AFFECTED, 'react')
@@ -59,7 +58,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
                   # Chromatic needs full git history to compare against the baseline.
@@ -76,7 +75,7 @@ jobs:
               run: |
                   {
                       echo "AFFECTED<<EOF"
-                      pnpm exec nx show projects --affected --base=origin/main --head=HEAD
+                      bunx nx show projects --affected --base=origin/main --head=HEAD
                       echo "EOF"
                   } >> "$GITHUB_ENV"
 
@@ -87,9 +86,9 @@ jobs:
             - name: Build workspace dependencies
               if: contains(env.AFFECTED, 'learn-card-app')
               run: |
-                  pnpm exec nx graph --focus=learn-card-app --file=dep-graph.json
-                  PROJECTS=$(node -e "const g=require('./dep-graph.json');const deps=g.graph.dependencies;const seen=new Set();const q=['learn-card-app'];while(q.length){const n=q.pop();for(const d of (deps[n]||[])){if(d.target.startsWith('npm:'))continue;if(!seen.has(d.target)){seen.add(d.target);q.push(d.target);}}}process.stdout.write([...seen].join(','));")
-                  pnpm exec nx run-many -t build --projects="$PROJECTS"
+                  bunx nx graph --focus=learn-card-app --file=dep-graph.json
+                  PROJECTS=$(bun -e "const g=require('./dep-graph.json');const deps=g.graph.dependencies;const seen=new Set();const q=['learn-card-app'];while(q.length){const n=q.pop();for(const d of (deps[n]||[])){if(d.target.startsWith('npm:'))continue;if(!seen.has(d.target)){seen.add(d.target);q.push(d.target);}}}process.stdout.write([...seen].join(','));")
+                  bunx nx run-many -t build --projects="$PROJECTS"
 
             - name: Publish to Chromatic
               if: contains(env.AFFECTED, 'learn-card-app')
@@ -99,5 +98,9 @@ jobs:
                   workingDir: apps/learn-card-app
                   # The app has no prebuilt Storybook output, so let Chromatic run the build script.
                   buildScriptName: build-storybook
+                  # TurboSnap: only snapshot stories whose files (or their dependencies) changed
+                  # since the baseline. Storybook 8 + Vite generates the dependency stats natively,
+                  # so no extra --stats-json flag is needed when Chromatic builds Storybook itself.
+                  onlyChanged: true
                   # Don't fail the build on visual changes — they're reviewed in Chromatic's UI.
                   exitZeroOnChanges: true

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/meta-mask-snap",
-    "version": "1.0.118",
+    "version": "1.0.122",
     "description": "The official LearnCard MetaMask Snap",
     "private": true,
     "repository": {
@@ -17,12 +17,12 @@
     ],
     "scripts": {
         "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
-        "build": "echo \"Skipping MM Snap build for now...\" # pnpm pre:build && rollup -c && pnpm post:build",
+        "build": "echo \"Skipping MM Snap build for now...\" # bun run pre:build && rollup -c && bun run post:build",
         "post:build": "./fixBundle.sh",
         "manifest": "mm-snap manifest --fix",
         "eval": "mm-snap eval -b dist/snap.js",
         "serve": "serve -Cl 3002",
-        "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve"
+        "dev": "bun run build && bun run manifest && bun run eval && bun run serve"
     },
     "devDependencies": {
         "@learncard/types": "workspace:*",
@@ -44,7 +44,7 @@
         "shx": "^0.3.4"
     },
     "engines": {
-        "node": ">=16.0.0"
+        "node": ">=24.12.0"
     },
     "dependencies": {
         "@learncard/core": "workspace:*"

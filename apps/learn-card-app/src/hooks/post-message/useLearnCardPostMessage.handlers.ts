@@ -558,6 +558,7 @@ export const createRequestLearnerContextHandler = (dependencies: {
                 format,
                 instructions: payload.instructions,
                 detailLevel,
+                waitForSync: payload.waitForSync,
             });
 
             return { success: true, data: context };
@@ -568,6 +569,35 @@ export const createRequestLearnerContextHandler = (dependencies: {
                     code: 'UNKNOWN_ERROR',
                     message:
                         error instanceof Error ? error.message : 'Failed to get learner context',
+                },
+            };
+        }
+    };
+};
+
+export const createGetSyncStatusHandler = (dependencies: {
+    getSyncStatus: () => Promise<{
+        status: 'ready' | 'syncing' | 'error';
+        progress: {
+            totalCredentials: number;
+            completedCredentials: number;
+            failedCredentials: number;
+            retryCount: number;
+        };
+        eta?: number;
+        lastError?: string;
+    }>;
+}): ActionHandler<'GET_SYNC_STATUS'> => {
+    return async () => {
+        try {
+            const status = await dependencies.getSyncStatus();
+            return { success: true, data: status };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'UNKNOWN_ERROR',
+                    message: error instanceof Error ? error.message : 'Failed to get sync status',
                 },
             };
         }
@@ -620,6 +650,17 @@ export function createActionHandlers(dependencies: {
     requestLearnerContext?: (
         options: LearnerContextRequestOptions
     ) => Promise<LearnerContextResponseData>;
+    getSyncStatus: () => Promise<{
+        status: 'ready' | 'syncing' | 'error';
+        progress: {
+            totalCredentials: number;
+            completedCredentials: number;
+            failedCredentials: number;
+            retryCount: number;
+        };
+        eta?: number;
+        lastError?: string;
+    }>;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),
@@ -645,6 +686,10 @@ export function createActionHandlers(dependencies: {
             requestLearnerContext: dependencies.requestLearnerContext,
         });
     }
+
+    handlers.GET_SYNC_STATUS = createGetSyncStatusHandler({
+        getSyncStatus: dependencies.getSyncStatus,
+    });
 
     return handlers;
 }

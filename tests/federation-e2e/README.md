@@ -16,7 +16,7 @@ Each brain service is configured to trust the other via the `TRUSTED_BRAIN_SERVI
 
 -   Docker and Docker Compose
 -   Node.js 18+
--   pnpm
+-   Bun
 
 ## Running Tests
 
@@ -31,10 +31,10 @@ docker compose up -d --build
 
 ```bash
 # Run tests in watch mode
-pnpm test:federation:e2e
+bun run test:federation:e2e
 
 # Run tests once
-pnpm test:federation:run
+bun run test:federation:run
 ```
 
 ### Stop the test environment

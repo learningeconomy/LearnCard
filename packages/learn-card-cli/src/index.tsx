@@ -1,14 +1,14 @@
 import fs from 'fs/promises';
 import dns from 'node:dns';
+import { emitKeypressEvents } from 'node:readline';
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
 
-import repl from 'pretty-repl';
 import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
 import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
-import types from '@learncard/types';
+import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -35,21 +35,71 @@ import packageJson from '../package.json';
 
 dns.setDefaultResultOrder('ipv4first');
 
+type ReplCompletion = [string[], string];
+type ReplKey = {
+    ctrl?: boolean;
+    name?: string;
+    sequence?: string;
+};
+
+const replGlobals = [
+    'learnCard',
+    'emptyLearnCard',
+    'learnCardFromSeed',
+    'initLearnCard',
+    'seed',
+    'generateRandomSeed',
+    'types',
+    'getTestCache',
+    'copy',
+    'getLearnCardBundlePassword',
+    'exportLearnCardBundle',
+    'importLearnCardBundle',
+    'createLearnCardBundle',
+    'readLearnCardBundle',
+    'restoreLearnCardFromBundle',
+];
+
+const replCommands = ['.exit'];
+
+const identifierPattern = /^[A-Za-z_$][\w$]*$/;
+
+const colorizeName = (name: string): string => {
+    const colorizedName = gradient(['cyan', 'green'])(name);
+
+    if (colorizedName !== name || !process.stdout.isTTY) return colorizedName;
+
+    return `\x1b[36m${name}\x1b[39m`;
+};
+
 const g = {
-    learnCard: gradient(['cyan', 'green'])('learnCard'),
-    emptyLearnCard: gradient(['cyan', 'green'])('emptyLearnCard'),
-    learnCardFromKey: gradient(['cyan', 'green'])('learnCardFromKey'),
-    initLearnCard: gradient(['cyan', 'green'])('initLearnCard'),
-    seed: gradient(['cyan', 'green'])('seed'),
-    generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
-    types: gradient(['cyan', 'green'])('types'),
-    getLearnCardBundlePassword: gradient(['cyan', 'green'])('getLearnCardBundlePassword'),
-    copy: gradient(['cyan', 'green'])('copy'),
-    exportLearnCardBundle: gradient(['cyan', 'green'])('exportLearnCardBundle'),
-    importLearnCardBundle: gradient(['cyan', 'green'])('importLearnCardBundle'),
-    createLearnCardBundle: gradient(['cyan', 'green'])('createLearnCardBundle'),
-    readLearnCardBundle: gradient(['cyan', 'green'])('readLearnCardBundle'),
-    restoreLearnCardFromBundle: gradient(['cyan', 'green'])('restoreLearnCardFromBundle'),
+    learnCard: colorizeName('learnCard'),
+    emptyLearnCard: colorizeName('emptyLearnCard'),
+    learnCardFromSeed: colorizeName('learnCardFromSeed'),
+    initLearnCard: colorizeName('initLearnCard'),
+    seed: colorizeName('seed'),
+    generateRandomSeed: colorizeName('generateRandomSeed'),
+    types: colorizeName('types'),
+    getTestCache: colorizeName('getTestCache'),
+    getLearnCardBundlePassword: colorizeName('getLearnCardBundlePassword'),
+    copy: colorizeName('copy'),
+    exportLearnCardBundle: colorizeName('exportLearnCardBundle'),
+    importLearnCardBundle: colorizeName('importLearnCardBundle'),
+    createLearnCardBundle: colorizeName('createLearnCardBundle'),
+    readLearnCardBundle: colorizeName('readLearnCardBundle'),
+    restoreLearnCardFromBundle: colorizeName('restoreLearnCardFromBundle'),
+};
+
+const colorizeReplInput = (input: string): string => {
+    return [...replGlobals]
+        .sort((a, b) => b.length - a.length)
+        .reduce((output, name) => {
+            const colorizedName = g[name as keyof typeof g];
+
+            if (!colorizedName) return output;
+
+            return output.replace(new RegExp(`\\b${name}\\b`, 'g'), colorizedName);
+        }, input);
 };
 
 const copyFunction = (text: string | object | number) => {
@@ -86,6 +136,372 @@ const getLearnCardBundlePassword = async (prompt = 'Bundle password: '): Promise
         rl.close();
         process.stdout.write('\n');
     }
+};
+
+const globalAssignmentPattern = /^(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([\s\S]*?);?\s*$/;
+
+const parseGlobalAssignment = (
+    source: string
+): { name: string; initializer: string } | undefined => {
+    const match = source.match(globalAssignmentPattern);
+
+    if (!match) return;
+
+    const [, name, initializer] = match;
+
+    return { name, initializer };
+};
+
+const getCurrentToken = (line: string): string => {
+    return line.match(/(?:[A-Za-z_$][\w$]*\.)*[A-Za-z_$][\w$]*\.?$/)?.[0] ?? '';
+};
+
+const getCompletionBase = (token: string): string | undefined => {
+    const lastDotIndex = token.lastIndexOf('.');
+
+    if (lastDotIndex === -1) return;
+
+    return token.slice(0, lastDotIndex);
+};
+
+const getCompletionPrefix = (token: string): string => {
+    const lastDotIndex = token.lastIndexOf('.');
+
+    if (lastDotIndex === -1) return token;
+
+    return token.slice(lastDotIndex + 1);
+};
+
+const getOwnPropertyNames = (value: unknown): string[] => {
+    if (value === null || value === undefined) return [];
+
+    const names = new Set<string>();
+
+    let current: unknown = Object(value);
+
+    while (current && current !== Object.prototype) {
+        for (const name of Object.getOwnPropertyNames(current)) names.add(name);
+
+        current = Object.getPrototypeOf(current);
+    }
+
+    return [...names];
+};
+
+const completeBunReplInput = (line: string): ReplCompletion => {
+    const token = getCurrentToken(line);
+
+    if (!token) return [replCommands, ''];
+
+    const base = getCompletionBase(token);
+    const prefix = getCompletionPrefix(token);
+
+    if (!base) {
+        const completions = [...replCommands, ...replGlobals].filter(name =>
+            name.startsWith(prefix)
+        );
+
+        return [completions.length ? completions : replGlobals, token];
+    }
+
+    try {
+        const target = globalThis.eval(base) as unknown;
+        const completions = getOwnPropertyNames(target)
+            .filter(name => identifierPattern.test(name))
+            .filter(name => name.startsWith(prefix))
+            .map(name => `${base}.${name}`);
+
+        return [completions, token];
+    } catch {
+        return [[], token];
+    }
+};
+
+const evaluateBunReplInput = async (source: string): Promise<unknown> => {
+    try {
+        return await globalThis.eval(`(async () => (${source}))()`);
+    } catch {
+        const globalAssignment = parseGlobalAssignment(source);
+
+        if (globalAssignment) {
+            const value = await globalThis.eval(
+                `(async () => (${globalAssignment.initializer}))()`
+            );
+            (globalThis as Record<string, unknown>)[globalAssignment.name] = value;
+            return value;
+        }
+
+        return await globalThis.eval(`(async () => { ${source} })()`);
+    }
+};
+
+const getSharedCompletion = (matches: string[]): string | undefined => {
+    if (!matches.length) return;
+
+    return matches.reduce((prefix, match) => {
+        let index = 0;
+
+        while (index < prefix.length && prefix[index] === match[index]) index += 1;
+
+        return prefix.slice(0, index);
+    });
+};
+
+const renderBunReplLine = (
+    prompt: string,
+    line: string,
+    cursor: number,
+    colorize: (input: string) => string
+): void => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+    process.stdout.write(prompt + colorize(line));
+
+    const trailingLength = line.length - cursor;
+
+    if (trailingLength > 0) process.stdout.write(`\x1b[${trailingLength}D`);
+};
+
+const startReadlineRepl = async (colorize?: (input: string) => string): Promise<void> => {
+    const rl = createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        prompt: '> ',
+        completer: completeBunReplInput,
+    });
+
+    rl.prompt();
+
+    for await (const line of rl) {
+        const source = line.trim();
+
+        if (source === '.exit') break;
+
+        if (!source) {
+            rl.prompt();
+
+            continue;
+        }
+
+        try {
+            const result = await evaluateBunReplInput(source);
+
+            if (result !== undefined) console.dir(result, { depth: 6 });
+        } catch (error) {
+            console.error(error);
+        }
+
+        if (colorize) process.stdout.write(colorize(''));
+
+        rl.prompt();
+    }
+
+    rl.close();
+};
+
+const startBunRepl = async (colorize: (input: string) => string): Promise<void> => {
+    if (!process.stdin.isTTY || !process.stdin.setRawMode) {
+        await startReadlineRepl(colorize);
+
+        return;
+    }
+
+    const prompt = '> ';
+    const history: string[] = [];
+
+    let line = '';
+    let cursor = 0;
+    let historyIndex = 0;
+    let draft = '';
+    let pending = Promise.resolve();
+
+    const resetHistory = (): void => {
+        historyIndex = history.length;
+        draft = '';
+    };
+
+    const setLine = (nextLine: string): void => {
+        line = nextLine;
+        cursor = line.length;
+        renderBunReplLine(prompt, line, cursor, colorize);
+    };
+
+    const insertText = (text: string): void => {
+        line = line.slice(0, cursor) + text + line.slice(cursor);
+        cursor += text.length;
+        renderBunReplLine(prompt, line, cursor, colorize);
+    };
+
+    const applyCompletion = (): void => {
+        const linePrefix = line.slice(0, cursor);
+        const [matches, token] = completeBunReplInput(linePrefix);
+        const completion = matches.length === 1 ? matches[0] : getSharedCompletion(matches);
+
+        if (completion && completion !== token) {
+            line = line.slice(0, cursor - token.length) + completion + line.slice(cursor);
+            cursor += completion.length - token.length;
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return;
+        }
+
+        if (matches.length > 1) {
+            process.stdout.write(`\n${matches.join('    ')}\n`);
+            renderBunReplLine(prompt, line, cursor, colorize);
+        }
+    };
+
+    const evaluateLine = async (): Promise<boolean> => {
+        process.stdout.write('\n');
+
+        const source = line.trim();
+
+        if (source === '.exit') return false;
+
+        if (source) {
+            history.push(source);
+
+            try {
+                const result = await evaluateBunReplInput(source);
+
+                if (result !== undefined) console.dir(result, { depth: 6 });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        line = '';
+        cursor = 0;
+        resetHistory();
+        renderBunReplLine(prompt, line, cursor, colorize);
+
+        return true;
+    };
+
+    const handleKey = async (input: string, key: ReplKey): Promise<boolean> => {
+        if (key.ctrl && key.name === 'c') return false;
+
+        if (key.name === 'return' || key.name === 'enter') return await evaluateLine();
+
+        if (key.ctrl && key.name === 'd' && !line) return false;
+
+        if (key.name === 'tab') {
+            applyCompletion();
+
+            return true;
+        }
+
+        if (key.name === 'backspace') {
+            if (cursor === 0) return true;
+
+            line = line.slice(0, cursor - 1) + line.slice(cursor);
+            cursor -= 1;
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return true;
+        }
+
+        if (key.name === 'delete') {
+            if (cursor >= line.length) return true;
+
+            line = line.slice(0, cursor) + line.slice(cursor + 1);
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return true;
+        }
+
+        if (key.name === 'left') {
+            if (cursor > 0) cursor -= 1;
+
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return true;
+        }
+
+        if (key.name === 'right') {
+            if (cursor < line.length) cursor += 1;
+
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return true;
+        }
+
+        if (key.name === 'home') {
+            cursor = 0;
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return true;
+        }
+
+        if (key.name === 'end') {
+            cursor = line.length;
+            renderBunReplLine(prompt, line, cursor, colorize);
+
+            return true;
+        }
+
+        if (key.name === 'up') {
+            if (historyIndex === history.length) draft = line;
+            if (historyIndex > 0) historyIndex -= 1;
+
+            setLine(history[historyIndex] ?? draft);
+
+            return true;
+        }
+
+        if (key.name === 'down') {
+            if (historyIndex < history.length) historyIndex += 1;
+
+            setLine(historyIndex === history.length ? draft : history[historyIndex] ?? '');
+
+            return true;
+        }
+
+        if (input && !key.ctrl && input >= ' ') {
+            insertText(input);
+            resetHistory();
+        }
+
+        return true;
+    };
+
+    await new Promise<void>(resolve => {
+        const onKeypress = (input: string, key: ReplKey): void => {
+            pending = pending.then(async () => {
+                const keepRunning = await handleKey(input, key);
+
+                if (!keepRunning) cleanup();
+            });
+        };
+
+        const cleanup = (): void => {
+            process.stdin.off('keypress', onKeypress);
+            process.stdin.setRawMode?.(false);
+            process.stdin.pause();
+            process.stdout.write('\n');
+            resolve();
+        };
+
+        emitKeypressEvents(process.stdin);
+        process.stdin.setRawMode?.(true);
+        process.stdin.resume();
+
+        console.log('Bun dev REPL ready. Tab completes globals/properties. Type .exit to quit.');
+        renderBunReplLine(prompt, line, cursor, colorize);
+        process.stdin.on('keypress', onKeypress);
+    });
+};
+
+const startCliRepl = async (colorize: (input: string) => string): Promise<void> => {
+    if (!('Bun' in globalThis)) {
+        const repl = await import('pretty-repl');
+
+        repl.default.start({ colorize });
+
+        return;
+    }
+
+    await startBunRepl(colorize);
 };
 
 program
@@ -237,23 +653,6 @@ program
 
         console.log('');
 
-        repl.start({
-            colorize: (input: string) => {
-                return input
-                    .replace('emptyLearnCard', g.emptyLearnCard)
-                    .replace('learnCardFromKey', g.learnCardFromKey)
-                    .replace('initLearnCard', g.initLearnCard)
-                    .replace('learnCard', g.learnCard)
-                    .replace('seed', g.seed)
-                    .replace('generateRandomSeed', g.generateRandomSeed)
-                    .replace('copy', g.copy)
-                    .replace('getLearnCardBundlePassword', g.getLearnCardBundlePassword)
-                    .replace('exportLearnCardBundle', g.exportLearnCardBundle)
-                    .replace('importLearnCardBundle', g.importLearnCardBundle)
-                    .replace('createLearnCardBundle', g.createLearnCardBundle)
-                    .replace('readLearnCardBundle', g.readLearnCardBundle)
-                    .replace('restoreLearnCardFromBundle', g.restoreLearnCardFromBundle);
-            },
-        });
+        await startCliRepl(colorizeReplInput);
     })
     .parse(process.argv);

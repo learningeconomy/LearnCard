@@ -18,21 +18,23 @@ This guide addresses common issues encountered when developing with LearnCard SD
 
     ```bash
     npm list @learncard/core @learncard/init
-    # or for pnpm
-    pnpm list @learncard/core @learncard/init
+    # or for Bun
+    bun pm ls @learncard/core @learncard/init
     ```
+
 2.  Check for version mismatches between LearnCard packages:
 
     ```bash
     npm list | grep learncard
-    # or for pnpm
-    pnpm list | grep learncard
+    # or for Bun
+    bun pm ls | grep learncard
     ```
-3.  Clear node\_modules and reinstall:
+
+3.  Clear node_modules and reinstall:
 
     ```bash
     rm -rf node_modules
-    pnpm install
+    bun install
     ```
 
 ### WASM Loading Issues
@@ -41,8 +43,8 @@ This guide addresses common issues encountered when developing with LearnCard SD
 
 **Error messages:**
 
-* `WebAssembly module is included in initial chunk`
-* `Error: Unable to load WASM module`
+-   `WebAssembly module is included in initial chunk`
+-   `Error: Unable to load WASM module`
 
 **Solutions:**
 
@@ -51,29 +53,31 @@ This guide addresses common issues encountered when developing with LearnCard SD
     ```javascript
     // webpack.config.js
     module.exports = {
-      experiments: {
-        asyncWebAssembly: true,
-      },
-      // ...
+        experiments: {
+            asyncWebAssembly: true,
+        },
+        // ...
     };
     ```
+
 2.  For Next.js, use dynamic imports:
 
     ```javascript
     const initializeLearnCard = async () => {
-      const { initLearnCard } = await import('@learncard/init');
-      return initLearnCard({ seed: yourSeed });
+        const { initLearnCard } = await import('@learncard/init');
+        return initLearnCard({ seed: yourSeed });
     };
     ```
+
 3.  Provide your own WASM bundle path:
 
     ```javascript
     import { initLearnCard } from '@learncard/init';
     import didkitPath from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
-    const learnCard = await initLearnCard({ 
-      seed: yourSeed,
-      didkit: didkitPath
+    const learnCard = await initLearnCard({
+        seed: yourSeed,
+        didkit: didkitPath,
     });
     ```
 
@@ -88,7 +92,7 @@ This guide addresses common issues encountered when developing with LearnCard SD
 1. Ensure you're using the same wallet instance for verification that was used for issuance
 2. Check for credential tampering or modification after issuance
 3. Verify the credential format matches expected schema
-4.  Check if the credential has been properly signed:
+4. Check if the credential has been properly signed:
 
     ```javascript
     // Verify the credential structure
@@ -110,8 +114,9 @@ This guide addresses common issues encountered when developing with LearnCard SD
     // Should follow the pattern: did:method:identifier
     console.log(credential.issuer);
     ```
-2. Check network connectivity if resolving remote DIDs
-3. For `did:web`, ensure the domain is accessible and properly configured
+
+2.  Check network connectivity if resolving remote DIDs
+3.  For `did:web`, ensure the domain is accessible and properly configured
 4.  Try resolving the DID manually:
 
     ```javascript
@@ -133,8 +138,9 @@ This guide addresses common issues encountered when developing with LearnCard SD
     // Should follow proper URI format for the storage method
     console.log(uri);
     ```
-2. Verify network connectivity for remote storage
-3. Ensure the credential exists at the specified location
+
+2.  Verify network connectivity for remote storage
+3.  Ensure the credential exists at the specified location
 4.  For LearnCloud storage, check API connectivity:
 
     ```javascript
@@ -159,8 +165,9 @@ This guide addresses common issues encountered when developing with LearnCard SD
     const learnCloudIndex = await learnCard.index.LearnCloud.get();
     console.log(learnCloudIndex);
     ```
-2. Ensure you're using the same wallet instance (same seed) that added the credentials
-3. Check if the storage service is accessible
+
+2.  Ensure you're using the same wallet instance (same seed) that added the credentials
+3.  Check if the storage service is accessible
 
 ## Plugin-Related Issues
 
@@ -176,8 +183,9 @@ This guide addresses common issues encountered when developing with LearnCard SD
     // Check registered plugins
     console.log(learnCard.plugins.map(p => p.name));
     ```
-2. Check plugin initialization order (dependency plugins should be loaded first)
-3. Verify plugin compatibility with your LearnCard Core version
+
+2.  Check plugin initialization order (dependency plugins should be loaded first)
+3.  Verify plugin compatibility with your LearnCard Core version
 
 ### Plugin Method Errors
 
@@ -187,12 +195,12 @@ This guide addresses common issues encountered when developing with LearnCard SD
 
 1. Check method parameters match expected types
 2. Verify plugin version compatibility with core
-3.  Enable debug mode if available:
+3. Enable debug mode if available:
 
     ```javascript
     const learnCard = await initLearnCard({
-      seed: yourSeed,
-      debug: true
+        seed: yourSeed,
+        debug: true,
     });
     ```
 
@@ -226,25 +234,25 @@ Add a logging plugin to capture detailed information:
 
 ```javascript
 const loggingPlugin = {
-  name: 'debug-logger',
-  methods: {
-    intercept: async (method, params, learnCard) => {
-      console.log(`Calling ${method} with params:`, params);
-      try {
-        const result = await learnCard.invoke[method](...params);
-        console.log(`${method} result:`, result);
-        return result;
-      } catch (error) {
-        console.error(`${method} error:`, error);
-        throw error;
-      }
-    }
-  }
+    name: 'debug-logger',
+    methods: {
+        intercept: async (method, params, learnCard) => {
+            console.log(`Calling ${method} with params:`, params);
+            try {
+                const result = await learnCard.invoke[method](...params);
+                console.log(`${method} result:`, result);
+                return result;
+            } catch (error) {
+                console.error(`${method} error:`, error);
+                throw error;
+            }
+        },
+    },
 };
 
 const learnCard = await initLearnCard({
-  seed: yourSeed,
-  plugins: [loggingPlugin]
+    seed: yourSeed,
+    plugins: [loggingPlugin],
 });
 
 // Now wrap any method call
@@ -257,14 +265,14 @@ For verification issues, inspect the credential structure:
 
 ```javascript
 function inspectCredential(credential) {
-  console.log('===== CREDENTIAL INSPECTION =====');
-  console.log('Types:', credential.type);
-  console.log('Issuer:', credential.issuer);
-  console.log('Subject:', credential.credentialSubject.id);
-  console.log('Proof type:', credential.proof?.type);
-  console.log('Issuance date:', credential.issuanceDate);
-  console.log('Expiration date:', credential.expirationDate);
-  console.log('================================');
+    console.log('===== CREDENTIAL INSPECTION =====');
+    console.log('Types:', credential.type);
+    console.log('Issuer:', credential.issuer);
+    console.log('Subject:', credential.credentialSubject.id);
+    console.log('Proof type:', credential.proof?.type);
+    console.log('Issuance date:', credential.issuanceDate);
+    console.log('Expiration date:', credential.expirationDate);
+    console.log('================================');
 }
 ```
 
@@ -275,8 +283,8 @@ If you continue to experience issues after trying the solutions in this guide:
 1. Check the [GitHub repository](https://github.com/learningeconomy/LearnCard) for open issues
 2. Join the [Learning Economy Discord](https://discord.gg/learningeconomy) for community support
 3. Submit a detailed bug report with:
-   * LearnCard SDK version
-   * Node.js/browser version
-   * Complete error message and stack trace
-   * Minimal reproducible example
-   * Environment details (OS, deployment context)
+    - LearnCard SDK version
+    - Node.js/browser version
+    - Complete error message and stack trace
+    - Minimal reproducible example
+    - Environment details (OS, deployment context)

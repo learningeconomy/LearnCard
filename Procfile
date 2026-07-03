@@ -1,1 +1,1 @@
-worker: cd services/learn-card-discord-bot && pnpm start
+worker: bun --cwd services/learn-card-discord-bot run start
