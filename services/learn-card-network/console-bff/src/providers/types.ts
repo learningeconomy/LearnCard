@@ -1,6 +1,7 @@
 import type {
     AuthProviderKind,
     DashboardSession,
+    EcosystemRoleGrant,
     ExternalIdentity,
     ExternalIdentityBinding,
 } from '@learncard/types';
@@ -21,6 +22,7 @@ export type CallbackContext = {
 export type IdentityResolution = {
     binding: ExternalIdentityBinding;
     isNewlyProvisioned: boolean;
+    grants: EcosystemRoleGrant[];
 };
 
 export interface ConsoleAuthProvider {

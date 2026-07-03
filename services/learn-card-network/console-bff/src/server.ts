@@ -11,6 +11,7 @@ export type ConsoleBffServerConfig = {
     cookieSecret: string;
     secureCookies?: boolean;
     didDocuments?: DidDocumentService;
+    resolveTenantFromHost?: (hostname: string) => string | undefined;
 };
 
 export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
@@ -18,8 +19,20 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
 
     app.register(cookie);
 
-    const tenantIdOf = (headers: Record<string, unknown>): string =>
-        (headers['x-tenant-id'] as string) ?? process.env.DEFAULT_TENANT_ID ?? 'learncard';
+    const tenantIdOf = (request: {
+        hostname: string;
+        headers: Record<string, unknown>;
+    }): string => {
+        const fromHost = config.resolveTenantFromHost?.(request.hostname);
+
+        if (fromHost) return fromHost;
+
+        return (
+            (request.headers['x-tenant-id'] as string) ??
+            process.env.DEFAULT_TENANT_ID ??
+            'learncard'
+        );
+    };
 
     app.get('/health', async () => ({ status: 'ok' }));
 
@@ -34,7 +47,10 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
 
                 if (!doc) return reply.code(404).send({ error: 'not_found' });
 
-                return reply.header('content-type', 'application/did+json').send(doc);
+                return reply
+                    .header('content-type', 'application/did+json')
+                    .header('cache-control', 'public, max-age=300')
+                    .send(doc);
             }
         );
     }
@@ -44,7 +60,7 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
         async (request, reply) => {
             const { providerId, redirectUri, state } = request.body;
             const result = await config.authService.beginLogin({
-                tenantId: tenantIdOf(request.headers),
+                tenantId: tenantIdOf(request),
                 providerId,
                 redirectUri,
                 state,
@@ -58,7 +74,7 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
         '/auth/callback',
         async (request, reply) => {
             const session = await config.authService.completeLogin({
-                tenantId: tenantIdOf(request.headers),
+                tenantId: tenantIdOf(request),
                 providerId: request.body.providerId,
                 params: request.body.params,
             });

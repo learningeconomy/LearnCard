@@ -18,6 +18,7 @@ describe('LocalKeyManagementService', () => {
         expect(ref.provider).toBe('local');
         expect(ref.algorithm).toBe('ES256');
         expect(ref.keyId).toBeTruthy();
+        expect(ref.alias).toBe('root');
 
         const jwk = await kms.getPublicKeyJwk(ref);
 
@@ -47,6 +48,7 @@ describe('LocalKeyManagementService', () => {
         const rotatedJwk = await kms.getPublicKeyJwk(rotated);
 
         expect(rotated.keyId).toBe(ref.keyId);
+        expect(rotated.alias).toBe(ref.alias);
         expect(rotated.version).not.toBe(ref.version);
         expect(rotatedJwk.x).not.toBe(originalJwk.x);
 

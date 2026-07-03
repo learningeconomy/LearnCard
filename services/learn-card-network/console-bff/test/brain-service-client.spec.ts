@@ -6,7 +6,7 @@ import { LocalKeyManagementService, type ManagedKeyRef } from '@kms';
 import { InMemoryKeyDirectory } from '@did';
 import {
     DidAuthBearerFactory,
-    buildDidAuthVpPayload,
+    DID_AUTH_VP_TTL_SECONDS,
     DidAuthProfileCreator,
     ServiceDidMembershipWriter,
     type BrainServiceTransport,
@@ -47,9 +47,11 @@ describe('DidAuthBearerFactory', () => {
         const bearer = await new DidAuthBearerFactory(kms).createBearer(did, ref, 'nonce-1');
         const payload = decodePayload(bearer);
 
-        expect(payload).toMatchObject(buildDidAuthVpPayload(did, 'nonce-1'));
-        expect((payload.vp as Record<string, unknown>).holder).toBe(did);
+        expect(payload.iss).toBe(did);
         expect(payload.nonce).toBe('nonce-1');
+        expect((payload.vp as Record<string, unknown>).holder).toBe(did);
+        expect(typeof payload.iat).toBe('number');
+        expect(payload.exp).toBe((payload.iat as number) + DID_AUTH_VP_TTL_SECONDS);
     });
 });
 

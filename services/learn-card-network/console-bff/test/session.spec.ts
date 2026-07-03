@@ -44,6 +44,21 @@ describe('SessionStore', () => {
         expect(ttlMs).toBeGreaterThan(290 * 1000);
     });
 
+    it('returns null for an expired session (destroy-on-read)', async () => {
+        const redis = new InMemoryRedis();
+        const expiringStore = new SessionStore({ redis, minTtlSeconds: 60 });
+        const session = await expiringStore.create(baseInput(), 60);
+
+        await redis.set(
+            `console-session:${session.sessionId}`,
+            JSON.stringify({ ...session, expiresAt: new Date(Date.now() - 1000).toISOString() }),
+            'EX',
+            60
+        );
+
+        expect(await expiringStore.get(session.sessionId)).toBeNull();
+    });
+
     it('destroys a single session', async () => {
         const session = await store.create(baseInput(), 3600);
 

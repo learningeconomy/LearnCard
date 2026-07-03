@@ -47,21 +47,32 @@ export class SessionStore {
     }
 
     async get(sessionId: string): Promise<DashboardSession | null> {
+        const session = await this.readStored(sessionId);
+
+        if (!session) return null;
+
+        if (new Date(session.expiresAt).getTime() <= Date.now()) {
+            await this.remove(session);
+
+            return null;
+        }
+
+        return session;
+    }
+
+    private async readStored(sessionId: string): Promise<DashboardSession | null> {
         const raw = await this.redis.get(this.key(sessionId));
 
         if (!raw) return null;
 
         const parsed = DashboardSessionValidator.safeParse(JSON.parse(raw));
 
-        if (!parsed.success) return null;
+        return parsed.success ? parsed.data : null;
+    }
 
-        if (new Date(parsed.data.expiresAt).getTime() <= Date.now()) {
-            await this.destroy(sessionId);
-
-            return null;
-        }
-
-        return parsed.data;
+    private async remove(session: DashboardSession): Promise<void> {
+        await this.redis.del(this.key(session.sessionId));
+        await this.redis.srem(this.profileKey(session.profileId), session.sessionId);
     }
 
     async refresh(sessionId: string, ttlSeconds: number): Promise<DashboardSession | null> {
@@ -82,11 +93,10 @@ export class SessionStore {
     }
 
     async destroy(sessionId: string): Promise<void> {
-        const session = await this.get(sessionId);
+        const session = await this.readStored(sessionId);
 
-        await this.redis.del(this.key(sessionId));
-
-        if (session) await this.redis.srem(this.profileKey(session.profileId), sessionId);
+        if (session) await this.remove(session);
+        else await this.redis.del(this.key(sessionId));
     }
 
     async destroyAllForProfile(profileId: string): Promise<number> {

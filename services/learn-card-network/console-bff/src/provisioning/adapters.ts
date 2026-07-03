@@ -47,6 +47,16 @@ export class KmsManagedIdentityMinter implements ManagedIdentityMinter {
 
         return { profileId, managedDid };
     }
+
+    async rotate(managedDid: string): Promise<void> {
+        const current = await this.deps.directory.getKeyRef(managedDid);
+
+        if (!current) throw new Error(`No managed key registered for ${managedDid}`);
+
+        const rotated = await this.deps.kms.rotateKey(current);
+
+        await this.deps.directory.put(managedDid, rotated);
+    }
 }
 
 export class BrainServiceMembershipGranter implements MembershipGranter {

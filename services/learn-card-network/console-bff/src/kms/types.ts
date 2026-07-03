@@ -4,6 +4,7 @@ export type ManagedKeyRef = {
     provider: string;
     tenantId: string;
     keyId: string;
+    alias: string;
     algorithm: KmsAlgorithm;
     version?: string;
 };

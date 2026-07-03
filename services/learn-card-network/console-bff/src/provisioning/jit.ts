@@ -1,8 +1,7 @@
 import type {
-    EcosystemRole,
+    EcosystemRoleGrant,
     ExternalIdentity,
     ExternalIdentityBinding,
-    ProvisionableRole,
     TenantAuthPolicy,
 } from '@learncard/types';
 
@@ -16,13 +15,18 @@ export type JitProvisionerDeps = {
     bindings: BindingRepository;
 };
 
-function mappedRoles(
-    policy: TenantAuthPolicy,
-    identity: ExternalIdentity
-): Array<{ ecosystemId: string; role: EcosystemRole }> {
+// The subject's entitlements are recompiled from the IdP assertion at every login (ADR §3.9):
+// the tenant default role at the root Ecosystem, plus any Ecosystem roles their current IdP
+// group claims map to. This is the single source of truth for both the graph grants and the
+// session's effectiveAccess, so the two can never diverge.
+function computeGrants(policy: TenantAuthPolicy, identity: ExternalIdentity): EcosystemRoleGrant[] {
     const groups = new Set(identity.groups ?? []);
 
-    return policy.groupMappings.filter(mapping => groups.has(mapping.idpGroup));
+    const mapped = policy.groupMappings
+        .filter(mapping => groups.has(mapping.idpGroup))
+        .map(mapping => ({ ecosystemId: mapping.ecosystemId, role: mapping.role }));
+
+    return [{ ecosystemId: policy.rootEcosystemId, role: policy.defaultRole }, ...mapped];
 }
 
 export class JitProvisioner {
@@ -43,6 +47,8 @@ export class JitProvisioner {
             throw new Error(`Identity binding for subject "${identity.subject}" is revoked`);
         }
 
+        const grants = computeGrants(policy, identity);
+
         if (existing?.status === 'ACTIVE') {
             await this.deps.bindings.touchLastLogin(
                 policy.tenantId,
@@ -51,7 +57,7 @@ export class JitProvisioner {
                 new Date().toISOString()
             );
 
-            return { binding: existing, isNewlyProvisioned: false };
+            return { binding: existing, isNewlyProvisioned: false, grants };
         }
 
         if (!existing && !policy.allowJit) {
@@ -65,33 +71,13 @@ export class JitProvisioner {
                   ecosystemId: policy.rootEcosystemId,
               });
 
-        await this.grantMemberships(minted.profileId, policy, identity);
+        for (const grant of grants) {
+            await this.deps.membership.grant({ profileId: minted.profileId, ...grant });
+        }
 
         const binding = await this.persistBinding(existing, minted, identity, policy, providerId);
 
-        return { binding, isNewlyProvisioned: true };
-    }
-
-    private async grantMemberships(
-        profileId: string,
-        policy: TenantAuthPolicy,
-        identity: ExternalIdentity
-    ): Promise<void> {
-        const defaultRole: ProvisionableRole = policy.defaultRole;
-
-        await this.deps.membership.grant({
-            profileId,
-            ecosystemId: policy.rootEcosystemId,
-            role: defaultRole,
-        });
-
-        for (const mapping of mappedRoles(policy, identity)) {
-            await this.deps.membership.grant({
-                profileId,
-                ecosystemId: mapping.ecosystemId,
-                role: mapping.role,
-            });
-        }
+        return { binding, isNewlyProvisioned: true, grants };
     }
 
     private async persistBinding(

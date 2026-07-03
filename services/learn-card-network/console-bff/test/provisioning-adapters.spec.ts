@@ -43,6 +43,30 @@ describe('KmsManagedIdentityMinter', () => {
         expect(doc?.id).toBe(identity.managedDid);
         expect(doc?.verificationMethod[0]!.type).toBe('JsonWebKey2020');
     });
+
+    it('rotate() updates the key directory so the DID doc serves the new public key', async () => {
+        const kms = new LocalKeyManagementService();
+        const directory = new InMemoryKeyDirectory();
+        const profiles: ProfileCreator = { async createManagedProfile() {} };
+        const minter = new KmsManagedIdentityMinter({
+            kms,
+            directory,
+            profiles,
+            consoleDomain: 'console.lef.org',
+        });
+        const docService = new DidDocumentService({ kms, directory });
+
+        const identity = await minter.mint({ tenantId: 'lef', ecosystemId: 'eco_root' });
+        const before = await docService.resolve(identity.managedDid);
+
+        await minter.rotate(identity.managedDid);
+        const after = await docService.resolve(identity.managedDid);
+
+        expect(after?.id).toBe(identity.managedDid);
+        expect(after?.verificationMethod[0]!.publicKeyJwk).not.toEqual(
+            before?.verificationMethod[0]!.publicKeyJwk
+        );
+    });
 });
 
 describe('BrainServiceMembershipGranter', () => {

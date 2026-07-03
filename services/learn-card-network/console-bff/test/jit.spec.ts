@@ -102,6 +102,7 @@ describe('JitProvisioner', () => {
             ecosystemId: 'eco_root',
             role: 'MEMBER',
         });
+        expect(result.grants).toEqual([{ ecosystemId: 'eco_root', role: 'MEMBER' }]);
     });
 
     it('returns an existing ACTIVE binding without re-minting', async () => {
@@ -168,12 +169,33 @@ describe('JitProvisioner', () => {
             groupMappings: [{ idpGroup: 'admins', ecosystemId: 'eco_ca', role: 'ADMIN' }],
         });
 
-        await jit.resolveOrProvision(identity({ groups: ['admins'] }), mappedPolicy, 'lef-oidc');
+        const result = await jit.resolveOrProvision(
+            identity({ groups: ['admins'] }),
+            mappedPolicy,
+            'lef-oidc'
+        );
 
         expect(membership.grants).toContainEqual({
             profileId: 'profile-1',
             ecosystemId: 'eco_ca',
             role: 'ADMIN',
         });
+        expect(result.grants).toContainEqual({ ecosystemId: 'eco_ca', role: 'ADMIN' });
+    });
+
+    it('recompiles grants for a returning ACTIVE binding from current IdP group claims', async () => {
+        const mappedPolicy = policy({
+            groupMappings: [{ idpGroup: 'admins', ecosystemId: 'eco_ca', role: 'ADMIN' }],
+        });
+
+        await jit.resolveOrProvision(identity({ groups: ['admins'] }), mappedPolicy, 'lef-oidc');
+        const second = await jit.resolveOrProvision(
+            identity({ groups: ['admins'] }),
+            mappedPolicy,
+            'lef-oidc'
+        );
+
+        expect(second.isNewlyProvisioned).toBe(false);
+        expect(second.grants).toContainEqual({ ecosystemId: 'eco_ca', role: 'ADMIN' });
     });
 });

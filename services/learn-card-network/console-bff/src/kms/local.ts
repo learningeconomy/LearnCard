@@ -19,6 +19,7 @@ export class LocalKeyManagementService implements KeyManagementService {
 
     async generateSigningKey({
         tenantId,
+        alias,
         algorithm = 'ES256',
     }: GenerateKeyParams): Promise<ManagedKeyRef> {
         const keyId = randomUUID();
@@ -28,7 +29,7 @@ export class LocalKeyManagementService implements KeyManagementService {
 
         this.store.set(keyId, { tenantId, algorithm, version, privateKey, publicKey });
 
-        return { provider: this.provider, tenantId, keyId, algorithm, version };
+        return { provider: this.provider, tenantId, keyId, alias, algorithm, version };
     }
 
     async getPublicKeyJwk(ref: ManagedKeyRef): Promise<JsonWebKey> {

@@ -1,12 +1,13 @@
 import type { DashboardSession, TenantAuthPolicy } from '@learncard/types';
 
 import type { ProviderRegistry } from '@providers';
-import type { SessionStore } from '@session';
+import type { SessionStore, LoginStateStore } from '@session';
 
 export type ConsoleAuthServiceDeps = {
     registry: ProviderRegistry;
     sessions: SessionStore;
     resolvePolicy: (tenantId: string) => Promise<TenantAuthPolicy>;
+    stateStore?: LoginStateStore;
 };
 
 export type BeginLoginParams = {
@@ -29,10 +30,31 @@ export class ConsoleAuthService {
         const policy = await this.deps.resolvePolicy(params.tenantId);
         const provider = this.deps.registry.resolve(policy, params.providerId);
 
-        return provider.beginLogin(params);
+        const state = this.deps.stateStore
+            ? await this.deps.stateStore.issue({
+                  tenantId: params.tenantId,
+                  providerId: params.providerId,
+              })
+            : params.state;
+
+        return provider.beginLogin({ ...params, state });
     }
 
     async completeLogin(params: CompleteLoginParams): Promise<DashboardSession> {
+        if (this.deps.stateStore) {
+            const record = params.params.state
+                ? await this.deps.stateStore.consume(params.params.state)
+                : null;
+
+            if (
+                !record ||
+                record.tenantId !== params.tenantId ||
+                record.providerId !== params.providerId
+            ) {
+                throw new Error('Invalid or missing login state');
+            }
+        }
+
         const policy = await this.deps.resolvePolicy(params.tenantId);
         const provider = this.deps.registry.resolve(policy, params.providerId);
 
@@ -43,7 +65,7 @@ export class ConsoleAuthService {
             throw new Error('Provider did not satisfy the tenant MFA assurance requirement');
         }
 
-        const { binding } = await provider.resolveBinding(identity, params);
+        const { binding, grants } = await provider.resolveBinding(identity, params);
 
         return this.deps.sessions.create(
             {
@@ -55,9 +77,7 @@ export class ConsoleAuthService {
                 managedDid: binding.managedDid,
                 activeEcosystemId: binding.ecosystemId,
                 effectiveAccess: {
-                    ecosystemRoles: [
-                        { ecosystemId: binding.ecosystemId, role: policy.defaultRole },
-                    ],
+                    ecosystemRoles: grants,
                     scopes: [],
                 },
                 assuranceLevel,
