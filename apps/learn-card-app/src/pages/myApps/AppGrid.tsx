@@ -8,7 +8,7 @@ export type AppGridProps = {
 const AppGrid: React.FC<AppGridProps> = ({ heading, children }) => (
     <section className="w-full max-w-[820px]">
         {heading && (
-            <h2 className="mb-4 font-poppins text-[20px] font-semibold text-[#18224E] md:mb-6 md:text-[24px]">
+            <h2 className="mb-4 font-poppins text-[20px] font-medium text-[#353E64] md:mb-6">
                 {heading}
             </h2>
         )}
