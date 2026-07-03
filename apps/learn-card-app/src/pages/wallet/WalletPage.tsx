@@ -182,7 +182,7 @@ const WalletPage: React.FC = () => {
                           }
                         : passportBgColor
                         ? { backgroundColor: passportBgColor }
-                        : { background: 'transparent' }
+                        : ({ '--background': 'transparent' } as React.CSSProperties)
                 }
                 notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
             />
