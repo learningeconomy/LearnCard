@@ -4,6 +4,7 @@ export type LearnerContextRequestOptions = {
     format?: 'prompt' | 'structured';
     instructions?: string;
     detailLevel?: 'compact' | 'expanded';
+    waitForSync?: boolean;
 };
 
 export type LearnerContextSourceData = {
