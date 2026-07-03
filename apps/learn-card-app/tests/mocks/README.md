@@ -4,23 +4,29 @@ Playwright tests that run against the **vite dev server only — no docker backe
 Fast and deterministic, so they run on every affected PR (`.github/workflows/mock-e2e.yml`)
 via the `test-mock` nx target. The real-backend E2E stays on the gated EC2 job.
 
+## What it covers
+
+The offline UI logic of `/issue`: type-picker gating, the form flow, recipient-mode
+tabs, the JSON editor toggle, and the retry-able error path. It does **not** complete a
+real issuance — that's a signing + multi-service backend flow that lives in the real
+`@e2e` spec (see the bottom of this doc).
+
 ## How it works
 
-`installNetwork(page)` composes two layers (see `network.ts`):
+`installNetwork(page)` sets up:
 
-1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and
-   all input-specific **reads** (`index.get`, `getProfile`, `getChallenges`, …) verbatim.
-   Recorded once against real docker; refreshable on demand.
-2. **Typed tRPC stubs** (`trpc.ts` + `issuance-stubs.json`) — serve the **mutations**
-   (`boost.createBoost`, `boost.send`, `credential.acceptCredential`, `storage.store`, …)
-   by **procedure name**, because tRPC batches mutations into timing-dependent URLs that
-   don't reliably match on HAR replay. Registered last, so they shadow the HAR baseline.
+1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and all
+   backend reads on `localhost:4000/4100/5100` (tRPC, `/api`, `/keys`, and non-tRPC calls
+   like did:web resolution) verbatim. Recorded once against real docker; refreshable.
+2. **A typed tRPC mock** (`trpc.ts`) layered on top — installed but empty by default; a
+   test can register per-procedure overrides on the returned mock (`mock.on(...)`).
 
-On replay, any backend call that is **neither recorded nor stubbed is aborted**
+On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
 (`notFound: 'abort'`) — missing coverage fails loudly instead of hanging.
 
-DIDKit signing runs locally (WASM mocked by the `mocked-test` fixture), so credentials
-are really signed offline.
+The replay app is built with the **local** tenant config (`--stage local`) so it points at
+`localhost`, matching the recorded HAR. DIDKit signing runs locally (WASM mocked by the
+`mocked-test` fixture).
 
 ## Writing a mocked test
 
@@ -67,7 +73,7 @@ git add tests/mocks/har/issue.har.zip
 Records to a single `.zip` (never a loose `.har` — that scatters ~hundreds of body files;
 the `har/.gitignore` blocks those).
 
-### Mutations → add a typed stub (no docker needed)
+### Deterministic override → typed stub (no docker needed)
 
 `installNetwork` returns the mock; override a procedure with a response anchored to the
 **real** router type, so a backend schema change breaks the build:
@@ -86,27 +92,24 @@ mock.on(
 // return ABORT from a handler to force the retry-able error path.
 ```
 
-For a stable default across tests, capture the real response into `issuance-stubs.json`
-(it's registered automatically for every mocked test).
-
 ## Files
 
 | File                                     | Role                                                                        |
 | ---------------------------------------- | --------------------------------------------------------------------------- |
-| `network.ts`                             | `installNetwork()` — HAR + stub composition, record/replay switch           |
+| `network.ts`                             | `installNetwork()` — HAR replay + optional typed override, record/replay    |
 | `trpc.ts`                                | `createTrpcMock` (batch-aware) + `BrainOutputs`/`CloudOutputs` type anchors |
-| `issuance-stubs.json`                    | Recorded mutation responses, served by procedure name                       |
 | `har/issue.har.zip`                      | Recorded boot + reads (single-file HAR)                                     |
 | `../fixtures/mocked-test.ts`             | WASM mock, no docker cleanup                                                |
-| `../../playwright.mock.config.ts`        | Replay config (vite, `@mocked` only)                                        |
+| `../../playwright.mock.config.ts`        | Replay config (vite, local stage, `@mocked` only)                           |
 | `../../playwright.mock-record.config.ts` | Record config (real docker)                                                 |
 
 ## Not in this tier (use the real `@e2e` spec)
 
-Flows whose backend surface isn't recorded/stubbed — currently **link mode**
-(`generateClaimLink` + signing authority) and **issue-to-a-person** (recipient search).
-These live in `tests/issue-credential-page.spec.ts` as the real-backend semantic net.
+Anything that **completes an issuance** — issue-to-self, issue-to-a-person, and link mode.
+These are real signing + multi-service flows; faithfully mocking them offline is brittle
+and low-value, so they live in `tests/issue-credential-page.spec.ts` (the real-backend
+semantic net, run on the gated job).
 
-> **Anti-drift:** the type anchor catches structural drift at compile time; the HAR can
-> be re-recorded to catch behavioral drift; and the real `@e2e` smoke is the backstop.
+> **Anti-drift:** the type anchor catches structural drift at compile time; the HAR can be
+> re-recorded to catch behavioral drift; and the real `@e2e` smoke is the backstop.
 > The `har/issue.har.zip` contains **test-user** auth tokens/DIDs (seed `'a'*64`), not real PII.

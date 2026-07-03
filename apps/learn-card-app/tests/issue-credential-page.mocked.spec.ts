@@ -60,21 +60,9 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await expect(page.locator('textarea.font-mono')).toBeVisible({ timeout: 30_000 });
     });
 
-    test('issues to self, then routes off the success screen', async ({ page }) => {
-        await selectBadgeType(page);
-        await fillName(page, 'Mocked Self Badge');
-        await issueButton(page).click();
-        await expect(page.getByRole('heading', { name: /you made it/i })).toBeVisible({
-            timeout: 30_000,
-        });
-        await page.getByRole('button', { name: /view in wallet/i }).click();
-        // "View in Wallet" is an SPA history.push (no load event), so assert we
-        // leave the success route rather than waiting for navigation load.
-        await expect(page).not.toHaveURL(/\/issue/, { timeout: 30_000 });
-    });
-
-    // Link mode (generateClaimLink + signing-authority) isn't stubbed here — it's
-    // covered by the real-backend @e2e spec. Keep it out of the mocked tier.
+    // Completing an issuance (self / person / link) is a real signing +
+    // multi-service backend flow — it lives in the real-backend @e2e spec, not
+    // here. This tier covers the offline UI logic up to the issue action.
 
     test('shows a retry-able error when issuance fails', async ({ page }) => {
         await selectBadgeType(page);
@@ -83,19 +71,6 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         await page.route(/\/\/localhost:4000\/trpc/, route => route.abort('failed'));
         await issueButton(page).click();
         await expect(page.getByRole('button', { name: /try again/i })).toBeVisible({
-            timeout: 30_000,
-        });
-    });
-
-    test('restores the success screen after a page reload', async ({ page }) => {
-        await selectBadgeType(page);
-        await fillName(page, 'Mocked Snapshot Badge');
-        await issueButton(page).click();
-        await expect(page.getByRole('heading', { name: /you made it/i })).toBeVisible({
-            timeout: 30_000,
-        });
-        await page.reload();
-        await expect(page.getByRole('heading', { name: /you made it/i })).toBeVisible({
             timeout: 30_000,
         });
     });

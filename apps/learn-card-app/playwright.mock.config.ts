@@ -26,10 +26,13 @@ const config: PlaywrightTestConfig = {
         storageState: undefined,
     },
     webServer: {
-        // prepare-config generates index.html + tenant-config.json; vite then
-        // serves the app pointed at localhost:4000/4100/5100, which the mock
-        // layer intercepts.
-        command: 'pnpm prepare-config && vite --host --port 3000',
+        // Build the LOCAL tenant config so the app points at localhost:4000/4100/5100
+        // — the same backend the HAR was recorded against. The default (production)
+        // config would call network.learncard.com and miss every recorded entry.
+        // Use bun (the repo's declared packageManager); a `pnpm` here is rejected by
+        // corepack against the bun packageManager spec.
+        command:
+            'bun scripts/prepare-native-config.ts learncard --stage local && bunx vite --host --port 3000',
         url: 'http://localhost:3000',
         timeout: 5 * 60 * 1000,
         reuseExistingServer: !process.env.CI,
