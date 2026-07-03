@@ -97,7 +97,8 @@ const MyAppsLanding: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader />
+            {/* Gray header so it blends with the grayscale-100 content (no white bar). */}
+            <MainHeader customClassName="bg-grayscale-100" />
             <IonContent fullscreen color="grayscale-100">
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">

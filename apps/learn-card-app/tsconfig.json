@@ -6,8 +6,6 @@
             "apps/learn-card-app/src/*": ["src/*"],
             "@analytics": ["src/analytics"],
             "@analytics/*": ["src/analytics/*"],
-            "learn-card-base": ["../../packages/learn-card-base/src/index.ts"],
-            "learn-card-base/*": ["../../packages/learn-card-base/src/*"],
             "learn-card-base/src/*": ["../../packages/learn-card-base/src/*"]
         },
         "target": "esnext",
