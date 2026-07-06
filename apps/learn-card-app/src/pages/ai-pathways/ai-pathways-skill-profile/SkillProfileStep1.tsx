@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import {
@@ -6,6 +7,8 @@ import {
     TextInput,
     SelectInput,
     useSyncAllCredentialsToContractsMutation,
+    useWallet,
+    queueAiInsightCredentialRefresh,
     useVerifiableData,
 } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
@@ -69,6 +72,8 @@ const MONTHS_OPTIONS = [
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
     const { trackProfileDataAdded } = useTrackProfileDataAdded();
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
+    const queryClient = useQueryClient();
+    const { initWallet } = useWallet();
     const { markStepCompleted } = useSkillProfileStepFunnel(1, () => {
         const fields: string[] = [];
         if (goals.length > 0) fields.push('goals');
@@ -157,8 +162,23 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
         ]);
 
         if (saveResults.some(Boolean)) {
-            console.log('[ConsentSync] My Skills Profile saved, triggering full wallet resync');
-            await syncAllCredentialsToContracts.mutateAsync();
+            void (async () => {
+                console.log('[ConsentSync] My Skills Profile saved, triggering full wallet resync');
+                await syncAllCredentialsToContracts.mutateAsync();
+
+                try {
+                    const wallet = await initWallet();
+                    await queueAiInsightCredentialRefresh({
+                        wallet,
+                        queryClient,
+                    });
+                } catch (error) {
+                    console.warn(
+                        'Failed to refresh AI insights after saving skill profile data:',
+                        error
+                    );
+                }
+            })();
         }
 
         trackProfileDataAdded();

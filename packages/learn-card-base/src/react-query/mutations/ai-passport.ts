@@ -3,11 +3,8 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { UploadTypesEnum } from 'learn-card-base';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { createAiInsightCredential } from '../../hooks/useAiInsightCredential';
 import { networkStore } from '../../stores/NetworkStore';
-import {
-    setAiInsightRefreshError,
-    setAiInsightRefreshPending,
-} from '../../stores/aiInsightRefreshStore';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('ai-passport');
 
@@ -100,25 +97,26 @@ export const queueAiInsightCredentialRefresh = async ({
         debounceMs: AI_INSIGHT_REFRESH_DEBOUNCE_MS,
     });
 
-    setAiInsightRefreshPending({
-        requestedAt: Date.now(),
-        baselineCredentialId: currentAiInsightCredential?.id ?? null,
-    });
-
     aiPassportRefreshPromise = (async () => {
         try {
             await new Promise(resolve => setTimeout(resolve, AI_INSIGHT_REFRESH_DEBOUNCE_MS));
-            await requestAiPassportCredentialRefresh(wallet);
+            const aiInsightCredential = await createAiInsightCredential(wallet);
+
+            queryClient.setQueryData(aiInsightCredentialQueryKey, aiInsightCredential);
+            queryClient.setQueryData(['useExistingAiInsightCredential'], aiInsightCredential);
+
             logAiInsightRefresh('Invalidating cached AI insight credential', {
                 queryKey: aiInsightCredentialQueryKey,
             });
             await queryClient.invalidateQueries({ queryKey: aiInsightCredentialQueryKey });
+            await queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] });
+            await queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
+            await queryClient.invalidateQueries({ queryKey: ['training-programs'] });
             logAiInsightRefresh('Invalidated cached AI insight credential', {
                 queryKey: aiInsightCredentialQueryKey,
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setAiInsightRefreshError(message);
             logAiInsightRefreshError('Failed to request AI Insight credential refresh', error);
         }
     })().finally(() => {

@@ -7,6 +7,7 @@ import {
     CredentialCategoryEnum,
     getBaseUrl,
     getCategoryForCredential,
+    queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
@@ -731,6 +732,16 @@ export const useManageSelfAssignedSkillsBoost = () => {
             });
 
             syncAllCredentialsToContracts.mutate();
+
+            try {
+                const wallet = await initWallet();
+                await queueAiInsightCredentialRefresh({
+                    wallet,
+                    queryClient,
+                });
+            } catch (error) {
+                log.warn('Failed to refresh AI insights after saving skills:', error);
+            }
         },
     });
 };
