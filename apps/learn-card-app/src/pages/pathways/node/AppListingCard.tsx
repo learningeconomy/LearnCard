@@ -80,6 +80,16 @@ export interface AppListingCardProps {
     isInstalledLoading?: boolean;
     /** Invoked when the user installs via the launched detail modal. */
     onInstallSuccess?: () => void;
+    /**
+     * Hide the surface this card lives in while an in-app modal is open,
+     * then restore it when the modal closes. The pathway NodeDetail is a
+     * body-level portal that paints above the app modal root, so an
+     * install / iframe / AI-tutor modal opened from here renders behind
+     * it. Suppressing the host lets the modal show; restoring on the
+     * modal's close returns the learner to the node.
+     */
+    onSuppressHost?: () => void;
+    onRestoreHost?: () => void;
 }
 
 const AppListingCard: React.FC<AppListingCardProps> = ({
@@ -87,10 +97,12 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
     isInstalled,
     isInstalledLoading = false,
     onInstallSuccess,
+    onSuppressHost,
+    onRestoreHost,
 }) => {
     const { newModal } = useModal({});
 
-    const { launch, inlineKind } = useAppListingLaunch(listing);
+    const { launch, inlineKind } = useAppListingLaunch(listing, isInstalled);
 
     const copy = launchTypeCopy(listing.launch_type as string);
 
@@ -114,15 +126,27 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
     // `hideButton: true` because AppStoreDetailModal has its own
     // close affordance in the IonHeader — we don't want two X buttons.
     const handleInstall = () => {
+        onSuppressHost?.();
+
         newModal(
             <AppStoreDetailModal
                 listing={listing as AppStoreListing | InstalledApp}
                 isInstalled={false}
                 onInstallSuccess={onInstallSuccess}
             />,
-            { hideButton: true },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right },
+            { hideButton: true, onClose: onRestoreHost },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
+    };
+
+    const handleOpen = () => {
+        if (inlineKind === 'iframe' || inlineKind === 'ai-tutor') {
+            onSuppressHost?.();
+            launch({ onClose: onRestoreHost });
+            return;
+        }
+
+        launch();
     };
 
     const buttonIcon = isInstalled
@@ -159,7 +183,9 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
 
                 {isInstalled && (
                     <>
-                        <span aria-hidden className="text-grayscale-300">·</span>
+                        <span aria-hidden className="text-grayscale-300">
+                            ·
+                        </span>
                         <span className="text-emerald-600">Installed</span>
                     </>
                 )}
@@ -184,8 +210,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
                                 // Broken CDN / 404 → swap to the
                                 // shared fallback so the card never
                                 // renders with a broken-image icon.
-                                (e.currentTarget as HTMLImageElement).src =
-                                    FALLBACK_ICON_URL;
+                                (e.currentTarget as HTMLImageElement).src = FALLBACK_ICON_URL;
                             }}
                         />
                     </span>
@@ -241,7 +266,7 @@ const AppListingCard: React.FC<AppListingCardProps> = ({
                     ) : isInstalled ? (
                         <button
                             type="button"
-                            onClick={launch}
+                            onClick={handleOpen}
                             className="
                                 w-full py-3 px-4
                                 rounded-[20px]
