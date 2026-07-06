@@ -102,6 +102,7 @@ const MyAppsLanding: React.FC = () => {
         />
     );
 
+    const hasNoMoreApps = !isLoadingMore && moreApps.length === 0;
     const moreAppsTiles =
         isLoadingMore && moreApps.length === 0
             ? Array.from({ length: 8 }).map((_, i) => renderSkeletonTile(`more-skeleton-${i}`))
@@ -172,7 +173,15 @@ const MyAppsLanding: React.FC = () => {
                                 {LEARNCARD_APP_SHORTCUTS.map(renderShortcutTile)}
                             </AppGrid>
 
-                            <AppGrid heading="More Apps">{moreAppsTiles}</AppGrid>
+                            <AppGrid heading="More Apps">
+                                {hasNoMoreApps ? (
+                                    <p className="col-span-full py-8 text-center font-poppins text-[15px] text-[#6F7590]">
+                                        No apps to show yet.
+                                    </p>
+                                ) : (
+                                    moreAppsTiles
+                                )}
+                            </AppGrid>
                         </>
                     )}
                 </div>
