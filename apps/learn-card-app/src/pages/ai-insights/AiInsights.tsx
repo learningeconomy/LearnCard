@@ -95,6 +95,20 @@ const AiInsights: React.FC = () => {
         useExistingAiInsightCredential({
             enabled: isAiEnabled && !aiFeatureGateLoading && Boolean(currentLCNUser),
         });
+    const [displayedAiInsightCredential, setDisplayedAiInsightCredential] = useState(
+        existingAiInsightCredential
+    );
+
+    useEffect(() => {
+        if (existingAiInsightCredential) {
+            setDisplayedAiInsightCredential(existingAiInsightCredential);
+            return;
+        }
+
+        if (!existingAiInsightCredentialLoading && existingAiInsightCredential === null) {
+            setDisplayedAiInsightCredential(null);
+        }
+    }, [existingAiInsightCredential, existingAiInsightCredentialLoading]);
 
     const { mutate: createAiInsightCredential, isPending: createAiInsightCredentialLoading } =
         useAiInsightCredentialMutation();
@@ -115,7 +129,9 @@ const AiInsights: React.FC = () => {
     const aiInsightCredentialRegenerating = aiInsightRefreshStore.use.status() === 'pending';
     const walletCredentialsLoading = credentialsFetching || allResolvedBoostsLoading;
     const hasWalletCredentials = Number(allResolvedCreds?.length ?? 0) > 0;
-    const hasExistingAiInsightCredential = Boolean(existingAiInsightCredential);
+    const aiInsightCredentialToDisplay =
+        existingAiInsightCredential ?? displayedAiInsightCredential;
+    const hasExistingAiInsightCredential = Boolean(aiInsightCredentialToDisplay);
     const canGenerateAiInsights = hasWalletCredentials;
 
     const generateAiInsights = useCallback(() => {
@@ -141,7 +157,7 @@ const AiInsights: React.FC = () => {
         !consentedContractsLoading &&
         !existingAiInsightCredentialLoading &&
         !createAiInsightCredentialLoading &&
-        !existingAiInsightCredential &&
+        !aiInsightCredentialToDisplay &&
         hasWalletCredentials &&
         !autoGenerateAiInsightsAttemptedRef.current;
 
@@ -244,11 +260,11 @@ const AiInsights: React.FC = () => {
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             <AiInsightsLearningSnapshots
-                aiInsightCredential={existingAiInsightCredential}
+                aiInsightCredential={aiInsightCredentialToDisplay}
                 isLoading={learningSnapshotsIsLoading}
                 showRegenerate
                 onRegenerate={generateAiInsights}
-                regenerateLabel={existingAiInsightCredential ? 'Regenerate' : 'Generate'}
+                regenerateLabel={aiInsightCredentialToDisplay ? 'Regenerate' : 'Generate'}
                 regenerateDisabled={
                     createAiInsightCredentialLoading ||
                     walletCredentialsLoading ||

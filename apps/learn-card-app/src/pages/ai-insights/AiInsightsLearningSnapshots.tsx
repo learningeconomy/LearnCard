@@ -42,6 +42,7 @@ const AiInsightsLearningSnapshots: React.FC<{
     regenerateDisabledReason,
 }) => {
     const resolvedAiInsightCredential = aiInsightCredential;
+    const hasResolvedAiInsightCredential = typeof resolvedAiInsightCredential !== 'undefined';
     const hasSnapshotContent = [
         resolvedAiInsightCredential?.insights?.strongestArea?.title,
         resolvedAiInsightCredential?.insights?.strongestArea?.summary,
@@ -78,11 +79,11 @@ const AiInsightsLearningSnapshots: React.FC<{
         },
     ];
 
-    if (isLoading) {
+    if (isLoading && !hasResolvedAiInsightCredential) {
         return <AiInsightsLearningSnapshotsSkeletonLoader />;
     }
 
-    if (!resolvedAiInsightCredential || !hasSnapshotContent) {
+    if (!hasResolvedAiInsightCredential || !hasSnapshotContent) {
         return (
             <AiInsightsEmptyPlaceholder
                 isSharedView={isSharedView}
