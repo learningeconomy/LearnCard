@@ -725,7 +725,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 ...backgroundStyles,
             }}
         >
-            <section className="min-h-[calc(100%-85px)] p-[20px] flex items-center justify-center">
+            {/* items-start (not items-center): when the profile content is taller
+                than the modal, align-items:center pushes the top above the scroll
+                origin where it can't be reached, clipping it. Top-align so it's
+                always scrollable from the top. */}
+            <section className="min-h-[calc(100%-85px)] p-[20px] flex items-start justify-center">
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">

@@ -26,6 +26,7 @@ export const getNotificationButtonColor = (path?: string) => {
         path === '/home' ||
         path === '/jobs' ||
         path === '/wallet' ||
+        path?.startsWith('/launchpad') ||
         path === '/lc-preview' ||
         path === '/notifications' ||
         path === '/campfire' ||
@@ -39,12 +40,13 @@ export const getNotificationButtonColor = (path?: string) => {
         path?.includes('/ai/insights') ||
         path?.includes('/ai/chat') ||
         path?.includes('/ai/pathways') ||
-        path?.includes('/ai/topics')
+        path?.includes('/ai/topics') ||
+        path?.startsWith('/pathways')
     ) {
         return 'text-black';
     }
 
-    if (path === '/launchpad' || path?.includes('/consent-flow')) {
+    if (path?.includes('/consent-flow')) {
         return 'hidden';
     }
 
