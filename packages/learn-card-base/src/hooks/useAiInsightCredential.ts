@@ -6,6 +6,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
     aiInsightRefreshStore,
     clearAiInsightRefreshState,
+    setAiInsightRefreshPending,
 } from 'learn-card-base/stores/aiInsightRefreshStore';
 
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
@@ -560,6 +561,17 @@ export const useAiInsightCredentialMutation = () => {
     const hasCachedAiInsightCredential = Boolean(
         queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)
     );
+    const setRefreshPending = () => {
+        const baselineCredentialId =
+            queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)?.id ??
+            queryClient.getQueryData<VC | null>(queryKey)?.id ??
+            null;
+
+        setAiInsightRefreshPending({
+            requestedAt: Date.now(),
+            baselineCredentialId,
+        });
+    };
 
     return useMutation({
         mutationFn: async () => {
@@ -587,6 +599,8 @@ export const useAiInsightCredentialMutation = () => {
                 throw new Error(AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE);
             }
 
+            setRefreshPending();
+
             const wallet = await initWallet();
 
             return createAiInsightCredential(wallet, queryClient);
@@ -598,6 +612,9 @@ export const useAiInsightCredentialMutation = () => {
             queryClient.invalidateQueries({ queryKey: existingAiInsightCredentialQueryKey });
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
             queryClient.invalidateQueries({ queryKey: ['training-programs'] });
+        },
+        onError: () => {
+            clearAiInsightRefreshState();
         },
     });
 };

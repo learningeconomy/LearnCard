@@ -24,6 +24,7 @@ interface AiInsightsLearningSnapshot {
 
 const AiInsightsLearningSnapshots: React.FC<{
     isLoading: boolean;
+    isRegenerating?: boolean;
     aiInsightCredential?: any;
     isSharedView?: boolean;
     showRegenerate?: boolean;
@@ -33,6 +34,7 @@ const AiInsightsLearningSnapshots: React.FC<{
     regenerateDisabledReason?: string;
 }> = ({
     isLoading,
+    isRegenerating = false,
     aiInsightCredential,
     isSharedView = false,
     showRegenerate = false,
@@ -92,6 +94,7 @@ const AiInsightsLearningSnapshots: React.FC<{
                 regenerateLabel={regenerateLabel}
                 regenerateDisabled={regenerateDisabled}
                 regenerateDisabledReason={regenerateDisabledReason}
+                isRegenerating={isRegenerating}
             />
         );
     }
@@ -106,12 +109,16 @@ const AiInsightsLearningSnapshots: React.FC<{
                 {showRegenerate && (
                     <button
                         type="button"
-                        disabled={isLoading}
+                        disabled={isLoading || isRegenerating}
                         onClick={onRegenerate}
                         className="flex items-center gap-1.5 py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <RefreshIcon className="w-4 h-4" />
-                        {isLoading ? 'Generating...' : 'Regenerate'}
+                        <RefreshIcon
+                            className={`w-4 h-4 ${
+                                isLoading || isRegenerating ? 'animate-spin' : ''
+                            }`}
+                        />
+                        {isLoading || isRegenerating ? 'Regenerating...' : 'Regenerate'}
                     </button>
                 )}
             </div>

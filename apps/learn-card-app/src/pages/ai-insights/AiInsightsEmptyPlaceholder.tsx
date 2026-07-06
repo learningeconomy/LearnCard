@@ -12,6 +12,7 @@ export const AiInsightsEmptyPlaceholder: React.FC<{
     regenerateLabel?: string;
     regenerateDisabled?: boolean;
     regenerateDisabledReason?: string;
+    isRegenerating?: boolean;
 }> = ({
     isSharedView = false,
     showRegenerate = false,
@@ -19,8 +20,10 @@ export const AiInsightsEmptyPlaceholder: React.FC<{
     regenerateLabel = 'Regenerate',
     regenerateDisabled = false,
     regenerateDisabledReason,
+    isRegenerating = false,
 }) => {
     const brandingConfig = useBrandingConfig();
+    const loadingLabel = regenerateLabel === 'Regenerate' ? 'Regenerating' : 'Generating';
 
     const handleRegenerateClick = (): void => {
         if (regenerateDisabled) {
@@ -48,12 +51,14 @@ export const AiInsightsEmptyPlaceholder: React.FC<{
                 >
                     <button
                         type="button"
-                        disabled={regenerateDisabled}
+                        disabled={regenerateDisabled || isRegenerating}
                         onClick={handleRegenerateClick}
                         className="flex items-center gap-1.5 py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <RefreshIcon className="w-4 h-4" />
-                        {regenerateLabel}
+                        <RefreshIcon
+                            className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`}
+                        />
+                        {isRegenerating ? loadingLabel : regenerateLabel}
                     </button>
                 </div>
             )}

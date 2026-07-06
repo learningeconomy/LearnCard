@@ -262,12 +262,14 @@ const AiInsights: React.FC = () => {
             <AiInsightsLearningSnapshots
                 aiInsightCredential={aiInsightCredentialToDisplay}
                 isLoading={learningSnapshotsIsLoading}
+                isRegenerating={aiInsightCredentialRegenerating}
                 showRegenerate
                 onRegenerate={generateAiInsights}
                 regenerateLabel={aiInsightCredentialToDisplay ? 'Regenerate' : 'Generate'}
                 regenerateDisabled={
                     createAiInsightCredentialLoading ||
                     walletCredentialsLoading ||
+                    aiInsightCredentialRegenerating ||
                     !canGenerateAiInsights
                 }
                 regenerateDisabledReason={
