@@ -20,6 +20,20 @@ module.exports = {
         'bg-sand-50',
         'bg-vp-red-50',
         'bg-baltic-blue-500',
+        // LC-1921 side-menu Build-My-LearnCard card + theme toggle: tints built
+        // via `bg-${family}-{50,200,500}` from the active theme primary color.
+        'bg-indigo-50',
+        'bg-indigo-200',
+        'bg-indigo-200/50',
+        'bg-indigo-500',
+        'bg-blue-50',
+        'bg-blue-200',
+        'bg-blue-200/50',
+        'bg-blue-500',
+        // VetPass default family is multi-word (`baltic-blue-500`).
+        'bg-baltic-blue-50',
+        'bg-baltic-blue-200',
+        'bg-baltic-blue-200/50',
     ],
     theme: {
         fontFamily: {
