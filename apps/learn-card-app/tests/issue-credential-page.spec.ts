@@ -9,7 +9,7 @@ const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
 // The Issue button renders two <span>s (a short mobile label and the full
 // desktop label) toggled by CSS. On the desktop Firefox viewport the accessible
 // name resolves to "Issue Credential"; the regex tolerates either label.
-const issueButton = (page: Page) => page.getByRole('button', { name: /issue credential|^issue$/i });
+const issueButton = (page: Page) => page.getByTestId('issue-submit');
 
 const selectBadgeType = async (page: Page) => {
     await page.getByRole('button', { name: 'Badge', exact: true }).click({ timeout: 30_000 });

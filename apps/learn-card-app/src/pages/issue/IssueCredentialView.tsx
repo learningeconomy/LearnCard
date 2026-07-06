@@ -183,6 +183,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
 
                                     <button
                                         type="button"
+                                        data-testid="issue-submit"
                                         onClick={onIssue}
                                         disabled={!canIssue}
                                         className="relative overflow-hidden py-2.5 px-4 sm:px-6 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:bg-grayscale-800 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-grayscale-900 shadow-sm hover:shadow-md active:scale-[0.98] shrink-0"

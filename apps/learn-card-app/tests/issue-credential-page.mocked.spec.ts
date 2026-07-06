@@ -7,7 +7,7 @@ import { TEST_USER_PROFILE_ID } from './constants';
 const NAME_PLACEHOLDER = 'e.g. Web Development Fundamentals';
 
 // See the sibling @e2e spec for the rationale behind these viewport-tolerant selectors.
-const issueButton = (page: Page) => page.getByRole('button', { name: /issue credential|^issue$/i });
+const issueButton = (page: Page) => page.getByTestId('issue-submit');
 
 const selectBadgeType = async (page: Page) => {
     await page.getByRole('button', { name: 'Badge', exact: true }).click({ timeout: 30_000 });
