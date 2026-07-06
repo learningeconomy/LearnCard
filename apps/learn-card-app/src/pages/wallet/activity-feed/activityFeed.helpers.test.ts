@@ -70,4 +70,18 @@ describe('groupActivitiesByMonth', () => {
         expect(groups[0].items.map(i => i.id)).toEqual(['a', 'b']);
         expect(groups[1].items.map(i => i.id)).toEqual(['c']);
     });
+
+    it('keeps one bucket per month even when same-month items are not consecutive', () => {
+        // 'a' (Jun) then 'b' (May) then 'c' (Jun) — the old linear grouping would
+        // have opened a second "JUNE 2026" bucket for 'c'.
+        const vms = [
+            toActivityFeedVM(record({ id: 'a', timestamp: '2026-06-23T00:00:00Z' }), 'me'),
+            toActivityFeedVM(record({ id: 'b', timestamp: '2026-05-30T00:00:00Z' }), 'me'),
+            toActivityFeedVM(record({ id: 'c', timestamp: '2026-06-01T00:00:00Z' }), 'me'),
+        ];
+        const groups = groupActivitiesByMonth(vms);
+        expect(groups.map(g => g.label)).toEqual(['JUNE 2026', 'MAY 2026']);
+        expect(groups[0].items.map(i => i.id)).toEqual(['a', 'c']);
+        expect(groups[1].items.map(i => i.id)).toEqual(['b']);
+    });
 });

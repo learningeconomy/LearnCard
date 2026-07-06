@@ -122,15 +122,21 @@ const monthLabel = (iso: string): string => {
     return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 
+/**
+ * Groups VMs into month buckets. Map-keyed by label so items from the same month
+ * always land in one group even if they arrive non-consecutively (e.g. out of
+ * strict timestamp order across paged results). Group order follows first-seen
+ * month, which for the caller's newest-first records is newest month first.
+ */
 export const groupActivitiesByMonth = (items: ActivityFeedItemVM[]): ActivityMonthGroup[] => {
-    const groups: ActivityMonthGroup[] = [];
+    const byLabel = new Map<string, ActivityFeedItemVM[]>();
     for (const item of items) {
         const label = monthLabel(item.timestamp);
-        const last = groups[groups.length - 1];
-        if (last && last.label === label) last.items.push(item);
-        else groups.push({ label, items: [item] });
+        const bucket = byLabel.get(label);
+        if (bucket) bucket.push(item);
+        else byLabel.set(label, [item]);
     }
-    return groups;
+    return Array.from(byLabel, ([label, groupItems]) => ({ label, items: groupItems }));
 };
 
 export type ActivityFilterId = 'all' | CredentialCategoryEnum;
