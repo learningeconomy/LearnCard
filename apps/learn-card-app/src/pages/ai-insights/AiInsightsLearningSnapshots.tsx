@@ -31,7 +31,6 @@ const AiInsightsLearningSnapshots: React.FC<{
     onRegenerate?: () => void;
     regenerateLabel?: string;
     regenerateDisabled?: boolean;
-    regenerateDisabledReason?: string;
 }> = ({
     isLoading,
     isRegenerating = false,
@@ -41,7 +40,6 @@ const AiInsightsLearningSnapshots: React.FC<{
     onRegenerate,
     regenerateLabel,
     regenerateDisabled,
-    regenerateDisabledReason,
 }) => {
     const resolvedAiInsightCredential = aiInsightCredential;
     const hasResolvedAiInsightCredential = typeof resolvedAiInsightCredential !== 'undefined';
@@ -93,7 +91,6 @@ const AiInsightsLearningSnapshots: React.FC<{
                 onRegenerate={onRegenerate}
                 regenerateLabel={regenerateLabel}
                 regenerateDisabled={regenerateDisabled}
-                regenerateDisabledReason={regenerateDisabledReason}
                 isRegenerating={isRegenerating}
             />
         );

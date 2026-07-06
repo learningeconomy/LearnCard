@@ -272,11 +272,6 @@ const AiInsights: React.FC = () => {
                     aiInsightCredentialRegenerating ||
                     !canGenerateAiInsights
                 }
-                regenerateDisabledReason={
-                    walletCredentialsLoading
-                        ? 'Loading your data. Please try again in a moment.'
-                        : 'Add at least one credential to generate Insights.'
-                }
             />
 
             <MySkillProfile />
