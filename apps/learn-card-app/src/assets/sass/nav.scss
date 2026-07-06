@@ -53,12 +53,17 @@ ion-tab-bar.lc-footer-nav {
     // :host is content-box, so L/R padding overflowed the viewport and pushed
     // "Apps" FURTHER right. Buttons keep Ionic's default flex:1, so the four
     // columns space evenly and labels stay full (no truncation).
-    ion-tab-button:first-child {
-        margin-left: 20px;
-    }
+    // Only inset from 400px up. On narrower phones (≤ ~390px) the tighter
+    // columns can't fit the labels — "Dashboard" wraps to two lines — so drop
+    // the insets there and let the four buttons use the full width, as before.
+    @media (min-width: 400px) {
+        ion-tab-button:first-child {
+            margin-left: 20px;
+        }
 
-    ion-tab-button:last-child {
-        margin-right: 40px;
+        ion-tab-button:last-child {
+            margin-right: 40px;
+        }
     }
 }
 
