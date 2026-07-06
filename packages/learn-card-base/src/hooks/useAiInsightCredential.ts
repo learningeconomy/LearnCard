@@ -14,6 +14,12 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 import { LCR } from 'learn-card-base/types/credential-records';
 import { VCValidator, VC } from '@learncard/types';
 import { getLogger } from '../logging/logger';
+import { useAiFeatureGate } from './useAiFeatureGate';
+import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
+import {
+    useGetCredentialCount,
+    useGetCredentialsForSkills,
+} from '../react-query/queries/vcQueries';
 const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
@@ -184,12 +190,28 @@ export const getOrCreateAiInsightCredential = async (
     return aiInsightCredential;
 };
 
-export const useAiInsightCredential = () => {
+export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean } = {}) => {
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const baseQueryEnabled =
+        enabled &&
+        !aiFeatureGateLoading &&
+        isAiEnabled &&
+        !currentLCNUserLoading &&
+        Boolean(currentLCNUser);
+
+    const { data: currentCredentialCount, isLoading: currentCredentialCountLoading } =
+        useGetCredentialCount(undefined, baseQueryEnabled);
     const refreshStatus = aiInsightRefreshStore.use.status();
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
     const baselineCredentialId = aiInsightRefreshStore.use.baselineCredentialId();
+
+    const canGenerateAiInsightCredential =
+        baseQueryEnabled &&
+        !currentCredentialCountLoading &&
+        Number(currentCredentialCount ?? 0) > 0;
 
     logAiInsightCredential('Hook state', {
         refreshStatus,
@@ -199,6 +221,7 @@ export const useAiInsightCredential = () => {
 
     const query = useQuery({
         queryKey: ['useAiInsightCredential'],
+        enabled: canGenerateAiInsightCredential,
         queryFn: async () => {
             const wallet = await initWallet();
 
@@ -240,6 +263,7 @@ export const useAiInsightCredential = () => {
             return credential;
         },
         staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
+        retry: false,
         refetchInterval: refreshStatus === 'pending' ? AI_INSIGHT_REFRESH_POLL_INTERVAL_MS : false,
     });
 
@@ -425,9 +449,42 @@ export const useAiPathways = () => {
 export const useAiInsightCredentialMutation = () => {
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const baseQueryEnabled =
+        !aiFeatureGateLoading && isAiEnabled && !currentLCNUserLoading && Boolean(currentLCNUser);
+
+    const { data: currentCredentialCount, isLoading: currentCredentialCountLoading } =
+        useGetCredentialCount(undefined, baseQueryEnabled);
 
     return useMutation({
-        mutationFn: async () => createAiInsightCredential(await initWallet()),
+        mutationFn: async () => {
+            if (aiFeatureGateLoading) {
+                throw new Error('AI features are still loading.');
+            }
+
+            if (!isAiEnabled) {
+                throw new Error('AI features are not enabled for this account.');
+            }
+
+            if (currentLCNUserLoading) {
+                throw new Error('Your profile is still loading. Please try again.');
+            }
+
+            if (!currentLCNUser) {
+                throw new Error('Please create a profile first.');
+            }
+
+            if (currentCredentialCountLoading) {
+                throw new Error('Your account data is still loading. Please try again.');
+            }
+
+            if (Number(currentCredentialCount ?? 0) <= 0) {
+                throw new Error('No credentials are available yet.');
+            }
+
+            return createAiInsightCredential(await initWallet());
+        },
         onSuccess: aiInsightCredential => {
             clearAiInsightRefreshState();
             queryClient.setQueryData(queryKey, aiInsightCredential);
