@@ -32,18 +32,7 @@ const getPersonalValue = (key: string, value: ContractFieldConfig): string => {
     return '';
 };
 
-interface NetworkConsentMutationParams {
-    queryClient: QueryClient;
-    checkExistingConsent?: boolean; // Default true for backfill, false for signup
-}
-
-interface NetworkConsentResult {
-    success: boolean;
-    alreadyConsented?: boolean;
-    error?: string;
-}
-
-const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Promise<any> => {
+const buildNetworkContractTerms = async (wallet: any, queryClient: QueryClient): Promise<any> => {
     const contractDetails = await wallet.invoke.getContract(NETWORK_CONTRACT_URI);
     const contract = contractDetails?.contract;
 
@@ -140,6 +129,17 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
     };
 };
 
+interface NetworkConsentMutationParams {
+    queryClient: QueryClient;
+    checkExistingConsent?: boolean; // Default true for backfill, false for signup
+}
+
+interface NetworkConsentResult {
+    success: boolean;
+    alreadyConsented?: boolean;
+    error?: string;
+}
+
 /**
  * React Query mutation for consenting to the LearnCard Network contract.
  * Handles both new user signup and existing user backfill scenarios.
@@ -170,7 +170,7 @@ export const useNetworkConsentMutation = () => {
                 }
 
                 // Generate consent terms using only the categories defined by the contract
-                const terms = await generateConsentTerms(wallet, queryClient);
+                const terms = await buildNetworkContractTerms(wallet, queryClient);
 
                 // Consent to the contract
                 await wallet.invoke.consentToContract(NETWORK_CONTRACT_URI, { terms });
