@@ -44,6 +44,8 @@ const ONE_WEEK_MS = 1000 * 60 * 60 * 24 * 7;
 const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
 const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 const ENABLE_AI_INSIGHT_CREDENTIAL_LOGS = false;
+const AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE =
+    'Add at least one credential before generating AI Insights.';
 
 const logAiInsightCredential = (message: string, data?: Record<string, unknown>) => {
     if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
@@ -451,11 +453,14 @@ export const useAiInsightCredentialMutation = () => {
     const { initWallet } = useWallet();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
-    const baseQueryEnabled =
-        !aiFeatureGateLoading && isAiEnabled && !currentLCNUserLoading && Boolean(currentLCNUser);
-
     const { data: currentCredentialCount, isLoading: currentCredentialCountLoading } =
-        useGetCredentialCount(undefined, baseQueryEnabled);
+        useGetCredentialCount(
+            undefined,
+            !aiFeatureGateLoading &&
+                isAiEnabled &&
+                !currentLCNUserLoading &&
+                Boolean(currentLCNUser)
+        );
 
     return useMutation({
         mutationFn: async () => {
@@ -476,18 +481,22 @@ export const useAiInsightCredentialMutation = () => {
             }
 
             if (currentCredentialCountLoading) {
-                throw new Error('Your account data is still loading. Please try again.');
+                throw new Error('Your data is still loading. Please try again.');
             }
 
             if (Number(currentCredentialCount ?? 0) <= 0) {
-                throw new Error('No credentials are available yet.');
+                throw new Error(AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE);
             }
 
-            return createAiInsightCredential(await initWallet());
+            const wallet = await initWallet();
+
+            return createAiInsightCredential(wallet);
         },
         onSuccess: aiInsightCredential => {
             clearAiInsightRefreshState();
             queryClient.setQueryData(queryKey, aiInsightCredential);
+            queryClient.setQueryData(['useExistingAiInsightCredential'], aiInsightCredential);
+            queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] });
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
             queryClient.invalidateQueries({ queryKey: ['training-programs'] });
         },
