@@ -44,7 +44,7 @@ export const LEARNCARD_APP_SHORTCUTS: LearnCardAppShortcut[] = [
         gradientFrom: '#5EEAD4',
         gradientTo: '#14B8A6',
         Icon: AiPathwaysIconWithShape,
-        getAction: route('/pathways'),
+        getAction: route('/ai/pathways'),
     },
     {
         key: 'ai-sessions',
