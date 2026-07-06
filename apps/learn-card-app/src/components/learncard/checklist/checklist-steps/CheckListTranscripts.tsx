@@ -14,6 +14,7 @@ import { getWalletCategory } from './AchievementTypeSelectorModal';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -50,6 +51,7 @@ export const CheckListTranscripts: React.FC = () => {
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -166,7 +168,12 @@ export const CheckListTranscripts: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                await wallet.index.LearnCloud.remove(id);
+                const record = await wallet.index.LearnCloud.get({ id });
+                const targetRecord = record?.[0];
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord as any);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteTranscript::error', error);

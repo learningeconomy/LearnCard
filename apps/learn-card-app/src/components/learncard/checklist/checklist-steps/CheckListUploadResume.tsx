@@ -15,6 +15,7 @@ import { getWalletCategory } from './AchievementTypeSelectorModal';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -51,6 +52,7 @@ export const CheckListUploadResume: React.FC = () => {
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
@@ -156,9 +158,11 @@ export const CheckListUploadResume: React.FC = () => {
                 const record = await wallet.index.LearnCloud.get({
                     category: UploadTypesEnum.Resume,
                 });
-                const recordUri = record?.[0]?.uri as string;
-                if (!recordUri) return;
-                await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
+                const targetRecord = record?.[0];
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord as any);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);
