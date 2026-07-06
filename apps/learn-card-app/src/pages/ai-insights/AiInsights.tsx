@@ -23,7 +23,6 @@ import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostE
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
     CredentialCategoryEnum,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
     useAiInsightCredentialMutation,
     useAiFeatureGate,
     useConsentedContracts,
@@ -50,11 +49,6 @@ import AiInsightsWidgets from './AiInsightsWidgets';
 type Flags = {
     hideAiPathways?: boolean;
     showGenerateAiInsightsButton?: boolean;
-};
-
-type ConsentContractRecord = {
-    contract?: { uri?: string };
-    status?: string | null;
 };
 
 type ContractRequestRecord = {
@@ -95,8 +89,7 @@ const AiInsights: React.FC = () => {
         isLoading: allResolvedBoostsLoading,
     } = useGetCredentialsForSkills();
 
-    const { data: consentedContracts = [], isLoading: consentedContractsLoading } =
-        useConsentedContracts();
+    const { isLoading: consentedContractsLoading } = useConsentedContracts();
 
     const { data: existingAiInsightCredential, isLoading: existingAiInsightCredentialLoading } =
         useExistingAiInsightCredential({
@@ -123,18 +116,10 @@ const AiInsights: React.FC = () => {
     const walletCredentialsLoading = credentialsFetching || allResolvedBoostsLoading;
     const hasWalletCredentials = Number(allResolvedCreds?.length ?? 0) > 0;
     const hasExistingAiInsightCredential = Boolean(existingAiInsightCredential);
-    const hasLearnCardAiConsent = consentedContracts.some(
-        (consent: ConsentContractRecord) =>
-            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-            consent?.status !== 'withdrawn'
-    );
-    const canGenerateAiInsights = hasWalletCredentials || hasLearnCardAiConsent;
+    const canGenerateAiInsights = hasWalletCredentials;
 
     const generateAiInsights = useCallback(() => {
         if (!canGenerateAiInsights) {
-            console.error(
-                'Add at least one credential or enable LearnCard AI consent before generating AI Insights. Not generating.'
-            );
             return;
         }
 
@@ -157,7 +142,7 @@ const AiInsights: React.FC = () => {
         !existingAiInsightCredentialLoading &&
         !createAiInsightCredentialLoading &&
         !existingAiInsightCredential &&
-        (hasWalletCredentials || hasLearnCardAiConsent) &&
+        hasWalletCredentials &&
         !autoGenerateAiInsightsAttemptedRef.current;
 
     const learningSnapshotsIsLoading = useMemo(() => {
@@ -246,7 +231,7 @@ const AiInsights: React.FC = () => {
                     <button
                         className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
                         type="button"
-                        disabled={createAiInsightCredentialLoading}
+                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
                         onClick={generateAiInsights}
                     >
                         {createAiInsightCredentialLoading ? 'Generating...' : 'Generate Insights'}
@@ -269,10 +254,10 @@ const AiInsights: React.FC = () => {
                     walletCredentialsLoading ||
                     !canGenerateAiInsights
                 }
-                regenerateHint={
+                regenerateDisabledReason={
                     walletCredentialsLoading
                         ? 'Loading your data. Please try again in a moment.'
-                        : 'Add at least one credential or enable LearnCard AI consent before you can generate Insights.'
+                        : 'Add at least one credential to generate Insights.'
                 }
             />
 

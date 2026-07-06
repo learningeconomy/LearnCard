@@ -11,19 +11,53 @@ export const AiInsightsEmptyPlaceholder: React.FC<{
     onRegenerate?: () => void;
     regenerateLabel?: string;
     regenerateDisabled?: boolean;
-    regenerateHint?: string;
+    regenerateDisabledReason?: string;
 }> = ({
     isSharedView = false,
     showRegenerate = false,
     onRegenerate,
     regenerateLabel = 'Regenerate',
     regenerateDisabled = false,
-    regenerateHint,
+    regenerateDisabledReason,
 }) => {
     const brandingConfig = useBrandingConfig();
 
+    const handleRegenerateClick = (): void => {
+        if (regenerateDisabled) {
+            console.log(regenerateDisabledReason ?? 'Generate Insights is currently disabled.');
+            return;
+        }
+
+        onRegenerate?.();
+    };
+
+    const handleRegenerateHover = (): void => {
+        if (!regenerateDisabled) {
+            return;
+        }
+
+        console.log(regenerateDisabledReason ?? 'Generate Insights is currently disabled.');
+    };
+
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px] mt-4">
+        <div className="relative w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px] mt-4">
+            {!isSharedView && showRegenerate && (
+                <div
+                    className="absolute top-[18px] right-[15px]"
+                    onMouseEnter={handleRegenerateHover}
+                >
+                    <button
+                        type="button"
+                        disabled={regenerateDisabled}
+                        onClick={handleRegenerateClick}
+                        className="flex items-center gap-1.5 py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <RefreshIcon className="w-4 h-4" />
+                        {regenerateLabel}
+                    </button>
+                </div>
+            )}
+
             <div className="w-full flex-col flex items-center justify-center gap-4">
                 <AiInsightsIconWithShape className="w-auto h-[60px]" />
                 <div className="flex flex-col items-center justify-center gap-2">
@@ -35,24 +69,6 @@ export const AiInsightsEmptyPlaceholder: React.FC<{
                     </p>
                 </div>
                 {!isSharedView && <CheckListButton />}
-                {!isSharedView && showRegenerate && (
-                    <div className="flex flex-col items-center gap-1.5">
-                        <button
-                            type="button"
-                            disabled={regenerateDisabled}
-                            onClick={onRegenerate}
-                            className="flex items-center gap-1.5 py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <RefreshIcon className="w-4 h-4" />
-                            {regenerateLabel}
-                        </button>
-                        {regenerateDisabled && regenerateHint && (
-                            <p className="max-w-[320px] text-xs text-grayscale-500 text-center leading-relaxed">
-                                {regenerateHint}
-                            </p>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );
