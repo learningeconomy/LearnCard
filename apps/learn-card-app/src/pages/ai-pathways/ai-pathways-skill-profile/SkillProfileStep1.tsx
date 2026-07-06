@@ -143,11 +143,23 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
         }
     }, [roleExperienceData]);
 
-    const handleAddGoal = () => {
-        if (goalInput.trim()) {
-            setGoals([...goals, goalInput.trim().slice(0, 35)]);
-            setGoalInput('');
+    const commitGoalInput = () => {
+        const nextGoal = goalInput.trim();
+
+        if (!nextGoal) {
+            return goals;
         }
+
+        const updatedGoals = [...goals, nextGoal.slice(0, 35)];
+
+        setGoals(updatedGoals);
+        setGoalInput('');
+
+        return updatedGoals;
+    };
+
+    const handleAddGoal = () => {
+        commitGoalInput();
     };
 
     const handleRemoveGoal = (index: number) => {
@@ -155,8 +167,10 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     };
 
     const handleSaveAndNext = async () => {
+        const goalsToSave = commitGoalInput();
+
         const saveResults = await Promise.all([
-            saveGoals({ goals }),
+            saveGoals({ goals: goalsToSave }),
             saveProfessionalTitle({ professionalTitle }),
             saveRoleExperience({ lifetimeExperience: { years, months } }),
         ]);
