@@ -39,12 +39,54 @@ interface PathwayItem {
 }
 
 const queryKey = ['useAiInsightCredential'];
+const existingAiInsightCredentialQueryKey = ['useExistingAiInsightCredential'];
 const ONE_WEEK_MS = 1000 * 60 * 60 * 24 * 7;
 const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
 const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 const ENABLE_AI_INSIGHT_CREDENTIAL_LOGS = false;
 const AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE =
     'Add at least one credential before generating AI Insights.';
+
+const clearAiInsightCredentialQueryData = (queryClient: QueryClient) => {
+    queryClient.setQueryData(queryKey, null);
+    queryClient.setQueryData(existingAiInsightCredentialQueryKey, null);
+};
+
+const clearAiInsightCredentialFromWallet = async (wallet: BespokeLearnCard): Promise<void> => {
+    const existingRecords = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
+    const existingRecord = existingRecords?.[0];
+
+    if (!existingRecord) return;
+
+    try {
+        const learnCloudStore = wallet.store?.LearnCloud as
+            | {
+                  delete?: (uri: string) => Promise<boolean>;
+              }
+            | undefined;
+        const deleted = await learnCloudStore?.delete?.(existingRecord.uri);
+
+        if (deleted) return;
+    } catch (error) {
+        logAiInsightCredentialError(
+            'Failed to delete AI insight credential from LearnCloud',
+            error,
+            {
+                credentialId: existingRecord.id,
+                credentialUri: existingRecord.uri,
+            }
+        );
+    }
+
+    try {
+        await wallet.index.LearnCloud.remove(existingRecord.id);
+    } catch (error) {
+        logAiInsightCredentialError('Failed to remove AI insight credential index record', error, {
+            credentialId: existingRecord.id,
+            credentialUri: existingRecord.uri,
+        });
+    }
+};
 
 const logAiInsightCredential = (message: string, data?: Record<string, unknown>) => {
     if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
@@ -74,7 +116,10 @@ const logAiInsightCredentialError = (
     }
 };
 
-export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
+export const createAiInsightCredential = async (
+    wallet: BespokeLearnCard,
+    queryClient?: QueryClient
+): Promise<VC | null> => {
     const did = wallet.id.did();
 
     logAiInsightCredential('Requesting AI insight credential', {
@@ -89,6 +134,20 @@ export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
             headers: { 'Content-Type': 'application/json' },
         }
     );
+
+    if (response.status === 204) {
+        await clearAiInsightCredentialFromWallet(wallet);
+
+        if (queryClient) {
+            clearAiInsightCredentialQueryData(queryClient);
+        }
+
+        logAiInsightCredential('AI insight request returned 204; cleared cached insight', {
+            did,
+        });
+
+        return null;
+    }
 
     const responseText = await response.text();
 
@@ -167,9 +226,9 @@ export const getOrCreateAiInsightCredential = async (
     wallet: BespokeLearnCard,
     queryClient: QueryClient,
     skipCache = false
-): Promise<VC> => {
+): Promise<VC | null> => {
     if (!skipCache) {
-        const cachedCredential = queryClient.getQueryData<VC>(queryKey);
+        const cachedCredential = queryClient.getQueryData<VC | null>(queryKey);
 
         if (cachedCredential) return cachedCredential;
     }
@@ -184,7 +243,7 @@ export const getOrCreateAiInsightCredential = async (
         return VCValidator.parseAsync(aiInsightCredential);
     }
 
-    const aiInsightCredential = await createAiInsightCredential(wallet);
+    const aiInsightCredential = await createAiInsightCredential(wallet, queryClient);
 
     if (!skipCache) queryClient.setQueryData(queryKey, aiInsightCredential);
 
@@ -216,11 +275,16 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
     const baselineCredentialId = aiInsightRefreshStore.use.baselineCredentialId();
 
+    const hasCachedAiInsightCredential = Boolean(
+        queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)
+    );
     const canGenerateAiInsightCredential =
         baseQueryEnabled &&
         !resolvedCredentialsLoading &&
         !consentedContractsLoading &&
-        (Number(resolvedCredentials?.length ?? 0) > 0 || hasLearnCardAiConsent);
+        (Number(resolvedCredentials?.length ?? 0) > 0 ||
+            hasLearnCardAiConsent ||
+            hasCachedAiInsightCredential);
 
     logAiInsightCredential('Hook state', {
         refreshStatus,
@@ -228,7 +292,7 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
         baselineCredentialId,
     });
 
-    const query = useQuery({
+    const query = useQuery<VC | null>({
         queryKey: ['useAiInsightCredential'],
         enabled: canGenerateAiInsightCredential,
         queryFn: async () => {
@@ -251,7 +315,19 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
                     }
                 );
 
-                const credential = await createAiInsightCredential(wallet);
+                const credential = await createAiInsightCredential(wallet, queryClient);
+
+                if (!credential) {
+                    logAiInsightCredential(
+                        'Query fetch complete via refresh path with no content',
+                        {
+                            requestedAt,
+                            baselineCredentialId,
+                        }
+                    );
+
+                    return null;
+                }
 
                 logAiInsightCredential('Query fetch complete via refresh path', {
                     credentialId: credential.id,
@@ -263,6 +339,15 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
             }
 
             const credential = await getOrCreateAiInsightCredential(wallet, queryClient, true);
+
+            if (!credential) {
+                logAiInsightCredential('Query fetch complete with no content', {
+                    requestedAt,
+                    baselineCredentialId,
+                });
+
+                return null;
+            }
 
             logAiInsightCredential('Query fetch complete', {
                 credentialId: credential.id,
@@ -472,6 +557,9 @@ export const useAiInsightCredentialMutation = () => {
             consent?.status !== 'withdrawn'
     );
     const hasWalletCredentials = Number(resolvedCredentials?.length ?? 0) > 0;
+    const hasCachedAiInsightCredential = Boolean(
+        queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)
+    );
 
     return useMutation({
         mutationFn: async () => {
@@ -495,19 +583,19 @@ export const useAiInsightCredentialMutation = () => {
                 throw new Error('Your data is still loading. Please try again.');
             }
 
-            if (!hasWalletCredentials && !hasLearnCardAiConsent) {
+            if (!hasWalletCredentials && !hasLearnCardAiConsent && !hasCachedAiInsightCredential) {
                 throw new Error(AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE);
             }
 
             const wallet = await initWallet();
 
-            return createAiInsightCredential(wallet);
+            return createAiInsightCredential(wallet, queryClient);
         },
         onSuccess: aiInsightCredential => {
             clearAiInsightRefreshState();
             queryClient.setQueryData(queryKey, aiInsightCredential);
-            queryClient.setQueryData(['useExistingAiInsightCredential'], aiInsightCredential);
-            queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] });
+            queryClient.setQueryData(existingAiInsightCredentialQueryKey, aiInsightCredential);
+            queryClient.invalidateQueries({ queryKey: existingAiInsightCredentialQueryKey });
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
             queryClient.invalidateQueries({ queryKey: ['training-programs'] });
         },

@@ -132,7 +132,7 @@ const AiInsights: React.FC = () => {
     const aiInsightCredentialToDisplay =
         existingAiInsightCredential ?? displayedAiInsightCredential;
     const hasExistingAiInsightCredential = Boolean(aiInsightCredentialToDisplay);
-    const canGenerateAiInsights = hasWalletCredentials;
+    const canGenerateAiInsights = hasWalletCredentials || hasExistingAiInsightCredential;
 
     const generateAiInsights = useCallback(() => {
         if (!canGenerateAiInsights) {
