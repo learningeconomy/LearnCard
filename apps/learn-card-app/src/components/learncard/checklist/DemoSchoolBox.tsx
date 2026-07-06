@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './DemoSchoolBox.css';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('demo-school-box');
@@ -7,17 +7,25 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import { switchedProfileStore, useCurrentUser, useIsCurrentUserLCNUser } from 'learn-card-base';
+import {
+    switchedProfileStore,
+    useCurrentUser,
+    useWallet,
+    createAiInsightCredential,
+} from 'learn-card-base';
 import { useConsentFlowByUri } from 'apps/learn-card-app/src/pages/consentFlow/useConsentFlow';
 import useJoinLCNetworkModal from '../../network-prompts/hooks/useJoinLCNetworkModal';
 import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 
 import {
     useConfirmation,
+    useExistingAiInsightCredential,
     useConsentToContract,
     useContract,
     useDeleteCredentialRecord,
+    useGetCurrentLCNUser,
     useModal,
+    useAiFeatureGate,
     useSyncConsentFlow,
     useWithdrawConsent,
     useGetCredentialsFromContract,
@@ -31,8 +39,11 @@ import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 import TrashBin from '../../svgs/TrashBin';
 
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
+import { LCR } from 'learn-card-base/types/credential-records';
 
 type DemoSchoolBoxProps = {};
+
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { colors } = useTheme();
@@ -44,7 +55,13 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { closeAllModals } = useModal();
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser();
+    const { initWallet } = useWallet();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const { refetch: refetchExistingAiInsightCredential } = useExistingAiInsightCredential({
+        enabled: false,
+    });
 
     const demoContractUri = isProductionNetwork() ? flags.demoContractUri : undefined;
     const { data: contract } = useContract(demoContractUri);
@@ -53,13 +70,22 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { mutateAsync: consentToContract, isPending: consentingToContract } =
         useConsentToContract(demoContractUri, contract?.owner?.did ?? '');
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
+    const {
+        data: contractCredentials,
+        isLoading: isLoadingContractCreds,
+        refetch: refetchContractCredentials,
+        isFetching: isFetchingContractCreds,
+    } = useGetCredentialsFromContract(demoContractUri);
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
     const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
         useWithdrawConsent(demoContractUri);
-    const { data: contractCredentials, isLoading: isLoadingContractCreds } =
-        useGetCredentialsFromContract(demoContractUri);
     const contractCredentialsExist = (contractCredentials?.length ?? 0) > 0;
+    const [isWaitingForContractSync, setIsWaitingForContractSync] = useState(false);
+    const [isGeneratingAiInsight, setIsGeneratingAiInsight] = useState(false);
+
+    const canGenerateAiInsight =
+        !aiFeatureGateLoading && isAiEnabled && !currentLCNUserLoading && Boolean(currentLCNUser);
 
     const resetCache = () => {
         const didWeb = switchedProfileStore.get.switchedDid();
@@ -69,6 +95,26 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         queryClient.invalidateQueries({
             queryKey: ['useGetSkills', didWeb ?? ''],
         });
+    };
+
+    const waitForDemoContractCredentials = async () => {
+        setIsWaitingForContractSync(true);
+
+        try {
+            for (let attempt = 0; attempt < 30; attempt += 1) {
+                const result = await refetchContractCredentials();
+
+                if ((result.data?.length ?? 0) > 0) {
+                    return;
+                }
+
+                await sleep(1000);
+            }
+
+            throw new Error('The demo school is still syncing. Please try again.');
+        } finally {
+            setIsWaitingForContractSync(false);
+        }
     };
 
     const handleAcceptDemoContract = async () => {
@@ -81,6 +127,22 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
             // Sync any auto-boost credentials. No need to wait.
             fetchNewContractCredentials();
+            await waitForDemoContractCredentials();
+
+            const existingAiInsightResult = await refetchExistingAiInsightCredential();
+
+            if (!existingAiInsightResult.data && canGenerateAiInsight) {
+                await queryClient.refetchQueries({
+                    queryKey: [
+                        'useGetCredentialCount',
+                        switchedProfileStore.get.switchedDid() ?? '',
+                    ],
+                });
+
+                const wallet = await initWallet();
+                await createAiInsightCredential(wallet);
+            }
+
             resetCache();
             presentToast('You have successfully connected to the demo school.', {
                 hasDismissButton: true,
@@ -105,14 +167,16 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         }
 
         withdrawConsent(consentedContract?.uri).then(async () => {
+            const credentialsToDelete = (contractCredentials ?? []) as LCR[];
+
             await Promise.all(
-                contractCredentials?.map(async contractCred => {
+                credentialsToDelete.map(async (contractCred: LCR) => {
                     await deleteCredentialRecord(contractCred);
                 })
             );
 
             // clear creds from newCredsStore
-            const credentialUris = contractCredentials?.map(contractCred => contractCred.uri) ?? [];
+            const credentialUris = credentialsToDelete.map((contractCred: LCR) => contractCred.uri);
             newCredsStore.set.removeCreds(credentialUris);
 
             presentToast(`Deleted ${contractCredentials?.length ?? 0} Demo credentials`, {
@@ -125,8 +189,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const handleStartDemoClick = async () => {
         const confirmed = await confirm({
             text: 'Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.',
-            confirmText: <span className="mr-[30px]">Yes</span>,
-            cancelText: <span>No</span>,
+            confirmText: 'Yes',
+            cancelText: 'No',
         });
 
         // ^^ await confirmation
@@ -138,8 +202,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const handleEndDemoClick = async () => {
         const confirmed = await confirm({
             text: 'Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed.',
-            confirmText: <span className="mr-[30px]">Yes</span>,
-            cancelText: <span>No</span>,
+            confirmText: 'Yes',
+            cancelText: 'No',
         });
 
         // await confirmation
@@ -148,7 +212,13 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         }
     };
 
-    const isLoading = consentingToContract || isLoadingContractCreds || isWithdrawingConsent;
+    const isLoading =
+        consentingToContract ||
+        isLoadingContractCreds ||
+        isFetchingContractCreds ||
+        isWithdrawingConsent ||
+        isWaitingForContractSync ||
+        isGeneratingAiInsight;
 
     return (
         <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
