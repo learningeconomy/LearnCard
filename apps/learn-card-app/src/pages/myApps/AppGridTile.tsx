@@ -39,7 +39,7 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
                 />
             ) : (
                 <div
-                    className="flex aspect-square w-full max-w-[100px] items-center justify-center rounded-[19%] border border-[#FBFBFC] p-[18%]"
+                    className="flex aspect-square w-full max-w-[100px] items-center justify-center rounded-[19%] border border-[#FBFBFC] p-[18%] md:max-w-[160px]"
                     style={{
                         backgroundImage:
                             gradientFrom && gradientTo
