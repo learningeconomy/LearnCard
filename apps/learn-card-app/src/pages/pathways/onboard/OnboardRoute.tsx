@@ -26,19 +26,16 @@ import { useLearnerDid } from '../hooks/useLearnerDid';
 import { classifyAltitude } from './classifyAltitude';
 import CredentialScan from './CredentialScan';
 import DiscoverStart from './DiscoverStart';
+import QuickBuildWizard from './QuickBuildWizard';
 import SuggestionGrid from './SuggestionGrid';
 import { instantiateTemplate } from './templates';
-import {
-    suggestPathways,
-    type PathwaySuggestion,
-    type WalletSignal,
-} from './suggestPathways';
+import { suggestPathways, type PathwaySuggestion, type WalletSignal } from './suggestPathways';
 
 // `discover` replaces the legacy `goal`-only entry: a peer-level
 // chooser between curated showcases and the free-text goal
 // capture. The downstream `scan` and `suggestions` steps are
 // unchanged so anyone deep-linking into them continues to work.
-type Step = 'discover' | 'scan' | 'suggestions';
+type Step = 'discover' | 'quick-build' | 'scan' | 'suggestions';
 
 const OnboardRoute: React.FC = () => {
     const history = useHistory();
@@ -68,7 +65,7 @@ const OnboardRoute: React.FC = () => {
 
     const suggestions = useMemo(
         () => suggestPathways({ goalText, wallet, altitude: rankingAltitude }),
-        [goalText, wallet, rankingAltitude],
+        [goalText, wallet, rankingAltitude]
     );
 
     const goToScan = (text: string) => {
@@ -133,15 +130,16 @@ const OnboardRoute: React.FC = () => {
                     initialGoal={goalText}
                     onContinueWithGoal={goToScan}
                     onSkip={() => goToScan('')}
+                    onQuickBuild={() => setStep('quick-build')}
                 />
             );
 
+        case 'quick-build':
+            return <QuickBuildWizard onExit={() => setStep('discover')} />;
+
         case 'scan':
             return (
-                <CredentialScan
-                    onContinue={goToSuggestions}
-                    onBack={() => setStep('discover')}
-                />
+                <CredentialScan onContinue={goToSuggestions} onBack={() => setStep('discover')} />
             );
 
         case 'suggestions':
@@ -149,9 +147,9 @@ const OnboardRoute: React.FC = () => {
                 <SuggestionGrid
                     suggestions={suggestions}
                     goalText={goalText}
-                    onPick={(s) => {
+                    onPick={s => {
                         const position = suggestions.findIndex(
-                            x => x.template.id === s.template.id,
+                            x => x.template.id === s.template.id
                         );
                         handlePick(s, position);
                     }}
