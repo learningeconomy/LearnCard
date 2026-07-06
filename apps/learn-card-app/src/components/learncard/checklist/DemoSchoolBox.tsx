@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './DemoSchoolBox.css';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('demo-school-box');
@@ -17,6 +17,7 @@ import {
     useConsentToContract,
     useContract,
     useDeleteCredentialRecord,
+    useAiInsightCredentialMutation,
     useModal,
     useSyncConsentFlow,
     useWithdrawConsent,
@@ -45,6 +46,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { presentToast } = useToast();
     const { closeAllModals } = useModal();
     const currentUser = useCurrentUser()!!!!!!!!!;
+    const [isSyncingDemoSchool, setIsSyncingDemoSchool] = useState(false);
+    const [isDeletingDemoSchool, setIsDeletingDemoSchool] = useState(false);
 
     const demoContractUri = isProductionNetwork() ? flags.demoContractUri : undefined;
     const { data: contract } = useContract(demoContractUri);
@@ -55,6 +58,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
+    const { mutateAsync: generateAiInsightCredential } = useAiInsightCredentialMutation();
     const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
         useWithdrawConsent(demoContractUri);
     const { data: contractCredentials, isLoading: isLoadingContractCreds } =
@@ -72,6 +76,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     };
 
     const handleAcceptDemoContract = async () => {
+        setIsSyncingDemoSchool(true);
+
         try {
             await consentToContract({
                 terms: getMinimumTermsForContract(contract?.contract, currentUser),
@@ -79,54 +85,77 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 oneTime: false,
             });
 
-            // Sync any auto-boost credentials. No need to wait.
-            fetchNewContractCredentials();
-            resetCache();
+            // Sync any auto-boost credentials and wait for the full flow to complete.
+            await fetchNewContractCredentials();
+            setIsSyncingDemoSchool(false);
             presentToast('You have successfully connected to the demo school.', {
                 hasDismissButton: true,
             });
             closeAllModals();
+
+            void generateAiInsightCredential()
+                .then(() => {
+                    resetCache();
+                })
+                .catch(error => {
+                    log.error(error);
+                });
         } catch (error) {
             presentToast('Unable to connect to the demo school. Please try again.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
             log.error(error);
+        } finally {
+            setIsSyncingDemoSchool(false);
         }
     };
 
     const handleEndDemoContract = async () => {
+        setIsDeletingDemoSchool(true);
+
         if (!contractCredentialsExist) {
             presentToast('No Demo credentials found. Please try again.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+            setIsDeletingDemoSchool(false);
             return;
         }
 
-        withdrawConsent(consentedContract?.uri).then(async () => {
+        try {
+            await withdrawConsent(consentedContract?.uri);
             await Promise.all(
-                contractCredentials?.map(async contractCred => {
+                contractCredentials?.map(async (contractCred: any) => {
                     await deleteCredentialRecord(contractCred);
                 })
             );
 
             // clear creds from newCredsStore
-            const credentialUris = contractCredentials?.map(contractCred => contractCred.uri) ?? [];
+            const credentialUris =
+                contractCredentials?.map((contractCred: any) => contractCred.uri) ?? [];
             newCredsStore.set.removeCreds(credentialUris);
 
             presentToast(`Deleted ${contractCredentials?.length ?? 0} Demo credentials`, {
                 hasDismissButton: true,
             });
             resetCache();
-        });
+        } catch (error) {
+            presentToast('Unable to delete the demo school. Please try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            log.error(error);
+        } finally {
+            setIsDeletingDemoSchool(false);
+        }
     };
 
     const handleStartDemoClick = async () => {
         const confirmed = await confirm({
             text: 'Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.',
-            confirmText: <span className="mr-[30px]">Yes</span>,
-            cancelText: <span>No</span>,
+            confirmText: 'Yes',
+            cancelText: 'No',
         });
 
         // ^^ await confirmation
@@ -138,8 +167,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const handleEndDemoClick = async () => {
         const confirmed = await confirm({
             text: 'Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed.',
-            confirmText: <span className="mr-[30px]">Yes</span>,
-            cancelText: <span>No</span>,
+            confirmText: 'Yes',
+            cancelText: 'No',
         });
 
         // await confirmation
@@ -148,7 +177,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         }
     };
 
-    const isLoading = consentingToContract || isLoadingContractCreds || isWithdrawingConsent;
+    const isSyncLoading = consentingToContract || isLoadingContractCreds || isSyncingDemoSchool;
+    const isDeleteLoading = isWithdrawingConsent || isDeletingDemoSchool;
 
     return (
         <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
@@ -168,13 +198,25 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                     hasConsented ? 'bg-rose-500' : `bg-${primaryColor}`
                 }`}
                 onClick={hasConsented ? handleEndDemoClick : handleStartDemoClick}
-                disabled={isLoading || (hasConsented && !contractCredentialsExist)}
+                disabled={
+                    isSyncLoading || isDeleteLoading || (hasConsented && !contractCredentialsExist)
+                }
             >
-                {hasConsented ? 'Delete Demo School' : 'Sync Demo School'}
+                {hasConsented
+                    ? isDeleteLoading
+                        ? 'Deleting Demo School...'
+                        : 'Delete Demo School'
+                    : isSyncLoading
+                    ? 'Syncing Demo School...'
+                    : 'Sync Demo School'}
                 {hasConsented ? (
-                    <TrashBin version="2" className="text-white" strokeWidth="2" />
+                    isDeleteLoading ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <TrashBin version="2" className="text-white" strokeWidth="2" />
+                    )
                 ) : (
-                    <SyncCircleArrows className={isLoading ? 'animate-spin-ccw' : ''} />
+                    <SyncCircleArrows className={isSyncLoading ? 'animate-spin-ccw' : ''} />
                 )}
             </button>
         </div>
