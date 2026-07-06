@@ -35,6 +35,8 @@ import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/cont
 
 type DemoSchoolBoxProps = {};
 
+type DemoSchoolStatus = 'idle' | 'connecting' | 'syncing' | 'disconnecting' | 'deleting';
+
 const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { colors } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -46,8 +48,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { presentToast } = useToast();
     const { closeAllModals } = useModal();
     const currentUser = useCurrentUser()!!!!!!!!!;
-    const [isSyncingDemoSchool, setIsSyncingDemoSchool] = useState(false);
-    const [isDeletingDemoSchool, setIsDeletingDemoSchool] = useState(false);
+    const [demoSchoolStatus, setDemoSchoolStatus] = useState<DemoSchoolStatus>('idle');
 
     const demoContractUri = isProductionNetwork() ? flags.demoContractUri : undefined;
     const { data: contract } = useContract(demoContractUri);
@@ -76,7 +77,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     };
 
     const handleAcceptDemoContract = async () => {
-        setIsSyncingDemoSchool(true);
+        setDemoSchoolStatus('connecting');
 
         try {
             await consentToContract({
@@ -85,9 +86,10 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 oneTime: false,
             });
 
+            setDemoSchoolStatus('syncing');
+
             // Sync any auto-boost credentials and wait for the full flow to complete.
             await fetchNewContractCredentials();
-            setIsSyncingDemoSchool(false);
             presentToast('You have successfully connected to the demo school.', {
                 hasDismissButton: true,
             });
@@ -107,24 +109,27 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             });
             log.error(error);
         } finally {
-            setIsSyncingDemoSchool(false);
+            setDemoSchoolStatus('idle');
         }
     };
 
     const handleEndDemoContract = async () => {
-        setIsDeletingDemoSchool(true);
+        setDemoSchoolStatus('disconnecting');
 
         if (!contractCredentialsExist) {
             presentToast('No Demo credentials found. Please try again.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
-            setIsDeletingDemoSchool(false);
+            setDemoSchoolStatus('idle');
             return;
         }
 
         try {
             await withdrawConsent(consentedContract?.uri);
+
+            setDemoSchoolStatus('deleting');
+
             await Promise.all(
                 contractCredentials?.map(async (contractCred: any) => {
                     await deleteCredentialRecord(contractCred);
@@ -147,7 +152,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             });
             log.error(error);
         } finally {
-            setIsDeletingDemoSchool(false);
+            setDemoSchoolStatus('idle');
         }
     };
 
@@ -177,8 +182,15 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         }
     };
 
-    const isSyncLoading = consentingToContract || isLoadingContractCreds || isSyncingDemoSchool;
-    const isDeleteLoading = isWithdrawingConsent || isDeletingDemoSchool;
+    const isSyncLoading =
+        consentingToContract ||
+        isLoadingContractCreds ||
+        demoSchoolStatus === 'connecting' ||
+        demoSchoolStatus === 'syncing';
+    const isDeleteLoading =
+        isWithdrawingConsent ||
+        demoSchoolStatus === 'disconnecting' ||
+        demoSchoolStatus === 'deleting';
 
     return (
         <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
@@ -195,10 +207,10 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
             <button
                 className={`py-[7px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px] ${
-                    isSyncLoading
-                        ? `bg-${primaryColor}`
-                        : isDeleteLoading
-                        ? `bg-${primaryColor}`
+                    isSyncLoading || isDeleteLoading
+                        ? isDeleteLoading
+                            ? 'bg-red-500'
+                            : `bg-${primaryColor}`
                         : hasConsented
                         ? 'bg-rose-500'
                         : `bg-${primaryColor}`
@@ -209,9 +221,13 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 }
             >
                 {isSyncLoading
-                    ? 'Syncing Demo School...'
+                    ? demoSchoolStatus === 'connecting'
+                        ? 'Connecting to Demo School...'
+                        : 'Syncing Credentials...'
                     : isDeleteLoading
-                    ? 'Deleting Demo School...'
+                    ? demoSchoolStatus === 'disconnecting'
+                        ? 'Disconnecting From Demo School...'
+                        : 'Deleting Demo Credentials...'
                     : hasConsented
                     ? 'Delete Demo School'
                     : 'Sync Demo School'}
