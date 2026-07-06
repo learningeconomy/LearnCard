@@ -87,8 +87,7 @@ import {
 } from 'learn-card-base';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
-import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
+import AddToPassportMenu from '../../../components/add-to-passport/AddToPassportMenu';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('launch-pad-action-modal');
@@ -760,21 +759,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     };
 
     const handleAddToLearnCard = () => {
-        if (isDesktop) {
-            newModal(
-                <AddToLearnCardMenuWrapper />,
-                {
-                    sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
-                },
-                { desktop: ModalTypes.Center }
-            );
-        } else {
-            newModal(
-                <AddToLearnCardMenu />,
-                { sectionClassName: '!max-w-[500px]' },
-                { mobile: ModalTypes.BottomSheet }
-            );
-        }
+        newModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
     };
 
     return (
