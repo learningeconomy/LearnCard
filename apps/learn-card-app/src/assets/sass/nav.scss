@@ -34,10 +34,6 @@ ion-tab-bar.lc-footer-nav {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 
-    // No host padding: Ionic's :host is content-box, so any L/R padding adds
-    // ONTO the 100% width and overflows the viewport (jamming "Apps" off the
-    // right edge). The four buttons are equal flex columns that already fill
-    // the width and center their icons, giving even, symmetric spacing.
     ion-tab-button {
         min-width: 0;
         --ripple-color: transparent;
@@ -48,6 +44,21 @@ ion-tab-bar.lc-footer-nav {
         --background-focused: transparent;
         --background-focused-opacity: 0;
         --background-activated: transparent;
+    }
+
+    // Figma "LearnCard Footer Nav - V3" (node 2364-82185): the row is inset 20px
+    // on the left (menu) and 40px on the right (Apps) so the outer items don't
+    // hug the screen edges — which is what made "Apps" read as too far right.
+    // Applied as first/last-child margins rather than host padding: Ionic's
+    // :host is content-box, so L/R padding overflowed the viewport and pushed
+    // "Apps" FURTHER right. Buttons keep Ionic's default flex:1, so the four
+    // columns space evenly and labels stay full (no truncation).
+    ion-tab-button:first-child {
+        margin-left: 20px;
+    }
+
+    ion-tab-button:last-child {
+        margin-right: 40px;
     }
 }
 
