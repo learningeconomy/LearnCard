@@ -157,6 +157,11 @@ export const useNetworkConsentMutation = () => {
                 const wallet = await initWallet();
                 await wallet.invoke.getProfile();
 
+                const totalCredentialCount = Number(await wallet.index.LearnCloud.getCount?.());
+                if (!Number.isFinite(totalCredentialCount) || totalCredentialCount <= 0) {
+                    return { success: true, alreadyConsented: checkExistingConsent };
+                }
+
                 // Check if user has already consented (for backfill scenarios)
                 if (checkExistingConsent) {
                     const allContracts = await getOrFetchConsentedContracts(queryClient, wallet);
