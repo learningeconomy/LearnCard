@@ -17,7 +17,15 @@ const useMoreApps = () => {
     const { data: installedData, isLoading: loadingInstalled } = useInstalledApps({ limit: 50 });
     const { data: featured, isLoading: loadingFeatured } = useFeaturedCarouselApps();
     const { data: curated, isLoading: loadingCurated } = useCuratedListApps();
-    const { data: browseData, isLoading: loadingBrowse } = useBrowseAppStore({ limit: 50 });
+
+    // Only run the full (50-item) all-apps scan when the user has no installed
+    // apps — otherwise its result is never read. Gating avoids a network request
+    // on every My Apps load for the common (has-installed-apps) case.
+    const hasNoInstalled = !loadingInstalled && (installedData?.records?.length ?? 0) === 0;
+    const { data: browseData, isLoading: loadingBrowse } = useBrowseAppStore({
+        limit: 50,
+        enabled: hasNoInstalled,
+    });
 
     return useMemo(() => {
         const installed = installedData?.records ?? [];
