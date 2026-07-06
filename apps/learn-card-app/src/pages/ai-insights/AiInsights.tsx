@@ -122,6 +122,7 @@ const AiInsights: React.FC = () => {
     const aiInsightCredentialRegenerating = aiInsightRefreshStore.use.status() === 'pending';
     const walletCredentialsLoading = credentialsFetching || allResolvedBoostsLoading;
     const hasWalletCredentials = Number(allResolvedCreds?.length ?? 0) > 0;
+    const hasExistingAiInsightCredential = Boolean(existingAiInsightCredential);
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: ConsentContractRecord) =>
             consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
@@ -158,6 +159,27 @@ const AiInsights: React.FC = () => {
         !existingAiInsightCredential &&
         (hasWalletCredentials || hasLearnCardAiConsent) &&
         !autoGenerateAiInsightsAttemptedRef.current;
+
+    const learningSnapshotsIsLoading = useMemo(() => {
+        if (hasExistingAiInsightCredential) {
+            return false;
+        }
+
+        return (
+            existingAiInsightCredentialLoading ||
+            createAiInsightCredentialLoading ||
+            walletCredentialsLoading ||
+            consentedContractsLoading ||
+            canAutoGenerateAiInsights
+        );
+    }, [
+        canAutoGenerateAiInsights,
+        consentedContractsLoading,
+        createAiInsightCredentialLoading,
+        existingAiInsightCredentialLoading,
+        hasExistingAiInsightCredential,
+        walletCredentialsLoading,
+    ]);
 
     useLoadingLine(
         credentialsBackgroundFetching ||
@@ -238,13 +260,7 @@ const AiInsights: React.FC = () => {
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             <AiInsightsLearningSnapshots
                 aiInsightCredential={existingAiInsightCredential}
-                isLoading={
-                    existingAiInsightCredentialLoading ||
-                    createAiInsightCredentialLoading ||
-                    walletCredentialsLoading ||
-                    consentedContractsLoading ||
-                    canAutoGenerateAiInsights
-                }
+                isLoading={learningSnapshotsIsLoading}
                 showRegenerate
                 onRegenerate={generateAiInsights}
                 regenerateLabel={existingAiInsightCredential ? 'Regenerate' : 'Generate'}
