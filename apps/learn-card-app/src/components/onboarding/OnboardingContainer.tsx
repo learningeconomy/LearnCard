@@ -202,6 +202,9 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
         }
 
         if (coordinatorState.status !== 'needs_setup') {
+            if (currentUser?.privateKey) return true;
+
+            setAgeGateError('Something went wrong. Please sign in again.');
             return false;
         }
 
@@ -235,7 +238,7 @@ const OnboardingContainer: React.FC<OnboardingContainerProps> = ({ onSuccess, in
 
         prepareNewKeyPromiseRef.current = preparePromise;
         return preparePromise;
-    }, [coordinatorState.status, deriveDidFromPrivateKey, setupNewKey]);
+    }, [coordinatorState.status, currentUser?.privateKey, deriveDidFromPrivateKey, setupNewKey]);
 
     const routeChildToParentFlow = useCallback(() => {
         closeModal();

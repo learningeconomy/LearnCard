@@ -8,19 +8,19 @@ This package provides a secure, self-hosted alternative to Web3Auth Single Facto
 
 ## Features
 
-- **Key Splitting**: Split ed25519 private keys into 3 shares with 2-of-3 threshold
-- **Device Storage**: Encrypted local storage using AES-GCM with IndexedDB
-- **Server Storage**: Encrypted auth share stored on server with envelope encryption
-- **Recovery Methods**:
-  - Password-based (Argon2id KDF)
-  - Passkey/WebAuthn PRF (coming soon)
-  - Backup file export/import
-- **Migration**: Seamless migration from Web3Auth SFA
+-   **Key Splitting**: Split ed25519 private keys into 3 shares with 2-of-3 threshold
+-   **Device Storage**: Encrypted local storage using AES-GCM with IndexedDB
+-   **Server Storage**: Encrypted auth share stored on server with envelope encryption
+-   **Recovery Methods**:
+    -   Password-based (Argon2id KDF)
+    -   Passkey/WebAuthn PRF (coming soon)
+    -   Backup file export/import
+-   **Migration**: Seamless migration from Web3Auth SFA
 
 ## Installation
 
 ```bash
-pnpm add @learncard/sss-key-manager
+bun add @learncard/sss-key-manager
 ```
 
 ## Usage
@@ -115,19 +115,19 @@ const privateKey = await keyManager.recover({
 
 ## Security Model
 
-- **Device Share**: Encrypted with non-extractable AES-GCM key stored in IndexedDB
-- **Auth Share**: Server-side envelope encryption (DEK + KMS-encrypted DEK)
-- **Recovery Share**: Password-based uses Argon2id KDF with secure parameters
-- **Threshold**: Any 2 of 3 shares can reconstruct the key
+-   **Device Share**: Encrypted with non-extractable AES-GCM key stored in IndexedDB
+-   **Auth Share**: Server-side envelope encryption (DEK + KMS-encrypted DEK)
+-   **Recovery Share**: Password-based uses Argon2id KDF with secure parameters
+-   **Threshold**: Any 2 of 3 shares can reconstruct the key
 
 ## Auth Provider Support
 
 The package is designed to work with any authentication provider:
 
-- Firebase Authentication (default for production)
-- SuperTokens (recommended for self-hosting/local dev)
-- Keycloak (enterprise SSO)
-- Any OIDC-compliant provider
+-   Firebase Authentication (default for production)
+-   SuperTokens (recommended for self-hosting/local dev)
+-   Keycloak (enterprise SSO)
+-   Any OIDC-compliant provider
 
 ## API Reference
 

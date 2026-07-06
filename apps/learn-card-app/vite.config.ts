@@ -1,10 +1,10 @@
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
+import { readdirSync, readFileSync, existsSync } from 'fs';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
@@ -50,24 +50,77 @@ const resolveBuildSha = (): string => {
     }
 };
 
-// Workspace packages that should not be pre-bundled for HMR support
-const workspacePackages = [
-    '@learncard/helpers',
-    '@learncard/types',
-    '@learncard/react',
-    '@learncard/init',
-    '@learncard/core',
-    '@learncard/chapi-plugin',
-    '@learncard/lca-api-plugin',
-    '@learncard/open-badge-v2-plugin',
-    '@learncard/network-brain-client',
-    '@learncard/network-plugin',
-    '@learncard/openid4vc-plugin',
-    '@learncard/sd-jwt-vc-plugin',
-];
+// Every @learncard/* workspace package in the monorepo. In dev these resolve to their
+// TypeScript source (via the `development` export condition below), so they must be kept
+// out of esbuild pre-bundling for HMR to work. Collected by scanning the packages roots
+// so a newly added package is picked up automatically — no hand-maintained list to drift.
+const collectWorkspacePackages = (): string[] => {
+    const names = new Set<string>();
 
-export default defineConfig(({ mode }) => {
+    // Depth-bounded walk: packages live at varying nesting (packages/x, packages/plugins/x,
+    // packages/learn-card-network/brain-client, ...). Prune heavy/irrelevant dirs so the scan
+    // stays cheap and never descends into module or source trees.
+    const walk = (dir: string, depth: number): void => {
+        if (depth < 0 || !existsSync(dir)) return;
+
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'src') {
+                continue;
+            }
+
+            const child = path.join(dir, entry.name);
+            const pkgPath = path.join(child, 'package.json');
+
+            if (existsSync(pkgPath)) {
+                try {
+                    const { name } = JSON.parse(readFileSync(pkgPath, 'utf8')) as { name?: string };
+                    if (name?.startsWith('@learncard/')) names.add(name);
+                } catch {
+                    // Ignore unreadable/partial package.json files during the scan.
+                }
+            }
+
+            walk(child, depth - 1);
+        }
+    };
+
+    walk(path.resolve(__dirname, '../../packages'), 2);
+
+    return [...names];
+};
+
+const workspacePackages = collectWorkspacePackages();
+
+export default defineConfig(async ({ mode, command }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
+
+    // Keyed off VITE_DOCKER_SOURCE alone (not `mode`) because the self-host build
+    // legitimately runs `vite build` in production mode, so `mode` can't distinguish it
+    // from a Netlify/dist build. We instead emit a loud build-log notice so an accidental
+    // production build with this flag set — which would ship uncompiled TS — is obvious.
+    const useDockerSourceMode = process.env.VITE_DOCKER_SOURCE === 'true';
+    if (useDockerSourceMode) {
+        console.warn(
+            [
+                '',
+                '════════════════════════════════════════════════════════════════════════',
+                '⚠️  VITE_DOCKER_SOURCE=true — resolving @learncard/* to TypeScript SOURCE.',
+                '    Intended ONLY for self-host container builds (docker-build).',
+                '    A production/Netlify/npm-dist build MUST leave this UNSET, otherwise',
+                '    the app ships uncompiled workspace sources instead of optimized dist.',
+                '════════════════════════════════════════════════════════════════════════',
+                '',
+            ].join('\n')
+        );
+    }
+
+    // Resolve @learncard/* to TypeScript source when serving the dev server (HMR / Fast
+    // Refresh) or in the self-host container build. Production dist builds leave this off
+    // so consumers get the optimized prebuilt bundles.
+    const useSourceConditions = useDockerSourceMode || command === 'serve';
+
     return {
         plugins: [
             react(),
@@ -107,7 +160,7 @@ export default defineConfig(({ mode }) => {
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
-            // Exclude workspace packages from pre-bundling to enable HMR when they rebuild
+            // Exclude workspace packages from pre-bundling so Vite serves their TypeScript sources.
             exclude: workspacePackages,
             esbuildOptions: {
                 target: 'esnext',
@@ -149,6 +202,12 @@ export default defineConfig(({ mode }) => {
                 : 'undefined',
         },
         resolve: {
+            // See useSourceConditions above: the `development` condition resolves @learncard/*
+            // to source for the dev server and self-host container builds; Netlify/dist builds
+            // leave it off and use the published dist bundles.
+            ...(useSourceConditions
+                ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
+                : {}),
             alias: {
                 ...stdlibbrowser,
                 '@web3auth/openlogin-adapter':
@@ -156,6 +215,12 @@ export default defineConfig(({ mode }) => {
                 'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
                 'apps/learn-card-app': path.resolve(__dirname),
                 '@analytics': path.resolve(__dirname, 'src/analytics'),
+                // Swiper's package exports resolve differently under Bun's hoisted install in
+                // this Vite app; keep this pinned to the published ESM modules entry.
+                'swiper/modules': path.resolve(
+                    __dirname,
+                    '../../node_modules/swiper/modules/index.mjs'
+                ),
             },
             dedupe: [
                 'react',
@@ -164,6 +229,11 @@ export default defineConfig(({ mode }) => {
                 'react-router-dom',
                 'history',
                 '@ionic/react-router',
+                // Required: learn-card-base is aliased to raw TS source and imports
+                // react-query with bare specifiers. Without this pin the prod build
+                // resolves two react-query instances, splitting the QueryClient React
+                // Context and throwing "No QueryClient set" at runtime.
+                '@tanstack/react-query',
             ],
         },
         server: {
@@ -172,8 +242,6 @@ export default defineConfig(({ mode }) => {
                 // Enable polling for Docker volume mounts
                 usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
                 interval: parseInt(process.env.CHOKIDAR_INTERVAL || '1000', 10),
-                // Watch workspace package dist folders for changes (when watcher rebuilds them)
-                ignored: ['!**/packages/**/dist/**', '!**/packages/plugins/**/dist/**'],
             },
         },
     };

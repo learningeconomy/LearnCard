@@ -4,15 +4,12 @@ import { defineConfig } from 'vitest/config';
 /**
  * The OpenID4VC plugin ships as a built artifact — its `package.json`
  * `main` points at `./dist/index.js`, which doesn't exist until
- * `pnpm --filter @learncard/openid4vc-plugin build` runs. To keep
+ * `bun --filter @learncard/openid4vc-plugin run build` runs. To keep
  * local dev / CI fast we bypass the build and resolve the plugin
  * import straight to its TypeScript source. Vitest/Vite handle the
  * TS transform transparently.
  */
-const pluginSrc = resolve(
-    __dirname,
-    '../../packages/plugins/openid4vc/src/index.ts'
-);
+const pluginSrc = resolve(__dirname, '../../packages/plugins/openid4vc/src/index.ts');
 
 export default defineConfig({
     resolve: {

@@ -1,18 +1,18 @@
 FROM --platform=linux/amd64 node:16
 
-RUN npm --global install pnpm
+RUN npm --global install bun@1.3.14
 RUN npm install pm2 -g
-RUN pnpm install --save esbuild
-RUN pnpm install --save rollup-plugin-esbuild
+RUN bun add esbuild
+RUN bun add rollup-plugin-esbuild
 
 WORKDIR /root/monorepo
 COPY ../.. . 
-# ↑ Copy the whole repository and let pnpm filter what to run
-RUN pnpm install --filter "learn-card-discord-bot..."
-RUN pnpm build --filter "learn-card-discord-bot..."
-RUN pnpm test --if-present --filter "learn-card-discord-bot"
+# ↑ Copy the whole repository and let Bun filter what to run
+RUN bun install --frozen-lockfile
+RUN bun --filter learn-card-discord-bot run build
+RUN bun --filter learn-card-discord-bot run test
 
 RUN ls -al -R
 
 EXPOSE 8080
-CMD [ "pnpm", "start" ]
+CMD [ "bun", "run", "start" ]

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 // Helper to extract flags and pattern from regex string
 const parseRegexString = (regexStr: string) => {

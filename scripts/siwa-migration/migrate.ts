@@ -110,7 +110,7 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
         throw new Error(`Failed to get access token: ${response.status} ${body}`);
     }
 
-    const data = await response.json() as { access_token: string };
+    const data = (await response.json()) as { access_token: string };
 
     if (!data.access_token) {
         throw new Error(`No access_token in response: ${JSON.stringify(data)}`);
@@ -138,7 +138,11 @@ async function callAppleMigrationApi(
     if (response.status === 429 && retryCount < MAX_RETRIES) {
         const delay = RETRY_BASE_DELAY_MS * Math.pow(2, retryCount);
 
-        console.warn(`  Rate limited by Apple API, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+        console.warn(
+            `  Rate limited by Apple API, retrying in ${delay}ms (attempt ${
+                retryCount + 1
+            }/${MAX_RETRIES})...`
+        );
 
         await sleep(delay);
 
@@ -149,7 +153,16 @@ async function callAppleMigrationApi(
         const body = await response.text();
 
         if (retryCount === 0) {
-            console.error(`\n   DEBUG request params: ${JSON.stringify(Object.fromEntries(Object.entries(params).map(([k, v]) => [k, k === 'client_secret' ? v.slice(0, 30) + '...' : v])))}`);
+            console.error(
+                `\n   DEBUG request params: ${JSON.stringify(
+                    Object.fromEntries(
+                        Object.entries(params).map(([k, v]) => [
+                            k,
+                            k === 'client_secret' ? v.slice(0, 30) + '...' : v,
+                        ])
+                    )
+                )}`
+            );
             console.error(`   DEBUG endpoint: ${APPLE_MIGRATION_ENDPOINT}`);
             console.error(`   DEBUG status: ${response.status}`);
             console.error(`   DEBUG body: ${body}\n`);
@@ -168,17 +181,22 @@ async function getTransferSub(
     clientSecret: string,
     accessToken: string
 ): Promise<string> {
-    const result = await callAppleMigrationApi({
-        sub: oldSub,
-        target: targetTeamId,
-        client_id: clientId,
-        client_secret: clientSecret,
-    }, accessToken);
+    const result = await callAppleMigrationApi(
+        {
+            sub: oldSub,
+            target: targetTeamId,
+            client_id: clientId,
+            client_secret: clientSecret,
+        },
+        accessToken
+    );
 
     const transferSub = result.transfer_sub;
 
     if (!transferSub) {
-        throw new Error(`No transfer_sub returned for sub=${oldSub}. Response: ${JSON.stringify(result)}`);
+        throw new Error(
+            `No transfer_sub returned for sub=${oldSub}. Response: ${JSON.stringify(result)}`
+        );
     }
 
     return transferSub;
@@ -190,16 +208,21 @@ async function exchangeTransferSub(
     clientSecret: string,
     accessToken: string
 ): Promise<string> {
-    const result = await callAppleMigrationApi({
-        transfer_sub: transferSub,
-        client_id: clientId,
-        client_secret: clientSecret,
-    }, accessToken);
+    const result = await callAppleMigrationApi(
+        {
+            transfer_sub: transferSub,
+            client_id: clientId,
+            client_secret: clientSecret,
+        },
+        accessToken
+    );
 
     const newSub = result.sub;
 
     if (!newSub) {
-        throw new Error(`No sub returned for transfer_sub=${transferSub}. Response: ${JSON.stringify(result)}`);
+        throw new Error(
+            `No sub returned for transfer_sub=${transferSub}. Response: ${JSON.stringify(result)}`
+        );
     }
 
     return newSub;
@@ -284,7 +307,9 @@ async function migrateUser(
 
     if (importResult.failureCount > 0) {
         const importError = importResult.errors[0];
-        throw new Error(`Import failed for ${firebaseUid}: ${importError?.error?.message ?? 'unknown error'}`);
+        throw new Error(
+            `Import failed for ${firebaseUid}: ${importError?.error?.message ?? 'unknown error'}`
+        );
     }
 
     // 5. Restore custom claims
@@ -311,7 +336,9 @@ function readJson<T>(dataDir: string, filename: string): T {
     const filePath = path.join(dataDir, filename);
 
     if (!fs.existsSync(filePath)) {
-        throw new Error(`Required file not found: ${filePath}. Did you run the pre-transfer step first?`);
+        throw new Error(
+            `Required file not found: ${filePath}. Did you run the pre-transfer step first?`
+        );
     }
 
     const raw = fs.readFileSync(filePath, 'utf-8');
@@ -421,7 +448,9 @@ async function preTransfer(options: CommonOptions): Promise<void> {
 
             const message = error instanceof Error ? error.message : String(error);
 
-            console.error(`   [${i + 1}/${appleUsers.length}] ${user.firebaseUid} — FAILED: ${message}`);
+            console.error(
+                `   [${i + 1}/${appleUsers.length}] ${user.firebaseUid} — FAILED: ${message}`
+            );
         }
 
         // Rate limit: ~2 requests/second to be safe
@@ -436,8 +465,8 @@ async function preTransfer(options: CommonOptions): Promise<void> {
     console.log('\n=== Pre-Transfer Complete ===');
     console.log('\n   Next steps:');
     console.log('   1. Initiate the app transfer in App Store Connect');
-    console.log('   2. Accept the transfer in the new team\'s App Store Connect');
-    console.log('   3. Run: npx tsx migrate.ts post-transfer ...\n');
+    console.log("   2. Accept the transfer in the new team's App Store Connect");
+    console.log('   3. Run: bun migrate.ts post-transfer ...\n');
 
     await app.delete();
 }
@@ -530,13 +559,19 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
 
             exchangeSuccessCount++;
 
-            console.log(`   [${i + 1}/${transferRecords.length}] ${record.firebaseUid} — OK (${record.oldAppleSub.slice(0, 12)}... → ${newAppleSub.slice(0, 12)}...)`);
+            console.log(
+                `   [${i + 1}/${transferRecords.length}] ${
+                    record.firebaseUid
+                } — OK (${record.oldAppleSub.slice(0, 12)}... → ${newAppleSub.slice(0, 12)}...)`
+            );
         } catch (error) {
             exchangeFailCount++;
 
             const message = error instanceof Error ? error.message : String(error);
 
-            console.error(`   [${i + 1}/${transferRecords.length}] ${record.firebaseUid} — FAILED: ${message}`);
+            console.error(
+                `   [${i + 1}/${transferRecords.length}] ${record.firebaseUid} — FAILED: ${message}`
+            );
         }
 
         if (i < transferRecords.length - 1) {
@@ -546,7 +581,9 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
 
     writeJson(dataDir, FILES.finalMapping, finalMapping);
 
-    console.log(`\n   Exchange complete: ${exchangeSuccessCount} succeeded, ${exchangeFailCount} failed`);
+    console.log(
+        `\n   Exchange complete: ${exchangeSuccessCount} succeeded, ${exchangeFailCount} failed`
+    );
 
     if (finalMapping.length === 0) {
         console.log('\n   No mappings to migrate. Done.');
@@ -560,7 +597,11 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
         console.log('   ' + '-'.repeat(90));
 
         for (const record of finalMapping) {
-            console.log(`   ${record.firebaseUid.padEnd(34)} | ${record.oldAppleSub.slice(0, 22).padEnd(22)} | ${record.newAppleSub.slice(0, 22)}`);
+            console.log(
+                `   ${record.firebaseUid.padEnd(34)} | ${record.oldAppleSub
+                    .slice(0, 22)
+                    .padEnd(22)} | ${record.newAppleSub.slice(0, 22)}`
+            );
         }
 
         console.log(`\n   Total: ${finalMapping.length} user(s) would be migrated`);
@@ -584,12 +625,18 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
         try {
             // Check if already migrated (idempotency)
             const currentUser = await app.auth().getUser(record.firebaseUid);
-            const currentAppleProvider = currentUser.providerData.find(p => p.providerId === 'apple.com');
+            const currentAppleProvider = currentUser.providerData.find(
+                p => p.providerId === 'apple.com'
+            );
 
             if (currentAppleProvider?.uid === record.newAppleSub) {
                 migrateSkipCount++;
 
-                console.log(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — SKIPPED (already migrated)`);
+                console.log(
+                    `   [${i + 1}/${finalMapping.length}] ${
+                        record.firebaseUid
+                    } — SKIPPED (already migrated)`
+                );
 
                 migrationLog.push({
                     firebaseUid: record.firebaseUid,
@@ -620,7 +667,9 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
 
             const message = error instanceof Error ? error.message : String(error);
 
-            console.error(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — FAILED: ${message}`);
+            console.error(
+                `   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — FAILED: ${message}`
+            );
 
             migrationLog.push({
                 firebaseUid: record.firebaseUid,
@@ -639,12 +688,16 @@ async function postTransfer(options: PostTransferOptions): Promise<void> {
 
     writeJson(dataDir, FILES.migrationLog, migrationLog);
 
-    console.log(`\n   Migration complete: ${migrateSuccessCount} succeeded, ${migrateFailCount} failed, ${migrateSkipCount} skipped`);
+    console.log(
+        `\n   Migration complete: ${migrateSuccessCount} succeeded, ${migrateFailCount} failed, ${migrateSkipCount} skipped`
+    );
 
     if (migrateFailCount > 0) {
         console.log(`\n   ⚠️  ${migrateFailCount} user(s) failed to migrate.`);
         console.log('   Check migration-log.json for details.');
-        console.log('   You can re-run this command safely — already-migrated users will be skipped.');
+        console.log(
+            '   You can re-run this command safely — already-migrated users will be skipped.'
+        );
     }
 
     console.log('\n=== Post-Transfer Complete ===\n');
@@ -695,26 +748,47 @@ async function validate(options: ValidateOptions): Promise<void> {
 
             if (!appleProvider) {
                 noProviderCount++;
-                console.log(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — NO APPLE PROVIDER (user exists but apple.com link is missing)`);
+                console.log(
+                    `   [${i + 1}/${finalMapping.length}] ${
+                        record.firebaseUid
+                    } — NO APPLE PROVIDER (user exists but apple.com link is missing)`
+                );
             } else if (appleProvider.uid === record.newAppleSub) {
                 okCount++;
                 console.log(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — OK`);
             } else if (appleProvider.uid === record.oldAppleSub) {
                 mismatchCount++;
-                console.log(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — NOT MIGRATED (still has old sub)`);
+                console.log(
+                    `   [${i + 1}/${finalMapping.length}] ${
+                        record.firebaseUid
+                    } — NOT MIGRATED (still has old sub)`
+                );
             } else {
                 mismatchCount++;
-                console.log(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — MISMATCH (expected ${record.newAppleSub.slice(0, 12)}..., got ${appleProvider.uid.slice(0, 12)}...)`);
+                console.log(
+                    `   [${i + 1}/${finalMapping.length}] ${
+                        record.firebaseUid
+                    } — MISMATCH (expected ${record.newAppleSub.slice(
+                        0,
+                        12
+                    )}..., got ${appleProvider.uid.slice(0, 12)}...)`
+                );
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
 
             if (message.includes('no user record')) {
                 missingCount++;
-                console.log(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — MISSING (user does not exist in Firebase)`);
+                console.log(
+                    `   [${i + 1}/${finalMapping.length}] ${
+                        record.firebaseUid
+                    } — MISSING (user does not exist in Firebase)`
+                );
             } else {
                 missingCount++;
-                console.error(`   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — ERROR: ${message}`);
+                console.error(
+                    `   [${i + 1}/${finalMapping.length}] ${record.firebaseUid} — ERROR: ${message}`
+                );
             }
         }
     }
@@ -750,7 +824,9 @@ program
 
 program
     .command('pre-transfer')
-    .description('Export Apple users from Firebase and generate transfer identifiers (run BEFORE app transfer)')
+    .description(
+        'Export Apple users from Firebase and generate transfer identifiers (run BEFORE app transfer)'
+    )
     .requiredOption('--firebase-credential <path>', 'Path to Firebase service account JSON')
     .requiredOption('--apple-key <path>', 'Path to old team SIWA private key (.p8)')
     .requiredOption('--apple-key-id <id>', 'Old team SIWA key ID')
@@ -758,7 +834,7 @@ program
     .requiredOption('--apple-client-id <id>', 'App bundle ID (e.g. com.learncard.app)')
     .requiredOption('--target-team-id <id>', 'New team Apple Team ID (e.g. 5JB5D53PRR)')
     .option('--data-dir <path>', 'Directory for migration data files', './migration-data')
-    .action(async (opts) => {
+    .action(async opts => {
         try {
             await preTransfer({
                 firebaseCredential: opts.firebaseCredential,
@@ -770,14 +846,19 @@ program
                 dataDir: opts.dataDir,
             });
         } catch (error) {
-            console.error('\n❌ Pre-transfer failed:', error instanceof Error ? error.message : error);
+            console.error(
+                '\n❌ Pre-transfer failed:',
+                error instanceof Error ? error.message : error
+            );
             process.exit(1);
         }
     });
 
 program
     .command('post-transfer')
-    .description('Exchange transfer IDs for new subs and migrate Firebase Auth (run AFTER app transfer)')
+    .description(
+        'Exchange transfer IDs for new subs and migrate Firebase Auth (run AFTER app transfer)'
+    )
     .requiredOption('--firebase-credential <path>', 'Path to Firebase service account JSON')
     .requiredOption('--apple-key <path>', 'Path to new team SIWA private key (.p8)')
     .requiredOption('--apple-key-id <id>', 'New team SIWA key ID')
@@ -787,7 +868,7 @@ program
     .option('--data-dir <path>', 'Directory for migration data files', './migration-data')
     .option('--dry-run', 'Preview changes without modifying Firebase', false)
     .option('--batch-delay <ms>', 'Delay between Firebase operations in ms', '200')
-    .action(async (opts) => {
+    .action(async opts => {
         try {
             await postTransfer({
                 firebaseCredential: opts.firebaseCredential,
@@ -801,24 +882,32 @@ program
                 batchDelay: parseInt(opts.batchDelay, 10),
             });
         } catch (error) {
-            console.error('\n❌ Post-transfer failed:', error instanceof Error ? error.message : error);
+            console.error(
+                '\n❌ Post-transfer failed:',
+                error instanceof Error ? error.message : error
+            );
             process.exit(1);
         }
     });
 
 program
     .command('validate')
-    .description('Verify that all users were migrated correctly (read-only, safe to run anytime after post-transfer)')
+    .description(
+        'Verify that all users were migrated correctly (read-only, safe to run anytime after post-transfer)'
+    )
     .requiredOption('--firebase-credential <path>', 'Path to Firebase service account JSON')
     .option('--data-dir <path>', 'Directory for migration data files', './migration-data')
-    .action(async (opts) => {
+    .action(async opts => {
         try {
             await validate({
                 firebaseCredential: opts.firebaseCredential,
                 dataDir: opts.dataDir,
             });
         } catch (error) {
-            console.error('\n❌ Validation failed:', error instanceof Error ? error.message : error);
+            console.error(
+                '\n❌ Validation failed:',
+                error instanceof Error ? error.message : error
+            );
             process.exit(1);
         }
     });

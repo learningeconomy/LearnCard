@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { delay, runCommand } from './run-command';
 
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 200) => {
     const controller = new AbortController();
@@ -34,7 +34,7 @@ export async function setup() {
 
     if (MANAGE_DOCKER) {
         console.log('Starting docker...');
-        await execa`docker compose up -d --build`;
+        await runCommand('docker', ['compose', 'up', '-d', '--build']);
         console.log(
             'Docker started in',
             ((performance.now() - start) / 1000).toFixed(2),
@@ -49,7 +49,7 @@ export async function setup() {
     console.log('Waiting for health check...');
 
     do {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await delay(2000);
     } while (!(await healthCheck()));
 
     console.log(
@@ -62,7 +62,7 @@ export async function setup() {
         if (MANAGE_DOCKER) {
             start = performance.now();
             console.log('Stopping docker...');
-            await execa`docker compose down`;
+            await runCommand('docker', ['compose', 'down']);
             console.log(
                 'Docker stopped in',
                 ((performance.now() - start) / 1000).toFixed(2),

@@ -17,4 +17,4 @@ jobs:
 
             - name: Validate all theme schemas
               working-directory: apps/learn-card-app
-              run: npx tsx scripts/validate-theme-schemas.ts
+              run: bunx tsx scripts/validate-theme-schemas.ts

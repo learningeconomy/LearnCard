@@ -2,30 +2,30 @@
 
 ## Build & Development Commands
 
--   Build: `pnpm build` or `pnpm build:docker`
--   Dev: `pnpm dev` - Watches files and rebuilds
--   Start server: `pnpm start` - Runs local server on port 3000
--   Start on port 4000: `pnpm start-p-4000`
--   Deploy: `pnpm serverless-deploy`
+-   Build: `bun run build` or `bun run build:docker`
+-   Dev: `bun run dev` - Watches files and rebuilds
+-   Start server: `bun run start` - Runs local server on port 3000
+-   Start on port 4000: `bun run start-p-4000`
+-   Deploy: `bun run serverless-deploy`
 
 ### Skill Framework Seeding
 
 -   Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
 -   Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
--   Re-seed manually with `pnpm skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
--   Grant framework admin access to an existing profile with `pnpm skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
+-   Re-seed manually with `bun run skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
+-   Grant framework admin access to an existing profile with `bun run skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
 -   If no stage is provided, the CLI defaults to `local` and prints a note.
 -   Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
 -   The seed command is idempotent and will not duplicate framework or skill nodes.
 
 ## Test Commands
 
--   Run all tests: `pnpm test`
--   Run all tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
--   Watch mode: `pnpm test:watch`
--   Run single test: `pnpm test test/consentflow.spec.ts`
--   Run single test once (non-watch): `pnpm test -- run test/consentflow.spec.ts`
--   Run specific test: `pnpm test -t "should allow setting and retrieving the image field for a contract"`
+-   Run all tests: `bun run test`
+-   Run all tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
+-   Watch mode: `bun run test:watch`
+-   Run single test: `bun run test test/consentflow.spec.ts`
+-   Run single test once (non-watch): `bun run test -- run test/consentflow.spec.ts`
+-   Run specific test: `bun run test -t "should allow setting and retrieving the image field for a contract"`
 
 ## Code Style Guidelines
 
@@ -757,26 +757,26 @@ An idempotent script that seeds a fully functional partner app listing into the 
 cd services/learn-card-network/brain-service
 
 # Basic (defaults to http://localhost:4321)
-pnpm seed:dev-app
+bun run seed:dev-app
 
 # Custom app URL
-pnpm seed:dev-app -- --app-url http://localhost:4321
+bun run seed:dev-app -- --app-url http://localhost:4321
 
 # Install for a specific user (needed for notifications)
-pnpm seed:dev-app -- --install-for my-profile-id
+bun run seed:dev-app -- --install-for my-profile-id
 
 # Reset rate limits (useful when testing repeatedly)
-pnpm seed:dev-app -- --reset-rate-limits
+bun run seed:dev-app -- --reset-rate-limits
 
 # Custom name, slug, permissions
-pnpm seed:dev-app -- --app-name "My Game" --slug my-game
-pnpm seed:dev-app -- --permissions request_identity,send_credential
+bun run seed:dev-app -- --app-name "My Game" --slug my-game
+bun run seed:dev-app -- --permissions request_identity,send_credential
 
 # Custom signing authority endpoint
-pnpm seed:dev-app -- --sa-endpoint http://localhost:5100/api
+bun run seed:dev-app -- --sa-endpoint http://localhost:5100/api
 
 # Custom promotion level
-pnpm seed:dev-app -- --promotion FEATURED_CAROUSEL
+bun run seed:dev-app -- --promotion FEATURED_CAROUSEL
 ```
 
 ### All Flags
@@ -799,7 +799,7 @@ pnpm seed:dev-app -- --promotion FEATURED_CAROUSEL
 
 ### Prerequisites
 
--   Neo4j running (`pnpm dev:services` from `apps/learn-card-app` or local Docker)
+-   Neo4j running (`bun run dev:services` from `apps/learn-card-app` or local Docker)
 -   Redis running (same)
 -   MongoDB running (same)
 -   Falls back to local docker-compose defaults if no `.env` is present

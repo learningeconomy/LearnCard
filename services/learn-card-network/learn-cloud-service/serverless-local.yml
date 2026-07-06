@@ -14,6 +14,8 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
+        # serverless-esbuild does not support Bun as a Lambda artifact packager.
+        # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
@@ -25,10 +27,10 @@ custom:
             pattern: ['src/**/*.ts', 'dids.ts']
 
 package:
-  individually: true
-  patterns: 
-    - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    individually: true
+    patterns:
+        - '!node_modules/**'
+        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
 provider:
     name: aws

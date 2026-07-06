@@ -4,9 +4,6 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-.pnpm-store
 
 node_modules
 *.local
@@ -29,13 +26,15 @@ node_modules
 *.sw?
 
 .nx-cache/
+.nx/
 
 # Generated tenant config (from prepare scripts — assets are tracked as source of truth)
 **/public/tenant-config.json
 .aider*
 
 # Personal AI tooling (not shared — teammates may use different setups)
-.claude/
+# No trailing slash: also matches a stray .claude symlink, not just a directory
+.claude
 .codex/
 .vexp/
 .superpowers/
@@ -46,6 +45,9 @@ internal-docs/*
 .github/copilot-instructions.md
 .worktrees/
 CLAUDE.local.md
+
+# Assembled at deploy time by scripts/prepare-didkit-native-layer.cjs
+services/learn-card-network/*/didkit-native-layer/
 
 # Local Netlify folder
 .netlify

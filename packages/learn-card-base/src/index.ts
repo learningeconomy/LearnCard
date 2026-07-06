@@ -81,6 +81,11 @@ export * from './hooks/useTermsTransactions';
 export * from './auth-coordinator';
 export * from './auth-providers';
 export * from './auth-adapters';
+
+// Auth Status - canonical race-safe auth-gate selector for all gating decisions
+export * from './auth-status/authStatus';
+export * from './auth-status/useAuthStatus';
+export * from './auth-status/useAuthGateState';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
@@ -127,6 +132,7 @@ export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
 export * from './hooks/useSharedUrisInTerms';
+export * from './hooks/usePendingContractSync';
 export * from './hooks/useConsentedContracts';
 export * from './hooks/useLaunchDarklyIdentify';
 
@@ -159,6 +165,7 @@ export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
 export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
+export * from './stores/pendingContractSyncStore';
 export * from './stores/boostPreviewStore';
 export {
     messages,
@@ -198,6 +205,7 @@ export * from './components/openid4vc/ExchangeErrorDisplay';
 export * from './components/openid4vc/IssuerHeader';
 export * from './components/openid4vc/VerifierHeader';
 export * from './helpers/web3AuthHelpers';
+export * from './helpers/networkHelpers';
 export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';

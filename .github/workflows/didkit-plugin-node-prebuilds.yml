@@ -64,13 +64,17 @@ jobs:
               with:
                   submodules: true
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
+            - name: Setup Bun cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
               with:
@@ -86,7 +90,7 @@ jobs:
                       ~/.cargo/git/db/
                       .cargo-cache
                       target/
-                  key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+                  key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('packages/plugins/didkit-plugin-node/native/Cargo.lock') }}
 
             - name: Install cross-compilation tools (aarch64-linux-gnu)
               if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
@@ -95,7 +99,7 @@ jobs:
                   sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
             - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Build in Docker (x86_64-musl)
               if: matrix.settings.target == 'x86_64-unknown-linux-musl'
@@ -111,11 +115,12 @@ jobs:
                       rustup update stable
                       rustup default stable
                       rustup target add $TARGET
-                      npm install -g corepack@latest
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      pnpm install --no-frozen-lockfile
-                      pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
+                      BUN_VERSION="$(awk -F'"' '/"packageManager"/ { split($4, parts, "@"); print parts[2]; exit }' package.json)"
+                      curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
+                      export BUN_INSTALL="$HOME/.bun"
+                      export PATH="$BUN_INSTALL/bin:$PATH"
+                      bun install --frozen-lockfile
+                      bunx nx run didkit-plugin-node:build -- --target $TARGET
                       $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
 
             - name: Build in Docker (aarch64-musl)
@@ -136,11 +141,12 @@ jobs:
                       rustup update stable
                       rustup default stable
                       rustup target add $TARGET
-                      npm install -g corepack@latest
-                      corepack enable
-                      corepack prepare pnpm@9 --activate
-                      pnpm install --no-frozen-lockfile
-                      pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
+                      BUN_VERSION="$(awk -F'"' '/"packageManager"/ { split($4, parts, "@"); print parts[2]; exit }' package.json)"
+                      curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
+                      export BUN_INSTALL="$HOME/.bun"
+                      export PATH="$BUN_INSTALL/bin:$PATH"
+                      bun install --frozen-lockfile
+                      bunx nx run didkit-plugin-node:build -- --target $TARGET
                       $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
 
             - name: Build (aarch64-unknown-linux-gnu)
@@ -151,14 +157,14 @@ jobs:
                   CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
                   AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
               run: |
-                  pnpm exec nx run didkit-plugin-node:build -- --target aarch64-unknown-linux-gnu
+                  bunx nx run didkit-plugin-node:build -- --target aarch64-unknown-linux-gnu
                   ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
               shell: bash
 
             - name: Build
               if: ${{ !matrix.settings.docker && matrix.settings.target != 'aarch64-unknown-linux-gnu' }}
               run: |
-                  pnpm exec nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && format('-- --target {0}', matrix.settings.target) || '' }}
+                  bunx nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && format('-- --target {0}', matrix.settings.target) || '' }}
                   ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
               shell: bash
 
@@ -180,28 +186,36 @@ jobs:
         steps:
             - uses: actions/checkout@v7
 
-            - name: Setup Node.js
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+
+            - name: Use Node.js 24 for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version-file: .nvmrc
-                  registry-url: 'https://registry.npmjs.org'
+                  node-version: 24
                   package-manager-cache: false
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v6
+            - name: Setup Bun cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
             - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Check if version is already published
               id: published
               working-directory: packages/plugins/didkit-plugin-node
               run: |
-                  PACKAGE=$(node -p "require('./package.json').name")
-                  VERSION=$(node -p "require('./package.json').version")
+                  PACKAGE=$(bun -e "console.log(require('./package.json').name)")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
 
-                  if npm view "$PACKAGE@$VERSION" version > /dev/null 2>&1; then
+                  if bun pm view "$PACKAGE@$VERSION" version > /dev/null 2>&1; then
                     echo "exists=true" >> "$GITHUB_OUTPUT"
-                    echo "$PACKAGE@$VERSION is already published; skipping npm publish"
+                    echo "$PACKAGE@$VERSION is already published; skipping registry publish"
                   else
                     echo "exists=false" >> "$GITHUB_OUTPUT"
                     echo "$PACKAGE@$VERSION is not published yet"
@@ -222,26 +236,33 @@ jobs:
             - name: Create platform package directories
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm create-npm-dir
+              run: bun run create-npm-dir
 
             - name: Move artifacts to platform packages
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm artifacts
+              run: bun run artifacts
 
             - name: Build TypeScript
               if: steps.published.outputs.exists != 'true'
-              run: pnpm exec nx run didkit-plugin-node:build
+              run: bunx nx run didkit-plugin-node:build
+
+            - name: Prepare publish dependency versions
+              if: steps.published.outputs.exists != 'true'
+              run: node scripts/prepare-publish-workspace-deps.mjs
 
             - name: Publish platform packages
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm exec napi prepublish -t npm --skip-gh-release
+              run: bun run prepublishOnly
 
+            # Use Bun for npm-registry tarball creation alongside the workspace install/build.
             - name: Pack package
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm pack --pack-destination "${{ runner.temp }}/didkit-plugin-node-pack"
+              run: |
+                  mkdir -p "${{ runner.temp }}/didkit-plugin-node-pack"
+                  bun pm pack --destination "${{ runner.temp }}/didkit-plugin-node-pack"
 
             - name: Validate packed package metadata
               if: steps.published.outputs.exists != 'true'
@@ -255,6 +276,7 @@ jobs:
                     exit 1
                   fi
 
+            # Publish the prepared npm-registry tarball with npm's OIDC trusted publishing path.
             - name: Publish to npm
               if: steps.published.outputs.exists != 'true'
               working-directory: packages/plugins/didkit-plugin-node

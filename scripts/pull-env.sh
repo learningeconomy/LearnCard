@@ -12,10 +12,10 @@
 #      LearnCard project ID), OR pass --projectId=<id> to this script.
 #
 # Usage:
-#   pnpm env:pull                      # Pull dev env for all services
-#   pnpm env:pull --env=staging        # Pull staging env overlays (*.env.staging)
-#   pnpm env:pull -- --only=brain      # Pull dev env for brain-service only
-#   pnpm env:pull -- --list            # Show available service targets
+#   bun run env:pull                      # Pull dev env for all services
+#   bun run env:pull --env=staging        # Pull staging env overlays (*.env.staging)
+#   bun run env:pull -- --only=brain      # Pull dev env for brain-service only
+#   bun run env:pull -- --list            # Show available service targets
 #
 # Infisical folder structure (LearnCard project):
 #   /LearnCard/brain-service       → brain-service secrets

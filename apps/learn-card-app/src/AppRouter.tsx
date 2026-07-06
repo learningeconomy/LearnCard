@@ -30,6 +30,7 @@ import {
     useCurrentUser,
     useIsCurrentUserLCNUser,
     useContract,
+    usePendingContractSync,
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
@@ -124,7 +125,8 @@ const AppRouter: React.FC = () => {
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const analytics = useAnalytics();
+    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
@@ -311,6 +313,7 @@ const AppRouter: React.FC = () => {
     usePrefetchCredentials(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
+    usePendingContractSync(enablePrefetch);
 
     // Idle-prefetch route chunks once logged in so navigation from any page
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache

@@ -1,23 +1,24 @@
 {
     "name": "@learncard/react",
-    "version": "2.10.3",
+    "version": "2.10.5",
     "description": "",
     "main": "dist/cjs",
     "module": "dist/esm",
     "types": "dist/index.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "sideEffects": false,
     "scripts": {
         "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all && prettier --write \"./src/components/**/index.ts\"",
-        "build": "pnpm generate-barrels && rollup -c",
+        "build": "bun run generate-barrels && rollup -c",
         "build:watch": "rollup -c -w",
         "test": "vitest",
         "test:watch": "vitest",
         "storybook": "storybook dev -p 6006",
         "build-storybook": "storybook build",
-        "chromatic": "npx chromatic"
+        "chromatic": "bunx chromatic"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -84,5 +85,19 @@
     "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/react-learn-card/README.md",
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js",
+            "default": "./dist/esm/index.js"
+        },
+        "./main.css": {
+            "development": "./src/assets/styles/main.css",
+            "default": "./dist/main.css"
+        },
+        "./dist/main.css": "./dist/main.css"
     }
 }
