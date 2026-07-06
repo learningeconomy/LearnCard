@@ -731,7 +731,14 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 queryKey: ['useSyncConsentFlow'],
             });
 
-            syncAllCredentialsToContracts.mutate();
+            try {
+                await syncAllCredentialsToContracts.mutateAsync();
+            } catch (error) {
+                log.warn(
+                    'Failed to sync credentials to contracts after saving self-assigned skills:',
+                    error
+                );
+            }
 
             try {
                 const wallet = await initWallet();
