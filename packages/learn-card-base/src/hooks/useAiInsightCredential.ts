@@ -358,19 +358,19 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
 export const useExistingAiInsightCredential = ({ enabled = true }: { enabled?: boolean } = {}) => {
     const { initWallet } = useWallet();
 
-    return useQuery({
+    return useQuery<VC | null>({
         queryKey: ['useExistingAiInsightCredential'],
         enabled,
-        queryFn: async (): Promise<VC | undefined> => {
+        queryFn: async (): Promise<VC | null> => {
             const wallet = await initWallet();
 
             const record = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
 
-            if (!record?.length) return undefined;
+            if (!record?.length) return null;
 
             const aiInsightCredential = await wallet.read.get(record[0].uri);
 
-            if (!aiInsightCredential) return undefined;
+            if (!aiInsightCredential) return null;
 
             return VCValidator.parseAsync(aiInsightCredential);
         },
