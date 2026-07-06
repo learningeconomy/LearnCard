@@ -176,15 +176,32 @@ export const CheckListUploadRawVC: React.FC = () => {
             if (result?.success) {
                 setRawVcText('');
                 loadRawVCs();
-                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    title: `JSON Credential Successfully Added`,
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Success,
-                    hasCheckmark: true,
-                    autoDismiss: false,
-                });
+
+                const added = result.addedCount;
+                const failed = result.failedCount;
+                const partial = failed > 0;
+
+                presentToast(
+                    partial
+                        ? `${added} of ${
+                              added + failed
+                          } credentials added. ${failed} could not be added.`
+                        : `Your journey is now reflected in portable, trusted credentials.`,
+                    {
+                        title:
+                            added === 1 && !partial
+                                ? `JSON Credential Successfully Added`
+                                : `${added} Credential${added === 1 ? '' : 's'} Added`,
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Success,
+                        hasCheckmark: true,
+                        autoDismiss: false,
+                    }
+                );
             } else {
-                setRawTextErrors([`Failed to parse JSON VC. ${result?.error}`]);
+                setRawTextErrors(
+                    result?.errors?.length ? result.errors : ['Failed to parse JSON VC.']
+                );
             }
         } catch (error: any) {
             setRawTextErrors([error.message]);
@@ -229,7 +246,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                     <input
                         multiple
                         type="file"
-                        accept=".json"
+                        accept=".json,.txt"
                         onChange={async e => {
                             setFileErrors([]);
                             const results = await getJsonFiles(e, error => {
