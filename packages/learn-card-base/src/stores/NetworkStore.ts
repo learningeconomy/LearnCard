@@ -43,7 +43,7 @@ export const initNetworkStoreFromTenant = (apis: TenantApiConfig, tenantId?: str
     networkStore.set.cloudUrl(apis.cloudService);
     networkStore.set.xapiUrl(apis.xapi ?? apis.cloudService.replace(/\/trpc\/?$/, '/xapi'));
     networkStore.set.apiEndpoint(apis.lcaApi);
-    networkStore.set.aiServiceUrl(apis.aiService ?? LEARNCARD_AI_URL);
+    networkStore.set.aiServiceUrl(LEARNCARD_AI_URL);
 
     if (tenantId) networkStore.set.tenantId(tenantId);
 };

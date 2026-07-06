@@ -174,7 +174,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 {hasConsented ? (
                     <TrashBin version="2" className="text-white" strokeWidth="2" />
                 ) : (
-                    <SyncCircleArrows className={isLoading ? 'animate-spin' : ''} />
+                    <SyncCircleArrows className={isLoading ? 'animate-spin-ccw' : ''} />
                 )}
             </button>
         </div>

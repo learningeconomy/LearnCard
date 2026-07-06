@@ -3,7 +3,6 @@ import { useWallet } from '../../hooks/useWallet';
 import { getOrCreateSharedUriForWallet } from '../../hooks/useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from '../../hooks/useConsentedContracts';
 import type { QueryClient } from '@tanstack/react-query';
-import { categoryMetadata, CredentialCategoryEnum } from '../../types/boostAndCredentialMetadata';
 import { isProductionNetwork } from '../../helpers/networkHelpers';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('network-consent');
@@ -12,33 +11,51 @@ const NETWORK_CONTRACT_URI =
     'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891';
 const CONTRACT_OWNER_DID = 'did:web:network.learncard.com:users:learn-cloud';
 
-// All possible contract categories, preferring the contractCredentialTypeOverride if available
-const CATEGORIES = Object.values(categoryMetadata).reduce<string[]>((categories, category) => {
-    const categoryToAdd = category.contractCredentialTypeOverride || category.credentialType;
-    if (!categories.includes(categoryToAdd)) {
-        categories.push(categoryToAdd);
+type ContractFieldConfig = {
+    required: boolean;
+    defaultEnabled?: boolean;
+};
+
+const getPersonalValue = (key: string, value: ContractFieldConfig): string => {
+    if (!value.required && !value.defaultEnabled) {
+        return '';
     }
-    return categories;
-}, []);
 
-interface NetworkConsentMutationParams {
-    queryClient: QueryClient;
-    checkExistingConsent?: boolean; // Default true for backfill, false for signup
-}
+    if (key.toLowerCase() === 'name') {
+        return 'Network User';
+    }
 
-interface NetworkConsentResult {
-    success: boolean;
-    alreadyConsented?: boolean;
-    error?: string;
-}
+    if (key.toLowerCase() === 'email') {
+        return 'anonymous@hidden.com';
+    }
 
-/**
- * Generates shared URIs for all credentials in all categories and creates consent terms
- */
-const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Promise<any> => {
+    return '';
+};
+
+const buildNetworkContractTerms = async (wallet: any, queryClient: QueryClient): Promise<any> => {
+    const contractDetails = await wallet.invoke.getContract(NETWORK_CONTRACT_URI);
+    const contract = contractDetails?.contract;
+
+    if (!contract) {
+        throw new Error('Could not load the LearnCard Network contract.');
+    }
+
+    const readPersonalEntries = Object.entries(contract.read?.personal ?? {}) as Array<
+        [string, ContractFieldConfig]
+    >;
+    const writePersonalEntries = Object.entries(contract.write?.personal ?? {}) as Array<
+        [string, ContractFieldConfig]
+    >;
+    const readCategoryEntries = Object.entries(
+        contract.read?.credentials?.categories ?? {}
+    ) as Array<[string, ContractFieldConfig]>;
+    const writeCategoryEntries = Object.entries(
+        contract.write?.credentials?.categories ?? {}
+    ) as Array<[string, ContractFieldConfig]>;
+
     const categoryCredentials: Record<string, string[]> = {};
 
-    for (const category of CATEGORIES) {
+    for (const [category] of readCategoryEntries) {
         try {
             const credentials = await wallet.index.LearnCloud.get({ category });
             const sharedUris: string[] = [];
@@ -67,15 +84,27 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
         }
     }
 
+    const readPersonal = Object.fromEntries(
+        readPersonalEntries.map(([key, value]) => [key, getPersonalValue(key, value)])
+    );
+
+    const writePersonal = Object.fromEntries(
+        writePersonalEntries.map(([key, value]) => [
+            key,
+            Boolean(value.required || value.defaultEnabled),
+        ])
+    );
+
     return {
         read: {
-            personal: { name: 'Network User' },
+            anonymize: contract.read?.anonymize,
+            personal: readPersonal,
             credentials: {
-                shareAll: true,
-                sharing: true,
+                shareAll: contract.read?.credentials?.shareAll ?? true,
+                sharing: contract.read?.credentials?.sharing ?? true,
                 categories: {
                     ...Object.fromEntries(
-                        CATEGORIES.map(category => [
+                        readCategoryEntries.map(([category]) => [
                             category,
                             {
                                 shareAll: true,
@@ -88,15 +117,28 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
             },
         },
         write: {
-            personal: {},
+            personal: writePersonal,
             credentials: {
                 categories: {
-                    ...Object.fromEntries(CATEGORIES.map(category => [category, true])),
+                    ...Object.fromEntries(
+                        writeCategoryEntries.map(([category]) => [category, true])
+                    ),
                 },
             },
         },
     };
 };
+
+interface NetworkConsentMutationParams {
+    queryClient: QueryClient;
+    checkExistingConsent?: boolean; // Default true for backfill, false for signup
+}
+
+interface NetworkConsentResult {
+    success: boolean;
+    alreadyConsented?: boolean;
+    error?: string;
+}
 
 /**
  * React Query mutation for consenting to the LearnCard Network contract.
@@ -127,8 +169,8 @@ export const useNetworkConsentMutation = () => {
                     }
                 }
 
-                // Generate consent terms with shared URIs for all categories
-                const terms = await generateConsentTerms(wallet, queryClient);
+                // Generate consent terms using only the categories defined by the contract
+                const terms = await buildNetworkContractTerms(wallet, queryClient);
 
                 // Consent to the contract
                 await wallet.invoke.consentToContract(NETWORK_CONTRACT_URI, { terms });
