@@ -2,10 +2,23 @@ import React from 'react';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
+import RefreshIcon from 'learn-card-base/svgs/RefreshIcon';
 import CheckListButton from '../../components/learncard/checklist/CheckListButton';
 
-export const AiInsightsEmptyPlaceholder: React.FC<{ isSharedView?: boolean }> = ({
+export const AiInsightsEmptyPlaceholder: React.FC<{
+    isSharedView?: boolean;
+    showRegenerate?: boolean;
+    onRegenerate?: () => void;
+    regenerateLabel?: string;
+    regenerateDisabled?: boolean;
+    regenerateHint?: string;
+}> = ({
     isSharedView = false,
+    showRegenerate = false,
+    onRegenerate,
+    regenerateLabel = 'Regenerate',
+    regenerateDisabled = false,
+    regenerateHint,
 }) => {
     const brandingConfig = useBrandingConfig();
 
@@ -22,6 +35,24 @@ export const AiInsightsEmptyPlaceholder: React.FC<{ isSharedView?: boolean }> = 
                     </p>
                 </div>
                 {!isSharedView && <CheckListButton />}
+                {!isSharedView && showRegenerate && (
+                    <div className="flex flex-col items-center gap-1.5">
+                        <button
+                            type="button"
+                            disabled={regenerateDisabled}
+                            onClick={onRegenerate}
+                            className="flex items-center gap-1.5 py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <RefreshIcon className="w-4 h-4" />
+                            {regenerateLabel}
+                        </button>
+                        {regenerateDisabled && regenerateHint && (
+                            <p className="max-w-[320px] text-xs text-grayscale-500 text-center leading-relaxed">
+                                {regenerateHint}
+                            </p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

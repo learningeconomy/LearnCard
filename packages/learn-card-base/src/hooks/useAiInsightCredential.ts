@@ -16,10 +16,9 @@ import { VCValidator, VC } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { useAiFeatureGate } from './useAiFeatureGate';
 import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
-import {
-    useGetCredentialCount,
-    useGetCredentialsForSkills,
-} from '../react-query/queries/vcQueries';
+import { useConsentedContracts } from './useConsentedContracts';
+import { useGetCredentialsForSkills } from '../react-query/queries/vcQueries';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from '../constants/aiPassport';
 const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
@@ -204,16 +203,24 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
         !currentLCNUserLoading &&
         Boolean(currentLCNUser);
 
-    const { data: currentCredentialCount, isLoading: currentCredentialCountLoading } =
-        useGetCredentialCount(undefined, baseQueryEnabled);
+    const { data: resolvedCredentials, isLoading: resolvedCredentialsLoading } =
+        useGetCredentialsForSkills(baseQueryEnabled);
+    const { data: consentedContracts = [], isLoading: consentedContractsLoading } =
+        useConsentedContracts();
+    const hasLearnCardAiConsent = consentedContracts.some(
+        (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
+            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            consent?.status !== 'withdrawn'
+    );
     const refreshStatus = aiInsightRefreshStore.use.status();
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
     const baselineCredentialId = aiInsightRefreshStore.use.baselineCredentialId();
 
     const canGenerateAiInsightCredential =
         baseQueryEnabled &&
-        !currentCredentialCountLoading &&
-        Number(currentCredentialCount ?? 0) > 0;
+        !resolvedCredentialsLoading &&
+        !consentedContractsLoading &&
+        (Number(resolvedCredentials?.length ?? 0) > 0 || hasLearnCardAiConsent);
 
     logAiInsightCredential('Hook state', {
         refreshStatus,
@@ -453,14 +460,18 @@ export const useAiInsightCredentialMutation = () => {
     const { initWallet } = useWallet();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
-    const { data: currentCredentialCount, isLoading: currentCredentialCountLoading } =
-        useGetCredentialCount(
-            undefined,
-            !aiFeatureGateLoading &&
-                isAiEnabled &&
-                !currentLCNUserLoading &&
-                Boolean(currentLCNUser)
-        );
+    const baseQueryEnabled =
+        !aiFeatureGateLoading && isAiEnabled && !currentLCNUserLoading && Boolean(currentLCNUser);
+    const { data: resolvedCredentials, isLoading: resolvedCredentialsLoading } =
+        useGetCredentialsForSkills(baseQueryEnabled);
+    const { data: consentedContracts = [], isLoading: consentedContractsLoading } =
+        useConsentedContracts();
+    const hasLearnCardAiConsent = consentedContracts.some(
+        (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
+            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            consent?.status !== 'withdrawn'
+    );
+    const hasWalletCredentials = Number(resolvedCredentials?.length ?? 0) > 0;
 
     return useMutation({
         mutationFn: async () => {
@@ -480,11 +491,11 @@ export const useAiInsightCredentialMutation = () => {
                 throw new Error('Please create a profile first.');
             }
 
-            if (currentCredentialCountLoading) {
+            if (resolvedCredentialsLoading || consentedContractsLoading) {
                 throw new Error('Your data is still loading. Please try again.');
             }
 
-            if (Number(currentCredentialCount ?? 0) <= 0) {
+            if (!hasWalletCredentials && !hasLearnCardAiConsent) {
                 throw new Error(AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE);
             }
 
