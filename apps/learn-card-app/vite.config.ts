@@ -229,6 +229,11 @@ export default defineConfig(async ({ mode, command }) => {
                 'react-router-dom',
                 'history',
                 '@ionic/react-router',
+                // Required: learn-card-base is aliased to raw TS source and imports
+                // react-query with bare specifiers. Without this pin the prod build
+                // resolves two react-query instances, splitting the QueryClient React
+                // Context and throwing "No QueryClient set" at runtime.
+                '@tanstack/react-query',
             ],
         },
         server: {

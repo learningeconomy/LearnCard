@@ -33,7 +33,8 @@ node_modules
 .aider*
 
 # Personal AI tooling (not shared — teammates may use different setups)
-.claude/
+# No trailing slash: also matches a stray .claude symlink, not just a directory
+.claude
 .codex/
 .vexp/
 .superpowers/
