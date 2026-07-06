@@ -39,7 +39,7 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
                 />
             ) : (
                 <div
-                    className="flex aspect-square w-full max-w-[160px] items-center justify-center rounded-[19%] border border-[#FBFBFC] p-[18%]"
+                    className="flex aspect-square w-full max-w-[100px] items-center justify-center rounded-[19%] border border-[#FBFBFC] p-[18%]"
                     style={{
                         backgroundImage:
                             gradientFrom && gradientTo
@@ -47,7 +47,14 @@ const AppGridTile: React.FC<AppGridTileProps> = ({
                                 : undefined,
                     }}
                 >
-                    <div className="flex h-full w-full items-center justify-center">{icon}</div>
+                    {/* Square-locked slot: some tile icons are Figma dev-mode exports
+                        (preserveAspectRatio="none" + %-inset layers) with no intrinsic
+                        size, so they only render undistorted inside a perfectly square box.
+                        `aspect-square w-full` derives the height from the (reliably pinned)
+                        width, giving a definite square regardless of flexbox sizing. */}
+                    <div className="flex aspect-square w-full items-center justify-center">
+                        {icon}
+                    </div>
                 </div>
             )}
             <p className="line-clamp-3 text-center font-poppins text-[13px] font-semibold text-[#353E64] [word-break:break-word] sm:text-[14px] md:line-clamp-2 md:text-[16px]">
