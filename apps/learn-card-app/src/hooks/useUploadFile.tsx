@@ -228,47 +228,55 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const fileArray = Array.from(files);
             const credentialsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
-            const totalUploads = fileArray.length;
-            let failedUploads = 0;
+            let filesWithFailures = 0;
+            let addedTotal = 0;
+            let failedTotal = 0;
 
-            const results = await Promise.all(
+            const nestedResults = await Promise.all(
                 fileArray.map(async file => {
+                    const fileInfo = getFileInfo(file);
                     try {
-                        const fileInfo = getFileInfo(file);
-                        try {
-                            const result = (await uploadVcFromText(file, {
-                                fileInfo,
-                                uploadType,
-                            }))!!;
+                        const aggregate = (await uploadVcFromText(file, {
+                            fileInfo,
+                            uploadType,
+                        }))!!;
 
-                            if (result.success && result.credentialUri && result.category) {
-                                if (!credentialsByCategory[result.category]) {
-                                    credentialsByCategory[result.category] = [];
+                        addedTotal += aggregate.addedCount;
+                        failedTotal += aggregate.failedCount;
+                        if (aggregate.failedCount > 0 || aggregate.addedCount === 0)
+                            filesWithFailures += 1;
+
+                        const entries = aggregate.results
+                            .filter(r => r.success && r.credentialUri && r.category)
+                            .map(r => {
+                                if (!credentialsByCategory[r.category!]) {
+                                    credentialsByCategory[r.category!] = [];
                                 }
-                                credentialsByCategory[result.category]?.push(result.credentialUri);
+                                credentialsByCategory[r.category!]?.push(r.credentialUri!);
 
-                                const storedVC = result.storedVC as { id: string } | undefined;
+                                const storedVC = r.storedVC as { id: string } | undefined;
                                 return {
-                                    credentialUri: result.credentialUri,
+                                    credentialUri: r.credentialUri!,
                                     fileInfo,
                                     id: storedVC?.id || crypto.randomUUID(),
-                                    category: result.category,
+                                    category: r.category!,
                                 };
-                            } else {
-                                onFail?.(result.error);
-                                throw new Error(result.error || 'Failed to upload file');
-                            }
-                        } catch (err) {
-                            log.error('Error uploading file:', err);
-                            throw err;
-                        }
-                    } catch (innerErr) {
-                        failedUploads++;
-                        log.error('❌ Error processing file:', innerErr);
-                        return null;
+                            });
+
+                        if (aggregate.errors.length > 0) onFail?.(aggregate.errors);
+
+                        return entries;
+                    } catch (err) {
+                        failedTotal += 1;
+                        filesWithFailures += 1;
+                        log.error('❌ Error processing file:', err);
+                        onFail?.(err instanceof Error ? err.message : String(err));
+                        return [];
                     }
                 })
             );
+
+            const results = nestedResults.flat();
 
             if (Object.keys(credentialsByCategory).length > 0) {
                 addNewCreds(credentialsByCategory);
@@ -276,10 +284,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const categories = Object.keys(credentialsByCategory);
             const filenames = fileArray.map(f => f.name);
-            const successCount = totalUploads - failedUploads;
+            const successCount = addedTotal;
 
             setTimeout(() => {
-                if (failedUploads === 0) {
+                if (failedTotal === 0 && filesWithFailures === 0) {
                     const fileList = formatFileNameList(filenames);
                     const categoryList = formatCategoryList(categories);
                     if (successCount === 1) {
@@ -293,7 +301,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             ...SUCCESS_TOAST_OPTIONS,
                         });
                     }
-                } else if (failedUploads === totalUploads) {
+                } else if (addedTotal === 0) {
                     presentToast(`All uploads failed. Please try again.`, {
                         title: 'Upload Failed',
                         hasDismissButton: true,
@@ -303,9 +311,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     });
                 } else {
                     presentToast(
-                        `${
-                            totalUploads - failedUploads
-                        } of ${totalUploads} uploaded. Some files failed.`,
+                        `${addedTotal} credential${
+                            addedTotal === 1 ? '' : 's'
+                        } added. Some credentials failed.`,
                         {
                             title: 'Partial Upload',
                             hasDismissButton: true,
