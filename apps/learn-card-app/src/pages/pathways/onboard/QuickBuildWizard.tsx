@@ -2,22 +2,22 @@
  * QuickBuildWizard — mobile-first pathway sketcher for live demos.
  *
  * Turns someone's spoken idea into a live pathway in under a minute:
- * name it, list the steps, optionally link a real network app to a
- * step or bring in a whole Credential Engine pathway as a nested
- * sub-route, go. Simple steps get a default `artifact` + `self-attest`
- * stage so the author never touches the CST primitive.
+ * name it, list the steps, optionally link a real network app or a
+ * Credential Engine sub-pathway to a step, and optionally make a step
+ * auto-complete when the learner earns a specific credential.
  *
  * Nodes are hand-built here rather than via `assembleBundle` because
- * two headline features need node fields `NodeSpec` doesn't carry: an
- * app-listing `action`, and a `composite` policy referencing an
- * imported pathway. The output shape matches `instantiateTemplate`.
+ * these features need node fields `NodeSpec` doesn't carry: an
+ * app-listing `action`, a `composite` policy, and a
+ * `requirement-satisfied` termination. The output shape matches
+ * `instantiateTemplate`.
  *
- * A Credential Engine step reuses the existing `ImportCtdlModal`; the
- * imported pathway(s) are held in wizard state and only committed at
- * "Create" (upserted before the parent so the composite ref resolves).
- * App picks stamp an `AppListingSnapshot` for instant/offline render.
- * Commit is direct `upsertPathway` (learner-authored, not the agent
- * proposal queue).
+ * Credential-triggered completion uses a `boost-uri` NodeRequirement
+ * (a boost the author manages, or one the linked app awards). It's
+ * seeded with `minTrustTier: 'self'` — quick-build targets demo /
+ * self-issued / app-issued credentials whose issuers won't be in the
+ * trust registry, so the stricter 'trusted' default (used by Build)
+ * would silently never auto-complete. Commit is direct `upsertPathway`.
  */
 
 import React, { useMemo, useState } from 'react';
@@ -31,14 +31,17 @@ import {
     layersOutline,
     libraryOutline,
     linkOutline,
+    ribbonOutline,
     searchOutline,
     sparklesOutline,
     trashOutline,
 } from 'ionicons/icons';
 import { AnimatePresence } from 'motion/react';
 import { useHistory } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
-import type { AppStoreListing } from '@learncard/types';
+import type { AppStoreListing, Boost } from '@learncard/types';
+import { useWallet, useGetPaginatedManagedBoostsQuery } from 'learn-card-base';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import { pathwayStore } from '../../../stores/pathways';
@@ -49,15 +52,18 @@ import { seedChosenRoute } from '../core/chosenRoute';
 import { buildAppListingSnapshot } from '../core/appListingSnapshot';
 import { useLearnerDid } from '../hooks/useLearnerDid';
 import ImportCtdlModal from '../import/ImportCtdlModal';
-import type { AppListingAction, Edge, Pathway, PathwayNode } from '../types';
+import type { AppListingAction, Edge, NodeRequirement, Pathway, PathwayNode } from '../types';
 import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
 interface NestedRef {
-    /** Id of the imported primary pathway the composite node points at. */
     primaryId: string;
-    /** Primary + supporting pathways to upsert before the parent. */
     pathways: Pathway[];
     nodeCount: number;
+}
+
+interface StepCompletion {
+    requirement: NodeRequirement;
+    label: string;
 }
 
 interface DraftStep {
@@ -66,6 +72,7 @@ interface DraftStep {
     title: string;
     description: string;
     action?: AppListingAction;
+    completion?: StepCompletion;
     nested?: NestedRef;
 }
 
@@ -175,6 +182,17 @@ const QuickBuildWizard: React.FC<QuickBuildWizardProps> = ({ onExit }) => {
                 return { ...base, stage: { initiation: [], policy, termination } };
             }
 
+            const termination: PathwayNode['stage']['termination'] = s.completion
+                ? {
+                      kind: 'requirement-satisfied',
+                      requirement: s.completion.requirement,
+                      minTrustTier: 'self',
+                  }
+                : {
+                      kind: 'self-attest',
+                      prompt: 'Mark as done when this step is complete.',
+                  };
+
             return {
                 ...base,
                 stage: {
@@ -184,10 +202,7 @@ const QuickBuildWizard: React.FC<QuickBuildWizardProps> = ({ onExit }) => {
                         prompt: stepTitle,
                         expectedArtifact: 'text',
                     },
-                    termination: {
-                        kind: 'self-attest',
-                        prompt: 'Mark as done when this step is complete.',
-                    },
+                    termination,
                 },
                 ...(s.action ? { action: s.action } : {}),
             };
@@ -769,6 +784,204 @@ const StepCard: React.FC<{
                     </button>
                 </div>
             )}
+
+            <div className="pl-8">
+                <CompletionControl
+                    listingId={step.action?.listingId}
+                    completion={step.completion}
+                    onSet={(requirement, label) => onPatch({ completion: { requirement, label } })}
+                    onClear={() => onPatch({ completion: undefined })}
+                />
+            </div>
+        </div>
+    );
+};
+
+const CompletionControl: React.FC<{
+    listingId?: string;
+    completion?: StepCompletion;
+    onSet: (requirement: NodeRequirement, label: string) => void;
+    onClear: () => void;
+}> = ({ listingId, completion, onSet, onClear }) => {
+    const { initWallet } = useWallet();
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+
+    const managedQuery = useGetPaginatedManagedBoostsQuery(undefined, { limit: 25 }, open);
+    const managedBoosts: Boost[] = useMemo(
+        () => managedQuery.data?.pages?.flatMap(p => p?.records ?? []) ?? [],
+        [managedQuery.data]
+    );
+
+    const appBoostsQuery = useQuery({
+        queryKey: ['quickBuildAppBoosts', listingId],
+        enabled: open && !!listingId,
+        queryFn: async (): Promise<Array<{ templateAlias: string; boostUri: string }>> => {
+            const wallet = await initWallet();
+
+            try {
+                return await wallet.invoke.getAppBoosts(listingId as string);
+            } catch {
+                // The listing→boost route is ownership-gated; a listing the
+                // author doesn't own throws. Treat as "none available".
+                return [];
+            }
+        },
+    });
+
+    const appBoosts = appBoostsQuery.data ?? [];
+
+    const filteredBoosts = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return managedBoosts;
+
+        return managedBoosts.filter(b => (b.name ?? '').toLowerCase().includes(q));
+    }, [managedBoosts, search]);
+
+    if (completion) {
+        return (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+                <IonIcon
+                    icon={ribbonOutline}
+                    className="text-emerald-600 text-base shrink-0"
+                    aria-hidden
+                />
+
+                <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-medium text-emerald-800 leading-snug">
+                        Completes when earned
+                    </p>
+                    <p className="text-xs text-grayscale-900 truncate">{completion.label}</p>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={onClear}
+                    aria-label="Remove completion credential"
+                    className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center
+                               text-grayscale-400 hover:text-grayscale-900 hover:bg-white transition-colors"
+                >
+                    <IonIcon icon={closeOutline} className="text-base" aria-hidden />
+                </button>
+            </div>
+        );
+    }
+
+    if (!open) {
+        return (
+            <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium
+                           text-grayscale-500 hover:text-grayscale-900 transition-colors"
+            >
+                <IonIcon icon={ribbonOutline} className="text-sm" aria-hidden />
+                Auto-complete when a credential is earned
+            </button>
+        );
+    }
+
+    const pickBoost = (uri: string, label: string): void => {
+        onSet({ kind: 'boost-uri', uri }, label);
+        setOpen(false);
+        setSearch('');
+    };
+
+    return (
+        <div className="space-y-2.5 rounded-xl border border-grayscale-200 bg-grayscale-10 p-3">
+            {appBoosts.length > 0 && (
+                <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-grayscale-500">
+                        Awarded by this app
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                        {appBoosts.map(b => (
+                            <button
+                                key={b.boostUri}
+                                type="button"
+                                onClick={() =>
+                                    pickBoost(b.boostUri, b.templateAlias || 'App credential')
+                                }
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full
+                                           bg-emerald-50 border border-emerald-200 text-emerald-800
+                                           text-xs font-medium hover:bg-emerald-100 transition-colors"
+                            >
+                                <IonIcon icon={ribbonOutline} className="text-sm" aria-hidden />
+                                {b.templateAlias || 'App credential'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-grayscale-500">
+                    A credential you manage
+                </p>
+
+                <div className="relative">
+                    <IonIcon
+                        icon={searchOutline}
+                        aria-hidden
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-grayscale-400 text-base"
+                    />
+
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search your credentials"
+                        className="w-full py-2 pl-9 pr-3 border border-grayscale-300 rounded-xl text-sm
+                                   text-grayscale-900 placeholder:text-grayscale-400 bg-white font-poppins
+                                   focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                </div>
+
+                {managedQuery.isLoading ? (
+                    <p className="text-[11px] text-grayscale-500 px-1 py-2">
+                        Loading your credentials…
+                    </p>
+                ) : filteredBoosts.length === 0 ? (
+                    <p className="text-[11px] text-grayscale-500 px-1 py-2">
+                        {search
+                            ? 'No credentials match that search.'
+                            : 'You don\u2019t manage any credentials yet.'}
+                    </p>
+                ) : (
+                    <ul className="max-h-40 overflow-y-auto rounded-xl border border-grayscale-200 divide-y divide-grayscale-100 bg-white">
+                        {filteredBoosts.map(b => (
+                            <li key={b.uri}>
+                                <button
+                                    type="button"
+                                    onClick={() => pickBoost(b.uri, b.name || 'Credential')}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-grayscale-10 transition-colors"
+                                >
+                                    <IonIcon
+                                        icon={ribbonOutline}
+                                        className="shrink-0 text-grayscale-400 text-base"
+                                        aria-hidden
+                                    />
+                                    <span className="min-w-0 flex-1 text-sm font-medium text-grayscale-900 truncate">
+                                        {b.name || 'Untitled credential'}
+                                    </span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            <button
+                type="button"
+                onClick={() => {
+                    setOpen(false);
+                    setSearch('');
+                }}
+                className="text-xs text-grayscale-500 hover:text-grayscale-900 transition-colors px-1"
+            >
+                Cancel
+            </button>
         </div>
     );
 };
