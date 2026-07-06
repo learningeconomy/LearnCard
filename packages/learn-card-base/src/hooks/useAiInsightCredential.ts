@@ -47,6 +47,7 @@ const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 const ENABLE_AI_INSIGHT_CREDENTIAL_LOGS = false;
 const AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE =
     'Add at least one credential before generating AI Insights.';
+const inFlightAiInsightCreations = new Map<string, Promise<VC | null>>();
 
 const clearAiInsightCredentialQueryData = (queryClient: QueryClient) => {
     queryClient.setQueryData(queryKey, null);
@@ -117,7 +118,7 @@ const logAiInsightCredentialError = (
     }
 };
 
-export const createAiInsightCredential = async (
+const createAiInsightCredentialInternal = async (
     wallet: BespokeLearnCard,
     queryClient?: QueryClient
 ): Promise<VC | null> => {
@@ -221,6 +222,27 @@ export const createAiInsightCredential = async (
     }
 
     return parsedCredential;
+};
+
+export const createAiInsightCredential = async (
+    wallet: BespokeLearnCard,
+    queryClient?: QueryClient
+): Promise<VC | null> => {
+    const did = wallet.id.did();
+    const inFlightKey = `${did}|${networkStore.get.aiServiceUrl()}`;
+    const inFlightCreation = inFlightAiInsightCreations.get(inFlightKey);
+
+    if (inFlightCreation) {
+        return inFlightCreation;
+    }
+
+    const creation = createAiInsightCredentialInternal(wallet, queryClient).finally(() => {
+        inFlightAiInsightCreations.delete(inFlightKey);
+    });
+
+    inFlightAiInsightCreations.set(inFlightKey, creation);
+
+    return creation;
 };
 
 export const getOrCreateAiInsightCredential = async (

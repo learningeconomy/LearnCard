@@ -17,7 +17,6 @@ import {
     useConsentToContract,
     useContract,
     useDeleteCredentialRecord,
-    useAiInsightCredentialMutation,
     useModal,
     useSyncConsentFlow,
     useWithdrawConsent,
@@ -59,7 +58,6 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
-    const { mutateAsync: generateAiInsightCredential } = useAiInsightCredentialMutation();
     const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
         useWithdrawConsent(demoContractUri);
     const { data: contractCredentials, isLoading: isLoadingContractCreds } =
@@ -90,18 +88,12 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
             // Sync any auto-boost credentials and wait for the full flow to complete.
             await fetchNewContractCredentials();
+            resetCache();
+
             presentToast('You have successfully connected to the demo school.', {
                 hasDismissButton: true,
             });
             closeAllModals();
-
-            void generateAiInsightCredential()
-                .then(() => {
-                    resetCache();
-                })
-                .catch(error => {
-                    log.error(error);
-                });
         } catch (error) {
             presentToast('Unable to connect to the demo school. Please try again.', {
                 type: ToastTypeEnum.Error,
