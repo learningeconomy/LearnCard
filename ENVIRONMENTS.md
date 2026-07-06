@@ -47,6 +47,22 @@ Each deployment environment provides secrets and variables for four service tier
 | [ci-tests](https://github.com/learningeconomy/LearnCard/settings/environments/7846436359/edit)              | CI test runner     |
 | [learn-card-discord-bot](https://github.com/learningeconomy/LearnCard/settings/environments/686767981/edit) | Discord bot deploy |
 
+## Front-End (Netlify) Deploys
+
+Front-end production deploys run from CI (`.github/workflows/deploy.yml`, `deploy-frontend` job)
+via the Netlify CLI (`netlify deploy --prod --no-build`) instead of force-pushing a deploy branch.
+Each front-end GitHub Environment must provide:
+
+| Key                  | Type   | Purpose                                                          |
+| -------------------- | ------ | ---------------------------------------------------------------- |
+| `NETLIFY_SITE_ID`    | var    | Target Netlify site ID for that environment                      |
+| `NETLIFY_AUTH_TOKEN` | secret | Netlify personal/team token with deploy rights (may be org-wide) |
+
+Set `NETLIFY_SITE_ID` per environment (`learn-card-app-staging`, `learn-card-app-production`,
+`scout-app-production`). The obsolete `NETLIFY_BRANCH` and `DEPLOY_FORCE_PUSH` vars are no longer
+used and can be removed. On the Netlify side, disable auto-publishing from the deploy branch so
+CI is the only publisher; Deploy Previews may still be built by Netlify's git integration.
+
 ## Environment Variables
 
 For the shared Infisical workflow and generated `.env` files, see [environment-variables.md](./environment-variables.md).

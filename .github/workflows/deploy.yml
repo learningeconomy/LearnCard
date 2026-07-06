@@ -651,53 +651,22 @@ jobs:
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
         environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
-        # The pre-push hook blocks pushes to protected branches and needs a TTY
-        # to confirm; CI has none, so it aborted the push to production. HUSKY=0
-        # disables local git hooks, which should never run in CI anyway.
-        env:
-            HUSKY: 0
         steps:
             - name: Set Deployment Variables
               id: vars
               run: |
                   echo "app_id=${{ vars.DEPLOY_APP_ID }}" >> "$GITHUB_OUTPUT"
                   echo "project_name=${{ vars.DEPLOY_PROJECT_NAME }}" >> "$GITHUB_OUTPUT"
-                  echo "netlify_branch=${{ vars.NETLIFY_BRANCH }}" >> "$GITHUB_OUTPUT"
+                  echo "netlify_site_id=${{ vars.NETLIFY_SITE_ID }}" >> "$GITHUB_OUTPUT"
                   echo "capgo_id=${{ vars.APP_ID }}" >> "$GITHUB_OUTPUT"
                   echo "build_path=${{ vars.DEPLOY_BUILD_PATH }}" >> "$GITHUB_OUTPUT"
-                  echo "force_push=${{ vars.DEPLOY_FORCE_PUSH }}" >> "$GITHUB_OUTPUT"
 
             - name: Checkout Repo
               uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
-                  token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
-
-            # Force-push to the deploy branch (Netlify auto-deploys from it). The deploy
-            # branch is a pointer to the source tip, not a dev branch — force-pushing
-            # prevents a diverged pointer (e.g. from a direct hotfix) from deadlocking the
-            # deploy on a non-fast-forward rejection. --force-with-lease refuses if the
-            # remote tip isn't the one we just fetched, guarding concurrent updates.
-            - name: Push to production branch
-              if: |
-                  needs.determine-affected.outputs.is_release == 'true' ||
-                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
-              run: |
-                  BRANCH="${{ steps.vars.outputs.netlify_branch }}"
-                  git fetch origin "$BRANCH" || true
-                  if [[ "${{ steps.vars.outputs.force_push }}" == 'true' ]]; then
-                    git push --force origin HEAD:"$BRANCH"
-                  elif git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null; then
-                    git push --force-with-lease="$BRANCH:origin/$BRANCH" origin HEAD:"$BRANCH"
-                  else
-                    git push origin HEAD:"$BRANCH"
-                  fi
 
             - name: Get App Version
               id: app-version
@@ -727,6 +696,16 @@ jobs:
                   echo "Preparing tenant config: $TENANT $STAGE_FLAG"
                   bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
+            # Generate the resolved per-tenant configs consumed by the Netlify edge
+            # function (netlify/edge-functions/shared/resolved-tenant-configs.generated.json).
+            # This previously ran inside Netlify's own build command; now that CI builds the
+            # artifact and deploys it with `--no-build`, we must generate it here so the
+            # edge function bundles the up-to-date data. LCA only — Scouts has no edge config.
+            - name: Generate edge tenant configs
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: bun scripts/generate-edge-tenant-configs.ts
+
             - name: Build App
               run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
@@ -747,6 +726,30 @@ jobs:
                   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
                   VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
                   VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+
+            - name: Validate Netlify target
+              run: |
+                  if [[ -z "${{ steps.vars.outputs.netlify_site_id }}" ]]; then
+                    echo "::error::NETLIFY_SITE_ID is not set in environment '${{ needs.determine-affected.outputs.target_frontend_env }}'! Configure it in the GitHub environment settings."
+                    exit 1
+                  fi
+
+            # Deploy the pre-built web artifact straight to Netlify, keyed off the GitHub
+            # Environment's NETLIFY_SITE_ID. This replaces the old force-push-to-deploy-branch
+            # mechanism, so the deploy branch can be removed and `main` fully branch-protected.
+            # --no-build: CI already built above; Netlify must not rebuild. Runs from the app
+            # directory so netlify.toml (headers/redirects/edge functions) resolves correctly.
+            - name: Deploy to Netlify
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
+              run: |
+                  bunx netlify-cli@latest deploy \
+                    --prod \
+                    --no-build \
+                    --dir build \
+                    --site "${{ steps.vars.outputs.netlify_site_id }}" \
+                    --message "CI deploy ${{ github.sha }}"
+              env:
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
