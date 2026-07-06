@@ -438,10 +438,11 @@ async function seedListing(neogma: Neogma, config: ListingConfig): Promise<void>
     );
 
     const existingId = existingResult.records[0]?.get('listing_id');
-    const launchConfigJson = JSON.stringify({
-        url: config.appUrl,
-        permissions: config.permissions,
-    });
+    const launchConfigJson = JSON.stringify(
+        config.launchType === 'AI_TUTOR'
+            ? { aiTutorUrl: config.appUrl, permissions: config.permissions }
+            : { url: config.appUrl, permissions: config.permissions }
+    );
 
     if (existingId) {
         console.log(`  Listing already exists for slug "${config.slug}": ${existingId}`);
