@@ -44,7 +44,7 @@
 import React, { useState } from 'react';
 
 import { IonIcon } from '@ionic/react';
-import { cloudDownloadOutline } from 'ionicons/icons';
+import { cloudDownloadOutline, sparklesOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
@@ -61,6 +61,8 @@ interface DiscoverStartProps {
     onContinueWithGoal: (text: string) => void;
     /** Skip the goal entirely and go straight to scan/suggestions. */
     onSkip: () => void;
+    /** Launch the quick-build wizard (sketch a pathway from scratch). */
+    onQuickBuild: () => void;
 }
 
 /**
@@ -77,6 +79,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
     initialGoal = '',
     onContinueWithGoal,
     onSkip,
+    onQuickBuild,
 }) => {
     const history = useHistory();
     const analytics = useAnalytics();
@@ -152,9 +155,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
             */}
             {SHOWCASES.length > 0 && (
                 <section aria-labelledby="discover-showcases" className="space-y-3">
-                    <SectionLabel id="discover-showcases">
-                        Try a curated journey
-                    </SectionLabel>
+                    <SectionLabel id="discover-showcases">Try a curated journey</SectionLabel>
 
                     <div className="space-y-2.5">
                         {SHOWCASES.map(showcase => (
@@ -170,6 +171,37 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                 </section>
             )}
 
+            <section aria-labelledby="discover-quick-build" className="space-y-3">
+                <SectionLabel id="discover-quick-build">Build one on the fly</SectionLabel>
+
+                <button
+                    type="button"
+                    onClick={onQuickBuild}
+                    disabled={isPicking}
+                    className="w-full text-left p-4 rounded-2xl bg-white border border-grayscale-200
+                               hover:border-grayscale-300 hover:bg-grayscale-10 hover:shadow-md
+                               transition-all duration-150 flex gap-3 items-center group
+                               disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                    <div
+                        aria-hidden
+                        className="shrink-0 w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600
+                                   flex items-center justify-center group-hover:bg-emerald-100 transition-colors"
+                    >
+                        <IonIcon icon={sparklesOutline} className="text-2xl" />
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="text-sm font-semibold text-grayscale-900 leading-tight">
+                            Quick-build a pathway
+                        </div>
+                        <div className="text-xs text-grayscale-600 leading-snug">
+                            Sketch a journey in under a minute — add steps and link real apps.
+                        </div>
+                    </div>
+                </button>
+            </section>
+
             {/*
                 Inline goal capture. Lives here rather than on its
                 own step so the open-ended path reads as a peer of
@@ -181,9 +213,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                 unchanged.
             */}
             <section aria-labelledby="discover-goal" className="space-y-3">
-                <SectionLabel id="discover-goal">
-                    Or describe your own goal
-                </SectionLabel>
+                <SectionLabel id="discover-goal">Or describe your own goal</SectionLabel>
 
                 <div className="space-y-1.5">
                     <label
@@ -208,9 +238,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                                    disabled:opacity-60 disabled:cursor-not-allowed"
                     />
 
-                    <p className="text-xs text-grayscale-400 text-right">
-                        {text.length} / 280
-                    </p>
+                    <p className="text-xs text-grayscale-400 text-right">{text.length} / 280</p>
                 </div>
 
                 <div className="space-y-3">
@@ -267,15 +295,9 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
  * What-if comparison columns) so the cold-start visually rhymes
  * with the post-onboarding shell.
  */
-const SectionLabel: React.FC<{ id?: string; children: React.ReactNode }> = ({
-    id,
-    children,
-}) => (
+const SectionLabel: React.FC<{ id?: string; children: React.ReactNode }> = ({ id, children }) => (
     <div className="flex items-center gap-3">
-        <h2
-            id={id}
-            className="text-xs font-semibold uppercase tracking-wide text-grayscale-500"
-        >
+        <h2 id={id} className="text-xs font-semibold uppercase tracking-wide text-grayscale-500">
             {children}
         </h2>
         <span className="flex-1 h-px bg-grayscale-200" />

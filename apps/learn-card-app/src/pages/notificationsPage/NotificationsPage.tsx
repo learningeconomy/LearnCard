@@ -20,6 +20,7 @@ import {
     useWallet,
     useMarkAllNotificationsRead,
 } from 'learn-card-base';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 
 const NotificationNavTabsContainer: React.FC<{
     isEmptyState: boolean;
@@ -107,9 +108,14 @@ const NotificationsPage: React.FC = () => {
     const [tab, setTab] = useState('active');
     const notificationCount = 0;
 
+    const onHeaderScroll = useHeaderScrollSync();
+
     return (
         <IonPage className="bg-white h-full">
-            <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none">
+            <MainHeader
+                showBackButton={false}
+                customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
+            >
                 <NotificationsSubHeader
                     isEmptyState={isEmptyState}
                     notificationCount={notificationCount}
@@ -118,7 +124,12 @@ const NotificationsPage: React.FC = () => {
                 />
             </MainHeader>
             <GenericErrorBoundary>
-                <IonContent fullscreen className="bg-white h-full w-full">
+                <IonContent
+                    fullscreen
+                    className="bg-white h-full w-full"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                >
                     <IonCol className="flex mx-auto relative items-start flex-wrap w-full h-auto min-h-[100%] notifications-list-container bg-white px-[20px]">
                         <NotificationNavTabsContainer
                             isEmptyState={isEmptyState}
