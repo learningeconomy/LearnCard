@@ -6,13 +6,17 @@ let curated: any[] = [];
 let browse: any[] = [];
 let featuredLoading = false;
 let browseLoading = false;
+let browseOpts: any;
 
 vi.mock('../launchPad/useAppStore', () => ({
     default: () => ({
         useInstalledApps: () => ({ data: { records: installed }, isLoading: false }),
         useFeaturedCarouselApps: () => ({ data: featured, isLoading: featuredLoading }),
         useCuratedListApps: () => ({ data: curated, isLoading: false }),
-        useBrowseAppStore: () => ({ data: { records: browse }, isLoading: browseLoading }),
+        useBrowseAppStore: (opts?: any) => {
+            browseOpts = opts;
+            return { data: { records: browse }, isLoading: browseLoading };
+        },
     }),
 }));
 
@@ -26,6 +30,7 @@ describe('useMoreApps', () => {
         browse = [];
         featuredLoading = false;
         browseLoading = false;
+        browseOpts = undefined;
     });
 
     it('returns installed apps when the user has some', () => {
@@ -72,5 +77,16 @@ describe('useMoreApps', () => {
         const { result } = renderHook(() => useMoreApps());
         expect(result.current.apps).toEqual([]);
         expect(result.current.isSuggested).toBe(true);
+    });
+
+    it('disables the all-apps scan when the user has installed apps', () => {
+        installed = [{ listing_id: 'a' }];
+        renderHook(() => useMoreApps());
+        expect(browseOpts?.enabled).toBe(false);
+    });
+
+    it('enables the all-apps scan only when there are no installed apps', () => {
+        renderHook(() => useMoreApps());
+        expect(browseOpts?.enabled).toBe(true);
     });
 });
