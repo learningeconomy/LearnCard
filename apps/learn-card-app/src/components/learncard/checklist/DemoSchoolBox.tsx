@@ -195,28 +195,34 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
             <button
                 className={`py-[7px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px] ${
-                    hasConsented ? 'bg-rose-500' : `bg-${primaryColor}`
+                    isSyncLoading
+                        ? `bg-${primaryColor}`
+                        : isDeleteLoading
+                        ? `bg-${primaryColor}`
+                        : hasConsented
+                        ? 'bg-rose-500'
+                        : `bg-${primaryColor}`
                 }`}
                 onClick={hasConsented ? handleEndDemoClick : handleStartDemoClick}
                 disabled={
                     isSyncLoading || isDeleteLoading || (hasConsented && !contractCredentialsExist)
                 }
             >
-                {hasConsented
-                    ? isDeleteLoading
-                        ? 'Deleting Demo School...'
-                        : 'Delete Demo School'
-                    : isSyncLoading
+                {isSyncLoading
                     ? 'Syncing Demo School...'
+                    : isDeleteLoading
+                    ? 'Deleting Demo School...'
+                    : hasConsented
+                    ? 'Delete Demo School'
                     : 'Sync Demo School'}
-                {hasConsented ? (
-                    isDeleteLoading ? (
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                        <TrashBin version="2" className="text-white" strokeWidth="2" />
-                    )
+                {isSyncLoading ? (
+                    <SyncCircleArrows className="animate-spin-ccw" />
+                ) : isDeleteLoading ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : hasConsented ? (
+                    <TrashBin version="2" className="text-white" strokeWidth="2" />
                 ) : (
-                    <SyncCircleArrows className={isSyncLoading ? 'animate-spin-ccw' : ''} />
+                    <SyncCircleArrows />
                 )}
             </button>
         </div>
