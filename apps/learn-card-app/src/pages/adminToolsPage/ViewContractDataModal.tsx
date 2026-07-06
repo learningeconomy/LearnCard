@@ -204,9 +204,11 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
     const resolvedContract = contractDetails ?? contract;
     const { initWallet } = useWallet();
 
-    const { data: paginatedData, isLoading: consentDataLoading } = useGetConsentFlowData(
-        resolvedContract.uri
-    );
+    const {
+        data: paginatedData,
+        isLoading: consentDataLoading,
+        refetch: refetchConsentData,
+    } = useGetConsentFlowData(resolvedContract.uri);
     const consentRecords = React.useMemo(() => {
         if (Array.isArray(paginatedData)) {
             return paginatedData;
@@ -225,6 +227,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
         data: consentDataForDid,
         isLoading: consentDataForDidLoading,
         isFetching: consentDataForDidFetching,
+        refetch: refetchConsentDataForDid,
     } = useConsentFlowDataForDid(normalizedDidFilter || undefined, undefined, shouldFilterByDid);
 
     const didFilteredConsentRecords = React.useMemo(() => {
@@ -287,6 +290,15 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
         setActiveDidFilter('');
         setResolvedDidFilter('');
         setFilterInputMode('did');
+    };
+
+    const refreshConsentRecords = async () => {
+        if (shouldFilterByDid) {
+            await refetchConsentDataForDid();
+            return;
+        }
+
+        await refetchConsentData();
     };
 
     const {
@@ -571,7 +583,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     <div className="flex min-w-0 items-center gap-2">
                         <span>Consent records</span>
                         <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-grayscale-600">
-                            {consentRecords.length}
+                            {visibleConsentRecords.length}
                         </span>
                     </div>
 
@@ -622,6 +634,15 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                                 disabled={!didInput && !activeDidFilter}
                             >
                                 Clear
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={refreshConsentRecords}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={visibleConsentRecordsLoading}
+                            >
+                                Refresh
                             </button>
                         </div>
 
