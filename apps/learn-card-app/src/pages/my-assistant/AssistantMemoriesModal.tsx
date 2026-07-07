@@ -8,6 +8,7 @@ import {
     archiveLearnCardAssistantMemory,
     fetchLearnCardAssistantMemories,
     type LearnCardAssistantMemoryDoc,
+    type LearnCardAssistantAuth,
 } from './learnCardAssistant.api';
 
 const STATUS_LABELS: Record<LearnCardAssistantMemoryDoc['status'], string> = {
@@ -21,22 +22,22 @@ const STATUS_ORDER: LearnCardAssistantMemoryDoc['status'][] = ['proposed', 'acti
 export const AssistantMemoriesModal: React.FC<{
     open: boolean;
     agentUrl: string;
-    did?: string;
+    auth?: LearnCardAssistantAuth;
     onClose: () => void;
-}> = ({ open, agentUrl, did, onClose }) => {
+}> = ({ open, agentUrl, auth, onClose }) => {
     const queryClient = useQueryClient();
-    const queryKey = ['learncard-assistant-memories', did, agentUrl];
+    const queryKey = ['learncard-assistant-memories', auth?.did, agentUrl];
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey,
-        queryFn: () => fetchLearnCardAssistantMemories(agentUrl, did!),
-        enabled: open && Boolean(did),
+        queryFn: () => fetchLearnCardAssistantMemories(agentUrl, auth!),
+        enabled: open && Boolean(auth),
     });
     const approveMutation = useMutation({
-        mutationFn: (name: string) => approveLearnCardAssistantMemory(agentUrl, did!, name),
+        mutationFn: (name: string) => approveLearnCardAssistantMemory(agentUrl, auth!, name),
         onSuccess: () => queryClient.invalidateQueries({ queryKey }),
     });
     const archiveMutation = useMutation({
-        mutationFn: (name: string) => archiveLearnCardAssistantMemory(agentUrl, did!, name),
+        mutationFn: (name: string) => archiveLearnCardAssistantMemory(agentUrl, auth!, name),
         onSuccess: () => queryClient.invalidateQueries({ queryKey }),
     });
     const docsByStatus = useMemo(() => {

@@ -6,13 +6,14 @@ import AssistantAvatar from './AssistantAvatar';
 import {
     runLearnCardAssistantAgent,
     type LearnCardAssistantAgentMessage,
+    type LearnCardAssistantAuth,
 } from './learnCardAssistant.api';
 import type { AssistantAvatarConfig } from './assistantAvatarOptions';
 
 export const AssistantAgentChatModal: React.FC<{
     agentUrl: string;
     avatarConfig: AssistantAvatarConfig;
-    did?: string;
+    auth?: LearnCardAssistantAuth;
     consentFlowContractUri?: string;
     initialPrompt?: string;
     open: boolean;
@@ -21,8 +22,8 @@ export const AssistantAgentChatModal: React.FC<{
 }> = ({
     agentUrl,
     avatarConfig,
+    auth,
     consentFlowContractUri,
-    did,
     initialPrompt,
     open,
     title,
@@ -50,7 +51,7 @@ export const AssistantAgentChatModal: React.FC<{
 
     const sendMessage = async (): Promise<void> => {
         const content = input.trim();
-        if (!content || !did || isSending) return;
+        if (!content || !auth || isSending) return;
 
         const nextMessages = [...messages, { role: 'user' as const, content }];
 
@@ -62,7 +63,7 @@ export const AssistantAgentChatModal: React.FC<{
         try {
             const response = await runLearnCardAssistantAgent(
                 agentUrl,
-                did,
+                auth,
                 nextMessages,
                 consentFlowContractUri
             );
@@ -167,19 +168,19 @@ export const AssistantAgentChatModal: React.FC<{
                                 }
                             }}
                             placeholder={
-                                did
+                                auth
                                     ? 'Message your assistant...'
                                     : 'Sign in with a network profile to chat.'
                             }
                             rows={2}
-                            disabled={!did || isSending}
+                            disabled={!auth || isSending}
                             className="flex-1 py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-none disabled:opacity-50"
                         />
 
                         <button
                             type="button"
                             onClick={() => void sendMessage()}
-                            disabled={!did || !input.trim() || isSending}
+                            disabled={!auth || !input.trim() || isSending}
                             className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label="Send message"
                         >

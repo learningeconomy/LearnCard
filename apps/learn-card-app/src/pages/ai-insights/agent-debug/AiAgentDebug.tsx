@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useGetCurrentLCNUser } from 'learn-card-base';
+import { useGetCurrentLCNUser, useWallet } from 'learn-card-base';
 
 import { useConsentFlowByUri } from '../../consentFlow/useConsentFlow';
 import {
     AGENT_URL_STORAGE_KEY,
+    createLearnCardAssistantAuth,
     getInitialAgentUrl,
     normalizeAgentUrl,
+    runLearnCardAssistantAgent,
+    withDebugToken,
 } from '../../my-assistant/learnCardAssistant.api';
 
 type AgentMessage = {
@@ -73,10 +76,20 @@ type ConsentFlowContractResponse = {
     error?: string;
 };
 
+const DEBUG_TOKEN_STORAGE_KEY = 'learnCardAiAgentDebugToken';
+
 const AiAgentDebug: React.FC = () => {
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { initWallet } = useWallet();
     const currentDid = currentLCNUser?.did ?? '';
     const [agentUrl, setAgentUrl] = useState(getInitialAgentUrl);
+    const [debugToken, setDebugToken] = useState(() => {
+        try {
+            return localStorage.getItem(DEBUG_TOKEN_STORAGE_KEY) ?? '';
+        } catch {
+            return '';
+        }
+    });
     const [messageInput, setMessageInput] = useState('');
     const [messages, setMessages] = useState<AgentMessage[]>([]);
     const [latestToolRuns, setLatestToolRuns] = useState<AgentToolRun[]>([]);
@@ -97,6 +110,13 @@ const AiAgentDebug: React.FC = () => {
     const [openContractWhenLoaded, setOpenContractWhenLoaded] = useState(false);
 
     const normalizedAgentUrl = useMemo(() => normalizeAgentUrl(agentUrl), [agentUrl]);
+    const assistantAuth = useMemo(
+        () =>
+            currentDid
+                ? createLearnCardAssistantAuth(normalizedAgentUrl, currentDid, initWallet)
+                : undefined,
+        [currentDid, initWallet, normalizedAgentUrl]
+    );
     const { contract, contractLoading, openConsentFlowModal } = useConsentFlowByUri(
         contractUri || undefined
     );
@@ -130,6 +150,14 @@ const AiAgentDebug: React.FC = () => {
     }, [agentUrl]);
 
     useEffect(() => {
+        try {
+            localStorage.setItem(DEBUG_TOKEN_STORAGE_KEY, debugToken);
+        } catch {
+            // Ignore storage failures in embedded or restricted browser contexts.
+        }
+    }, [debugToken]);
+
+    useEffect(() => {
         if (!openContractWhenLoaded || !contractUri || contractLoading || !contract) return;
 
         openConsentFlowModal(true, undefined, undefined, undefined, true);
@@ -137,7 +165,7 @@ const AiAgentDebug: React.FC = () => {
     }, [contract, contractLoading, contractUri, openConsentFlowModal, openContractWhenLoaded]);
 
     const fetchMemory = useCallback(async (): Promise<void> => {
-        if (!currentDid) {
+        if (!assistantAuth) {
             setMemoryManifest(null);
             setMemoryDocs([]);
             return;
@@ -148,7 +176,10 @@ const AiAgentDebug: React.FC = () => {
 
         try {
             const response = await fetch(
-                `${normalizedAgentUrl}/api/debug/users/${encodeURIComponent(currentDid)}/memory`
+                `${normalizedAgentUrl}/api/debug/users/${encodeURIComponent(
+                    assistantAuth.did
+                )}/memory`,
+                { headers: withDebugToken(await assistantAuth.getHeaders(), debugToken.trim()) }
             );
             const payload = (await response.json()) as AgentMemoryResponse;
 
@@ -165,7 +196,7 @@ const AiAgentDebug: React.FC = () => {
         } finally {
             setIsFetchingMemory(false);
         }
-    }, [currentDid, normalizedAgentUrl]);
+    }, [assistantAuth, debugToken, normalizedAgentUrl]);
 
     useEffect(() => {
         void fetchMemory();
@@ -200,7 +231,7 @@ const AiAgentDebug: React.FC = () => {
 
     const sendMessage = async (): Promise<void> => {
         const content = messageInput.trim();
-        if (!content || isSending || !currentDid) return;
+        if (!content || isSending || !assistantAuth) return;
 
         setError('');
         setStatus('');
@@ -211,18 +242,12 @@ const AiAgentDebug: React.FC = () => {
         setMessageInput('');
 
         try {
-            const response = await fetch(`${normalizedAgentUrl}/api/agent/run`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    messages: nextMessages,
-                    ...(currentDid ? { did: currentDid } : {}),
-                    ...(contractUri ? { consentFlowContractUri: contractUri } : {}),
-                }),
-            });
-            const payload = (await response.json()) as AgentRunResponse & { error?: string };
-
-            if (!response.ok) throw new Error(payload.error || 'The agent did not respond.');
+            const payload = await runLearnCardAssistantAgent(
+                normalizedAgentUrl,
+                assistantAuth,
+                nextMessages,
+                contractUri || undefined
+            );
 
             setMessages(payload.messages);
             setLatestToolRuns(payload.toolRuns ?? []);
@@ -236,17 +261,22 @@ const AiAgentDebug: React.FC = () => {
     };
 
     const postMemoryAction = async (body: Record<string, unknown>): Promise<boolean> => {
-        if (!currentDid || isSavingMemory) return false;
+        if (!assistantAuth || isSavingMemory) return false;
 
         setMemoryError('');
         setIsSavingMemory(true);
 
         try {
             const response = await fetch(
-                `${normalizedAgentUrl}/api/debug/users/${encodeURIComponent(currentDid)}/memory`,
+                `${normalizedAgentUrl}/api/debug/users/${encodeURIComponent(
+                    assistantAuth.did
+                )}/memory`,
                 {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        ...withDebugToken(await assistantAuth.getHeaders(), debugToken.trim()),
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify(body),
                 }
             );
@@ -271,7 +301,7 @@ const AiAgentDebug: React.FC = () => {
     const createMemory = async (): Promise<void> => {
         const description = memoryDescription.trim();
         const content = memoryContent.trim();
-        if (!description || !content || !currentDid) return;
+        if (!description || !content || !assistantAuth) return;
 
         const saved = await postMemoryAction({
             action: 'create',
@@ -333,6 +363,23 @@ const AiAgentDebug: React.FC = () => {
                         value={agentUrl}
                         onChange={event => handleAgentUrlChange(event.target.value)}
                         placeholder={DEFAULT_AGENT_URL}
+                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label
+                        htmlFor="agent-debug-token"
+                        className="block text-xs font-medium text-grayscale-700"
+                    >
+                        Debug Token
+                    </label>
+                    <input
+                        id="agent-debug-token"
+                        type="password"
+                        value={debugToken}
+                        onChange={event => setDebugToken(event.target.value)}
+                        placeholder="Required when the agent protects debug endpoints"
                         className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                 </div>
@@ -412,7 +459,7 @@ const AiAgentDebug: React.FC = () => {
                 <button
                     type="button"
                     onClick={sendMessage}
-                    disabled={isSending || !messageInput.trim() || !currentDid}
+                    disabled={isSending || !messageInput.trim() || !assistantAuth}
                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {isSending ? 'Sending...' : currentDid ? 'Send Message' : 'No DID Available'}
@@ -445,7 +492,7 @@ const AiAgentDebug: React.FC = () => {
                     <button
                         type="button"
                         onClick={fetchMemory}
-                        disabled={isFetchingMemory || !currentDid}
+                        disabled={isFetchingMemory || !assistantAuth}
                         className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {isFetchingMemory ? 'Refreshing...' : 'Refresh'}
@@ -566,7 +613,7 @@ const AiAgentDebug: React.FC = () => {
                         onClick={createMemory}
                         disabled={
                             isSavingMemory ||
-                            !currentDid ||
+                            !assistantAuth ||
                             !memoryDescription.trim() ||
                             !memoryContent.trim()
                         }
@@ -620,7 +667,7 @@ const AiAgentDebug: React.FC = () => {
                                                         name: doc.name,
                                                     })
                                                 }
-                                                disabled={isSavingMemory}
+                                                disabled={isSavingMemory || !assistantAuth}
                                                 className="py-2 px-3 rounded-[20px] bg-emerald-600 text-white font-medium text-xs hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
                                                 Approve
@@ -637,7 +684,7 @@ const AiAgentDebug: React.FC = () => {
                                                         reason: 'Archived in debug UI.',
                                                     })
                                                 }
-                                                disabled={isSavingMemory}
+                                                disabled={isSavingMemory || !assistantAuth}
                                                 className="py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
                                                 Archive

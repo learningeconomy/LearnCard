@@ -2,6 +2,12 @@ import type { Db, Filter, ObjectId } from 'mongodb';
 import { z } from 'zod';
 
 import type { MongoRuntime } from './mongo';
+import {
+    createFieldAad,
+    isEncryptedEnvelope,
+    type EncryptedJsonEnvelopeV1,
+    type EncryptionService,
+} from './security/encryption';
 
 export const LEARNCARD_ASSISTANT_PROFILE_COLLECTION = 'learnCardAssistantProfiles';
 
@@ -49,6 +55,7 @@ export interface LearnCardAssistantProfileRuntime {
 export interface LearnCardAssistantProfileRuntimeOptions {
     mongoRuntime: MongoRuntime;
     service?: LearnCardAssistantProfileService;
+    getEncryption?: () => EncryptionService;
 }
 
 export const DEFAULT_LEARNCARD_ASSISTANT_PROFILE = {
@@ -56,6 +63,11 @@ export const DEFAULT_LEARNCARD_ASSISTANT_PROFILE = {
     personality: 'Encouraging, practical, and focused on helping you grow your career.',
     avatarVariant: 'robot',
 } as const;
+
+type StoredLearnCardAssistantProfile = Omit<LearnCardAssistantProfile, 'name' | 'personality'> & {
+    name: string | EncryptedJsonEnvelopeV1;
+    personality: string | EncryptedJsonEnvelopeV1;
+};
 
 export const UpdateLearnCardAssistantProfileValidator = z
     .object({
@@ -94,12 +106,73 @@ export const toLearnCardAssistantProfileResponse = (
 });
 
 export const createMongoLearnCardAssistantProfileRepository = (
-    db: Db
+    db: Db,
+    encryption: EncryptionService
 ): LearnCardAssistantProfileRepository => {
-    const collection = db.collection<LearnCardAssistantProfile>(
+    const collection = db.collection<StoredLearnCardAssistantProfile>(
         LEARNCARD_ASSISTANT_PROFILE_COLLECTION
     );
     let indexesReady: Promise<void> | undefined;
+    let migrationReady: Promise<void> | undefined;
+
+    const aad = (profile: Pick<LearnCardAssistantProfile, 'ownerDid'>, fieldPath: string): string =>
+        createFieldAad({
+            collectionName: LEARNCARD_ASSISTANT_PROFILE_COLLECTION,
+            ownerDid: profile.ownerDid,
+            stableRecordId: profile.ownerDid,
+            fieldPath,
+        });
+
+    const encryptProfile = async (
+        profile: LearnCardAssistantProfile
+    ): Promise<StoredLearnCardAssistantProfile> => ({
+        ...profile,
+        name: await encryption.encryptJson(profile.name, aad(profile, 'name')),
+        personality: await encryption.encryptJson(profile.personality, aad(profile, 'personality')),
+    });
+
+    const decryptProfile = async (
+        profile: StoredLearnCardAssistantProfile
+    ): Promise<{ profile: LearnCardAssistantProfile; legacyPlaintext: boolean }> => {
+        const name = await encryption.decryptLegacyOrEnvelope<string>(
+            profile.name,
+            aad(profile, 'name')
+        );
+        const personality = await encryption.decryptLegacyOrEnvelope<string>(
+            profile.personality,
+            aad(profile, 'personality')
+        );
+
+        return {
+            profile: {
+                ...profile,
+                name: name.value,
+                personality: personality.value,
+            },
+            legacyPlaintext: name.legacyPlaintext || personality.legacyPlaintext,
+        };
+    };
+
+    const migrateExisting = async (): Promise<void> => {
+        const profiles = await collection.find({}).toArray();
+
+        await Promise.all(
+            profiles
+                .filter(
+                    profile =>
+                        !isEncryptedEnvelope(profile.name) ||
+                        !isEncryptedEnvelope(profile.personality)
+                )
+                .map(async profile => {
+                    const decrypted = await decryptProfile(profile);
+                    await collection.replaceOne(
+                        { ownerDid: profile.ownerDid } as Filter<StoredLearnCardAssistantProfile>,
+                        await encryptProfile(decrypted.profile),
+                        { upsert: false }
+                    );
+                })
+        );
+    };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= collection
@@ -107,22 +180,28 @@ export const createMongoLearnCardAssistantProfileRepository = (
             .then(() => undefined);
 
         await indexesReady;
+
+        migrationReady ??= migrateExisting();
+
+        await migrationReady;
     };
 
     return {
         findByOwnerDid: async ownerDid => {
             await ensureIndexes();
 
-            return (
-                (await collection.findOne({ ownerDid } as Filter<LearnCardAssistantProfile>)) ??
-                undefined
-            );
+            const stored =
+                (await collection.findOne({
+                    ownerDid,
+                } as Filter<StoredLearnCardAssistantProfile>)) ?? undefined;
+
+            return stored ? (await decryptProfile(stored)).profile : undefined;
         },
         upsert: async profile => {
             await ensureIndexes();
             await collection.replaceOne(
-                { ownerDid: profile.ownerDid } as Filter<LearnCardAssistantProfile>,
-                profile,
+                { ownerDid: profile.ownerDid } as Filter<StoredLearnCardAssistantProfile>,
+                await encryptProfile(profile),
                 { upsert: true }
             );
         },
@@ -175,13 +254,17 @@ export const createLearnCardAssistantProfileService = (
 });
 
 export const createMongoLearnCardAssistantProfileService = (
-    db: Db
+    db: Db,
+    encryption: EncryptionService
 ): LearnCardAssistantProfileService =>
-    createLearnCardAssistantProfileService(createMongoLearnCardAssistantProfileRepository(db));
+    createLearnCardAssistantProfileService(
+        createMongoLearnCardAssistantProfileRepository(db, encryption)
+    );
 
 export const createLearnCardAssistantProfileRuntime = ({
     mongoRuntime,
     service,
+    getEncryption,
 }: LearnCardAssistantProfileRuntimeOptions): LearnCardAssistantProfileRuntime => {
     let servicePromise: Promise<LearnCardAssistantProfileService | undefined> | undefined;
 
@@ -190,14 +273,19 @@ export const createLearnCardAssistantProfileRuntime = ({
 
         servicePromise ??= (async () => {
             const status = await mongoRuntime.getStatus();
-            if (!status.connected) return undefined;
+            if (!status.connected) {
+                if (!status.configured) return undefined;
+                throw new Error('LearnCard Assistant profile storage is not available.');
+            }
+            if (!getEncryption) {
+                throw new Error('Encrypted LearnCard Assistant profile storage is not configured.');
+            }
 
-            return createMongoLearnCardAssistantProfileService(await mongoRuntime.getDb());
-        })().catch(() => {
-            servicePromise = undefined;
-
-            return undefined;
-        });
+            return createMongoLearnCardAssistantProfileService(
+                await mongoRuntime.getDb(),
+                getEncryption()
+            );
+        })();
 
         return servicePromise;
     };

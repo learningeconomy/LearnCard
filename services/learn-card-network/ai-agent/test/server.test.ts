@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Express } from 'express';
 
 import type { AgentProvider, AgentToolDefinition } from '../src/agent/types';
 import type { ConsentFlowRuntime } from '../src/consentFlow';
@@ -20,14 +21,46 @@ import {
     createInMemoryLearnCardAssistantFeedRepository,
     createLearnCardAssistantFeedRuntime,
     createLearnCardAssistantFeedService,
+    type LearnCardAssistantFeedRuntime,
 } from '../src/assistantFeed';
 import {
     createInMemoryLearnCardAssistantProfileRepository,
     createLearnCardAssistantProfileRuntime,
     createLearnCardAssistantProfileService,
 } from '../src/assistantProfile';
+interface TestRouteHandler {
+    handle: (req: unknown, res: unknown, next?: (error?: unknown) => void) => Promise<void> | void;
+}
+
+interface TestRoute {
+    path: string;
+    methods: Record<string, boolean>;
+    stack: TestRouteHandler[];
+}
+
+interface ExpressRouterLayer {
+    route?: TestRoute;
+}
+
+interface ExpressWithRouter extends Express {
+    _router: {
+        stack: ExpressRouterLayer[];
+    };
+}
+
+interface RouteCallResult {
+    status: number;
+    payload?: unknown;
+}
+
+interface TestRouteResponse {
+    locals: Record<string, unknown>;
+    status: (code: number) => TestRouteResponse;
+    json: (payload: unknown) => TestRouteResponse;
+}
 
 const testConfig: ServiceConfig = {
+    nodeEnv: 'test',
     model: 'test-model',
     port: 0,
     maxToolRounds: 3,
@@ -39,6 +72,9 @@ const testConfig: ServiceConfig = {
     selfImprovementEnabled: true,
     retroModel: 'retro-model',
     retroMaxTraceChars: 24_000,
+    authChallengeTtlMs: 300_000,
+    encryptionKeyId: 'test-key',
+    debugEnabled: true,
 };
 
 describe('runChatRequest', () => {
@@ -54,6 +90,7 @@ describe('runChatRequest', () => {
         const tools: AgentToolDefinition[] = [];
         const result = await runChatRequest({
             body: { messages: [{ role: 'user', content: 'Hi' }] },
+            ownerDid: 'did:key:user',
             config: testConfig,
             provider,
             tools,
@@ -83,6 +120,7 @@ describe('runChatRequest', () => {
         };
         const result = await runChatRequest({
             body: { messages: [{ role: 'tool', content: 'Nope' }] },
+            ownerDid: 'did:key:user',
             config: testConfig,
             provider,
             tools: [],
@@ -174,6 +212,7 @@ describe('runChatRequest', () => {
                 did: 'did:key:user',
                 messages: [{ role: 'user', content: 'What do you know about me?' }],
             },
+            ownerDid: 'did:key:user',
             config: testConfig,
             provider,
             tools: [],
@@ -257,6 +296,7 @@ describe('runChatRequest', () => {
                 did: 'did:key:user',
                 messages: [{ role: 'user', content: 'What do you remember?' }],
             },
+            ownerDid: 'did:key:user',
             config: testConfig,
             provider,
             tools: [],
@@ -354,6 +394,7 @@ describe('runChatRequest', () => {
         };
         const result = await runChatRequest({
             body: { messages: [{ role: 'user', content: 'Find current info.' }] },
+            ownerDid: 'did:key:user',
             config: testConfig,
             provider,
             tools: [createWebSearchTool({ provider: webSearchProvider })],
@@ -384,58 +425,68 @@ describe('runChatRequest', () => {
 });
 
 describe('createServer', () => {
+    const findRoute = (
+        app: Express,
+        method: 'get' | 'post' | 'patch',
+        routePath: string
+    ): TestRoute | undefined => {
+        // Express exposes registered route handlers through _router in tests; no HTTP port is opened.
+        const appWithRouter = app as ExpressWithRouter;
+
+        return appWithRouter._router.stack.find(
+            layer => layer.route?.path === routePath && layer.route.methods[method]
+        )?.route;
+    };
+
+    const createRouteResponse = (
+        resolve: (result: RouteCallResult) => void,
+        params: Record<string, string> = {}
+    ): TestRouteResponse => {
+        let status = 200;
+
+        const res: TestRouteResponse = {
+            locals: {
+                agentDidAuth: {
+                    did: params.did ?? 'did:key:user',
+                    challenge: 'test-challenge',
+                    domain: 'http://test.local',
+                },
+                debugTokenAuthenticated: true,
+            },
+            status: code => {
+                status = code;
+
+                return res;
+            },
+            json: payload => {
+                resolve({ status, payload });
+
+                return res;
+            },
+        };
+
+        return res;
+    };
+
     const callRoute = async (
-        app: ReturnType<typeof createAgentServer>,
+        app: Express,
         method: 'get' | 'post' | 'patch',
         routePath: string,
         body?: unknown,
         params: Record<string, string> = {}
-    ): Promise<{ status: number; payload: unknown }> => {
-        const { stack } = (
-            app as unknown as {
-                _router: {
-                    stack: Array<{
-                        route?: {
-                            path: string;
-                            methods: Record<string, boolean>;
-                            stack: Array<{
-                                handle: (req: unknown, res: unknown) => Promise<void> | void;
-                            }>;
-                        };
-                    }>;
-                };
-            }
-        )._router;
-        const route = stack.find(
-            (layer: {
-                route?: {
-                    path: string;
-                    methods: Record<string, boolean>;
-                    stack: Array<{ handle: (req: unknown, res: unknown) => Promise<void> | void }>;
-                };
-            }) => layer.route?.path === routePath && layer.route.methods[method]
-        )?.route;
-        const handler = route?.stack[0]?.handle;
+    ): Promise<RouteCallResult> => {
+        const handler = findRoute(app, method, routePath)?.stack.at(-1)?.handle;
 
         if (!handler) throw new Error(`Route ${method.toUpperCase()} ${routePath} not found.`);
 
-        let status = 200;
+        const { promise, resolve, reject } = Promise.withResolvers<RouteCallResult>();
+        const res = createRouteResponse(resolve, params);
 
-        return new Promise((resolve, reject) => {
-            const res = {
-                status: (code: number) => {
-                    status = code;
-                    return res;
-                },
-                json: (payload: unknown) => {
-                    resolve({ status, payload });
-                    return res;
-                },
-            };
+        Promise.resolve(handler({ body, params, query: {} }, res)).catch(reject);
 
-            Promise.resolve(handler({ body, params, query: {} }, res)).catch(reject);
-        });
+        return promise;
     };
+
     const healthyMongoRuntime: MongoRuntime = {
         getClient: async () => {
             throw new Error('Mongo client should not be requested.');
@@ -450,6 +501,16 @@ describe('createServer', () => {
         }),
         close: async () => undefined,
     };
+
+    it('does not register browser debug UI routes', () => {
+        const app = createAgentServer({
+            config: testConfig,
+            mongoRuntime: healthyMongoRuntime,
+        });
+
+        expect(findRoute(app, 'get', '/')).toBeUndefined();
+        expect(findRoute(app, 'get', '/index.html')).toBeUndefined();
+    });
 
     it('includes webSearch in health and tools when Brave is configured', async () => {
         const app = createAgentServer({
@@ -749,6 +810,43 @@ describe('createServer', () => {
             payload: {
                 ok: true,
                 items: [],
+            },
+        });
+    });
+
+    it('returns 503 when assistant feed storage is unavailable', async () => {
+        const unavailableFeed: LearnCardAssistantFeedRuntime = {
+            getStatus: async () => ({ configured: true, connected: false }),
+            loadRequestTools: async () => [],
+            listLatest: async () => {
+                throw new Error('LearnCard Assistant feed storage is not available.');
+            },
+            recordItem: async () => {
+                throw new Error('LearnCard Assistant feed storage is not available.');
+            },
+            markItemRead: async () => {
+                throw new Error('LearnCard Assistant feed storage is not available.');
+            },
+            recordFeedback: async () => {
+                throw new Error('LearnCard Assistant feed storage is not available.');
+            },
+        };
+        const app = createAgentServer({
+            config: testConfig,
+            tools: [],
+            assistantFeedRuntime: unavailableFeed,
+        });
+
+        await expect(
+            callRoute(app, 'post', '/api/users/:did/assistant-feed/:id/read', undefined, {
+                did: 'did:key:user',
+                id: 'card-1',
+            })
+        ).resolves.toEqual({
+            status: 503,
+            payload: {
+                ok: false,
+                error: 'LearnCard Assistant feed storage is not available.',
             },
         });
     });
@@ -1193,7 +1291,7 @@ describe('createServer', () => {
                 throw new Error('No Mongo.');
             },
             getStatus: async () => ({
-                configured: true,
+                configured: false,
                 connected: false,
                 dbName: 'test-ai-agent',
                 error: 'No Mongo.',

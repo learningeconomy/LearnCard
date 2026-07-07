@@ -14,7 +14,7 @@ const unavailableMongoRuntime: MongoRuntime = {
     getDb: async () => {
         throw new Error('No Mongo.');
     },
-    getStatus: async () => ({ configured: true, connected: false, dbName: 'test' }),
+    getStatus: async () => ({ configured: false, connected: false, dbName: 'test' }),
     close: async () => undefined,
 };
 

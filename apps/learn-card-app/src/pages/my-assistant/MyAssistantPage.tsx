@@ -4,7 +4,7 @@ import { IonContent, IonIcon, IonPage, IonPopover } from '@ionic/react';
 import { alertCircleOutline, chevronDownOutline, filterOutline } from 'ionicons/icons';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
-import { CredentialCategoryEnum, useGetCurrentLCNUser } from 'learn-card-base';
+import { CredentialCategoryEnum, useGetCurrentLCNUser, useWallet } from 'learn-card-base';
 
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -17,6 +17,7 @@ import AssistantProfileCard from './AssistantProfileCard';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import {
     createLearnCardAssistantDebugCard,
+    createLearnCardAssistantAuth,
     fetchLearnCardAssistantCards,
     fetchLearnCardAssistantConsentContract,
     fetchLearnCardAssistantProfile,
@@ -120,8 +121,16 @@ const MyAssistantPageContent: React.FC = () => {
     const flags = useFlags();
     const queryClient = useQueryClient();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { initWallet } = useWallet();
     const currentDid = currentLCNUser?.did;
     const normalizedAgentUrl = useMemo(() => normalizeAgentUrl(getInitialAgentUrl()), []);
+    const assistantAuth = useMemo(
+        () =>
+            currentDid
+                ? createLearnCardAssistantAuth(normalizedAgentUrl, currentDid, initWallet)
+                : undefined,
+        [currentDid, initWallet, normalizedAgentUrl]
+    );
     const [activeTab, setActiveTab] = useState<'inbox' | 'activity'>('inbox');
     const [memoriesOpen, setMemoriesOpen] = useState(false);
     const [filterOpen, setFilterOpen] = useState(false);
@@ -151,20 +160,20 @@ const MyAssistantPageContent: React.FC = () => {
         refetch: refetchCards,
     } = useQuery<LearnCardAssistantCard[]>({
         queryKey: cardsQueryKey,
-        queryFn: () => fetchLearnCardAssistantCards(normalizedAgentUrl, currentDid!, 50),
-        enabled: Boolean(currentDid),
+        queryFn: () => fetchLearnCardAssistantCards(normalizedAgentUrl, assistantAuth!, 50),
+        enabled: Boolean(assistantAuth),
         refetchInterval: 60_000,
     });
     const { data: profile } = useQuery<LearnCardAssistantProfile>({
         queryKey: profileQueryKey,
-        queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, currentDid!),
-        enabled: Boolean(currentDid),
+        queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, assistantAuth!),
+        enabled: Boolean(assistantAuth),
     });
     const updateProfileMutation = useMutation({
         mutationFn: (input: { name?: string; personality?: string }) => {
-            if (!currentDid) throw new Error('Sign in with a network profile to save changes.');
+            if (!assistantAuth) throw new Error('Sign in with a network profile to save changes.');
 
-            return updateLearnCardAssistantProfile(normalizedAgentUrl, currentDid, input);
+            return updateLearnCardAssistantProfile(normalizedAgentUrl, assistantAuth, input);
         },
         onSuccess: updatedProfile => {
             queryClient.setQueryData(profileQueryKey, updatedProfile);
@@ -177,8 +186,11 @@ const MyAssistantPageContent: React.FC = () => {
         },
     });
     const markReadMutation = useMutation({
-        mutationFn: (id: string) =>
-            markLearnCardAssistantCardRead(normalizedAgentUrl, currentDid!, id),
+        mutationFn: (id: string) => {
+            if (!assistantAuth) throw new Error('Sign in to update assistant cards.');
+
+            return markLearnCardAssistantCardRead(normalizedAgentUrl, assistantAuth, id);
+        },
         onSuccess: updatedCard => {
             queryClient.setQueryData<LearnCardAssistantCard[]>(cardsQueryKey, currentCards =>
                 (currentCards ?? []).map(card => (card.id === updatedCard.id ? updatedCard : card))
@@ -186,8 +198,11 @@ const MyAssistantPageContent: React.FC = () => {
         },
     });
     const feedbackMutation = useMutation({
-        mutationFn: (id: string) =>
-            sendLearnCardAssistantCardFeedback(normalizedAgentUrl, currentDid!, id),
+        mutationFn: (id: string) => {
+            if (!assistantAuth) throw new Error('Sign in to send assistant feedback.');
+
+            return sendLearnCardAssistantCardFeedback(normalizedAgentUrl, assistantAuth, id);
+        },
         onSuccess: updatedCard => {
             queryClient.setQueryData<LearnCardAssistantCard[]>(cardsQueryKey, currentCards =>
                 (currentCards ?? []).map(card => (card.id === updatedCard.id ? updatedCard : card))
@@ -196,11 +211,12 @@ const MyAssistantPageContent: React.FC = () => {
     });
     const debugSeedMutation = useMutation({
         mutationFn: async () => {
-            if (!currentDid) throw new Error('Sign in with a network profile to seed test cards.');
+            if (!assistantAuth)
+                throw new Error('Sign in with a network profile to seed test cards.');
 
             return Promise.all(
                 TEST_ASSISTANT_CARDS.map(card =>
-                    createLearnCardAssistantDebugCard(normalizedAgentUrl, currentDid, card)
+                    createLearnCardAssistantDebugCard(normalizedAgentUrl, assistantAuth, card)
                 )
             );
         },
@@ -304,7 +320,7 @@ const MyAssistantPageContent: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => debugSeedMutation.mutate()}
-                            disabled={!currentDid || debugSeedMutation.isPending}
+                            disabled={!assistantAuth || debugSeedMutation.isPending}
                             className="py-3 px-4 rounded-[20px] border border-amber-100 bg-amber-50 text-amber-700 font-medium text-sm hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {debugSeedMutation.isPending ? 'Sending...' : 'Send test cards'}
@@ -325,7 +341,7 @@ const MyAssistantPageContent: React.FC = () => {
                 <AssistantProfileCard
                     profile={profile}
                     avatarConfig={avatarConfig}
-                    disabled={false}
+                    disabled={!assistantAuth}
                     isSaving={updateProfileMutation.isPending}
                     isLoadingConsent={
                         isFetchingContract || (openContractWhenLoaded && contractLoading)
@@ -515,7 +531,7 @@ const MyAssistantPageContent: React.FC = () => {
                 agentUrl={normalizedAgentUrl}
                 avatarConfig={avatarConfig}
                 consentFlowContractUri={contractUri || undefined}
-                did={currentDid}
+                auth={assistantAuth}
                 initialPrompt={chatInitialPrompt}
                 open={chatOpen}
                 title={profile?.name ?? 'My Assistant'}
@@ -525,7 +541,7 @@ const MyAssistantPageContent: React.FC = () => {
             <AssistantMemoriesModal
                 open={memoriesOpen}
                 agentUrl={normalizedAgentUrl}
-                did={currentDid}
+                auth={assistantAuth}
                 onClose={() => setMemoriesOpen(false)}
             />
         </>

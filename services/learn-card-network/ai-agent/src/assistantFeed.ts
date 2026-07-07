@@ -1,10 +1,16 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import type { Db, Filter, ObjectId } from 'mongodb';
 import { z } from 'zod';
 
 import type { AgentToolDefinition } from './agent/types';
 import type { MongoRuntime } from './mongo';
+import {
+    createFieldAad,
+    isEncryptedEnvelope,
+    type EncryptedJsonEnvelopeV1,
+    type EncryptionService,
+} from './security/encryption';
 
 export const LEARNCARD_ASSISTANT_FEED_COLLECTION = 'learnCardAssistantFeedItems';
 
@@ -109,7 +115,24 @@ export interface LearnCardAssistantFeedRuntime {
 export interface LearnCardAssistantFeedRuntimeOptions {
     mongoRuntime: MongoRuntime;
     service?: LearnCardAssistantFeedService;
+    getEncryption?: () => EncryptionService;
 }
+
+type StoredLearnCardAssistantCard = Omit<
+    LearnCardAssistantCard,
+    'dedupeKey' | 'title' | 'description' | 'detail' | 'cta' | 'feedback'
+> & {
+    dedupeKey?: string | EncryptedJsonEnvelopeV1;
+    dedupeKeyHash?: string;
+    title: string | EncryptedJsonEnvelopeV1;
+    description: string | EncryptedJsonEnvelopeV1;
+    detail?: string | EncryptedJsonEnvelopeV1;
+    cta?: LearnCardAssistantCardCta | EncryptedJsonEnvelopeV1;
+    feedback?: LearnCardAssistantCardFeedback | EncryptedJsonEnvelopeV1;
+};
+
+const getDedupeKeyHash = (ownerDid: string, dedupeKey: string): string =>
+    createHash('sha256').update(`${ownerDid}\0${dedupeKey}`).digest('hex');
 
 const AssistantCardCtaValidator = z
     .object({
@@ -186,60 +209,195 @@ export const toLearnCardAssistantCardResponse = (
 });
 
 export const createMongoLearnCardAssistantFeedRepository = (
-    db: Db
+    db: Db,
+    encryption: EncryptionService
 ): LearnCardAssistantFeedRepository => {
-    const collection = db.collection<LearnCardAssistantCard>(LEARNCARD_ASSISTANT_FEED_COLLECTION);
+    const collection = db.collection<StoredLearnCardAssistantCard>(
+        LEARNCARD_ASSISTANT_FEED_COLLECTION
+    );
     let indexesReady: Promise<void> | undefined;
+    let migrationReady: Promise<void> | undefined;
+
+    const aad = (
+        item: Pick<LearnCardAssistantCard, 'ownerDid' | 'id'>,
+        fieldPath: string
+    ): string =>
+        createFieldAad({
+            collectionName: LEARNCARD_ASSISTANT_FEED_COLLECTION,
+            ownerDid: item.ownerDid,
+            stableRecordId: item.id,
+            fieldPath,
+        });
+
+    const encryptItem = async (
+        item: LearnCardAssistantCard
+    ): Promise<StoredLearnCardAssistantCard> => ({
+        ...item,
+        ...(item.dedupeKey
+            ? {
+                  dedupeKey: await encryption.encryptJson(item.dedupeKey, aad(item, 'dedupeKey')),
+                  dedupeKeyHash: getDedupeKeyHash(item.ownerDid, item.dedupeKey),
+              }
+            : {}),
+        title: await encryption.encryptJson(item.title, aad(item, 'title')),
+        description: await encryption.encryptJson(item.description, aad(item, 'description')),
+        ...(item.detail
+            ? { detail: await encryption.encryptJson(item.detail, aad(item, 'detail')) }
+            : {}),
+        ...(item.cta ? { cta: await encryption.encryptJson(item.cta, aad(item, 'cta')) } : {}),
+        ...(item.feedback
+            ? { feedback: await encryption.encryptJson(item.feedback, aad(item, 'feedback')) }
+            : {}),
+    });
+
+    const decryptOptional = async <T>(
+        item: Pick<LearnCardAssistantCard, 'ownerDid' | 'id'>,
+        value: T | EncryptedJsonEnvelopeV1 | undefined,
+        fieldPath: string
+    ): Promise<{ value?: T; legacyPlaintext: boolean }> => {
+        if (value === undefined) return { legacyPlaintext: false };
+
+        return encryption.decryptLegacyOrEnvelope<T>(value, aad(item, fieldPath));
+    };
+
+    const decryptItem = async (
+        item: StoredLearnCardAssistantCard
+    ): Promise<{ item: LearnCardAssistantCard; legacyPlaintext: boolean }> => {
+        const dedupeKey = await decryptOptional<string>(item, item.dedupeKey, 'dedupeKey');
+        const title = await encryption.decryptLegacyOrEnvelope<string>(
+            item.title,
+            aad(item, 'title')
+        );
+        const description = await encryption.decryptLegacyOrEnvelope<string>(
+            item.description,
+            aad(item, 'description')
+        );
+        const detail = await decryptOptional<string>(item, item.detail, 'detail');
+        const cta = await decryptOptional<LearnCardAssistantCardCta>(item, item.cta, 'cta');
+        const feedback = await decryptOptional<LearnCardAssistantCardFeedback>(
+            item,
+            item.feedback,
+            'feedback'
+        );
+
+        return {
+            item: {
+                ...(item._id ? { _id: item._id } : {}),
+                id: item.id,
+                ownerDid: item.ownerDid,
+                type: item.type,
+                priority: item.priority,
+                ...(item.sourceRunId ? { sourceRunId: item.sourceRunId } : {}),
+                ...(item.readAt ? { readAt: item.readAt } : {}),
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+                ...(dedupeKey.value ? { dedupeKey: dedupeKey.value } : {}),
+                title: title.value,
+                description: description.value,
+                ...(detail.value ? { detail: detail.value } : {}),
+                ...(cta.value ? { cta: cta.value } : {}),
+                ...(feedback.value ? { feedback: feedback.value } : {}),
+            },
+            legacyPlaintext:
+                dedupeKey.legacyPlaintext ||
+                title.legacyPlaintext ||
+                description.legacyPlaintext ||
+                detail.legacyPlaintext ||
+                cta.legacyPlaintext ||
+                feedback.legacyPlaintext ||
+                Boolean(dedupeKey.value && !item.dedupeKeyHash),
+        };
+    };
+
+    const needsMigration = (item: StoredLearnCardAssistantCard): boolean =>
+        !isEncryptedEnvelope(item.title) ||
+        !isEncryptedEnvelope(item.description) ||
+        Boolean(item.dedupeKey && !isEncryptedEnvelope(item.dedupeKey)) ||
+        Boolean(item.dedupeKey && !item.dedupeKeyHash) ||
+        Boolean(item.detail && !isEncryptedEnvelope(item.detail)) ||
+        Boolean(item.cta && !isEncryptedEnvelope(item.cta)) ||
+        Boolean(item.feedback && !isEncryptedEnvelope(item.feedback));
+
+    const migrateExisting = async (): Promise<void> => {
+        const items = await collection.find({}).toArray();
+
+        await Promise.all(
+            items.filter(needsMigration).map(async item => {
+                const decrypted = await decryptItem(item);
+                await collection.replaceOne(
+                    {
+                        ownerDid: item.ownerDid,
+                        id: item.id,
+                    } as Filter<StoredLearnCardAssistantCard>,
+                    await encryptItem(decrypted.item),
+                    { upsert: false }
+                );
+            })
+        );
+    };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
             collection.createIndex({ ownerDid: 1, id: 1 }, { unique: true }),
-            collection.createIndex({ ownerDid: 1, dedupeKey: 1 }, { unique: true, sparse: true }),
+            collection.createIndex(
+                { ownerDid: 1, dedupeKeyHash: 1 },
+                { unique: true, sparse: true }
+            ),
             collection.createIndex({ ownerDid: 1, createdAt: -1 }),
         ]).then(() => undefined);
 
         await indexesReady;
+
+        migrationReady ??= migrateExisting();
+
+        await migrationReady;
     };
 
     return {
         findByDedupeKey: async (ownerDid, dedupeKey) => {
             await ensureIndexes();
 
-            return (
+            const stored =
                 (await collection.findOne({
                     ownerDid,
-                    dedupeKey,
-                } as Filter<LearnCardAssistantCard>)) ?? undefined
-            );
+                    dedupeKeyHash: getDedupeKeyHash(ownerDid, dedupeKey),
+                } as Filter<StoredLearnCardAssistantCard>)) ?? undefined;
+
+            return stored ? (await decryptItem(stored)).item : undefined;
         },
         findById: async (ownerDid, id) => {
             await ensureIndexes();
 
-            return (
-                (await collection.findOne({ ownerDid, id } as Filter<LearnCardAssistantCard>)) ??
-                undefined
-            );
+            const stored =
+                (await collection.findOne({
+                    ownerDid,
+                    id,
+                } as Filter<StoredLearnCardAssistantCard>)) ?? undefined;
+
+            return stored ? (await decryptItem(stored)).item : undefined;
         },
         insert: async item => {
             await ensureIndexes();
-            await collection.insertOne(item);
+            await collection.insertOne(await encryptItem(item));
         },
         replace: async item => {
             await ensureIndexes();
             await collection.replaceOne(
-                { ownerDid: item.ownerDid, id: item.id } as Filter<LearnCardAssistantCard>,
-                item,
+                { ownerDid: item.ownerDid, id: item.id } as Filter<StoredLearnCardAssistantCard>,
+                await encryptItem(item),
                 { upsert: false }
             );
         },
         listLatest: async (ownerDid, limit) => {
             await ensureIndexes();
 
-            return collection
-                .find({ ownerDid } as Filter<LearnCardAssistantCard>)
+            const items = await collection
+                .find({ ownerDid } as Filter<StoredLearnCardAssistantCard>)
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .toArray();
+
+            return Promise.all(items.map(async item => (await decryptItem(item)).item));
         },
     };
 };
@@ -364,8 +522,13 @@ export const createLearnCardAssistantFeedService = (
     },
 });
 
-export const createMongoLearnCardAssistantFeedService = (db: Db): LearnCardAssistantFeedService =>
-    createLearnCardAssistantFeedService(createMongoLearnCardAssistantFeedRepository(db));
+export const createMongoLearnCardAssistantFeedService = (
+    db: Db,
+    encryption: EncryptionService
+): LearnCardAssistantFeedService =>
+    createLearnCardAssistantFeedService(
+        createMongoLearnCardAssistantFeedRepository(db, encryption)
+    );
 
 const toolParameters = {
     type: 'object',
@@ -439,6 +602,7 @@ export const createLearnCardAssistantFeedTools = ({
 export const createLearnCardAssistantFeedRuntime = ({
     mongoRuntime,
     service,
+    getEncryption,
 }: LearnCardAssistantFeedRuntimeOptions): LearnCardAssistantFeedRuntime => {
     let servicePromise: Promise<LearnCardAssistantFeedService | undefined> | undefined;
 
@@ -447,14 +611,19 @@ export const createLearnCardAssistantFeedRuntime = ({
 
         servicePromise ??= (async () => {
             const status = await mongoRuntime.getStatus();
-            if (!status.connected) return undefined;
+            if (!status.connected) {
+                if (!status.configured) return undefined;
+                throw new Error('LearnCard Assistant feed storage is not available.');
+            }
+            if (!getEncryption) {
+                throw new Error('Encrypted LearnCard Assistant feed storage is not configured.');
+            }
 
-            return createMongoLearnCardAssistantFeedService(await mongoRuntime.getDb());
-        })().catch(() => {
-            servicePromise = undefined;
-
-            return undefined;
-        });
+            return createMongoLearnCardAssistantFeedService(
+                await mongoRuntime.getDb(),
+                getEncryption()
+            );
+        })();
 
         return servicePromise;
     };

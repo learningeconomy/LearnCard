@@ -7,6 +7,7 @@ import type {
 } from '../agent/types';
 import type { ServiceConfig } from '../config';
 import type { MongoRuntime } from '../mongo';
+import type { EncryptionService } from '../security/encryption';
 import { createUserMemoryTools } from './memoryTools';
 import {
     createMongoRunTraceService,
@@ -69,6 +70,7 @@ export interface SelfImprovementRuntimeOptions {
     mongoRuntime: MongoRuntime;
     retroProvider?: AgentProvider;
     services?: SelfImprovementServices;
+    getEncryption?: () => EncryptionService;
 }
 
 export interface SelfImprovementServices {
@@ -132,6 +134,7 @@ export const createSelfImprovementRuntime = ({
     mongoRuntime,
     retroProvider,
     services,
+    getEncryption,
 }: SelfImprovementRuntimeOptions): SelfImprovementRuntime => {
     if (!config.selfImprovementEnabled) return noopRuntime;
 
@@ -143,20 +146,23 @@ export const createSelfImprovementRuntime = ({
         if (!servicesPromise) {
             servicesPromise = (async () => {
                 const status = await mongoRuntime.getStatus();
-                if (!status.connected) return undefined;
+                if (!status.connected) {
+                    if (!status.configured) return undefined;
+                    throw new Error('Self-improvement storage is not available.');
+                }
+                if (!getEncryption) {
+                    throw new Error('Encrypted self-improvement storage is not configured.');
+                }
 
                 const db = await mongoRuntime.getDb();
+                const encryption = getEncryption();
 
                 return {
-                    userDocs: createMongoUserDocService(db),
-                    runTraces: createMongoRunTraceService(db),
-                    retroResults: createMongoRetroResultRepository(db),
+                    userDocs: createMongoUserDocService(db, encryption),
+                    runTraces: createMongoRunTraceService(db, encryption),
+                    retroResults: createMongoRetroResultRepository(db, encryption),
                 };
-            })().catch(() => {
-                servicesPromise = undefined;
-
-                return undefined;
-            });
+            })();
         }
 
         return servicesPromise;
@@ -288,7 +294,7 @@ export const createSelfImprovementRuntime = ({
             if (!services) throw new Error('Self-improvement storage is not available.');
 
             return services.userDocs.approveDoc(ownerDid, name, {
-                reason: 'Approved in debug UI.',
+                reason: 'Approved by debug endpoint.',
             });
         },
         archiveDebugDoc: async input => {

@@ -1,7 +1,5 @@
-import path from 'node:path';
-
 import cors from 'cors';
-import express from 'express';
+import express, { type RequestHandler } from 'express';
 import { z } from 'zod';
 
 import { createOpenAIProvider } from './agent/openAIProvider';
@@ -21,6 +19,7 @@ import {
 } from './assistantProfile';
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
+import { getAgentLearnCard, getEmptyAgentLearnCard } from './helpers/learnCard.helpers';
 import { createMongoRuntime, type MongoRuntime } from './mongo';
 import {
     createSelfImprovementRuntime,
@@ -36,6 +35,19 @@ import {
 } from './selfImprovement/userDocs';
 import { createConsentedUserDataTool } from './tools/consentedUserData';
 import { createTools } from './tools';
+import {
+    AgentDidAuthError,
+    createMongoDidAuthChallengeStore,
+    createSecureChallenge,
+    verifyDidAuthRequest,
+    type AgentDidAuthChallengeStore,
+    type AgentDidAuthContext,
+    type AgentDidAuthVerifierLearnCard,
+} from './security/didAuth';
+import {
+    createLearnCardDagJweEncryptionService,
+    type EncryptionService,
+} from './security/encryption';
 
 const MessageValidator = z.object({
     role: z.enum(['user', 'assistant']),
@@ -49,7 +61,7 @@ const RunRequestValidator = z.object({
 });
 
 const HeartbeatRequestValidator = z.object({
-    did: z.string().trim().min(1),
+    did: z.string().trim().min(1).optional(),
     consentFlowContractUri: z.string().trim().min(1).optional(),
     maxItems: z.number().optional(),
 });
@@ -125,11 +137,14 @@ export interface CreateServerOptions {
     selfImprovementRuntime?: SelfImprovementRuntime;
     assistantFeedRuntime?: LearnCardAssistantFeedRuntime;
     assistantProfileRuntime?: LearnCardAssistantProfileRuntime;
-    publicDir?: string;
+    didAuthChallengeStore?: AgentDidAuthChallengeStore;
+    getVerifierLearnCard?: () => Promise<AgentDidAuthVerifierLearnCard>;
+    encryptionService?: EncryptionService;
 }
 
 export interface RunChatOptions {
     body: unknown;
+    ownerDid: string;
     config: ServiceConfig;
     provider: AgentProvider;
     tools: AgentToolDefinition[];
@@ -165,8 +180,6 @@ const createProvider = (config: ServiceConfig): AgentProvider => {
 
     return createOpenAIProvider(config.openAIApiKey);
 };
-
-const getPublicDir = (): string => path.join(process.cwd(), 'public');
 
 const getRunContextPrompt = (
     did: string,
@@ -222,6 +235,7 @@ const serializeAssistantMemoryDoc = (doc: AgentUserDoc): unknown => ({
 
 export const runChatRequest = async ({
     body,
+    ownerDid,
     config,
     provider,
     tools,
@@ -242,7 +256,7 @@ export const runChatRequest = async ({
     }
 
     try {
-        const did = parsed.data.did?.trim();
+        const did = ownerDid;
         const consentFlowContractUri = parsed.data.consentFlowContractUri?.trim();
         const agentTools = [...tools];
         const runtime = consentFlowRuntime ?? createConsentFlowRuntime(config);
@@ -346,28 +360,48 @@ export const createServer = ({
     selfImprovementRuntime,
     assistantFeedRuntime,
     assistantProfileRuntime,
-    publicDir = getPublicDir(),
+    didAuthChallengeStore,
+    getVerifierLearnCard,
+    encryptionService: injectedEncryptionService,
 }: CreateServerOptions): express.Express => {
     const app = express();
     const agentProvider = provider ?? createProvider(config);
     const providerConfigured = Boolean(provider || config.openAIApiKey);
     const consentRuntime = consentFlowRuntime ?? createConsentFlowRuntime(config);
     const mongo = mongoRuntime ?? createMongoRuntime(config);
+    let encryptionService = injectedEncryptionService;
+
+    const getEncryption = (): EncryptionService => {
+        encryptionService ??= createLearnCardDagJweEncryptionService({
+            keyId: config.encryptionKeyId,
+            getWallet: () =>
+                getAgentLearnCard({
+                    seed: config.walletSeed,
+                    cloudUrl: config.cloudUrl,
+                    networkUrl: config.networkUrl,
+                }),
+        });
+
+        return encryptionService;
+    };
     const selfImprovement =
         selfImprovementRuntime ??
         createSelfImprovementRuntime({
             config,
             mongoRuntime: mongo,
+            getEncryption,
         });
     const assistantFeed =
         assistantFeedRuntime ??
         createLearnCardAssistantFeedRuntime({
             mongoRuntime: mongo,
+            getEncryption,
         });
     const assistantProfile =
         assistantProfileRuntime ??
         createLearnCardAssistantProfileRuntime({
             mongoRuntime: mongo,
+            getEncryption,
         });
     const agentTools =
         tools ??
@@ -383,10 +417,108 @@ export const createServer = ({
             webSearchSearchLang: config.webSearchSearchLang,
             webSearchSafeSearch: config.webSearchSafeSearch,
         });
+    let challengeStorePromise: Promise<AgentDidAuthChallengeStore> | undefined;
+
+    const getChallengeStore = async (): Promise<AgentDidAuthChallengeStore> => {
+        if (didAuthChallengeStore) return didAuthChallengeStore;
+
+        challengeStorePromise ??= mongo
+            .getDb()
+            .then(db => createMongoDidAuthChallengeStore(db))
+            .catch(error => {
+                challengeStorePromise = undefined;
+
+                throw error;
+            });
+
+        return challengeStorePromise;
+    };
+
+    const getAuthContext = (res: express.Response): AgentDidAuthContext | undefined =>
+        res.locals.agentDidAuth;
+
+    const requireDidAuth: RequestHandler = async (req, res, next) => {
+        try {
+            res.locals.agentDidAuth = await verifyDidAuthRequest(req, {
+                config,
+                challengeStore: await getChallengeStore(),
+                getVerifierLearnCard: getVerifierLearnCard ?? getEmptyAgentLearnCard,
+            });
+
+            next();
+        } catch (error) {
+            if (error instanceof AgentDidAuthError) {
+                res.status(401).json({ ok: false, error: 'DID Auth is required.' });
+                return;
+            }
+
+            res.status(503).json({ ok: false, error: 'DID Auth is unavailable.' });
+        }
+    };
+
+    const requireMatchingDidParam: RequestHandler = (req, res, next) => {
+        const auth = getAuthContext(res);
+
+        if (!auth || req.params.did !== auth.did) {
+            res.status(403).json({
+                ok: false,
+                error: 'Authenticated DID does not match requested DID.',
+            });
+            return;
+        }
+
+        next();
+    };
+
+    const requireDebugAccess: RequestHandler = (req, res, next) => {
+        if (!config.debugEnabled) {
+            res.status(404).json({ ok: false, error: 'Not found.' });
+            return;
+        }
+
+        if (config.debugToken) {
+            if (req.get('X-AI-Agent-Debug-Token') !== config.debugToken) {
+                res.status(403).json({ ok: false, error: 'Debug access is not authorized.' });
+                return;
+            }
+
+            res.locals.debugTokenAuthenticated = true;
+            next();
+            return;
+        }
+
+        if (config.nodeEnv === 'production') {
+            res.status(403).json({ ok: false, error: 'Debug access is not authorized.' });
+            return;
+        }
+
+        res.locals.debugTokenAuthenticated = false;
+        next();
+    };
+
+    const getBodyDid = (body: unknown): string | undefined => {
+        if (!body || typeof body !== 'object' || !('did' in body)) return undefined;
+        if (typeof body.did !== 'string') return undefined;
+
+        return body.did.trim();
+    };
+
+    const getStorageAwareStatus = (message: string): number =>
+        message.includes('storage is not available') || message.includes('Encrypted') ? 503 : 400;
+
+    const asyncHandler =
+        (handler: RequestHandler): RequestHandler =>
+        (req, res, next) => {
+            Promise.resolve(handler(req, res, next)).catch(error => {
+                const message =
+                    error instanceof Error ? error.message : 'AI Agent storage is not available.';
+
+                res.status(503).json({ ok: false, error: message });
+            });
+        };
 
     app.use(cors());
     app.use(express.json({ limit: '1mb' }));
-    app.use(express.static(publicDir));
 
     app.get('/api/health', async (_req, res) => {
         const assistantFeedStatus = await assistantFeed.getStatus();
@@ -423,6 +555,33 @@ export const createServer = ({
         });
     });
 
+    app.post('/api/auth/challenge', async (req, res) => {
+        const domain =
+            config.authDomain ??
+            (config.nodeEnv !== 'production' ? `${req.protocol}://${req.get('host')}` : undefined);
+
+        if (!domain) {
+            res.status(503).json({ ok: false, error: 'DID Auth is unavailable.' });
+            return;
+        }
+
+        try {
+            const challenge = createSecureChallenge();
+            const stored = await (
+                await getChallengeStore()
+            ).insert(challenge, domain, config.authChallengeTtlMs);
+
+            res.json({
+                ok: true,
+                challenge,
+                domain,
+                expiresAt: stored.expiresAt.toISOString(),
+            });
+        } catch {
+            res.status(503).json({ ok: false, error: 'DID Auth is unavailable.' });
+        }
+    });
+
     app.get('/api/consent-flow/contract', async (_req, res) => {
         if (!providerConfigured) {
             res.status(503).json({
@@ -445,14 +604,28 @@ export const createServer = ({
         }
     });
 
-    app.post('/api/agent/run', async (req, res) => {
+    app.post('/api/agent/run', requireDidAuth, async (req, res) => {
         if (!providerConfigured) {
             res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
             return;
         }
 
+        const auth = getAuthContext(res);
+        const bodyDid = getBodyDid(req.body);
+
+        if (!auth) {
+            res.status(401).json({ ok: false, error: 'DID Auth is required.' });
+            return;
+        }
+
+        if (bodyDid && bodyDid !== auth.did) {
+            res.status(403).json({ error: 'Authenticated DID does not match request DID.' });
+            return;
+        }
+
         const result = await runChatRequest({
             body: req.body,
+            ownerDid: auth.did,
             config,
             provider: agentProvider,
             tools: agentTools,
@@ -466,7 +639,7 @@ export const createServer = ({
         void result.afterResponse?.().catch(() => undefined);
     });
 
-    app.post('/api/agent/heartbeat', async (req, res) => {
+    app.post('/api/agent/heartbeat', requireDidAuth, async (req, res) => {
         if (!providerConfigured) {
             res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
             return;
@@ -479,10 +652,21 @@ export const createServer = ({
             return;
         }
 
+        const auth = getAuthContext(res);
+
+        if (!auth) {
+            res.status(401).json({ ok: false, error: 'DID Auth is required.' });
+            return;
+        }
+
+        if (parsed.data.did && parsed.data.did !== auth.did) {
+            res.status(403).json({ error: 'Authenticated DID does not match request DID.' });
+            return;
+        }
+
         const maxItems = getLimitedQueryValue(parsed.data.maxItems, 3, 5);
         const result = await runChatRequest({
             body: {
-                did: parsed.data.did,
                 consentFlowContractUri: parsed.data.consentFlowContractUri,
                 messages: [
                     {
@@ -491,6 +675,7 @@ export const createServer = ({
                     },
                 ],
             },
+            ownerDid: auth.did,
             config,
             provider: agentProvider,
             tools: agentTools,
@@ -510,281 +695,375 @@ export const createServer = ({
         res.json({
             ok: true,
             run: result.payload,
-            items: (await assistantFeed.listLatest(parsed.data.did, maxItems)).map(
+            items: (await assistantFeed.listLatest(auth.did, maxItems)).map(
                 toLearnCardAssistantCardResponse
             ),
         });
     });
 
-    app.get('/api/users/:did/assistant-feed', async (req, res) => {
-        const limit = getLimitedQueryValue(req.query?.limit, 10, 50);
-
-        res.json({
-            ok: true,
-            items: (await assistantFeed.listLatest(req.params.did, limit)).map(
-                toLearnCardAssistantCardResponse
-            ),
-        });
-    });
-
-    app.post('/api/debug/users/:did/assistant-feed', async (req, res) => {
-        const parsed = LearnCardAssistantCardToolInputValidator.safeParse(req.body);
-
-        if (!parsed.success) {
-            res.status(400).json({ ok: false, error: 'Invalid assistant card.' });
-            return;
-        }
-
-        try {
-            const item = await assistantFeed.recordItem({
-                ...parsed.data,
-                ownerDid: req.params.did,
-            });
-
-            res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not record assistant card.';
-
-            res.status(400).json({ ok: false, error: message });
-        }
-    });
-
-    app.post('/api/users/:did/assistant-feed/:id/read', async (req, res) => {
-        try {
-            const item = await assistantFeed.markItemRead(req.params.did, req.params.id);
-
-            res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not mark assistant card read.';
-
-            res.status(400).json({ ok: false, error: message });
-        }
-    });
-
-    app.post('/api/users/:did/assistant-feed/:id/feedback', async (req, res) => {
-        const parsed = AssistantCardFeedbackRequestValidator.safeParse(req.body);
-
-        if (!parsed.success) {
-            res.status(400).json({ ok: false, error: 'Invalid assistant card feedback.' });
-            return;
-        }
-
-        try {
-            const item = await assistantFeed.recordFeedback(
-                req.params.did,
-                req.params.id,
-                parsed.data
-            );
-
-            res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not record assistant feedback.';
-
-            res.status(400).json({ ok: false, error: message });
-        }
-    });
-
-    app.get('/api/users/:did/assistant-profile', async (req, res) => {
-        res.json({
-            ok: true,
-            profile: toLearnCardAssistantProfileResponse(
-                await assistantProfile.getProfile(req.params.did)
-            ),
-        });
-    });
-
-    app.patch('/api/users/:did/assistant-profile', async (req, res) => {
-        const body = typeof req.body === 'object' && req.body ? req.body : {};
-        const parsed = UpdateLearnCardAssistantProfileValidator.safeParse({
-            ...body,
-            ownerDid: req.params.did,
-        });
-
-        if (!parsed.success) {
-            res.status(400).json({ ok: false, error: 'Invalid assistant profile.' });
-            return;
-        }
-
-        try {
-            const profile = await assistantProfile.updateProfile(parsed.data);
-
-            res.json({ ok: true, profile: toLearnCardAssistantProfileResponse(profile) });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not update assistant profile.';
-
-            res.status(400).json({ ok: false, error: message });
-        }
-    });
-
-    app.get('/api/users/:did/assistant-memories', async (req, res) => {
-        res.json({
-            ok: true,
-            manifest: serializeAssistantMemoryManifest(
-                await selfImprovement.getAssistantMemoryManifest(req.params.did)
-            ),
-            docs: (await selfImprovement.getAssistantMemoryDocs(req.params.did)).map(
-                serializeAssistantMemoryDoc
-            ),
-        });
-    });
-
-    app.post('/api/users/:did/assistant-memories/:name/approve', async (req, res) => {
-        try {
-            const doc = await selfImprovement.approveAssistantMemory(
-                req.params.did,
-                req.params.name
-            );
+    app.get(
+        '/api/users/:did/assistant-feed',
+        requireDidAuth,
+        requireMatchingDidParam,
+        asyncHandler(async (_req, res) => {
+            const ownerDid = getAuthContext(res)?.did ?? '';
+            const limit = getLimitedQueryValue(_req.query?.limit, 10, 50);
 
             res.json({
                 ok: true,
-                doc: serializeAssistantMemoryDoc(doc),
-                manifest: serializeAssistantMemoryManifest(
-                    await selfImprovement.getAssistantMemoryManifest(req.params.did)
+                items: (await assistantFeed.listLatest(ownerDid, limit)).map(
+                    toLearnCardAssistantCardResponse
                 ),
             });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not approve assistant memory.';
+        })
+    );
 
-            res.status(400).json({ ok: false, error: message });
+    app.post(
+        '/api/debug/users/:did/assistant-feed',
+        requireDebugAccess,
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const parsed = LearnCardAssistantCardToolInputValidator.safeParse(req.body);
+
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid assistant card.' });
+                return;
+            }
+
+            try {
+                const ownerDid = getAuthContext(res)?.did ?? '';
+                const item = await assistantFeed.recordItem({
+                    ...parsed.data,
+                    ownerDid,
+                });
+
+                res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not record assistant card.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
         }
-    });
+    );
 
-    app.post('/api/users/:did/assistant-memories/:name/archive', async (req, res) => {
-        const parsed = AssistantMemoryArchiveRequestValidator.safeParse(req.body ?? {});
+    app.post(
+        '/api/users/:did/assistant-feed/:id/read',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            try {
+                const item = await assistantFeed.markItemRead(
+                    getAuthContext(res)?.did ?? '',
+                    req.params.id ?? ''
+                );
 
-        if (!parsed.success) {
-            res.status(400).json({ ok: false, error: 'Invalid assistant memory archive.' });
-            return;
+                res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not mark assistant card read.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
         }
+    );
 
-        try {
-            const doc = await selfImprovement.archiveAssistantMemory(
-                req.params.did,
-                req.params.name,
-                parsed.data.reason
-            );
+    app.post(
+        '/api/users/:did/assistant-feed/:id/feedback',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const parsed = AssistantCardFeedbackRequestValidator.safeParse(req.body);
 
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid assistant card feedback.' });
+                return;
+            }
+
+            try {
+                const item = await assistantFeed.recordFeedback(
+                    getAuthContext(res)?.did ?? '',
+                    req.params.id ?? '',
+                    parsed.data
+                );
+
+                res.json({ ok: true, item: toLearnCardAssistantCardResponse(item) });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not record assistant feedback.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
+        }
+    );
+
+    app.get(
+        '/api/users/:did/assistant-profile',
+        requireDidAuth,
+        requireMatchingDidParam,
+        asyncHandler(async (_req, res) => {
             res.json({
                 ok: true,
-                doc: serializeAssistantMemoryDoc(doc),
-                manifest: serializeAssistantMemoryManifest(
-                    await selfImprovement.getAssistantMemoryManifest(req.params.did)
+                profile: toLearnCardAssistantProfileResponse(
+                    await assistantProfile.getProfile(getAuthContext(res)?.did ?? '')
                 ),
             });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not archive assistant memory.';
+        })
+    );
 
-            res.status(400).json({ ok: false, error: message });
+    app.patch(
+        '/api/users/:did/assistant-profile',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const body = typeof req.body === 'object' && req.body ? req.body : {};
+            const parsed = UpdateLearnCardAssistantProfileValidator.safeParse({
+                ...body,
+                ownerDid: getAuthContext(res)?.did ?? '',
+            });
+
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid assistant profile.' });
+                return;
+            }
+
+            try {
+                const profile = await assistantProfile.updateProfile(parsed.data);
+
+                res.json({ ok: true, profile: toLearnCardAssistantProfileResponse(profile) });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not update assistant profile.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
         }
-    });
-    app.get('/api/debug/users/:did/docs', async (req, res) => {
-        res.json({
-            ok: true,
-            docs: await selfImprovement.getDocsForDebug(req.params.did),
-        });
-    });
+    );
 
-    app.get('/api/debug/users/:did/memory', async (req, res) => {
-        const manifest = await selfImprovement.getMemoryManifestForDebug(req.params.did);
-
-        res.json({
-            ok: true,
-            manifest,
-            docs: await selfImprovement.getDocsForDebug(req.params.did),
-        });
-    });
-
-    app.post('/api/debug/users/:did/memory', async (req, res) => {
-        const parsed = DebugMemoryRequestValidator.safeParse(req.body);
-
-        if (!parsed.success) {
-            res.status(400).json({ ok: false, error: 'Invalid memory debug request.' });
-            return;
-        }
-
-        try {
-            const ownerDid = req.params.did;
-            const { action } = parsed.data;
-            const doc =
-                action === 'create'
-                    ? await selfImprovement.createDebugDoc({
-                          ownerDid,
-                          name:
-                              parsed.data.name ??
-                              parsed.data.description
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9._-]+/g, '-')
-                                  .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '')
-                                  .slice(0, 48),
-                          kind: parsed.data.kind,
-                          description: parsed.data.description,
-                          content: parsed.data.content,
-                          status: parsed.data.status,
-                          sourceType: parsed.data.sourceType,
-                          confidence: parsed.data.confidence,
-                          sensitivity: parsed.data.sensitivity,
-                          expiresAt: parsed.data.expiresAt,
-                          requiresApproval: parsed.data.requiresApproval,
-                      })
-                    : action === 'update'
-                    ? await selfImprovement.updateDebugDoc({
-                          ownerDid,
-                          name: parsed.data.name,
-                          kind: parsed.data.kind,
-                          description: parsed.data.description,
-                          content: parsed.data.content,
-                          status: parsed.data.status,
-                          sourceType: parsed.data.sourceType,
-                          confidence: parsed.data.confidence,
-                          sensitivity: parsed.data.sensitivity,
-                          expiresAt: parsed.data.expiresAt,
-                          requiresApproval: parsed.data.requiresApproval,
-                      })
-                    : action === 'approve'
-                    ? await selfImprovement.approveDebugDoc(ownerDid, parsed.data.name)
-                    : await selfImprovement.archiveDebugDoc({
-                          ownerDid,
-                          name: parsed.data.name,
-                          reason: parsed.data.reason,
-                          provenance: { reason: parsed.data.reason },
-                      });
+    app.get(
+        '/api/users/:did/assistant-memories',
+        requireDidAuth,
+        requireMatchingDidParam,
+        asyncHandler(async (_req, res) => {
+            const ownerDid = getAuthContext(res)?.did ?? '';
 
             res.json({
                 ok: true,
-                doc,
-                manifest: await selfImprovement.getMemoryManifestForDebug(ownerDid),
+                manifest: serializeAssistantMemoryManifest(
+                    await selfImprovement.getAssistantMemoryManifest(ownerDid)
+                ),
+                docs: (await selfImprovement.getAssistantMemoryDocs(ownerDid)).map(
+                    serializeAssistantMemoryDoc
+                ),
             });
-        } catch (error) {
-            const message =
-                error instanceof Error ? error.message : 'Could not update debug memory.';
+        })
+    );
 
-            res.status(400).json({ ok: false, error: message });
+    app.post(
+        '/api/users/:did/assistant-memories/:name/approve',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            try {
+                const ownerDid = getAuthContext(res)?.did ?? '';
+                const doc = await selfImprovement.approveAssistantMemory(
+                    ownerDid,
+                    req.params.name ?? ''
+                );
+
+                res.json({
+                    ok: true,
+                    doc: serializeAssistantMemoryDoc(doc),
+                    manifest: serializeAssistantMemoryManifest(
+                        await selfImprovement.getAssistantMemoryManifest(ownerDid)
+                    ),
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not approve assistant memory.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
         }
-    });
+    );
 
-    app.get('/api/debug/runs/:runId', async (req, res) => {
-        const run = await selfImprovement.getRunForDebug(req.params.runId);
+    app.post(
+        '/api/users/:did/assistant-memories/:name/archive',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const parsed = AssistantMemoryArchiveRequestValidator.safeParse(req.body ?? {});
 
-        if (!run) {
-            res.status(404).json({ ok: false, error: 'Run trace not found.' });
-            return;
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid assistant memory archive.' });
+                return;
+            }
+
+            try {
+                const ownerDid = getAuthContext(res)?.did ?? '';
+                const doc = await selfImprovement.archiveAssistantMemory(
+                    ownerDid,
+                    req.params.name ?? '',
+                    parsed.data.reason
+                );
+
+                res.json({
+                    ok: true,
+                    doc: serializeAssistantMemoryDoc(doc),
+                    manifest: serializeAssistantMemoryManifest(
+                        await selfImprovement.getAssistantMemoryManifest(ownerDid)
+                    ),
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not archive assistant memory.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
         }
+    );
+    app.get(
+        '/api/debug/users/:did/docs',
+        requireDebugAccess,
+        requireDidAuth,
+        requireMatchingDidParam,
+        asyncHandler(async (_req, res) => {
+            res.json({
+                ok: true,
+                docs: await selfImprovement.getDocsForDebug(getAuthContext(res)?.did ?? ''),
+            });
+        })
+    );
 
-        res.json({
-            ok: true,
-            ...run,
-        });
-    });
+    app.get(
+        '/api/debug/users/:did/memory',
+        requireDebugAccess,
+        requireDidAuth,
+        requireMatchingDidParam,
+        asyncHandler(async (_req, res) => {
+            const ownerDid = getAuthContext(res)?.did ?? '';
+            const manifest = await selfImprovement.getMemoryManifestForDebug(ownerDid);
 
-    app.get('*', (_req, res) => {
-        res.sendFile(path.join(publicDir, 'index.html'));
-    });
+            res.json({
+                ok: true,
+                manifest,
+                docs: await selfImprovement.getDocsForDebug(ownerDid),
+            });
+        })
+    );
+
+    app.post(
+        '/api/debug/users/:did/memory',
+        requireDebugAccess,
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const parsed = DebugMemoryRequestValidator.safeParse(req.body);
+
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid memory debug request.' });
+                return;
+            }
+
+            try {
+                const ownerDid = getAuthContext(res)?.did ?? '';
+                const { action } = parsed.data;
+                const doc =
+                    action === 'create'
+                        ? await selfImprovement.createDebugDoc({
+                              ownerDid,
+                              name:
+                                  parsed.data.name ??
+                                  parsed.data.description
+                                      .toLowerCase()
+                                      .replace(/[^a-z0-9._-]+/g, '-')
+                                      .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '')
+                                      .slice(0, 48),
+                              kind: parsed.data.kind,
+                              description: parsed.data.description,
+                              content: parsed.data.content,
+                              status: parsed.data.status,
+                              sourceType: parsed.data.sourceType,
+                              confidence: parsed.data.confidence,
+                              sensitivity: parsed.data.sensitivity,
+                              expiresAt: parsed.data.expiresAt,
+                              requiresApproval: parsed.data.requiresApproval,
+                          })
+                        : action === 'update'
+                        ? await selfImprovement.updateDebugDoc({
+                              ownerDid,
+                              name: parsed.data.name,
+                              kind: parsed.data.kind,
+                              description: parsed.data.description,
+                              content: parsed.data.content,
+                              status: parsed.data.status,
+                              sourceType: parsed.data.sourceType,
+                              confidence: parsed.data.confidence,
+                              sensitivity: parsed.data.sensitivity,
+                              expiresAt: parsed.data.expiresAt,
+                              requiresApproval: parsed.data.requiresApproval,
+                          })
+                        : action === 'approve'
+                        ? await selfImprovement.approveDebugDoc(ownerDid, parsed.data.name)
+                        : await selfImprovement.archiveDebugDoc({
+                              ownerDid,
+                              name: parsed.data.name,
+                              reason: parsed.data.reason,
+                              provenance: { reason: parsed.data.reason },
+                          });
+
+                res.json({
+                    ok: true,
+                    doc,
+                    manifest: await selfImprovement.getMemoryManifestForDebug(ownerDid),
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not update debug memory.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
+        }
+    );
+
+    app.get(
+        '/api/debug/runs/:runId',
+        requireDebugAccess,
+        requireDidAuth,
+        asyncHandler(async (req, res) => {
+            const auth = getAuthContext(res);
+            const run = await selfImprovement.getRunForDebug(req.params.runId ?? '');
+
+            if (!run) {
+                res.status(404).json({ ok: false, error: 'Run trace not found.' });
+                return;
+            }
+
+            const runOwnerDid = run.trace?.ownerDid;
+
+            if (runOwnerDid && auth?.did !== runOwnerDid) {
+                res.status(403).json({
+                    ok: false,
+                    error: 'Authenticated DID does not match run owner.',
+                });
+                return;
+            }
+
+            if (!runOwnerDid && res.locals.debugTokenAuthenticated !== true) {
+                res.status(403).json({
+                    ok: false,
+                    error: 'Debug token is required for legacy run traces.',
+                });
+                return;
+            }
+
+            res.json({
+                ok: true,
+                ...run,
+            });
+        })
+    );
 
     return app;
 };

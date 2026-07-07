@@ -239,7 +239,7 @@ services:
                 export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}"
                 export AI_AGENT_MONGO_DB_NAME="$${AI_AGENT_MONGO_DB_NAME:-learn-card-ai-agent}"
                 export AI_AGENT_WALLET_SEED="$${AI_AGENT_WALLET_SEED:-$${SEED:-d}}"
-                cd services/learn-card-network/ai-agent && pnpm dev
+                bun run --cwd services/learn-card-network/ai-agent dev
         depends_on:
             - brain
             - cloud

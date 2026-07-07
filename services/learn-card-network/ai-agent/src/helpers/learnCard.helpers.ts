@@ -14,16 +14,26 @@ export type AgentNetworkWallet = NetworkLearnCardFromSeed['returnValue'];
 let didKitInitPromise: Promise<'node' | Buffer> | undefined;
 const walletCache = new Map<string, Promise<AgentNetworkWallet>>();
 
-const resolveDidKitPluginFactory = (module: Record<string, unknown>): (() => Promise<unknown>) => {
-    const factory =
-        (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
-        (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
+const hasDidKitPluginFactory = (
+    value: unknown
+): value is { getDidKitPlugin?: unknown; default?: { getDidKitPlugin?: unknown } } =>
+    Boolean(value && typeof value === 'object');
 
-    if (typeof factory !== 'function') {
+const isDidKitPluginFactory = (value: unknown): value is () => Promise<unknown> =>
+    typeof value === 'function';
+
+const resolveDidKitPluginFactory = (module: Record<string, unknown>): (() => Promise<unknown>) => {
+    if (!hasDidKitPluginFactory(module)) {
         throw new Error('DIDKit plugin factory not found in module exports');
     }
 
-    return factory as () => Promise<unknown>;
+    const factory = module.getDidKitPlugin ?? module.default?.getDidKitPlugin;
+
+    if (!isDidKitPluginFactory(factory)) {
+        throw new Error('DIDKit plugin factory not found in module exports');
+    }
+
+    return factory;
 };
 
 const getDidKitInit = async (): Promise<'node' | Buffer> => {
@@ -46,6 +56,26 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
 
     return didKitInitPromise;
 };
+
+export const getEmptyAgentLearnCard = async (): Promise<{
+    invoke: {
+        verifyPresentation: (
+            presentation: string,
+            options: Record<string, unknown>
+        ) => Promise<unknown>;
+    };
+}> =>
+    initLearnCard({
+        didkit: await getDidKitInit(),
+        allowRemoteContexts: true,
+    }) as Promise<{
+        invoke: {
+            verifyPresentation: (
+                presentation: string,
+                options: Record<string, unknown>
+            ) => Promise<unknown>;
+        };
+    }>;
 
 export const getAgentLearnCard = async ({
     seed,

@@ -2,6 +2,12 @@ import type { Db, Filter } from 'mongodb';
 import { z } from 'zod';
 
 import type { AgentMessage, AgentProvider } from '../agent/types';
+import {
+    createFieldAad,
+    isEncryptedEnvelope,
+    type EncryptedJsonEnvelopeV1,
+    type EncryptionService,
+} from '../security/encryption';
 import type { AgentRunTrace } from './runTrace';
 import {
     USER_DOC_KINDS,
@@ -72,6 +78,12 @@ export interface RetroResult {
     reason?: string;
     error?: string;
 }
+
+type StoredRetroResult = Omit<RetroResult, 'docName' | 'reason' | 'error'> & {
+    docName?: string | EncryptedJsonEnvelopeV1;
+    reason?: string | EncryptedJsonEnvelopeV1;
+    error?: string | EncryptedJsonEnvelopeV1;
+};
 
 export interface RetroResultRepository {
     insert: (result: RetroResult) => Promise<void>;
@@ -316,9 +328,99 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
     }
 };
 
-export const createMongoRetroResultRepository = (db: Db): RetroResultRepository => {
-    const collection = db.collection<RetroResult>(RETRO_RESULT_COLLECTION);
+export const createMongoRetroResultRepository = (
+    db: Db,
+    encryption: EncryptionService
+): RetroResultRepository => {
+    const collection = db.collection<StoredRetroResult>(RETRO_RESULT_COLLECTION);
     let indexesReady: Promise<void> | undefined;
+    let migrationReady: Promise<void> | undefined;
+
+    const stableRecordId = (result: Pick<RetroResult, 'runId' | 'createdAt' | 'action'>): string =>
+        `${result.runId}:${result.createdAt.toISOString()}:${result.action}`;
+
+    const aad = (result: RetroResult, fieldPath: string): string =>
+        createFieldAad({
+            collectionName: RETRO_RESULT_COLLECTION,
+            ownerDid: result.ownerDid,
+            stableRecordId: stableRecordId(result),
+            fieldPath,
+        });
+
+    const encryptResult = async (result: RetroResult): Promise<StoredRetroResult> => ({
+        ...result,
+        ...(result.docName
+            ? { docName: await encryption.encryptJson(result.docName, aad(result, 'docName')) }
+            : {}),
+        ...(result.reason
+            ? { reason: await encryption.encryptJson(result.reason, aad(result, 'reason')) }
+            : {}),
+        ...(result.error
+            ? { error: await encryption.encryptJson(result.error, aad(result, 'error')) }
+            : {}),
+    });
+
+    const decryptOptional = async (
+        result: RetroResult,
+        value: string | EncryptedJsonEnvelopeV1 | undefined,
+        fieldPath: string
+    ): Promise<{ value?: string; legacyPlaintext: boolean }> => {
+        if (value === undefined) return { legacyPlaintext: false };
+
+        return encryption.decryptLegacyOrEnvelope<string>(value, aad(result, fieldPath));
+    };
+
+    const decryptResult = async (
+        result: StoredRetroResult
+    ): Promise<{ result: RetroResult; legacyPlaintext: boolean }> => {
+        const base: RetroResult = {
+            runId: result.runId,
+            ownerDid: result.ownerDid,
+            model: result.model,
+            action: result.action,
+            status: result.status,
+            createdAt: result.createdAt,
+            ...(result.docVersion !== undefined ? { docVersion: result.docVersion } : {}),
+        };
+        const docName = await decryptOptional(base, result.docName, 'docName');
+        const reason = await decryptOptional(base, result.reason, 'reason');
+        const error = await decryptOptional(base, result.error, 'error');
+
+        return {
+            result: {
+                ...base,
+                ...(docName.value ? { docName: docName.value } : {}),
+                ...(reason.value ? { reason: reason.value } : {}),
+                ...(error.value ? { error: error.value } : {}),
+            },
+            legacyPlaintext:
+                docName.legacyPlaintext || reason.legacyPlaintext || error.legacyPlaintext,
+        };
+    };
+
+    const needsMigration = (result: StoredRetroResult): boolean =>
+        Boolean(result.docName && !isEncryptedEnvelope(result.docName)) ||
+        Boolean(result.reason && !isEncryptedEnvelope(result.reason)) ||
+        Boolean(result.error && !isEncryptedEnvelope(result.error));
+
+    const migrateExisting = async (): Promise<void> => {
+        const results = await collection.find({}).toArray();
+
+        await Promise.all(
+            results.filter(needsMigration).map(async result => {
+                const decrypted = await decryptResult(result);
+                await collection.replaceOne(
+                    {
+                        runId: result.runId,
+                        createdAt: result.createdAt,
+                        action: result.action,
+                    } as Filter<StoredRetroResult>,
+                    await encryptResult(decrypted.result),
+                    { upsert: false }
+                );
+            })
+        );
+    };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
@@ -327,20 +429,26 @@ export const createMongoRetroResultRepository = (db: Db): RetroResultRepository 
         ]).then(() => undefined);
 
         await indexesReady;
+
+        migrationReady ??= migrateExisting();
+
+        await migrationReady;
     };
 
     return {
         insert: async result => {
             await ensureIndexes();
-            await collection.insertOne(result);
+            await collection.insertOne(await encryptResult(result));
         },
         findByRunId: async runId => {
             await ensureIndexes();
 
-            return collection
-                .find({ runId } as Filter<RetroResult>)
+            const results = await collection
+                .find({ runId } as Filter<StoredRetroResult>)
                 .sort({ createdAt: -1 })
                 .toArray();
+
+            return Promise.all(results.map(async result => (await decryptResult(result)).result));
         },
     };
 };

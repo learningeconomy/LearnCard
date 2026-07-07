@@ -22,9 +22,17 @@
         "start": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "dependsOn": ["build"],
+            "dependsOn": [],
             "options": {
                 "script": "start"
+            }
+        },
+        "start:docker": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": [],
+            "options": {
+                "script": "start:docker"
             }
         },
         "test": {

@@ -2,6 +2,12 @@ import type { Db, Filter, ObjectId, UpdateFilter } from 'mongodb';
 import { z } from 'zod';
 
 import type { AgentSkillDefinition } from '../agent/types';
+import {
+    createFieldAad,
+    isEncryptedEnvelope,
+    type EncryptedJsonEnvelopeV1,
+    type EncryptionService,
+} from '../security/encryption';
 
 export const USER_DOC_COLLECTION = 'agentUserDocs';
 export const USER_DOC_KINDS = ['skill', 'user-profile', 'memory', 'wiki'] as const;
@@ -71,6 +77,26 @@ export interface AgentUserDoc {
     provenance?: UserDocProvenance;
     history: UserDocHistoryEntry[];
 }
+
+type StoredUserDocHistoryEntry = Omit<
+    UserDocHistoryEntry,
+    'description' | 'content' | 'provenance'
+> & {
+    description: string | EncryptedJsonEnvelopeV1;
+    content: string | EncryptedJsonEnvelopeV1;
+    provenance?: UserDocProvenance | EncryptedJsonEnvelopeV1;
+};
+
+type StoredAgentUserDoc = Omit<
+    AgentUserDoc,
+    'description' | 'content' | 'archiveReason' | 'provenance' | 'history'
+> & {
+    description: string | EncryptedJsonEnvelopeV1;
+    content: string | EncryptedJsonEnvelopeV1;
+    archiveReason?: string | EncryptedJsonEnvelopeV1;
+    provenance?: UserDocProvenance | EncryptedJsonEnvelopeV1;
+    history: StoredUserDocHistoryEntry[];
+};
 
 export interface UserDocSummary {
     ownerDid: string;
@@ -429,9 +455,205 @@ const getDynamicDocContent = (doc: AgentUserDoc): string =>
         doc.content,
     ].join('\n\n');
 
-export const createMongoUserDocRepository = (db: Db): UserDocRepository => {
-    const collection = db.collection<AgentUserDoc>(USER_DOC_COLLECTION);
+export const createMongoUserDocRepository = (
+    db: Db,
+    encryption: EncryptionService
+): UserDocRepository => {
+    const collection = db.collection<StoredAgentUserDoc>(USER_DOC_COLLECTION);
     let indexesReady: Promise<void> | undefined;
+    let migrationReady: Promise<void> | undefined;
+
+    const aad = (doc: Pick<AgentUserDoc, 'ownerDid' | 'name'>, fieldPath: string): string =>
+        createFieldAad({
+            collectionName: USER_DOC_COLLECTION,
+            ownerDid: doc.ownerDid,
+            stableRecordId: doc.name,
+            fieldPath,
+        });
+
+    const encryptHistory = async (
+        doc: AgentUserDoc,
+        entry: UserDocHistoryEntry,
+        index: number
+    ): Promise<StoredUserDocHistoryEntry> => ({
+        ...entry,
+        description: await encryption.encryptJson(
+            entry.description,
+            aad(doc, `history.${index}.description`)
+        ),
+        content: await encryption.encryptJson(entry.content, aad(doc, `history.${index}.content`)),
+        ...(entry.provenance
+            ? {
+                  provenance: await encryption.encryptJson(
+                      entry.provenance,
+                      aad(doc, `history.${index}.provenance`)
+                  ),
+              }
+            : {}),
+    });
+
+    const encryptDoc = async (doc: AgentUserDoc): Promise<StoredAgentUserDoc> => ({
+        ...doc,
+        description: await encryption.encryptJson(doc.description, aad(doc, 'description')),
+        content: await encryption.encryptJson(doc.content, aad(doc, 'content')),
+        ...(doc.archiveReason
+            ? {
+                  archiveReason: await encryption.encryptJson(
+                      doc.archiveReason,
+                      aad(doc, 'archiveReason')
+                  ),
+              }
+            : {}),
+        ...(doc.provenance
+            ? { provenance: await encryption.encryptJson(doc.provenance, aad(doc, 'provenance')) }
+            : {}),
+        history: await Promise.all(
+            doc.history.map((entry, index) => encryptHistory(doc, entry, index))
+        ),
+    });
+
+    const decryptOptional = async <T>(
+        doc: Pick<AgentUserDoc, 'ownerDid' | 'name'>,
+        value: T | EncryptedJsonEnvelopeV1 | undefined,
+        fieldPath: string
+    ): Promise<{ value?: T; legacyPlaintext: boolean }> => {
+        if (value === undefined) return { legacyPlaintext: false };
+
+        return encryption.decryptLegacyOrEnvelope<T>(value, aad(doc, fieldPath));
+    };
+
+    const decryptHistory = async (
+        doc: Pick<AgentUserDoc, 'ownerDid' | 'name'>,
+        entry: StoredUserDocHistoryEntry,
+        index: number
+    ): Promise<{ entry: UserDocHistoryEntry; legacyPlaintext: boolean }> => {
+        const description = await encryption.decryptLegacyOrEnvelope<string>(
+            entry.description,
+            aad(doc, `history.${index}.description`)
+        );
+        const content = await encryption.decryptLegacyOrEnvelope<string>(
+            entry.content,
+            aad(doc, `history.${index}.content`)
+        );
+        const provenance = await decryptOptional<UserDocProvenance>(
+            doc,
+            entry.provenance,
+            `history.${index}.provenance`
+        );
+
+        return {
+            entry: {
+                version: entry.version,
+                kind: entry.kind,
+                description: description.value,
+                content: content.value,
+                status: entry.status,
+                ...(entry.sourceType ? { sourceType: entry.sourceType } : {}),
+                ...(entry.confidence !== undefined ? { confidence: entry.confidence } : {}),
+                ...(entry.sensitivity ? { sensitivity: entry.sensitivity } : {}),
+                ...(entry.expiresAt ? { expiresAt: entry.expiresAt } : {}),
+                ...(entry.requiresApproval !== undefined
+                    ? { requiresApproval: entry.requiresApproval }
+                    : {}),
+                updatedAt: entry.updatedAt,
+                ...(provenance.value ? { provenance: provenance.value } : {}),
+            },
+            legacyPlaintext:
+                description.legacyPlaintext ||
+                content.legacyPlaintext ||
+                provenance.legacyPlaintext,
+        };
+    };
+
+    const decryptDoc = async (
+        doc: StoredAgentUserDoc
+    ): Promise<{ doc: AgentUserDoc; legacyPlaintext: boolean }> => {
+        const description = await encryption.decryptLegacyOrEnvelope<string>(
+            doc.description,
+            aad(doc, 'description')
+        );
+        const content = await encryption.decryptLegacyOrEnvelope<string>(
+            doc.content,
+            aad(doc, 'content')
+        );
+        const archiveReason = await decryptOptional<string>(
+            doc,
+            doc.archiveReason,
+            'archiveReason'
+        );
+        const provenance = await decryptOptional<UserDocProvenance>(
+            doc,
+            doc.provenance,
+            'provenance'
+        );
+        const history = await Promise.all(
+            doc.history.map((entry, index) => decryptHistory(doc, entry, index))
+        );
+
+        return {
+            doc: {
+                ...(doc._id ? { _id: doc._id } : {}),
+                ownerDid: doc.ownerDid,
+                name: doc.name,
+                kind: doc.kind,
+                description: description.value,
+                content: content.value,
+                status: doc.status,
+                createdBy: doc.createdBy,
+                sourceType: doc.sourceType,
+                confidence: doc.confidence,
+                sensitivity: doc.sensitivity,
+                ...(doc.expiresAt ? { expiresAt: doc.expiresAt } : {}),
+                ...(doc.proposedAt ? { proposedAt: doc.proposedAt } : {}),
+                ...(doc.approvedAt ? { approvedAt: doc.approvedAt } : {}),
+                ...(doc.archivedAt ? { archivedAt: doc.archivedAt } : {}),
+                ...(archiveReason.value ? { archiveReason: archiveReason.value } : {}),
+                requiresApproval: doc.requiresApproval,
+                version: doc.version,
+                createdAt: doc.createdAt,
+                updatedAt: doc.updatedAt,
+                listedCount: doc.listedCount,
+                readCount: doc.readCount,
+                ...(doc.lastListedAt ? { lastListedAt: doc.lastListedAt } : {}),
+                ...(doc.lastReadAt ? { lastReadAt: doc.lastReadAt } : {}),
+                ...(provenance.value ? { provenance: provenance.value } : {}),
+                history: history.map(result => result.entry),
+            },
+            legacyPlaintext:
+                description.legacyPlaintext ||
+                content.legacyPlaintext ||
+                archiveReason.legacyPlaintext ||
+                provenance.legacyPlaintext ||
+                history.some(result => result.legacyPlaintext),
+        };
+    };
+
+    const historyNeedsMigration = (entry: StoredUserDocHistoryEntry): boolean =>
+        !isEncryptedEnvelope(entry.description) ||
+        !isEncryptedEnvelope(entry.content) ||
+        Boolean(entry.provenance && !isEncryptedEnvelope(entry.provenance));
+
+    const needsMigration = (doc: StoredAgentUserDoc): boolean =>
+        !isEncryptedEnvelope(doc.description) ||
+        !isEncryptedEnvelope(doc.content) ||
+        Boolean(doc.archiveReason && !isEncryptedEnvelope(doc.archiveReason)) ||
+        Boolean(doc.provenance && !isEncryptedEnvelope(doc.provenance)) ||
+        doc.history.some(historyNeedsMigration);
+
+    const migrateExisting = async (): Promise<void> => {
+        const docs = await collection.find({}).toArray();
+
+        await Promise.all(
+            docs.filter(needsMigration).map(async doc => {
+                const decrypted = await decryptDoc(doc);
+                await collection.replaceOne(
+                    { ownerDid: doc.ownerDid, name: doc.name } as Filter<StoredAgentUserDoc>,
+                    await encryptDoc(decrypted.doc),
+                    { upsert: false }
+                );
+            })
+        );
+    };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
@@ -440,6 +662,10 @@ export const createMongoUserDocRepository = (db: Db): UserDocRepository => {
         ]).then(() => undefined);
 
         await indexesReady;
+
+        migrationReady ??= migrateExisting();
+
+        await migrationReady;
     };
 
     const findByName = async (
@@ -448,36 +674,44 @@ export const createMongoUserDocRepository = (db: Db): UserDocRepository => {
     ): Promise<AgentUserDoc | undefined> => {
         await ensureIndexes();
 
-        return (await collection.findOne({ ownerDid, name } as Filter<AgentUserDoc>)) ?? undefined;
+        const stored =
+            (await collection.findOne({ ownerDid, name } as Filter<StoredAgentUserDoc>)) ??
+            undefined;
+
+        return stored ? (await decryptDoc(stored)).doc : undefined;
     };
 
     return {
         findActiveByOwner: async ownerDid => {
             await ensureIndexes();
 
-            return collection
-                .find({ ownerDid, status: 'active' } as Filter<AgentUserDoc>)
+            const docs = await collection
+                .find({ ownerDid, status: 'active' } as Filter<StoredAgentUserDoc>)
                 .sort({ kind: 1, name: 1 })
                 .toArray();
+
+            return Promise.all(docs.map(async doc => (await decryptDoc(doc)).doc));
         },
         findAllByOwner: async ownerDid => {
             await ensureIndexes();
 
-            return collection
-                .find({ ownerDid } as Filter<AgentUserDoc>)
+            const docs = await collection
+                .find({ ownerDid } as Filter<StoredAgentUserDoc>)
                 .sort({ status: 1, kind: 1, name: 1 })
                 .toArray();
+
+            return Promise.all(docs.map(async doc => (await decryptDoc(doc)).doc));
         },
         findByName,
         insert: async doc => {
             await ensureIndexes();
-            await collection.insertOne(doc);
+            await collection.insertOne(await encryptDoc(doc));
         },
         replace: async doc => {
             await ensureIndexes();
             await collection.replaceOne(
-                { ownerDid: doc.ownerDid, name: doc.name } as Filter<AgentUserDoc>,
-                doc,
+                { ownerDid: doc.ownerDid, name: doc.name } as Filter<StoredAgentUserDoc>,
+                await encryptDoc(doc),
                 { upsert: false }
             );
         },
@@ -486,13 +720,13 @@ export const createMongoUserDocRepository = (db: Db): UserDocRepository => {
             if (names.length === 0) return;
 
             const now = new Date();
-            const update: UpdateFilter<AgentUserDoc> =
+            const update: UpdateFilter<StoredAgentUserDoc> =
                 usage === 'listed'
                     ? { $inc: { listedCount: 1 }, $set: { lastListedAt: now } }
                     : { $inc: { readCount: 1 }, $set: { lastReadAt: now } };
 
             await collection.updateMany(
-                { ownerDid, name: { $in: names } } as Filter<AgentUserDoc>,
+                { ownerDid, name: { $in: names } } as Filter<StoredAgentUserDoc>,
                 update
             );
         },
@@ -842,5 +1076,5 @@ export const createUserDocService = (repository: UserDocRepository): UserDocServ
     };
 };
 
-export const createMongoUserDocService = (db: Db): UserDocService =>
-    createUserDocService(createMongoUserDocRepository(db));
+export const createMongoUserDocService = (db: Db, encryption: EncryptionService): UserDocService =>
+    createUserDocService(createMongoUserDocRepository(db, encryption));

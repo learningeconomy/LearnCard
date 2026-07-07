@@ -124,6 +124,22 @@ export interface LearnCardAssistantAgentRunResponse {
     }>;
 }
 
+export type LearnCardAssistantAuth = {
+    did: string;
+    getHeaders: () => Promise<Record<string, string>>;
+};
+
+export type LearnCardAssistantWallet = {
+    id: { did: () => string | Promise<string> };
+    invoke: {
+        getDidAuthVp: (options: {
+            proofFormat: 'jwt';
+            challenge: string;
+            domain: string;
+        }) => Promise<unknown>;
+    };
+};
+
 interface AssistantCardsResponse {
     ok: boolean;
     items?: LearnCardAssistantCard[];
@@ -162,6 +178,14 @@ interface AssistantConsentContractResponse {
     error?: string;
 }
 
+interface AssistantAuthChallengeResponse {
+    ok: boolean;
+    challenge?: string;
+    domain?: string;
+    expiresAt?: string;
+    error?: string;
+}
+
 export interface CreateLearnCardAssistantDebugCardInput {
     dedupeKey?: string;
     type: LearnCardAssistantCardType;
@@ -189,15 +213,65 @@ export const getInitialAgentUrl = (): string => {
 
 const parseJson = async <T>(response: Response): Promise<T> => (await response.json()) as T;
 
-export const fetchLearnCardAssistantCards = async (
+export const createLearnCardAssistantAuth = (
     agentUrl: string,
     did: string,
+    getWallet: () => Promise<LearnCardAssistantWallet>
+): LearnCardAssistantAuth => ({
+    did,
+    getHeaders: async () => {
+        const normalizedAgentUrl = normalizeAgentUrl(agentUrl);
+        const challengeResponse = await fetch(`${normalizedAgentUrl}/api/auth/challenge`, {
+            method: 'POST',
+        });
+        const challengePayload = await parseJson<AssistantAuthChallengeResponse>(challengeResponse);
+
+        if (
+            !challengeResponse.ok ||
+            !challengePayload.ok ||
+            !challengePayload.challenge ||
+            !challengePayload.domain
+        ) {
+            throw new Error(challengePayload.error || 'Could not prepare assistant sign in.');
+        }
+
+        const wallet = await getWallet();
+        const walletDid = await wallet.id.did();
+
+        if (walletDid !== did) {
+            throw new Error(
+                'The current wallet DID does not match the assistant DID. Please sign in again.'
+            );
+        }
+
+        const vpJwt = await wallet.invoke.getDidAuthVp({
+            proofFormat: 'jwt',
+            challenge: challengePayload.challenge,
+            domain: challengePayload.domain,
+        });
+
+        if (typeof vpJwt !== 'string') throw new Error('Could not sign in to My Assistant.');
+
+        return { Authorization: `Bearer ${vpJwt}` };
+    },
+});
+
+export const withDebugToken = (
+    headers: Record<string, string>,
+    debugToken?: string
+): Record<string, string> =>
+    debugToken ? { ...headers, 'X-AI-Agent-Debug-Token': debugToken } : headers;
+
+export const fetchLearnCardAssistantCards = async (
+    agentUrl: string,
+    auth: LearnCardAssistantAuth,
     limit = 50
 ): Promise<LearnCardAssistantCard[]> => {
     const response = await fetch(
         `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
-            did
-        )}/assistant-feed?limit=${limit}`
+            auth.did
+        )}/assistant-feed?limit=${limit}`,
+        { headers: await auth.getHeaders() }
     );
     const payload = await parseJson<AssistantCardsResponse>(response);
 
@@ -208,14 +282,14 @@ export const fetchLearnCardAssistantCards = async (
 
 export const markLearnCardAssistantCardRead = async (
     agentUrl: string,
-    did: string,
+    auth: LearnCardAssistantAuth,
     id: string
 ): Promise<LearnCardAssistantCard> => {
     const response = await fetch(
         `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
-            did
+            auth.did
         )}/assistant-feed/${encodeURIComponent(id)}/read`,
-        { method: 'POST' }
+        { method: 'POST', headers: await auth.getHeaders() }
     );
     const payload = await parseJson<AssistantCardResponse>(response);
 
@@ -228,16 +302,16 @@ export const markLearnCardAssistantCardRead = async (
 
 export const sendLearnCardAssistantCardFeedback = async (
     agentUrl: string,
-    did: string,
+    auth: LearnCardAssistantAuth,
     id: string
 ): Promise<LearnCardAssistantCard> => {
     const response = await fetch(
         `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
-            did
+            auth.did
         )}/assistant-feed/${encodeURIComponent(id)}/feedback`,
         {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { ...(await auth.getHeaders()), 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'thumbs-down' }),
         }
     );
@@ -252,10 +326,13 @@ export const sendLearnCardAssistantCardFeedback = async (
 
 export const fetchLearnCardAssistantProfile = async (
     agentUrl: string,
-    did: string
+    auth: LearnCardAssistantAuth
 ): Promise<LearnCardAssistantProfile> => {
     const response = await fetch(
-        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(did)}/assistant-profile`
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-profile`,
+        { headers: await auth.getHeaders() }
     );
     const payload = await parseJson<AssistantProfileResponse>(response);
 
@@ -268,14 +345,16 @@ export const fetchLearnCardAssistantProfile = async (
 
 export const updateLearnCardAssistantProfile = async (
     agentUrl: string,
-    did: string,
+    auth: LearnCardAssistantAuth,
     input: { name?: string; personality?: string }
 ): Promise<LearnCardAssistantProfile> => {
     const response = await fetch(
-        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(did)}/assistant-profile`,
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-profile`,
         {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { ...(await auth.getHeaders()), 'Content-Type': 'application/json' },
             body: JSON.stringify(input),
         }
     );
@@ -290,14 +369,20 @@ export const updateLearnCardAssistantProfile = async (
 
 export const createLearnCardAssistantDebugCard = async (
     agentUrl: string,
-    did: string,
-    input: CreateLearnCardAssistantDebugCardInput
+    auth: LearnCardAssistantAuth,
+    input: CreateLearnCardAssistantDebugCardInput,
+    debugToken?: string
 ): Promise<LearnCardAssistantCard> => {
     const response = await fetch(
-        `${normalizeAgentUrl(agentUrl)}/api/debug/users/${encodeURIComponent(did)}/assistant-feed`,
+        `${normalizeAgentUrl(agentUrl)}/api/debug/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-feed`,
         {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                ...withDebugToken(await auth.getHeaders(), debugToken),
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(input),
         }
     );
@@ -312,22 +397,22 @@ export const createLearnCardAssistantDebugCard = async (
 
 export const runLearnCardAssistantAgent = async (
     agentUrl: string,
-    did: string,
+    auth: LearnCardAssistantAuth,
     messages: LearnCardAssistantAgentMessage[],
     consentFlowContractUri?: string
 ): Promise<LearnCardAssistantAgentRunResponse> => {
     const response = await fetch(`${normalizeAgentUrl(agentUrl)}/api/agent/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...(await auth.getHeaders()), 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            did,
+            did: auth.did,
             messages,
             ...(consentFlowContractUri ? { consentFlowContractUri } : {}),
         }),
     });
-    const payload = (await response.json()) as LearnCardAssistantAgentRunResponse & {
-        error?: string;
-    };
+    const payload = await parseJson<LearnCardAssistantAgentRunResponse & { error?: string }>(
+        response
+    );
 
     if (!response.ok) throw new Error(payload.error || 'The assistant did not respond.');
 
@@ -336,13 +421,16 @@ export const runLearnCardAssistantAgent = async (
 
 export const fetchLearnCardAssistantMemories = async (
     agentUrl: string,
-    did: string
+    auth: LearnCardAssistantAuth
 ): Promise<{
     manifest?: LearnCardAssistantMemoryManifest;
     docs: LearnCardAssistantMemoryDoc[];
 }> => {
     const response = await fetch(
-        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(did)}/assistant-memories`
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-memories`,
+        { headers: await auth.getHeaders() }
     );
     const payload = await parseJson<AssistantMemoriesResponse>(response);
 
@@ -353,14 +441,14 @@ export const fetchLearnCardAssistantMemories = async (
 
 export const approveLearnCardAssistantMemory = async (
     agentUrl: string,
-    did: string,
+    auth: LearnCardAssistantAuth,
     name: string
 ): Promise<AssistantMemoryMutationResponse> => {
     const response = await fetch(
         `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
-            did
+            auth.did
         )}/assistant-memories/${encodeURIComponent(name)}/approve`,
-        { method: 'POST' }
+        { method: 'POST', headers: await auth.getHeaders() }
     );
     const payload = await parseJson<AssistantMemoryMutationResponse>(response);
 
@@ -371,14 +459,14 @@ export const approveLearnCardAssistantMemory = async (
 
 export const archiveLearnCardAssistantMemory = async (
     agentUrl: string,
-    did: string,
+    auth: LearnCardAssistantAuth,
     name: string
 ): Promise<AssistantMemoryMutationResponse> => {
     const response = await fetch(
         `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
-            did
+            auth.did
         )}/assistant-memories/${encodeURIComponent(name)}/archive`,
-        { method: 'POST' }
+        { method: 'POST', headers: await auth.getHeaders() }
     );
     const payload = await parseJson<AssistantMemoryMutationResponse>(response);
 

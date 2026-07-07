@@ -1,6 +1,12 @@
 import type { Db, Filter } from 'mongodb';
 
 import type { AgentMessage, AgentRunResult, AgentToolRun } from '../agent/types';
+import {
+    createFieldAad,
+    isEncryptedEnvelope,
+    type EncryptedJsonEnvelopeV1,
+    type EncryptionService,
+} from '../security/encryption';
 
 export const RUN_TRACE_COLLECTION = 'agentRunTraces';
 
@@ -35,6 +41,16 @@ export interface AgentRunTrace {
     traceChars: number;
     truncated: boolean;
 }
+
+type StoredAgentRunTrace = Omit<
+    AgentRunTrace,
+    'inputMessages' | 'finalAssistantMessage' | 'toolRuns' | 'skillUsage'
+> & {
+    inputMessages: StoredAgentMessage[] | EncryptedJsonEnvelopeV1;
+    finalAssistantMessage: string | EncryptedJsonEnvelopeV1;
+    toolRuns: StoredToolRun[] | EncryptedJsonEnvelopeV1;
+    skillUsage: SkillUsage | EncryptedJsonEnvelopeV1;
+};
 
 export interface BuildRunTraceInput {
     ownerDid?: string;
@@ -301,9 +317,92 @@ const normalizeStoredMessages = (messages: AgentMessage[]): StoredAgentMessage[]
         )
         .map(({ role, content }) => ({ role, content }));
 
-export const createMongoRunTraceRepository = (db: Db): RunTraceRepository => {
-    const collection = db.collection<AgentRunTrace>(RUN_TRACE_COLLECTION);
+export const createMongoRunTraceRepository = (
+    db: Db,
+    encryption: EncryptionService
+): RunTraceRepository => {
+    const collection = db.collection<StoredAgentRunTrace>(RUN_TRACE_COLLECTION);
     let indexesReady: Promise<void> | undefined;
+    let migrationReady: Promise<void> | undefined;
+
+    const aad = (trace: Pick<AgentRunTrace, 'runId' | 'ownerDid'>, fieldPath: string): string =>
+        createFieldAad({
+            collectionName: RUN_TRACE_COLLECTION,
+            ownerDid: trace.ownerDid ?? '',
+            stableRecordId: trace.runId,
+            fieldPath,
+        });
+
+    const encryptTrace = async (trace: AgentRunTrace): Promise<StoredAgentRunTrace> => ({
+        ...trace,
+        inputMessages: await encryption.encryptJson(
+            trace.inputMessages,
+            aad(trace, 'inputMessages')
+        ),
+        finalAssistantMessage: await encryption.encryptJson(
+            trace.finalAssistantMessage,
+            aad(trace, 'finalAssistantMessage')
+        ),
+        toolRuns: await encryption.encryptJson(trace.toolRuns, aad(trace, 'toolRuns')),
+        skillUsage: await encryption.encryptJson(trace.skillUsage, aad(trace, 'skillUsage')),
+    });
+
+    const decryptTrace = async (
+        trace: StoredAgentRunTrace
+    ): Promise<{ trace: AgentRunTrace; legacyPlaintext: boolean }> => {
+        const inputMessages = await encryption.decryptLegacyOrEnvelope<StoredAgentMessage[]>(
+            trace.inputMessages,
+            aad(trace, 'inputMessages')
+        );
+        const finalAssistantMessage = await encryption.decryptLegacyOrEnvelope<string>(
+            trace.finalAssistantMessage,
+            aad(trace, 'finalAssistantMessage')
+        );
+        const toolRuns = await encryption.decryptLegacyOrEnvelope<StoredToolRun[]>(
+            trace.toolRuns,
+            aad(trace, 'toolRuns')
+        );
+        const skillUsage = await encryption.decryptLegacyOrEnvelope<SkillUsage>(
+            trace.skillUsage,
+            aad(trace, 'skillUsage')
+        );
+
+        return {
+            trace: {
+                ...trace,
+                inputMessages: inputMessages.value,
+                finalAssistantMessage: finalAssistantMessage.value,
+                toolRuns: toolRuns.value,
+                skillUsage: skillUsage.value,
+            },
+            legacyPlaintext:
+                inputMessages.legacyPlaintext ||
+                finalAssistantMessage.legacyPlaintext ||
+                toolRuns.legacyPlaintext ||
+                skillUsage.legacyPlaintext,
+        };
+    };
+
+    const needsMigration = (trace: StoredAgentRunTrace): boolean =>
+        !isEncryptedEnvelope(trace.inputMessages) ||
+        !isEncryptedEnvelope(trace.finalAssistantMessage) ||
+        !isEncryptedEnvelope(trace.toolRuns) ||
+        !isEncryptedEnvelope(trace.skillUsage);
+
+    const migrateExisting = async (): Promise<void> => {
+        const traces = await collection.find({}).toArray();
+
+        await Promise.all(
+            traces.filter(needsMigration).map(async trace => {
+                const decrypted = await decryptTrace(trace);
+                await collection.replaceOne(
+                    { runId: trace.runId } as Filter<StoredAgentRunTrace>,
+                    await encryptTrace(decrypted.trace),
+                    { upsert: false }
+                );
+            })
+        );
+    };
 
     const ensureIndexes = async (): Promise<void> => {
         indexesReady ??= Promise.all([
@@ -312,17 +411,24 @@ export const createMongoRunTraceRepository = (db: Db): RunTraceRepository => {
         ]).then(() => undefined);
 
         await indexesReady;
+
+        migrationReady ??= migrateExisting();
+
+        await migrationReady;
     };
 
     return {
         insert: async trace => {
             await ensureIndexes();
-            await collection.insertOne(trace);
+            await collection.insertOne(await encryptTrace(trace));
         },
         findByRunId: async runId => {
             await ensureIndexes();
 
-            return (await collection.findOne({ runId } as Filter<AgentRunTrace>)) ?? undefined;
+            const stored =
+                (await collection.findOne({ runId } as Filter<StoredAgentRunTrace>)) ?? undefined;
+
+            return stored ? (await decryptTrace(stored)).trace : undefined;
         },
     };
 };
@@ -348,7 +454,9 @@ export const createRunTraceService = (repository: RunTraceRepository): RunTraceS
     getRunTrace: repository.findByRunId,
 });
 
-export const createMongoRunTraceService = (db: Db): RunTraceService =>
-    createRunTraceService(createMongoRunTraceRepository(db));
+export const createMongoRunTraceService = (
+    db: Db,
+    encryption: EncryptionService
+): RunTraceService => createRunTraceService(createMongoRunTraceRepository(db, encryption));
 
 export const toStoredInputMessages = normalizeStoredMessages;

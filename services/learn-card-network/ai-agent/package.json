@@ -6,11 +6,12 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json",
-        "dev": "nodemon --watch src --watch public -e ts,js,html,css --exec \"pnpm build && node dist/index.js\"",
-        "dev:prod": "nodemon --watch src --watch public -e ts,js,html,css --exec \"pnpm build && node dist/index.js\"",
-        "start": "node dist/index.js",
-        "test": "vitest"
+        "build": "rm -rf dist && node esbuild.cjs && bun run tsc --p tsconfig.build.json",
+        "dev": "bun --conditions=development --watch src/index.ts",
+        "dev:prod": "NODE_ENV=production bun --conditions=development --watch src/index.ts",
+        "start": "bun --conditions=development src/index.ts",
+        "start:docker": "bun --conditions=development src/index.ts",
+        "test": "bunx vitest"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -31,8 +32,6 @@
         "@types/express": "^4.17.15",
         "@types/node": "^18.0.0",
         "esbuild": "^0.27.1",
-        "nodemon": "3.1.14",
-        "shx": "^0.3.4",
         "vitest": "^1.4.0"
     },
     "repository": {
