@@ -541,6 +541,8 @@ export const useRevokeBoostRecipient = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useNetworkMembers'],
             });
+            queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
+            queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
         },
     });
 };
@@ -586,6 +588,8 @@ export const useSuspendBoostRecipient = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useNetworkMembers'],
             });
+            queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
+            queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
         },
     });
 };
@@ -628,6 +632,8 @@ export const useUnsuspendBoostRecipient = () => {
             queryClient.invalidateQueries({
                 queryKey: ['useNetworkMembers'],
             });
+            queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
+            queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
         },
     });
 };

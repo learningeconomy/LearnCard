@@ -264,14 +264,21 @@ export const getActivityStatsForProfile = async (
         WITH aid, events, REDUCE(latest = HEAD(events), e IN TAIL(events) |
             CASE WHEN e.timestamp > latest.timestamp THEN e ELSE latest END) as latestEvent
         ${postGroupFilter}
-        WITH 
-            COUNT(DISTINCT aid) as total,
+        WITH latestEvent
+        OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { activityId: latestEvent.activityId }]->(cred:Credential)
+            WHERE sender:Profile OR sender:AppStoreListing
+        OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
+        WITH latestEvent, coalesce(sent.status, received.status) AS credStatus
+        WITH
+            COUNT(DISTINCT latestEvent.activityId) as total,
             SUM(CASE WHEN latestEvent.eventType = 'CREATED' THEN 1 ELSE 0 END) as created,
             SUM(CASE WHEN latestEvent.eventType = 'DELIVERED' THEN 1 ELSE 0 END) as delivered,
             SUM(CASE WHEN latestEvent.eventType = 'CLAIMED' THEN 1 ELSE 0 END) as claimed,
             SUM(CASE WHEN latestEvent.eventType = 'EXPIRED' THEN 1 ELSE 0 END) as expired,
-            SUM(CASE WHEN latestEvent.eventType = 'FAILED' THEN 1 ELSE 0 END) as failed
-        RETURN total, created, delivered, claimed, expired, failed
+            SUM(CASE WHEN latestEvent.eventType = 'FAILED' THEN 1 ELSE 0 END) as failed,
+            SUM(CASE WHEN credStatus = 'revoked' THEN 1 ELSE 0 END) as revoked,
+            SUM(CASE WHEN credStatus = 'suspended' THEN 1 ELSE 0 END) as suspended
+        RETURN total, created, delivered, claimed, expired, failed, revoked, suspended
     `;
 
     const result = await neogma.queryRunner.run(query, {
@@ -293,6 +300,8 @@ export const getActivityStatsForProfile = async (
             claimed: 0,
             expired: 0,
             failed: 0,
+            revoked: 0,
+            suspended: 0,
             claimRate: 0,
         };
     }
@@ -308,6 +317,8 @@ export const getActivityStatsForProfile = async (
             claimed: 0,
             expired: 0,
             failed: 0,
+            revoked: 0,
+            suspended: 0,
             claimRate: 0,
         };
     }
@@ -330,6 +341,12 @@ export const getActivityStatsForProfile = async (
         typeof expiredVal?.toNumber === 'function' ? expiredVal.toNumber() : expiredVal ?? 0;
     const failed =
         typeof failedVal?.toNumber === 'function' ? failedVal.toNumber() : failedVal ?? 0;
+    const revokedVal = record.get('revoked');
+    const suspendedVal = record.get('suspended');
+    const revoked =
+        typeof revokedVal?.toNumber === 'function' ? revokedVal.toNumber() : revokedVal ?? 0;
+    const suspended =
+        typeof suspendedVal?.toNumber === 'function' ? suspendedVal.toNumber() : suspendedVal ?? 0;
 
     const totalSent = created + delivered + claimed;
     const claimRate = totalSent > 0 ? (claimed / totalSent) * 100 : 0;
@@ -342,6 +359,8 @@ export const getActivityStatsForProfile = async (
         claimed,
         expired,
         failed,
+        revoked,
+        suspended,
         claimRate: Math.round(claimRate * 100) / 100,
     };
 };

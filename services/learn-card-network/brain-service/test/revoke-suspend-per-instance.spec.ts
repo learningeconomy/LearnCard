@@ -1,6 +1,8 @@
 import { Profile, Credential, Boost, StatusList, CredentialActivity } from '@models';
+import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { app as statusListsApp } from '../src/status-lists';
 import { decodeBitstring } from '../src/helpers/status-list.helpers';
+import * as notifications from '../src/helpers/notifications.helpers';
 import { getClient, getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost } from './helpers/send';
 
@@ -473,6 +475,44 @@ describe('Per-instance revoke/suspend/unsuspend (LC-1862)', () => {
             expect(delivered.length).toBe(1);
             expect(isActiveStatus(delivered[0]?.status)).toBe(true);
         });
+
+        it('counts a revoked instance in getActivityStats (LC-1894 A3)', async () => {
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                boostUri,
+                true
+            );
+            await userA.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri,
+                recipientProfileId: 'userb',
+            });
+
+            const stats = await userA.clients.fullAuth.activity.getActivityStats({
+                boostUris: [boostUri],
+            });
+            expect(stats.revoked).toBe(1);
+            expect(stats.suspended).toBe(0);
+        });
+
+        it('counts a suspended instance in getActivityStats (LC-1894 A3)', async () => {
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                boostUri,
+                true
+            );
+            await userA.clients.fullAuth.boost.suspendBoostRecipient({
+                boostUri,
+                recipientProfileId: 'userb',
+            });
+
+            const stats = await userA.clients.fullAuth.activity.getActivityStats({
+                boostUris: [boostUri],
+            });
+            expect(stats.suspended).toBe(1);
+            expect(stats.revoked).toBe(0);
+        });
     });
 
     // -------------------------------------------------------------------
@@ -552,4 +592,235 @@ describe('Per-instance revoke/suspend/unsuspend (LC-1862)', () => {
             ).toBeUndefined();
         });
     });
+
+    // -------------------------------------------------------------------
+    // Per-instance status beyond the historical 25-recipient cap (LC-1894 A2)
+    //
+    // PR #1271 surfaces each instance's status directly off its CREDENTIAL_SENT
+    // relationship (coalesce(sent.status, received.status)) for EVERY activity row,
+    // bounded only by the caller's `limit`. Earlier implementations overlaid status
+    // from a separate query capped at 25 recipients, so the 26th+ recipient surfaced a
+    // stale/default status. This guard locks the per-instance surfacing for >25
+    // distinct recipients so the cap can't silently regress.
+    // -------------------------------------------------------------------
+    describe('status surfacing beyond the historical 25-recipient cap', () => {
+        // 26 distinct recipient wallets — created once in beforeAll; profiles are re-created
+        // per test by the outer beforeEach (which wipes the DB) plus the nested one below.
+        const recipientCount = 26;
+        const recipientUsers: Awaited<ReturnType<typeof getUser>>[] = [];
+
+        beforeAll(async () => {
+            for (let i = 0; i < recipientCount; i++) {
+                // 26 distinct 64-char hex seeds (getDidKeyPlugin rejects non-hex).
+                const seed = (i + 1).toString(16).padStart(2, '0').repeat(32);
+                recipientUsers.push(await getUser(seed));
+            }
+        });
+
+        beforeEach(async () => {
+            for (let i = 0; i < recipientCount; i++) {
+                await recipientUsers[i]!.clients.fullAuth.profile.createProfile({
+                    profileId: `cap${i}`,
+                });
+            }
+        });
+
+        it('reports per-instance revoked status beyond the historical 25-recipient cap', async () => {
+            // Issue the boost to 26 DISTINCT recipients. No accept is needed: revoke stamps the
+            // CREDENTIAL_SENT relationship directly, which is exactly what getMyActivities reads.
+            const recipientUris: string[] = [];
+            for (let i = 0; i < recipientCount; i++) {
+                recipientUris.push(
+                    await sendBoost(
+                        { profileId: 'usera', user: userA },
+                        { profileId: `cap${i}`, user: recipientUsers[i]! },
+                        boostUri,
+                        false
+                    )
+                );
+            }
+            // Sanity: each recipient got a distinct credential instance.
+            expect(new Set(recipientUris).size).toBe(recipientCount);
+
+            // Revoke ONLY the 26th recipient (index 25 — past the old 25-row overlay cap).
+            await userA.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri,
+                recipientProfileId: 'cap25',
+            });
+
+            const result = await userA.clients.fullAuth.activity.getMyActivities({
+                boostUri,
+                limit: 100,
+            });
+
+            const delivered = result.records.filter(r => r.eventType === 'DELIVERED');
+            // All 26 DELIVERED rows surfaced despite the historical cap.
+            expect(delivered).toHaveLength(recipientCount);
+
+            const revokedRecord = delivered.find(r => r.recipientProfile?.profileId === 'cap25');
+            const activeRecord = delivered.find(r => r.recipientProfile?.profileId === 'cap0');
+
+            // The 26th recipient (beyond the historical cap) surfaces its real per-instance status.
+            expect(revokedRecord).toBeDefined();
+            expect(revokedRecord?.status).toBe('revoked');
+
+            // A sibling instance beyond the cap stays active.
+            expect(activeRecord).toBeDefined();
+            expect(isActiveStatus(activeRecord?.status)).toBe(true);
+        }, 60_000);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Holder notifications on revoke / suspend / unsuspend (LC-1913 B1)
+// ---------------------------------------------------------------------------
+describe('Holder notifications on revoke/suspend/unsuspend (LC-1913)', () => {
+    beforeAll(async () => {
+        userA = await getUser();
+        userB = await getUser('b'.repeat(64));
+        await statusListsApp.ready();
+    });
+
+    let boostUri: string;
+
+    beforeEach(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
+        await StatusList.delete({ detach: true, where: {} });
+        await CredentialActivity.delete({ detach: true, where: {} });
+
+        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+        boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+    });
+
+    afterAll(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
+        await StatusList.delete({ detach: true, where: {} });
+        await CredentialActivity.delete({ detach: true, where: {} });
+    });
+
+    /** Seed one claimed boost instance from userA -> userB, returning the credential URI. */
+    const seedClaimedBoost = async (): Promise<string> =>
+        sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            boostUri,
+            true
+        );
+
+    it('queues a CREDENTIAL_REVOKED notification to the holder on revoke', async () => {
+        const recipientProfileId = 'userb';
+        const credentialUri = await seedClaimedBoost();
+
+        const spy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined as any);
+
+        await userA.clients.fullAuth.boost.revokeBoostRecipient({
+            boostUri,
+            recipientProfileId,
+            credentialUri,
+        });
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'CREDENTIAL_REVOKED' }));
+        expect(spy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                to: expect.objectContaining({ profileId: 'userb' }),
+                from: expect.objectContaining({ profileId: 'usera' }),
+                data: expect.objectContaining({
+                    vcUris: expect.arrayContaining([expect.any(String)]),
+                }),
+            })
+        );
+        spy.mockRestore();
+    }, 20000);
+
+    it('queues a CREDENTIAL_SUSPENDED notification to the holder on suspend', async () => {
+        const recipientProfileId = 'userb';
+        const credentialUri = await seedClaimedBoost();
+
+        const spy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined as any);
+
+        await userA.clients.fullAuth.boost.suspendBoostRecipient({
+            boostUri,
+            recipientProfileId,
+            credentialUri,
+        });
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'CREDENTIAL_SUSPENDED' }));
+        expect(spy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                to: expect.objectContaining({ profileId: 'userb' }),
+                data: expect.objectContaining({
+                    vcUris: expect.arrayContaining([expect.any(String)]),
+                }),
+            })
+        );
+        spy.mockRestore();
+    }, 20000);
+
+    it('queues a CREDENTIAL_UNSUSPENDED notification to the holder on unsuspend', async () => {
+        const recipientProfileId = 'userb';
+        const credentialUri = await seedClaimedBoost();
+
+        // First suspend, so the unsuspend action succeeds.
+        await userA.clients.fullAuth.boost.suspendBoostRecipient({
+            boostUri,
+            recipientProfileId,
+            credentialUri,
+        });
+
+        const spy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined as any);
+
+        await userA.clients.fullAuth.boost.unsuspendBoostRecipient({
+            boostUri,
+            recipientProfileId,
+            credentialUri,
+        });
+
+        expect(spy).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'CREDENTIAL_UNSUSPENDED' })
+        );
+        expect(spy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                to: expect.objectContaining({ profileId: 'userb' }),
+                data: expect.objectContaining({
+                    vcUris: expect.arrayContaining([expect.any(String)]),
+                }),
+            })
+        );
+        spy.mockRestore();
+    }, 20000);
+
+    it('does not fail the revoke when notification queuing throws', async () => {
+        const recipientProfileId = 'userb';
+        const credentialUri = await seedClaimedBoost();
+
+        // Only mock AFTER seeding so the spy affects just the revoke's notification.
+        const spy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockRejectedValue(new Error('queue down'));
+
+        // Should NOT throw despite the notification failure.
+        const result = await userA.clients.fullAuth.boost.revokeBoostRecipient({
+            boostUri,
+            recipientProfileId,
+            credentialUri,
+        });
+
+        expect(result).toBe(true);
+        expect(spy).toHaveBeenCalled();
+        spy.mockRestore();
+    }, 20000);
 });

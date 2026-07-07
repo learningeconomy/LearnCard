@@ -33,6 +33,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     linkedCredentialsCount = 0,
     linkedCredentialsClassName = '',
     checkBtnClass = '',
+    lifecycleStatus = 'active',
 }) => {
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
@@ -45,10 +46,24 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
 
+    const isInactive = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
+    const inactiveMedia = isInactive ? 'grayscale brightness-90' : '';
+    const inactiveText = isInactive ? 'grayscale opacity-60' : '';
+    const pillColor = lifecycleStatus === 'revoked' ? 'bg-[#DC2626]' : 'bg-[#EA580C]';
+    const pillLeft = showChecked ? 'left-[44px]' : 'left-[8px]';
+
     return (
         <div
             className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
         >
+            {isInactive && (
+                <span
+                    className={`absolute top-[8px] ${pillLeft} z-20 rounded-full px-[9px] py-[3px] text-[10px] font-extrabold uppercase tracking-wide text-white ${pillColor}`}
+                >
+                    {lifecycleStatus === 'revoked' ? 'Revoked' : 'Suspended'}
+                </span>
+            )}
+
             {optionsTriggerOnClick && (
                 <section
                     className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full bg-white/70 flex items-center justify-center z-20"
@@ -60,7 +75,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
             {bgImgSrc && (
                 <section className="absolute top-[-50px] left-0 rounded-b-full overflow-hidden z-0">
-                    <img className="h-full w-full object-cover" src={bgImgSrc} />
+                    <img className={`h-full w-full object-cover ${inactiveMedia}`} src={bgImgSrc} />
                 </section>
             )}
 
@@ -71,16 +86,16 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
             >
                 {/* Thumbnail */}
                 {customThumbComponent || (
-                    <section className={defaultThumbClass}>
+                    <section className={`${defaultThumbClass} ${inactiveMedia}`}>
                         {thumbImgSrc?.trim() ? (
                             <BadgeThumbnailImg
-                                className="w-full h-full rounded-full object-cover"
+                                className={`w-full h-full rounded-full object-cover ${inactiveMedia}`}
                                 src={thumbImgSrc}
                                 alt="Credential Achievement"
                             />
                         ) : (
                             <img
-                                className="max-w-full p-0 object-cover rounded-full"
+                                className={`max-w-full p-0 object-cover rounded-full ${inactiveMedia}`}
                                 src={imgSrc}
                             />
                         )}
@@ -106,6 +121,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                                         ? 'text-[13px] leading-tight'
                                         : 'text-[16px]'
                                 }
+                                ${inactiveText}
                             `}
                                 title={title}
                             >
@@ -124,7 +140,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                                     </span>
                                 )}
                                 {customIssuerName || (
-                                    <span className="font-bold">{issuerName}</span>
+                                    <span className={`font-bold ${inactiveText}`}>
+                                        {issuerName}
+                                    </span>
                                 )}
                             </span>
                         </div>

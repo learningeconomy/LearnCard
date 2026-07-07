@@ -186,7 +186,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [activeTab, setActiveTab] = useState<string>('overview');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [refreshKey, setRefreshKey] = useState(0);
 
     const [authGrants, setAuthGrants] = useState<AuthGrant[]>([]);
     const [templates, setTemplates] = useState<CredentialTemplate[]>([]);
@@ -438,7 +437,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const handleRefresh = () => {
         loadDashboardData(true);
         refetchActivity();
-        setRefreshKey(k => k + 1);
     };
 
     // Combine activity stats (credential metrics) with loaded stats (tokens, contracts, etc.)
@@ -572,7 +570,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         selectedListingId={selectedListingId}
                         onListingFilterChange={setSelectedListingId}
                         onNavigate={setActiveTab}
-                        refreshKey={refreshKey}
                     />
                 )}
 

@@ -51,11 +51,6 @@ export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;
     /** Which issuer surface opened this modal — used for analytics attribution. */
     surface?: 'managed-boosts' | 'issuer-dashboard';
-    /**
-     * Called after a successful revoke/suspend/unsuspend so the opener can refresh its
-     * data (the activity list manages its own state, not a react-query cache).
-     */
-    onActionComplete?: () => void;
 }
 
 // Helper to get styling for an event type
@@ -91,7 +86,6 @@ function formatDuration(ms: number): string {
 export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
     item,
     surface = 'issuer-dashboard',
-    onActionComplete,
 }) => {
     const { initWallet } = useWallet();
     const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
@@ -165,8 +159,6 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         unsuspend: 'active',
                     } as const;
                     setStatusOverride(nextStatus[action]);
-                    // ...and let the opener refetch its list/stats so the row updates too.
-                    onActionComplete?.();
                     presentToast(`${recipientName}'s credential has been ${noun}.`, {
                         type: ToastTypeEnum.Success,
                     });
