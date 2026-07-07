@@ -17,17 +17,35 @@ const unwrapPresentation = (vp: any): any[] => {
     return (Array.isArray(inner) ? inner : inner ? [inner] : []).filter(Boolean);
 };
 
+// Fields that mark an object as a plausible credential. Intentionally lenient — every real
+// VC/VP/OpenBadge carries at least one of these — but enough to reject arbitrary JSON
+// metadata (e.g. `{ "source": "x" }`) so the scanner keeps looking for the real credential.
+const CREDENTIAL_HINT_FIELDS = [
+    '@context',
+    'type',
+    'credentialSubject',
+    'verifiableCredential',
+    'proof',
+];
+
+const looksLikeCredential = (value: any): boolean =>
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    CREDENTIAL_HINT_FIELDS.some(field => field in value);
+
 /**
  * Flatten a parsed JSON value into individual credential candidates:
  * - a VerifiablePresentation → its verifiableCredential(s)
  * - a bare array → each element, flattened (VP elements are unwrapped too)
- * - a single object → itself
- * Non-object values (strings, numbers, null) yield nothing.
+ * - a single credential-like object → itself
+ * Plain JSON that isn't credential-shaped (metadata, config, primitives) yields nothing, so
+ * the scanner skips it and keeps looking for a real credential later in the text.
  */
 const collectCandidates = (parsed: any): any[] => {
     if (isVerifiablePresentation(parsed)) return unwrapPresentation(parsed);
     if (Array.isArray(parsed)) return parsed.filter(Boolean).flatMap(collectCandidates);
-    return parsed && typeof parsed === 'object' ? [parsed] : [];
+    return looksLikeCredential(parsed) ? [parsed] : [];
 };
 
 /**

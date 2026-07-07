@@ -212,4 +212,32 @@ describe('extractCredentialsFromText', () => {
         expect(errors.join(' ')).not.toMatch(/unexpected|token|position|JSON\.parse/i);
         expect(errors.length).toBeGreaterThan(0);
     });
+
+    it('skips parseable non-credential JSON and keeps scanning for the real credential', () => {
+        const vc = { type: ['VerifiableCredential'], name: 'RealOne' };
+        // The first parseable block is metadata, not a credential.
+        const messy = `metadata: {"source":"x"} credential: ${JSON.stringify(vc)}`;
+
+        const { credentials, errors } = extractCredentialsFromText(messy);
+
+        expect(errors).toEqual([]);
+        expect(credentials).toHaveLength(1);
+        expect(credentials[0].name).toBe('RealOne');
+    });
+
+    it('drops non-credential elements from a bare array', () => {
+        const arr = [{ source: 'x' }, { type: ['VerifiableCredential'], name: 'Keep' }];
+
+        const { credentials, errors } = extractCredentialsFromText(JSON.stringify(arr));
+
+        expect(errors).toEqual([]);
+        expect(credentials.map(c => c.name)).toEqual(['Keep']);
+    });
+
+    it('returns an error for a lone non-credential object', () => {
+        const { credentials, errors } = extractCredentialsFromText('{"source":"x"}');
+
+        expect(credentials).toEqual([]);
+        expect(errors.length).toBeGreaterThan(0);
+    });
 });
