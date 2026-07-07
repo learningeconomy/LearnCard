@@ -10,10 +10,13 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@learncard/types": "workspace:*",
+        "@trpc/client": "11.7.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
     },
     "devDependencies": {
+        "@trpc/server": "11.7.1",
         "@types/react": "^18.3.23",
         "@types/react-dom": "^18.3.7",
         "@vitejs/plugin-react-swc": "^3.11.0",

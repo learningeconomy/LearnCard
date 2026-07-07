@@ -28,6 +28,7 @@
     "dependencies": {
         "@fastify/cookie": "^11.0.2",
         "@learncard/types": "workspace:*",
+        "@trpc/server": "11.7.1",
         "fastify": "^5.7.2",
         "ioredis": "^5.2.2",
         "mongodb": "^6.2.0"

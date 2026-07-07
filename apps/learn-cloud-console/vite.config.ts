@@ -8,7 +8,10 @@ export default defineConfig(({ mode }) => {
     const bffUrl = env.BFF_URL ?? 'http://localhost:3200';
 
     const proxy = Object.fromEntries(
-        ['/auth', '/health', '/p'].map(path => [path, { target: bffUrl, changeOrigin: true }])
+        ['/auth', '/health', '/p', '/trpc'].map(path => [
+            path,
+            { target: bffUrl, changeOrigin: true },
+        ])
     );
 
     return {

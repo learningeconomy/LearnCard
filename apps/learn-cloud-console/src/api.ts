@@ -1,24 +1,11 @@
-export type EcosystemRoleGrant = {
-    ecosystemId: string;
-    role: string;
-};
+import { TRPCClientError } from '@trpc/client';
+import type { inferRouterOutputs } from '@trpc/server';
 
-export type DashboardSession = {
-    tenantId: string;
-    providerId: string;
-    providerKind: string;
-    externalSubject: string;
-    profileId: string;
-    managedDid?: string;
-    activeEcosystemId?: string;
-    effectiveAccess: {
-        ecosystemRoles: EcosystemRoleGrant[];
-        scopes: string[];
-    };
-    assuranceLevel: string;
-    sessionId?: string;
-    expiresAt?: string;
-};
+import type { ConsoleRouter } from '@console-bff/trpc/router';
+
+import { trpc } from './trpc';
+
+export type DashboardSession = inferRouterOutputs<ConsoleRouter>['session']['get'];
 
 const TENANT_ID = 'learncard';
 const PROVIDER_ID = 'lef-wallet';
@@ -75,12 +62,13 @@ export async function login(): Promise<{ profileId: string; expiresAt: string }>
 }
 
 export async function getSession(): Promise<DashboardSession | null> {
-    const res = await fetch('/auth/session', { credentials: 'include' });
+    try {
+        return await trpc.session.get.query();
+    } catch (error) {
+        if (error instanceof TRPCClientError && error.data?.httpStatus === 401) return null;
 
-    if (res.status === 401) return null;
-    if (!res.ok) throw new Error(`session fetch failed (${res.status})`);
-
-    return (await res.json()) as DashboardSession;
+        throw error;
+    }
 }
 
 export async function logout(): Promise<void> {

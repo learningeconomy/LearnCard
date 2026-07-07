@@ -15,7 +15,11 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "types": ["vite/client"]
+        "types": ["vite/client"],
+        "baseUrl": ".",
+        "paths": {
+            "@console-bff/*": ["../../services/learn-card-network/console-bff/src/*"]
+        }
     },
     "include": ["src"]
 }

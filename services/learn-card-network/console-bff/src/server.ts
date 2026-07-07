@@ -1,8 +1,10 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 
 import { SESSION_COOKIE_NAME, readSessionCookie, signSessionCookie } from '@session';
 import { didWebFromDomain, type DidDocumentService } from '@did';
+import { consoleRouter, makeCreateConsoleContext } from './trpc';
 
 import type { ConsoleAuthService } from './app';
 
@@ -18,6 +20,17 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
     const app = Fastify({ logger: true });
 
     app.register(cookie);
+
+    app.register(fastifyTRPCPlugin, {
+        prefix: '/trpc',
+        trpcOptions: {
+            router: consoleRouter,
+            createContext: makeCreateConsoleContext({
+                authService: config.authService,
+                cookieSecret: config.cookieSecret,
+            }),
+        },
+    });
 
     const tenantIdOf = (request: {
         hostname: string;

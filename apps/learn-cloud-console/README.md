@@ -31,12 +31,19 @@ grant of `eco_dev_root → MEMBER`.
 
 ## How it works
 
-The Vite dev server proxies `/auth`, `/health`, and `/p` to `console-bff`
+The Vite dev server proxies `/auth`, `/health`, `/p`, and `/trpc` to `console-bff`
 (`BFF_URL`, default `http://localhost:3200`). Sharing one origin keeps the
 `console-bff` httpOnly session cookie first-party — no CORS, no `SameSite=None`.
 
-`Sign in (dev)` mirrors the README curl flow: it calls `/auth/login`, extracts the
-CSRF `state`, crafts a **dev-only** presentation (the BFF's decode-only verifier
+The auth handshake (`/auth/login`, `/auth/callback`, `/auth/logout`) stays REST
+because it's cookie/redirect-shaped. Everything data-shaped goes through **tRPC**
+at `/trpc`: `session.get` is the first typed procedure, and the SPA's
+`DashboardSession` type is inferred directly from the server router
+(`@console-bff/trpc/router`) — no hand-written client types. New feature reads
+(ecosystems, groups, members) are added as procedures there.
+
+`Sign in (dev)` mirrors the console-bff curl flow: it calls `/auth/login`, extracts
+the CSRF `state`, crafts a **dev-only** presentation (the BFF's decode-only verifier
 reads `vp.holder` without checking the signature — never do this in production),
 and posts `/auth/callback`.
 
