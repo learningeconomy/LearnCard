@@ -23,7 +23,7 @@ This is one combined spec with two workstreams (A: issuer/backend, B: holder UX)
 | A2    | 25-recipient status coverage      | Verify already resolved by PR #1271; no new code expected                                                                                    |
 | B1    | Holder notification               | **Yes** — notify holder on internal revoke/suspend (external status-list revokes can't be observed)                                          |
 | B2    | Status detection for thumbnails   | **Lazy per-thumbnail check** as cards render, cached                                                                                         |
-| B3    | Thumbnail visual treatment        | Inline seal-badge swap + neutral text pill + desaturated card                                                                                |
+| B3    | Thumbnail visual treatment        | Inline seal-badge swap + colored status pill (red/orange) + desaturated card                                                                 |
 | B4    | Earned tab                        | Revoked/suspended creds **stay in place**, styled                                                                                            |
 
 ---
@@ -131,7 +131,7 @@ Design source: Figma node `2422:101057` ("Revoked Badge"), file `qNPuCYkYvjfGm1j
     - Active → existing green verified seal (check).
     - Revoked → **red** seal (`#DC2626`) with a white **X** (the Figma "Revoked Badge").
     - Suspended → the **same X seal recolored orange** (`#EA580C`). Same silhouette, same slot.
-2. **Top-left text pill.** A neutral (dark, semi-opaque) pill in the card's top-left corner reading **"Revoked"** / **"Suspended"**. Top-left is chosen so it clears the existing "···" options menu in the top-right. Pill is neutral for both states — the red/orange X badge carries the state color.
+2. **Top-left status pill.** A **colored** pill in the card's top-left corner reading **"Revoked"** / **"Suspended"**, white text. The pill matches the state color: red (`#DC2626`) for revoked, orange (`#EA580C`) for suspended. Top-left is chosen so it clears the existing "···" options menu in the top-right. The pill stays full-color on top of the desaturated card (it is not desaturated).
 3. **Desaturated card.** The card art and text desaturate (grayscale) to read as inactive. The **badge and pill stay full-color / legible on top of the gray** (desaturation is scoped to art + text nodes, not the status overlays).
 
 **Implementation notes:**
