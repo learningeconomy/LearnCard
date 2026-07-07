@@ -1,0 +1,175 @@
+:root {
+    color-scheme: light;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f4f5f8;
+    color: #18224e;
+}
+
+.page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.tag {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #e2e3e9;
+    color: #52597a;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #e2e3e9;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.card h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+}
+
+.card h3 {
+    margin: 20px 0 8px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6f7590;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+button {
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid #c5c8d3;
+    background: #18224e;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+button:nth-child(n + 2) {
+    background: #fff;
+    color: #52597a;
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #52597a;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+}
+
+.dot.on {
+    background: #10b981;
+}
+
+.dot.off {
+    background: #c5c8d3;
+}
+
+.error {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    font-size: 14px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 16px;
+    margin: 0;
+    font-size: 14px;
+}
+
+.grid dt {
+    color: #8b91a7;
+}
+
+.grid dd {
+    margin: 0;
+    word-break: break-all;
+}
+
+.mono,
+code,
+pre {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 13px;
+}
+
+.muted {
+    color: #8b91a7;
+    font-size: 14px;
+}
+
+ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+}
+
+details {
+    margin-top: 16px;
+}
+
+summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: #6f7590;
+}
+
+pre {
+    background: #f4f5f8;
+    border-radius: 12px;
+    padding: 16px;
+    overflow: auto;
+}
