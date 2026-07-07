@@ -3,7 +3,7 @@ import { test } from './fixtures/test';
 import {
     clickPublishAndIssueIfPresent,
     issueCredentialToSelf,
-    openAddToLearnCardMenu,
+    openBoostTemplateSelector,
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
 } from './test.helpers';
@@ -15,17 +15,17 @@ const log = getLogger('wallet-credentials.spec');
 
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
-        // Create a network profile so the LCN gate lets `Add to LearnCard`
-        // open AddToLearnCardMenu instead of OnboardingContainer.
+        // Create a network profile so the LCN gate lets the boost flow open
+        // instead of OnboardingContainer.
         await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
     });
 
     test('Issue credential to yourself', async ({ page }) => {
-        // waitForAuthenticatedState lands on /wallet — issue credential from here
         await issueCredentialToSelf(page);
 
-        // history.goBack() returns to /wallet
-        await page.waitForURL(/\/wallet/, { timeout: 60_000 });
+        // issueCredentialToSelf drives the boost flow from /launchpad, so after
+        // its history.goBack() we're on /launchpad — go to the wallet to verify.
+        await page.goto('/wallet');
 
         // Verify the Boosts category exists on wallet page
         const boostsCategory = page.locator('[role="button"]').filter({ hasText: 'Boosts' });
@@ -70,12 +70,9 @@ test.describe('Wallet Credentials', () => {
             profileId: TEST_USER_2_PROFILE_ID,
         });
 
-        // User 1: Start from /wallet so history.goBack() returns here after issuing
-        // (waitForAuthenticatedState already lands on /wallet)
-
-        // User 1: Create a credential and send to user 2
-        await openAddToLearnCardMenu(page);
-        await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
+        // User 1: Create a credential and send to user 2. openBoostTemplateSelector
+        // opens the boost flow from /launchpad (see its doc comment).
+        await openBoostTemplateSelector(page);
 
         // Select the first available template
         await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
@@ -115,8 +112,10 @@ test.describe('Wallet Credentials', () => {
         // so we dispatch the click directly on the DOM element to bypass hit-testing.
         await page.locator('[data-testid="boost-cms-save"]').dispatchEvent('click');
 
-        // history.goBack() returns to /wallet
-        await page.waitForURL(/\/wallet/, { timeout: 60_000 });
+        // Wait for issuance to finish: handleSaveAndIssue awaits the boost issuance
+        // then history.goBack(), which returns to /launchpad (the boost flow started
+        // there). User 1 does no further wallet checks — user 2 claims below.
+        await page.waitForURL(/\/launchpad/, { timeout: 60_000 });
 
         // Log any console errors for debugging if the test fails later
         if (consoleErrors.length > 0) {
