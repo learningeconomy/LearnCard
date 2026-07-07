@@ -38,15 +38,22 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
 };
 
 /**
- * Clicks the side-menu's "Add to LearnCard" and drills through the desktop
- * LaunchPadActionModal intermediate (#1243) if it appears, leaving the
- * AddToLearnCardMenu open with `Boost Someone` ready to click.
+ * Opens the side-menu boost entry point and drills through the
+ * LaunchPadActionModal intermediate, leaving the AddToLearnCardMenu open with
+ * `Boost Someone` ready to click.
+ *
+ * The Nav/App/Passport redesign (LC-1921) renamed the side-menu entry from
+ * "Add to LearnCard" to "Issue Credentials", and both desktop and mobile now
+ * open the LaunchPadActionModal ("What would you like to do?") first. Its
+ * "Add to LearnCard" tile still leads to the AddToLearnCardMenu.
  */
 export const openAddToLearnCardMenu = async (page: Page) => {
-    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
+    await page
+        .getByRole('button', { name: 'Issue Credentials', exact: true })
+        .click({ timeout: 30_000 });
 
-    // Desktop opens LaunchPadActionModal first; click its inner tile to reach
-    // AddToLearnCardMenu. Mobile skips this step.
+    // The entry opens LaunchPadActionModal; click its inner "Add to LearnCard"
+    // tile to reach AddToLearnCardMenu.
     const launcherModal = page.getByRole('complementary').filter({
         has: page.getByRole('heading', { name: 'What would you like to do?' }),
     });
