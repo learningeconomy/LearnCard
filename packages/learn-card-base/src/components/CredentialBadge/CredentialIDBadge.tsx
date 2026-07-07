@@ -2,10 +2,10 @@ import React from 'react';
 
 import { VC } from '@learncard/types';
 
-import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import { IDsIconSolid } from 'learn-card-base/svgs/wallet/IDsIcon';
 import ProfilePicture from '../profilePicture/ProfilePicture';
 import defaultIDCardImage from 'learn-card-base/assets/images/default-id-bg-gradient.png';
+
 // Full-width background card
 export const IDDisplayCard: React.FC<{ credential: VC; backgroundColor?: string }> = ({
     credential,
@@ -26,18 +26,16 @@ export const IDDisplayCard: React.FC<{ credential: VC; backgroundColor?: string 
         backgroundStyles.backgroundImage = `url(${defaultIDCardImage})`;
     }
 
-    backgroundStyles.boxShadow = '0px 4px 4px 0px rgba(0, 0, 0, 0.25)';
-
     return (
-        <div
-            style={backgroundStyles}
-            className="w-full relative flex-col rounded-tr-[10px] rounded-tl-[10px]  pl-4 pt-6 bg-cover bg-center bg-no-repeat"
-        >
-            <ProfilePicture
-                customContainerClass="flex justify-center items-center h-[60px] w-[60px] rounded-full overflow-hidden  text-white font-medium text-4xl min-w-[60px] min-h-[60px] absolute top-[-15px] left-[-5px]"
-                customImageClass="flex justify-center items-center h-[60px] w-[60px] rounded-full overflow-hidden object-cover  min-w-[60px] min-h-[60px]"
-                customSize={500}
-            />
+        <div className="w-full aspect-[335/180] relative">
+            {/* Header Image with generous rounding and hairline border */}
+            <div
+                style={backgroundStyles}
+                className="absolute inset-0 rounded-t-[16px] bg-cover bg-center bg-no-repeat overflow-hidden border border-white/30"
+            >
+                {/* Subtle frosted scrim at the bottom edge for depth to seat the photo/notch */}
+                <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black/40 via-black/5 to-transparent pointer-events-none" />
+            </div>
         </div>
     );
 };
@@ -49,25 +47,48 @@ export const CredentialIDBadge: React.FC<{
     badgeContainerCustomClass?: string;
 }> = ({ credential, backgroundColor, badgeContainerCustomClass }) => {
     return (
-        <div
-            className={`relative w-full mt-8 mb-8 select-none ${
-                badgeContainerCustomClass ?? ''
-            } bg-blue-500`}
-        >
-            {/* 1) Background card at z-0 (behind sleeve) */}
-            <div className="relative w-full z-0 px-2 pt-5">
-                <IDDisplayCard credential={credential} backgroundColor={backgroundColor} />
-            </div>
+        <div className={`relative w-full mt-8 mb-8 select-none ${badgeContainerCustomClass ?? ''}`}>
+            {/* bg-blue-500 frames the header image on top.
+                Removed px-2 so the header image and glass shelf span the full width,
+                eliminating any awkward blue side-slivers. */}
+            <div className="relative w-full z-0 pt-5 pb-0 bg-blue-500 rounded-t-[20px] overflow-hidden">
+                {/* 1) Background card at z-0 */}
+                <div className="relative w-full">
+                    <IDDisplayCard credential={credential} backgroundColor={backgroundColor} />
+                </div>
 
-            {/* 2) Sleeve overlay at z-10 */}
-            <div className="absolute bottom-[-20%] left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
-                <IDSleeve className="w-[320px] h-[75px] text-white" version="2" />
-            </div>
+                {/* 2) Frosted glass shelf spanning full width.
+                       It blurs the bottom of the header image, transitioning smoothly into the white card body below. */}
+                <div className="absolute bottom-0 left-0 w-full h-[36px]">
+                    <div
+                        className="w-full h-full bg-white/70 backdrop-blur-md border-t border-white/50 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
+                        style={{
+                            // Scalloped notch cut into the glass shelf for the ID icon bubble
+                            // Center is at calc(100% - 38px) to align with the bubble
+                            maskImage:
+                                'radial-gradient(circle 24px at calc(100% - 38px) 0px, transparent 100%, black 100%)',
+                            WebkitMaskImage:
+                                'radial-gradient(circle 24px at calc(100% - 38px) 0px, transparent 100%, black 100%)',
+                        }}
+                    />
+                    {/* Gradient to solid white to blend perfectly into the card body below */}
+                    <div className="absolute bottom-0 left-0 w-full h-[16px] bg-gradient-to-b from-white/0 to-white pointer-events-none" />
+                </div>
 
-            {/* 3) ID icon bubble at z-20 */}
-            <div className="absolute bottom-[-20px] left-1/2 transform -translate-x-1/2 z-20">
-                <div className="w-[40px] h-[40px] rounded-full bg-white flex items-center justify-center">
-                    <IDsIconSolid className="w-[20px] h-[20px] text-gray-500" />
+                {/* 3) Prominent circular profile photo straddling the header/glass boundary */}
+                <div className="absolute bottom-[36px] left-[24px] transform translate-y-1/2 z-20">
+                    <ProfilePicture
+                        customContainerClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden text-white font-medium text-3xl bg-grayscale-100 border-[4px] border-white shadow-sm"
+                        customImageClass="flex justify-center items-center h-full w-full rounded-full overflow-hidden object-cover"
+                        customSize={500}
+                    />
+                </div>
+
+                {/* 4) Frosted-glass ID icon bubble nested into the scalloped notch */}
+                <div className="absolute bottom-[36px] right-[20px] transform translate-y-1/2 z-20">
+                    <div className="w-[36px] h-[36px] rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/60">
+                        <IDsIconSolid className="w-[18px] h-[18px] text-grayscale-800" />
+                    </div>
                 </div>
             </div>
         </div>
