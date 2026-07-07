@@ -5,10 +5,7 @@ import { insertParamsToFilestackUrl } from '../filestack.helpers';
 describe('filestack helpers', () => {
     it('inserts params into standard Filestack CDN URLs', () => {
         expect(
-            insertParamsToFilestackUrl(
-                'https://cdn.filestackcontent.com/abc',
-                'resize=width:100/'
-            )
+            insertParamsToFilestackUrl('https://cdn.filestackcontent.com/abc', 'resize=width:100/')
         ).toBe('https://cdn.filestackcontent.com/resize=width:100/abc');
     });
 

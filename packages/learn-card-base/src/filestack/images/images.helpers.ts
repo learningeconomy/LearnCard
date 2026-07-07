@@ -4,7 +4,6 @@ import { createResource, Resource } from './Resource';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../config/tenantDefaults';
 import { getImageUploadProvider } from '../../storage/image-upload';
 
-
 const Providers = { filestack, unsplash };
 const getUrlHost = (url?: string): string | undefined => {
     if (!url) return;
@@ -20,7 +19,6 @@ const isFilestackCdnUrl = (url?: string): boolean =>
     getUrlHost(url) === DEFAULT_LEARNCARD_TENANT_CONFIG.storage.cdnDomain;
 
 const isUnsplashUrl = (url: string): boolean => getUrlHost(url) === 'images.unsplash.com';
-
 
 const getImageProviderForUrl = (url?: string) => {
     const activeProvider = getImageUploadProvider();

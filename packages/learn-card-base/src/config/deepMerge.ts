@@ -41,7 +41,7 @@ const shouldReplaceDiscriminatedUnion = (
 
 export const deepMerge = (
     base: Record<string, unknown>,
-    overrides: Record<string, unknown>,
+    overrides: Record<string, unknown>
 ): Record<string, unknown> => {
     const result = { ...base };
 
@@ -66,7 +66,7 @@ export const deepMerge = (
         ) {
             result[key] = deepMerge(
                 baseVal as Record<string, unknown>,
-                overrideVal as Record<string, unknown>,
+                overrideVal as Record<string, unknown>
             );
         } else {
             result[key] = overrideVal;

@@ -2,7 +2,6 @@ import { getCoverImageUrl, isYoutubeUrl } from './youtube.helpers';
 import { isKnownImageUploadUrl } from '../storage/image-upload';
 import { getMetadata } from '../filestack/images/images.helpers';
 
-
 export const getFileMetadata = async (url: string) => {
     if (!isKnownImageUploadUrl(url)) return;
 

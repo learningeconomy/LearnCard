@@ -60,9 +60,7 @@ const BoostCMSAppearanceForm: React.FC<{
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(
-            subject?.achievement?.achievementType
-        );
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
     });
 
     const categoryMetadata = boostCategoryOptions[activeCategoryType];
@@ -162,9 +160,8 @@ const BoostCMSAppearanceForm: React.FC<{
 
     let formBackgroundColor: string = '';
 
-    const {
-        subColor: _subColor,
-    } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+    const { subColor: _subColor } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';

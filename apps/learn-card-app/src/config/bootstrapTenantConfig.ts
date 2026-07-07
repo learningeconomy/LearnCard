@@ -83,7 +83,10 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
 
     // 3. Populate network store with tenant API endpoints + tenant ID
     initNetworkStoreFromTenant(config.apis, config.tenantId);
-    emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
+    emitConfigDebugEvent(
+        'bootstrap:network_store_init',
+        'Network store populated with tenant API endpoints'
+    );
 
     // 4. Initialize Sentry from tenant observability config
     initSentryFromTenant();

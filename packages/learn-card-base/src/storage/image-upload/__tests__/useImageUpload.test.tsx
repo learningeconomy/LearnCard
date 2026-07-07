@@ -5,10 +5,7 @@ import { render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../config/tenantDefaults';
-import {
-    registerImageUploadProviderFactory,
-    setImageUploadConfigFromTenant,
-} from '..';
+import { registerImageUploadProviderFactory, setImageUploadConfigFromTenant } from '..';
 import type { ImageUploadProvider, UploadRes } from '..';
 import type { TenantConfig, TenantStorageConfig } from '../../../config/tenantConfig';
 import { useImageUpload } from '../useImageUpload';

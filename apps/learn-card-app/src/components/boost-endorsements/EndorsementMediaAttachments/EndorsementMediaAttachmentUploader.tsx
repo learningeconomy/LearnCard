@@ -28,11 +28,13 @@ export const EndorsementMediaAttachmentUploader: React.FC<{
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload({
-        fileType: VIEWER_MIME_TYPES,
-        onUpload: (_url, _file, data) => onDocumentUpload(data),
-        options: { onProgress: event => setUploadProgress(event.totalPercent) },
-    });
+    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload(
+        {
+            fileType: VIEWER_MIME_TYPES,
+            onUpload: (_url, _file, data) => onDocumentUpload(data),
+            options: { onProgress: event => setUploadProgress(event.totalPercent) },
+        }
+    );
 
     const handleSaveMedia = (media: EndorsementMediaAttachment) => {
         setEndorsement(prevState => {

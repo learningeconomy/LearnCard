@@ -3,7 +3,17 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
-import { Zap, ZapOff, ChevronDown, ChevronUp, HelpCircle, Upload, Loader2, Settings, Lock } from 'lucide-react';
+import {
+    Zap,
+    ZapOff,
+    ChevronDown,
+    ChevronUp,
+    HelpCircle,
+    Upload,
+    Loader2,
+    Settings,
+    Lock,
+} from 'lucide-react';
 
 import { useImageUpload } from 'learn-card-base';
 
@@ -53,14 +63,17 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     fieldRef.current = field;
     onChangeRef.current = onChange;
 
-    const handleValueChange = useCallback((value: string) => {
-        const currentField = fieldRef.current;
-        onChangeRef.current({
-            ...currentField,
-            value,
-            variableName: currentField.variableName || labelToVariableName(label),
-        });
-    }, [label]);
+    const handleValueChange = useCallback(
+        (value: string) => {
+            const currentField = fieldRef.current;
+            onChangeRef.current({
+                ...currentField,
+                value,
+                variableName: currentField.variableName || labelToVariableName(label),
+            });
+        },
+        [label]
+    );
 
     const { handleFileSelect, isLoading: isUploading } = useImageUpload({
         onUpload: (url: string) => {
@@ -81,20 +94,23 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         }
     }, [field, onChange, label]);
 
-    const handleVariableNameChange = useCallback((varName: string) => {
-        onChange({
-            ...field,
-            variableName: varName.replace(/[^a-z0-9_]/gi, '_').toLowerCase(),
-        });
-    }, [field, onChange]);
+    const handleVariableNameChange = useCallback(
+        (varName: string) => {
+            onChange({
+                ...field,
+                variableName: varName.replace(/[^a-z0-9_]/gi, '_').toLowerCase(),
+            });
+        },
+        [field, onChange]
+    );
 
     const renderInput = () => {
         const baseClasses = `w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors ${
             showError
                 ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
                 : field.isDynamic
-                    ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
-                    : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
+                ? 'border-violet-300 bg-violet-50 focus:ring-2 focus:ring-violet-500 focus:border-violet-500'
+                : 'border-gray-200 bg-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
 
         if (type === 'select' && options) {
@@ -105,7 +121,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             return (
                 <select
                     value={currentIsValid ? field.value : ''}
-                    onChange={(e) => handleValueChange(e.target.value)}
+                    onChange={e => handleValueChange(e.target.value)}
                     onBlur={() => {
                         setTouched(true);
                         // Auto-clear invalid legacy values when user interacts
@@ -119,7 +135,9 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                     <option value="">Select...</option>
 
                     {options.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
                     ))}
                 </select>
             );
@@ -129,9 +147,13 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             return (
                 <textarea
                     value={field.value}
-                    onChange={(e) => handleValueChange(e.target.value)}
+                    onChange={e => handleValueChange(e.target.value)}
                     onBlur={() => setTouched(true)}
-                    placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
+                    placeholder={
+                        field.isDynamic
+                            ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}`
+                            : placeholder
+                    }
                     disabled={disabled}
                     rows={3}
                     className={`${baseClasses} resize-none`}
@@ -148,9 +170,15 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                         <input
                             type={type}
                             value={field.value}
-                            onChange={(e) => handleValueChange(e.target.value)}
+                            onChange={e => handleValueChange(e.target.value)}
                             onBlur={() => setTouched(true)}
-                            placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
+                            placeholder={
+                                field.isDynamic
+                                    ? `Dynamic: {{${
+                                          field.variableName || labelToVariableName(label)
+                                      }}}`
+                                    : placeholder
+                            }
                             disabled={disabled}
                             className={`${baseClasses} flex-1`}
                         />
@@ -176,9 +204,13 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                                 src={field.value}
                                 alt="Uploaded preview"
                                 className="w-10 h-10 rounded object-cover border border-gray-200"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                onError={e => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
                             />
-                            <span className="text-xs text-gray-500 truncate flex-1">{field.value.split('/').pop()}</span>
+                            <span className="text-xs text-gray-500 truncate flex-1">
+                                {field.value.split('/').pop()}
+                            </span>
                         </div>
                     )}
                 </div>
@@ -189,9 +221,13 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             <input
                 type={type}
                 value={field.value}
-                onChange={(e) => handleValueChange(e.target.value)}
+                onChange={e => handleValueChange(e.target.value)}
                 onBlur={() => setTouched(true)}
-                placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
+                placeholder={
+                    field.isDynamic
+                        ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}`
+                        : placeholder
+                }
                 disabled={disabled}
                 className={baseClasses}
             />
@@ -231,10 +267,14 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                     <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
 
                     <div className="flex-1">
-                        <p className="text-sm text-amber-800 font-medium">Auto-generated at issuance</p>
+                        <p className="text-sm text-amber-800 font-medium">
+                            Auto-generated at issuance
+                        </p>
 
                         {field.systemDescription && (
-                            <p className="text-xs text-amber-600 mt-0.5">{field.systemDescription}</p>
+                            <p className="text-xs text-amber-600 mt-0.5">
+                                {field.systemDescription}
+                            </p>
                         )}
                     </div>
                 </div>
@@ -293,9 +333,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
 
             {renderInput()}
 
-            {showError && (
-                <p className="text-xs text-red-600 mt-1">{error}</p>
-            )}
+            {showError && <p className="text-xs text-red-600 mt-1">{error}</p>}
 
             {field.isDynamic && (
                 <div className="flex items-center gap-2 mt-1">
@@ -305,7 +343,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
                         <input
                             type="text"
                             value={field.variableName}
-                            onChange={(e) => handleVariableNameChange(e.target.value)}
+                            onChange={e => handleVariableNameChange(e.target.value)}
                             className="flex-1 px-2 py-0.5 text-xs border border-violet-200 rounded bg-violet-50 focus:outline-none focus:ring-1 focus:ring-violet-500"
                             placeholder="variable_name"
                         />
@@ -368,11 +406,15 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                 <span className="flex-1 text-left font-medium text-gray-800">{title}</span>
 
                 {optional && (
-                    <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-200 rounded">Optional</span>
+                    <span className="text-xs text-gray-400 px-2 py-0.5 bg-gray-200 rounded">
+                        Optional
+                    </span>
                 )}
 
                 {badge && (
-                    <span className="text-xs text-cyan-700 px-2 py-0.5 bg-cyan-100 rounded">{badge}</span>
+                    <span className="text-xs text-cyan-700 px-2 py-0.5 bg-cyan-100 rounded">
+                        {badge}
+                    </span>
                 )}
 
                 {isExpanded ? (

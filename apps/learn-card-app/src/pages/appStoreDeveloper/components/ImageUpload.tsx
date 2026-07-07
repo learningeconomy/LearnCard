@@ -53,11 +53,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     </div>
                 ) : value ? (
                     <>
-                        <img
-                            src={value}
-                            alt="Uploaded"
-                            className="w-full h-full object-cover"
-                        />
+                        <img src={value} alt="Uploaded" className="w-full h-full object-cover" />
 
                         {onRemove && (
                             <button

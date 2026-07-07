@@ -174,7 +174,9 @@ describe('tenantConfigSchema', () => {
 
         const result = tenantConfigSchema.parse(withExtra);
 
-        expect((result.apis as Record<string, unknown>).customEndpoint).toBe('https://custom.example.com');
+        expect((result.apis as Record<string, unknown>).customEndpoint).toBe(
+            'https://custom.example.com'
+        );
     });
 });
 

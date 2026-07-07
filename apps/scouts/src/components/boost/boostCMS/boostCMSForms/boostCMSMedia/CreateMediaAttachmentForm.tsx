@@ -161,11 +161,13 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
         setActiveMediaType(BoostMediaOptionsEnum.document);
     };
 
-    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload({
-        fileType: VIEWER_MIME_TYPES,
-        onUpload: (_url, _file, data) => onDocumentUpload(data),
-        options: { onProgress: event => setUploadProgress(event.totalPercent) },
-    });
+    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload(
+        {
+            fileType: VIEWER_MIME_TYPES,
+            onUpload: (_url, _file, data) => onDocumentUpload(data),
+            options: { onProgress: event => setUploadProgress(event.totalPercent) },
+        }
+    );
 
     if (activeMediaType === BoostMediaOptionsEnum.photo) {
         return (

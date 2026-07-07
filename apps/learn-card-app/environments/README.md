@@ -155,17 +155,17 @@ copied directly from tenant assets and are also gitignored.
 The config is a partial `TenantConfig` object. Fields are deep-merged onto
 `DEFAULT_LEARNCARD_TENANT_CONFIG`. Common override sections:
 
-| Section        | Purpose                                                 |
-| -------------- | ------------------------------------------------------- |
-| `tenantId`     | Unique tenant identifier                                |
-| `domain`       | Production domain (e.g. `vetpass.app`)                  |
-| `apis`         | API endpoint URLs                                       |
-| `auth`         | Firebase project, SSS server, sign-in methods           |
-| `storage`      | Image upload provider and CDN settings                  |
-| `branding`     | App name, colors, category labels                       |
-| `features`     | Feature toggles                                         |
-| `native`       | Bundle ID, deep link domains, Capgo channel             |
-| `email`        | Email branding for recovery / OTP / notification emails |
+| Section    | Purpose                                                 |
+| ---------- | ------------------------------------------------------- |
+| `tenantId` | Unique tenant identifier                                |
+| `domain`   | Production domain (e.g. `vetpass.app`)                  |
+| `apis`     | API endpoint URLs                                       |
+| `auth`     | Firebase project, SSS server, sign-in methods           |
+| `storage`  | Image upload provider and CDN settings                  |
+| `branding` | App name, colors, category labels                       |
+| `features` | Feature toggles                                         |
+| `native`   | Bundle ID, deep link domains, Capgo channel             |
+| `email`    | Email branding for recovery / OTP / notification emails |
 
 The config supports an optional `schemaVersion` field (defaults to the current
 version). When the schema version changes, stale localStorage caches are

@@ -6,9 +6,17 @@ import {
     getUrlsFromSrcSet,
     type ImageMetadata,
 } from '../../../filestack/images/images.helpers';
-import type { TenantFilestackStorageConfig, TenantStorageConfig } from '../../../config/tenantConfig';
+import type {
+    TenantFilestackStorageConfig,
+    TenantStorageConfig,
+} from '../../../config/tenantConfig';
 import { getLogger } from '../../../logging/logger';
-import type { ImageTransformOptions, ImageUploadOptions, ImageUploadProvider, UploadRes } from '../types';
+import type {
+    ImageTransformOptions,
+    ImageUploadOptions,
+    ImageUploadProvider,
+    UploadRes,
+} from '../types';
 
 const log = getLogger('filestack-provider');
 
@@ -29,12 +37,12 @@ const normalizeUploadRes = (res: FilestackUploadResponse): UploadRes => ({
     url: String(res.url ?? ''),
 });
 
-const isFilestackConfig = (
-    config: TenantStorageConfig
-): config is TenantFilestackStorageConfig => config.provider === 'filestack';
+const isFilestackConfig = (config: TenantStorageConfig): config is TenantFilestackStorageConfig =>
+    config.provider === 'filestack';
 
 export const createFilestackProvider = (storage: TenantStorageConfig): ImageUploadProvider => {
-    if (!isFilestackConfig(storage)) throw new Error('Filestack provider requires filestack storage config.');
+    if (!isFilestackConfig(storage))
+        throw new Error('Filestack provider requires filestack storage config.');
 
     const filestack = client.init(storage.apiKey, { sessionCache: false });
     const cdnBase = normalizeDomain(storage.cdnDomain);
@@ -102,7 +110,8 @@ export const createFilestackProvider = (storage: TenantStorageConfig): ImageUplo
     const changeQuality = (url: string, quality: number): string => {
         const urlParams = getUrlParams(url).filter(param => !param.match(/quality.*/));
 
-        if (urlParams.includes('rotate=deg:exif')) urlParams.splice(1, 0, `quality=value:${quality}`);
+        if (urlParams.includes('rotate=deg:exif'))
+            urlParams.splice(1, 0, `quality=value:${quality}`);
         else urlParams.splice(0, 0, `quality=value:${quality}`);
 
         return getUrlFromParams(urlParams);
@@ -187,7 +196,10 @@ export const createFilestackProvider = (storage: TenantStorageConfig): ImageUplo
             .upload(file, options as UploadOptions)
             .then(res => normalizeUploadRes(res as FilestackUploadResponse));
 
-    const multiupload = (files: FileList | File[], options?: ImageUploadOptions): Promise<UploadRes> =>
+    const multiupload = (
+        files: FileList | File[],
+        options?: ImageUploadOptions
+    ): Promise<UploadRes> =>
         filestack
             .multiupload(Array.from(files), options as UploadOptions)
             .then(res => normalizeUploadRes(res as FilestackUploadResponse));

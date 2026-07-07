@@ -10,7 +10,6 @@ const log = getLogger('use-image-upload');
 
 export type { UploadRes } from './types';
 
-
 type UseImageUpload = (args: {
     onUpload: (url: string, file: File, res: UploadRes) => void;
     onFileSelected?: (file: File) => void;
