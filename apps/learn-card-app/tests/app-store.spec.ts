@@ -10,7 +10,9 @@ test.describe('App Store — redirect flow', () => {
         listing = await seedAppListing();
     });
 
-    test('shows sign-in modal then redirect banner on login page when installing from app listing', async ({ page }) => {
+    test('shows sign-in modal then redirect banner on login page when installing from app listing', async ({
+        page,
+    }) => {
         // Clear auth state so user is truly logged out
         // (demoState.json pre-populates currentUserStore with a demo user)
         await page.goto('/');
@@ -86,7 +88,9 @@ test.describe('App Store — redirect flow', () => {
         await expect(page).toHaveURL(new RegExp(`/app/${listing.listingId}`), { timeout: 15_000 });
 
         // Install consent modal should auto-open
-        await expect(page.getByRole('heading', { name: 'Install App' })).toBeVisible({ timeout: 20_000 });
+        await expect(page.getByRole('heading', { name: 'Install App' })).toBeVisible({
+            timeout: 20_000,
+        });
     });
 });
 
@@ -114,12 +118,10 @@ test.describe('App Store', () => {
             timeout: 30_000,
         });
 
-        // 3. Click "Get" to open the detail modal
-        await page
-            .locator('ion-item')
-            .filter({ hasText: listing.displayName })
-            .getByRole('button', { name: 'Get' })
-            .click();
+        // 3. Click the app tile to open the detail modal. The LaunchPad redesign
+        // (LC-1919) renders listings as grid-tile buttons on /launchpad rather
+        // than ion-item rows with a "Get" button; the tile opens AppStoreDetailModal.
+        await page.getByRole('button', { name: listing.displayName }).click();
 
         // 4. Verify the detail modal opens with the app name and description
         const modal = page.locator('#right-modal');
@@ -138,15 +140,13 @@ test.describe('App Store', () => {
             timeout: 30_000,
         });
 
-        // 3. Click "Get" to open the detail modal
-        await page
-            .locator('ion-item')
-            .filter({ hasText: listing.displayName })
-            .getByRole('button', { name: 'Get' })
-            .click();
+        // 3. Click the app tile to open the detail modal. The LaunchPad redesign
+        // (LC-1919) renders listings as grid-tile buttons on /launchpad rather
+        // than ion-item rows with a "Get" button; the tile opens AppStoreDetailModal.
+        await page.getByRole('button', { name: listing.displayName }).click();
 
         // Scope assertions to the detail modal to avoid strict mode violations
-        // (the app name and buttons also appear in the list item behind the modal)
+        // (the app name and buttons also appear in the tile behind the modal)
         const modal = page.locator('#right-modal');
 
         // 4. In the detail modal, click "Install"
@@ -172,6 +172,8 @@ test.describe('App Store', () => {
         await expect(page.getByText(listing.displayName).first()).toBeVisible({
             timeout: 10_000,
         });
-        await expect(page.locator(`iframe[title*="${listing.displayName}"]`)).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator(`iframe[title*="${listing.displayName}"]`)).toBeVisible({
+            timeout: 30_000,
+        });
     });
 });
