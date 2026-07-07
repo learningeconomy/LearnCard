@@ -52,5 +52,5 @@ export const SCOUTPASS_API_ENDPOINT = getRuntimeUrl(
 );
 
 // LearnCard AI
-// export const LEARNCARD_AI_URL = 'https://api.learncloud.ai';
-export const LEARNCARD_AI_URL = 'http://localhost:3001'; // For local dev / testing
+export const LEARNCARD_AI_URL = 'https://api.learncloud.ai';
+// export const LEARNCARD_AI_URL = 'http://localhost:3001'; // For local dev / testing
