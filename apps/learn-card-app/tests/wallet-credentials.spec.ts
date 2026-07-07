@@ -24,15 +24,20 @@ test.describe('Wallet Credentials', () => {
         await issueCredentialToSelf(page);
 
         // issueCredentialToSelf drives the boost flow from /launchpad, so after
-        // its history.goBack() we're on /launchpad — go to the wallet to verify.
-        await page.goto('/wallet');
+        // its history.goBack() we're on /launchpad. Navigate to the Passport via
+        // the nav link (SPA navigation, not page.goto) so the just-issued
+        // credential stays in the in-memory wallet cache — a hard reload would
+        // refetch from the backend before the write has synced and show an empty
+        // category. /passport, /wallet and /home all render WalletPage.
+        await page.getByRole('link', { name: 'Passport', exact: true }).click();
 
-        // Verify the Boosts category exists on wallet page
-        const boostsCategory = page.locator('[role="button"]').filter({ hasText: 'Boosts' });
-        await expect(boostsCategory).toBeVisible({ timeout: 30_000 });
+        // Verify the Badges (social badge) category exists on the passport page.
+        // The LC-1919 Passport reorg renamed the "Boosts" category to "Badges".
+        const badgesCategory = page.locator('[role="button"]').filter({ hasText: 'Badges' });
+        await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
 
-        // Click the Boosts category to navigate to credential list
-        await boostsCategory.click();
+        // Click the Badges category to navigate to the credential list
+        await badgesCategory.click();
         await page.waitForURL(/\/socialBadges/, { timeout: 30_000 });
 
         // Verify credential appears in the list
@@ -122,8 +127,10 @@ test.describe('Wallet Credentials', () => {
             log.info('Console errors during credential issuance:', consoleErrors);
         }
 
-        // User 2: Navigate to alerts and accept the credential
-        await page2.getByRole('link', { name: 'Alerts', exact: true }).click({ timeout: 30_000 });
+        // User 2: Navigate to notifications and accept the credential. The LC-1921
+        // nav redesign removed the "Alerts" nav link — notifications now live at
+        // the /notifications route (reached via the NotificationButton icon).
+        await page2.goto('/notifications');
 
         // Claim the credential
         await page2.getByRole('button', { name: /claim/i }).click({ timeout: 30_000 });
@@ -149,12 +156,13 @@ test.describe('Wallet Credentials', () => {
         await page2.goto('/wallet');
         await page2.waitForURL(/\/wallet/, { timeout: 30_000 });
 
-        // Verify the Boosts category exists on User 2's wallet
-        const boostsCategory = page2.locator('[role="button"]').filter({ hasText: 'Boosts' });
-        await expect(boostsCategory).toBeVisible({ timeout: 30_000 });
+        // Verify the Badges (social badge) category exists on User 2's wallet
+        // (the LC-1919 Passport reorg renamed "Boosts" → "Badges").
+        const badgesCategory = page2.locator('[role="button"]').filter({ hasText: 'Badges' });
+        await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
 
-        // Click into the Boosts category
-        await boostsCategory.click();
+        // Click into the Badges category
+        await badgesCategory.click();
         await page2.waitForURL(/\/socialBadges/, { timeout: 30_000 });
 
         // Verify credential appears in User 2's credential list
