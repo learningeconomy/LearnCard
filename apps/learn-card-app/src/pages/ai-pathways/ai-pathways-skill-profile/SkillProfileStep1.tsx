@@ -10,6 +10,7 @@ import {
     useWallet,
     queueAiInsightCredentialRefresh,
     useVerifiableData,
+    getLogger,
 } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
@@ -35,6 +36,8 @@ export const SKILL_PROFILE_GOALS_KEY = 'skill-profile-goals';
 export const SKILL_PROFILE_PROFESSIONAL_TITLE_KEY = 'skill-profile-professional-title';
 export const SKILL_PROFILE_ROLE_EXPERIENCE_KEY = 'skill-profile-role-experience';
 export const SKILL_PROFILE_PROFILE_KEY = SKILL_PROFILE_PROFESSIONAL_TITLE_KEY;
+
+const log = getLogger('ai-pathways-skill-profile.step1');
 
 type SkillProfileStep1Props = {
     handleNext: () => void;
@@ -186,7 +189,7 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
                         queryClient,
                     });
                 } catch (error) {
-                    console.warn(
+                    log.warn(
                         'Failed to refresh AI insights after saving skill profile data:',
                         error
                     );
