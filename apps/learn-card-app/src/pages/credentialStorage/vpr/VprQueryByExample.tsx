@@ -15,7 +15,10 @@ import {
     useGetResolvedCredentials,
 } from 'learn-card-base';
 
-import { isVerifiableDataContractCategory } from '../../../helpers/contract.helpers';
+import {
+    isAiContractCategory,
+    isVerifiableDataContractCategory,
+} from '../../../helpers/contract.helpers';
 
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import Lottie from 'react-lottie-player';
@@ -104,6 +107,8 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         // Internal "My Skills Profile" data is self-issued verifiable data, not shareable credentials — exclude it like the wallet does.
         if (isVerifiableDataRecord(credential.record)) return false;
         if (isVerifiableDataContractCategory(credential.category)) return false;
+        // AI session/pathway metadata isn't a real credential and isn't shown in the wallet grid.
+        if (isAiContractCategory(credential.category)) return false;
         if (!credential.loading && !credential.vc) return false;
 
         if (!searchInput) return true;

@@ -128,9 +128,9 @@ const VCToShare: React.FC<{
                 </IonHeader>
                 <IonGrid>
                     {error && <p className="text-center text-rose-600 text-lg">{error}</p>}
-                    <IonCol className="flex flex-row items-center flex-wrap mb-48 w-full  achievements-list-container">
+                    <div className="flex flex-row flex-wrap items-start justify-center gap-4 mb-48 w-full achievements-list-container [&>ion-col]:!w-[220px] [&>ion-col]:!max-w-[220px] [&>ion-col]:!flex-none [&>ion-col]:!p-0">
                         {renderCredentialList}
-                    </IonCol>
+                    </div>
                 </IonGrid>
             </IonRow>
         </IonPage>
