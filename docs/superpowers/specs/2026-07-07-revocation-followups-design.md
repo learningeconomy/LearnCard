@@ -137,6 +137,7 @@ Design source: Figma node `2422:101057` ("Revoked Badge"), file `qNPuCYkYvjfGm1j
 **Implementation notes:**
 
 -   The seal is the same silhouette as the verified badge, so the natural approach is to extend the existing issuer-badge component with a `status` variant (`active | revoked | suspended`) rather than a new component. Pin the exact component during planning (holder credential card: `BoostEarnedCard` and its issuer row).
+-   **Filter scoping (gotcha):** a CSS `filter: grayscale()` desaturates the whole subtree, so the desaturation must be applied only to the art image and text nodes — **never to an ancestor of the status pill or seal badge**. The pill must be a sibling of the art (a direct child of the card), not nested inside the (filtered) art element, or it will render gray. Same for the badge (it already lives in the card body, outside the art).
 -   Suspended color (`#EA580C`, orange-600) is provisional — confirm the exact token with the designer.
 
 ### B4. Earned tab behavior
