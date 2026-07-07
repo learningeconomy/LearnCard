@@ -12,6 +12,8 @@ import type { CoordinatorStatus } from './authStatus';
 const mockUseOptionalAuthCoordinator = vi.fn();
 const mockUseWallet = vi.fn();
 const mockUseIsLoggedIn = vi.fn();
+const mockUseConnectivityStatus = vi.fn();
+const mockUseWalletMode = vi.fn();
 
 vi.mock('../auth-coordinator/AuthCoordinatorProvider', () => ({
     useOptionalAuthCoordinator: () => mockUseOptionalAuthCoordinator(),
@@ -19,6 +21,14 @@ vi.mock('../auth-coordinator/AuthCoordinatorProvider', () => ({
 
 vi.mock('../stores/walletStore', () => ({
     walletStore: { use: { wallet: () => mockUseWallet() } },
+}));
+
+vi.mock('../stores/connectivityStore', () => ({
+    connectivityStore: { use: { status: () => mockUseConnectivityStatus() } },
+}));
+
+vi.mock('../stores/walletModeStore', () => ({
+    walletModeStore: { use: { mode: () => mockUseWalletMode() } },
 }));
 
 vi.mock('../stores/currentUserStore', () => ({
@@ -32,12 +42,16 @@ const setSources = (opts: {
     coordinatorStatus?: CoordinatorStatus;
     walletReady?: boolean;
     isLoggedIn?: boolean;
+    connectivity?: 'unknown' | 'online' | 'offline';
+    walletMode?: 'full' | 'offline' | null;
 }) => {
     mockUseOptionalAuthCoordinator.mockReturnValue(
         opts.coordinatorStatus ? { state: { status: opts.coordinatorStatus } } : null
     );
     mockUseWallet.mockReturnValue(opts.walletReady ? {} : null);
     mockUseIsLoggedIn.mockReturnValue(opts.isLoggedIn ?? false);
+    mockUseConnectivityStatus.mockReturnValue(opts.connectivity ?? 'unknown');
+    mockUseWalletMode.mockReturnValue(opts.walletMode ?? 'full');
 };
 
 describe('useAuthGateState — resume race', () => {
@@ -89,6 +103,35 @@ describe('useAuthGateState — resume race', () => {
         const { result } = renderHook(() => useAuthGateState('success', true));
 
         expect(hasNetworkProfile(result.current)).toBe(true);
+        expect(shouldPromptProfileOnboarding(result.current)).toBe(false);
+    });
+
+    it('does NOT authorize onboarding when offline reads no profile (unconfirmed, not absent)', () => {
+        setSources({
+            coordinatorStatus: 'ready',
+            walletReady: true,
+            isLoggedIn: true,
+            connectivity: 'offline',
+        });
+
+        const { result } = renderHook(() => useAuthGateState('success', false));
+
+        expect(result.current).toEqual({ tag: 'ready', profile: { tag: 'unconfirmed' } });
+        expect(shouldPromptProfileOnboarding(result.current)).toBe(false);
+    });
+
+    it('does NOT authorize onboarding on the offline-fallback wallet even when online', () => {
+        setSources({
+            coordinatorStatus: 'ready',
+            walletReady: true,
+            isLoggedIn: true,
+            connectivity: 'online',
+            walletMode: 'offline',
+        });
+
+        const { result } = renderHook(() => useAuthGateState('success', false));
+
+        expect(result.current).toEqual({ tag: 'ready', profile: { tag: 'unconfirmed' } });
         expect(shouldPromptProfileOnboarding(result.current)).toBe(false);
     });
 });
