@@ -77,6 +77,7 @@ export type BoostPreviewProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 
 export const useVerification = (credential: VC) => {
@@ -147,6 +148,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     issuancesSummaryComponent,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const unwrappedCredential = unwrapBoostCredential(_credential);
@@ -189,8 +191,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
 
     const selectedCredential = credential;
-    const isCertificate = credential?.display?.displayType === 'certificate';
-    const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const isCertificate =
+        displayType === DisplayTypeEnum.Certificate ||
+        credential?.display?.displayType === 'certificate';
+    const isID =
+        displayType === DisplayTypeEnum.ID ||
+        credential?.display?.displayType === 'id' ||
+        categoryType === 'ID';
     const isIssuerViewSelected =
         enableRenderMethod &&
         Boolean(renderMethod) &&
@@ -226,6 +233,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={_credential as VC | UnsignedVC}
                 issuancesSummaryComponent={issuancesSummaryComponent}
+                isPreview={isPreview}
             />,
             {
                 className: '!bg-transparent',
@@ -344,6 +352,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         isClrChildCredential={isClrChildCredential}
                         renderMethodCredential={_credential as VC | UnsignedVC}
                         issuancesSummaryComponent={issuancesSummaryComponent}
+                        isPreview={isPreview}
                     />
                 )}
                 <CredentialIssuerPopover {...credentialIssuerPopoverProps} />

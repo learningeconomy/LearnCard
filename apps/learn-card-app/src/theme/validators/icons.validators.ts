@@ -92,9 +92,14 @@ export type SideMenuIcons = z.infer<typeof SideMenuIconsSchema>;
 
 export const NavbarIconsSchema = z
     .object({
+        // Optional so Zod doesn't strip them during validateThemeData — every
+        // theme defines these, but they were absent from the schema, which
+        // silently dropped `icons.navbar.dashboard` at runtime (LC-1921).
+        dashboard: componentLike.optional().describe('Navbar Dashboard Icon'),
         wallet: componentLike.describe('Navbar Wallet Icon'),
         plus: componentLike.describe('Navbar Plus Icon'),
         launchPad: componentLike.describe('Navbar LaunchPad Icon'),
+        notification: componentLike.optional().describe('Navbar Notification Icon'),
     })
     .describe('Navbar Icons');
 export type NavbarIcons = z.infer<typeof NavbarIconsSchema>;

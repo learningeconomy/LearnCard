@@ -275,6 +275,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
         },
 
         navbar: {
+            dashboard: DashboardColorfulIcon,
             wallet: NavBarPassportIcon,
             plus: ColorFulPlus,
             launchPad: NavBarLaunchPadIcon,
@@ -336,6 +337,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
         },
 
         navbar: {
+            dashboard: DashboardFormalIcon,
             wallet: NavBarPassportIconFormal,
             plus: FormalPlus,
             launchPad: NavBarLaunchPadIconFormal,
@@ -433,6 +435,7 @@ export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
             },
 
             navbar: {
+                dashboard: DashboardColorfulIcon,
                 wallet: VetpassPassportNavbar,
                 launchPad: VetpassAppsNavbar,
                 notification: VetpassAlertsNavbar,

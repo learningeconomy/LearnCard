@@ -11,13 +11,17 @@ import {
     useGetCurrentLCNUser,
     useGetUnreadUserNotifications,
     useToast,
+    walletStore,
+    WalletSyncState,
 } from 'learn-card-base';
+import CustomSpinner from '../svgs/CustomSpinner';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
@@ -40,7 +44,19 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const iconSet = getIconSet(IconSetEnum.sideMenu);
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
+    const isWalletSyncing = walletStore.useTracked.syncState();
+    const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
+    const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
+
+    let walletText = 'Passport';
+    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+
+    let walletTextStyles = '';
+    if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
+    if (isCompleted) walletTextStyles = `${colors.completedColor}`;
+
     const flags = useFlags();
+    const { isMobile } = useDeviceTypeByWidth();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
     const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
     const learnCardAssistantEnabled =
@@ -124,6 +140,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
         if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
+        // Alerts lives in the header island on desktop; only show it in the
+        // side menu on mobile (LC-1921).
+        if (link.path === '/notifications' && !isMobile) return null;
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
         const linkPath = link.path;
@@ -199,11 +218,37 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             );
         }
 
+        if (linkPath === '/passport') {
+            linkEl = (
+                <PreloadingLink
+                    to={linkPath}
+                    className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
+                >
+                    {(isSyncing || isCompleted) && (
+                        <div className="flex items-center justify-center absolute top-[12px] z-50 h-[28px] w-[28px] rounded-[10px]">
+                            {isSyncing && (
+                                <CustomSpinner
+                                    className={`${colors?.syncingColor} h-[18px] w-[18px]`}
+                                />
+                            )}
+                        </div>
+                    )}
+                    <IconComponent
+                        className={`${iconStyles}`}
+                        shadeColor={shadeColor}
+                        isCompleted={isCompleted}
+                        isSyncing={isSyncing}
+                    />
+                    {walletText}
+                </PreloadingLink>
+            );
+        }
+
         return (
             <IonMenuToggle key={link.id} autoHide={false} className="w-full">
                 <div
                     onClick={() => setActiveTab(linkPath)}
-                    className="flex items-center justify-center px-2 py-0"
+                    className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
                 </div>
