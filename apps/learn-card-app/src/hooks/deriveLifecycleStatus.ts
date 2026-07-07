@@ -12,7 +12,7 @@ export type CredentialLifecycleStatus = 'active' | 'revoked' | 'suspended';
  * without pulling in the `learn-card-base` barrel.
  */
 export const deriveLifecycleStatus = (
-    check: Pick<VerificationCheck, 'errors' | 'status'> | undefined | null
+    check: Partial<VerificationCheck> | undefined | null
 ): CredentialLifecycleStatus => {
     const entries = check?.status ?? [];
     if (entries.some(e => e.statusPurpose === 'revocation' && e.isSet)) return 'revoked';

@@ -25,11 +25,17 @@ export const useCredentialStatus = (
         queryFn: async (): Promise<CredentialLifecycleStatus> => {
             try {
                 const wallet = await initWallet();
-                const check = (await wallet?.invoke?.verifyCredential(
-                    credential as VC,
-                    {},
-                    false
-                )) as VerificationCheck;
+                // prettify=false returns the raw VerificationCheck (with structured
+                // `status` entries). The exposed invoke type narrows the 3rd arg to
+                // `true`, so cast to reach the raw-result overload.
+                const verify = wallet?.invoke?.verifyCredential as
+                    | ((
+                          c: VC,
+                          options: Record<string, unknown>,
+                          prettify: boolean
+                      ) => Promise<VerificationCheck>)
+                    | undefined;
+                const check = await verify?.(credential as VC, {}, false);
                 return deriveLifecycleStatus(check);
             } catch {
                 return 'active'; // fail-open

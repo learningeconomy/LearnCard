@@ -269,6 +269,11 @@ export const getActivityStatsForProfile = async (
             WHERE sender:Profile OR sender:AppStoreListing
         OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
         WITH latestEvent, coalesce(sent.status, received.status) AS credStatus
+        // Collapse the CREDENTIAL_SENT fan-out to one status per activity before
+        // aggregating: AppStoreListing-issued credentials have two CREDENTIAL_SENT
+        // edges (owner Profile + listing) written with the same activityId and
+        // status, which would otherwise double every SUM below.
+        WITH latestEvent, head(collect(credStatus)) AS credStatus
         WITH
             COUNT(DISTINCT latestEvent.activityId) as total,
             SUM(CASE WHEN latestEvent.eventType = 'CREATED' THEN 1 ELSE 0 END) as created,
