@@ -150,16 +150,17 @@ public async someMethod(): Promise<Response> {
 
 ### Build Commands
 
--   **Build**: `pnpm exec nx build partner-connect-sdk`
--   **Development**: `pnpm exec nx dev partner-connect-sdk`
--   **Type Check**: `pnpm exec nx typecheck partner-connect-sdk`
+-   **Build**: `bunx nx build partner-connect-sdk`
+-   **Development**: `bunx nx dev partner-connect-sdk`
+-   **Type Check**: `bunx nx typecheck partner-connect-sdk`
 
 ### Build Outputs
 
-The package builds to multiple formats:
+The package builds to multiple formats (paths come from `package.json` `main`/`module`/`exports`):
 
--   **CommonJS**: `dist/partner-connect.js`
--   **ESM**: `dist/partner-connect.esm.js`
+-   **CommonJS**: `dist/partner-connect.js` (the `require` condition)
+-   **ESM (bundler)**: `dist/partner-connect.esm.js` (the `import`/`module` condition)
+-   **ESM (Node)**: `dist/partner-connect.mjs` (the `node.import` condition, for raw Node ESM consumers)
 -   **Types**: `dist/index.d.ts`
 
 ### Browser Compatibility

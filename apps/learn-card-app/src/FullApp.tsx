@@ -16,12 +16,13 @@ import {
     useSQLiteInitWeb,
     sqliteStore,
     ensureReactQueryTableExists,
+    getLogger,
 } from 'learn-card-base';
-
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
 import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
@@ -47,6 +48,8 @@ import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+
+const log = getLogger('cache');
 
 const history = createBrowserHistory();
 
@@ -81,7 +84,7 @@ const persister = createAsyncStoragePersister({
 
                 return result.values![0].cache;
             } catch (error) {
-                console.error('Error getting from cache', { key, error });
+                log.error('Error getting from cache', error, { key });
                 // Fallback to localforage on error
                 return localforage.getItem(key);
             }
@@ -113,12 +116,12 @@ const persister = createAsyncStoragePersister({
                     await db.close();
                 }
             } catch (error) {
-                console.error('Error setting in cache', { key, value, error });
+                log.error('Error setting in cache', error, { key });
                 // Fallback to localforage on error
                 try {
                     return localforage.setItem(key, value);
                 } catch (fallbackError) {
-                    console.error('Fallback cache error', fallbackError);
+                    log.error('Fallback cache error', fallbackError);
                 }
             }
         },
@@ -146,12 +149,12 @@ const persister = createAsyncStoragePersister({
                     await db.close();
                 }
             } catch (error) {
-                console.error('Error removing from cache', { key, error });
+                log.error('Error removing from cache', error, { key });
                 // Fallback to localforage on error
                 try {
                     await localforage.removeItem(key);
                 } catch (fallbackError) {
-                    console.error('Fallback cache removal error', fallbackError);
+                    log.error('Fallback cache removal error', fallbackError);
                 }
             }
         },
@@ -191,6 +194,7 @@ const FullApp: React.FC = () => {
                                         <AppUrlListener />
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
+                                        <CredentialSyncListener />
                                         {/* Subscribes the pathway-progress reactor to
                                             the wallet event bus. Placed alongside the
                                             other app-level listeners so every claim

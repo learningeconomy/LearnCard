@@ -75,8 +75,8 @@ flowchart LR
 
 1. User opens the Skills Hub from their wallet
 2. Taps the **+** button to add skills
-3. Searches by skill name or occupation, or browses suggested skills
-4. Selects one or more skills from the framework
+3. Searches by skill name or occupation, or browses suggested skills across the available frameworks
+4. Selects one or more skills from a framework
 5. Sets a proficiency level for each skill:
     - **Hidden** — Do not display proficiency status
     - **Novice** — Just starting and needs guidance
@@ -98,21 +98,21 @@ The LearnCard App uses the [AuthCoordinator](../../core-concepts/architecture-an
 
 ### Key Flows
 
-- **New User Setup** — After first login, a private key is generated and split into device, server, and recovery shares automatically.
-- **Account Recovery** — If a user logs in on a new device, they can [recover their key](../../core-concepts/identities-and-keys/account-recovery.md) using a passkey, recovery phrase, backup file, or email backup.
-- **Cross-Device Login** — Users can transfer their device share to a new device by [scanning a QR code](../../core-concepts/identities-and-keys/cross-device-login.md) from an already-authenticated device.
-- **Migration** — Existing Web3Auth users are automatically detected and migrated to SSS.
+-   **New User Setup** — After first login, a private key is generated and split into device, server, and recovery shares automatically.
+-   **Account Recovery** — If a user logs in on a new device, they can [recover their key](../../core-concepts/identities-and-keys/account-recovery.md) using a passkey, recovery phrase, backup file, or email backup.
+-   **Cross-Device Login** — Users can transfer their device share to a new device by [scanning a QR code](../../core-concepts/identities-and-keys/cross-device-login.md) from an already-authenticated device.
+-   **Migration** — Existing Web3Auth users are automatically detected and migrated to SSS.
 
 ### Recovery Methods
 
 Users are prompted to set up recovery methods after initial key setup. A persistent banner appears until at least one method is configured. Available methods:
 
-| Method | Description |
-|---|---|
-| **Passkey** | Hardware-bound recovery via WebAuthn PRF (Touch ID, Face ID, YubiKey) |
-| **Recovery Phrase** | 24-word mnemonic written down by the user |
-| **Backup File** | Password-protected JSON file downloaded by the user |
-| **Email Backup** | Encrypted share sent to a verified recovery email |
+| Method              | Description                                                           |
+| ------------------- | --------------------------------------------------------------------- |
+| **Passkey**         | Hardware-bound recovery via WebAuthn PRF (Touch ID, Face ID, YubiKey) |
+| **Recovery Phrase** | 24-word mnemonic written down by the user                             |
+| **Backup File**     | Password-protected JSON file downloaded by the user                   |
+| **Email Backup**    | Encrypted share sent to a verified recovery email                     |
 
 Recovery methods are managed from the **Account Recovery** section in the user's profile settings.
 

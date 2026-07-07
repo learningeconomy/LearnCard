@@ -1,5 +1,120 @@
 # @welibraryos/lca-api-service
 
+## 1.2.25
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/helpers@1.3.8
+    -   @learncard/did-web-plugin@1.1.26
+    -   @learncard/didkey-plugin@1.1.26
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/dynamic-loader-plugin@1.1.26
+    -   @learncard/expiration-plugin@1.2.26
+    -   @learncard/learn-card-plugin@1.2.26
+    -   @learncard/vc-plugin@1.5.6
+
+## 1.2.24
+
+### Patch Changes
+
+-   [#1341](https://github.com/learningeconomy/LearnCard/pull/1341) [`69ef21bda3e003e83f4d842c52e037acf528af09`](https://github.com/learningeconomy/LearnCard/commit/69ef21bda3e003e83f4d842c52e037acf528af09) Thanks [@goblincore](https://github.com/goblincore)! - 🐛 Bundle DIDKit WASM into Lambda artifacts (fix staging 500s)
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/helpers@1.3.7
+    -   @learncard/types@5.17.5
+    -   @learncard/did-web-plugin@1.1.25
+    -   @learncard/didkey-plugin@1.1.25
+    -   @learncard/didkit-plugin@1.9.5
+    -   @learncard/dynamic-loader-plugin@1.1.25
+    -   @learncard/expiration-plugin@1.2.25
+    -   @learncard/learn-card-plugin@1.2.25
+    -   @learncard/vc-plugin@1.5.5
+
+## 1.2.23
+
+### Patch Changes
+
+-   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/types@5.17.4
+    -   @learncard/helpers@1.3.6
+    -   @learncard/core@9.4.24
+    -   @learncard/did-web-plugin@1.1.24
+    -   @learncard/didkey-plugin@1.1.24
+    -   @learncard/didkit-plugin@1.9.4
+    -   @learncard/learn-card-plugin@1.2.24
+    -   @learncard/vc-plugin@1.5.4
+    -   @learncard/dynamic-loader-plugin@1.1.24
+    -   @learncard/expiration-plugin@1.2.24
+
+## 1.2.22
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/core@9.4.23
+    -   @learncard/helpers@1.3.5
+    -   @learncard/did-web-plugin@1.1.23
+    -   @learncard/didkey-plugin@1.1.23
+    -   @learncard/didkit-plugin@1.9.3
+    -   @learncard/learn-card-plugin@1.2.23
+    -   @learncard/vc-plugin@1.5.3
+    -   @learncard/dynamic-loader-plugin@1.1.23
+    -   @learncard/expiration-plugin@1.2.23
+
+## 1.2.21
+
+### Patch Changes
+
+-   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    -   @learncard/helpers@1.3.4
+    -   @learncard/types@5.17.2
+    -   @learncard/core@9.4.22
+    -   @learncard/did-web-plugin@1.1.22
+    -   @learncard/didkey-plugin@1.1.22
+    -   @learncard/didkit-plugin@1.9.2
+    -   @learncard/learn-card-plugin@1.2.22
+    -   @learncard/vc-plugin@1.5.2
+    -   @learncard/dynamic-loader-plugin@1.1.22
+    -   @learncard/expiration-plugin@1.2.22
+
+## 1.2.20
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/did-web-plugin@1.1.21
+    -   @learncard/didkey-plugin@1.1.21
+    -   @learncard/didkit-plugin@1.9.1
+    -   @learncard/dynamic-loader-plugin@1.1.21
+    -   @learncard/expiration-plugin@1.2.21
+    -   @learncard/helpers@1.3.3
+    -   @learncard/learn-card-plugin@1.2.21
+    -   @learncard/types@5.17.1
+    -   @learncard/vc-plugin@1.5.1
+    -   @learncard/core@9.4.21
+
+## 1.2.19
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3), [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/types@5.17.0
+    -   @learncard/didkit-plugin@1.9.0
+    -   @learncard/vc-plugin@1.5.0
+    -   @learncard/core@9.4.20
+    -   @learncard/did-web-plugin@1.1.20
+    -   @learncard/didkey-plugin@1.1.20
+    -   @learncard/learn-card-plugin@1.2.20
+    -   @learncard/dynamic-loader-plugin@1.1.20
+    -   @learncard/expiration-plugin@1.2.20
+
 ## 1.2.18
 
 ### Patch Changes
@@ -372,7 +487,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

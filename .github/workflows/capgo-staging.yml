@@ -1,0 +1,98 @@
+name: CapGo Staging Deploy
+
+# When a PR is merged into main (or anything else pushes to main), upload an
+# OTA bundle to the Capgo `staging` channel for the LearnCard app. Skipped on
+# release commits — those go through deploy.yml's production pipeline and
+# upload to the version-pinned channel (e.g. `1.0.7`).
+#
+# The bundle version is suffixed with `-staging.<short-sha>` so it never
+# collides with production bundles in Capgo's bundle list.
+
+on:
+    push:
+        branches:
+            - main
+
+concurrency:
+    group: capgo-staging-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    decide:
+        name: Decide whether to deploy
+        runs-on: ubuntu-latest
+        outputs:
+            should_deploy: ${{ steps.gate.outputs.should_deploy }}
+            bundle_version: ${{ steps.version.outputs.bundle_version }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - name: Skip on release commits
+              id: release_check
+              env:
+                  COMMIT_MSG: ${{ github.event.head_commit.message }}
+              run: |
+                  if [[ "$COMMIT_MSG" == *"chore(release):"* ]]; then
+                    echo "is_release=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "is_release=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Use Composite Setup Action
+              if: steps.release_check.outputs.is_release != 'true'
+              uses: ./.github/actions/setup
+
+            - name: Check if learn-card-app is affected
+              id: affected
+              if: steps.release_check.outputs.is_release != 'true'
+              run: |
+                  AFFECTED="$(bunx nx show projects --affected --base=HEAD~1 --head=HEAD)"
+                  echo "Affected: $AFFECTED"
+
+                  if grep -qx "learn-card-app" <<< "$AFFECTED"; then
+                    echo "affected=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "affected=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Compute final gate
+              id: gate
+              run: |
+                  if [[ "${{ steps.release_check.outputs.is_release }}" == "true" ]]; then
+                    echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+                  elif [[ "${{ steps.affected.outputs.affected }}" == "true" ]]; then
+                    echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Compute staging bundle version
+              id: version
+              if: steps.gate.outputs.should_deploy == 'true'
+              run: |
+                  BASE_VERSION=$(bun -e "console.log(require('./apps/learn-card-app/package.json').version)")
+                  SHORT_SHA="${GITHUB_SHA::7}"
+                  echo "bundle_version=${BASE_VERSION}-staging.${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+    upload:
+        name: Upload to staging channel
+        needs: decide
+        if: needs.decide.outputs.should_deploy == 'true'
+        uses: ./.github/workflows/capgo-upload.yml
+        with:
+            project: learn-card-app
+            app_id: com.learncard.app
+            version: ${{ needs.decide.outputs.bundle_version }}
+            build_path: apps/learn-card-app/build
+            package_json: apps/learn-card-app/package.json
+            node_modules_path: node_modules
+            environment: learn-card-app-staging
+            channel: staging
+            tenant: learncard
+            stage: staging
+            self_assign: 'true'
+        secrets:
+            CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}

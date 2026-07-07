@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('candidate-pool');
 /**
  * Build the candidate-credential pool the OpenID4VP plugin matches the
  * verifier's request against.
@@ -86,7 +88,7 @@ export const loadCandidatePool = async (
     }
 
     const candidates = await Promise.all(
-        Array.from(dedupedByUri.values()).map(async (entry) => {
+        Array.from(dedupedByUri.values()).map(async entry => {
             try {
                 const credential = await wallet.read.get(entry.uri);
                 if (!credential && skipMissing) return null;
@@ -102,7 +104,7 @@ export const loadCandidatePool = async (
                 // A single broken read shouldn\u2019t poison the whole pool;
                 // surfacing it would prevent the user from sharing
                 // unrelated credentials.
-                console.warn('OID4VP candidate read failed', entry.uri, err);
+                log.warn('OID4VP candidate read failed', entry.uri, err);
                 return null;
             }
         })
@@ -124,7 +126,9 @@ const collectIndexEntries = async (
 
     const [cloud, sqlite] = await Promise.all([
         wallet.index.LearnCloud.get().catch(() => [] as IndexEntry[]),
-        wallet.index.SQLite ? wallet.index.SQLite.get().catch(() => [] as IndexEntry[]) : Promise.resolve([] as IndexEntry[]),
+        wallet.index.SQLite
+            ? wallet.index.SQLite.get().catch(() => [] as IndexEntry[])
+            : Promise.resolve([] as IndexEntry[]),
     ]);
     return [...cloud, ...sqlite];
 };

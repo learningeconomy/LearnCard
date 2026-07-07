@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-upload-resume');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -35,8 +37,17 @@ export const CheckListUploadResume: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFile, isUploading, isSaving, fetchParsedCredentials, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Data, rawArtifactCredential } =
-        useUploadFile(UploadTypesEnum.Resume);
+    const {
+        getFile,
+        isUploading,
+        isSaving,
+        fetchParsedCredentials,
+        storeSelectedCredentials,
+        parsedCredentials,
+        setParsedCredentials,
+        base64Data,
+        rawArtifactCredential,
+    } = useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
@@ -74,9 +85,11 @@ export const CheckListUploadResume: React.FC = () => {
                         });
                         setShowReview(true);
                     } else {
-                        storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                            () => handleSetResume()
-                        );
+                        storeSelectedCredentials(
+                            [],
+                            rawArtifactCredential,
+                            UploadTypesEnum.Resume
+                        ).finally(() => handleSetResume());
                     }
                 })
                 .catch(error => {
@@ -91,9 +104,11 @@ export const CheckListUploadResume: React.FC = () => {
                         duration: 7000,
                     });
                     // Still store the raw artifact so the file isn't lost
-                    storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                        () => handleSetResume()
-                    );
+                    storeSelectedCredentials(
+                        [],
+                        rawArtifactCredential,
+                        UploadTypesEnum.Resume
+                    ).finally(() => handleSetResume());
                 });
         }
     }, [base64Data, rawArtifactCredential]);
@@ -125,7 +140,7 @@ export const CheckListUploadResume: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetResume::error', error);
+            log.error('handleSetResume::error', error);
         }
     };
 
@@ -138,13 +153,15 @@ export const CheckListUploadResume: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
+                const record = await wallet.index.LearnCloud.get({
+                    category: UploadTypesEnum.Resume,
+                });
                 const recordUri = record?.[0]?.uri as string;
                 if (!recordUri) return;
                 await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
                 refetchCheckListStatus();
             } catch (error) {
-                console.error('handleDeleteResume::error', error);
+                log.error('handleDeleteResume::error', error);
                 setResume(previous);
                 presentToast('Failed to delete. Please try again.', {
                     title: 'Delete failed',
@@ -269,7 +286,9 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                        {savedCredentialCount} credential
+                                        {savedCredentialCount !== 1 ? 's' : ''} saved to your
+                                        wallet.
                                     </p>
                                 </div>
                             )}
@@ -281,8 +300,19 @@ export const CheckListUploadResume: React.FC = () => {
                                         fill="none"
                                         viewBox="0 0 24 24"
                                     >
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                        />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
                                         Processing your resume in the background...
@@ -292,7 +322,7 @@ export const CheckListUploadResume: React.FC = () => {
 
                             <input
                                 type="file"
-                                accept=".pdf,.txt,.docx"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp"
                                 onChange={async e => {
                                     setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);

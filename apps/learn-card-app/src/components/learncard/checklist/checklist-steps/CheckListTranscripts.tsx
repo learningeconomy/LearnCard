@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-transcripts');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -34,8 +36,17 @@ export const CheckListTranscripts: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFiles, isUploading, isSaving, fetchParsedCredentialsFromFiles, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Datas, rawArtifactCredentials } =
-        useUploadFile(UploadTypesEnum.Transcript);
+    const {
+        getFiles,
+        isUploading,
+        isSaving,
+        fetchParsedCredentialsFromFiles,
+        storeSelectedCredentials,
+        parsedCredentials,
+        setParsedCredentials,
+        base64Datas,
+        rawArtifactCredentials,
+    } = useUploadFile(UploadTypesEnum.Transcript);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
@@ -75,9 +86,12 @@ export const CheckListTranscripts: React.FC = () => {
                         setShowReview(true);
                     } else {
                         const [first, ...rest] = rawArtifactCredentials;
-                        storeSelectedCredentials([], first, UploadTypesEnum.Transcript, rest).finally(
-                            () => handleSetTranscripts()
-                        );
+                        storeSelectedCredentials(
+                            [],
+                            first,
+                            UploadTypesEnum.Transcript,
+                            rest
+                        ).finally(() => handleSetTranscripts());
                     }
                 })
                 .catch(error => {
@@ -137,7 +151,7 @@ export const CheckListTranscripts: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetTranscripts::error', error);
+            log.error('handleSetTranscripts::error', error);
         }
     };
 
@@ -155,7 +169,7 @@ export const CheckListTranscripts: React.FC = () => {
                 await wallet.index.LearnCloud.remove(id);
                 refetchCheckListStatus();
             } catch (error) {
-                console.error('handleDeleteTranscript::error', error);
+                log.error('handleDeleteTranscript::error', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setTranscripts(prev => (prev.some(t => t?.id === id) ? prev : [...prev, deleted]));
                 presentToast('Failed to delete. Please try again.', {
@@ -189,9 +203,10 @@ export const CheckListTranscripts: React.FC = () => {
         setIsSavingSelected(true);
         const pending = checklistStore.get.pendingReview().transcript;
         const first = rawArtifactCredentials?.[0] || pending?.rawArtifact;
-        const rest = rawArtifactCredentials?.length > 1
-            ? rawArtifactCredentials.slice(1)
-            : pending?.additionalRawArtifacts || [];
+        const rest =
+            rawArtifactCredentials?.length > 1
+                ? rawArtifactCredentials.slice(1)
+                : pending?.additionalRawArtifacts || [];
         await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Transcript, rest);
         checklistStore.set.setPendingReview('transcript', null);
         setSavedCredentialCount(selectedVcs.length);
@@ -224,7 +239,10 @@ export const CheckListTranscripts: React.FC = () => {
             });
             const pending = checklistStore.get.pendingReview().transcript;
             if (pending) {
-                checklistStore.set.setPendingReview('transcript', { ...pending, credentials: updated });
+                checklistStore.set.setPendingReview('transcript', {
+                    ...pending,
+                    credentials: updated,
+                });
             }
             return updated;
         });
@@ -247,12 +265,13 @@ export const CheckListTranscripts: React.FC = () => {
                 />
             ) : (
                 <>
-                    {(isSaving || checklistStore.get.isParsing().transcript) && !loaderDismissed && (
-                        <ChecklistLoader
-                            fileType={UploadTypesEnum.Transcript}
-                            onDismiss={() => setLoaderDismissed(true)}
-                        />
-                    )}
+                    {(isSaving || checklistStore.get.isParsing().transcript) &&
+                        !loaderDismissed && (
+                            <ChecklistLoader
+                                fileType={UploadTypesEnum.Transcript}
+                                onDismiss={() => setLoaderDismissed(true)}
+                            />
+                        )}
                     <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
                             <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
@@ -278,7 +297,9 @@ export const CheckListTranscripts: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                        {savedCredentialCount} credential
+                                        {savedCredentialCount !== 1 ? 's' : ''} saved to your
+                                        wallet.
                                     </p>
                                 </div>
                             )}
@@ -290,8 +311,19 @@ export const CheckListTranscripts: React.FC = () => {
                                         fill="none"
                                         viewBox="0 0 24 24"
                                     >
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                        />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
                                         Processing your transcripts in the background...
@@ -302,7 +334,7 @@ export const CheckListTranscripts: React.FC = () => {
                             <input
                                 multiple
                                 type="file"
-                                accept=".pdf,.txt,.docx"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
                                 onChange={async e => {
                                     setLoaderDismissed(false);
                                     await getFiles(e, UploadTypesEnum.Transcript);

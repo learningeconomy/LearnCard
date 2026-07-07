@@ -13,14 +13,16 @@ import { useAnalytics } from '@analytics';
 
 import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';
-import BurgerIcon from '../../components/svgs/Burger';
+import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import LearnCardTextLogo from '../svgs/LearnCardTextLogo';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import SideMenuSecondaryLinks from './SideMenuSecondaryLinks';
 import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
-import ThemeSelector from '../../theme/components/ThemeSelector';
-import AddToLearnCardMenu from '../add-to-learncard-menu/AddToLearnCardMenu';
+import Settings from '../svgs/Settings';
+import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
+import CheckListButton from '../learncard/checklist/CheckListButton';
+import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
 import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
@@ -30,12 +32,7 @@ import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import sideMenuStore from 'learn-card-base/stores/sideMenuStore';
 
-import {
-    sideMenuLearnCardBrandingStyles,
-    sideMenuMetaversityBrandingStyles,
-} from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { aiRoutes } from '../../AppRouter';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -48,7 +45,6 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.sideMenu);
     const resolvedAssets = useTenantBrandingAssets();
-    const brandingConfig = useBrandingConfig();
     const { isMobile } = useDeviceTypeByWidth();
     const flags = useFlags();
     const history = useHistory();
@@ -57,6 +53,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const { page: setCurrentScreen } = useAnalytics();
     const { gate } = useLCNGatedAction();
     const { openNewAiSessionModal } = useAiSession();
+    const openMyLearnCard = useOpenMyLearnCard();
 
     const [activeTab, setActiveTab] = useState<string>(location.pathname);
 
@@ -73,7 +70,10 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
             try {
                 const currentBundle = (await CapacitorUpdater.current()).bundle;
 
-                if (currentBundle.version !== 'builtin' && currentBundle?.version?.trim?.() !== '') {
+                if (
+                    currentBundle.version !== 'builtin' &&
+                    currentBundle?.version?.trim?.() !== ''
+                ) {
                     firstStartupStore.set.version(`${currentBundle.version}`);
                     Sentry.setTag('packageVersion', currentBundle.version);
                 }
@@ -106,27 +106,15 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         const { prompted } = await gate();
         if (prompted) return;
 
-        if (isMobile) {
-            // Mobile: existing "Add to LearnCard" menu in a Cancel modal.
-            newModal(
-                <AddToLearnCardMenu />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                },
-                {
-                    desktop: ModalTypes.Cancel,
-                    mobile: ModalTypes.Cancel,
-                }
-            );
-            return;
-        }
-
-        // Desktop: open the launchpad action modal instead — same Freeform modal
-        // configuration used by the launchpad greeting card's quick-action button.
+        // Both desktop and mobile open the launchpad action modal (LC-1921) —
+        // the same Freeform modal used by the launchpad greeting card's
+        // quick-action button. Mobile previously opened the AddToLearnCardMenu
+        // submenu directly; it now follows the desktop pattern.
         newModal(
             <LaunchPadActionModal />,
             {
-                className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                className:
+                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
                 sectionClassName: '!max-w-[500px] disable-scrollbars',
             },
             {
@@ -136,55 +124,77 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         );
     };
 
-    const sideMenuBrandingStyles =
-        branding === BrandingEnum.learncard
-            ? sideMenuLearnCardBrandingStyles
-            : sideMenuMetaversityBrandingStyles;
-
     return (
         <IonMenu contentId="main" swipeGesture menuId="appSideMenu" disabled={false}>
-            <IonContent color={`${sideMenuBrandingStyles.mainBg}`} className="flex flex-col">
+            <IonContent
+                style={{ ['--background' as any]: '#ffffff' }}
+                className="lc-side-menu-content"
+            >
                 <GenericErrorBoundary>
-                    <div className="flex-shrink-0">
-                        <div className="flex w-full flex-col items-center justify-center">
-                            <button className="side-menu-logo w-full flex items-center justify-start mt-8 mb-6 px-6 cursor-pointer">
-                                <IonMenuToggle autoHide={false}>
-                                    <div className="max-w-[90%] flex items-center justify-center">
-                                        {isMobile && (
-                                            <BurgerIcon className="text-grayscale-800 h-[25px] w-[25px] mr-4" />
-                                        )}
+                    <div className="flex min-h-full flex-col">
+                        <div className="flex-shrink-0">
+                            <div className="flex w-full flex-col items-center justify-center">
+                                <div className="side-menu-logo w-full flex items-center justify-between mt-8 mb-4 px-6">
+                                    <IonMenuToggle autoHide={false} className="cursor-pointer">
+                                        <div className="max-w-[90%] flex items-center justify-center">
+                                            {resolvedAssets.textLogoDark ? (
+                                                <img
+                                                    src={resolvedAssets.textLogoDark}
+                                                    alt="Logo"
+                                                    className="w-[180px] max-w-full object-contain"
+                                                />
+                                            ) : (
+                                                <LearnCardTextLogo
+                                                    className={`${
+                                                        colors.logoColor ?? 'text-grayscale-900'
+                                                    } w-[180px] max-w-full`}
+                                                />
+                                            )}
+                                        </div>
+                                    </IonMenuToggle>
 
-                                        {resolvedAssets.textLogoDark ? (
-                                            <img src={resolvedAssets.textLogoDark} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
-                                        ) : (
-                                            <LearnCardTextLogo className={`${colors.logoColor ?? 'text-grayscale-900'} w-[85%] max-w-[150px]`} />
-                                        )}
-                                    </div>
-                                </IonMenuToggle>
-                            </button>
+                                    {/* Mobile-only close affordance (LC-1921): tap or swipe to
+                                        dismiss the drawer. Hidden on desktop where the menu is
+                                        a persistent split-pane. */}
+                                    {isMobile && (
+                                        <IonMenuToggle
+                                            autoHide={false}
+                                            aria-label="Close menu"
+                                            className="cursor-pointer flex items-center justify-center p-2 -mr-2"
+                                        >
+                                            <LeftArrow
+                                                className="text-grayscale-400 h-[22px] w-auto"
+                                                opacity="1"
+                                            />
+                                        </IonMenuToggle>
+                                    )}
+                                </div>
 
-                            <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
-                                {flags?.enableLaunchPadUpdates && (
-                                    <NewAiSessionButton type={NewAiSessionButtonEnum.sideMenu} />
-                                )}
+                                {/* Light divider under the logo (LC-1921 Figma). */}
+                                <div className="self-stretch mx-6 border-t border-solid border-grayscale-200" />
 
-                                <IonMenuToggle
-                                    role="button"
-                                    autoHide={false}
-                                    onClick={handleBoost}
-                                    className={`text-[17px] flex items-center justify-center font-semibold py-[5px] rounded-full w-full max-w-[90%] border-solid border-[2px] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
-                                >
-                                    Add to {brandingConfig.name}
-                                    <GearPlusIcon className="ml-1 text-grayscale-800" />
-                                </IonMenuToggle>
+                                <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
+                                    {/* Disable New AI Session Button for now on Side Menu
+                                    {flags?.enableLaunchPadUpdates && (
+                                        <NewAiSessionButton type={NewAiSessionButtonEnum.sideMenu} />
+                                    )} */}
+
+                                    <IonMenuToggle
+                                        role="button"
+                                        autoHide={false}
+                                        onClick={handleBoost}
+                                        className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full max-w-[90%] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
+                                    >
+                                        Issue Credentials
+                                        <GearPlusIcon className="w-[30px] h-[30px] text-grayscale-800" />
+                                    </IonMenuToggle>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex-grow overflow-y-auto">
                         <GenericErrorBoundary>
                             <SideMenuRootLinks
-                                branding={BrandingEnum.learncard}
+                                branding={branding}
                                 activeTab={activeTab}
                                 setActiveTab={setActiveTab}
                             />
@@ -196,11 +206,33 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                             />
                         </GenericErrorBoundary>
 
-                        <ThemeSelector />
+                        {/* Bottom system section (LC-1921): Settings, theme toggle,
+                            Build My LearnCard, then footer — pinned to the bottom via
+                            mt-auto inside the min-h-full column. */}
+                        <div className="mt-auto flex flex-col gap-[5px] pt-2 pb-4">
+                            <div className="mx-4 mb-1 border-t border-solid border-grayscale-200" />
 
-                        <GenericErrorBoundary>
-                            <SideMenuFooter version={version} />
-                        </GenericErrorBoundary>
+                            <IonMenuToggle autoHide={false} className="w-full px-4">
+                                <button
+                                    type="button"
+                                    onClick={openMyLearnCard}
+                                    className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px] text-grayscale-900 font-poppins text-[17px]"
+                                >
+                                    <Settings className="h-[35px] w-[35px] text-grayscale-400" />
+                                    Settings
+                                </button>
+                            </IonMenuToggle>
+
+                            <ThemeSelector viewMode={themeSelectorViewMode.Compact} />
+
+                            <GenericErrorBoundary>
+                                <CheckListButton mode="sidemenu" className="mx-4 my-1" />
+                            </GenericErrorBoundary>
+
+                            <GenericErrorBoundary>
+                                <SideMenuFooter version={version} />
+                            </GenericErrorBoundary>
+                        </div>
                     </div>
                 </GenericErrorBoundary>
             </IonContent>

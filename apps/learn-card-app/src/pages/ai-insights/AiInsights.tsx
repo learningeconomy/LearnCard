@@ -146,9 +146,7 @@ const AiInsights: React.FC = () => {
                         disabled={createAiInsightCredentialLoading}
                         onClick={() => createAiInsightCredential()}
                     >
-                        {createAiInsightCredentialLoading
-                            ? 'Generating...'
-                            : 'Generate AI Insights'}
+                        {createAiInsightCredentialLoading ? 'Generating...' : 'Generate Insights'}
                     </button>
                 )}
             </div>

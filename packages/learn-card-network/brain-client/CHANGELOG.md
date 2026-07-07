@@ -1,5 +1,99 @@
 # @learncard/network-brain-client
 
+## 2.5.44
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/network-brain-service@3.16.7
+
+## 2.5.43
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix(packaging): ship ESM-clean named exports from the tRPC client packages and route `@learncard/init`'s Node ESM entry at the real ESM bundle
+
+    The four generated tRPC client packages (`lca-api-client`, `simple-signing-client`,
+    `network-brain-client`, `learn-cloud-client`) previously exposed only a CJS
+    `main` (a `NODE_ENV`-switching `mixedEntrypoint`) with no `exports` map. Under
+    Node's native ESM loader this bound to the CJS entry, whose named exports
+    (`getClient`, `getApiTokenClient`) the CommonJS lexer could not see through the
+    `module.exports = require(...)` indirection — so `import { getClient } from ...`
+    threw "getClient not found". Each package now declares `"type": "module"`, emits
+    its CJS bundles with a `.cjs` extension, and publishes a dual `exports` map
+    (`import` → real ESM build, `require` → CJS entry) mirroring `@learncard/types`
+    and `@learncard/helpers`. Each also gains the `files: ["dist"]` field it was
+    previously missing (with `dist` gitignored, `pnpm pack` shipped zero build
+    artifacts — now caught by `scripts/validate-packages.mjs`, which also gates the
+    three network clients going forward).
+
+    With the leaf clients resolving cleanly as ESM, `@learncard/init` no longer needs
+    the `createRequire(import.meta.url)` shim (`node-esm.mjs`) that routed Node ESM
+    consumers back through the CJS bundle — a shape that crashed when bundled
+    (`esbuild --platform=node` compiles `import.meta` away → `createRequire(undefined)`).
+    `init`'s `node.import` condition now points directly at `init.esm.js`, which loads
+    natively under Node ESM and bundles cleanly under esbuild/Vite. The didkit backend
+    is unchanged: it is still selected at call-time via the `didkit: 'node'` argument
+    (lazy `import('@learncard/didkit-plugin-node')`), independent of the entry module
+    format. This repairs the esbuild bundler job of the daily published-packages
+    smoketest and clears the clients' "known broken" advisory list.
+
+-   Updated dependencies [[`e24c3e69e4550529d1957189ae8a4a7e0edc0b17`](https://github.com/learningeconomy/LearnCard/commit/e24c3e69e4550529d1957189ae8a4a7e0edc0b17), [`69ef21bda3e003e83f4d842c52e037acf528af09`](https://github.com/learningeconomy/LearnCard/commit/69ef21bda3e003e83f4d842c52e037acf528af09), [`8a5cd1fa2b4996ea6e3e0fafab3cec64a704b99b`](https://github.com/learningeconomy/LearnCard/commit/8a5cd1fa2b4996ea6e3e0fafab3cec64a704b99b)]:
+    -   @learncard/network-brain-service@3.16.6
+
+## 2.5.42
+
+### Patch Changes
+
+-   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354)]:
+    -   @learncard/network-brain-service@3.16.5
+
+## 2.5.41
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@3.16.4
+
+## 2.5.40
+
+### Patch Changes
+
+-   Updated dependencies [[`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9)]:
+    -   @learncard/network-brain-service@3.16.3
+
+## 2.5.39
+
+### Patch Changes
+
+-   Updated dependencies [[`4bf986418f6477a7659faa348307ae7af199182a`](https://github.com/learningeconomy/LearnCard/commit/4bf986418f6477a7659faa348307ae7af199182a), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e)]:
+    -   @learncard/network-brain-service@3.16.2
+
+## 2.5.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@3.16.1
+
+## 2.5.37
+
+### Patch Changes
+
+-   Updated dependencies [[`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
+    -   @learncard/network-brain-service@3.16.0
+
+## 2.5.36
+
+### Patch Changes
+
+-   Updated dependencies [[`8014ca6408ac30f9c356f3978cbbf9c3174b8e1d`](https://github.com/learningeconomy/LearnCard/commit/8014ca6408ac30f9c356f3978cbbf9c3174b8e1d)]:
+    -   @learncard/network-brain-service@3.15.2
+
 ## 2.5.35
 
 ### Patch Changes
@@ -260,7 +354,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

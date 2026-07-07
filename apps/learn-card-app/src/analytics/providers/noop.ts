@@ -1,5 +1,7 @@
 import type { AnalyticsProvider } from '../types';
 import type { AnalyticsEventName, EventPayload } from '../events';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('noop');
 
 /**
  * No-op analytics provider.
@@ -11,37 +13,40 @@ export class NoopProvider implements AnalyticsProvider {
 
     async init(): Promise<void> {
         if (import.meta.env.DEV) {
-            console.debug('[Analytics:Noop] Initialized (no-op mode)');
+            log.debug('[Analytics:Noop] Initialized (no-op mode)');
         }
     }
 
     async identify(userId: string, traits?: Record<string, unknown>): Promise<void> {
         if (import.meta.env.DEV) {
-            console.debug('[Analytics:Noop] identify', { userId, traits });
+            log.debug('[Analytics:Noop] identify', { userId, traits });
         }
     }
 
-    async track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<void> {
+    async track<E extends AnalyticsEventName>(
+        event: E,
+        properties: EventPayload<E>
+    ): Promise<void> {
         if (import.meta.env.DEV) {
-            console.debug('[Analytics:Noop] track', { event, properties });
+            log.debug('[Analytics:Noop] track', { event, properties });
         }
     }
 
     async page(name: string, properties?: Record<string, unknown>): Promise<void> {
         if (import.meta.env.DEV) {
-            console.debug('[Analytics:Noop] page', { name, properties });
+            log.debug('[Analytics:Noop] page', { name, properties });
         }
     }
 
     async reset(): Promise<void> {
         if (import.meta.env.DEV) {
-            console.debug('[Analytics:Noop] reset');
+            log.debug('[Analytics:Noop] reset');
         }
     }
 
     async setEnabled(_enabled: boolean): Promise<void> {
         if (import.meta.env.DEV) {
-            console.debug('[Analytics:Noop] setEnabled', { enabled: _enabled });
+            log.debug('[Analytics:Noop] setEnabled', { enabled: _enabled });
         }
     }
 }

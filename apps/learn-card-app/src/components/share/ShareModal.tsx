@@ -3,6 +3,8 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('share-modal');
 
 import { IonSpinner } from '@ionic/react';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -37,12 +39,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ contractUri, profileId, overrid
                 profileId: string;
                 expiresIn: number | null;
             } = await wallet?.invoke?.generateInvite(challenge, expiration);
-            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${generatedInvite?.challenge}&profileId=${generatedInvite?.profileId}`;
+            const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${
+                generatedInvite?.challenge
+            }&profileId=${generatedInvite?.profileId}`;
             setInviteLink(_inviteLink);
             // Treat null as 0 for "never expire"
             setExpiresIn(generatedInvite?.expiresIn === null ? 0 : generatedInvite?.expiresIn);
         } catch (e) {
-            console.log('generateInvite::error', e);
+            log.info('generateInvite::error', e);
             presentToast('Failed to generate invite link', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

@@ -8,6 +8,7 @@ import {
     JWEValidator,
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
+    StoredCredentialEnvelopeValidator,
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -51,7 +52,14 @@ const resolveStoredContent = async ({
     challenge?: string;
     ctx: Context;
     bypassAccessChecks?: boolean;
-}): Promise<UnsignedVC | VC | VP | JWE | z.infer<typeof ConsentFlowContractValidator> | z.infer<typeof ConsentFlowTermsValidator>> => {
+}): Promise<
+    | UnsignedVC
+    | VC
+    | VP
+    | JWE
+    | z.infer<typeof ConsentFlowContractValidator>
+    | z.infer<typeof ConsentFlowTermsValidator>
+> => {
     const { domain: localDomain } = ctx;
 
     if (isContentAddressedUri(uri)) {
@@ -264,7 +272,10 @@ export const storageRouter = t.router({
         })
         .input(
             z.object({
-                item: UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator),
+                item: UnsignedVCValidator.or(VCValidator)
+                    .or(VPValidator)
+                    .or(JWEValidator)
+                    .or(StoredCredentialEnvelopeValidator),
                 type: z.enum(['credential', 'presentation']).optional(),
             })
         )
@@ -285,7 +296,10 @@ export const storageRouter = t.router({
                 return uri;
             }
 
-            const boostUri = !isJwe && typeof item === 'object' && item && 'boostId' in item ? item.boostId : undefined;
+            const boostUri =
+                !isJwe && typeof item === 'object' && item && 'boostId' in item
+                    ? item.boostId
+                    : undefined;
 
             if (typeof boostUri === 'string') {
                 const boost = await getBoostById(getIdFromUri(boostUri));
@@ -322,7 +336,13 @@ export const storageRouter = t.router({
         })
         .input(z.object({ uri: z.string(), challenge: z.string().optional() }))
         .output(
-            UnsignedVCValidator.or(VCValidator)
+            // StoredCredentialEnvelopeValidator FIRST because ConsentFlowContractValidator
+            // uses .prefault() on every field, so any object — including an envelope —
+            // would successfully parse as a contract with extras stripped. Envelope's
+            // `format` literal enum makes its parse strict, so non-envelopes fall through
+            // to the next validator correctly.
+            StoredCredentialEnvelopeValidator.or(UnsignedVCValidator)
+                .or(VCValidator)
                 .or(VPValidator)
                 .or(JWEValidator)
                 .or(ConsentFlowContractValidator)
@@ -337,7 +357,8 @@ export const storageRouter = t.router({
                 path: '/storage/break-glass',
                 tags: ['Storage'],
                 summary: 'Break-glass plaintext credential access',
-                description: 'Emergency staff-only plaintext access for investigation and debugging',
+                description:
+                    'Emergency staff-only plaintext access for investigation and debugging',
             },
             requiredScope: 'storage:read',
         })

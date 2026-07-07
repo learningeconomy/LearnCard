@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-boost-menu');
 
 import {
     useDeleteCredentialRecord,
@@ -28,6 +30,8 @@ const useBoostMenu = ({
     boostCredential,
     onCloseModal,
     onDelete,
+    onManageIssuances,
+    isDraft,
 }:
     | {
           credential?: VC;
@@ -36,8 +40,10 @@ const useBoostMenu = ({
           menuType: BoostMenuType.earned;
           onCloseModal?: () => void;
           onDelete?: () => void;
+          onManageIssuances?: never;
           boostUri?: never;
           boostCredential?: never;
+          isDraft?: never;
       }
     | {
           boostUri: string;
@@ -46,8 +52,10 @@ const useBoostMenu = ({
           boostCredential?: VC | UnsignedVC;
           onCloseModal?: () => void;
           onDelete?: () => void;
+          onManageIssuances?: () => void;
           credential?: never;
           record?: never;
+          isDraft?: boolean;
       }) => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -70,11 +78,11 @@ const useBoostMenu = ({
             await deleteManagedBoost({ boostUri, category: categoryType });
             onDelete?.();
         } else if (record?.id && record.uri) {
-            console.log('deleting record', record);
+            log.info('deleting record', record);
             await deleteCredentialRecord(record as LCR);
             onDelete?.();
         } else {
-            presentToast("Error deleting credential: unable to locate record ID.", {
+            presentToast('Error deleting credential: unable to locate record ID.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -94,6 +102,8 @@ const useBoostMenu = ({
                 handleDelete={handleDelete}
                 menuType={menuType}
                 categoryType={categoryType}
+                handleManageIssuances={onManageIssuances}
+                isDraft={isDraft}
             />,
             { sectionClassName: '!max-w-[400px]' }
         );

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-page');
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
@@ -9,7 +11,6 @@ import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import {
     useModal,
     ModalTypes,
-    useGetCredentialList,
     CredentialCategoryEnum,
     newCredsStore,
     lazyWithRetry,
@@ -19,21 +20,22 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
-import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import CheckListButton from '../../components/learncard/checklist/CheckListButton';
 import { IonPage, IonContent, IonRow, IonCol, IonModal } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import WalletPageItemWrapper from './WalletPageItemWrapper';
+import { filterPassportCategories } from './passportCategories';
+import PassportActivityFeed from './activity-feed/PassportActivityFeed';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
 import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -53,7 +55,7 @@ const WalletPage: React.FC = () => {
 
     const { theme, colors } = useTheme();
     const { isMobile } = useDeviceTypeByWidth();
-    const categories = theme.categories;
+    const categories = filterPassportCategories(theme.categories ?? []);
 
     const passportBgColor = colors?.defaults?.passportBgColor;
     const passportTextColor = colors?.defaults?.passportTextColor ?? 'text-grayscale-900';
@@ -64,26 +66,15 @@ const WalletPage: React.FC = () => {
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
-    const { data: records } = useGetCredentialList(CredentialCategoryEnum.family);
-
-    const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
-    const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
-    const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
-    const showAiInsights = flags?.showAiInsights;
-    const hideAiPathways = flags?.hideAiPathways;
-    const showChecklistButton = Boolean(flags?.enableOnboardingChecklist);
-    const showResumeBuilderButton = Boolean(flags?.enableResumeBuilder);
-    const showInlineWalletActions = showChecklistButton && showResumeBuilderButton;
+    const showActivityFeed = Boolean(flags?.enablePassportActivityFeed);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
-    const placeholderCategories = [
-        CredentialCategoryEnum.aiPathway,
-        CredentialCategoryEnum.aiInsight,
-    ];
 
     useEffect(() => {
         prefetchRoutes({ aiEnabled: isAiEnabled });
     }, [isAiEnabled]);
+
+    const onHeaderScroll = useHeaderScrollSync();
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
@@ -102,7 +93,7 @@ const WalletPage: React.FC = () => {
                     );
                 }
             } catch (error) {
-                console.log(error);
+                log.info(error);
             }
         });
 
@@ -156,84 +147,84 @@ const WalletPage: React.FC = () => {
         history.push(path);
     };
 
-    const renderWalletList = categories?.map(category => {
-        const { categoryId: categoryType } = category;
+    const renderWalletList = categories?.map(category => (
+        <GenericErrorBoundary key={category.categoryId}>
+            <WalletPageItemWrapper
+                handleClickSquare={handleClickSquare}
+                walletPageItem={category}
+            />
+        </GenericErrorBoundary>
+    ));
 
-        if (categoryType === CredentialCategoryEnum.family && !canCreateFamilies) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.resume) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.aiInsight && !showAiInsights) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.aiPathway && hideAiPathways) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        return (
-            <GenericErrorBoundary key={categoryType}>
-                <WalletPageItemWrapper
-                    handleClickSquare={handleClickSquare}
-                    walletPageItem={category}
-                />
-            </GenericErrorBoundary>
-        );
-    });
-
-    const isGrid = viewMode === PassportPageViewMode.grid;
     const isList = viewMode === PassportPageViewMode.list;
+    // The list/grid switcher is mobile-only; desktop is always the tiled grid.
+    const effectiveIsList = isMobile && isList;
 
     return (
         <IonPage
-            className="bg-white"
+            className="bg-grayscale-100"
             style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
         >
-            <MainHeader
-                customClassName={passportBgColor ? '' : 'bg-white'}
-                style={passportBgColor
-                    ? isMobile
-                        ? {
-                            background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
-                            backdropFilter: 'blur(5px)',
-                            WebkitBackdropFilter: 'blur(5px)',
-                            borderBottom: '1px solid white',
-                        }
-                        : { backgroundColor: passportBgColor }
-                    : undefined
-                }
-                notificationColorOverride={passportBgColor && !isMobile ? 'text-white' : undefined}
-            />
+            {/* Desktop hides the header bar entirely (the sidebar carries the LEARNCARD
+                wordmark) and renders the profile/alerts island in the content row below;
+                mobile keeps the frosted MainHeader bar. */}
+            {isMobile && (
+                <MainHeader
+                    customClassName=""
+                    style={{
+                        background:
+                            'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                        backdropFilter: 'blur(5px)',
+                        WebkitBackdropFilter: 'blur(5px)',
+                        borderBottom: '1px solid white',
+                    }}
+                />
+            )}
+            {/* Desktop: profile/alerts island pinned to the page's top-right corner
+                (like the other pages), independent of the centered content column. */}
+            {!isMobile && (
+                // Pinned to the exact inset of MainHeader's native island so it
+                // doesn't shift when navigating to/from pages that keep the header:
+                // Ionic grid padding (5px) + col padding (5px) = 10px on each axis.
+                <div className="absolute right-[10px] top-[10px] z-20">
+                    <ProfileAlertsIsland />
+                </div>
+            )}
             <GenericErrorBoundary>
                 <IonContent
                     fullscreen
-                    style={passportBgColor ? { '--background': passportBgColor } as React.CSSProperties : undefined}
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                    style={
+                        passportBgColor
+                            ? ({ '--background': passportBgColor } as React.CSSProperties)
+                            : undefined
+                    }
                 >
-                    <div className={`px-[20px] ${passportBgColor ? 'pt-[12px]' : ''}`}>
-                        <div className="flex flex-col max-w-[600px] mx-auto">
+                    <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
+                        <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
-                                <div className="flex justify-between items-center w-full">
-                                    <div className="flex items-center gap-[10px] w-full">
-                                        <h2 className={`${passportTextColor} font-poppins text-[25px] tracking-[0.25px]`}>
-                                            Passport
-                                        </h2>
+                                <div className="flex justify-between items-center w-full gap-[10px]">
+                                    <h2
+                                        className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
+                                    >
+                                        Passport
+                                    </h2>
 
-                                        {/* 
-                                        // TODOS:
-                                        - add support for new items count based on categories
-                                        */}
+                                    <div className="wallet-header-menu-options items-center flex gap-[15px]">
                                         {totalNewCredentialsCount > 0 && (
-                                            <p className={`${passportBgColor ? 'text-white/80' : 'text-emerald-700'} font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]`}>
+                                            <p
+                                                className={`${
+                                                    passportBgColor
+                                                        ? 'text-white/80'
+                                                        : 'text-emerald-700'
+                                                } font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px] whitespace-nowrap`}
+                                            >
                                                 <DotIcon className="w-[10px] h-[10px]" />{' '}
-                                                {totalNewCredentialsCount} New
+                                                {totalNewCredentialsCount} New Credentials
                                             </p>
                                         )}
-                                    </div>
-                                    <div className="wallet-header-menu-options items-center flex gap-[10px]">
                                         {flags?.boostBundleMenu && (
                                             <WalletActionButton
                                                 location={location}
@@ -242,49 +233,27 @@ const WalletPage: React.FC = () => {
                                             />
                                         )}
 
-                                        <div className="flex items-center justify-end">
-                                            <WalletPageViewModeSelector />
-                                            <ThemeSelector viewMode={themeSelectorViewMode.Mini} />
-                                        </div>
+                                        {/* View switcher is mobile-only; on desktop the grid is
+                                            fixed. Theme switching now lives in the side menu
+                                            (Colorful Mode), so there's no per-page theme picker. */}
+                                        {isMobile && (
+                                            <div className="flex items-center justify-end">
+                                                <WalletPageViewModeSelector />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </IonRow>
-                            {isMobile ? (
-                                <>
-                                    <CheckListButton className="mb-[10px] mt-[16px]" />
-                                    <ResumeBuilderController className="mb-[16px]" />
-                                </>
-                            ) : (
-                                <div
-                                    className={`w-full flex gap-[10px] pt-[6px] pb-[16px] ${
-                                        showInlineWalletActions ? 'flex-row' : 'flex-col'
-                                    }`}
-                                >
-                                    {showChecklistButton && (
-                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
-                                            <CheckListButton
-                                                mode={
-                                                    showInlineWalletActions ? 'inline' : 'default'
-                                                }
-                                            />
-                                        </div>
-                                    )}
-                                    {showResumeBuilderButton && (
-                                        <div className={showInlineWalletActions ? 'flex-1' : ''}>
-                                            <ResumeBuilderController mode="inline" />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
+                            <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
                                 <IonCol
                                     className={`wallet-squares-container ${
-                                        isList ? 'list' : 'grid'
+                                        effectiveIsList ? 'list' : 'grid'
                                     }`}
                                 >
                                     {renderWalletList}
                                 </IonCol>
                             </IonRow>
+                            {showActivityFeed && <PassportActivityFeed />}
                         </div>
                     </div>
                 </IonContent>

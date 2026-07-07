@@ -29,7 +29,9 @@ import {
 } from './LaunchPadSearch/launchpad-search.helpers';
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import AppStoreListItem from './AppStoreListItem';
+import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
 import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
@@ -39,14 +41,28 @@ const LaunchPad: React.FC = () => {
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+        tab: tabParam,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
     const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
 
-    const [tab, setTab] = useState(LaunchPadTabEnum.myApps);
+    const initialTab = (() => {
+        const raw = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+        const match = Object.values(LaunchPadTabEnum).find(option => option === raw);
+        return match ?? LaunchPadTabEnum.myApps;
+    })();
+
+    const [tab, setTab] = useState(initialTab);
     const [filterBy, setFilterBy] = useState<LaunchPadFilterOptionsEnum>(
         LaunchPadFilterOptionsEnum.allApps
     );
@@ -86,7 +102,7 @@ const LaunchPad: React.FC = () => {
     const { data: featuredCarouselApps } = useFeaturedCarouselApps(appStoreCategory);
 
     // Fetch curated list apps
-    const { data: curatedListApps } = useCuratedListApps();
+    const { data: curatedListApps, isLoading: isLoadingCuratedApps } = useCuratedListApps();
 
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
@@ -144,6 +160,8 @@ const LaunchPad: React.FC = () => {
             openConsentFlowModal();
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
+
+    const onHeaderScroll = useHeaderScrollSync();
 
     // Filter app store apps based on search and category
     const filteredInstalledApps = useMemo(() => {
@@ -248,7 +266,13 @@ const LaunchPad: React.FC = () => {
         <IonPage className="bg-white">
             <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
-                <IonContent fullscreen scrollY={true} color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    scrollY={true}
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                >
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
                             <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
@@ -323,7 +347,9 @@ const LaunchPad: React.FC = () => {
                                                                       ? 'Plugin'
                                                                       : 'Plugins'
                                                               }`
-                                                            : `${filteredAvailableApps.length} Search ${
+                                                            : `${
+                                                                  filteredAvailableApps.length
+                                                              } Search ${
                                                                   filteredAvailableApps.length === 1
                                                                       ? 'Result'
                                                                       : 'Results'
@@ -372,6 +398,20 @@ const LaunchPad: React.FC = () => {
                                     lines="none"
                                     className="w-full max-w-[600px] bg-grayscale-100"
                                 >
+                                    {/* My Apps tab: Installed Apps loading skeletons (cold load, no data yet) */}
+                                    {isMyApps &&
+                                        isLoadingInstalledApps &&
+                                        filteredInstalledApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        Installed Apps
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="installed-skeleton" />
+                                            </>
+                                        )}
+
                                     {/* My Apps tab: Installed Apps (hidden if none) */}
                                     {isMyApps && filteredInstalledApps.length > 0 && (
                                         <>
@@ -388,6 +428,18 @@ const LaunchPad: React.FC = () => {
                                                     onInstallSuccess={refetchInstalledApps}
                                                 />
                                             ))}
+                                        </>
+                                    )}
+
+                                    {/* Suggested Apps loading skeletons (cold load, no data yet) */}
+                                    {isLoadingCuratedApps && filteredCuratedApps.length === 0 && (
+                                        <>
+                                            <div className="px-2 pt-4 pb-2">
+                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                    Suggested Apps
+                                                </p>
+                                            </div>
+                                            <AppStoreListSkeleton idPrefix="suggested-skeleton" />
                                         </>
                                     )}
 
@@ -411,6 +463,20 @@ const LaunchPad: React.FC = () => {
                                             ))}
                                         </>
                                     )}
+
+                                    {/* Category/All tabs: browse list loading skeletons (cold load, no data yet) */}
+                                    {(isCategory || isAll) &&
+                                        isLoadingBrowseApps &&
+                                        nonPromotedAvailableApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="browse-skeleton" />
+                                            </>
+                                        )}
 
                                     {/* Category/All tabs: browse list (include installed apps with Open CTA) */}
                                     {(isCategory || isAll) &&
@@ -472,21 +538,22 @@ const LaunchPad: React.FC = () => {
                                             !hasContract &&
                                             !hasCustomApp &&
                                             !isLoadingBrowseApps &&
-                                            !isLoadingInstalledApps;
+                                            !isLoadingInstalledApps &&
+                                            !isLoadingCuratedApps;
 
                                         if (!isEmpty) return null;
 
                                         const title = isMyApps
                                             ? 'Your apps will live here'
                                             : isAll
-                                              ? 'No apps available right now'
-                                              : `Nothing in ${tab} yet`;
+                                            ? 'No apps available right now'
+                                            : `Nothing in ${tab} yet`;
 
                                         const subtitle = isMyApps
                                             ? 'Install something from the App Store to get started.'
                                             : isAll
-                                              ? 'Check back later — new apps are added all the time.'
-                                              : 'Check back soon, or browse all apps.';
+                                            ? 'Check back later — new apps are added all the time.'
+                                            : 'Check back soon, or browse all apps.';
 
                                         const showCta = !isAll;
 
@@ -504,9 +571,7 @@ const LaunchPad: React.FC = () => {
                                                 </p>
                                                 {showCta && (
                                                     <button
-                                                        onClick={() =>
-                                                            setTab(LaunchPadTabEnum.all)
-                                                        }
+                                                        onClick={() => setTab(LaunchPadTabEnum.all)}
                                                         className="mt-5 px-5 py-2 rounded-full bg-grayscale-900 text-white text-sm font-semibold font-poppins"
                                                     >
                                                         Browse all apps

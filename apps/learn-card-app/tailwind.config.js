@@ -20,6 +20,20 @@ module.exports = {
         'bg-sand-50',
         'bg-vp-red-50',
         'bg-baltic-blue-500',
+        // LC-1921 side-menu Build-My-LearnCard card + theme toggle: tints built
+        // via `bg-${family}-{50,200,500}` from the active theme primary color.
+        'bg-indigo-50',
+        'bg-indigo-200',
+        'bg-indigo-200/50',
+        'bg-indigo-500',
+        'bg-blue-50',
+        'bg-blue-200',
+        'bg-blue-200/50',
+        'bg-blue-500',
+        // VetPass default family is multi-word (`baltic-blue-500`).
+        'bg-baltic-blue-50',
+        'bg-baltic-blue-200',
+        'bg-baltic-blue-200/50',
     ],
     theme: {
         fontFamily: {
@@ -47,6 +61,8 @@ module.exports = {
                 'chat-in': 'chat-in 250ms ease-out forwards',
                 'chat-in-mine': 'chat-in-mine 250ms ease-out forwards',
                 'spin-custom': 'spin-custom 1s linear infinite',
+                'pop-in': 'pop-in 0.4s ease-out forwards',
+                'shimmer': 'shimmer 1.2s ease-in-out forwards',
             },
             keyframes: {
                 'pulse-opacity': {
@@ -101,6 +117,14 @@ module.exports = {
                 'sdk-bar': {
                     '0%': { transform: 'translateX(-100%)' },
                     '100%': { transform: 'translateX(300%)' },
+                },
+                'pop-in': {
+                    '0%': { opacity: '0', transform: 'translateY(6px) scale(0.96)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                },
+                'shimmer': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(200%)' },
                 },
             },
             boxShadow: {

@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-sync-data-source');
 // import { useIonToast } from '@ionic/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -68,7 +70,7 @@ export const useSyncDataSource = (id: string) => {
                 }
             } catch (error) {
                 walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
-                console.log('fetch::error', error);
+                log.info('fetch::error', error);
                 throw new Error('There was an error fetching your credentials.');
             }
 
@@ -78,7 +80,7 @@ export const useSyncDataSource = (id: string) => {
 
             try {
                 if (!filteredIds || filteredIds?.length === 0) {
-                    console.warn('No credential Ids provided, skipping request');
+                    log.warn('No credential Ids provided, skipping request');
                     return false;
                 }
 
@@ -129,10 +131,10 @@ export const useSyncDataSource = (id: string) => {
                 // });
                 walletStore.set.setIsSyncing(WalletSyncState.Completed, vcData?.length);
 
-                console.log('2nd req', vcData);
+                log.info('2nd req', vcData);
             } catch (error) {
                 walletStore.set.setIsSyncing(WalletSyncState.NotSyncing);
-                console.log('fetch2::error', error);
+                log.info('fetch2::error', error);
                 throw new Error('There was an error fetching your credentials.');
             }
 

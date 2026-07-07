@@ -34,11 +34,7 @@ const makeJwtVc = (vcBody: Record<string, unknown>): string => {
 };
 
 const base64url = (s: string): string =>
-    Buffer.from(s)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 const universityDegreeJwt = makeJwtVc({
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -69,7 +65,7 @@ const mastersDegreeLdp = {
 };
 
 describe('selectCredentialsForDcql — single credential query', () => {
-    it('finds a JWT-VC matching by type', () => {
+    it('finds a JWT-VC matching by type', async () => {
         const query = parseDcqlQuery({
             credentials: [
                 {
@@ -82,19 +78,17 @@ describe('selectCredentialsForDcql — single credential query', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
+        const result = await selectCredentialsForDcql(
             [{ credential: universityDegreeJwt }, { credential: openBadgeJwt }],
             query
         );
 
         expect(result.canSatisfy).toBe(true);
         expect(result.matches.degree?.candidates).toHaveLength(1);
-        expect(result.matches.degree?.candidates[0]?.credential).toBe(
-            universityDegreeJwt
-        );
+        expect(result.matches.degree?.candidates[0]?.credential).toBe(universityDegreeJwt);
     });
 
-    it('returns canSatisfy=false when no candidate matches', () => {
+    it('returns canSatisfy=false when no candidate matches', async () => {
         const query = parseDcqlQuery({
             credentials: [
                 {
@@ -107,7 +101,7 @@ describe('selectCredentialsForDcql — single credential query', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
+        const result = await selectCredentialsForDcql(
             [{ credential: universityDegreeJwt }, { credential: openBadgeJwt }],
             query
         );
@@ -118,7 +112,7 @@ describe('selectCredentialsForDcql — single credential query', () => {
         expect(result.reason).toBeDefined();
     });
 
-    it('filters on a claim value', () => {
+    it('filters on a claim value', async () => {
         // The query asks specifically for a BSc — the MSc candidate
         // must be excluded even though both share the type.
         const query = parseDcqlQuery({
@@ -139,7 +133,7 @@ describe('selectCredentialsForDcql — single credential query', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
+        const result = await selectCredentialsForDcql(
             [
                 { credential: universityDegreeJwt },
                 {
@@ -158,7 +152,7 @@ describe('selectCredentialsForDcql — single credential query', () => {
 });
 
 describe('selectCredentialsForDcql — format gating', () => {
-    it("only matches credentials whose format matches the query's", () => {
+    it("only matches credentials whose format matches the query's", async () => {
         // Query asks for ldp_vc; the JWT-VC candidate must be
         // excluded even though its type matches.
         const query = parseDcqlQuery({
@@ -173,24 +167,19 @@ describe('selectCredentialsForDcql — format gating', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
-            [
-                { credential: universityDegreeJwt },
-                { credential: mastersDegreeLdp },
-            ],
+        const result = await selectCredentialsForDcql(
+            [{ credential: universityDegreeJwt }, { credential: mastersDegreeLdp }],
             query
         );
 
         expect(result.canSatisfy).toBe(true);
         expect(result.matches.ldp_only?.candidates).toHaveLength(1);
-        expect(result.matches.ldp_only?.candidates[0]?.credential).toBe(
-            mastersDegreeLdp
-        );
+        expect(result.matches.ldp_only?.candidates[0]?.credential).toBe(mastersDegreeLdp);
     });
 });
 
 describe('selectCredentialsForDcql — multiple credential queries', () => {
-    it('satisfies an unconditional multi-query (implicit AND)', () => {
+    it('satisfies an unconditional multi-query (implicit AND)', async () => {
         // No `credential_sets` declared → DCQL semantics say all
         // listed credential queries must be satisfied.
         const query = parseDcqlQuery({
@@ -212,7 +201,7 @@ describe('selectCredentialsForDcql — multiple credential queries', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
+        const result = await selectCredentialsForDcql(
             [{ credential: universityDegreeJwt }, { credential: openBadgeJwt }],
             query
         );
@@ -222,7 +211,7 @@ describe('selectCredentialsForDcql — multiple credential queries', () => {
         expect(result.matches.badge?.candidates).toHaveLength(1);
     });
 
-    it('returns canSatisfy=false when one of multiple queries is unsatisfied', () => {
+    it('returns canSatisfy=false when one of multiple queries is unsatisfied', async () => {
         const query = parseDcqlQuery({
             credentials: [
                 {
@@ -242,10 +231,7 @@ describe('selectCredentialsForDcql — multiple credential queries', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
-            [{ credential: universityDegreeJwt }],
-            query
-        );
+        const result = await selectCredentialsForDcql([{ credential: universityDegreeJwt }], query);
 
         expect(result.canSatisfy).toBe(false);
         expect(result.matches.degree?.candidates).toHaveLength(1);
@@ -254,7 +240,7 @@ describe('selectCredentialsForDcql — multiple credential queries', () => {
 });
 
 describe('selectCredentialsForDcql — credential_sets', () => {
-    it('satisfies an OR-of-options set when one option is met', () => {
+    it('satisfies an OR-of-options set when one option is met', async () => {
         // Verifier asks for "degree OR license" — having only the
         // degree should still mark the set satisfied.
         const query = parseDcqlQuery({
@@ -281,10 +267,7 @@ describe('selectCredentialsForDcql — credential_sets', () => {
             ],
         });
 
-        const result = selectCredentialsForDcql(
-            [{ credential: universityDegreeJwt }],
-            query
-        );
+        const result = await selectCredentialsForDcql([{ credential: universityDegreeJwt }], query);
 
         expect(result.canSatisfy).toBe(true);
         expect(result.matches.degree?.candidates).toHaveLength(1);

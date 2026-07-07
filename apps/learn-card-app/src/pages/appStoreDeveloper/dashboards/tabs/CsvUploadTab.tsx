@@ -1,6 +1,8 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('csv-upload-tab');
 /**
  * CsvUploadTab - Batch CSV Upload for Credential Issuance
- * 
+ *
  * Supports two modes:
  * 1. Multi-template mode (when master templates exist):
  *    - Uses a "boost selector" column to determine which child template per row
@@ -34,7 +36,7 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { CredentialTemplate } from '../types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
-import { 
+import {
     extractVariablesByType,
     OBv3CredentialTemplate,
 } from '../../partner-onboarding/components/CredentialBuilder';
@@ -67,7 +69,10 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
     const csvInputRef = useRef<HTMLInputElement>(null);
 
     // Load full template details on-demand (not loaded by dashboard for performance)
-    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
+        integration.id,
+        basicTemplates
+    );
 
     // CSV state
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
@@ -89,7 +94,9 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
     // Get master templates (have child templates)
     const masterTemplates = useMemo(() => {
-        return (templates as ExtendedTemplate[]).filter(t => t.isMasterTemplate && t.childTemplates?.length);
+        return (templates as ExtendedTemplate[]).filter(
+            t => t.isMasterTemplate && t.childTemplates?.length
+        );
     }, [templates]);
 
     // Determine if we're in multi-template mode
@@ -135,7 +142,9 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
     // Selected template (single-template mode only)
     const selectedTemplate = useMemo(() => {
         if (isMultiTemplateMode) return null;
-        return issuableTemplates.find(t => t.id === selectedTemplateId || t.boostUri === selectedTemplateId);
+        return issuableTemplates.find(
+            t => t.id === selectedTemplateId || t.boostUri === selectedTemplateId
+        );
     }, [issuableTemplates, selectedTemplateId, isMultiTemplateMode]);
 
     // Get shared dynamic variables across all child templates (multi-template mode)
@@ -147,10 +156,12 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         for (const child of allChildTemplates) {
             if (child.obv3Template) {
                 try {
-                    const { dynamic } = extractVariablesByType(child.obv3Template as OBv3CredentialTemplate);
+                    const { dynamic } = extractVariablesByType(
+                        child.obv3Template as OBv3CredentialTemplate
+                    );
                     allVarSets.push(new Set(dynamic));
                 } catch (e) {
-                    console.warn('Failed to extract child template variables:', e);
+                    log.warn('Failed to extract child template variables:', e);
                 }
             }
         }
@@ -168,14 +179,20 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         }
 
         if (!selectedTemplate?.obv3Template) {
-            return selectedTemplate?.fields?.map(f => f.variableName || fieldNameToVariable(f.name || '')) || [];
+            return (
+                selectedTemplate?.fields?.map(
+                    f => f.variableName || fieldNameToVariable(f.name || '')
+                ) || []
+            );
         }
 
         try {
-            const { dynamic } = extractVariablesByType(selectedTemplate.obv3Template as OBv3CredentialTemplate);
+            const { dynamic } = extractVariablesByType(
+                selectedTemplate.obv3Template as OBv3CredentialTemplate
+            );
             return dynamic;
         } catch (e) {
-            console.warn('Failed to extract dynamic variables:', e);
+            log.warn('Failed to extract dynamic variables:', e);
             return [];
         }
     }, [isMultiTemplateMode, sharedVariables, selectedTemplate]);
@@ -192,7 +209,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
-            complete: (result) => {
+            complete: result => {
                 const headers = result.meta.fields || [];
                 const rows = result.data as Record<string, string>[];
 
@@ -212,7 +229,13 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
                 // Auto-detect course ID column for multi-template mode
                 if (isMultiTemplateMode) {
-                    const coursePatterns = ['courseid', 'course', 'template', 'boostid', 'credentialtype'];
+                    const coursePatterns = [
+                        'courseid',
+                        'course',
+                        'template',
+                        'boostid',
+                        'credentialtype',
+                    ];
                     const courseGuess = cleanHeaders.find(h => {
                         const normalized = h.toLowerCase().replace(/[^a-z]/g, '');
                         return coursePatterns.some(p => normalized.includes(p));
@@ -234,11 +257,11 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         if (isMultiTemplateMode) {
             // Multi-template mode: add boost selector column + shared variables
             headers.push('Course ID'); // Boost selector column
-            const formattedVars = sharedVariables.map(v => 
+            const formattedVars = sharedVariables.map(v =>
                 v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
             );
             headers.push(...formattedVars);
-            
+
             // Add example rows for each child template
             for (const child of allChildTemplates) {
                 const row: string[] = [
@@ -253,11 +276,11 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
             }
         } else if (selectedTemplate) {
             // Single template mode: add that template's variables
-            const formattedVars = templateVariables.map(v => 
+            const formattedVars = templateVariables.map(v =>
                 v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
             );
             headers.push(...formattedVars);
-            
+
             // Add one example row
             const row: string[] = ['example@email.com'];
             for (const field of formattedVars) {
@@ -273,7 +296,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         const csvLines = [headers.join(',')];
         for (const row of rows) {
             // Escape values that contain commas
-            csvLines.push(row.map(v => v.includes(',') ? `"${v}"` : v).join(','));
+            csvLines.push(row.map(v => (v.includes(',') ? `"${v}"` : v)).join(','));
         }
         const csvContent = csvLines.join('\n');
 
@@ -281,8 +304,8 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
-        const filename = isMultiTemplateMode 
+
+        const filename = isMultiTemplateMode
             ? 'batch-issuance-template.csv'
             : `${selectedTemplate!.name.toLowerCase().replace(/\s+/g, '-')}-batch-template.csv`;
         a.download = filename;
@@ -306,9 +329,9 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
     // Find template by boost selector value (multi-template mode)
     const findTemplateBySelector = (selectorValue: string): ExtendedTemplate | null => {
         if (!selectorValue) return null;
-        
+
         const normalizedValue = selectorValue.toLowerCase().trim();
-        
+
         for (const child of allChildTemplates) {
             if (boostMatchType === 'id') {
                 // Exact match on ID or boostUri
@@ -323,7 +346,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 }
             }
         }
-        
+
         return null;
     };
 
@@ -332,12 +355,16 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
         // Validation based on mode
         if (isMultiTemplateMode) {
             if (!boostSelectorColumn || !recipientColumn || csvRows.length === 0) {
-                presentToast('Please select recipient and course ID columns', { hasDismissButton: true });
+                presentToast('Please select recipient and course ID columns', {
+                    hasDismissButton: true,
+                });
                 return;
             }
         } else {
             if (!selectedTemplate?.boostUri || !recipientColumn || csvRows.length === 0) {
-                presentToast('Please select a template, recipient column, and upload a CSV', { hasDismissButton: true });
+                presentToast('Please select a template, recipient column, and upload a CSV', {
+                    hasDismissButton: true,
+                });
                 return;
             }
         }
@@ -363,9 +390,11 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 const recipient = row[recipientColumn]?.trim();
 
                 if (!recipient) {
-                    setProcessingResults(prev => prev.map((r, idx) => 
-                        idx === i ? { ...r, status: 'error', message: 'Missing recipient' } : r
-                    ));
+                    setProcessingResults(prev =>
+                        prev.map((r, idx) =>
+                            idx === i ? { ...r, status: 'error', message: 'Missing recipient' } : r
+                        )
+                    );
                     continue;
                 }
 
@@ -376,18 +405,28 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 if (isMultiTemplateMode) {
                     const selectorValue = row[boostSelectorColumn]?.trim();
                     templateToUse = findTemplateBySelector(selectorValue);
-                    
+
                     if (!templateToUse) {
-                        setProcessingResults(prev => prev.map((r, idx) => 
-                            idx === i ? { ...r, status: 'error', message: `No template found for "${selectorValue}"` } : r
-                        ));
+                        setProcessingResults(prev =>
+                            prev.map((r, idx) =>
+                                idx === i
+                                    ? {
+                                          ...r,
+                                          status: 'error',
+                                          message: `No template found for "${selectorValue}"`,
+                                      }
+                                    : r
+                            )
+                        );
                         continue;
                     }
 
                     // Get variables for this specific template
                     if (templateToUse.obv3Template) {
                         try {
-                            const { dynamic } = extractVariablesByType(templateToUse.obv3Template as OBv3CredentialTemplate);
+                            const { dynamic } = extractVariablesByType(
+                                templateToUse.obv3Template as OBv3CredentialTemplate
+                            );
                             varsToUse = dynamic;
                         } catch (e) {
                             // Use shared variables as fallback
@@ -398,9 +437,13 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 }
 
                 if (!templateToUse?.boostUri) {
-                    setProcessingResults(prev => prev.map((r, idx) => 
-                        idx === i ? { ...r, status: 'error', message: 'No template available' } : r
-                    ));
+                    setProcessingResults(prev =>
+                        prev.map((r, idx) =>
+                            idx === i
+                                ? { ...r, status: 'error', message: 'No template available' }
+                                : r
+                        )
+                    );
                     continue;
                 }
 
@@ -411,9 +454,11 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                     const normalizedVar = varName.toLowerCase().replace(/_/g, ' ');
                     const matchingHeader = csvHeaders.find(h => {
                         const normalizedHeader = h.toLowerCase().replace(/_/g, ' ');
-                        return normalizedHeader === normalizedVar || 
-                               normalizedHeader.includes(normalizedVar) ||
-                               normalizedVar.includes(normalizedHeader);
+                        return (
+                            normalizedHeader === normalizedVar ||
+                            normalizedHeader.includes(normalizedVar) ||
+                            normalizedVar.includes(normalizedHeader)
+                        );
                     });
 
                     if (matchingHeader && row[matchingHeader]) {
@@ -430,19 +475,25 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         templateData,
                     });
 
-                    setProcessingResults(prev => prev.map((r, idx) => 
-                        idx === i ? { 
-                            ...r, 
-                            status: 'success', 
-                            message: `Sent: ${templateToUse!.name}`,
-                            credentialUri: result?.credentialUri,
-                        } : r
-                    ));
+                    setProcessingResults(prev =>
+                        prev.map((r, idx) =>
+                            idx === i
+                                ? {
+                                      ...r,
+                                      status: 'success',
+                                      message: `Sent: ${templateToUse!.name}`,
+                                      credentialUri: result?.credentialUri,
+                                  }
+                                : r
+                        )
+                    );
                 } catch (err) {
                     const errorMessage = err instanceof Error ? err.message : 'Send failed';
-                    setProcessingResults(prev => prev.map((r, idx) => 
-                        idx === i ? { ...r, status: 'error', message: errorMessage } : r
-                    ));
+                    setProcessingResults(prev =>
+                        prev.map((r, idx) =>
+                            idx === i ? { ...r, status: 'error', message: errorMessage } : r
+                        )
+                    );
                 }
 
                 // Small delay between requests to avoid rate limiting
@@ -451,13 +502,16 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 }
             }
 
-            presentToast(`Processed ${csvRows.length} rows`, { 
+            presentToast(`Processed ${csvRows.length} rows`, {
                 type: ToastTypeEnum.Success,
-                hasDismissButton: true 
+                hasDismissButton: true,
             });
         } catch (err) {
-            console.error('CSV processing error:', err);
-            presentToast('Failed to process CSV', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('CSV processing error:', err);
+            presentToast('Failed to process CSV', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -473,15 +527,17 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
     // Validation based on mode
     const canProcess = isMultiTemplateMode
-        ? (boostSelectorColumn && recipientColumn && csvRows.length > 0 && !isProcessing)
-        : (selectedTemplate?.boostUri && recipientColumn && csvRows.length > 0 && !isProcessing);
+        ? boostSelectorColumn && recipientColumn && csvRows.length > 0 && !isProcessing
+        : selectedTemplate?.boostUri && recipientColumn && csvRows.length > 0 && !isProcessing;
 
     if (issuableTemplates.length === 0) {
         return (
             <div className="text-center py-12">
                 <FileSpreadsheet className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500 font-medium">No templates available</p>
-                <p className="text-sm text-gray-400 mt-1">Create and save templates first to use CSV batch upload</p>
+                <p className="text-sm text-gray-400 mt-1">
+                    Create and save templates first to use CSV batch upload
+                </p>
             </div>
         );
     }
@@ -504,8 +560,9 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 <div className="text-sm text-amber-800">
                     <p className="font-medium mb-1">Batch Credential Issuance</p>
                     <p>
-                        Upload a CSV spreadsheet to issue credentials in bulk. Each row represents one credential to send.
-                        The CSV must include a recipient column (email, phone, profile ID, or DID).
+                        Upload a CSV spreadsheet to issue credentials in bulk. Each row represents
+                        one credential to send. The CSV must include a recipient column (email,
+                        phone, profile ID, or DID).
                     </p>
                 </div>
             </div>
@@ -521,14 +578,16 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         <div>
                             <h3 className="font-semibold text-gray-800">Multi-Course Batch Mode</h3>
                             <p className="text-sm text-gray-500">
-                                You have {allChildTemplates.length} course templates. 
-                                Your CSV can include rows for different courses.
+                                You have {allChildTemplates.length} course templates. Your CSV can
+                                include rows for different courses.
                             </p>
                         </div>
                     </div>
 
                     <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
-                        <p className="text-xs font-medium text-violet-800 mb-2">Required CSV columns:</p>
+                        <p className="text-xs font-medium text-violet-800 mb-2">
+                            Required CSV columns:
+                        </p>
                         <div className="flex flex-wrap gap-2">
                             <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
                                 recipient *
@@ -537,13 +596,17 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                 course id *
                             </span>
                             {sharedVariables.map(v => (
-                                <span key={v} className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                <span
+                                    key={v}
+                                    className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs"
+                                >
                                     {v.replace(/_/g, ' ')}
                                 </span>
                             ))}
                         </div>
                         <p className="text-xs text-violet-600 mt-2">
-                            The "course id" column identifies which template to use per row (matches by name).
+                            The "course id" column identifies which template to use per row (matches
+                            by name).
                         </p>
                     </div>
                 </div>
@@ -559,7 +622,7 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
                     <select
                         value={selectedTemplateId}
-                        onChange={(e) => setSelectedTemplateId(e.target.value)}
+                        onChange={e => setSelectedTemplateId(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
                         <option value="">Choose a credential template...</option>
@@ -572,13 +635,18 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
                     {selectedTemplate && templateVariables.length > 0 && (
                         <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs font-medium text-gray-600 mb-2">Required columns for this template:</p>
+                            <p className="text-xs font-medium text-gray-600 mb-2">
+                                Required columns for this template:
+                            </p>
                             <div className="flex flex-wrap gap-2">
                                 <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
                                     recipient *
                                 </span>
                                 {templateVariables.map(v => (
-                                    <span key={v} className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                    <span
+                                        key={v}
+                                        className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs"
+                                    >
                                         {v}
                                     </span>
                                 ))}
@@ -629,10 +697,13 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                             <Check className="w-5 h-5 text-emerald-600" />
                             <div className="flex-1">
-                                <p className="text-sm font-medium text-emerald-800">{csvFileName}</p>
+                                <p className="text-sm font-medium text-emerald-800">
+                                    {csvFileName}
+                                </p>
                                 <p className="text-xs text-emerald-600">
                                     {csvRows.length} rows, {csvHeaders.length} columns
-                                    {(recipientColumn || boostSelectorColumn) && ' • Auto-detected columns'}
+                                    {(recipientColumn || boostSelectorColumn) &&
+                                        ' • Auto-detected columns'}
                                 </p>
                             </div>
                             <button
@@ -661,18 +732,21 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
                             <select
                                 value={recipientColumn}
-                                onChange={(e) => setRecipientColumn(e.target.value)}
+                                onChange={e => setRecipientColumn(e.target.value)}
                                 className="w-full px-3 py-2 border border-emerald-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="">Select recipient column...</option>
                                 {csvHeaders.map(header => (
-                                    <option key={header} value={header}>{header}</option>
+                                    <option key={header} value={header}>
+                                        {header}
+                                    </option>
                                 ))}
                             </select>
 
                             {recipientColumn && (
                                 <p className="text-xs text-emerald-700">
-                                    Will send credentials to values in the "{recipientColumn}" column
+                                    Will send credentials to values in the "{recipientColumn}"
+                                    column
                                 </p>
                             )}
                         </div>
@@ -696,18 +770,21 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
 
                                 <select
                                     value={boostSelectorColumn}
-                                    onChange={(e) => setBoostSelectorColumn(e.target.value)}
+                                    onChange={e => setBoostSelectorColumn(e.target.value)}
                                     className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                                 >
                                     <option value="">Select course ID column...</option>
                                     {csvHeaders.map(header => (
-                                        <option key={header} value={header}>{header}</option>
+                                        <option key={header} value={header}>
+                                            {header}
+                                        </option>
                                     ))}
                                 </select>
 
                                 {boostSelectorColumn && (
                                     <p className="text-xs text-violet-700">
-                                        Will match "{boostSelectorColumn}" values to course template names
+                                        Will match "{boostSelectorColumn}" values to course template
+                                        names
                                     </p>
                                 )}
                             </div>
@@ -717,16 +794,23 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         {csvRows.length > 0 && (
                             <div className="border border-gray-200 rounded-lg overflow-hidden">
                                 <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
-                                    <p className="text-xs font-medium text-gray-600">Preview (first 5 rows)</p>
+                                    <p className="text-xs font-medium text-gray-600">
+                                        Preview (first 5 rows)
+                                    </p>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="min-w-full text-xs">
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 {csvHeaders.slice(0, 6).map(header => (
-                                                    <th key={header} className={`px-3 py-2 text-left font-medium border-b ${
-                                                        header === recipientColumn ? 'text-emerald-700 bg-emerald-50' : 'text-gray-600'
-                                                    }`}>
+                                                    <th
+                                                        key={header}
+                                                        className={`px-3 py-2 text-left font-medium border-b ${
+                                                            header === recipientColumn
+                                                                ? 'text-emerald-700 bg-emerald-50'
+                                                                : 'text-gray-600'
+                                                        }`}
+                                                    >
                                                         {header}
                                                         {header === recipientColumn && ' ✓'}
                                                     </th>
@@ -740,16 +824,26 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                                         </thead>
                                         <tbody>
                                             {csvRows.slice(0, 5).map((row, idx) => (
-                                                <tr key={idx} className="border-b border-gray-100 last:border-0">
+                                                <tr
+                                                    key={idx}
+                                                    className="border-b border-gray-100 last:border-0"
+                                                >
                                                     {csvHeaders.slice(0, 6).map(header => (
-                                                        <td key={header} className={`px-3 py-2 truncate max-w-32 ${
-                                                            header === recipientColumn ? 'text-emerald-700 bg-emerald-50/50' : 'text-gray-700'
-                                                        }`}>
+                                                        <td
+                                                            key={header}
+                                                            className={`px-3 py-2 truncate max-w-32 ${
+                                                                header === recipientColumn
+                                                                    ? 'text-emerald-700 bg-emerald-50/50'
+                                                                    : 'text-gray-700'
+                                                            }`}
+                                                        >
                                                             {row[header] || '-'}
                                                         </td>
                                                     ))}
                                                     {csvHeaders.length > 6 && (
-                                                        <td className="px-3 py-2 text-gray-400">...</td>
+                                                        <td className="px-3 py-2 text-gray-400">
+                                                            ...
+                                                        </td>
                                                     )}
                                                 </tr>
                                             ))}
@@ -779,7 +873,8 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                     {isProcessing ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Processing {resultStats.success + resultStats.error} / {resultStats.total}...
+                            Processing {resultStats.success + resultStats.error} /{' '}
+                            {resultStats.total}...
                         </>
                     ) : (
                         <>
@@ -803,7 +898,11 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                         onClick={() => setShowResults(!showResults)}
                         className="flex items-center gap-2 text-sm font-medium text-gray-700"
                     >
-                        {showResults ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {showResults ? (
+                            <ChevronUp className="w-4 h-4" />
+                        ) : (
+                            <ChevronDown className="w-4 h-4" />
+                        )}
                         Results
                         <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs">
                             {resultStats.success} success
@@ -825,17 +924,29 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                             <table className="min-w-full text-sm">
                                 <thead className="bg-gray-50 sticky top-0">
                                     <tr>
-                                        <th className="px-3 py-2 text-left font-medium text-gray-600 w-16">Row</th>
-                                        <th className="px-3 py-2 text-left font-medium text-gray-600">Recipient</th>
-                                        <th className="px-3 py-2 text-left font-medium text-gray-600 w-24">Status</th>
-                                        <th className="px-3 py-2 text-left font-medium text-gray-600">Message</th>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-600 w-16">
+                                            Row
+                                        </th>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-600">
+                                            Recipient
+                                        </th>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-600 w-24">
+                                            Status
+                                        </th>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-600">
+                                            Message
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {processingResults.map((result) => (
+                                    {processingResults.map(result => (
                                         <tr key={result.row} className="border-t border-gray-100">
-                                            <td className="px-3 py-2 text-gray-600">{result.row}</td>
-                                            <td className="px-3 py-2 text-gray-800 truncate max-w-48">{result.recipient}</td>
+                                            <td className="px-3 py-2 text-gray-600">
+                                                {result.row}
+                                            </td>
+                                            <td className="px-3 py-2 text-gray-800 truncate max-w-48">
+                                                {result.recipient}
+                                            </td>
                                             <td className="px-3 py-2">
                                                 {result.status === 'pending' && (
                                                     <span className="flex items-center gap-1 text-gray-500">

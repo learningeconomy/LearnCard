@@ -1,5 +1,10 @@
-#!/usr/bin/env node
 // tools/capgo/readDefaultChannel.cjs
+//
+// NOTE: intentionally NO `#!/usr/bin/env node` shebang. This file is a pure
+// library `require`d by vite.config.ts (bundled by esbuild) as well as by the
+// CLI helpers. A shebang breaks the esbuild bundle with `Syntax error "!"`.
+// The actual CLI entrypoints (getCapgoChannel.js, check-channel-bump.js) keep
+// their own shebangs.
 //
 // Shared reader for the Capgo `defaultChannel` SSOT in an app's
 // `capacitor.config.ts`. Used by:

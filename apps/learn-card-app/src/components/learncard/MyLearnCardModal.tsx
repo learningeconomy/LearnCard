@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('my-learn-card-modal');
 
 import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
@@ -341,8 +343,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     if (prompted) return;
                     newModal(
                         <ManageDataSharingModal />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                        {
+                            sectionClassName:
+                                '!bg-transparent !shadow-none data-sharing-modal-shell',
+                        },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                     );
                 },
             },
@@ -381,7 +386,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 caretText: '',
                 onClick: async () => {
                     if (!currentUser?.privateKey) {
-                        console.error('No private key available');
+                        log.error('No private key available');
                         return;
                     }
 
@@ -720,7 +725,11 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 ...backgroundStyles,
             }}
         >
-            <section className="min-h-[calc(100%-85px)] p-[20px] flex items-center justify-center">
+            {/* items-start (not items-center): when the profile content is taller
+                than the modal, align-items:center pushes the top above the scroll
+                origin where it can't be reached, clipping it. Top-align so it's
+                always scrollable from the top. */}
+            <section className="min-h-[calc(100%-85px)] p-[20px] flex items-start justify-center">
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
@@ -754,7 +763,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         </span>
                         {!isNetworkUser && !isNetworkUserLoading && (
                             <button
-                                onClick={handlePresentJoinNetworkModal}
+                                onClick={() => {
+                                    void handlePresentJoinNetworkModal();
+                                }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
                                 Complete Profile
@@ -795,9 +806,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         {!hideLogout && (
                             <button
-                                onClick={() =>
-                                    handleLogout({ overrideRedirectUrl: '/login' })
-                                }
+                                onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}
                             >

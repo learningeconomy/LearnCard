@@ -8,6 +8,9 @@ import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
 import DatePickerInput from '../date-picker/DatePickerInput';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-update-form');
+
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
@@ -39,9 +42,11 @@ import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoa
 import OnboardingRoleItem from '../onboarding/onboardingRoles/OnboardingRoleItem';
 import OnboardingRolesContainer from '../onboarding/onboardingRoles/OnboardingRolesContainer';
 import CountrySelectorModal from '../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
+import IssuerStatusCard from './IssuerStatusCard';
 import countries from '../../constants/countries.json';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
+
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -241,11 +246,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 role: role ?? '',
                 country: country ?? '',
             });
-            console.log('updatedProfile::res', updatedProfile);
+            log.info('updatedProfile::res', updatedProfile);
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
-                    console.log('getAiInsightsContractUri::error', err);
+                    log.info('getAiInsightsContractUri::error', err);
                 });
             }
         }
@@ -386,7 +391,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.info('updateProfile::error', error);
                 }
             }
         }
@@ -473,6 +478,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     </button>
                 </div>
             )}
+
+            <div className="w-full px-6 mt-4">
+                <IssuerStatusCard walletDid={walletDid} />
+            </div>
 
             <form
                 onSubmit={e => {

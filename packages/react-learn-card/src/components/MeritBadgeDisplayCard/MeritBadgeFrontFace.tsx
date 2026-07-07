@@ -41,6 +41,10 @@ type MeritBadgeFrontFaceProps = {
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -60,6 +64,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     customBodyContentSlot,
     unknownVerifierTitle,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const {
         title = '',
@@ -226,9 +231,9 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     </div> */}
 
                     <div className="flex flex-col gap-[5px] items-center w-full">
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
                             {issuerDisplay.isDidValue ? (
-                                <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                                <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] w-full text-center line-clamp-2 break-words">
                                     <span className="font-[600]">Digital ID:</span>
                                     <span className="text-grayscale-600">{issuerName}</span>
                                 </span>
@@ -274,6 +279,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     verifierState={verifierState}
                     unknownVerifierTitle={unknownVerifierTitle}
                     className="bg-white px-[5px] pb-[5px]"
+                    onClick={event => onVerifierClick?.(event, verifierState)}
                 />
             </div>
 

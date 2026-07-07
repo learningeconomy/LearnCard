@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('guardian-consent-launch-modal');
 
 import { IonSpinner } from '@ionic/react';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
@@ -138,7 +140,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
                 // Launch with redirect
                 await launchWithCredentials(selectedUser.did);
             } catch (error) {
-                console.error('Failed to consent:', error);
+                log.error('Failed to consent:', error);
                 setIsProcessing(false);
             }
         });
@@ -188,7 +190,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
             window.open(urlObj.toString(), '_blank');
             closeAllModals();
         } catch (error) {
-            console.error('Failed to launch:', error);
+            log.error('Failed to launch:', error);
             setIsProcessing(false);
             setStep(LaunchStep.confirmConsent);
         }

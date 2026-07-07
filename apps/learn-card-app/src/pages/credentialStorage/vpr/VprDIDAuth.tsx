@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('vpr-d-i-d-auth');
 
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
 
@@ -18,7 +20,7 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
 
         // TODO: Move this logic into LearnCard - LearnCard should handle DID-Auth presentation flow.
@@ -51,7 +53,7 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
         event.respondWith(Promise.resolve(null));
     };

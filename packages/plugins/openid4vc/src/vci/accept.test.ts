@@ -97,6 +97,68 @@ describe('acceptCredentialOffer', () => {
         });
     });
 
+    it('prefers nonce_endpoint over token response c_nonce when advertised', async () => {
+        const fetchMock = makeFetch([
+            mockResponse({ ...issuerMetadata, nonce_endpoint: 'https://issuer.example.com/nonce' }),
+            mockResponse(asMetadata),
+            mockResponse({ ...tokenResponse, c_nonce: 'legacy-token-nonce' }),
+            mockResponse({ c_nonce: 'fresh-endpoint-nonce', c_nonce_expires_in: 120 }),
+            mockResponse(credentialResponse),
+        ]);
+
+        await acceptCredentialOffer({
+            offer: baseOffer,
+            signer: fakeSigner,
+            fetchImpl: fetchMock,
+        });
+
+        expect((fetchMock as unknown as jest.Mock).mock.calls[3]).toEqual([
+            'https://issuer.example.com/nonce',
+            { method: 'POST' },
+        ]);
+
+        const signCall = (fakeSigner.sign as jest.Mock).mock.calls[0];
+        expect(signCall[1]).toMatchObject({ nonce: 'fresh-endpoint-nonce' });
+    });
+
+    it('re-fetches nonce_endpoint and retries once on invalid_proof', async () => {
+        const fetchMock = makeFetch([
+            mockResponse({ ...issuerMetadata, nonce_endpoint: 'https://issuer.example.com/nonce' }),
+            mockResponse(asMetadata),
+            mockResponse({ ...tokenResponse, c_nonce: 'legacy-token-nonce' }),
+            mockResponse({ c_nonce: 'fresh-endpoint-nonce', c_nonce_expires_in: 120 }),
+            mockResponse(
+                {
+                    error: 'invalid_proof',
+                    error_description: 'nonce mismatch',
+                    c_nonce: 'ignored-error-nonce',
+                },
+                { ok: false, status: 400 }
+            ),
+            mockResponse({ c_nonce: 'refreshed-endpoint-nonce', c_nonce_expires_in: 240 }),
+            mockResponse(credentialResponse),
+        ]);
+
+        const result = await acceptCredentialOffer({
+            offer: baseOffer,
+            signer: fakeSigner,
+            fetchImpl: fetchMock,
+        });
+
+        expect(result.credentials).toHaveLength(1);
+        expect(fakeSigner.sign).toHaveBeenCalledTimes(2);
+        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+            nonce: 'fresh-endpoint-nonce',
+        });
+        expect((fakeSigner.sign as jest.Mock).mock.calls[1][1]).toMatchObject({
+            nonce: 'refreshed-endpoint-nonce',
+        });
+        expect((fetchMock as unknown as jest.Mock).mock.calls[5]).toEqual([
+            'https://issuer.example.com/nonce',
+            { method: 'POST' },
+        ]);
+    });
+
     it('sends credential_definition from issuer metadata (NOT credential_identifier) in the credential request', async () => {
         // Regression: WaltID demo rejected us with "No matching issuance
         // request found for this session" because we were sending
@@ -158,12 +220,8 @@ describe('acceptCredentialOffer', () => {
         // One credential request per credential_identifier.
         expect(result.credentials).toHaveLength(2);
 
-        const call1Body = JSON.parse(
-            (fetchMock as unknown as jest.Mock).mock.calls[3][1].body
-        );
-        const call2Body = JSON.parse(
-            (fetchMock as unknown as jest.Mock).mock.calls[4][1].body
-        );
+        const call1Body = JSON.parse((fetchMock as unknown as jest.Mock).mock.calls[3][1].body);
+        const call2Body = JSON.parse((fetchMock as unknown as jest.Mock).mock.calls[4][1].body);
 
         expect(call1Body.credential_identifier).toBe('issuer-scoped-id-1');
         expect(call1Body.format).toBeUndefined();
@@ -241,10 +299,7 @@ describe('acceptCredentialOffer', () => {
 
     it('handles batch `credentials` array in response', async () => {
         const batchResponse = {
-            credentials: [
-                { credential: 'vc1' },
-                { credential: 'vc2' },
-            ],
+            credentials: [{ credential: 'vc1' }, { credential: 'vc2' }],
         };
 
         const fetchMock = makeFetch([
@@ -268,10 +323,7 @@ describe('acceptCredentialOffer', () => {
     it('filters to a subset of credential configuration ids when configurationIds option is set', async () => {
         const multiOffer: CredentialOffer = {
             ...baseOffer,
-            credential_configuration_ids: [
-                'UniversityDegree_jwt_vc_json',
-                'StudentId_jwt_vc_json',
-            ],
+            credential_configuration_ids: ['UniversityDegree_jwt_vc_json', 'StudentId_jwt_vc_json'],
         };
 
         const fetchMock = makeFetch([

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-diplomas');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -96,7 +98,7 @@ export const CheckListDiplomas: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetDiploma::error', error);
+            log.error('handleSetDiploma::error', error);
         }
     };
 
@@ -114,7 +116,7 @@ export const CheckListDiplomas: React.FC = () => {
                 await wallet.index.LearnCloud.remove(id);
                 refetchCheckListStatus();
             } catch (error) {
-                console.error('handleDeleteDiploma::error', error);
+                log.error('handleDeleteDiploma::error', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setDiplomas(prev => (prev.some(d => d?.id === id) ? prev : [...prev, deleted]));
                 presentToast('Failed to delete. Please try again.', {
@@ -165,7 +167,7 @@ export const CheckListDiplomas: React.FC = () => {
                     <input
                         multiple
                         type="file"
-                        accept=".pdf,.txt,.docx"
+                        accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
                         onChange={async e => {
                             await getFiles(e, UploadTypesEnum.Diploma);
                         }}

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('partner-onboarding-wizard');
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
@@ -43,7 +45,12 @@ import { SandboxTestStep } from './steps/SandboxTestStep';
 import { ProductionStep } from './steps/ProductionStep';
 import { UnifiedIntegrationDashboard } from '../dashboards';
 import { usePersistedWizardState } from './hooks';
-import { getIntegrationRoute, getSetupStep, isIntegrationActive, PartnerOnboardingGuideState } from './utils/integrationStatus';
+import {
+    getIntegrationRoute,
+    getSetupStep,
+    isIntegrationActive,
+    PartnerOnboardingGuideState,
+} from './utils/integrationStatus';
 
 const STEP_ICONS = [Building2, Shield, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
@@ -119,10 +126,11 @@ const PartnerOnboardingWizard: React.FC = () => {
     const { data: currentIntegration } = useIntegration(integrationId ?? null);
     const updateIntegrationMutation = useUpdateIntegration();
 
-    const [state, setState, { clear: clearPersistedState }] = usePersistedWizardState<PartnerOnboardingState>({
-        key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
-        initialState: DEFAULT_ONBOARDING_STATE,
-    });
+    const [state, setState, { clear: clearPersistedState }] =
+        usePersistedWizardState<PartnerOnboardingState>({
+            key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
+            initialState: DEFAULT_ONBOARDING_STATE,
+        });
     const [isLoadingIntegration, setIsLoadingIntegration] = useState(!!integrationId);
 
     // Handle integration switching - navigate to correct state for that integration
@@ -152,22 +160,29 @@ const PartnerOnboardingWizard: React.FC = () => {
                     query: { meta: { integrationId } },
                 });
 
-                const templates: CredentialTemplate[] = boostsResult?.records?.map((boost: any) => {
-                    const meta = boost.boost?.meta as any;
-                    const credential = boost.boost?.credential;
+                const templates: CredentialTemplate[] =
+                    boostsResult?.records?.map((boost: any) => {
+                        const meta = boost.boost?.meta as any;
+                        const credential = boost.boost?.credential;
 
-                    return {
-                        id: boost.uri || boost.boost?.id || crypto.randomUUID(),
-                        name: boost.boost?.name || credential?.name || 'Untitled Template',
-                        description: credential?.credentialSubject?.achievement?.description || '',
-                        achievementType: meta?.templateConfig?.achievementType || boost.boost?.type || 'Achievement',
-                        fields: meta?.templateConfig?.fields || [],
-                        imageUrl: boost.boost?.image || credential?.credentialSubject?.achievement?.image?.id,
-                        boostUri: boost.uri,
-                        isNew: false,
-                        isDirty: false,
-                    };
-                }) || [];
+                        return {
+                            id: boost.uri || boost.boost?.id || crypto.randomUUID(),
+                            name: boost.boost?.name || credential?.name || 'Untitled Template',
+                            description:
+                                credential?.credentialSubject?.achievement?.description || '',
+                            achievementType:
+                                meta?.templateConfig?.achievementType ||
+                                boost.boost?.type ||
+                                'Achievement',
+                            fields: meta?.templateConfig?.fields || [],
+                            imageUrl:
+                                boost.boost?.image ||
+                                credential?.credentialSubject?.achievement?.image?.id,
+                            boostUri: boost.uri,
+                            isNew: false,
+                            isDirty: false,
+                        };
+                    }) || [];
 
                 // Load profile for branding
                 let branding: BrandingConfig | null = null;
@@ -183,13 +198,15 @@ const PartnerOnboardingWizard: React.FC = () => {
                         };
                     }
                 } catch (err) {
-                    console.warn('Could not load profile:', err);
+                    log.warn('Could not load profile:', err);
                 }
 
                 // Check integration status from server to determine if we should show wizard or dashboard
                 const integrationData = await wallet.invoke.getIntegration(integrationId);
                 const isActive = integrationData?.status === 'active';
-                const guideState = integrationData?.guideState as PartnerOnboardingGuideState | undefined;
+                const guideState = integrationData?.guideState as
+                    | PartnerOnboardingGuideState
+                    | undefined;
 
                 // Ensure guideType is set to 'course-catalog' for this wizard
                 if (integrationData && integrationData.guideType !== 'course-catalog') {
@@ -201,15 +218,24 @@ const PartnerOnboardingWizard: React.FC = () => {
 
                 setState(prev => ({
                     ...prev,
-                    project: { id: integrationId, name: integrationData?.name || `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
+                    project: {
+                        id: integrationId,
+                        name: integrationData?.name || `Integration ${integrationId.slice(0, 8)}`,
+                        createdAt: new Date().toISOString(),
+                    },
                     templates,
                     branding,
                     isLive: isActive,
-                    currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (guideState?.setupStep ?? 0),
+                    currentStep: isActive
+                        ? ONBOARDING_STEPS.length - 1
+                        : guideState?.setupStep ?? 0,
                 }));
             } catch (err) {
-                console.error('Failed to load integration:', err);
-                presentToast('Failed to load integration', { type: ToastTypeEnum.Error, hasDismissButton: true });
+                log.error('Failed to load integration:', err);
+                presentToast('Failed to load integration', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
                 history.push('/app-store/developer/guides');
             } finally {
                 setIsLoadingIntegration(false);
@@ -219,11 +245,14 @@ const PartnerOnboardingWizard: React.FC = () => {
         loadIntegration();
     }, [integrationId, history, presentToast]);
 
-    const goToStep = useCallback((step: number) => {
-        if (step >= 0 && step <= state.currentStep) {
-            setState(prev => ({ ...prev, currentStep: step }));
-        }
-    }, [state.currentStep]);
+    const goToStep = useCallback(
+        (step: number) => {
+            if (step >= 0 && step <= state.currentStep) {
+                setState(prev => ({ ...prev, currentStep: step }));
+            }
+        },
+        [state.currentStep]
+    );
 
     const nextStep = useCallback(() => {
         setState(prev => {
@@ -231,7 +260,9 @@ const PartnerOnboardingWizard: React.FC = () => {
 
             // Track setup progress on the server (fire-and-forget with error logging)
             if (prev.project?.id) {
-                const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+                const currentGuideState = currentIntegration?.guideState as
+                    | PartnerOnboardingGuideState
+                    | undefined;
                 updateIntegrationMutation.mutate(
                     {
                         id: prev.project.id,
@@ -240,8 +271,8 @@ const PartnerOnboardingWizard: React.FC = () => {
                         },
                     },
                     {
-                        onError: (error) => {
-                            console.error('Failed to save setup progress:', error);
+                        onError: error => {
+                            log.error('Failed to save setup progress:', error);
                             // Don't block navigation - local state is still updated
                         },
                     }
@@ -259,34 +290,49 @@ const PartnerOnboardingWizard: React.FC = () => {
         }));
     }, []);
 
-    const handleProjectComplete = useCallback((project: PartnerProject) => {
-        setState(prev => ({ ...prev, project }));
-        nextStep();
-    }, [nextStep]);
+    const handleProjectComplete = useCallback(
+        (project: PartnerProject) => {
+            setState(prev => ({ ...prev, project }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
     const handleSigningAuthorityComplete = useCallback(() => {
         nextStep();
     }, [nextStep]);
 
-    const handleBrandingComplete = useCallback((branding: BrandingConfig) => {
-        setState(prev => ({ ...prev, branding }));
-        nextStep();
-    }, [nextStep]);
+    const handleBrandingComplete = useCallback(
+        (branding: BrandingConfig) => {
+            setState(prev => ({ ...prev, branding }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
-    const handleTemplatesComplete = useCallback((templates: CredentialTemplate[]) => {
-        setState(prev => ({ ...prev, templates }));
-        nextStep();
-    }, [nextStep]);
+    const handleTemplatesComplete = useCallback(
+        (templates: CredentialTemplate[]) => {
+            setState(prev => ({ ...prev, templates }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
-    const handleIntegrationMethodComplete = useCallback((method: IntegrationMethod) => {
-        setState(prev => ({ ...prev, integrationMethod: method }));
-        nextStep();
-    }, [nextStep]);
+    const handleIntegrationMethodComplete = useCallback(
+        (method: IntegrationMethod) => {
+            setState(prev => ({ ...prev, integrationMethod: method }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
-    const handleDataMappingComplete = useCallback((mapping: DataMappingConfig, updatedTemplates: CredentialTemplate[]) => {
-        setState(prev => ({ ...prev, dataMapping: mapping, templates: updatedTemplates }));
-        nextStep();
-    }, [nextStep]);
+    const handleDataMappingComplete = useCallback(
+        (mapping: DataMappingConfig, updatedTemplates: CredentialTemplate[]) => {
+            setState(prev => ({ ...prev, dataMapping: mapping, templates: updatedTemplates }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
     const handleTestComplete = useCallback(() => {
         setState(prev => ({ ...prev, isTestMode: true }));
@@ -297,7 +343,9 @@ const PartnerOnboardingWizard: React.FC = () => {
         if (!state.project?.id) return;
 
         try {
-            const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+            const currentGuideState = currentIntegration?.guideState as
+                | PartnerOnboardingGuideState
+                | undefined;
             await updateIntegrationMutation.mutateAsync({
                 id: state.project.id,
                 updates: {
@@ -311,10 +359,19 @@ const PartnerOnboardingWizard: React.FC = () => {
             // Redirect to the integration dashboard
             history.push(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
-            console.error('Failed to activate integration:', error);
-            presentToast('Failed to go live. Please try again.', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to activate integration:', error);
+            presentToast('Failed to go live. Please try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
-    }, [state.project?.id, history, currentIntegration?.guideState, updateIntegrationMutation, presentToast]);
+    }, [
+        state.project?.id,
+        history,
+        currentIntegration?.guideState,
+        updateIntegrationMutation,
+        presentToast,
+    ]);
 
     const handleBackToWizard = useCallback(() => {
         setState(prev => ({ ...prev, isLive: false }));
@@ -414,7 +471,7 @@ const PartnerOnboardingWizard: React.FC = () => {
         <div className="flex items-center gap-3">
             <button
                 onClick={() => {
-                    const guidesPath = integrationId 
+                    const guidesPath = integrationId
                         ? `/app-store/developer/integrations/${integrationId}/guides`
                         : '/app-store/developer/guides';
                     history.push(guidesPath);
@@ -424,7 +481,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">All Guides</span>
             </button>
-            
+
             <HeaderIntegrationSelector
                 integrations={integrations || []}
                 selectedId={integrationId || null}
@@ -484,9 +541,7 @@ const PartnerOnboardingWizard: React.FC = () => {
         <IonPage>
             <AppStoreHeader title="Course Catalog Setup" rightContent={headerContent} />
 
-            <IonContent>
-                {wizardContent}
-            </IonContent>
+            <IonContent>{wizardContent}</IonContent>
         </IonPage>
     );
 };
@@ -510,10 +565,11 @@ export const PartnerOnboardingWizardContent: React.FC<{
     const { data: currentIntegration } = useIntegration(integrationId ?? null);
     const updateIntegrationMutation = useUpdateIntegration();
 
-    const [state, setState, { clear: clearPersistedState }] = usePersistedWizardState<PartnerOnboardingState>({
-        key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
-        initialState: DEFAULT_ONBOARDING_STATE,
-    });
+    const [state, setState, { clear: clearPersistedState }] =
+        usePersistedWizardState<PartnerOnboardingState>({
+            key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
+            initialState: DEFAULT_ONBOARDING_STATE,
+        });
     const [isLoadingIntegration, setIsLoadingIntegration] = useState(!!integrationId);
 
     // Load integration data
@@ -531,22 +587,29 @@ export const PartnerOnboardingWizardContent: React.FC<{
                     query: { meta: { integrationId } },
                 });
 
-                const templates: CredentialTemplate[] = boostsResult?.records?.map((boost: any) => {
-                    const meta = boost.boost?.meta as any;
-                    const credential = boost.boost?.credential;
+                const templates: CredentialTemplate[] =
+                    boostsResult?.records?.map((boost: any) => {
+                        const meta = boost.boost?.meta as any;
+                        const credential = boost.boost?.credential;
 
-                    return {
-                        id: boost.uri || boost.boost?.id || crypto.randomUUID(),
-                        name: boost.boost?.name || credential?.name || 'Untitled Template',
-                        description: credential?.credentialSubject?.achievement?.description || '',
-                        achievementType: meta?.templateConfig?.achievementType || boost.boost?.type || 'Achievement',
-                        fields: meta?.templateConfig?.fields || [],
-                        imageUrl: boost.boost?.image || credential?.credentialSubject?.achievement?.image?.id,
-                        boostUri: boost.uri,
-                        isNew: false,
-                        isDirty: false,
-                    };
-                }) || [];
+                        return {
+                            id: boost.uri || boost.boost?.id || crypto.randomUUID(),
+                            name: boost.boost?.name || credential?.name || 'Untitled Template',
+                            description:
+                                credential?.credentialSubject?.achievement?.description || '',
+                            achievementType:
+                                meta?.templateConfig?.achievementType ||
+                                boost.boost?.type ||
+                                'Achievement',
+                            fields: meta?.templateConfig?.fields || [],
+                            imageUrl:
+                                boost.boost?.image ||
+                                credential?.credentialSubject?.achievement?.image?.id,
+                            boostUri: boost.uri,
+                            isNew: false,
+                            isDirty: false,
+                        };
+                    }) || [];
 
                 let branding: BrandingConfig | null = null;
 
@@ -563,12 +626,14 @@ export const PartnerOnboardingWizardContent: React.FC<{
                         };
                     }
                 } catch (err) {
-                    console.warn('Could not load profile:', err);
+                    log.warn('Could not load profile:', err);
                 }
 
                 const integrationData = await wallet.invoke.getIntegration(integrationId);
                 const isActive = integrationData?.status === 'active';
-                const guideState = integrationData?.guideState as PartnerOnboardingGuideState | undefined;
+                const guideState = integrationData?.guideState as
+                    | PartnerOnboardingGuideState
+                    | undefined;
 
                 // Ensure guideType is set to 'course-catalog'
                 if (integrationData && integrationData.guideType !== 'course-catalog') {
@@ -580,15 +645,24 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
                 setState(prev => ({
                     ...prev,
-                    project: { id: integrationId, name: integrationData?.name || `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
+                    project: {
+                        id: integrationId,
+                        name: integrationData?.name || `Integration ${integrationId.slice(0, 8)}`,
+                        createdAt: new Date().toISOString(),
+                    },
                     templates,
                     branding,
                     isLive: isActive,
-                    currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (guideState?.setupStep ?? 0),
+                    currentStep: isActive
+                        ? ONBOARDING_STEPS.length - 1
+                        : guideState?.setupStep ?? 0,
                 }));
             } catch (err) {
-                console.error('Failed to load integration:', err);
-                presentToast('Failed to load integration', { type: ToastTypeEnum.Error, hasDismissButton: true });
+                log.error('Failed to load integration:', err);
+                presentToast('Failed to load integration', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
             } finally {
                 setIsLoadingIntegration(false);
             }
@@ -597,18 +671,23 @@ export const PartnerOnboardingWizardContent: React.FC<{
         loadIntegration();
     }, [integrationId]);
 
-    const goToStep = useCallback((step: number) => {
-        if (step >= 0 && step <= state.currentStep) {
-            setState(prev => ({ ...prev, currentStep: step }));
-        }
-    }, [state.currentStep]);
+    const goToStep = useCallback(
+        (step: number) => {
+            if (step >= 0 && step <= state.currentStep) {
+                setState(prev => ({ ...prev, currentStep: step }));
+            }
+        },
+        [state.currentStep]
+    );
 
     const nextStep = useCallback(() => {
         setState(prev => {
             const newStep = Math.min(prev.currentStep + 1, ONBOARDING_STEPS.length - 1);
 
             if (prev.project?.id) {
-                const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+                const currentGuideState = currentIntegration?.guideState as
+                    | PartnerOnboardingGuideState
+                    | undefined;
 
                 updateIntegrationMutation.mutate(
                     {
@@ -618,8 +697,8 @@ export const PartnerOnboardingWizardContent: React.FC<{
                         },
                     },
                     {
-                        onError: (error) => {
-                            console.error('Failed to save setup progress:', error);
+                        onError: error => {
+                            log.error('Failed to save setup progress:', error);
                         },
                     }
                 );
@@ -636,34 +715,49 @@ export const PartnerOnboardingWizardContent: React.FC<{
         }));
     }, []);
 
-    const handleProjectComplete = useCallback((project: PartnerProject) => {
-        setState(prev => ({ ...prev, project }));
-        nextStep();
-    }, [nextStep]);
+    const handleProjectComplete = useCallback(
+        (project: PartnerProject) => {
+            setState(prev => ({ ...prev, project }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
     const handleSigningAuthorityComplete = useCallback(() => {
         nextStep();
     }, [nextStep]);
 
-    const handleBrandingComplete = useCallback((branding: BrandingConfig) => {
-        setState(prev => ({ ...prev, branding }));
-        nextStep();
-    }, [nextStep]);
+    const handleBrandingComplete = useCallback(
+        (branding: BrandingConfig) => {
+            setState(prev => ({ ...prev, branding }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
-    const handleTemplatesComplete = useCallback((templates: CredentialTemplate[]) => {
-        setState(prev => ({ ...prev, templates }));
-        nextStep();
-    }, [nextStep]);
+    const handleTemplatesComplete = useCallback(
+        (templates: CredentialTemplate[]) => {
+            setState(prev => ({ ...prev, templates }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
-    const handleIntegrationMethodComplete = useCallback((method: IntegrationMethod) => {
-        setState(prev => ({ ...prev, integrationMethod: method }));
-        nextStep();
-    }, [nextStep]);
+    const handleIntegrationMethodComplete = useCallback(
+        (method: IntegrationMethod) => {
+            setState(prev => ({ ...prev, integrationMethod: method }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
-    const handleDataMappingComplete = useCallback((mapping: DataMappingConfig, updatedTemplates: CredentialTemplate[]) => {
-        setState(prev => ({ ...prev, dataMapping: mapping, templates: updatedTemplates }));
-        nextStep();
-    }, [nextStep]);
+    const handleDataMappingComplete = useCallback(
+        (mapping: DataMappingConfig, updatedTemplates: CredentialTemplate[]) => {
+            setState(prev => ({ ...prev, dataMapping: mapping, templates: updatedTemplates }));
+            nextStep();
+        },
+        [nextStep]
+    );
 
     const handleTestComplete = useCallback(() => {
         setState(prev => ({ ...prev, isTestMode: true }));
@@ -674,7 +768,9 @@ export const PartnerOnboardingWizardContent: React.FC<{
         if (!state.project?.id) return;
 
         try {
-            const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+            const currentGuideState = currentIntegration?.guideState as
+                | PartnerOnboardingGuideState
+                | undefined;
 
             await updateIntegrationMutation.mutateAsync({
                 id: state.project.id,
@@ -688,10 +784,19 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             history.push(`/app-store/developer/integrations/${state.project.id}`);
         } catch (error) {
-            console.error('Failed to activate integration:', error);
-            presentToast('Failed to go live. Please try again.', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to activate integration:', error);
+            presentToast('Failed to go live. Please try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
-    }, [state.project?.id, history, currentIntegration?.guideState, updateIntegrationMutation, presentToast]);
+    }, [
+        state.project?.id,
+        history,
+        currentIntegration?.guideState,
+        updateIntegrationMutation,
+        presentToast,
+    ]);
 
     const handleBackToWizard = useCallback(() => {
         setState(prev => ({ ...prev, isLive: false }));
@@ -814,9 +919,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             {/* Step Header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                    {currentStepInfo.title}
-                </h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentStepInfo.title}</h1>
 
                 <p className="text-gray-600">{currentStepInfo.description}</p>
             </div>

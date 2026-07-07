@@ -6,7 +6,7 @@
 # file and its matching .env.backup file.
 #
 # Usage:
-#   pnpm env:compare-backup
+#   bun run env:compare-backup
 # ============================================================================
 
 set -euo pipefail

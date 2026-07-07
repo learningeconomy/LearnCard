@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 import moment from 'moment';
 import TrustedCertIcon from 'learn-card-base/svgs/TrustedCertIcon';
@@ -8,6 +8,8 @@ import UntrustedCertIcon from 'learn-card-base/svgs/UntrustedCertIcon';
 import { AchievementCredential, VC, CredentialInfo } from '@learncard/types';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import { isAppDidWeb } from '@learncard/helpers';
+import CredentialIssuerPopover from './CredentialIssuerPopover';
+import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
@@ -31,15 +33,6 @@ export const getInfoFromCredential = (
     return { title, createdAt, issuer: credential?.issuer, issuee, credentialSubject, imageUrl };
 };
 
-const VERIFIER_STATES = {
-    selfVerified: 'Self Issued',
-    trustedVerifier: 'Trusted Issuer',
-    unknownVerifier: 'Unknown Issuer',
-    appIssuer: 'App Issuer',
-    untrustedVerifier: 'Untrusted Issuer',
-} as const;
-type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
-
 type CredentialVerificationDisplayProps = {
     credential: VC;
     className?: string;
@@ -47,6 +40,8 @@ type CredentialVerificationDisplayProps = {
     showText?: boolean;
     managedBoost?: boolean;
     unknownVerifierTitle?: string;
+    issuerDisplayName?: string;
+    issuerPopoverEnabled?: boolean;
 };
 
 export const CredentialVerificationDisplay: React.FC<CredentialVerificationDisplayProps> = ({
@@ -56,7 +51,10 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     showText = false,
     managedBoost = false,
     unknownVerifierTitle,
+    issuerDisplayName,
+    issuerPopoverEnabled = true,
 }) => {
+    const popoverId = useId().replace(/:/g, '');
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
@@ -70,6 +68,10 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     const issuerDid =
         typeof credential?.issuer === 'string' ? credential?.issuer : credential?.issuer?.id;
     const isAppIssuer = isAppDidWeb(issuerDid);
+    const registryIssuerName = (knownDIDRegistry as any)?.results?.matchingIssuers?.[0]?.issuer
+        ?.federation_entity?.organization_name;
+    const resolvedIssuerName =
+        issuerDisplayName ?? registryIssuerName ?? unknownVerifierTitle ?? 'Unknown issuer';
 
     let verifierState: VerifierState;
 
@@ -100,89 +102,124 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     } else {
         verifierState = isAppIssuer ? VERIFIER_STATES.appIssuer : VERIFIER_STATES.unknownVerifier;
     }
-    const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
-
-    if (isSelfVerified) {
-        if (showText) {
+    const popoverTriggerId = `credential-issuer-trigger-${popoverId}`;
+    const verifierStateLabel = unknownVerifierTitle ?? verifierState;
+    const renderBadge = (badgeClassName = className, badgeIconClassName = iconClassName) => {
+        if (verifierState === VERIFIER_STATES.selfVerified) {
             return (
                 <div
-                    className={`text-green-dark flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
+                    className={`text-green-dark flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
-                    <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
-                    <span className="whitespace-nowrap">Self Issued</span>
+                    <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
+                    <span className="whitespace-nowrap uppercase tracking-wide">Self Issued</span>
                 </div>
             );
         }
-        return <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
 
-    if (verifierState === VERIFIER_STATES.trustedVerifier) {
-        if (showText) {
-            const displayText = unknownVerifierTitle ?? 'Trusted Issuer';
+        if (verifierState === VERIFIER_STATES.trustedVerifier) {
             return (
                 <div
-                    className={`text-green-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
+                    className={`text-green-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
-                    <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
-                    <span className="whitespace-nowrap">{displayText}</span>
+                    <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
+                    <span className="whitespace-nowrap uppercase tracking-wide">
+                        {unknownVerifierTitle ?? VERIFIER_STATES.trustedVerifier}
+                    </span>
                 </div>
             );
         }
-        return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
-    if (verifierState === VERIFIER_STATES.unknownVerifier) {
-        // https://welibrary.atlassian.net/browse/LC-704
-        // https://welibrary.atlassian.net/browse/LC-694
-        // removes question mark when credential is unknown
-        // leaving this comment here incase we want to bring it back
 
-        // Hiding verifier badges for troops everywhere per https://welibrary.atlassian.net/browse/LC-741
-        //   Adding back the orange question mark icon since we do/will want it everywhere we're using this component
-
-        if (showText) {
+        if (verifierState === VERIFIER_STATES.unknownVerifier) {
             return (
                 <div
-                    className={`text-orange-500 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
+                    className={`text-orange-500 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
-                    <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
-                    <span className="whitespace-nowrap">
+                    <UnknownCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
+                    <span className="whitespace-nowrap uppercase tracking-wide">
                         {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
                     </span>
                 </div>
             );
         }
 
-        return <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
-    if (verifierState === VERIFIER_STATES.appIssuer) {
-        if (showText) {
-            return (
-                <p
-                    className={`text-cyan-600 flex items-center font-poppins font-[500] text-base uppercase ${className}`}
-                >
-                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} /> App
-                    Issuer
-                </p>
-            );
-        }
-
-        return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
-    }
-    if (verifierState === VERIFIER_STATES.untrustedVerifier) {
-        if (showText) {
+        if (verifierState === VERIFIER_STATES.appIssuer) {
             return (
                 <div
-                    className={`text-red-mastercard flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
+                    className={`text-cyan-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
-                    <UntrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
-                    <span className="whitespace-nowrap">Untrusted Issuer</span>
+                    <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
+                    <span className="whitespace-nowrap uppercase tracking-wide">App Issuer</span>
                 </div>
             );
         }
-        return <UntrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
+
+        return (
+            <div
+                className={`text-red-mastercard flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
+            >
+                <UntrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
+                <span className="whitespace-nowrap uppercase tracking-wide">Untrusted Issuer</span>
+            </div>
+        );
+    };
+    const renderIconOnlyBadge = (badgeIconClassName = iconClassName) => {
+        if (verifierState === VERIFIER_STATES.selfVerified) {
+            return <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        if (verifierState === VERIFIER_STATES.trustedVerifier) {
+            return <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        if (verifierState === VERIFIER_STATES.unknownVerifier) {
+            return <UnknownCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        if (verifierState === VERIFIER_STATES.appIssuer) {
+            return <TrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+        }
+
+        return <UntrustedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
+    };
+    const renderPopover = () => (
+        <CredentialIssuerPopover
+            enabled={issuerPopoverEnabled}
+            triggerId={popoverTriggerId}
+            verifierState={verifierState}
+            issuerDid={issuerDid}
+        />
+    );
+    const renderInteractiveBadge = (badge: React.ReactNode) => (
+        <>
+            <button
+                id={popoverTriggerId}
+                type="button"
+                onClick={e => e.stopPropagation()}
+                className="appearance-none bg-transparent p-0 inline-flex"
+                aria-haspopup={issuerPopoverEnabled ? 'dialog' : undefined}
+                aria-label={
+                    issuerPopoverEnabled
+                        ? `Open issuer details for ${verifierStateLabel}`
+                        : `Issuer verification: ${verifierStateLabel}`
+                }
+            >
+                {badge}
+            </button>
+            {renderPopover()}
+        </>
+    );
+
+    if (showText) return renderInteractiveBadge(renderBadge());
+    if (issuerPopoverEnabled) return renderInteractiveBadge(renderIconOnlyBadge());
+
+    if (verifierState === VERIFIER_STATES.unknownVerifier) {
+        // Icon-only mode intentionally renders nothing for unknown issuers: a bare "?"
+        // badge with no context reads as an error. Context is only shown via the labeled
+        // showText=true variant above (e.g. when a credential is opened).
+        return <></>;
     }
 
-    return <></>;
+    return renderIconOnlyBadge();
 };
 
 export default CredentialVerificationDisplay;

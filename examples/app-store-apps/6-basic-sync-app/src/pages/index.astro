@@ -1,0 +1,373 @@
+---
+import '../styles/global.css';
+
+const hostOriginEnv = import.meta.env.HOST_ORIGIN || 'https://learncard.app';
+const hostOrigin = hostOriginEnv.includes(' ') ? hostOriginEnv.split(/\s+/) : hostOriginEnv;
+const contractUri = import.meta.env.APP_CONTRACT_URI || '';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Basic Sync Demo</title>
+        <script is:inline define:vars={{ hostOrigin, contractUri }}>
+            window.__LC_SYNC_CONFIG = { hostOrigin, contractUri };
+        </script>
+    </head>
+    <body>
+        <main class="shell">
+            <section class="mb-6">
+                <p class="text-sm font-bold uppercase tracking-[0.16em] text-emerald-700">
+                    Partner Connect example
+                </p>
+                <h1 class="mt-2 text-4xl font-black tracking-tight text-slate-950">
+                    Basic Sync Demo
+                </h1>
+                <p class="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+                    A minimal e2e app for checking LearnCard background sync before reading learner
+                    context.
+                </p>
+            </section>
+
+            <section class="panel p-6 md:p-8">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <button id="connect-btn" data-testid="connect-btn" class="button">
+                        Connect
+                    </button>
+                    <button
+                        id="consent-btn"
+                        data-testid="consent-btn"
+                        class="button secondary"
+                        disabled
+                    >
+                        Grant Data Access
+                    </button>
+                    <button
+                        id="status-btn"
+                        data-testid="sync-status-btn"
+                        class="button secondary"
+                        disabled
+                    >
+                        Check Sync Status
+                    </button>
+                    <button
+                        id="context-btn"
+                        data-testid="request-context-btn"
+                        class="button"
+                        disabled
+                    >
+                        Request Synced Context
+                    </button>
+                    <button
+                        id="query-synced-btn"
+                        data-testid="query-synced-btn"
+                        class="button secondary"
+                        disabled
+                    >
+                        Query Synced By DID
+                    </button>
+                </div>
+
+                <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div class="flex items-center gap-3">
+                        <span id="status-dot" class="status-dot" aria-hidden="true"></span>
+                        <div>
+                            <p
+                                id="status-label"
+                                data-testid="sync-status"
+                                class="font-bold text-slate-900"
+                            >
+                                Waiting to connect
+                            </p>
+                            <p
+                                id="progress-text"
+                                data-testid="progress-text"
+                                class="mt-1 text-sm text-slate-500"
+                            >
+                                Sync progress will appear here.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    id="error-box"
+                    data-testid="error-box"
+                    class="mt-5 hidden rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                >
+                </div>
+
+                <div class="mt-8 grid gap-5 md:grid-cols-[220px_1fr]">
+                    <div class="grid gap-5">
+                        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Snapshot
+                            </p>
+                            <p class="mt-4 text-3xl font-black text-slate-950">
+                                <span id="credential-count" data-testid="credential-count">0</span>
+                            </p>
+                            <p class="text-sm text-slate-500">credentials returned</p>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                Synced By DID
+                            </p>
+                            <p class="mt-4 text-3xl font-black text-slate-950">
+                                <span id="synced-count" data-testid="synced-count">0</span>
+                            </p>
+                            <p class="text-sm text-slate-500">unique synced credential URIs</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="mb-2 text-sm font-bold text-slate-700">Latest response</p>
+                        <pre id="result" data-testid="result" class="code-box">No response yet.</pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <script>
+            import { createPartnerConnect } from '@learncard/partner-connect';
+
+            const config = window.__LC_SYNC_CONFIG;
+            const learnCard = createPartnerConnect({
+                hostOrigin: config.hostOrigin,
+                requestTimeout: 90000,
+                allowNativeAppOrigins: true,
+            });
+
+            const elements = {
+                connectBtn: document.getElementById('connect-btn'),
+                consentBtn: document.getElementById('consent-btn'),
+                statusBtn: document.getElementById('status-btn'),
+                contextBtn: document.getElementById('context-btn'),
+                querySyncedBtn: document.getElementById('query-synced-btn'),
+                statusDot: document.getElementById('status-dot'),
+                statusLabel: document.getElementById('status-label'),
+                progressText: document.getElementById('progress-text'),
+                errorBox: document.getElementById('error-box'),
+                credentialCount: document.getElementById('credential-count'),
+                syncedCount: document.getElementById('synced-count'),
+                result: document.getElementById('result'),
+            };
+
+            let syncUnsubscribe = null;
+            let currentDid = '';
+
+            const setBusy = isBusy => {
+                elements.connectBtn.disabled = isBusy;
+                elements.consentBtn.disabled = isBusy;
+                elements.statusBtn.disabled = isBusy;
+                elements.contextBtn.disabled = isBusy;
+                elements.querySyncedBtn.disabled = isBusy;
+            };
+
+            const showError = error => {
+                elements.errorBox.textContent =
+                    error instanceof Error ? error.message : 'Something went wrong.';
+                elements.errorBox.classList.remove('hidden');
+            };
+
+            const clearError = () => {
+                elements.errorBox.textContent = '';
+                elements.errorBox.classList.add('hidden');
+            };
+
+            const renderSyncStatus = status => {
+                const progress = status.progress || {};
+                const total = progress.totalCredentials ?? 0;
+                const completed = progress.completedCredentials ?? 0;
+                const failed = progress.failedCredentials ?? 0;
+                const retries = progress.retryCount ?? 0;
+
+                elements.statusDot.className = `status-dot ${status.status}`;
+                elements.statusLabel.textContent = `Sync status: ${status.status}`;
+                elements.progressText.textContent = `${completed}/${total} credentials complete, ${failed} failed, ${retries} retries`;
+            };
+
+            const renderContext = context => {
+                const credentials = context.raw?.credentials || [];
+                elements.credentialCount.textContent = String(credentials.length);
+                elements.result.textContent = JSON.stringify(
+                    {
+                        status: context.status,
+                        progress: context.progress,
+                        did: context.did,
+                        displayName: context.displayName,
+                        credentialCount: credentials.length,
+                        promptPreview: context.prompt?.slice(0, 600),
+                    },
+                    null,
+                    2,
+                );
+            };
+
+            const renderSyncedQuery = summary => {
+                elements.syncedCount.textContent = String(summary.totalUniqueSharedUris ?? 0);
+                elements.result.textContent = JSON.stringify(summary, null, 2);
+            };
+
+            const refreshStatus = async () => {
+                const status = await learnCard.getSyncStatus();
+                renderSyncStatus(status);
+                return status;
+            };
+
+            const enableConnectedControls = () => {
+                elements.connectBtn.disabled = false;
+                elements.consentBtn.disabled = false;
+                elements.statusBtn.disabled = false;
+                elements.contextBtn.disabled = false;
+                elements.querySyncedBtn.disabled = false;
+            };
+
+            elements.connectBtn.addEventListener('click', async () => {
+                clearError();
+                setBusy(true);
+
+                try {
+                    const identity = await learnCard.requestIdentity();
+                    currentDid = identity.user.did;
+                    elements.result.textContent = JSON.stringify(identity, null, 2);
+                    elements.statusLabel.textContent = 'Connected';
+                    elements.progressText.textContent = `Signed in as ${identity.user.did}`;
+                    enableConnectedControls();
+                } catch (error) {
+                    showError(error);
+                    elements.connectBtn.disabled = false;
+                }
+            });
+
+            elements.consentBtn.addEventListener('click', async () => {
+                clearError();
+                setBusy(true);
+
+                try {
+                    const consent = await learnCard.requestConsent(config.contractUri || undefined);
+                    elements.result.textContent = JSON.stringify(consent, null, 2);
+                    await refreshStatus();
+                    enableConnectedControls();
+                } catch (error) {
+                    showError(error);
+                    enableConnectedControls();
+                }
+            });
+
+            elements.statusBtn.addEventListener('click', async () => {
+                clearError();
+                setBusy(true);
+
+                try {
+                    const status = await refreshStatus();
+                    elements.result.textContent = JSON.stringify(status, null, 2);
+                    enableConnectedControls();
+                } catch (error) {
+                    showError(error);
+                    enableConnectedControls();
+                }
+            });
+
+            elements.contextBtn.addEventListener('click', async () => {
+                clearError();
+                setBusy(true);
+
+                if (syncUnsubscribe) {
+                    syncUnsubscribe();
+                    syncUnsubscribe = null;
+                }
+
+                try {
+                    const context = await learnCard.requestLearnerContext({
+                        includeCredentials: true,
+                        includePersonalData: false,
+                        format: 'structured',
+                        detailLevel: 'compact',
+                        waitForSync: true,
+                    });
+
+                    if (context.status === 'syncing') {
+                        renderContext(context);
+                        renderSyncStatus({
+                            status: 'syncing',
+                            progress: context.progress || {
+                                totalCredentials: 0,
+                                completedCredentials: 0,
+                                failedCredentials: 0,
+                                retryCount: 0,
+                            },
+                        });
+
+                        syncUnsubscribe = learnCard.onSyncComplete(async status => {
+                            renderSyncStatus(status);
+                            const readyContext = await learnCard.requestLearnerContext({
+                                includeCredentials: true,
+                                includePersonalData: false,
+                                format: 'structured',
+                                detailLevel: 'compact',
+                                waitForSync: true,
+                            });
+                            renderContext(readyContext);
+                            enableConnectedControls();
+                            syncUnsubscribe?.();
+                            syncUnsubscribe = null;
+                        });
+
+                        elements.contextBtn.disabled = true;
+                        elements.connectBtn.disabled = false;
+                        elements.consentBtn.disabled = false;
+                        elements.statusBtn.disabled = false;
+                        return;
+                    }
+
+                    renderContext(context);
+                    await refreshStatus();
+                    enableConnectedControls();
+                } catch (error) {
+                    showError(error);
+                    enableConnectedControls();
+                }
+            });
+
+            elements.querySyncedBtn.addEventListener('click', async () => {
+                clearError();
+
+                if (!currentDid) {
+                    showError(new Error('Connect first so the demo knows which DID to query.'));
+                    return;
+                }
+
+                if (!config.contractUri) {
+                    showError(
+                        new Error(
+                            'APP_CONTRACT_URI is required so this demo can query the current app contract only.'
+                        )
+                    );
+                    return;
+                }
+
+                setBusy(true);
+
+                try {
+                    const response = await fetch(
+                        `/api/synced-credentials.json?did=${encodeURIComponent(currentDid)}`
+                    );
+                    const payload = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(payload.error || 'Failed to query synced credentials.');
+                    }
+
+                    renderSyncedQuery(payload);
+                    enableConnectedControls();
+                } catch (error) {
+                    showError(error);
+                    enableConnectedControls();
+                }
+            });
+        </script>
+    </body>
+</html>

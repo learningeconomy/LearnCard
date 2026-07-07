@@ -9,7 +9,8 @@
         "nx-run-command",
         "types",
         "init",
-        "open-badge-v2-plugin"
+        "open-badge-v2-plugin",
+        "holder-continuity"
     ],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
@@ -23,11 +24,18 @@
                 "script": "build"
             }
         },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "test"
+            }
+        },
         "start": {
             "executor": "./tools/executors/workspace:run-command",
             "dependsOn": ["^build"],
             "options": {
-                "command": "pnpm start",
+                "command": "bun run start",
                 "cwd": "{root}/packages/learn-card-cli"
             }
         }

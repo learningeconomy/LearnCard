@@ -9,14 +9,14 @@ import {
     type ParseClaimInputConfig,
 } from '../../hooks/parseClaimInput';
 import { resolveTenantParseConfig } from '../../hooks/resolveTenantParseConfig';
+import { getLogger } from 'learn-card-base';
+
+const log = getLogger('app-url-listener');
 
 export const AppUrlListener: React.FC = () => {
     const history = useHistory();
 
-    const parserConfig = useMemo<ParseClaimInputConfig>(
-        () => resolveTenantParseConfig(),
-        []
-    );
+    const parserConfig = useMemo<ParseClaimInputConfig>(() => resolveTenantParseConfig(), []);
 
     useEffect(() => {
         let listener: PluginListenerHandle | null = null;
@@ -65,7 +65,7 @@ export const AppUrlListener: React.FC = () => {
                         return;
                 }
             } catch (error) {
-                console.error('Error processing deep link:', error);
+                log.error('Error processing deep link', error);
             }
         };
 

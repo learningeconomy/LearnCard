@@ -6,6 +6,7 @@ import { IonPage } from '@ionic/react';
 import { VCDisplayCard2 } from '@learncard/react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
+import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
@@ -13,6 +14,9 @@ import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -72,6 +76,7 @@ export type BoostPreviewProps = {
     previewType?: PreviewTypeEnum;
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
+    issuancesSummaryComponent?: React.ReactNode;
 };
 
 export const useVerification = (credential: VC) => {
@@ -81,7 +86,7 @@ export const useVerification = (credential: VC) => {
         const verify = async () => {
             const wallet = await initWallet();
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(verifications);
+            setVCVerifications(prettifyVerificationItems(verifications ?? []));
         };
         verify();
     }, []);
@@ -141,6 +146,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     previewType,
     isEarnedBoost,
     isClrChildCredential = false,
+    issuancesSummaryComponent,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const unwrappedCredential = unwrapBoostCredential(_credential);
@@ -161,6 +167,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }, [credentialWithEdits?.id, renderMethod?.template, enableRenderMethod]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
 
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
@@ -184,7 +192,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const isIssuerViewSelected =
-        enableRenderMethod && Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
 
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -215,6 +225,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 isEarnedBoost={isEarnedBoost}
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={_credential as VC | UnsignedVC}
+                issuancesSummaryComponent={issuancesSummaryComponent}
             />,
             {
                 className: '!bg-transparent',
@@ -281,6 +292,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             formattedDisplayType={formattedDisplayType}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             customBodyContentSlot={endorsementBadge}
+            onVerifierClick={openCredentialIssuerPopover}
         />
     );
 
@@ -331,8 +343,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         isEarnedBoost={isEarnedBoost}
                         isClrChildCredential={isClrChildCredential}
                         renderMethodCredential={_credential as VC | UnsignedVC}
+                        issuancesSummaryComponent={issuancesSummaryComponent}
                     />
                 )}
+                <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
             </div>
         </IonPage>
     );

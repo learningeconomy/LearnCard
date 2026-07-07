@@ -1,14 +1,29 @@
 {
     "name": "@learncard/ler-rs-plugin",
-    "version": "0.1.10",
+    "version": "0.1.17",
     "description": "LER-RS plugin for LearnCard: create, package, and verify Learning & Employment Record Resumes",
-    "main": "./dist/index.js",
+    "type": "module",
+    "main": "./dist/index.cjs",
     "module": "./dist/ler-rs-plugin.esm.js",
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/ler-rs-plugin.esm.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""

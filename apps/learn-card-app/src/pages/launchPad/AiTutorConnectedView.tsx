@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-tutor-connected-view');
 
 import { IonSpinner, IonFooter } from '@ionic/react';
 import { Sparkles, History, Send, ChevronLeft, Settings } from 'lucide-react';
@@ -61,7 +63,9 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
     }, [allTopics, launchConfig.contractUri]);
 
     // Consent flow hooks
-    const { contract, consentedContract, hasConsented } = useConsentFlowByUri(launchConfig.contractUri);
+    const { contract, consentedContract, hasConsented } = useConsentFlowByUri(
+        launchConfig.contractUri
+    );
     const termsUri = consentedContract?.uri;
     const { mutateAsync: withdrawConsent } = useWithdrawConsent(termsUri ?? '');
 
@@ -85,7 +89,7 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
             window.open(url.toString(), '_blank');
             closeAllModals();
         } catch (error) {
-            console.error('Failed to launch AI tutor:', error);
+            log.error('Failed to launch AI tutor:', error);
         } finally {
             setIsLaunching(false);
         }
@@ -112,14 +116,14 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                 }
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
             closeAllModals();
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         }
     };
 
@@ -231,24 +235,26 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
                     </div>
                 ) : existingTopics.length > 0 ? (
                     <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {existingTopics.slice(0, 5).map((topicCred: AnyCredential, index: number) => {
-                            const topicName =
-                                topicCred?.credentialSubject?.topic ||
-                                topicCred?.credentialSubject?.name ||
-                                'Untitled Topic';
+                        {existingTopics
+                            .slice(0, 5)
+                            .map((topicCred: AnyCredential, index: number) => {
+                                const topicName =
+                                    topicCred?.credentialSubject?.topic ||
+                                    topicCred?.credentialSubject?.name ||
+                                    'Untitled Topic';
 
-                            return (
-                                <button
-                                    key={index}
-                                    onClick={() => handleExistingTopic(topicCred)}
-                                    disabled={isLaunching}
-                                    className="w-full px-4 py-3 bg-grayscale-50 hover:bg-grayscale-100 rounded-xl text-left text-sm font-medium text-grayscale-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    <History className="w-4 h-4 text-grayscale-400" />
-                                    {topicName}
-                                </button>
-                            );
-                        })}
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleExistingTopic(topicCred)}
+                                        disabled={isLaunching}
+                                        className="w-full px-4 py-3 bg-grayscale-50 hover:bg-grayscale-100 rounded-xl text-left text-sm font-medium text-grayscale-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        <History className="w-4 h-4 text-grayscale-400" />
+                                        {topicName}
+                                    </button>
+                                );
+                            })}
 
                         {existingTopics.length > 5 && (
                             <button
@@ -278,7 +284,9 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
 
                     <div className="text-left">
                         <p className="font-semibold text-grayscale-900">New Topic</p>
-                        <p className="text-sm text-grayscale-500">Start a fresh AI tutoring session</p>
+                        <p className="text-sm text-grayscale-500">
+                            Start a fresh AI tutoring session
+                        </p>
                     </div>
                 </button>
 
@@ -408,40 +416,40 @@ const AiTutorConnectedView: React.FC<AiTutorConnectedViewProps> = ({ listing, la
 
     return (
         <AiFeatureGate>
-        <div className="h-full w-full flex flex-col bg-gradient-to-b from-violet-500 to-indigo-600">
-            <div className="flex-1 overflow-y-auto ion-padding pb-[100px]">
-                <div className="max-w-[600px] mx-auto">
-                    {step === 'main' && renderMainView()}
-                    {step === 'new' && renderNewTopicView()}
-                    {step === 'existing' && renderExistingTopicsView()}
-                </div>
-            </div>
-
-            {/* Footer */}
-            <IonFooter
-                mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
-            >
-                <div className="w-full flex items-center justify-center">
-                    <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">
-                        <button
-                            onClick={closeModal}
-                            className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 shadow-button-bottom flex gap-[5px] justify-center flex-1"
-                        >
-                            Back
-                        </button>
-
-                        <button
-                            onClick={handleOpenOptionsMenu}
-                            className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
-                            aria-label="More options"
-                        >
-                            <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
-                        </button>
+            <div className="h-full w-full flex flex-col bg-gradient-to-b from-violet-500 to-indigo-600">
+                <div className="flex-1 overflow-y-auto ion-padding pb-[100px]">
+                    <div className="max-w-[600px] mx-auto">
+                        {step === 'main' && renderMainView()}
+                        {step === 'new' && renderNewTopicView()}
+                        {step === 'existing' && renderExistingTopicsView()}
                     </div>
                 </div>
-            </IonFooter>
-        </div>
+
+                {/* Footer */}
+                <IonFooter
+                    mode="ios"
+                    className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
+                >
+                    <div className="w-full flex items-center justify-center">
+                        <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">
+                            <button
+                                onClick={closeModal}
+                                className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 shadow-button-bottom flex gap-[5px] justify-center flex-1"
+                            >
+                                Back
+                            </button>
+
+                            <button
+                                onClick={handleOpenOptionsMenu}
+                                className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
+                                aria-label="More options"
+                            >
+                                <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
+                            </button>
+                        </div>
+                    </div>
+                </IonFooter>
+            </div>
         </AiFeatureGate>
     );
 };

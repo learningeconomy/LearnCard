@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-persisted-wizard-state');
 
 const STORAGE_KEY_PREFIX = 'lc_wizard_';
 const STORAGE_VERSION = 1;
@@ -19,14 +21,14 @@ interface UsePersistedWizardStateOptions<T> {
 
 /**
  * Custom hook for persisting wizard/guide state to localStorage.
- * 
+ *
  * Features:
  * - Automatic save on state changes (debounced)
  * - Versioned storage for migration support
  * - Automatic expiration of stale data
  * - SSR-safe (checks for window)
  * - Clear function for manual reset
- * 
+ *
  * Usage:
  * ```ts
  * const [state, setState, { clear, isLoaded }] = usePersistedWizardState({
@@ -62,7 +64,7 @@ export function usePersistedWizardState<T>({
 
             // Check version compatibility
             if (parsed.version !== STORAGE_VERSION) {
-                console.log(`[usePersistedWizardState] Version mismatch, using initial state`);
+                log.info(`[usePersistedWizardState] Version mismatch, using initial state`);
                 return initialState;
             }
 
@@ -70,15 +72,19 @@ export function usePersistedWizardState<T>({
             const age = Date.now() - parsed.timestamp;
 
             if (age > maxAgeMs) {
-                console.log(`[usePersistedWizardState] State expired, using initial state`);
+                log.info(`[usePersistedWizardState] State expired, using initial state`);
                 localStorage.removeItem(storageKey);
                 return initialState;
             }
 
-            console.log(`[usePersistedWizardState] Restored state from ${new Date(parsed.timestamp).toLocaleString()}`);
+            log.info(
+                `[usePersistedWizardState] Restored state from ${new Date(
+                    parsed.timestamp
+                ).toLocaleString()}`
+            );
             return parsed.data;
         } catch (err) {
-            console.warn(`[usePersistedWizardState] Failed to load persisted state:`, err);
+            log.warn(`[usePersistedWizardState] Failed to load persisted state:`, err);
             return initialState;
         }
     });
@@ -89,39 +95,44 @@ export function usePersistedWizardState<T>({
     }, []);
 
     // Save to localStorage (debounced)
-    const saveToStorage = useCallback((newState: T) => {
-        if (typeof window === 'undefined') return;
+    const saveToStorage = useCallback(
+        (newState: T) => {
+            if (typeof window === 'undefined') return;
 
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        saveTimeoutRef.current = setTimeout(() => {
-            try {
-                const wrapper: PersistedStateWrapper<T> = {
-                    version: STORAGE_VERSION,
-                    timestamp: Date.now(),
-                    data: newState,
-                };
-
-                localStorage.setItem(storageKey, JSON.stringify(wrapper));
-            } catch (err) {
-                console.warn(`[usePersistedWizardState] Failed to save state:`, err);
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
             }
-        }, debounceMs);
-    }, [storageKey, debounceMs]);
+
+            saveTimeoutRef.current = setTimeout(() => {
+                try {
+                    const wrapper: PersistedStateWrapper<T> = {
+                        version: STORAGE_VERSION,
+                        timestamp: Date.now(),
+                        data: newState,
+                    };
+
+                    localStorage.setItem(storageKey, JSON.stringify(wrapper));
+                } catch (err) {
+                    log.warn(`[usePersistedWizardState] Failed to save state:`, err);
+                }
+            }, debounceMs);
+        },
+        [storageKey, debounceMs]
+    );
 
     // Wrapped setState that also persists
-    const setState = useCallback((action: React.SetStateAction<T>) => {
-        setStateInternal(prev => {
-            const newState = typeof action === 'function' 
-                ? (action as (prev: T) => T)(prev) 
-                : action;
+    const setState = useCallback(
+        (action: React.SetStateAction<T>) => {
+            setStateInternal(prev => {
+                const newState =
+                    typeof action === 'function' ? (action as (prev: T) => T)(prev) : action;
 
-            saveToStorage(newState);
-            return newState;
-        });
-    }, [saveToStorage]);
+                saveToStorage(newState);
+                return newState;
+            });
+        },
+        [saveToStorage]
+    );
 
     // Clear persisted state
     const clear = useCallback(() => {
@@ -131,7 +142,7 @@ export function usePersistedWizardState<T>({
             localStorage.removeItem(storageKey);
             setStateInternal(initialState);
         } catch (err) {
-            console.warn(`[usePersistedWizardState] Failed to clear state:`, err);
+            log.warn(`[usePersistedWizardState] Failed to clear state:`, err);
         }
     }, [storageKey, initialState]);
 
@@ -152,7 +163,7 @@ export function usePersistedWizardState<T>({
 
             localStorage.setItem(storageKey, JSON.stringify(wrapper));
         } catch (err) {
-            console.warn(`[usePersistedWizardState] Failed to save state:`, err);
+            log.warn(`[usePersistedWizardState] Failed to save state:`, err);
         }
     }, [storageKey, state]);
 
@@ -171,7 +182,10 @@ export function usePersistedWizardState<T>({
 /**
  * Get all wizard states from localStorage (for debugging/management)
  */
-export function getAllWizardStates(): Record<string, { key: string; timestamp: Date; age: string }> {
+export function getAllWizardStates(): Record<
+    string,
+    { key: string; timestamp: Date; age: string }
+> {
     if (typeof window === 'undefined') return {};
 
     const result: Record<string, { key: string; timestamp: Date; age: string }> = {};

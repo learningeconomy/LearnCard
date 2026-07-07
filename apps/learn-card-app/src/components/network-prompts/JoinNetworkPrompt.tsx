@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import {
     ModalTypes,
     useModal,
@@ -15,10 +14,11 @@ import {
     useIsCurrentUserLCNUser,
     getNotificationsEndpoint,
     useBrandingConfig,
+    useNetworkConsentMutation,
 } from 'learn-card-base';
 
 import { IonInput } from '@ionic/react';
-import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
+import { ProfilePicture } from 'learn-card-base';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
@@ -36,6 +36,9 @@ const StateValidator = z.object({
             ` Alpha numeric characters(s) and dashes '-' only, no spaces allowed.`
         ),
 });
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('join-network-prompt');
 
 export const JoinNetworkPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -103,10 +106,11 @@ export const JoinNetworkPrompt: React.FC<{
                 setLoading(true);
                 const wallet = await initWallet();
                 const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
-                    profileId: profileId,
-                    displayName: currentUser?.name,
-                    image: currentUser?.profileImage,
+                    profileId: profileId ?? '',
+                    displayName: currentUser?.name ?? '',
+                    shortBio: '',
+                    bio: '',
+                    image: currentUser?.profileImage ?? '',
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
 
@@ -118,7 +122,7 @@ export const JoinNetworkPrompt: React.FC<{
                             queryClient,
                         });
                     } catch (consentErr) {
-                        console.warn('Network consent error:', consentErr);
+                        log.warn('Network consent error:', consentErr);
                     }
 
                     await refetchIsCurrentUserLCNUser();
@@ -141,9 +145,9 @@ export const JoinNetworkPrompt: React.FC<{
                         }, 0);
                     }
                 }
-            } catch (err) {
-                console.log('createProfile::error', err);
-                setError(err?.message);
+            } catch (err: unknown) {
+                log.info('createProfile::error', err);
+                setError(err instanceof Error ? err.message : String(err));
                 setLoading(false);
             }
         }

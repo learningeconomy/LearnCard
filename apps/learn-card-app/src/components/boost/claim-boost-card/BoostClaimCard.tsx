@@ -1,6 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
@@ -11,7 +13,14 @@ const HourGlass = '/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -100,6 +109,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [credential]);
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -152,11 +163,29 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
+    // A credential that fails verification because it's revoked can't be claimed
+    // (the backend rejects acceptCredential with "Credential has been revoked").
+    const isRevoked = vcVerifications.some(
+        (v: any) =>
+            v?.status !== 'Success' &&
+            /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
+    );
+
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
 
+        if (isRevoked) {
+            presentToast('This credential has been revoked and can no longer be claimed.', {
+                duration: 4000,
+                type: ToastTypeEnum.Error,
+            });
+            return;
+        }
+
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
             setIsClaimLoading(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
             try {
                 mutate(
                     { uri: credentialUri, metadata: notification?.data?.metadata },
@@ -178,6 +207,23 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     category: category,
                                     boostType: achievementType,
                                     method: 'Notification',
+                                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                                });
+
+                                const now = Date.now();
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
+                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                    method: ProfileBuildMethod.Notification,
+                                    itemType: 'credential',
+                                    itemCount: 1,
+                                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                                    msSinceAccountCreated: now - accountCreatedAt,
+                                    msSinceSessionStart: now - sessionStart,
                                 });
                             }
 
@@ -198,10 +244,19 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
                             closeModal();
                         },
+                        onError(err: any) {
+                            setIsClaimLoading(false);
+                            presentToast(
+                                `Failed to claim credential: ${
+                                    err?.message ?? 'Please try again.'
+                                }`,
+                                { duration: 4000, type: ToastTypeEnum.Error }
+                            );
+                        },
                     }
                 );
             } catch (err) {
-                console.log('acceptCredential::error', err?.message);
+                log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
@@ -230,7 +285,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
+    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
         claimStatusText = 'Claimed';
@@ -244,6 +299,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
         claimStatusText = 'Accept';
         if (isFamily) claimStatusText = 'Join';
+    }
+
+    if (isRevoked) {
+        claimStatusText = 'Revoked';
     }
 
     useEffect(() => {

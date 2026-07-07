@@ -8,6 +8,8 @@ import { UnsignedVC, VC } from '@learncard/types';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('mutations');
 
 // ** CONNECTION MUTATIONS **
 
@@ -152,9 +154,9 @@ export const useDeleteCredentialRecord = () => {
 
         try {
             if (data) {
-                console.log(`[DeleteCredentialRecord] ${message}`, data);
+                log.debug(`[DeleteCredentialRecord] ${message}`, data);
             } else {
-                console.log(`[DeleteCredentialRecord] ${message}`);
+                log.debug(`[DeleteCredentialRecord] ${message}`);
             }
         } catch {
             // logging should never break deletion flows
@@ -189,7 +191,7 @@ export const useDeleteCredentialRecord = () => {
     return useMutation<DeleteCredentialResult, Error, LCR, DeleteCredentialContext>({
         mutationFn: async record => {
             try {
-                console.log('deleting record (in mutation)', record);
+                log.debug('deleting record (in mutation)', record);
                 const wallet = await initWallet();
                 // Preemptively empty LC cache
                 await wallet.cache.flushIndex();
@@ -201,17 +203,19 @@ export const useDeleteCredentialRecord = () => {
 
                     // Also try SQLite index for completeness (if available)
                     try {
-                        const sqliteIndex = await wallet.index.SQLite?.get?.().catch(console.error);
+                        const sqliteIndex = await wallet.index.SQLite?.get?.().catch(err =>
+                            log.error('SQLite index get failed', err)
+                        );
                         const foundIndex = sqliteIndex?.find(index => index?.uri === record.uri);
 
                         if (foundIndex?.id) {
                             await wallet.index.SQLite?.remove?.(foundIndex.id);
                         }
                     } catch (error) {
-                        console.error('SQLite removal error:', error);
+                        log.error('SQLite removal error:', error);
                     }
                 } else {
-                    console.error('Record ID not provided for deletion');
+                    log.error('Record ID not provided for deletion');
                 }
 
                 return {
@@ -224,7 +228,7 @@ export const useDeleteCredentialRecord = () => {
             }
         },
         onMutate: async record => {
-            console.log('deleting record (in mutation onMutate)', record);
+            log.debug('deleting record (in mutation onMutate)', record);
             const uri = record.uri;
             const category = record.category;
             const didWeb = switchedProfileStore.get.switchedDid();
@@ -258,7 +262,7 @@ export const useDeleteCredentialRecord = () => {
                 }>
             >(['useGetCredentialList', didWeb ?? '', category]);
 
-            console.log('optimistic update');
+            log.debug('optimistic update');
 
             // Update cache optimistically
             if (currentQuery || currentQueryList) {
@@ -302,7 +306,7 @@ export const useDeleteCredentialRecord = () => {
                     updatedQuery
                 );
 
-                console.log('setting list', updatedQueryList);
+                log.debug('setting list', updatedQueryList);
                 queryClient.setQueryData(
                     ['useGetCredentialList', didWeb ?? '', category],
                     updatedQueryList
@@ -430,7 +434,7 @@ export const useDeleteCredentialRecord = () => {
                             });
                         })().catch(cleanupFallbackError => {
                             if (ENABLE_DELETE_CREDENTIAL_LOGS) {
-                                console.error(
+                                log.error(
                                     'Failed to run full sync fallback after cleanup failure:',
                                     cleanupFallbackError
                                 );
@@ -441,7 +445,7 @@ export const useDeleteCredentialRecord = () => {
                     }
 
                     if (ENABLE_DELETE_CREDENTIAL_LOGS) {
-                        console.error('Failed to run post-delete cleanup:', error);
+                        log.error('Failed to run post-delete cleanup:', error);
                     }
                 });
             }, 0);
@@ -492,6 +496,7 @@ export const useDeleteCredentialRecord = () => {
 type RevokeBoostRecipientParams = {
     boostUri: string;
     recipientProfileId: string;
+    credentialUri?: string;
 };
 
 /**
@@ -504,12 +509,13 @@ export const useRevokeBoostRecipient = () => {
     const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, RevokeBoostRecipientParams>({
-        mutationFn: async ({ boostUri, recipientProfileId }) => {
+        mutationFn: async ({ boostUri, recipientProfileId, credentialUri }) => {
             try {
                 const wallet = await initWallet();
                 const result = await (wallet?.invoke as any)?.revokeBoostRecipient(
                     boostUri,
-                    recipientProfileId
+                    recipientProfileId,
+                    credentialUri
                 );
 
                 return result;
@@ -532,6 +538,93 @@ export const useRevokeBoostRecipient = () => {
                 queryKey: ['boosts'],
             });
             // Invalidate Scouts app member list query
+            queryClient.invalidateQueries({
+                queryKey: ['useNetworkMembers'],
+            });
+        },
+    });
+};
+
+export * from './networkConsent';
+
+/**
+ * Suspend a boost recipient, temporarily disabling their credential.
+ * The recipient remains visible in the list with status='suspended'.
+ */
+export const useSuspendBoostRecipient = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    return useMutation<boolean, Error, RevokeBoostRecipientParams>({
+        mutationFn: async ({ boostUri, recipientProfileId, credentialUri }) => {
+            try {
+                const wallet = await initWallet();
+                const result = await (wallet?.invoke as any)?.suspendBoostRecipient(
+                    boostUri,
+                    recipientProfileId,
+                    credentialUri
+                );
+
+                return result;
+            } catch (error) {
+                return Promise.reject(new Error(String(error)));
+            }
+        },
+        onSuccess: (_, { boostUri }) => {
+            queryClient.invalidateQueries({
+                queryKey: ['boostRecipients', boostUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getPaginatedBoostRecipients'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getBoostRecipientCount'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['boosts'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useNetworkMembers'],
+            });
+        },
+    });
+};
+
+/**
+ * Unsuspend a boost recipient, re-enabling their previously suspended credential.
+ */
+export const useUnsuspendBoostRecipient = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    return useMutation<boolean, Error, RevokeBoostRecipientParams>({
+        mutationFn: async ({ boostUri, recipientProfileId, credentialUri }) => {
+            try {
+                const wallet = await initWallet();
+                const result = await (wallet?.invoke as any)?.unsuspendBoostRecipient(
+                    boostUri,
+                    recipientProfileId,
+                    credentialUri
+                );
+
+                return result;
+            } catch (error) {
+                return Promise.reject(new Error(String(error)));
+            }
+        },
+        onSuccess: (_, { boostUri }) => {
+            queryClient.invalidateQueries({
+                queryKey: ['boostRecipients', boostUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getPaginatedBoostRecipients'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['getBoostRecipientCount'],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['boosts'],
+            });
             queryClient.invalidateQueries({
                 queryKey: ['useNetworkMembers'],
             });

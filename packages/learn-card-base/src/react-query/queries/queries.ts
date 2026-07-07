@@ -14,6 +14,9 @@ import {
     switchedProfileStore,
 } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { walletStore } from 'learn-card-base/stores/walletStore';
+import { useAuthGateState } from 'learn-card-base/auth-status/useAuthGateState';
+import { hasNetworkProfile, isAuthSettled } from 'learn-card-base/auth-status/authStatus';
 import {
     Boost,
     BoostRecipientInfo,
@@ -34,6 +37,8 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
 import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('queries');
 
 type QueriedProfile = LCNProfile | LCNVisibleProfile;
 
@@ -372,15 +377,15 @@ export const useResolveBoosts = (uris?: (string | undefined)[], enabled = true) 
         queries:
             enabled && validUris
                 ? validUris.map(uri => ({
-                    queryKey: ['useResolveBoost', uri],
-                    queryFn: async (): Promise<VC> => {
-                        if (!uri) throw new Error('Boost URI is required.');
-                        const wallet = await initWallet();
-                        const vc = await wallet.invoke.resolveFromLCN(uri);
-                        if (!vc) throw new Error('Unresolveable boost.');
-                        return vc as VC;
-                    },
-                }))
+                      queryKey: ['useResolveBoost', uri],
+                      queryFn: async (): Promise<VC> => {
+                          if (!uri) throw new Error('Boost URI is required.');
+                          const wallet = await initWallet();
+                          const vc = await wallet.invoke.resolveFromLCN(uri);
+                          if (!vc) throw new Error('Unresolveable boost.');
+                          return vc as VC;
+                      },
+                  }))
                 : [],
     });
     return queries.map((result, index) => ({ ...result, uri: validUris?.[index] }));
@@ -756,14 +761,22 @@ export const useGetSearchProfiles = (profileId: string) => {
 
 /**
  * Hook: Determine if the current user is an LCN user.
+ *
+ * Re-rooted on the canonical auth-gate selector: `data` is true ONLY for a
+ * confirmed network profile, and `isLoading` stays true until auth is settled —
+ * the profile is definitively resolved (present or absent) or the user is
+ * definitively unauthenticated. A transient wallet/network failure
+ * resolves to "still resolving", never "no profile", so the Complete Profile /
+ * age gate / JoinNetworkModal prompts can't fire during the resume race.
  */
-type ResultStatus = 'pending' | 'success' | 'error';
 export const useIsCurrentUserLCNUser = () => {
     const result = useGetProfile();
+    const authStatus = useAuthGateState(result.status, Boolean(result.data));
+
     return {
         ...result,
-        data: Boolean(result.data),
-        isLoading: result.status === 'pending',
+        data: hasNetworkProfile(authStatus),
+        isLoading: !isAuthSettled(authStatus),
     };
 };
 
@@ -773,10 +786,19 @@ export const useGetProfile = (
 ): UseQueryResult<QueriedProfile | null> => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
+    const wallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
+    // Fetching the current user's OWN profile (no explicit profileId) needs a
+    // reconstructed wallet. On resume the persisted `currentUser` rehydrates (so
+    // `isLoggedIn` flips true) before the private key is restored; gating on the
+    // wallet being present stops the query from running early and caching a bogus
+    // `null` for the whole staleTime — the root cause of the mixed-login state.
+    const requiresOwnWallet = isLoggedIn && !profileId;
+    const walletReady = !!wallet;
+
     return useQuery<QueriedProfile | null>({
-        enabled: enabled && (!!profileId || isLoggedIn),
+        enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
         // The current user's profile changes rarely (avatar/displayName edits).
         // Keep cached data fresh for 5 minutes so navigations between pages don't
@@ -785,22 +807,26 @@ export const useGetProfile = (
         // (e.g., editProfile) are responsible for invalidating this query.
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<QueriedProfile | null> => {
-            // If user is logged in, try to use the wallet
-            if (isLoggedIn) {
-                try {
-                    const wallet = await initWallet();
-                    if (wallet) {
-                        if (profileId) {
-                            const data = await wallet.invoke.getProfile(profileId);
+            // Own profile: the wallet MUST resolve here. On failure, throw so React
+            // Query records an error rather than caching `null` as a definitive
+            // "no profile" (which would falsely trigger onboarding). Recovery is the
+            // `enabled` false→true transition once the wallet lands, not retries.
+            if (isLoggedIn && !profileId) {
+                const ownWallet = await initWallet();
+                if (!ownWallet) throw new Error('Wallet not ready for profile fetch');
+                const data = await ownWallet.invoke.getProfile();
+                return data ?? null;
+            }
 
-                            return data ?? null;
-                        } else {
-                            const data = await wallet.invoke.getProfile();
-                            return data ?? null;
-                        }
+            if (isLoggedIn && profileId) {
+                try {
+                    const loggedInWallet = await initWallet();
+                    if (loggedInWallet) {
+                        const data = await loggedInWallet.invoke.getProfile(profileId);
+                        return data ?? null;
                     }
                 } catch (error) {
-                    console.warn('Failed to initialize wallet, falling back to public API', error);
+                    log.warn('Failed to initialize wallet, falling back to public API', error);
                 }
             }
 
@@ -815,7 +841,7 @@ export const useGetProfile = (
                         return data ?? null;
                     }
                 } catch (error) {
-                    console.warn(
+                    log.warn(
                         'Failed to initialize dummy wallet, falling back to public API',
                         error
                     );
@@ -832,7 +858,7 @@ export const useGetProfile = (
                     const data = await response.json();
                     return data ?? null;
                 } catch (error) {
-                    console.error('Failed to fetch profile from public API', error);
+                    log.error('Failed to fetch profile from public API', error);
                     return null;
                 }
             }
@@ -860,7 +886,7 @@ export const useGetAppStoreListingBySlug = (
                 try {
                     return await wallet.invoke.getPublicAppStoreListingBySlug(slug);
                 } catch (error) {
-                    console.warn('Failed to load app listing by slug', error);
+                    log.warn('Failed to load app listing by slug', error);
                 }
             }
 
@@ -873,7 +899,7 @@ export const useGetAppStoreListingBySlug = (
 
                 return (await response.json()) as AppStoreListing;
             } catch (error) {
-                console.warn('Failed to load app listing by slug', error);
+                log.warn('Failed to load app listing by slug', error);
                 return undefined;
             }
         },
@@ -1037,7 +1063,7 @@ export const useGetMyGuardians = () => {
         queryFn: async () => {
             const wallet = await initWallet();
             if (!wallet.invoke.getMyGuardians) {
-                console.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
+                log.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
                 return [];
             }
             return (await wallet.invoke.getMyGuardians()) ?? [];

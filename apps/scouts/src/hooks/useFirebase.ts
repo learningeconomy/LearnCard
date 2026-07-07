@@ -38,13 +38,14 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import GoogleLoginHelpModal from '../components/auth/GoogleLoginHelpModal';
 
 import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-firebase');
 
 export const useFirebase = () => {
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
-
 
     const presentGoogleHelpModal = (message?: string) => {
         newModal(React.createElement(GoogleLoginHelpModal, { message }), {
@@ -96,7 +97,7 @@ export const useFirebase = () => {
                         );
                         await signInWithCredential(firebaseAuth, credential);
                     } catch (error) {
-                        console.log('googleLogin::signInWithCredential::web::error', error);
+                        log.debug('googleLogin::signInWithCredential::web::error', error);
                     }
                 }
 
@@ -120,21 +121,16 @@ export const useFirebase = () => {
             }
 
             if (errorCode === 'auth/popup-blocked') {
-                if (errorCode) console.warn(errorCode);
-                if (errorMessage) console.warn(errorMessage);
+                log.warn(`googleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
                 presentGoogleHelpModal(
                     'Popups are blocked in your browser. Please enable popups in your browser and try again.'
                 );
             } else if (errorCode === 'auth/cancelled-popup-request') {
-                if (errorCode) console.warn(errorCode);
-                if (errorMessage) console.warn(errorMessage);
+                log.warn(`googleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                 return;
             } else {
-                if (errorCode) console.warn(errorCode);
-                if (errorMessage) {
-                    console.error('errorMessage', errorMessage);
-                    presentGoogleHelpModal(errorMessage);
-                }
+                log.error(`googleLogin failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) presentGoogleHelpModal(errorMessage);
             }
         }
     };
@@ -171,7 +167,7 @@ export const useFirebase = () => {
                     });
                 })
                 .catch(error => {
-                    console.error('sendSignInLinkToEmail::error', error);
+                    log.error('sendSignInLinkToEmail::error', error);
                     presentToast('An error occurred, unable to send a login link!', {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
@@ -197,7 +193,7 @@ export const useFirebase = () => {
                     });
                 })
                 .catch(error => {
-                    console.error('sendSignInLinkToEmail::error', error);
+                    log.error('sendSignInLinkToEmail::error', error);
                     presentToast('An error occurred, unable to send a login link!', {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
@@ -249,11 +245,8 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                if (errorCode) console.error('errorCode', errorCode);
-                if (errorMessage) {
-                    console.error('errorMessage', errorMessage);
-                    presentAlert(errorMessage);
-                }
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) presentAlert(errorMessage);
             }
         } else {
             try {
@@ -278,11 +271,8 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                if (errorCode) console.error('errorCode', errorCode);
-                if (errorMessage) {
-                    console.error('errorMessage', errorMessage);
-                    presentAlert(errorMessage);
-                }
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
+                if (errorMessage) presentAlert(errorMessage);
             }
         }
     };
@@ -315,8 +305,7 @@ export const useFirebase = () => {
 
                 errorCallback(errorCode);
 
-                console.error('errorCode', errorCode);
-                console.error('errorMessage', errorMessage);
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
             });
     };
 
@@ -343,7 +332,7 @@ export const useFirebase = () => {
             const res = await signInWithCredential(firebaseAuth, credential);
             user = res?.user;
         } catch (error) {
-            console.log('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
+            log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
 
@@ -366,7 +355,7 @@ export const useFirebase = () => {
                 }
             }
         } catch (error) {
-            console.log('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
+            log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
     };
@@ -393,8 +382,7 @@ export const useFirebase = () => {
 
             errorCallback(errorCode);
 
-            console.error('errorCode', errorCode);
-            console.error('errorMessage', errorMessage);
+            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorCode === 5111) {
                 presentToast('An error occured. Please refresh to fix.', {
@@ -437,7 +425,7 @@ export const useFirebase = () => {
                 }
             }
         } catch (error) {
-            console.log('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
+            log.debug('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(error?.message);
         }
     };
@@ -466,14 +454,10 @@ export const useFirebase = () => {
 
                 // user cancelled apple login
                 if (errorMessage?.includes('1001')) {
-                    if (errorCode) console.warn('errorCode', errorCode);
-                    if (errorMessage) console.warn('errorMessage', errorMessage);
+                    log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                 } else {
-                    if (errorCode) console.error('errorCode', errorCode);
-                    if (errorMessage) {
-                        console.error('errorMessage', errorMessage);
-                        presentAlert(errorMessage);
-                    }
+                    log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
+                    if (errorMessage) presentAlert(errorMessage);
                 }
             }
 
@@ -520,8 +504,7 @@ export const useFirebase = () => {
                 const credential = OAuthProvider.credentialFromError(error);
 
                 if (errorCode === 'auth/popup-blocked') {
-                    if (errorCode) console.warn(errorCode);
-                    if (errorMessage) console.warn(errorMessage);
+                    log.warn(`appleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
                     presentAlert(
                         'Popups are blocked in your browser. Please enable Popups to login with this method.'
                     );
@@ -529,15 +512,11 @@ export const useFirebase = () => {
                     errorCode === 'auth/cancelled-popup-request' ||
                     errorCode === 'auth/popup-closed-by-user'
                 ) {
-                    if (errorCode) console.warn(errorCode);
-                    if (errorMessage) console.warn(errorMessage);
+                    log.warn(`appleLogin cancelled (${errorCode ?? 'unknown'})`, error);
                     return;
                 } else {
-                    if (errorCode) console.error('errorCode', errorCode);
-                    if (errorMessage) {
-                        console.error('errorMessage', errorMessage);
-                        presentAlert(errorMessage);
-                    }
+                    log.error(`appleLogin failed (${errorCode ?? 'unknown'})`, error);
+                    if (errorMessage) presentAlert(errorMessage);
                 }
             }
         }
@@ -569,8 +548,7 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
-                console.error('errorCode', errorCode);
-                console.error('errorMessage', errorMessage);
+                log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
                 if (errorMessage) presentAlert(errorMessage);
 
@@ -601,8 +579,7 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = (error as any)?.code;
             const errorMessage = (error as any)?.message;
-            console.error('errorCode', errorCode);
-            console.error('errorMessage', errorMessage);
+            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorMessage) presentAlert(errorMessage as any);
         }
@@ -633,8 +610,7 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = (error as any)?.code;
             const errorMessage = (error as any)?.message;
-            console.error('errorCode', errorCode);
-            console.error('errorMessage', errorMessage);
+            log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorMessage) presentAlert(errorMessage as any);
         }

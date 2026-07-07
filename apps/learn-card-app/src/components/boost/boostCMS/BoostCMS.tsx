@@ -42,8 +42,8 @@ const BoostCMSAppearanceController = lazyWithRetry(
 );
 
 const BoostPreviewFooter = lazyWithRetry(() => import('./BoostPreview/BoostPreviewFooter'));
-const CredentialBadge = lazyWithRetry(
-    () => import('learn-card-base/components/CredentialBadge/CredentialBadge')
+const CredentialBadgeNew = lazyWithRetry(
+    () => import('learn-card-base/components/CredentialBadge/CredentialBadgeNew')
 );
 
 // Legacy skill selector (hardcoded skills)
@@ -137,6 +137,9 @@ interface BoostCMSProps {
     boostCMSState?: BoostCMSState;
     profileId?: string;
 }
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<BoostCMSProps> = ({
     boostDetails,
@@ -777,7 +780,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.info('error::savingBoost', e);
             presentToast(`Unable to save boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -844,7 +847,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsPublishLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(`Error issuing boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -950,7 +953,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(`Error issuing boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -970,7 +973,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

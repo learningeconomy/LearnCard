@@ -413,6 +413,11 @@ export const getBoostRecipients = async (
         from: sender.profileId,
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+        status: coalesceStatus(sent.status, received?.status) as
+            | 'active'
+            | 'revoked'
+            | 'suspended'
+            | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -434,6 +439,10 @@ export const getBoostRecipients = async (
         }))
         .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
 };
+
+/** Coalesce sent/received status into a single value (undefined when unset — callers treat as 'active'). */
+const coalesceStatus = (sentStatus?: unknown, receivedStatus?: unknown): string | undefined =>
+    (sentStatus as string) || (receivedStatus as string) || undefined;
 
 /** @deprecated */
 export const getBoostRecipientsSkipLimit = async (
@@ -502,6 +511,11 @@ export const getBoostRecipientsSkipLimit = async (
         from: sender.profileId,
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+        status: coalesceStatus(sent.status, received?.status) as
+            | 'active'
+            | 'revoked'
+            | 'suspended'
+            | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -1521,18 +1535,6 @@ export const getBoostRecipientsWithChildren = async (
     }>(await _query.run());
 
     // Process results and group by profile, filtering out revoked credentials
-    // Debug: log results with status info
-    console.log('[getBoostRecipientsWithChildren] Total results before filter:', results.length);
-    const revokedResults = results.filter(({ received }) => received?.status === 'revoked');
-    console.log(
-        '[getBoostRecipientsWithChildren] Revoked results:',
-        revokedResults.map(r => ({
-            to: r.sent?.to,
-            status: r.received?.status,
-            boostId: r.relevantBoost?.id,
-        }))
-    );
-
     const resultsWithIds = results
         .filter(({ received }) => received?.status !== 'revoked')
         .map(({ relevantBoost, sender, sent, received, credential }) => {
@@ -1544,6 +1546,11 @@ export const getBoostRecipientsWithChildren = async (
                 received: received?.date,
                 boostUri: getBoostUri(boostId, domain),
                 ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+                status: coalesceStatus(sent.status, received?.status) as
+                    | 'active'
+                    | 'revoked'
+                    | 'suspended'
+                    | undefined,
             };
         });
 
@@ -1560,6 +1567,7 @@ export const getBoostRecipientsWithChildren = async (
             received?: string;
             boostUris: string[];
             credentialUris: string[];
+            status?: 'active' | 'revoked' | 'suspended';
         }
     >();
 
@@ -1575,6 +1583,7 @@ export const getBoostRecipientsWithChildren = async (
                 received: result.received,
                 boostUris: [],
                 credentialUris: [],
+                status: result.status,
             });
         }
 

@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { RadioGroup, useVerifiableData } from 'learn-card-base';
+import React, { useState, useEffect, useRef } from 'react';
+import { CredentialCategoryEnum, RadioGroup, useVerifiableData } from 'learn-card-base';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
 
 export type SkillProfileJobSatisfactionData = {
     workLifeBalance: string | null;
     jobStability: string | null;
 };
 
+export type SkillProfileWorkLifeBalanceData = {
+    workLifeBalance: string | null;
+};
+
+export type SkillProfileJobStabilityData = {
+    jobStability: string | null;
+};
+
+export const SKILL_PROFILE_WORK_LIFE_BALANCE_KEY = 'skill-profile-work-life-balance';
+export const SKILL_PROFILE_JOB_STABILITY_KEY = 'skill-profile-job-stability';
 export const SKILL_PROFILE_JOB_SATISFACTION_KEY = 'skill-profile-job-satisfaction';
 
 type SkillProfileStep4Props = {
@@ -32,28 +44,61 @@ const JOB_STABILITY_OPTIONS = [
 ];
 
 const SkillProfileStep4: React.FC<SkillProfileStep4Props> = ({ handleNext, handleBack }) => {
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(4, () => {
+        const fields: string[] = [];
+        if (workLifeBalance) fields.push('workLifeBalance');
+        if (jobStability) fields.push('jobStability');
+        return fields;
+    });
     const [workLifeBalance, setWorkLifeBalance] = useState<string | null>(null);
     const [jobStability, setJobStability] = useState<string | null>(null);
 
-    const { data, isLoading, saveIfChanged, isSaving } =
-        useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY, {
-            name: 'Job Satisfaction',
-            description: 'Work-life balance and job stability preferences',
-        });
+    const {
+        data: workLifeBalanceData,
+        isLoading: workLifeBalanceLoading,
+        saveIfChanged: saveWorkLifeBalance,
+        isSaving: workLifeBalanceSaving,
+    } = useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY, {
+        name: 'Work Life Balance',
+        description: 'Your preferred work-life balance',
+        category: CredentialCategoryEnum.workLifeBalance,
+    });
+
+    const {
+        data: jobStabilityData,
+        isLoading: jobStabilityLoading,
+        saveIfChanged: saveJobStability,
+        isSaving: jobStabilitySaving,
+    } = useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY, {
+        name: 'Job Stability',
+        description: 'How stable you want your work to feel',
+        category: CredentialCategoryEnum.jobStability,
+    });
+
+    const isLoading = workLifeBalanceLoading || jobStabilityLoading;
+    const isSaving = workLifeBalanceSaving || jobStabilitySaving;
 
     // Pre-populate form from existing verifiable data
     useEffect(() => {
-        if (data) {
-            setWorkLifeBalance(data.workLifeBalance ?? null);
-            setJobStability(data.jobStability ?? null);
+        if (workLifeBalanceData) {
+            setWorkLifeBalance(workLifeBalanceData.workLifeBalance ?? null);
         }
-    }, [data]);
+    }, [workLifeBalanceData]);
+
+    useEffect(() => {
+        if (jobStabilityData) {
+            setJobStability(jobStabilityData.jobStability ?? null);
+        }
+    }, [jobStabilityData]);
 
     const handleSaveAndNext = async () => {
-        await saveIfChanged({
-            workLifeBalance,
-            jobStability,
-        });
+        await Promise.all([
+            saveWorkLifeBalance({ workLifeBalance }),
+            saveJobStability({ jobStability }),
+        ]);
+        trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 

@@ -15,7 +15,7 @@ import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
@@ -79,6 +79,9 @@ import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/Boos
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
 import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
@@ -498,7 +501,7 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.info('error::savingBoost', e);
             presentToast(`Unable to save boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -534,7 +537,7 @@ const UpdateBoostCMS: React.FC = () => {
                 }
             } catch (e) {
                 setIsPublishLoading(false);
-                console.log('error::boosting::someone', e);
+                log.info('error::boosting::someone', e);
                 presentToast(`Error issuing boost`, {
                     duration: 3000,
                     type: ToastTypeEnum.Error,
@@ -606,7 +609,7 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.info('error::boosting::someone', e);
             presentToast(`Error issuing boost`, {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
@@ -626,7 +629,7 @@ const UpdateBoostCMS: React.FC = () => {
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

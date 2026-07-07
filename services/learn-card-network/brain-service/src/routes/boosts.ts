@@ -201,19 +201,26 @@ const getEncryptedFieldPaths = (encryptedFields?: string[]): string[] => {
 
 const transformBoostFieldsForStorage = (boostData: Record<string, any>): Record<string, any> => {
     const key = getFieldEncryptionKey();
-    const encryptedFields = getEncryptedFieldPaths(boostData.encryptedFields as string[] | undefined);
+    const encryptedFields = getEncryptedFieldPaths(
+        boostData.encryptedFields as string[] | undefined
+    );
 
     if (!key || encryptedFields.length === 0) {
         return boostData;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const flattenedBoostData: Record<string, unknown> = flattenObject(boostData as Record<string, unknown>) as Record<string, unknown>;
+    const flattenedBoostData: Record<string, unknown> = flattenObject(
+        boostData as Record<string, unknown>
+    ) as Record<string, unknown>;
 
     for (const fieldPath of encryptedFields) {
         if (typeof flattenedBoostData[fieldPath] === 'undefined') continue;
 
-        flattenedBoostData[fieldPath] = encryptField(JSON.stringify(flattenedBoostData[fieldPath]), key);
+        flattenedBoostData[fieldPath] = encryptField(
+            JSON.stringify(flattenedBoostData[fieldPath]),
+            key
+        );
     }
 
     return inflateObject(flattenedBoostData as any) as Record<string, any>;
@@ -221,18 +228,24 @@ const transformBoostFieldsForStorage = (boostData: Record<string, any>): Record<
 
 const transformBoostFieldsForRead = (boostData: Record<string, any>): Record<string, any> => {
     const key = getFieldEncryptionKey();
-    const encryptedFields = getEncryptedFieldPaths(boostData.encryptedFields as string[] | undefined);
+    const encryptedFields = getEncryptedFieldPaths(
+        boostData.encryptedFields as string[] | undefined
+    );
 
     if (!key || encryptedFields.length === 0) {
         return boostData;
     }
 
-    const flattenedBoostData: Record<string, unknown> = flattenObject(boostData as Record<string, unknown>) as Record<string, unknown>;
+    const flattenedBoostData: Record<string, unknown> = flattenObject(
+        boostData as Record<string, unknown>
+    ) as Record<string, unknown>;
 
     for (const fieldPath of encryptedFields) {
         if (typeof flattenedBoostData[fieldPath] !== 'string') continue;
 
-        flattenedBoostData[fieldPath] = JSON.parse(decryptField(flattenedBoostData[fieldPath] as string, key));
+        flattenedBoostData[fieldPath] = JSON.parse(
+            decryptField(flattenedBoostData[fieldPath] as string, key)
+        );
     }
 
     return inflateObject(flattenedBoostData as any) as Record<string, any>;
@@ -288,6 +301,54 @@ const buildInboxConfig = (
     }
 
     return config;
+};
+
+/**
+ * Resolve the credential instance to act on for a boost-recipient lifecycle action
+ * (revoke / suspend / unsuspend).
+ *
+ * If `credentialUri` is provided, resolves that specific instance and verifies it is an
+ * INSTANCE_OF the boost (throws NOT_FOUND otherwise). When omitted, falls back to the
+ * most-recent (non-revoked) instance for the boost + recipient, which may be null.
+ */
+const resolveBoostCredentialInstance = async ({
+    boostId,
+    recipientProfileId,
+    credentialUri,
+}: {
+    boostId: string;
+    recipientProfileId: string;
+    credentialUri?: string;
+}) => {
+    const {
+        getCredentialByUri,
+        getCredentialInstanceForBoostAndProfile,
+        isCredentialInstanceOfBoost,
+    } = await import('@accesslayer/credential/read');
+
+    if (credentialUri) {
+        const resolvedCredential = await getCredentialByUri(decodeURIComponent(credentialUri));
+
+        if (!resolvedCredential) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No credential found for the provided credentialUri',
+            });
+        }
+
+        const isInstance = await isCredentialInstanceOfBoost(resolvedCredential.id, boostId);
+
+        if (!isInstance) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Credential is not an instance of the specified boost',
+            });
+        }
+
+        return resolvedCredential;
+    }
+
+    return getCredentialInstanceForBoostAndProfile(boostId, recipientProfileId);
 };
 
 export const boostsRouter = t.router({
@@ -1928,12 +1989,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -1969,14 +2031,12 @@ export const boostsRouter = t.router({
                 });
             }
 
-            // Get the credential instance for this boost + recipient
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -2025,12 +2085,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -2062,13 +2123,12 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -2111,12 +2171,13 @@ export const boostsRouter = t.router({
             z.object({
                 boostUri: z.string(),
                 recipientProfileId: z.string(),
+                credentialUri: z.string().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, recipientProfileId } = input;
+            const { boostUri, recipientProfileId, credentialUri } = input;
 
             const resolvedRecipientProfileId = await getProfileIdFromString(
                 recipientProfileId,
@@ -2140,13 +2201,12 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { getCredentialInstanceForBoostAndProfile } = await import(
-                '@accesslayer/credential/read'
-            );
-            const credential = await getCredentialInstanceForBoostAndProfile(
-                boost.id,
-                resolvedRecipientProfileId
-            );
+            // Get the credential instance — specific instance if credentialUri provided, else most recent
+            const credential = await resolveBoostCredentialInstance({
+                boostId: boost.id,
+                recipientProfileId: resolvedRecipientProfileId,
+                credentialUri,
+            });
 
             if (!credential) {
                 throw new TRPCError({
@@ -2751,17 +2811,25 @@ export const boostsRouter = t.router({
             }
 
             const actualUpdates: Partial<BoostType> = {};
-            const boostData = inflateObject(boost.getDataValues() as Record<string, any>) as BoostType;
+            const boostData = inflateObject(
+                boost.getDataValues() as Record<string, any>
+            ) as BoostType;
             const currentReadableBoost = transformBoostFieldsForRead(boostData);
             const nextReadableBoost = {
                 ...currentReadableBoost,
                 ...updates,
-                meta: meta ? { ...(currentReadableBoost.meta ?? {}), ...meta } : currentReadableBoost.meta,
+                meta: meta
+                    ? { ...(currentReadableBoost.meta ?? {}), ...meta }
+                    : currentReadableBoost.meta,
                 encryptedFields: encryptedFields ?? currentReadableBoost.encryptedFields,
             } as BoostType;
             const storageReadyBoost = transformBoostFieldsForStorage(nextReadableBoost);
-            const previousEncryptedFields = new Set(getEncryptedFieldPaths(boostData.encryptedFields));
-            const nextEncryptedFields = new Set(getEncryptedFieldPaths(storageReadyBoost.encryptedFields));
+            const previousEncryptedFields = new Set(
+                getEncryptedFieldPaths(boostData.encryptedFields)
+            );
+            const nextEncryptedFields = new Set(
+                getEncryptedFieldPaths(storageReadyBoost.encryptedFields)
+            );
             const encryptedMetaChanged =
                 encryptedFields !== undefined &&
                 [...new Set([...previousEncryptedFields, ...nextEncryptedFields])].some(

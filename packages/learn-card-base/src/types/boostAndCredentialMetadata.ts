@@ -1,7 +1,14 @@
 import React from 'react';
 import { z } from 'zod';
 
-import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import BrokenStar from 'learn-card-base/svgs/BrokenStar';
+import PuzzlePiece, { TiltedPuzzlePiece } from 'learn-card-base/svgs/PuzzlePiece';
+import TwoToneProfile from 'learn-card-base/svgs/TwoToneProfile';
+import TwoToneTimeCircle from 'learn-card-base/svgs/TwoToneTimeCircle';
+import TwoToneWork from 'learn-card-base/svgs/TwoToneWork';
+import TwoToneWallet from 'learn-card-base/svgs/TwoToneWallet';
+import Scale from 'learn-card-base/svgs/Scale';
+import TwoToneLock from 'learn-card-base/svgs/TwoToneLock';
 import Graduation from 'learn-card-base/svgs/Graduation';
 import Briefcase from 'learn-card-base/svgs/Briefcase';
 import KeyIcon from 'learn-card-base/svgs/KeyIcon';
@@ -96,9 +103,19 @@ export enum CredentialCategoryEnum {
     aiInsight = 'AI Insight',
     aiAssessment = 'AI Assessment',
 
+    goals = 'Goals',
+    professionalTitle = 'Professional Title',
+    roleExperience = 'Role Experience',
+    workExperience = 'Work Experience',
+    payRate = 'Pay Rate',
+    workLifeBalance = 'Work Life Balance',
+    jobStability = 'Job Stability',
+    selfAssignedSkills = 'Self-Assigned Skills',
+
+    verifiableData = 'VerifiableData',
+
     // todo
     membership = 'Membership',
-    goals = 'Goals',
 
     // deprecated
     id = 'ID',
@@ -992,6 +1009,132 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         contractCredentialTypeOverride: 'ai-assessment',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.aiAssessment],
     },
+    [CredentialCategoryEnum.verifiableData]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Verifiable Data',
+        title: 'Verifiable Data',
+        titleSingular: 'Verifiable Data',
+        plural: 'Verifiable Data',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: BrokenStar,
+        IconWithShape: BrokenStar,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.goals]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Goals',
+        title: 'Goals',
+        titleSingular: 'Goal',
+        plural: 'Goals',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: BrokenStar,
+        IconWithShape: BrokenStar,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.professionalTitle]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Professional Title',
+        title: 'Professional Title',
+        titleSingular: 'Professional Title',
+        plural: 'Professional Titles',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: TwoToneProfile,
+        IconWithShape: TwoToneProfile,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.roleExperience]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Role Experience',
+        title: 'Role Experience',
+        titleSingular: 'Role Experience',
+        plural: 'Role Experience',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: TwoToneTimeCircle,
+        IconWithShape: TwoToneTimeCircle,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.workExperience]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Work Experience',
+        title: 'Work Experience',
+        titleSingular: 'Work Experience',
+        plural: 'Work Experience',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: TwoToneWork,
+        IconWithShape: TwoToneWork,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.payRate]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Pay Rate',
+        title: 'Pay Rate',
+        titleSingular: 'Pay Rate',
+        plural: 'Pay Rates',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: TwoToneWallet,
+        IconWithShape: TwoToneWallet,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.workLifeBalance]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Work Life Balance',
+        title: 'Work Life Balance',
+        titleSingular: 'Work Life Balance',
+        plural: 'Work Life Balance',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: Scale,
+        IconWithShape: Scale,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.jobStability]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Job Stability',
+        title: 'Job Stability',
+        titleSingular: 'Job Stability',
+        plural: 'Job Stability',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: TwoToneLock,
+        IconWithShape: TwoToneLock,
+        ShapeIcon: Hexagon,
+    },
+    [CredentialCategoryEnum.selfAssignedSkills]: {
+        walletSubtype: WalletCategoryTypes.notImplemented,
+        defaultImageSrc: '',
+        walletColor: 'gray-300',
+        displayName: 'Self-Assigned Skills',
+        title: 'Self-Assigned Skills',
+        titleSingular: 'Self-Assigned Skill',
+        plural: 'Self-Assigned Skills',
+        subColor: 'gray-400',
+        color: 'gray-500',
+        IconComponent: TiltedPuzzlePiece,
+        IconWithShape: TiltedPuzzlePiece,
+        ShapeIcon: Hexagon,
+    },
 
     // Obsolete / deprecated / unused / not implemented yet
     [CredentialCategoryEnum.events]: {
@@ -1007,13 +1150,6 @@ export const categoryMetadata: Record<CredentialCategoryEnum, CredentialMetadata
         defaultImageSrc: '',
         walletColor: '',
         ...boostCategoryMetadata[BoostCategoryOptionsEnum.currency],
-    },
-    [CredentialCategoryEnum.goals]: {
-        boostType: BoostCategoryOptionsEnum.goals,
-        walletSubtype: WalletCategoryTypes.goals,
-        defaultImageSrc: '',
-        walletColor: '',
-        ...boostCategoryMetadata[BoostCategoryOptionsEnum.goals],
     },
     [CredentialCategoryEnum.relationship]: {
         boostType: BoostCategoryOptionsEnum.relationship,

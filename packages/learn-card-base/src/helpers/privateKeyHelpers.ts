@@ -1,5 +1,7 @@
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { getPlatformPrivateKey } from 'learn-card-base/security/platformPrivateKeyStorage';
+import { getLogger } from '../logging/logger';
+const log = getLogger('private-key-helpers');
 
 /**
  * Centralized helper to retrieve the current user's private key.
@@ -8,9 +10,7 @@ import { getPlatformPrivateKey } from 'learn-card-base/security/platformPrivateK
  * 2) In-memory store: `currentUserStore.currentUserPK` or `currentUser.privateKey`
  * 3) Platform-aware secure storage (web: AES-GCM + IndexedDB; native: encrypted SQLite)
  */
-export const getCurrentUserPrivateKey = async (
-    override?: string
-): Promise<string | null> => {
+export const getCurrentUserPrivateKey = async (override?: string): Promise<string | null> => {
     // 1) Direct override
     if (override && typeof override === 'string' && override.length > 0) return override;
 
@@ -26,7 +26,7 @@ export const getCurrentUserPrivateKey = async (
         const pk = await getPlatformPrivateKey();
         if (pk && pk.length > 0) return pk;
     } catch (e) {
-        console.warn('getCurrentUserPrivateKey::secureStorage', e);
+        log.warn('getCurrentUserPrivateKey::secureStorage', e);
     }
 
     return null;

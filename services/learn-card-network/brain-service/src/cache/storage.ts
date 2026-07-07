@@ -1,5 +1,13 @@
 import cache from '@cache';
-import { UnsignedVC, VC, VP, JWE, ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
+import {
+    UnsignedVC,
+    VC,
+    VP,
+    JWE,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    StoredCredentialEnvelope,
+} from '@learncard/types';
 import { createHash } from 'crypto';
 
 export type { StoredCredential } from 'types/credential';
@@ -15,11 +23,18 @@ export const getStorageContentHashKey = (content: unknown): string =>
         createHash('sha256').update(JSON.stringify(content)).digest('hex')
     );
 
+type StorageCacheItem =
+    | UnsignedVC
+    | VC
+    | VP
+    | JWE
+    | ConsentFlowContract
+    | ConsentFlowTerms
+    | StoredCredentialEnvelope;
+
 export const getCachedStorageByUri = async (
     uri: string
-): Promise<
-    UnsignedVC | VC | VP | JWE | ConsentFlowContract | ConsentFlowTerms | null | undefined
-> => {
+): Promise<StorageCacheItem | null | undefined> => {
     const cacheKey = uri.startsWith('storage:hash:') ? uri : getStorageCacheKey(uri);
     const result = await cache.get(cacheKey, true, STORAGE_TTL);
 
@@ -39,10 +54,7 @@ export const getCachedStorageByUri = async (
     return undefined;
 };
 
-export const setStorageForUri = async (
-    uri: string,
-    item: UnsignedVC | VC | VP | JWE | ConsentFlowContract | ConsentFlowTerms
-) => {
+export const setStorageForUri = async (uri: string, item: StorageCacheItem) => {
     const serializedItem = JSON.stringify(item);
 
     await Promise.all([

@@ -14,6 +14,9 @@ import {
     ChevronUp,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('organization-setup-step');
+
 import {
     useWallet,
     useToast,
@@ -89,7 +92,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: profiles, isLoading: profilesLoading } = useGetAvailableProfiles();
-    const { handleSwitchAccount, handleSwitchBackToParentAccount, isSwitching } = useSwitchProfile();
+    const { handleSwitchAccount, handleSwitchBackToParentAccount, isSwitching } =
+        useSwitchProfile();
 
     const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
     const parentUser = currentUserStore.get.parentUser();
@@ -100,7 +104,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
 
     const [mode, setMode] = useState<SetupMode>('select');
-    const [selectedProfile, setSelectedProfile] = useState<OrganizationProfile | null>(organization);
+    const [selectedProfile, setSelectedProfile] = useState<OrganizationProfile | null>(
+        organization
+    );
 
     // Create organization form state
     const [orgName, setOrgName] = useState('');
@@ -116,10 +122,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     const [isFormatValid, setIsFormatValid] = useState(false);
     const [isUniqueValid, setIsUniqueValid] = useState(false);
 
-    const {
-        data: uniqueProfile,
-        isFetching: uniqueProfileFetching,
-    } = useGetProfile(profileId ?? '');
+    const { data: uniqueProfile, isFetching: uniqueProfileFetching } = useGetProfile(
+        profileId ?? ''
+    );
 
     const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
         fileType: IMAGE_MIME_TYPES,
@@ -304,9 +309,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                     );
 
                     if (sentBoost && sentBoostUri) {
-                        const issuedVcUri = await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(
-                            sentBoost
-                        );
+                        const issuedVcUri =
+                            await parentWallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                         if (issuedVcUri) {
                             await addCredentialToWallet({ uri: issuedVcUri, didOverride: true });
@@ -364,7 +368,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 );
 
                 if (sentBoost) {
-                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
+                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
+                        sentBoost
+                    );
                     if (issuedVcUri) {
                         await addCredentialToWallet({ uri: issuedVcUri });
                     }
@@ -397,7 +403,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
             presentToast(`Failed to create organization: ${e?.message}`, {
                 type: ToastTypeEnum.Error,
             });
-            console.error('Error creating organization:', e);
+            log.error('Error creating organization:', e);
         } finally {
             setIsCreating(false);
         }
@@ -423,8 +429,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Organization Account</p>
                     <p>
-                        Choose or create an organization account that will be used as the issuer for 
-                        your credentials. This determines the DID, API keys, and branding for your integration.
+                        Choose or create an organization account that will be used as the issuer for
+                        your credentials. This determines the DID, API keys, and branding for your
+                        integration.
                     </p>
                 </div>
             </div>
@@ -444,7 +451,10 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                             }`}
                         >
                             <UserProfilePicture
-                                user={{ image: currentLCNUser?.image, displayName: currentLCNUser?.displayName }}
+                                user={{
+                                    image: currentLCNUser?.image,
+                                    displayName: currentLCNUser?.displayName,
+                                }}
                                 customContainerClass="w-12 h-12 rounded-full overflow-hidden"
                             />
 
@@ -461,7 +471,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                     )}
                                 </div>
 
-                                <p className="text-sm text-gray-500">@{currentLCNUser?.profileId}</p>
+                                <p className="text-sm text-gray-500">
+                                    @{currentLCNUser?.profileId}
+                                </p>
                             </div>
 
                             {selectedProfile?.did === currentLCNUser?.did && (
@@ -487,7 +499,10 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                 }`}
                             >
                                 <UserProfilePicture
-                                    user={{ image: parentUser.profileImage, displayName: parentUser.name }}
+                                    user={{
+                                        image: parentUser.profileImage,
+                                        displayName: parentUser.name,
+                                    }}
                                     customContainerClass="w-12 h-12 rounded-full overflow-hidden"
                                 />
 
@@ -502,7 +517,9 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                         </span>
                                     </div>
 
-                                    <p className="text-sm text-gray-500">Your root personal account</p>
+                                    <p className="text-sm text-gray-500">
+                                        Your root personal account
+                                    </p>
                                 </div>
 
                                 {isSwitching && selectedProfile?.did === parentUserDid ? (
@@ -524,43 +541,58 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                             </h3>
 
                             <div className="space-y-2">
-                                {serviceProfiles.map(({ profile, manager }: { profile: LCNProfile; manager: LCNProfile }, index: number) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => handleSelectExistingProfile(profile, manager)}
-                                        disabled={isSwitching}
-                                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                                            selectedProfile?.did === profile.did
-                                                ? 'border-cyan-500 bg-cyan-50'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <UserProfilePicture
-                                            user={{ image: profile.image, displayName: profile.displayName }}
-                                            customContainerClass="w-12 h-12 rounded-full overflow-hidden"
-                                        />
+                                {serviceProfiles.map(
+                                    (
+                                        {
+                                            profile,
+                                            manager,
+                                        }: { profile: LCNProfile; manager: LCNProfile },
+                                        index: number
+                                    ) => (
+                                        <button
+                                            key={index}
+                                            onClick={() =>
+                                                handleSelectExistingProfile(profile, manager)
+                                            }
+                                            disabled={isSwitching}
+                                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                                                selectedProfile?.did === profile.did
+                                                    ? 'border-cyan-500 bg-cyan-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <UserProfilePicture
+                                                user={{
+                                                    image: profile.image,
+                                                    displayName: profile.displayName,
+                                                }}
+                                                customContainerClass="w-12 h-12 rounded-full overflow-hidden"
+                                            />
 
-                                        <div className="flex-1 text-left">
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-medium text-gray-800">
-                                                    {profile.displayName}
+                                            <div className="flex-1 text-left">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-gray-800">
+                                                        {profile.displayName}
+                                                    </p>
+                                                    <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
+                                                        Organization
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-gray-500">
+                                                    @{profile.profileId}
                                                 </p>
-                                                <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                                    Organization
-                                                </span>
                                             </div>
-                                            <p className="text-sm text-gray-500">@{profile.profileId}</p>
-                                        </div>
 
-                                        {isSwitching && selectedProfile?.did === profile.did ? (
-                                            <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
-                                        ) : selectedProfile?.did === profile.did ? (
-                                            <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
-                                                <Check className="w-4 h-4 text-white" />
-                                            </div>
-                                        ) : null}
-                                    </button>
-                                ))}
+                                            {isSwitching && selectedProfile?.did === profile.did ? (
+                                                <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
+                                            ) : selectedProfile?.did === profile.did ? (
+                                                <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                                                    <Check className="w-4 h-4 text-white" />
+                                                </div>
+                                            ) : null}
+                                        </button>
+                                    )
+                                )}
                             </div>
                         </div>
                     )}
@@ -595,7 +627,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                         <input
                             type="text"
                             value={orgName}
-                            onChange={(e) => {
+                            onChange={e => {
                                 setOrgName(e.target.value);
                                 setNameError('');
                             }}
@@ -649,7 +681,11 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                         onClick={() => setShowAdvanced(!showAdvanced)}
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
                     >
-                        {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        {showAdvanced ? (
+                            <ChevronUp className="w-4 h-4" />
+                        ) : (
+                            <ChevronDown className="w-4 h-4" />
+                        )}
                         Advanced Settings
                     </button>
 
@@ -664,21 +700,45 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                 <input
                                     type="text"
                                     value={profileId}
-                                    onChange={(e) => handleProfileIdInput(e.target.value)}
+                                    onChange={e => handleProfileIdInput(e.target.value)}
                                     placeholder="organization-id"
                                     className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                 />
                             </div>
 
                             <div className="flex flex-wrap gap-2 mt-2">
-                                <span className={`text-xs px-2 py-1 rounded ${isLengthValid ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                        isLengthValid
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                >
                                     3-25 characters
                                 </span>
-                                <span className={`text-xs px-2 py-1 rounded ${isFormatValid ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                        isFormatValid
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                >
                                     Letters, numbers, dashes only
                                 </span>
-                                <span className={`text-xs px-2 py-1 rounded ${isUniqueValid ? 'bg-emerald-100 text-emerald-700' : uniqueProfileFetching ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
-                                    {uniqueProfileFetching ? 'Checking...' : isUniqueValid ? 'Available' : 'Must be unique'}
+                                <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                        isUniqueValid
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : uniqueProfileFetching
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                >
+                                    {uniqueProfileFetching
+                                        ? 'Checking...'
+                                        : isUniqueValid
+                                        ? 'Available'
+                                        : 'Must be unique'}
                                 </span>
                             </div>
 

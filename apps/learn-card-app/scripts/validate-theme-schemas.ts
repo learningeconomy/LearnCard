@@ -1,4 +1,7 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
+
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
 
 /**
  * validate-theme-schemas.ts
@@ -11,7 +14,7 @@
  * and inheritance chains only.
  *
  * Usage:
- *   npx tsx scripts/validate-theme-schemas.ts
+ *   bun scripts/validate-theme-schemas.ts
  *
  * Exit codes:
  *   0 — all themes valid
@@ -34,7 +37,7 @@ const SCHEMAS_DIR = resolve(APP_ROOT, 'src/theme/schemas');
 // ---------------------------------------------------------------------------
 
 if (!existsSync(SCHEMAS_DIR)) {
-    console.error(`❌ Schemas directory not found: ${SCHEMAS_DIR}`);
+    log.error(`❌ Schemas directory not found: ${SCHEMAS_DIR}`);
     process.exit(1);
 }
 
@@ -45,7 +48,7 @@ const themeDirs = readdirSync(SCHEMAS_DIR).filter(name => {
 });
 
 if (themeDirs.length === 0) {
-    console.log('⚠  No theme directories found in src/theme/schemas/');
+    log.info('⚠  No theme directories found in src/theme/schemas/');
     process.exit(0);
 }
 
@@ -65,7 +68,7 @@ for (const theme of themeDirs) {
 
         rawConfigs.set(theme, raw);
     } catch (err) {
-        console.error(`✗  ${theme} — failed to parse theme.json: ${err}`);
+        log.error(`✗  ${theme} — failed to parse theme.json: ${err}`);
     }
 }
 
@@ -80,7 +83,7 @@ for (const theme of themeDirs) {
     const configPath = join(SCHEMAS_DIR, theme, 'theme.json');
 
     if (!existsSync(configPath)) {
-        console.log(`⚠  ${theme}/ — no theme.json (assets-only theme dir)`);
+        log.info(`⚠  ${theme}/ — no theme.json (assets-only theme dir)`);
         continue;
     }
 
@@ -96,10 +99,10 @@ for (const theme of themeDirs) {
         const result = ThemeJsonSchema.safeParse(raw);
 
         if (!result.success) {
-            console.error(`✗  ${theme} — INVALID JSON structure:`);
+            log.error(`✗  ${theme} — INVALID JSON structure:`);
 
             for (const issue of result.error.issues) {
-                console.error(`      ${issue.path.join('.')}: ${issue.message}`);
+                log.error(`      ${issue.path.join('.')}: ${issue.message}`);
             }
 
             failures++;
@@ -108,7 +111,9 @@ for (const theme of themeDirs) {
 
         // 2. Check id matches directory name
         if (raw.id !== theme) {
-            console.error(`✗  ${theme} — id mismatch: theme.json has id="${raw.id}" but directory is "${theme}"`);
+            log.error(
+                `✗  ${theme} — id mismatch: theme.json has id="${raw.id}" but directory is "${theme}"`
+            );
             failures++;
             continue;
         }
@@ -118,7 +123,7 @@ for (const theme of themeDirs) {
             const parentId = raw.extends as string;
 
             if (!rawConfigs.has(parentId)) {
-                console.error(`✗  ${theme} — extends "${parentId}" which does not exist`);
+                log.error(`✗  ${theme} — extends "${parentId}" which does not exist`);
                 failures++;
                 continue;
             }
@@ -129,7 +134,9 @@ for (const theme of themeDirs) {
 
             while (current) {
                 if (seen.has(current)) {
-                    console.error(`✗  ${theme} — circular extends chain: ${[...seen, current].join(' → ')}`);
+                    log.error(
+                        `✗  ${theme} — circular extends chain: ${[...seen, current].join(' → ')}`
+                    );
                     failures++;
                     break;
                 }
@@ -149,7 +156,11 @@ for (const theme of themeDirs) {
         const iconSet = raw.iconSet as string | undefined;
 
         if (iconSet && !KNOWN_ICON_SETS.includes(iconSet)) {
-            console.warn(`⚠  ${theme} — references unknown iconSet "${iconSet}" (known: ${KNOWN_ICON_SETS.join(', ')})`);
+            log.warn(
+                `⚠  ${theme} — references unknown iconSet "${iconSet}" (known: ${KNOWN_ICON_SETS.join(
+                    ', '
+                )})`
+            );
             warnings++;
         }
 
@@ -162,23 +173,31 @@ for (const theme of themeDirs) {
             const hasBlocksIcon = assetFiles.some(f => f.startsWith('blocks-icon'));
 
             if (!hasSwitcherIcon) {
-                console.warn(`⚠  ${theme} — missing assets/switcher-icon.* (theme switcher will use fallback)`);
+                log.warn(
+                    `⚠  ${theme} — missing assets/switcher-icon.* (theme switcher will use fallback)`
+                );
                 warnings++;
             }
 
             if (!hasBlocksIcon) {
-                console.warn(`⚠  ${theme} — missing assets/blocks-icon.* (build-my-LC icon will use fallback)`);
+                log.warn(
+                    `⚠  ${theme} — missing assets/blocks-icon.* (build-my-LC icon will use fallback)`
+                );
                 warnings++;
             }
         } else if (!raw.extends) {
             // Root themes (no extends) should have their own assets
-            console.warn(`⚠  ${theme} — no assets/ directory (root theme without inherited assets)`);
+            log.warn(`⚠  ${theme} — no assets/ directory (root theme without inherited assets)`);
             warnings++;
         }
 
-        console.log(`✓  ${theme} — valid (displayName="${raw.displayName}"${raw.extends ? `, extends="${raw.extends}"` : ''})`);
+        log.info(
+            `✓  ${theme} — valid (displayName="${raw.displayName}"${
+                raw.extends ? `, extends="${raw.extends}"` : ''
+            })`
+        );
     } catch (err) {
-        console.error(`✗  ${theme} — unexpected error: ${err}`);
+        log.error(`✗  ${theme} — unexpected error: ${err}`);
         failures++;
     }
 }
@@ -187,15 +206,15 @@ for (const theme of themeDirs) {
 // Summary
 // ---------------------------------------------------------------------------
 
-console.log('');
+log.info('');
 
 if (warnings > 0) {
-    console.log(`⚠  ${warnings} warning(s).`);
+    log.info(`⚠  ${warnings} warning(s).`);
 }
 
 if (failures > 0) {
-    console.error(`❌ ${failures} theme(s) failed validation.`);
+    log.error(`❌ ${failures} theme(s) failed validation.`);
     process.exit(1);
 } else {
-    console.log(`✅ All ${themeDirs.length} theme(s) valid.`);
+    log.info(`✅ All ${themeDirs.length} theme(s) valid.`);
 }

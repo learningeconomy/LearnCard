@@ -51,7 +51,7 @@ export const AiInsightsParentConsent: React.FC<{
                     setTimeout(() => {
                         openConsentFlowModal(
                             true,
-                            () => presentToast('AI Insights shared!'),
+                            () => presentToast('Insights shared!'),
                             targetProfile,
                             undefined,
                             true

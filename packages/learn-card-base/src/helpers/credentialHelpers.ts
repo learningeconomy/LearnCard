@@ -38,6 +38,8 @@ import { VERIFIER_STATES } from '@learncard/react';
 import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/components/boost/boost';
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
+import { getLogger } from '../logging/logger';
+const log = getLogger('credential-helpers');
 
 type CredentialType =
     | 'MovieTicketCredential'
@@ -551,7 +553,7 @@ export const getDefaultCategoryForCredential = (
         if ('learningPathway' in _credential) return 'AI Pathway';
         if ('assessment' in _credential) return 'AI Assessment';
     } catch (error) {
-        console.log(error);
+        log.debug(error);
     }
 
     const _isClrCredential = isClrCredential(_credential);
@@ -851,16 +853,9 @@ export const getCredentialName = (credential: VC): string => {
     // rendered nameless. Critical for vanilla VCDM credentials issued
     // via OID4VCI by issuers that don't ship a learncard-flavored
     // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
-    const humanizedType = humanizeCredentialType(
-        getMostSpecificCredentialType(credentialTypes)
-    );
+    const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
 
-    return (
-        credential?.name ||
-        name ||
-        credentialSubjectAchievementName ||
-        humanizedType
-    );
+    return credential?.name || name || credentialSubjectAchievementName || humanizedType;
 };
 
 export const getCredentialType = (credential: VC) => {
@@ -1215,8 +1210,13 @@ export const getAchievementTypeDisplayText = (
                 (options: { title: string; type: string }) => options?.type === achievementType
             )?.title ?? '';
 
-        if (!achievementType && fallbackText) {
-            displayText = fallbackText;
+        // 'Achievement' is the OBv3 base achievement type — it has no specific subtype and
+        //   maps to the meaningless label 'Generic'. Treat it like the no-type case: clear the
+        //   'Generic' lookup so we fall back to the credential title when a caller provides one
+        //   (e.g. the badge), otherwise to the boostType display text via the fail-safe below
+        //   (matching how unmatched/empty types already behave).
+        if (!achievementType || achievementType === 'Achievement') {
+            displayText = fallbackText || '';
         }
     }
 
@@ -1240,6 +1240,7 @@ export const getCategoryPrimaryColor = (category = CredentialCategoryEnum.achiev
         case CredentialCategoryEnum.socialBadge:
             return 'cyan';
         case CredentialCategoryEnum.skill:
+        case CredentialCategoryEnum.selfAssignedSkills:
             return 'indigo';
         case CredentialCategoryEnum.achievement:
             return 'spice';

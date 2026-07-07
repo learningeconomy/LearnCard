@@ -8,6 +8,12 @@ import {
     ModalTypes,
     LEARNCARD_AI_URL,
     getOrFetchIntegrationForListing,
+    pendingContractSyncStore,
+    getCategoryForCredential,
+    getOrCreateSharedUriForWallet,
+    contractCategoryNameToCategoryMetadata,
+    isJobTerminal,
+    MAX_JOB_RETRIES,
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -46,6 +52,80 @@ interface UseLearnCardMessageHandlersOptions {
     debug?: boolean;
 }
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-learn-card-message-handlers');
+
+const getPendingSyncStatus = (contractUri?: string) => {
+    const allJobs = Object.values(pendingContractSyncStore.get.jobs());
+    // When a contractUri is provided (a partner app asking about its own
+    // contract), only consider that contract's jobs so an unrelated contract's
+    // sync can't make this app appear to be syncing or skew its progress
+    // totals. With no contractUri we fall back to the store-global view.
+    const jobs = contractUri ? allJobs.filter(job => job.contractUri === contractUri) : allJobs;
+    // A job that just errored but still has retries left is not terminal — it
+    // will be retried by the worker — so treat it as active. Otherwise a
+    // waitForSync caller could see a premature "ready" during the retry window.
+    const activeJobs = jobs.filter(
+        job =>
+            job.status === 'queued' ||
+            job.status === 'running' ||
+            (job.status === 'error' && job.retryCount < MAX_JOB_RETRIES)
+    );
+    const latestTerminalJob = jobs
+        .filter(isJobTerminal)
+        .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+
+    const relevantJobs =
+        activeJobs.length > 0 ? activeJobs : latestTerminalJob ? [latestTerminalJob] : [];
+
+    const progress = relevantJobs.reduce(
+        (summary, job) => ({
+            totalCredentials: summary.totalCredentials + job.totalCredentials,
+            completedCredentials: summary.completedCredentials + job.completedCredentials,
+            failedCredentials: summary.failedCredentials + job.failedCredentials,
+            retryCount: summary.retryCount + job.retryCount,
+        }),
+        {
+            totalCredentials: 0,
+            completedCredentials: 0,
+            failedCredentials: 0,
+            retryCount: 0,
+        }
+    );
+
+    if (activeJobs.length > 0) {
+        return {
+            status: 'syncing' as const,
+            progress,
+        };
+    }
+
+    if (latestTerminalJob?.status === 'error') {
+        return {
+            status: 'error' as const,
+            progress,
+            lastError: latestTerminalJob.lastError,
+        };
+    }
+
+    return {
+        status: 'ready' as const,
+        progress,
+    };
+};
+
+const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const status = getPendingSyncStatus(contractUri);
+        if (status.status !== 'syncing') return status;
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    return getPendingSyncStatus(contractUri);
+};
+
 /**
  * Shared hook for creating LEARNCARD_V1 message handlers.
  * Used by both EmbedIframeModal and EmbedAppFullScreen to ensure consistent behavior.
@@ -70,14 +150,14 @@ export function useLearnCardMessageHandlers({
     // Debug logging helper
     const log = useCallback(
         (...args: unknown[]) => {
-            if (debug) console.log('[PostMessage]', ...args);
+            if (debug) log.info('[PostMessage]', ...args);
         },
         [debug]
     );
 
     const logError = useCallback(
         (...args: unknown[]) => {
-            if (debug) console.error('[PostMessage]', ...args);
+            if (debug) log.error('[PostMessage]', ...args);
         },
         [debug]
     );
@@ -232,6 +312,31 @@ export function useLearnCardMessageHandlers({
         return getOrFetchIntegrationForListing(queryClient, wallet, appId);
     };
 
+    const getConfiguredContractUri = async () => {
+        const launchConfigContractUri = launchConfig?.contractUri as string | undefined;
+        if (launchConfigContractUri) return launchConfigContractUri;
+        if (!appId) return undefined;
+
+        const integration = await getIntegrationForListing(appId);
+        const guideState = integration?.guideState as
+            | {
+                  config?: {
+                      consentFlowConfig?: { contractUri?: string };
+                      embedAppConfig?: {
+                          featureConfig?: {
+                              'request-data-consent'?: { contractUri?: string };
+                          };
+                      };
+                  };
+              }
+            | undefined;
+
+        return (
+            guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
+                ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
+        );
+    };
+
     const handlers = useMemo(
         () =>
             createActionHandlers({
@@ -262,7 +367,7 @@ export function useLearnCardMessageHandlers({
 
                             // Check if already trusted
                             // if (isOriginTrusted(origin)) {
-                            //     console.log('[PostMessage] Origin already trusted:', origin);
+                            //     log.info('[PostMessage] Origin already trusted:', origin);
                             //     resolve(true);
                             //     return;
                             // }
@@ -359,26 +464,7 @@ export function useLearnCardMessageHandlers({
                 },
                 getContractUri: () => launchConfig?.contractUri as string | undefined,
                 getIntegrationContractUri: async () => {
-                    if (!appId) return undefined;
-
-                    const integration = await getIntegrationForListing(appId);
-                    const guideState = integration?.guideState as
-                        | {
-                            config?: {
-                                consentFlowConfig?: { contractUri?: string };
-                                embedAppConfig?: {
-                                    featureConfig?: {
-                                        'request-data-consent'?: { contractUri?: string };
-                                    };
-                                };
-                            };
-                        }
-                        | undefined;
-
-                    return (
-                        guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
-                            ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
-                    );
+                    return getConfiguredContractUri();
                 },
 
                 // Credential handlers
@@ -507,6 +593,52 @@ export function useLearnCardMessageHandlers({
                     }
 
                     const credential = await learnCard.read.get(id);
+
+                    try {
+                        const contractUri = await getConfiguredContractUri();
+                        const consentedContract = consentedContracts?.find(
+                            contract => contract.contract.uri === contractUri
+                        );
+                        const category = credential
+                            ? await getCategoryForCredential(credential, learnCard, false)
+                            : undefined;
+                        const categoryInfo = category
+                            ? consentedContract?.terms.read.credentials.categories[category]
+                            : undefined;
+
+                        if (
+                            contractUri &&
+                            consentedContract &&
+                            category &&
+                            typeof categoryInfo === 'object' &&
+                            categoryInfo.shareAll &&
+                            categoryInfo.sharing &&
+                            (!categoryInfo.shareUntil ||
+                                categoryInfo.shareUntil > new Date().toISOString())
+                        ) {
+                            const credentialCategory =
+                                contractCategoryNameToCategoryMetadata(category)?.credentialType ??
+                                category;
+                            const sharedUri = await getOrCreateSharedUriForWallet(
+                                learnCard,
+                                consentedContract.contract.owner.did,
+                                queryClient,
+                                id,
+                                credentialCategory
+                            );
+
+                            if (sharedUri) {
+                                await learnCard.invoke.syncCredentialsToContract(
+                                    consentedContract.uri,
+                                    {
+                                        [category]: [sharedUri],
+                                    }
+                                );
+                            }
+                        }
+                    } catch (error) {
+                        logError('Failed to lazily materialize credential share:', error);
+                    }
 
                     log('Fetched credential:', credential);
                     sdkActivityStore.set.endActivity();
@@ -938,144 +1070,141 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                        const learnCard = await initWallet();
+                          const learnCard = await initWallet();
 
-                        if (!learnCard) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('Wallet not initialized');
-                        }
+                          if (!learnCard) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('Wallet not initialized');
+                          }
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                          if (!learnCard.invoke.sendAppEvent) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
 
-                        // LC-1644 perf telemetry — only the send-credential path triggers
-                        // the user-facing claim flow we want to time. Other event types
-                        // (check-credential, send-ai-session-credential) follow different paths.
-                        const isSendCredential = event.type === 'send-credential';
-                        if (isSendCredential) {
-                            startSendCredentialFlow({
-                                listingId,
-                                eventType: event.type,
-                            });
-                        }
+                          // LC-1644 perf telemetry — only the send-credential path triggers
+                          // the user-facing claim flow we want to time. Other event types
+                          // (check-credential, send-ai-session-credential) follow different paths.
+                          const isSendCredential = event.type === 'send-credential';
+                          if (isSendCredential) {
+                              startSendCredentialFlow({
+                                  listingId,
+                                  eventType: event.type,
+                              });
+                          }
 
-                        let result;
-                        try {
-                            result = await learnCard.invoke.sendAppEvent(listingId, event);
-                        } catch (err) {
-                            if (isSendCredential) {
-                                void flushSendCredentialFlowOnError({
-                                    phase: 'request',
-                                    message: err instanceof Error ? err.message : String(err),
-                                });
-                            }
-                            throw err;
-                        }
+                          let result;
+                          try {
+                              result = await learnCard.invoke.sendAppEvent(listingId, event);
+                          } catch (err) {
+                              if (isSendCredential) {
+                                  void flushSendCredentialFlowOnError({
+                                      phase: 'request',
+                                      message: err instanceof Error ? err.message : String(err),
+                                  });
+                              }
+                              throw err;
+                          }
 
-                        if (isSendCredential) {
-                            markSendCredentialResponseReceived({
-                                alreadyClaimed: !!result.alreadyClaimed,
-                            });
-                        }
+                          if (isSendCredential) {
+                              markSendCredentialResponseReceived({
+                                  alreadyClaimed: !!result.alreadyClaimed,
+                              });
+                          }
 
-                        // If a credential was issued via send-credential event, notify the parent component
-                        // Note: check-credential also returns credentialUri but should NOT trigger the modal
-                        if (
-                            event.type === 'send-credential' &&
-                            result.credentialUri &&
-                            !result.alreadyClaimed &&
-                            onCredentialIssued
-                        ) {
-                            onCredentialIssued(
-                                result.credentialUri as string,
-                                result.boostUri as string | undefined,
-                                result.credential as VC | VP | undefined
-                            );
-                        } else if (isSendCredential) {
-                            // alreadyClaimed branch (or send-credential without onCredentialIssued
-                            // wired) — the modal never mounts, so flush the flow as a terminal
-                            // event with whatever phases we captured. `already_claimed` outcome
-                            // surfaces in PostHog so we can filter it out of warm-path stats.
-                            void markSendCredentialClaimCompleted();
-                        }
+                          // If a credential was issued via send-credential event, notify the parent component
+                          // Note: check-credential also returns credentialUri but should NOT trigger the modal
+                          if (
+                              event.type === 'send-credential' &&
+                              result.credentialUri &&
+                              !result.alreadyClaimed &&
+                              onCredentialIssued
+                          ) {
+                              onCredentialIssued(
+                                  result.credentialUri as string,
+                                  result.boostUri as string | undefined,
+                                  result.credential as VC | VP | undefined
+                              );
+                          } else if (isSendCredential) {
+                              // alreadyClaimed branch (or send-credential without onCredentialIssued
+                              // wired) — the modal never mounts, so flush the flow as a terminal
+                              // event with whatever phases we captured. `already_claimed` outcome
+                              // surfaces in PostHog so we can filter it out of warm-path stats.
+                              void markSendCredentialClaimCompleted();
+                          }
 
-                        if (event.type === 'send-ai-session-credential') {
-                            const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
-                                result;
+                          if (event.type === 'send-ai-session-credential') {
+                              const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
+                                  result;
 
-                            if (topicCredentialUri && isNewTopic) {
-                                try {
-                                    const topicCredential = await learnCard.read.get(
-                                        topicCredentialUri as string
-                                    );
-                                    if (topicCredential) {
-                                        await storeAndAddVCToWallet(
-                                            topicCredential,
-                                            { title: topicCredential.name || 'AI Topic' },
-                                            'LearnCloud',
-                                            true
-                                        );
-                                    }
-                                } catch (e) {
-                                    console.error(
-                                        '[AI Topics] Failed to store topic credential:',
-                                        e
-                                    );
-                                }
-                            }
+                              if (topicCredentialUri && isNewTopic) {
+                                  try {
+                                      const topicCredential = await learnCard.read.get(
+                                          topicCredentialUri as string
+                                      );
+                                      if (topicCredential) {
+                                          await storeAndAddVCToWallet(
+                                              topicCredential,
+                                              { title: topicCredential.name || 'AI Topic' },
+                                              'LearnCloud',
+                                              true
+                                          );
+                                      }
+                                  } catch (e) {
+                                      log.error('[AI Topics] Failed to store topic credential:', e);
+                                  }
+                              }
 
-                            if (sessionCredentialUri) {
-                                try {
-                                    const sessionCredential = await learnCard.read.get(
-                                        sessionCredentialUri as string
-                                    );
-                                    if (sessionCredential) {
-                                        await storeAndAddVCToWallet(
-                                            sessionCredential,
-                                            { title: sessionCredential.name || 'AI Session' },
-                                            'LearnCloud',
-                                            true
-                                        );
-                                    }
-                                } catch (e) {
-                                    console.error(
-                                        '[AI Topics] Failed to store session credential:',
-                                        e
-                                    );
-                                }
-                            }
-                        }
+                              if (sessionCredentialUri) {
+                                  try {
+                                      const sessionCredential = await learnCard.read.get(
+                                          sessionCredentialUri as string
+                                      );
+                                      if (sessionCredential) {
+                                          await storeAndAddVCToWallet(
+                                              sessionCredential,
+                                              { title: sessionCredential.name || 'AI Session' },
+                                              'LearnCloud',
+                                              true
+                                          );
+                                      }
+                                  } catch (e) {
+                                      log.error(
+                                          '[AI Topics] Failed to store session credential:',
+                                          e
+                                      );
+                                  }
+                              }
+                          }
 
-                        // If a notification was sent, trigger the toast overlay
-                        if (
-                            event.type === 'send-notification' &&
-                            result.sent &&
-                            onAppNotification
-                        ) {
-                            onAppNotification({
-                                title: (event as Record<string, unknown>).title as
-                                    | string
-                                    | undefined,
-                                body: (event as Record<string, unknown>).body as
-                                    | string
-                                    | undefined,
-                                actionPath: (event as Record<string, unknown>).actionPath as
-                                    | string
-                                    | undefined,
-                                category: (event as Record<string, unknown>).category as
-                                    | string
-                                    | undefined,
-                                priority: (event as Record<string, unknown>).priority as
-                                    | string
-                                    | undefined,
-                            });
-                        }
+                          // If a notification was sent, trigger the toast overlay
+                          if (
+                              event.type === 'send-notification' &&
+                              result.sent &&
+                              onAppNotification
+                          ) {
+                              onAppNotification({
+                                  title: (event as Record<string, unknown>).title as
+                                      | string
+                                      | undefined,
+                                  body: (event as Record<string, unknown>).body as
+                                      | string
+                                      | undefined,
+                                  actionPath: (event as Record<string, unknown>).actionPath as
+                                      | string
+                                      | undefined,
+                                  category: (event as Record<string, unknown>).category as
+                                      | string
+                                      | undefined,
+                                  priority: (event as Record<string, unknown>).priority as
+                                      | string
+                                      | undefined,
+                              });
+                          }
 
-                        sdkActivityStore.set.endActivity();
-                        return result;
-                    }
+                          sdkActivityStore.set.endActivity();
+                          return result;
+                      }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
                 getIntegrationForListing: getIntegrationForListing,
@@ -1083,105 +1212,129 @@ export function useLearnCardMessageHandlers({
                 // Learner context - only available when appId is provided
                 requestLearnerContext: appId
                     ? async (options: {
-                        includeCredentials?: boolean;
-                        includePersonalData?: boolean;
-                        format?: string;
-                        instructions?: string;
-                        detailLevel?: string;
-                    }) => {
-                        const learnCard = await initWallet();
+                          includeCredentials?: boolean;
+                          includePersonalData?: boolean;
+                          format?: string;
+                          instructions?: string;
+                          detailLevel?: string;
+                          waitForSync?: boolean;
+                      }) => {
+                          const appContractUri = await getConfiguredContractUri();
 
-                        if (!learnCard) {
-                            throw new Error('Wallet not initialized');
-                        }
+                          if (options.waitForSync) {
+                              const syncStatus = await waitForPendingSync(appContractUri);
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                              if (syncStatus.status === 'syncing') {
+                                  return {
+                                      status: 'syncing',
+                                      progress: syncStatus.progress,
+                                      prompt: '',
+                                      raw:
+                                          options.format === 'structured'
+                                              ? { credentials: [] }
+                                              : undefined,
+                                      did: '',
+                                  };
+                              }
 
-                        const result = await learnCard.invoke.sendAppEvent(appId, {
-                            type: 'request-learner-context',
-                            includeCredentials: options.includeCredentials,
-                            includePersonalData: options.includePersonalData,
-                            instructions: options.instructions,
-                            detailLevel: options.detailLevel,
-                        });
+                              if (syncStatus.status === 'error') {
+                                  throw new Error(syncStatus.lastError ?? 'Data sync failed');
+                              }
+                          }
 
-                        // Only fetch and include credentials if requested
-                        let validCredentials: unknown[] = [];
-                        if (options.includeCredentials !== false) {
-                            const credentialUris = (result.credentialUris as string[]) || [];
+                          const learnCard = await initWallet();
 
-                            const credentials = await Promise.all(
-                                credentialUris.map(async uri => {
-                                    try {
-                                        return await learnCard.read.get(uri);
-                                    } catch (error) {
-                                        console.error(
-                                            `Failed to resolve credential ${uri}:`,
-                                            error
-                                        );
-                                        return null;
-                                    }
-                                })
-                            );
+                          if (!learnCard) {
+                              throw new Error('Wallet not initialized');
+                          }
 
-                            validCredentials = credentials.filter((c: unknown) => c !== null);
-                        }
+                          if (!learnCard.invoke.sendAppEvent) {
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
 
-                        // Only include personal data if requested
-                        let personalData: Record<string, string> | undefined;
-                        if (options.includePersonalData) {
-                            personalData = (result.personalData as Record<string, string>) || {};
-                        }
+                          const result = await learnCard.invoke.sendAppEvent(appId, {
+                              type: 'request-learner-context',
+                              includeCredentials: options.includeCredentials,
+                              includePersonalData: options.includePersonalData,
+                              instructions: options.instructions,
+                              detailLevel: options.detailLevel,
+                          });
 
-                        let prompt = '';
-                        if (options.format === 'prompt') {
-                            try {
-                                const promptizerResponse = await fetch(
-                                    `${LEARNCARD_AI_URL}/ai/learner-context/format`,
-                                    {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
+                          // Only fetch and include credentials if requested
+                          let validCredentials: unknown[] = [];
+                          if (options.includeCredentials !== false) {
+                              const credentialUris = (result.credentialUris as string[]) || [];
+
+                              const credentials = await Promise.all(
+                                  credentialUris.map(async uri => {
+                                      try {
+                                          return await learnCard.read.get(uri);
+                                      } catch (error) {
+                                          log.error(`Failed to resolve credential ${uri}:`, error);
+                                          return null;
+                                      }
+                                  })
+                              );
+
+                              validCredentials = credentials.filter((c: unknown) => c !== null);
+                          }
+
+                          // Only include personal data if requested
+                          let personalData: Record<string, string> | undefined;
+                          if (options.includePersonalData) {
+                              personalData = (result.personalData as Record<string, string>) || {};
+                          }
+
+                          let prompt = '';
+                          if (options.format === 'prompt') {
+                              try {
+                                  const promptizerResponse = await fetch(
+                                      `${LEARNCARD_AI_URL}/ai/learner-context/format`,
+                                      {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                              credentials: validCredentials,
+                                              personalData,
+                                              instructions: options.instructions,
+                                              detailLevel: options.detailLevel,
+                                              includeStructuredContext: true,
+                                              maxCredentials: validCredentials.length,
+                                          }),
+                                      }
+                                  );
+
+                                  if (promptizerResponse.ok) {
+                                      const promptizerData = await promptizerResponse.json();
+                                      prompt = promptizerData.prompt || '';
+                                  } else {
+                                      prompt = `User has ${validCredentials.length} credentials.`;
+                                  }
+                              } catch (error) {
+                                  log.error('Failed to call promptizer:', error);
+                                  prompt = `User has ${validCredentials.length} credentials.`;
+                              }
+                          }
+
+                          return {
+                              status: 'ready',
+                              progress: getPendingSyncStatus(appContractUri).progress,
+                              prompt,
+                              raw:
+                                  options.format === 'structured'
+                                      ? {
                                             credentials: validCredentials,
                                             personalData,
-                                            instructions: options.instructions,
-                                            detailLevel: options.detailLevel,
-                                            includeStructuredContext: true,
-                                            maxCredentials: validCredentials.length,
-                                        }),
-                                    }
-                                );
-
-                                if (promptizerResponse.ok) {
-                                    const promptizerData = await promptizerResponse.json();
-                                    prompt = promptizerData.prompt || '';
-                                } else {
-                                    prompt = `User has ${validCredentials.length} credentials.`;
-                                }
-                            } catch (error) {
-                                console.error('Failed to call promptizer:', error);
-                                prompt = `User has ${validCredentials.length} credentials.`;
-                            }
-                        }
-
-                        return {
-                            prompt,
-                            raw:
-                                options.format === 'structured'
-                                    ? {
-                                        credentials: validCredentials,
-                                        personalData,
-                                    }
-                                    : undefined,
-                            did: (result.did as string) || '',
-                            displayName:
-                                personalData?.name ||
-                                (result.personalData as { displayName?: string })?.displayName,
-                        };
-                    }
+                                        }
+                                      : undefined,
+                              did: (result.did as string) || '',
+                              displayName:
+                                  personalData?.name ||
+                                  (result.personalData as { displayName?: string })?.displayName,
+                          };
+                      }
                     : undefined,
+                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
             }),
         [
             isLoggedIn,
@@ -1199,6 +1352,8 @@ export function useLearnCardMessageHandlers({
             log,
             logError,
             launchConfig,
+            consentedContracts,
+            queryClient,
             getIntegrationForListing,
         ]
     );

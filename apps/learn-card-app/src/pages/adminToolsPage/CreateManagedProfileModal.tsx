@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { cloneDeep } from 'lodash-es';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-managed-profile-modal');
 
 import {
     useWallet,
@@ -190,8 +192,8 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
             presentToast(`Failed to create "${name}": ${e.message}`, {
                 type: ToastTypeEnum.Error,
             });
-            console.log('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
-            console.error(e);
+            log.info('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
+            log.error(e);
         } finally {
             setIsLoading(false);
         }

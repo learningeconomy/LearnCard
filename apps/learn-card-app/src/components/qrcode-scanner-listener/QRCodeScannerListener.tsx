@@ -8,13 +8,14 @@ import AddContactView, {
 } from '../../pages/addressBook/addContactView/AddContactView';
 import { IonModal, IonContent, IonPage, IonSpinner } from '@ionic/react';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
-
+import { useToast, ToastTypeEnum, getLogger } from 'learn-card-base';
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { VC } from '@learncard/types';
 import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
+
+const log = getLogger('qr-scanner');
 
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
@@ -84,12 +85,16 @@ export const QRCodeScannerListener: React.FC = () => {
             }
             // 'routed' — the router already called history.push; nothing more to do.
         } catch (error) {
-            console.log('❌❌ scanner::error ❌❌', error);
+            log.error('scanner::error', error);
             await handleCancelScanning();
             setLoading(false);
 
             presentToast(
-                `Oops! ${error instanceof Error ? error.message : 'There was an error scanning the QR Code.'}`,
+                `Oops! ${
+                    error instanceof Error
+                        ? error.message
+                        : 'There was an error scanning the QR Code.'
+                }`,
                 {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -111,11 +116,11 @@ export const QRCodeScannerListener: React.FC = () => {
             if (showScanner) {
                 handleStartScanning()
                     .then(async (res: any) => {
-                        console.log('scan::success', res);
+                        log.debug('scan::success', { rawValue: res?.rawValue });
                         await handleScan(res?.rawValue);
                     })
                     .catch(async error => {
-                        console.log('scan::error', error);
+                        log.error('scan::error', error);
                         await handleCancelScanning();
                     });
             } else if (!showScanner) {

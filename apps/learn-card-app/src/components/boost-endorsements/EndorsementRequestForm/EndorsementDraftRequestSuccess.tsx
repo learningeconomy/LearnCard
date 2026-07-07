@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('endorsement-draft-request-success');
 
 import EndorsementRequestFormFooter from './EndorsementRequestFormFooter';
 import EndorsementFullView from '../EndorsementsList/EndorsementFullView';
@@ -139,7 +141,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                 setIsLoading(false);
             }
         } catch (error) {
-            console.error(error);
+            log.error(error);
             setIsLoading(false);
         }
     };

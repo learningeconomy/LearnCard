@@ -32,15 +32,14 @@ import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import CustomIssuerName from './helpers/CustomIssuerName';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
-
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
+import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
@@ -76,6 +75,8 @@ type BoostEarnedCardProps = {
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
+    relativeDate?: boolean;
+    compact?: boolean;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -100,6 +101,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
+    relativeDate = false,
+    compact = false,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -176,12 +179,14 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
     const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
+    const clrTranscriptIssuerInfo = isClrCredential && cred ? getClrTranscriptIssuerInfo(cred) : {};
 
     const color = categoryMetadata[categoryType].color;
     const darkColor = categoryMetadata[categoryType].darkColor;
     const { getThemedCategory } = useTheme();
     const colors = getThemedCategory(categoryType as CredentialCategoryEnum)?.colors;
     const indicatorColor = colors?.indicatorColor;
+    const clrBadgeKind = isClrCredential && cred ? getClrTranscriptKind(cred) : 'unknown';
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
@@ -292,7 +297,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     {...mappedInputs}
                 />
             ) : (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     boostType={categoryType}
                     badgeThumbnail={badgeThumbnail}
@@ -312,6 +317,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         const earnedBoostModalProps = {
             credential,
+            boostUri: record?.uri,
             categoryType: categoryType,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
@@ -325,7 +331,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 handleOptionsMenu();
             },
             customThumbComponent: (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}
@@ -340,6 +346,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             displayType: displayType,
             isEarnedBoost: true,
             isClrChildCredential,
+            isClrCredential,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;
@@ -411,10 +418,15 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     dateDisplay={issueDate}
                     issuerName={issuerName}
                     customIssuerName={
-                        <CustomIssuerName issuerName={issuerName} isLoading={showSkeleton} />
+                        <CustomIssuerName
+                            issuerName={issuerName}
+                            subjectName={issueeName}
+                            isLoading={showSkeleton}
+                            isClrCredential={isClrCredential}
+                        />
                     }
                     customThumbComponent={
-                        <CredentialBadge
+                        <CredentialBadgeNew
                             achievementType={achievementType}
                             fallbackCircleText={title}
                             boostType={categoryType}
@@ -439,13 +451,16 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     boostPageViewMode={boostPageViewMode}
                     credential={cred}
                     isInSkillsModal={isInSkillsModal}
-                    linkedCredentialsCount={linkedCredentialCount}
+                    linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
                     linkedCredentialsClassName={`bg-${color}`}
                     displayType={
                         isClrCredential
                             ? getDefaultDisplayType(categoryType as string)
                             : displayType
                     }
+                    relativeDate={relativeDate}
+                    compact={compact}
+                    isCLR={isClrCredential}
                 />
             </ErrorBoundary>
         );
@@ -474,11 +489,16 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         dateDisplay={issueDate}
                         issuerName={issuerName}
                         customIssuerName={
-                            <CustomIssuerName issuerName={issuerName} isLoading={showSkeleton} />
+                            <CustomIssuerName
+                                issuerName={issuerName}
+                                subjectName={issueeName}
+                                isLoading={showSkeleton}
+                                isClrCredential={isClrCredential}
+                            />
                         }
                         customThumbComponent={
                             <>
-                                <CredentialBadge
+                                <CredentialBadgeNew
                                     achievementType={achievementType}
                                     boostType={categoryType}
                                     badgeThumbnail={badgeThumbnail}
@@ -503,13 +523,16 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         boostPageViewMode={boostPageViewMode}
                         credential={cred}
                         isInSkillsModal={isInSkillsModal}
-                        linkedCredentialsCount={linkedCredentialCount}
+                        linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
                         linkedCredentialsClassName={`bg-${color}`}
                         displayType={
                             isClrCredential
                                 ? getDefaultDisplayType(categoryType as string)
                                 : displayType
                         }
+                        relativeDate={relativeDate}
+                        compact={compact}
+                        isCLR={isClrCredential}
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -562,7 +585,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }
                     issuerName={issuerName}
                     customIssuerName={
-                        <CustomIssuerName issuerName={issuerName} isLoading={showSkeleton} />
+                        <CustomIssuerName
+                            issuerName={issuerName}
+                            subjectName={issueeName}
+                            isLoading={showSkeleton}
+                            isClrCredential={isClrCredential}
+                        />
                     }
                     customThumbComponent={
                         showSkeleton ? (
@@ -588,6 +616,13 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                                 displayType={displayType}
                                 credential={cred}
+                                clrIssuerName={clrTranscriptIssuerInfo.issuerName}
+                                clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
+                                clrBadgeKind={
+                                    isClrCredential && clrBadgeKind !== 'unknown'
+                                        ? clrBadgeKind
+                                        : undefined
+                                }
                             />
                         )
                     }
@@ -599,7 +634,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     credential={cred}
                     loading={showSkeleton}
                     isInSkillsModal={isInSkillsModal}
-                    linkedCredentialsCount={linkedCredentialCount}
+                    linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
                     linkedCredentialsClassName={`bg-${color}`}
                     displayType={
                         isClrCredential
@@ -608,6 +643,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }
                     uri={record?.uri}
                     indicatorColor={indicatorColor}
+                    relativeDate={relativeDate}
+                    compact={compact}
+                    isCLR={isClrCredential}
                 />
             </IonCol>
         </ErrorBoundary>

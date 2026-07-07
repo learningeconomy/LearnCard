@@ -103,9 +103,7 @@ describe('buildPresentation — ldp_vp envelope', () => {
         expect(result.vpFormat).toBe('ldp_vp');
         expect(result.innerFormats).toEqual(['ldp_vc', 'ldp_vc']);
 
-        expect(result.unsignedVp['@context']).toEqual([
-            'https://www.w3.org/2018/credentials/v1',
-        ]);
+        expect(result.unsignedVp['@context']).toEqual(['https://www.w3.org/2018/credentials/v1']);
         expect(result.unsignedVp.type).toEqual(['VerifiablePresentation']);
         expect(result.unsignedVp.holder).toBe(HOLDER);
         expect(result.unsignedVp.id).toMatch(/^urn:uuid:[0-9a-f-]+$/);
@@ -154,9 +152,7 @@ describe('buildPresentation — jwt_vp_json envelope', () => {
     it('unwraps a W3C-wrapped JWT-VC to its compact JWS before embedding', () => {
         const result = buildPresentation({
             pd,
-            chosen: [
-                { descriptorId: 'degree', candidate: { credential: degreeJwtWrapped } },
-            ],
+            chosen: [{ descriptorId: 'degree', candidate: { credential: degreeJwtWrapped } }],
             holder: HOLDER,
         });
 
@@ -183,9 +179,7 @@ describe('buildPresentation — jwt_vp_json envelope', () => {
     it('emits paths rooted at $.vp.verifiableCredential[N]', () => {
         const result = buildPresentation({
             pd,
-            chosen: [
-                { descriptorId: 'degree', candidate: { credential: degreeJwt } },
-            ],
+            chosen: [{ descriptorId: 'degree', candidate: { credential: degreeJwt } }],
             holder: HOLDER,
             submissionId: 'sub-jwt',
         });
@@ -303,9 +297,7 @@ describe('envelope format inference', () => {
         });
 
         expect(result.vpFormat).toBe('ldp_vp');
-        expect(result.submission.descriptor_map[0].path).toBe(
-            '$.verifiableCredential[0]'
-        );
+        expect(result.submission.descriptor_map[0].path).toBe('$.verifiableCredential[0]');
     });
 });
 
@@ -318,9 +310,9 @@ describe('buildPresentation — input validation', () => {
     };
 
     it('throws no_selections on an empty pick list', () => {
-        expect(() =>
-            buildPresentation({ pd, chosen: [], holder: HOLDER })
-        ).toThrow(BuildPresentationError);
+        expect(() => buildPresentation({ pd, chosen: [], holder: HOLDER })).toThrow(
+            BuildPresentationError
+        );
 
         try {
             buildPresentation({ pd, chosen: [], holder: HOLDER });
@@ -333,9 +325,7 @@ describe('buildPresentation — input validation', () => {
         expect(() =>
             buildPresentation({
                 pd,
-                chosen: [
-                    { descriptorId: 'not-in-pd', candidate: { credential: degreeLdp } },
-                ],
+                chosen: [{ descriptorId: 'not-in-pd', candidate: { credential: degreeLdp } }],
                 holder: HOLDER,
             })
         ).toThrow(/unknown descriptor "not-in-pd"/);
@@ -378,6 +368,52 @@ describe('buildPresentation — input validation', () => {
     });
 });
 
+/* ------------- SD-JWT + W3C mix rejection (mixed-format PEX guard) ---------- */
+
+describe('buildPresentation — mixed SD-JWT + W3C VC rejection', () => {
+    it('throws unknown_credential_format for a PEX submission mixing SD-JWT-VC and W3C VC', () => {
+        const compactSdJwt =
+            [
+                base64UrlEncode(JSON.stringify({ alg: 'EdDSA', typ: 'dc+sd-jwt' })),
+                base64UrlEncode(
+                    JSON.stringify({
+                        iss: 'did:web:issuer.example',
+                        vct: 'https://example.com/cred',
+                    })
+                ),
+                'fakesig',
+            ].join('.') + '~';
+
+        const pd: PresentationDefinition = {
+            id: 'pd-mixed',
+            input_descriptors: [
+                degreeDescriptor,
+                { id: 'sd-jwt-cred', constraints: { fields: [] } },
+            ],
+        };
+
+        let caught: unknown;
+        try {
+            buildPresentation({
+                pd,
+                chosen: [
+                    { descriptorId: 'degree', candidate: { credential: degreeLdp } },
+                    {
+                        descriptorId: 'sd-jwt-cred',
+                        candidate: { credential: compactSdJwt, format: 'dc+sd-jwt' },
+                    },
+                ],
+                holder: HOLDER,
+            });
+        } catch (e) {
+            caught = e;
+        }
+
+        expect(caught).toBeInstanceOf(BuildPresentationError);
+        expect((caught as BuildPresentationError).code).toBe('unknown_credential_format');
+    });
+});
+
 /* ----------------------------- id generation ------------------------------- */
 
 describe('buildPresentation — id generation', () => {
@@ -396,9 +432,7 @@ describe('buildPresentation — id generation', () => {
         });
 
         expect(result.submission.id).toBe('my-submission');
-        expect(result.unsignedVp.id).toBe(
-            'urn:uuid:11111111-1111-1111-1111-111111111111'
-        );
+        expect(result.unsignedVp.id).toBe('urn:uuid:11111111-1111-1111-1111-111111111111');
     });
 
     it('auto-generates a v4-shaped UUID for the presentation id', () => {

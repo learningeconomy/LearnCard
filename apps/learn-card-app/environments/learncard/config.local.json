@@ -9,11 +9,12 @@
         "xapi": "http://localhost:4100/xapi"
     },
     "features": {
-        "analytics": false
+        "analytics": false,
+        "useSeededSkillFrameworks": true
     },
     "observability": {
         "sentryEnv": "development",
-        "launchDarklyClientId": "63dabf3082caed12cac3e55b",
+        "launchDarklyClientId": "63dabf3982caed12cac3e55b",
         "analyticsProvider": "noop"
     },
     "auth": {

@@ -15,6 +15,8 @@ import {
 import { pushUtilities, useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('push-notifications-prompt');
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
@@ -44,9 +46,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             <PushNotificationsSettings
                 handleCloseModal={closeModal}
                 settings={settings}
-                handleStateChange={(settingsType: PushNotificationSettingsEnum, settingState: boolean) =>
-                    handleStateChange(settingsType, settingState)
-                }
+                handleStateChange={(
+                    settingsType: PushNotificationSettingsEnum,
+                    settingState: boolean
+                ) => handleStateChange(settingsType, settingState)}
             />
         );
     };
@@ -120,13 +123,13 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                                                 option: AndroidSettings.ApplicationDetails,
                                             });
                                         } else {
-                                            console.warn(
+                                            log.warn(
                                                 `Unable to open settings for platform: '${platform}`
                                             );
                                         }
                                     }
                                 } catch (err) {
-                                    console.error('Issue directing user to settings', err);
+                                    log.error('Issue directing user to settings', err);
                                 } finally {
                                     handleCloseModal();
                                     await pushUtilities.syncPushToken();

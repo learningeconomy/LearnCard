@@ -1,13 +1,14 @@
 /**
  * Vite plugin that mounts the playground's launch + status endpoints
  * directly on the dev server. Keeps the developer's terminal tally
- * to a single command (`pnpm dev`) without a second Express process.
+ * to a single command (`bun run dev`) without a second Express process.
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
 
 import { ApiError, handleLaunch, handleStatus } from './api';
 import { handleEudiProxy } from './eudi-proxy';
+import { handleEmbeddedRequest } from './embedded';
 
 export const playgroundApiPlugin = (): Plugin => ({
     name: 'openid4vc-playground-api',
@@ -16,14 +17,15 @@ export const playgroundApiPlugin = (): Plugin => ({
             const url = req.url ?? '';
 
             try {
-                // EUDI reverse proxy intercepts before any other route \u2014
-                // its handler returns true once it has written the
-                // response, false if the URL didn't match its prefix.
+                if (await handleEmbeddedRequest(req, res)) return;
                 if (await handleEudiProxy(req, res)) return;
 
                 if (req.method === 'POST' && url.startsWith('/api/launch')) {
                     const body = await readJson(req);
-                    const result = await handleLaunch(body);
+                    const host = (req.headers.host ?? 'localhost:5173').toString();
+                    const proto = (req.headers['x-forwarded-proto'] ?? 'http').toString();
+                    const publicBaseUrl = `${proto}://${host}`;
+                    const result = await handleLaunch(body, { publicBaseUrl });
                     return sendJson(res, 200, result);
                 }
 
