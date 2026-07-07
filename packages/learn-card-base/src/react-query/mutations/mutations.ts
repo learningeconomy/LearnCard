@@ -149,6 +149,8 @@ export const useDeleteCredentialRecord = () => {
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
     const ENABLE_DELETE_CREDENTIAL_LOGS = false;
 
+    const getRecordCategory = (record: LCR) => record.metadata?.category ?? record.category;
+
     const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
         if (!ENABLE_DELETE_CREDENTIAL_LOGS) return;
 
@@ -204,6 +206,7 @@ export const useDeleteCredentialRecord = () => {
             try {
                 log.debug('deleting record (in mutation)', record);
                 const wallet = await initWallet();
+                const category = getRecordCategory(record);
                 // Preemptively empty LC cache
                 await wallet.cache.flushIndex();
 
@@ -231,7 +234,7 @@ export const useDeleteCredentialRecord = () => {
 
                 return {
                     uri: record.uri,
-                    category: record.metadata?.category,
+                    category,
                     contractUri: record.metadata?.contractUri,
                     skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
@@ -242,7 +245,7 @@ export const useDeleteCredentialRecord = () => {
         onMutate: async record => {
             log.debug('deleting record (in mutation onMutate)', record);
             const uri = record.uri;
-            const category = record.category;
+            const category = getRecordCategory(record);
 
             if (record.skipPostDeleteCleanup) {
                 return {
