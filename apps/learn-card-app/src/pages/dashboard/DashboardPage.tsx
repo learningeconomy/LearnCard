@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
@@ -31,18 +31,19 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
-import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
 import ManageDataSharingModal from '../../components/data-sharing/ManageDataSharingModal';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
+import useOpenMyLearnCard from '../../components/learncard/useOpenMyLearnCard';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import pathwayStore from '../../stores/pathways/pathwayStore';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 import useTheme from '../../theme/hooks/useTheme';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 import {
@@ -66,7 +67,7 @@ import {
     type RawCategorizedEntry,
 } from '../skills/skills.helpers';
 import { countReviewsDueToday } from './helpers/dueReviews';
-import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
+import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
 import useSkillProfileModal from './hooks/useSkillProfileModal';
 import useAppStore from '../launchPad/useAppStore';
@@ -88,7 +89,6 @@ const DashboardPage: React.FC = () => {
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
     const pathwaysEnabled = usePathwaysEnabled();
-    const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
     const {
         openClaimLink,
         openIssueCredential,
@@ -100,6 +100,12 @@ const DashboardPage: React.FC = () => {
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
+    const { newModal: openAddToPassportModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.BottomSheet,
+    });
+
+    const onHeaderScroll = useHeaderScrollSync();
 
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -208,9 +214,9 @@ const DashboardPage: React.FC = () => {
         return buildTopSkills(getTopSkills(aggregatedSkills, 15), 3);
     }, [aiInsightsAllowed, skillsCredentials]);
 
-    const openMyLearnCard = () => {
-        openHeaderModal(<MyLearnCardModal branding={BrandingEnum.learncard} />);
-    };
+    // LC-1921: shared right-loading profile/settings modal, same entry point as
+    // the side-menu Settings row and the header avatar.
+    const openMyLearnCard = useOpenMyLearnCard();
     const openQrScanner = () => {
         openHeaderModal(
             <QrCodeUserCardModal
@@ -302,7 +308,11 @@ const DashboardPage: React.FC = () => {
     }, [activePathway]);
 
     const goToCollect = () => {
-        openBuildMyLearnCard();
+        openAddToPassportModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
     };
     const goToInsights = () => history.push('/ai/insights');
     const goToSkills = () => history.push('/skills');
@@ -391,6 +401,7 @@ const DashboardPage: React.FC = () => {
 
     const actionHandlers: ActionHandlers = {
         goToAddCredential: goToCollect,
+        openAddToPassport: goToCollect,
         openClaimLink,
         goToWallet,
         goToSkills,
@@ -551,7 +562,12 @@ const DashboardPage: React.FC = () => {
     return (
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                >
                     <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>

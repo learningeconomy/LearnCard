@@ -95,7 +95,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const newCredsCountDisplay =
         newCredsCount > 0 && category !== CredentialCategoryEnum.aiPathway ? (
             <span
-                className={`text-${colors?.indicatorColor} font-poppins text-[17px] font-[600] inline-flex items-center gap-[5px] ml-[5px]`}
+                className={`text-${colors?.indicatorColor} font-poppins text-[18px] font-[600] inline-flex items-center gap-[5px] ml-[5px]`}
             >
                 <DotIcon className="w-[10px] h-[10px]" /> {newCredsCount} New
             </span>
@@ -144,7 +144,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 <h2
                     className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${headerTextColor}`}
                 >
-                    <span className="font-poppins text-[22px] leading-[100%] flex items-center">
+                    <span className="font-poppins text-[30px] leading-[100%] flex items-center">
                         {countLoading && (
                             <IonSpinner
                                 name="crescent"
