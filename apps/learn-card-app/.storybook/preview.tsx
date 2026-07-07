@@ -2,6 +2,7 @@ import React from 'react';
 import type { Preview } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { IonApp, setupIonicReact } from '@ionic/react';
 import { ModalsProvider } from 'learn-card-base';
 import { Buffer } from 'buffer';
 
@@ -20,6 +21,8 @@ import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 
 import './preview.css';
+
+setupIonicReact({ swipeBackEnabled: false });
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -45,18 +48,22 @@ const preview: Preview = {
     decorators: [
         Story =>
             React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
+                IonApp,
+                null,
                 React.createElement(
-                    MemoryRouter,
-                    null,
+                    QueryClientProvider,
+                    { client: queryClient },
                     React.createElement(
-                        ModalsProvider,
+                        MemoryRouter,
                         null,
                         React.createElement(
-                            'div',
-                            { className: 'font-poppins bg-grayscale-100 min-h-screen' },
-                            React.createElement(Story)
+                            ModalsProvider,
+                            null,
+                            React.createElement(
+                                'div',
+                                { className: 'font-poppins bg-grayscale-100 min-h-screen' },
+                                React.createElement(Story)
+                            )
                         )
                     )
                 )
