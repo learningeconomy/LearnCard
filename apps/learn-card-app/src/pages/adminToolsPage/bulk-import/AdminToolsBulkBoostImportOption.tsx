@@ -24,7 +24,7 @@ import {
     ModalTypes,
     BoostCMSState,
     ToastTypeEnum,
-    CredentialBadge,
+    CredentialBadgeNew,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
@@ -558,7 +558,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
             />
         ) : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

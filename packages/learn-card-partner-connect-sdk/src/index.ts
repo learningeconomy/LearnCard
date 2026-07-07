@@ -39,6 +39,7 @@ import type {
     TemplateRecipientsResponse,
     RequestLearnerContextOptions,
     LearnerContextResponse,
+    SyncStatus,
     SendAiSessionCredentialInput,
     SendAiSessionCredentialResponse,
     AppNotificationInput,
@@ -57,6 +58,9 @@ import type {
 // Re-export the class as a value plus all type exports.
 export { PartnerConnectError } from './types';
 export type * from './types';
+
+/** Maximum time to poll for sync completion before giving up (10 minutes) */
+const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
 
 /**
  * LearnCard Partner Connect SDK class
@@ -93,6 +97,8 @@ export class PartnerConnect {
     private pendingRequests: Map<string, PendingRequest>;
     private messageListener: ((event: MessageEvent) => void) | null = null;
     private isInitialized = false;
+    private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
+    private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
@@ -288,10 +294,7 @@ export class PartnerConnect {
             // Replace the wildcard labels with a syntactically-valid host so
             // URL() can parse it; we validate the real shape ourselves below.
             patternUrl = new URL(
-                pattern.replace(
-                    PartnerConnect.WILDCARD_REGEX,
-                    PartnerConnect.WILDCARD_PLACEHOLDER
-                )
+                pattern.replace(PartnerConnect.WILDCARD_REGEX, PartnerConnect.WILDCARD_PLACEHOLDER)
             );
             candidateUrl = new URL(candidate);
         } catch {
@@ -769,10 +772,18 @@ export class PartnerConnect {
      * const context = await learnCard.requestLearnerContext({
      *   includeCredentials: true,
      *   includePersonalData: true,
+     *   waitForSync: true,
      *   format: 'prompt',
      *   instructions: 'Focus on technical skills and certifications',
      *   detailLevel: 'expanded'
      * });
+     *
+     * if (context.status === 'syncing') {
+     *   const unsubscribe = learnCard.onSyncComplete(async () => {
+     *     const readyContext = await learnCard.requestLearnerContext({ waitForSync: true });
+     *     unsubscribe();
+     *   });
+     * }
      *
      * // Use in AI system prompt
      * const systemPrompt = `You are a helpful tutor. ${context.prompt}`;
@@ -782,16 +793,88 @@ export class PartnerConnect {
      * console.log('Credentials count:', context.raw?.credentials.length);
      * ```
      */
-    public requestLearnerContext(
+    public async requestLearnerContext(
         options?: RequestLearnerContextOptions
     ): Promise<LearnerContextResponse> {
-        return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+        const startedAt = performance.now();
+        const response = await this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
             includeCredentials: options?.includeCredentials ?? true,
             includePersonalData: options?.includePersonalData ?? false,
             format: options?.format ?? 'prompt',
             instructions: options?.instructions,
             detailLevel: options?.detailLevel ?? 'compact',
+            waitForSync: options?.waitForSync ?? false,
         });
+
+        response.metadata ??= {};
+        response.metadata.timings ??= { totalMs: 0 };
+        response.metadata.timings.sdkRoundTripMs = performance.now() - startedAt;
+
+        return response;
+    }
+
+    /**
+     * Get the current LearnCard background data sync status.
+     */
+    public getSyncStatus(): Promise<SyncStatus> {
+        return this.sendMessage<SyncStatus>('GET_SYNC_STATUS');
+    }
+
+    /**
+     * Register a callback that fires when LearnCard reports background sync has reached a
+     * terminal state ('ready' or 'error'). Check `status.status` to distinguish the two.
+     * Polling stops once a terminal state is reached, all callbacks unsubscribe, or the
+     * poll exceeds its maximum duration (reported to callbacks as an 'error' status).
+     * Returns an unsubscribe function.
+     */
+    public onSyncComplete(callback: (status: SyncStatus) => void): () => void {
+        this.syncCompleteCallbacks.add(callback);
+
+        if (!this.syncStatusPollId) {
+            const pollStartedAt = Date.now();
+
+            const stopPolling = () => {
+                if (this.syncStatusPollId) {
+                    clearInterval(this.syncStatusPollId);
+                    this.syncStatusPollId = null;
+                }
+            };
+
+            this.syncStatusPollId = setInterval(() => {
+                if (Date.now() - pollStartedAt > SYNC_STATUS_POLL_MAX_DURATION_MS) {
+                    stopPolling();
+                    const timeoutStatus: SyncStatus = {
+                        status: 'error',
+                        progress: {
+                            totalCredentials: 0,
+                            completedCredentials: 0,
+                            failedCredentials: 0,
+                            retryCount: 0,
+                        },
+                        lastError: 'Timed out waiting for sync to complete',
+                    };
+                    this.syncCompleteCallbacks.forEach(cb => cb(timeoutStatus));
+                    return;
+                }
+
+                this.getSyncStatus()
+                    .then(status => {
+                        if (status.status !== 'ready' && status.status !== 'error') return;
+
+                        stopPolling();
+                        this.syncCompleteCallbacks.forEach(cb => cb(status));
+                    })
+                    .catch(() => undefined);
+            }, 1000);
+        }
+
+        return () => {
+            this.syncCompleteCallbacks.delete(callback);
+            if (this.syncCompleteCallbacks.size === 0 && this.syncStatusPollId) {
+                clearInterval(this.syncStatusPollId);
+                this.syncStatusPollId = null;
+            }
+        };
     }
 
     /**
@@ -903,6 +986,13 @@ export class PartnerConnect {
         }
 
         this.pendingRequests.clear();
+
+        if (this.syncStatusPollId) {
+            clearInterval(this.syncStatusPollId);
+            this.syncStatusPollId = null;
+        }
+        this.syncCompleteCallbacks.clear();
+
         this.isInitialized = false;
     }
 }

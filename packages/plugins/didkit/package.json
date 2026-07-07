@@ -1,12 +1,13 @@
 {
     "name": "@learncard/didkit-plugin",
-    "version": "1.9.2",
+    "version": "1.9.6",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/didkit-plugin.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
             "import": {
                 "types": "./dist/index.d.ts",
                 "default": "./dist/didkit-plugin.esm.js"
@@ -16,11 +17,18 @@
                 "default": "./dist/index.cjs"
             }
         },
-        "./dist/didkit_wasm_bg.wasm": "./dist/didkit_wasm_bg.wasm",
-        "./dist/didkit/didkit_wasm_bg.wasm": "./dist/didkit/didkit_wasm_bg.wasm"
+        "./dist/didkit_wasm_bg.wasm": {
+            "development": "./src/didkit/pkg/didkit_wasm_bg.wasm",
+            "default": "./dist/didkit_wasm_bg.wasm"
+        },
+        "./dist/didkit/didkit_wasm_bg.wasm": {
+            "development": "./src/didkit/pkg/didkit_wasm_bg.wasm",
+            "default": "./dist/didkit/didkit_wasm_bg.wasm"
+        }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",

@@ -59,11 +59,6 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
 
         return (
             <div className="flex items-start justify-center gap-2 w-full my-1">
-                {!multiline && (
-                    <span className="text-xs text-grayscale-900 leading-relaxed shrink-0 mt-2">
-                        •
-                    </span>
-                )}
                 <div className="flex-1">
                     {showDecoration ? (
                         <div className="bg-indigo-50 rounded-lg overflow-hidden">
@@ -116,16 +111,13 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     if (!value) return null;
 
     return (
-        <div className="flex items-start gap-1 w-full">
-            <span className="text-xs text-grayscale-600 leading-relaxed shrink-0">–</span>
-            <span
-                className={`text-xs text-left leading-relaxed flex-1 ${
-                    isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
-                }`}
-            >
-                {value}
-            </span>
-        </div>
+        <span
+            className={`block w-full text-xs text-left leading-relaxed ${
+                isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
+            }`}
+        >
+            {value}
+        </span>
     );
 };
 

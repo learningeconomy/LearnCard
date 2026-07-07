@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import {
     ModalTypes,
     useModal,
@@ -15,10 +14,11 @@ import {
     useIsCurrentUserLCNUser,
     getNotificationsEndpoint,
     useBrandingConfig,
+    useNetworkConsentMutation,
 } from 'learn-card-base';
 
 import { IonInput } from '@ionic/react';
-import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
+import { ProfilePicture } from 'learn-card-base';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
@@ -106,10 +106,11 @@ export const JoinNetworkPrompt: React.FC<{
                 setLoading(true);
                 const wallet = await initWallet();
                 const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
-                    profileId: profileId,
-                    displayName: currentUser?.name,
-                    image: currentUser?.profileImage,
+                    profileId: profileId ?? '',
+                    displayName: currentUser?.name ?? '',
+                    shortBio: '',
+                    bio: '',
+                    image: currentUser?.profileImage ?? '',
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
 
@@ -144,9 +145,9 @@ export const JoinNetworkPrompt: React.FC<{
                         }, 0);
                     }
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 log.info('createProfile::error', err);
-                setError(err?.message);
+                setError(err instanceof Error ? err.message : String(err));
                 setLoading(false);
             }
         }

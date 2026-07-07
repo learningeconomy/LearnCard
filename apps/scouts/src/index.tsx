@@ -4,6 +4,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
+import { resolveTenantConfig, TenantConfigProvider } from 'learn-card-base';
 
 import App from './App';
 
@@ -31,14 +32,18 @@ const log = getLogger('index');
     // initialize & hide splash screen
     SplashScreen.hide();
 
+    const tenantConfig = await resolveTenantConfig();
+
     const LDProvider = await asyncWithLDProvider(LAUNCH_DARKLY_CONFIG);
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
         root.render(
-            <LDProvider>
-                <App />
-            </LDProvider>
+            <TenantConfigProvider config={tenantConfig}>
+                <LDProvider>
+                    <App />
+                </LDProvider>
+            </TenantConfigProvider>
         );
     }
     // If you want your app to work offline and load faster, you can change

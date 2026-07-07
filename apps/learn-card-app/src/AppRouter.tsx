@@ -15,6 +15,7 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
 import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
+import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 
 import {
     useIsLoggedIn,
@@ -29,27 +30,30 @@ import {
     useCurrentUser,
     useIsCurrentUserLCNUser,
     useContract,
+    usePendingContractSync,
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
+    useNetworkConsentMutation,
+    BrandingEnum,
+    useLaunchDarklyIdentify,
+    useIsChapiInteraction,
+    redirectStore,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
+import { useAuthStatus } from 'learn-card-base';
+import { OfflineBootGate } from './components/network-listener/OfflineBootGate';
+import { connectivityStore } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
-
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
-import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
-import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
-import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
@@ -80,6 +84,16 @@ const AppRouter: React.FC = () => {
     // Everything else (`authenticating`, `authenticated`, `checking_key_status`,
     // `needs_migration`, `deriving_key`, and the brief
     // `ready`-without-wallet window) is a transition we bridge with the loader.
+
+    const authStatus = useAuthStatus();
+    const isOffline = connectivityStore.use.status() === 'offline';
+
+    // If offline and auth is not settled into a usable state (no wallet and unauthenticated/resolving)
+    const showOfflineBootGate =
+        isOffline &&
+        !walletReady &&
+        (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
+
     const initLoading = !(
         walletReady ||
         coordinatorState.status === 'idle' ||
@@ -124,13 +138,33 @@ const AppRouter: React.FC = () => {
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const analytics = useAnalytics();
+    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+
+    useEffect(() => {
+        if (!isLoggedIn || !currentUser || !isAiEnabled) return;
+
+        void autoConsentLearnCardAi({
+            enabled: true,
+            userOverrides: {
+                name: currentUser.name ?? '',
+                profileImage: currentUser.profileImage ?? '',
+            },
+        });
+    }, [
+        autoConsentLearnCardAi,
+        currentUser?.name,
+        currentUser?.profileImage,
+        isAiEnabled,
+        isLoggedIn,
+    ]);
 
     const params = queryString.parse(location.search);
 
@@ -143,7 +177,7 @@ const AppRouter: React.FC = () => {
     // Insights Consent
     const insightsConsent = params.insightsConsent;
     const shareInsightsRequest = params.shareInsights;
-    const contractUri = params.contractUri;
+    const contractUri = typeof params.contractUri === 'string' ? params.contractUri : undefined;
     const teacherProfileId = params.teacherProfileId;
     const learnerProfileId = params.learnerProfileId;
 
@@ -292,6 +326,7 @@ const AppRouter: React.FC = () => {
     usePrefetchCredentials(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
+    usePendingContractSync(enablePrefetch);
 
     // Idle-prefetch route chunks once logged in so navigation from any page
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
@@ -389,7 +424,9 @@ const AppRouter: React.FC = () => {
     // live modal instance across the transition.
     return (
         <GenericErrorBoundary>
-            {initLoading ? (
+            {showOfflineBootGate ? (
+                <OfflineBootGate />
+            ) : initLoading ? (
                 <LoginLoadingPage />
             ) : (
                 <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>

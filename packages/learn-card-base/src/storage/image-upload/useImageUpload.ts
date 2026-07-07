@@ -52,6 +52,16 @@ export const useImageUpload: UseImageUpload = ({
 
     const fileSelectorRef = useRef<HTMLInputElement>();
 
+    // The web file input's onchange handler is bound once (mount-time effect
+    // below) and async uploads resolve later, so callbacks must be read from refs
+    // to avoid invoking stale first-render closures.
+    const onUploadRef = useRef(onUpload);
+    const onFileSelectedRef = useRef(onFileSelected);
+    const onPhotoResizedRef = useRef(onPhotoResized);
+    onUploadRef.current = onUpload;
+    onFileSelectedRef.current = onFileSelected;
+    onPhotoResizedRef.current = onPhotoResized;
+
     const getFileToUpload = async (
         file: File
     ): Promise<{ file: File; resized: boolean } | false> => {
@@ -70,7 +80,7 @@ export const useImageUpload: UseImageUpload = ({
         try {
             const res = await provider.upload(file, options);
 
-            onUpload(res.url, file, res);
+            onUploadRef.current(res.url, file, res);
 
             return res.url;
         } catch (e) {
@@ -92,7 +102,7 @@ export const useImageUpload: UseImageUpload = ({
             return;
         }
 
-        if (uploadTarget.resized) onPhotoResized?.(uploadTarget.file);
+        if (uploadTarget.resized) onPhotoResizedRef.current?.(uploadTarget.file);
 
         await singleImageUpload(uploadTarget.file);
     };
@@ -121,7 +131,7 @@ export const useImageUpload: UseImageUpload = ({
             const filename = `photo-${Date.now()}.${photo.format || 'jpg'}`;
             const file = await dataUrlToFile(photo.dataUrl, filename);
 
-            onFileSelected?.(file);
+            onFileSelectedRef.current?.(file);
 
             const uploadTarget = await getFileToUpload(file);
 
@@ -130,7 +140,7 @@ export const useImageUpload: UseImageUpload = ({
                 return;
             }
 
-            if (uploadTarget.resized) onPhotoResized?.(uploadTarget.file);
+            if (uploadTarget.resized) onPhotoResizedRef.current?.(uploadTarget.file);
 
             await singleImageUpload(uploadTarget.file);
         } catch (e) {
@@ -150,12 +160,12 @@ export const useImageUpload: UseImageUpload = ({
         if (!firstFile) return;
 
         if (files.length > 1) {
-            onFileSelected?.(firstFile);
+            onFileSelectedRef.current?.(firstFile);
             setIsLoading(true);
 
             provider
                 .multiupload(files, options)
-                .then((res: UploadRes) => onUpload(res.url, firstFile, res))
+                .then((res: UploadRes) => onUploadRef.current(res.url, firstFile, res))
                 .catch(e => {
                     log.debug('image-upload::uploadFile::error', e);
                     setError(e);
@@ -167,7 +177,7 @@ export const useImageUpload: UseImageUpload = ({
 
         const file = firstFile;
 
-        onFileSelected?.(file);
+        onFileSelectedRef.current?.(file);
 
         await directUploadFile(file);
     };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('manage-data-sharing-modal');
 
@@ -20,6 +20,7 @@ import {
     useModal,
     ModalTypes,
     useWithdrawConsent,
+    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
     contractCategoryNameToCategoryMetadata,
     useWallet,
 } from 'learn-card-base';
@@ -28,10 +29,105 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { buildPermissionText } from './consentSummary';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
+};
+
+type RevokeAccessConfirmationModalProps = {
+    name: string;
+    brandName: string;
+    isLearnCardAiContract: boolean;
+    isWorking: boolean;
+    onConfirm: () => Promise<void>;
+    onCancel: () => void;
+};
+
+const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps> = ({
+    name,
+    brandName,
+    isLearnCardAiContract,
+    isWorking,
+    onConfirm,
+    onCancel,
+}) => {
+    const { closeModal } = useModal();
+    const [isRevoking, setIsRevoking] = useState(false);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
+    const handleConfirm = async () => {
+        setIsRevoking(true);
+
+        try {
+            await onConfirm();
+        } finally {
+            if (isMountedRef.current) {
+                setIsRevoking(false);
+            }
+        }
+    };
+
+    const handleCancel = () => {
+        onCancel();
+        closeModal();
+    };
+
+    return (
+        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[400px]">
+            <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                    <Trash2 className="w-8 h-8 text-red-500" />
+                </div>
+
+                <div>
+                    <h3 className="text-lg font-semibold text-grayscale-900">
+                        {isLearnCardAiContract ? 'Disable AI features?' : 'Revoke Access?'}
+                    </h3>
+
+                    <p className="text-sm text-grayscale-600 mt-2 leading-relaxed">
+                        {isLearnCardAiContract ? (
+                            <>This will revoke LearnCard AI access and turn off AI features.</>
+                        ) : (
+                            <>
+                                <span className="font-medium">{name}</span> will no longer be able
+                                to access your {brandName} data.
+                            </>
+                        )}
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-2 w-full mt-2">
+                    <button
+                        onClick={handleConfirm}
+                        disabled={isRevoking || isWorking}
+                        className="w-full py-3 bg-red-500 text-white rounded-full font-medium disabled:opacity-60"
+                    >
+                        {isRevoking || isWorking
+                            ? 'Revoking...'
+                            : isLearnCardAiContract
+                            ? 'Disable AI & Revoke'
+                            : 'Yes, Revoke Access'}
+                    </button>
+
+                    <button
+                        onClick={handleCancel}
+                        disabled={isRevoking || isWorking}
+                        className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium disabled:opacity-60"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose }) => {
@@ -55,10 +151,17 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
         );
     }
 
-    const contracts = consentedContracts ?? [];
+    const contracts = [...(consentedContracts ?? [])]
+        .filter(contract => contract?.status !== 'withdrawn')
+        .sort((a, b) => {
+            const aUpdatedAt = new Date(a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0).getTime();
+            const bUpdatedAt = new Date(b.terms?.updatedAt ?? b.contract?.updatedAt ?? 0).getTime();
+
+            return bUpdatedAt - aUpdatedAt;
+        });
 
     return (
-        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full flex flex-col !overflow-hidden">
+        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-full overflow-hidden flex flex-col min-h-0">
             <div className="shrink-0 p-6 pb-4">
                 <div className="flex items-center gap-3 mb-3">
                     <button onClick={handleClose} className="p-1 -ml-1" aria-label="Back">
@@ -112,22 +215,37 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
     );
 };
 
-type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
+export type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
 
 type ConsentedContractRowProps = {
     contract: ConsentedContract;
-    onUpdate?: () => void;
+    onUpdate?: () => Promise<unknown> | void;
 };
 
-const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, onUpdate }) => {
+export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
+    contract,
+    onUpdate,
+}) => {
     const { newModal, closeModal } = useModal();
     // Contract details are already in the record
     const contractDetails = contract.contract;
 
     const handleOpenDetails = () => {
+        void (async () => {
+            try {
+                const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+                await Haptics.impact({ style: ImpactStyle.Light });
+            } catch (e) {
+                log.debug('haptics unavailable', e);
+            }
+        })();
+
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
-            { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
+            {
+                sectionClassName:
+                    '!bg-transparent !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
+            },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
@@ -140,7 +258,7 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     return (
         <button
             onClick={handleOpenDetails}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-grayscale-10 transition-colors text-left w-full"
+            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
         >
             {image ? (
                 <img src={image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
@@ -162,57 +280,37 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
 
 type ContractDetailViewProps = {
     contract: ConsentedContract;
-    onUpdate?: () => void;
+    onUpdate?: () => Promise<unknown> | void;
 };
 
-const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
+export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
     const contractDetails = contract.contract;
-    const { closeModal, closeAllModals, newModal } = useModal();
+    const { closeModal, newModal } = useModal();
     const { initWallet } = useWallet();
+    const { handleAiToggle } = useAiConsentToggle();
+    const { name: brandName } = useBrandingConfig();
+    const contractUri = contractDetails?.uri ?? contract.uri;
+    const [step, setStep] = useState<'details' | 'edit' | 'activity'>('details');
 
     const handleBack = () => {
-        onUpdate?.(); // Refetch to show updated terms
+        if (step !== 'details') {
+            void onUpdate?.();
+            setStep('details');
+            return;
+        }
+        void onUpdate?.();
         closeModal();
     };
 
     const { mutateAsync: withdrawConsent, isPending: isWithdrawing } = useWithdrawConsent(
         contract.uri
     );
-    const [showConfirmRevoke, setShowConfirmRevoke] = useState(false);
     const [isOpening, setIsOpening] = useState(false);
+    const isLearnCardAiContract = contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI;
 
     const name = contractDetails?.name ?? 'Unknown App';
     const image = contractDetails?.image;
     const redirectUrl = contractDetails?.redirectUrl?.trim();
-
-    const handleEditPermissions = () => {
-        if (!contractDetails || !contract.terms) return;
-
-        newModal(
-            <ConsentFlowPrivacyAndData
-                contractDetails={contractDetails}
-                terms={contract.terms}
-                setTerms={() => {}} // Not used for direct updates - uses updateTerms internally
-                isPostConsent={true}
-                termsUri={contract.uri}
-                ownerDid={contractDetails.owner?.did}
-            />,
-            {},
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
-    };
-
-    const handleViewDataFeed = () => {
-        newModal(
-            <XApiDataFeedModal
-                contractUri={contract.uri}
-                contractName={name}
-                onBack={closeModal}
-            />,
-            { sectionClassName: '!p-0 !shadow-none' },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
-    };
 
     const handleOpenApp = async () => {
         if (!redirectUrl) return;
@@ -258,129 +356,156 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
 
     const handleRevoke = async () => {
         try {
+            if (isLearnCardAiContract) {
+                const revoked = await handleAiToggle(false);
+                if (!revoked) return;
+
+                await onUpdate?.();
+                closeModal();
+                closeModal();
+                return;
+            }
+
             await withdrawConsent(contract.uri);
-            onUpdate?.();
-            closeAllModals();
+            await onUpdate?.();
+            closeModal();
+            closeModal();
         } catch (error) {
             log.error('Failed to revoke access:', error);
         }
     };
 
-    if (showConfirmRevoke) {
-        return (
-            <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[400px]">
-                <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
-                        <Trash2 className="w-8 h-8 text-red-500" />
-                    </div>
-
-                    <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900">Revoke Access?</h3>
-
-                        <p className="text-sm text-grayscale-600 mt-2">
-                            <span className="font-medium">{name}</span> will no longer be able to
-                            access your {brandingConfig?.name} data.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-col gap-2 w-full mt-2">
-                        <button
-                            onClick={handleRevoke}
-                            disabled={isWithdrawing}
-                            className="w-full py-3 bg-red-500 text-white rounded-full font-medium disabled:opacity-60"
-                        >
-                            {isWithdrawing ? 'Revoking...' : 'Yes, Revoke Access'}
-                        </button>
-
-                        <button
-                            onClick={() => setShowConfirmRevoke(false)}
-                            disabled={isWithdrawing}
-                            className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium disabled:opacity-60"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
+    const openRevokeConfirmation = () => {
+        newModal(
+            <RevokeAccessConfirmationModal
+                name={name}
+                brandName={brandName}
+                isLearnCardAiContract={isLearnCardAiContract}
+                onConfirm={handleRevoke}
+                onCancel={closeModal}
+                isWorking={isWithdrawing}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !shadow-none !max-w-[400px] !w-[400px] !overflow-hidden',
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
-    }
+    };
+
+    const stepTitle =
+        step === 'edit' ? 'Edit access' : step === 'activity' ? 'Activity' : 'App details';
 
     return (
-        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-                <button onClick={handleBack} className="p-1 -ml-1">
+        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
+            <div className="shrink-0 flex items-center gap-3 px-6 pt-6 pb-4">
+                <button
+                    onClick={handleBack}
+                    aria-label="Back"
+                    className="p-1 -ml-1 rounded-full hover:bg-grayscale-10 transition-colors"
+                >
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
                 </button>
 
-                <span className="text-lg font-semibold text-grayscale-900">App Details</span>
-            </div>
-
-            <div className="flex items-center gap-4 mb-6">
                 {image ? (
-                    <img src={image} alt={name} className="w-16 h-16 rounded-xl object-cover" />
+                    <img src={image} alt={name} className="w-8 h-8 rounded-lg object-cover" />
                 ) : (
-                    <div className="w-16 h-16 rounded-xl bg-grayscale-100 flex items-center justify-center">
-                        <Shield className="w-8 h-8 text-grayscale-400" />
+                    <div className="w-8 h-8 rounded-lg bg-grayscale-100 flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-grayscale-400" />
                     </div>
                 )}
 
-                <div>
-                    <h3 className="text-lg font-semibold text-grayscale-900">{name}</h3>
-
-                    {contractDetails?.description && (
-                        <p className="text-sm text-grayscale-600 line-clamp-2">
-                            {contractDetails.description}
-                        </p>
-                    )}
+                <div className="min-w-0">
+                    <h2 className="text-lg font-semibold text-grayscale-900 truncate leading-tight">
+                        {stepTitle}
+                    </h2>
+                    <p className="text-xs text-grayscale-500 truncate">{name}</p>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto mb-4">
-                <h4 className="text-sm font-semibold text-grayscale-700 mb-2">
-                    Data Access Permissions
-                </h4>
+            {step === 'details' && (
+                <>
+                    <div className="flex-1 min-h-0 overflow-y-auto px-6">
+                        {contractDetails?.description && (
+                            <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
+                                {contractDetails.description}
+                            </p>
+                        )}
 
-                <div className="bg-grayscale-50 rounded-xl p-4">
-                    <PermissionsList contract={contract} />
+                        <h4 className="text-xs font-semibold tracking-wider text-grayscale-500 uppercase mb-2">
+                            Data access
+                        </h4>
+
+                        <div className="bg-grayscale-50 rounded-xl p-4">
+                            <PermissionsList contract={contract} />
+                        </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col gap-2.5 px-6 py-5 border-t border-grayscale-100">
+                        {redirectUrl && (
+                            <button
+                                onClick={handleOpenApp}
+                                disabled={isOpening}
+                                className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                {isOpening ? 'Opening...' : 'Open App'}
+                            </button>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button
+                                onClick={() => setStep('edit')}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Settings className="w-4 h-4" />
+                                Edit access
+                            </button>
+
+                            <button
+                                onClick={() => setStep('activity')}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Activity className="w-4 h-4" />
+                                Activity
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={openRevokeConfirmation}
+                            className="w-full py-3 px-4 rounded-[20px] text-red-600 font-medium text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Revoke access
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {step === 'edit' && contractDetails && contract.terms && (
+                <div className="relative flex-1 min-h-0">
+                    <ConsentFlowPrivacyAndData
+                        contractDetails={contractDetails}
+                        terms={contract.terms}
+                        setTerms={() => {}}
+                        isPostConsent
+                        embedded
+                        termsUri={contract.uri}
+                        ownerDid={contractDetails.owner?.did}
+                        onSaved={() => {
+                            void onUpdate?.();
+                            setStep('details');
+                        }}
+                        onCancel={() => setStep('details')}
+                    />
                 </div>
-            </div>
+            )}
 
-            <div className="flex flex-col gap-2">
-                {redirectUrl && (
-                    <button
-                        onClick={handleOpenApp}
-                        disabled={isOpening}
-                        className="w-full py-3 bg-emerald-600 text-white rounded-full font-medium flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                        {isOpening ? 'Opening...' : 'Open App'}
-                    </button>
-                )}
-
-                <button
-                    onClick={handleViewDataFeed}
-                    className="w-full py-3 bg-violet-100 text-violet-700 rounded-full font-medium flex items-center justify-center gap-2"
-                >
-                    <Activity className="w-4 h-4" />
-                    xAPI Data Feed
-                </button>
-
-                <button
-                    onClick={handleEditPermissions}
-                    className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium flex items-center justify-center gap-2"
-                >
-                    <Settings className="w-4 h-4" />
-                    Edit Permissions
-                </button>
-
-                <button
-                    onClick={() => setShowConfirmRevoke(true)}
-                    className="w-full py-3 bg-red-50 text-red-600 rounded-full font-medium flex items-center justify-center gap-2"
-                >
-                    <Trash2 className="w-4 h-4" />
-                    Revoke Access
-                </button>
-            </div>
+            {step === 'activity' && (
+                <div className="flex-1 min-h-0">
+                    <XApiDataFeedModal contractUri={contract.uri} contractName={name} embedded />
+                </div>
+            )}
         </div>
     );
 };

@@ -56,6 +56,19 @@ test.describe('Tier 1: API Health Checks', () => {
             expect(response.status()).toBe(200);
         });
 
+        test('deep health check exercises DIDKit (VP round-trip)', async ({ request }) => {
+            const response = await request.get(`${API_URL}/health-check/deep`);
+            // Roll-out tolerance: environments deployed before this endpoint existed 404.
+            test.skip(response.status() === 404, 'deep health check not deployed here yet');
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(
+                body.vpVerified,
+                `verification errors: ${JSON.stringify(body.verificationErrors)}`
+            ).toBe(true);
+            console.log(`[deep-health] brain: engine=${body.didkitEngine} (${body.ms}ms)`);
+        });
+
         test('tRPC router is mounted and serving', async ({ request }) => {
             await expectTrpcReachable(request, BRAIN_ROOT);
         });
@@ -79,6 +92,19 @@ test.describe('Tier 1: API Health Checks', () => {
             expect(response.status()).toBe(200);
         });
 
+        test('deep health check exercises DIDKit (VP round-trip)', async ({ request }) => {
+            const response = await request.get(`${CLOUD_URL}/health-check/deep`);
+            // Roll-out tolerance: environments deployed before this endpoint existed 404.
+            test.skip(response.status() === 404, 'deep health check not deployed here yet');
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(
+                body.vpVerified,
+                `verification errors: ${JSON.stringify(body.verificationErrors)}`
+            ).toBe(true);
+            console.log(`[deep-health] learn-cloud: engine=${body.didkitEngine} (${body.ms}ms)`);
+        });
+
         test('tRPC router is mounted and serving', async ({ request }) => {
             await expectTrpcReachable(request, CLOUD_ROOT);
         });
@@ -88,6 +114,19 @@ test.describe('Tier 1: API Health Checks', () => {
         test('health endpoint returns 200', async ({ request }) => {
             const response = await request.get(`${LCA_API_URL}/health-check`);
             expect(response.status()).toBe(200);
+        });
+
+        test('deep health check exercises DIDKit (VP round-trip)', async ({ request }) => {
+            const response = await request.get(`${LCA_API_URL}/health-check/deep`);
+            // Roll-out tolerance: environments deployed before this endpoint existed 404.
+            test.skip(response.status() === 404, 'deep health check not deployed here yet');
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(
+                body.vpVerified,
+                `verification errors: ${JSON.stringify(body.verificationErrors)}`
+            ).toBe(true);
+            console.log(`[deep-health] lca-api: engine=${body.didkitEngine} (${body.ms}ms)`);
         });
 
         test('tRPC router is mounted and serving', async ({ request }) => {

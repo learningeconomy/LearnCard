@@ -9,17 +9,19 @@
 **LearnCard Bridge - HTTP** is a suite of tools with a simple CLI for deploying a serverless execution environment for LearnCard Core exposed over an HTTP API.
 
 ## Documentation
+
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
 ## Install
 
-- Clone this repo
-- Set up AWS CLI
-- Add a .env file exporting a wallet seed (e.g. `WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
-- Run `pnpm serverless-deploy`
+-   Clone this repo
+-   Set up AWS CLI
+-   Add a .env file exporting a wallet seed (e.g. `WALLET_SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
+-   Run `bun run serverless-deploy`
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
@@ -27,7 +29,6 @@ Please make sure to update tests as appropriate.
 ## Who is Learning Economy Foundation?
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
-
 
 ## License
 

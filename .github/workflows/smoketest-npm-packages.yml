@@ -81,26 +81,35 @@ jobs:
             matrix:
                 include:
                     # npm is the package manager that broke us in the incident
-                    # this workflow was created to prevent. Test across all
-                    # currently supported LTS Node versions.
-                    - { package-manager: npm, node-version: '18' }
-                    - { package-manager: npm, node-version: '20' }
-                    - { package-manager: npm, node-version: '22' }
+                    # this workflow was created to prevent. Run all package
+                    # managers on the standardized monorepo Node version.
+                    - { package-manager: npm, node-version: '24.12.0' }
                     # pnpm and yarn have their own resolution algorithms and
-                    # handle optional/workspace deps differently — test on
-                    # current LTS to catch other bug classes.
-                    - { package-manager: pnpm, node-version: '20' }
-                    - { package-manager: yarn, node-version: '20' }
+                    # handle optional/workspace deps differently.
+                    - { package-manager: pnpm, node-version: '24.12.0' }
+                    - { package-manager: yarn, node-version: '24.12.0' }
+                    # bun is the package manager this monorepo builds with, and
+                    # a growing share of external consumers install with it. Its
+                    # resolver + node_modules layout differ from npm/pnpm/yarn,
+                    # so it gets its own leg. Bun bundles its own runtime, so no
+                    # separate Node setup is needed for the install itself.
+                    - { package-manager: bun, node-version: '24.12.0' }
         steps:
             - name: Set up Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
 
             - name: Set up pnpm
               if: matrix.package-manager == 'pnpm'
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@v6
               with:
+                  # action-setup@v6 has no bundled default and resolves the
+                  # version from a `packageManager`/`pnpm.version` field in the
+                  # cwd's package.json. This smoketest runs in a throwaway dir
+                  # with no such field, so pin it explicitly (matching the repo's
+                  # pnpm major) — otherwise the step fails with
+                  # "No pnpm version is specified."
                   version: 9
                   run_install: false
 
@@ -109,6 +118,10 @@ jobs:
               run: |
                   corepack enable
                   corepack prepare yarn@stable --activate
+
+            - name: Set up Bun
+              if: matrix.package-manager == 'bun'
+              uses: oven-sh/setup-bun@v2
 
             - name: Wait for npm CDN propagation
               env:
@@ -156,6 +169,9 @@ jobs:
                           ;;
                       yarn)
                           yarn add "$CLI" "$INIT" "$PC"
+                          ;;
+                      bun)
+                          bun add "$CLI" "$INIT" "$PC"
                           ;;
                   esac
                   echo "::endgroup::"
@@ -258,6 +274,7 @@ jobs:
                       npm)  npm install --no-fund --no-audit "${PKGS[@]}" ;;
                       pnpm) pnpm add "${PKGS[@]}" ;;
                       yarn) yarn add "${PKGS[@]}" ;;
+                      bun)  bun add "${PKGS[@]}" ;;
                   esac
 
             - name: Verify each plugin loads via ESM and CJS
@@ -371,10 +388,10 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 6
         steps:
-            - name: Set up Node.js 20
-              uses: actions/setup-node@v4
+            - name: Set up Node.js
+              uses: actions/setup-node@v6
               with:
-                  node-version: '20'
+                  node-version: '24.12.0'
 
             - name: Wait for npm CDN propagation
               env:

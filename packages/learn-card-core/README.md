@@ -16,7 +16,7 @@ https://docs.learncard.com
 ## Install
 
 ```bash
-pnpm i @learncard/core
+bun add @learncard/core
 ```
 
 ## Usage

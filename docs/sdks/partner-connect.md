@@ -10,12 +10,12 @@ The Partner Connect SDK transforms complex `postMessage` communication into clea
 
 ## Features
 
-- **🔒 Secure**: Multi-layered origin validation prevents unauthorized access
-- **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions
-- **⚡ Promise-based**: Modern async/await API eliminates callback complexity
-- **🧹 Clean**: Abstracts away all postMessage implementation details
-- **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
-- **🛡️ Robust**: Built-in timeout handling and structured error management
+-   **🔒 Secure**: Multi-layered origin validation prevents unauthorized access
+-   **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions
+-   **⚡ Promise-based**: Modern async/await API eliminates callback complexity
+-   **🧹 Clean**: Abstracts away all postMessage implementation details
+-   **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
+-   **🛡️ Robust**: Built-in timeout handling and structured error management
 
 ## Installation
 
@@ -28,10 +28,10 @@ npm install @learncard/partner-connect
 
 {% endtab %}
 
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
 
 ```bash
-pnpm add @learncard/partner-connect
+bun add @learncard/partner-connect
 ```
 
 {% endtab %}
@@ -77,7 +77,7 @@ Creates a new Partner Connect SDK instance.
 
 **Parameters:**
 
-- `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
+-   `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
 
 **Returns:** `PartnerConnect` instance
 
@@ -181,7 +181,7 @@ Issue a credential using a pre-configured boost template attached to your App St
 
 **Parameters:**
 
-- `input` (`TemplateCredentialInput`): Template alias and optional data
+-   `input` (`TemplateCredentialInput`): Template alias and optional data
 
 **Returns:** `Promise<TemplateCredentialResponse>`
 
@@ -202,7 +202,7 @@ Send a pre-signed verifiable credential directly. Your backend must issue and si
 
 **Parameters:**
 
-- `input` (`unknown`): A signed verifiable credential object
+-   `input` (`unknown`): A signed verifiable credential object
 
 **Returns:** `Promise<SendCredentialResponse>`
 
@@ -229,8 +229,8 @@ Navigate the **LearnCard host wallet** to one of its built-in features. Use this
 
 **Parameters:**
 
-- `featurePath` (`string`): Wallet route to navigate to (e.g., `/ai/topics`, `/wallet/share`, `/profile`)
-- `initialPrompt` (`string`, optional): Initial prompt or data to pass to the feature
+-   `featurePath` (`string`): Wallet route to navigate to (e.g., `/ai/topics`, `/wallet/share`, `/profile`)
+-   `initialPrompt` (`string`, optional): Initial prompt or data to pass to the feature
 
 **Returns:** `Promise<void>`
 
@@ -253,9 +253,9 @@ await learnCard.launchFeature('/wallet/share');
 
 These two APIs both take a `/path` string and look interchangeable, but they navigate to **different origins**:
 
-| API | Scope | Use when |
-| --- | --- | --- |
-| `launchFeature(path)` | **LearnCard wallet** | You want to send the user into a wallet feature (`/ai/topics`, `/wallet/share`, `/profile`). Path is interpreted by the LearnCard host. |
+| API                                | Scope                 | Use when                                                                                                                                    |
+| ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `launchFeature(path)`              | **LearnCard wallet**  | You want to send the user into a wallet feature (`/ai/topics`, `/wallet/share`, `/profile`). Path is interpreted by the LearnCard host.     |
 | `sendNotification({ actionPath })` | **Your embedded app** | You want a notification's tap action to deep-link the user to a route **inside your own app's iframe**. Path is appended to your app's URL. |
 
 **Bridge pattern — deep-linking from a notification to a wallet feature:**
@@ -283,7 +283,7 @@ Request credentials from the user's wallet using query criteria.
 
 **Parameters:**
 
-- `verifiablePresentationRequest` (`VerifiablePresentationRequest`): Query specification
+-   `verifiablePresentationRequest` (`VerifiablePresentationRequest`): Query specification
 
 **Returns:** `Promise<CredentialSearchResponse>`
 
@@ -317,7 +317,7 @@ Request a specific credential by ID.
 
 **Parameters:**
 
-- `credentialId` (`string`): The ID of the credential to request
+-   `credentialId` (`string`): The ID of the credential to request
 
 **Returns:** `Promise<CredentialSpecificResponse>`
 
@@ -340,8 +340,8 @@ Request user consent for data access permissions.
 
 **Parameters:**
 
-- `contractUri` (`string`, optional): URI of the consent contract. Can be omitted for App Store apps with configured contracts.
-- `options` (`RequestConsentOptions`, optional): Additional options for the consent flow
+-   `contractUri` (`string`, optional): URI of the consent contract. Can be omitted for App Store apps with configured contracts.
+-   `options` (`RequestConsentOptions`, optional): Additional options for the consent flow
 
 | Option     | Type      | Default | Description                                                                 |
 | ---------- | --------- | ------- | --------------------------------------------------------------------------- |
@@ -381,8 +381,8 @@ Initiate a template-based credential issuance flow.
 
 **Parameters:**
 
-- `templateId` (`string`): ID of the template/boost to issue
-- `draftRecipients` (`string[]`, optional): Array of recipient DIDs
+-   `templateId` (`string`): ID of the template/boost to issue
+-   `draftRecipients` (`string[]`, optional): Array of recipient DIDs
 
 **Returns:** `Promise<TemplateIssueResponse>`
 
@@ -409,14 +409,14 @@ This method retrieves the user's credentials and personal data (with their conse
 
 **Use Cases:**
 
-- AI tutors that adapt to learner's existing skills and credentials
-- Personalized learning pathway recommendations
-- Smart content that adjusts based on learner history
-- Intelligent assessment systems
+-   AI tutors that adapt to learner's existing skills and credentials
+-   Personalized learning pathway recommendations
+-   Smart content that adjusts based on learner history
+-   Intelligent assessment systems
 
 **Parameters:**
 
-- `options` (`RequestLearnerContextOptions`, optional): Configuration for what data to include and how to format it
+-   `options` (`RequestLearnerContextOptions`, optional): Configuration for what data to include and how to format it
 
 | Option                | Type                       | Default     | Description                                          |
 | --------------------- | -------------------------- | ----------- | ---------------------------------------------------- |
@@ -543,14 +543,14 @@ Send an AI Session credential to record a learning interaction. AI Sessions are 
 
 **Use Cases:**
 
-- **AI Tutoring Apps** - Record what was learned during a tutoring session
-- **Learning Assistants** - Track learning progress and outcomes
-- **Skill Assessment** - Document demonstrated competencies
-- **Learning Pathways** - Build a history of learning interactions
+-   **AI Tutoring Apps** - Record what was learned during a tutoring session
+-   **Learning Assistants** - Track learning progress and outcomes
+-   **Skill Assessment** - Document demonstrated competencies
+-   **Learning Pathways** - Build a history of learning interactions
 
 **Parameters:**
 
-- `input` (`SendAiSessionCredentialInput`): Session details
+-   `input` (`SendAiSessionCredentialInput`): Session details
 
 | Property       | Type                      | Required | Description                            |
 | -------------- | ------------------------- | -------- | -------------------------------------- |
@@ -650,8 +650,7 @@ const session = await learnCard.sendAiSessionCredential({
             },
             {
                 title: 'Supervised vs Unsupervised',
-                description:
-                    'Distinguishes the two paradigms and gives examples of each.',
+                description: 'Distinguishes the two paradigms and gives examples of each.',
             },
         ],
         nextSteps: [
@@ -757,13 +756,13 @@ Send a notification to the current user from this app. The notification appears 
 
 **Parameters:** `AppNotificationInput`
 
-| Property     | Type                    | Required | Description                                                                                                          |
-| ------------ | ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
-| `title`      | `string`                | No       | Notification title.                                                                                                  |
-| `body`       | `string`                | No       | Notification body text.                                                                                              |
-| `actionPath` | `string`                | No       | **App-local** path. When the user taps the notification, this path is appended to your app's iframe URL. See below. |
-| `category`   | `string`                | No       | Optional category tag for grouping notifications.                                                                    |
-| `priority`   | `'normal' \| 'high'`    | No       | Visual priority. `'high'` notifications are styled more prominently in the inbox.                                    |
+| Property     | Type                 | Required | Description                                                                                                         |
+| ------------ | -------------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `title`      | `string`             | No       | Notification title.                                                                                                 |
+| `body`       | `string`             | No       | Notification body text.                                                                                             |
+| `actionPath` | `string`             | No       | **App-local** path. When the user taps the notification, this path is appended to your app's iframe URL. See below. |
+| `category`   | `string`             | No       | Optional category tag for grouping notifications.                                                                   |
+| `priority`   | `'normal' \| 'high'` | No       | Visual priority. `'high'` notifications are styled more prominently in the inbox.                                   |
 
 **Returns:** `Promise<AppNotificationResponse>`
 
@@ -806,10 +805,10 @@ Lightweight per-user-app counters for tracking app-defined integer state (e.g. "
 
 **Limits (load-bearing — design around these):**
 
-- **Maximum 50 distinct keys** per `(user, app)` pair
-- **Maximum 100 writes per minute** per `(user, app)` pair
-- **Integer values only** (use `Math.floor` or pre-aggregate if you need fractional state)
-- **Key format:** `^[a-zA-Z0-9_-]+$`, 1–64 characters
+-   **Maximum 50 distinct keys** per `(user, app)` pair
+-   **Maximum 100 writes per minute** per `(user, app)` pair
+-   **Integer values only** (use `Math.floor` or pre-aggregate if you need fractional state)
+-   **Key format:** `^[a-zA-Z0-9_-]+$`, 1–64 characters
 
 If you need to track more than 50 things, consolidate (e.g. one `lessons_completed` counter rather than one counter per lesson).
 
@@ -831,10 +830,7 @@ const { newValue } = await learnCard.incrementCounter('sessions_completed', 1);
 const { value, updatedAt } = await learnCard.getCounter('sessions_completed');
 
 // Read several (omit the array to fetch every counter for this user-app)
-const { counters } = await learnCard.getCounters([
-    'sessions_completed',
-    'streak_days',
-]);
+const { counters } = await learnCard.getCounters(['sessions_completed', 'streak_days']);
 ```
 
 **Errors:** `LC_UNAUTHENTICATED`, `UNAUTHORIZED`, `BAD_REQUEST` (invalid key format, > 50 keys, or rate-limit exceeded), `LC_TIMEOUT`
@@ -860,9 +856,9 @@ The Partner Connect SDK implements comprehensive security measures:
 
 **Strict Enforcement:**
 
-- Incoming messages must exactly match the configured host origin
-- No wildcard (`*`) origins are ever used
-- Query parameter overrides are validated against whitelist
+-   Incoming messages must exactly match the configured host origin
+-   No wildcard (`*`) origins are ever used
+-   Query parameter overrides are validated against whitelist
 
 **Configuration Hierarchy:**
 
@@ -891,10 +887,10 @@ const learnCard = createPartnerConnect({
 
 ### Message Security
 
-- **Protocol Verification**: Messages must match expected protocol version
-- **Request ID Tracking**: Only tracked requests are processed
-- **Timeout Protection**: Requests automatically timeout to prevent hanging
-- **Cleanup on Destroy**: Pending requests are properly rejected
+-   **Protocol Verification**: Messages must match expected protocol version
+-   **Request ID Tracking**: Only tracked requests are processed
+-   **Timeout Protection**: Requests automatically timeout to prevent hanging
+-   **Cleanup on Destroy**: Pending requests are properly rejected
 
 ## Error Handling
 
@@ -1020,17 +1016,17 @@ const learnCard = createPartnerConnect({
 
 ## Browser Support
 
-- **Chrome/Edge**: 90+
-- **Firefox**: 88+
-- **Safari**: 14+
-- **Mobile**: iOS Safari 14+, Android Chrome 90+
+-   **Chrome/Edge**: 90+
+-   **Firefox**: 88+
+-   **Safari**: 14+
+-   **Mobile**: iOS Safari 14+, Android Chrome 90+
 
 **Required APIs:**
 
-- `postMessage`
-- `Promise`
-- `URLSearchParams`
-- `addEventListener`
+-   `postMessage`
+-   `Promise`
+-   `URLSearchParams`
+-   `addEventListener`
 
 ## Migration Guide
 
@@ -1100,11 +1096,11 @@ const identity = await learnCard.requestIdentity();
 
 **Benefits:**
 
-- **85% code reduction** in typical integrations
-- **Type safety** with full TypeScript support
-- **Better error handling** with structured error codes
-- **Security improvements** with origin validation
-- **No manual cleanup** required
+-   **85% code reduction** in typical integrations
+-   **Type safety** with full TypeScript support
+-   **Better error handling** with structured error codes
+-   **Security improvements** with origin validation
+-   **No manual cleanup** required
 
 ## Examples
 
@@ -1373,8 +1369,8 @@ interface LearnCardError {
 
 ## Related Documentation
 
-- [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) - Step-by-step guide for App Store credential issuance
-- [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
-- [LearnCard Network](/sdks/learncard-network/) - Network integration
-- [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
-- [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem
+-   [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) - Step-by-step guide for App Store credential issuance
+-   [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
+-   [LearnCard Network](/sdks/learncard-network/) - Network integration
+-   [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
+-   [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const PaginationOptionsValidator = z.object({
     limit: z.number(),

@@ -129,7 +129,7 @@ jobs:
               run: |
                   CHANNEL="pr-${PR_NUMBER}"
                   echo "Deleting Capgo channel: $CHANNEL"
-                  npx @capgo/cli@latest channel delete "$CHANNEL" com.learncard.app || \
+                  bunx @capgo/cli@latest channel delete "$CHANNEL" com.learncard.app || \
                       echo "::warning::channel delete failed (already gone?)"
 
             - name: Post Capgo teardown comment

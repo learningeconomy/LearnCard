@@ -1,7 +1,7 @@
 /**
  * Vite plugin that mounts the playground's launch + status endpoints
  * directly on the dev server. Keeps the developer's terminal tally
- * to a single command (`pnpm dev`) without a second Express process.
+ * to a single command (`bun run dev`) without a second Express process.
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';

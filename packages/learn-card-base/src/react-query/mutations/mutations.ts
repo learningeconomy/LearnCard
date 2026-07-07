@@ -545,6 +545,8 @@ export const useRevokeBoostRecipient = () => {
     });
 };
 
+export * from './networkConsent';
+
 /**
  * Suspend a boost recipient, temporarily disabling their credential.
  * The recipient remains visible in the list with status='suspended'.

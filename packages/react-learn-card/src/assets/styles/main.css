@@ -1,4 +1,6 @@
-@import 'tailwindcss/utilities';
+@config "../../../tailwind.config.js";
+
+@tailwind utilities;
 
 .scrollbar-hide {
     -ms-overflow-style: none;

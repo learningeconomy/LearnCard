@@ -137,8 +137,15 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                     let attachmentUrl = '';
                     let type: Attachment['type'] = 'link';
 
+                    const genreType = normalizeAttachmentType(ev.genre);
+
                     if (ev?.type?.includes('EvidenceFile')) {
-                        type = normalizeAttachmentType(ev.genre) ?? 'document';
+                        type = genreType ?? 'document';
+                    } else if (genreType && genreType !== 'link') {
+                        // Trust an explicit genre (e.g. Filestack URLs carry no file
+                        // extension, so URL sniffing can't classify them). 'link' still
+                        // goes through detection so e.g. YouTube URLs render as video.
+                        type = genreType;
                     } else if (typeof ev.id === 'string' && isPdfAttachmentSource(ev.id)) {
                         type = 'document';
                     } else if (ev.url) {

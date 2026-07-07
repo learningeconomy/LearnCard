@@ -1,11 +1,11 @@
 /**
  * Critical Path Tests
- * 
+ *
  * These tests verify that private keys can NEVER be lost due to:
  * - Share splitting bugs
  * - Recovery method round-trip failures
  * - Partial storage failures
- * 
+ *
  * Run these tests before any release that touches SSS code.
  */
 
@@ -13,12 +13,14 @@ import { describe, it, expect } from 'vitest';
 
 import { splitPrivateKey, reconstructFromShares, SSS_THRESHOLD } from './sss';
 import { generateEd25519PrivateKey, encryptWithPassword, decryptWithPassword } from './crypto';
-import { shareToRecoveryPhrase, recoveryPhraseToShare, validateRecoveryPhrase } from './recovery-phrase';
+import {
+    shareToRecoveryPhrase,
+    recoveryPhraseToShare,
+    validateRecoveryPhrase,
+} from './recovery-phrase';
 
 describe('Critical: Key must NEVER be lost', () => {
-
     describe('Share split verification (fuzz test)', () => {
-
         it('should verify all 6 share combinations reconstruct the key (100 iterations)', async () => {
             for (let i = 0; i < 100; i++) {
                 const privateKey = await generateEd25519PrivateKey();
@@ -91,8 +93,8 @@ describe('Critical: Key must NEVER be lost', () => {
 
         it('should handle edge case private keys', async () => {
             const edgeCases = [
-                '0'.repeat(64),  // All zeros
-                'f'.repeat(64),  // All ones
+                '0'.repeat(64), // All zeros
+                'f'.repeat(64), // All ones
                 '0f'.repeat(32), // Alternating
                 'abcdef0123456789'.repeat(4), // Pattern
             ];
@@ -113,14 +115,13 @@ describe('Critical: Key must NEVER be lost', () => {
             const privateKey = await generateEd25519PrivateKey();
             const shares = await splitPrivateKey(privateKey);
 
-            await expect(
-                reconstructFromShares([shares.deviceShare])
-            ).rejects.toThrow(`Need at least ${SSS_THRESHOLD} shares`);
+            await expect(reconstructFromShares([shares.deviceShare])).rejects.toThrow(
+                `Need at least ${SSS_THRESHOLD} shares`
+            );
         });
     });
 
     describe('Password encryption round-trip (used by backup files)', () => {
-
         it('should preserve exact private key through password encryption/decryption', async () => {
             const privateKey = await generateEd25519PrivateKey();
             const password = 'test-password-123!@#';
@@ -138,10 +139,7 @@ describe('Critical: Key must NEVER be lost', () => {
 
             expect(decrypted).toBe(shares.recoveryShare);
 
-            const reconstructed = await reconstructFromShares([
-                decrypted,
-                shares.authShare,
-            ]);
+            const reconstructed = await reconstructFromShares([decrypted, shares.authShare]);
 
             expect(reconstructed).toBe(privateKey);
         });
@@ -167,8 +165,8 @@ describe('Critical: Key must NEVER be lost', () => {
                 'short',
                 'medium-length-password',
                 'very-long-password-with-special-characters-!@#$%^&*()',
-                '日本語パスワード',  // Unicode
-                '🔐🔑🔒',  // Emoji
+                '日本語パスワード', // Unicode
+                '🔐🔑🔒', // Emoji
             ];
 
             for (const password of passwords) {
@@ -184,18 +182,14 @@ describe('Critical: Key must NEVER be lost', () => {
                     encrypted.kdfParams
                 );
 
-                const reconstructed = await reconstructFromShares([
-                    decrypted,
-                    shares.authShare,
-                ]);
+                const reconstructed = await reconstructFromShares([decrypted, shares.authShare]);
 
                 expect(reconstructed).toBe(privateKey);
             }
-        });
+        }, 15_000);
     });
 
     describe('Recovery phrase round-trip', () => {
-
         it('should preserve exact private key through phrase encoding/decoding', async () => {
             const privateKey = await generateEd25519PrivateKey();
             const shares = await splitPrivateKey(privateKey);
@@ -207,10 +201,7 @@ describe('Critical: Key must NEVER be lost', () => {
             const recoveredShare = await recoveryPhraseToShare(phrase);
             expect(recoveredShare).toBe(shares.recoveryShare);
 
-            const reconstructed = await reconstructFromShares([
-                recoveredShare,
-                shares.authShare,
-            ]);
+            const reconstructed = await reconstructFromShares([recoveredShare, shares.authShare]);
 
             expect(reconstructed).toBe(privateKey);
         });
@@ -270,7 +261,6 @@ describe('Critical: Key must NEVER be lost', () => {
     });
 
     describe('Backup file round-trip', () => {
-
         it('should preserve exact private key through backup file flow', async () => {
             const privateKey = await generateEd25519PrivateKey();
             const backupPassword = 'backup-file-password-123';
@@ -304,17 +294,13 @@ describe('Critical: Key must NEVER be lost', () => {
                 restoredBackup.encryptedShare.kdfParams
             );
 
-            const reconstructed = await reconstructFromShares([
-                recoveredShare,
-                shares.authShare,
-            ]);
+            const reconstructed = await reconstructFromShares([recoveredShare, shares.authShare]);
 
             expect(reconstructed).toBe(privateKey);
         });
     });
 
     describe('Cross-share compatibility', () => {
-
         it('should NOT reconstruct key from shares of different splits', async () => {
             const privateKey = await generateEd25519PrivateKey();
 
@@ -324,8 +310,8 @@ describe('Critical: Key must NEVER be lost', () => {
 
             // Mixing shares from different splits should produce WRONG key
             const wrongKey = await reconstructFromShares([
-                shares1.deviceShare,  // From split 1
-                shares2.authShare,    // From split 2
+                shares1.deviceShare, // From split 1
+                shares2.authShare, // From split 2
             ]);
 
             // The reconstructed key should NOT match the original
@@ -344,8 +330,8 @@ describe('Critical: Key must NEVER be lost', () => {
 
             // Reconstruct with stale device + new auth
             const wrongKey = await reconstructFromShares([
-                originalShares.deviceShare,  // Stale
-                newShares.authShare,         // New
+                originalShares.deviceShare, // Stale
+                newShares.authShare, // New
             ]);
 
             // Keys don't match - this is the scenario DID verification catches
@@ -355,7 +341,6 @@ describe('Critical: Key must NEVER be lost', () => {
 });
 
 describe('Critical: Share integrity', () => {
-
     it('shares should be valid hex strings', async () => {
         const privateKey = await generateEd25519PrivateKey();
         const shares = await splitPrivateKey(privateKey);

@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipper, Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
 import VC2FrontFaceInfo from './VC2FrontFaceInfo';
@@ -29,6 +29,14 @@ import {
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
 import { KnownDIDRegistryType } from '../../types';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -196,10 +204,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    if (
-        categoryType === LCCategoryEnum.meritBadge ||
-        credential?.display?.displayType === 'award'
-    ) {
+    const resolvedDisplayType =
+        credential?.display?.displayType ?? formattedDisplayType?.toLocaleLowerCase();
+
+    if (categoryType === LCCategoryEnum.meritBadge || resolvedDisplayType === 'award') {
         return (
             <MeritBadgeDisplayCard
                 credential={credential}
@@ -233,7 +241,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         );
     }
 
-    if (credential?.display?.displayType === 'certificate') {
+    if (resolvedDisplayType === 'certificate') {
         return (
             <CertificateDisplayCard
                 credential={credential}
@@ -265,7 +273,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 onVerifierClick={onVerifierClick}
             />
         );
-    } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
+    } else if (resolvedDisplayType === 'id' || categoryType === 'ID') {
         return (
             <div>
                 <VCIDDisplayCard

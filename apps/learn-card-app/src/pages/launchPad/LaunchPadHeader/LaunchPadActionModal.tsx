@@ -3,6 +3,7 @@ import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -61,6 +62,7 @@ import {
 } from '../../adminToolsPage/AdminToolsModal/admin-tools.helpers';
 import AdminToolsCreateProfileSimple from '../../adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
 import { openDeveloperDocs } from '../../../helpers/externalLinkHelpers';
 import {
     LearnCardRolesEnum,
@@ -85,8 +87,7 @@ import {
 } from 'learn-card-base';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
-import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
+import AddToPassportMenu from '../../../components/add-to-passport/AddToPassportMenu';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('launch-pad-action-modal');
@@ -184,8 +185,10 @@ const ActionButton: React.FC<{
     role?: string;
 }> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
+    const flags = useFlags();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
     const { theme, getIconSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
@@ -305,6 +308,13 @@ const ActionButton: React.FC<{
                 );
                 return;
             case 'Create Credential':
+                if (flags?.enableSimpleSend) {
+                    checkAndPromptRecovery(() => {
+                        closeAllModals();
+                        history.push('/issue');
+                    });
+                    return;
+                }
                 closeModal();
                 handlePresentBoostModal();
                 return;
@@ -749,21 +759,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     };
 
     const handleAddToLearnCard = () => {
-        if (isDesktop) {
-            newModal(
-                <AddToLearnCardMenuWrapper />,
-                {
-                    sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
-                },
-                { desktop: ModalTypes.Center }
-            );
-        } else {
-            newModal(
-                <AddToLearnCardMenu />,
-                { sectionClassName: '!max-w-[500px]' },
-                { mobile: ModalTypes.BottomSheet }
-            );
-        }
+        newModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
     };
 
     return (

@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -13,7 +13,7 @@ const log = getLogger();
  * Run this in CI to catch config drift before deploy.
  *
  * Usage:
- *   npx tsx scripts/validate-tenant-configs.ts
+ *   bun scripts/validate-tenant-configs.ts
  *
  * Exit codes:
  *   0 — all configs valid

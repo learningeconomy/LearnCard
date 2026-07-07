@@ -11,14 +11,15 @@ import { ConsentFlowContractDetails } from '@learncard/types';
 
 export const AdminToolsConsentFlowContractItem: React.FC<{
     contract: ConsentFlowContractDetails;
-}> = ({ contract }) => {
+    onCreateSuccess?: (contractUri?: string) => void;
+}> = ({ contract, onCreateSuccess }) => {
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
 
     const openViewContractDataModal = (contract: ConsentFlowContractDetails) => {
-        newModal(<ViewContractDataModal contract={contract} />);
+        newModal(<ViewContractDataModal contract={contract} onCreateSuccess={onCreateSuccess} />);
     };
 
     const openShareContractModal = (contract: ConsentFlowContractDetails) => {
