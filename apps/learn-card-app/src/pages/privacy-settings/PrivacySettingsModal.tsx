@@ -335,7 +335,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 checked={showEmail}
                                 disabled={savingProfileField === 'showEmail'}
                                 onIonChange={e => handleShowEmailToggle(e.detail.checked)}
-                                aria-label="Show email to connections"
+                                aria-label={m['settings.privacy.showEmail']()}
                             />
                         </div>
 
@@ -383,7 +383,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 aiFeatureGateReason !== 'disabled_minor' &&
                                 handleAiFeatureToggle(e.detail.checked)
                             }
-                            aria-label="AI Features"
+                            aria-label={m['settings.aiFeatures']()}
                         />
                     </div>
                     {showAiConnectionStatus && (
@@ -405,8 +405,8 @@ const PrivacySettingsModal: React.FC = () => {
                                     <Check className="w-3.5 h-3.5 shrink-0" />
                                     <span>
                                         {aiConnectionStatus === 'connected'
-                                            ? 'Connected'
-                                            : 'Successfully Disconnected'}
+                                            ? m['dataSharing.connected']()
+                                            : m['dataSharing.disconnected']()}
                                     </span>
                                 </p>
                             )}
@@ -416,14 +416,16 @@ const PrivacySettingsModal: React.FC = () => {
                         <div className="px-5 pb-4">
                             <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
                                 <p className="text-sm text-red-700 leading-relaxed">
-                                    AI is on, but consent to the LearnCard AI contract is missing.
+                                    {m['dataSharing.aiConsentWarning']()}
                                     <button
                                         type="button"
                                         onClick={handleRetryAiConsent}
                                         disabled={retryingAiConsent}
                                         className="ml-1 font-medium underline underline-offset-2 text-red-700 disabled:opacity-60"
                                     >
-                                        {retryingAiConsent ? 'Retrying…' : 'Try again'}
+                                        {retryingAiConsent
+                                            ? m['dataSharing.retrying']()
+                                            : m['dataSharing.tryAgain']()}
                                     </button>
                                     .
                                 </p>
@@ -446,7 +448,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <IonToggle
                             checked={analyticsEnabled}
                             onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
-                            aria-label="Usage Analytics"
+                            aria-label={m['settings.analytics']()}
                         />
                     </div>
                 </div>
@@ -465,7 +467,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <IonToggle
                             checked={bugReportsEnabled}
                             onIonChange={e => handleBugReportsToggle(e.detail.checked)}
-                            aria-label="Crash Reports"
+                            aria-label={m['settings.bugReports']()}
                         />
                     </div>
                 </div>

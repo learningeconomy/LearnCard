@@ -20,6 +20,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+import * as m from '../../paraglide/messages.js';
 import DataSharingCenterView from './DataSharingCenterView';
 import type {
     ConnectionRequestsValue,
@@ -79,7 +80,7 @@ const PrivacySettingsPage: React.FC = () => {
                 await wallet?.invoke?.updateProfile(updates);
                 await refetchUser?.();
             } catch (error: any) {
-                presentToast(error?.message ?? 'Unable to update privacy settings.', {
+                presentToast(error?.message ?? m['settings.privacy.unableToUpdate'](), {
                     type: ToastTypeEnum.Error,
                 });
             } finally {
