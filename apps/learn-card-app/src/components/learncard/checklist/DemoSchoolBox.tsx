@@ -122,11 +122,9 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
             setDemoSchoolStatus('deleting');
 
-            await Promise.all(
-                contractCredentials?.map(async (contractCred: any) => {
-                    await deleteCredentialRecord(contractCred);
-                })
-            );
+            for (const contractCred of contractCredentials ?? []) {
+                await deleteCredentialRecord(contractCred);
+            }
 
             // clear creds from newCredsStore
             const credentialUris =
