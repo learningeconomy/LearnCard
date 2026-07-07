@@ -14,6 +14,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
 const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
+const LCA_API_ROOT = resolve(APP_ROOT, '../../services/learn-card-network/lca-api');
+const SCOUTS_ENV_PATH = resolve(LCA_API_ROOT, '.env.scouts');
+const FALLBACK_ENV_PATH = resolve(LCA_API_ROOT, '.env');
 
 /**
  * ScoutPass is single-tenant, so unlike learn-card-app's lc there is no tenant
@@ -37,6 +40,64 @@ const green = (value: string): string => `\x1b[32m${value}\x1b[0m`;
 const cyan = (value: string): string => `\x1b[36m${value}\x1b[0m`;
 const dim = (value: string): string => `\x1b[2m${value}\x1b[0m`;
 const yellow = (value: string): string => `\x1b[33m${value}\x1b[0m`;
+
+const loadEnvFile = (filePath: string): Record<string, string> => {
+    if (!existsSync(filePath)) {
+        return {};
+    }
+
+    const env: Record<string, string> = {};
+    const lines = readFileSync(filePath, 'utf-8').split(/\r?\n/);
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+
+        if (!trimmed || trimmed.startsWith('#')) {
+            continue;
+        }
+
+        const equalsIndex = trimmed.indexOf('=');
+
+        if (equalsIndex === -1) {
+            continue;
+        }
+
+        const key = trimmed.slice(0, equalsIndex).trim();
+
+        if (!key) {
+            continue;
+        }
+
+        let value = trimmed.slice(equalsIndex + 1).trim();
+
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+
+        env[key] = value;
+    }
+
+    return env;
+};
+
+const loadScoutsEnv = (): Record<string, string> => {
+    if (existsSync(SCOUTS_ENV_PATH)) {
+        return loadEnvFile(SCOUTS_ENV_PATH);
+    }
+
+    return loadEnvFile(FALLBACK_ENV_PATH);
+};
+
+const scoutsEnv = loadScoutsEnv();
+
+for (const [key, value] of Object.entries(scoutsEnv)) {
+    if (process.env[key] === undefined) {
+        process.env[key] = value;
+    }
+}
 
 const runCommand = (
     cmd: string,
@@ -159,6 +220,14 @@ const configToEnv = (config: Record<string, any>): Record<string, string> => {
 
 const resolveStageEnv = (stage: string): Record<string, string> =>
     configToEnv(resolveStageConfig(stage));
+
+const getEnvFileLabel = (): string => {
+    if (existsSync(SCOUTS_ENV_PATH)) {
+        return `${SCOUTS_ENV_PATH} (.env.scouts preferred)`;
+    }
+
+    return `${FALLBACK_ENV_PATH} (.env fallback)`;
+};
 
 const printResolvedStage = (stage?: string): void => {
     const stages = discoverStages();
@@ -469,6 +538,7 @@ const printHelp = (): void => {
             )} — dev commands default to 'local'.`
         )
     );
+    log.info(dim(`  LCA API env file: ${getEnvFileLabel()}`));
     log.info('');
     log.info(bold('  📱 Native'));
     log.info('');
