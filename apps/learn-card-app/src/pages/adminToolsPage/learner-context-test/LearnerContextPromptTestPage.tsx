@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { FC } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learner-context-prompt-test-page');
@@ -116,6 +116,8 @@ const LearnerContextPromptTestPage: FC = () => {
     const [response, setResponse] = useState<LearnerContextResponse | null>(null);
     const [responseError, setResponseError] = useState<string | null>(null);
 
+    const [formatterTimingMs, setFormatterTimingMs] = useState<number | null>(null);
+    const [isSeeding, setIsSeeding] = useState(false);
     useEffect(() => {
         const savedBackendUrl = localStorage.getItem(LEARNER_CONTEXT_BACKEND_URL_KEY);
         if (savedBackendUrl) setBackendUrl(savedBackendUrl);
@@ -207,6 +209,101 @@ const LearnerContextPromptTestPage: FC = () => {
         presentToast('Cleared all selections.');
     };
 
+    const getBenchmarkUuid = (count: number, index: number) =>
+        `00000000-0000-4000-8000-${String(count).padStart(4, '0')}${String(index).padStart(
+            8,
+            '0'
+        )}`.slice(0, 36);
+
+    const handleSeedBenchmarkCredentials = async (count: number) => {
+        setIsSeeding(true);
+        presentToast(`Seeding ${count} benchmark credentials...`);
+
+        try {
+            const wallet = await initWallet();
+            const did = wallet.id.did();
+            const uploadEncrypted = wallet.store.LearnCloud.uploadEncrypted;
+
+            if (!uploadEncrypted) throw new Error('LearnCloud encrypted upload is unavailable.');
+
+            for (let i = 0; i < count; i += 1) {
+                const title = `Learner Context Benchmark ${count}-${i + 1}`;
+                const role = ['Frontend Engineer', 'Data Analyst', 'Project Lead', 'UX Researcher'][
+                    i % 4
+                ];
+                const skill = [
+                    'TypeScript',
+                    'credential design',
+                    'learner analytics',
+                    'accessibility review',
+                    'systems thinking',
+                ][i % 5];
+                const issuer = `Benchmark Issuer ${(i % 7) + 1}`;
+                const date = `202${i % 5}-${String((i % 12) + 1).padStart(2, '0')}-15`;
+                const description = `${role} evidence for ${skill}. Issuer ${issuer} observed applied practice on ${date}. Evidence includes project delivery, collaboration notes, rubric feedback, and reflective growth text for realistic prompt diversity.`;
+                const id = `learner-context-bench-${count}-${i}`;
+                const uuid = getBenchmarkUuid(count, i);
+                const unsignedCredential = {
+                    '@context': [
+                        'https://www.w3.org/2018/credentials/v1',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+                    ],
+                    id: `urn:uuid:${uuid}`,
+                    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+                    issuer: did,
+                    issuanceDate: date,
+                    name: title,
+                    credentialSubject: {
+                        id: did,
+                        type: ['AchievementSubject'],
+                        achievement: {
+                            id: `urn:uuid:${uuid}`,
+                            type: ['Achievement'],
+                            achievementType: 'ext:Achievement',
+                            criteria: {
+                                narrative: description,
+                            },
+                            description,
+                            name: title,
+                            alignment: [
+                                {
+                                    targetName: skill,
+                                    targetDescription: `${skill} demonstrated through ${role} work.`,
+                                    targetFramework: 'Learner Context Benchmark',
+                                },
+                            ],
+                        },
+                    },
+                    display: {
+                        backgroundImage: '',
+                        backgroundColor: '',
+                    },
+                };
+                const vc = await wallet.invoke.issueCredential(unsignedCredential);
+                const uri = await uploadEncrypted(vc);
+
+                if (!uri) throw new Error('Benchmark credential upload failed.');
+
+                await wallet.index.LearnCloud.remove(id).catch(() => undefined);
+                await wallet.index.LearnCloud.add({
+                    id,
+                    uri,
+                    category: 'Achievement' as CredentialCategory,
+                });
+            }
+
+            presentToast(`Seeded ${count} benchmark credentials.`);
+            await handleSelectAllCategories();
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : 'Failed to seed benchmark credentials.';
+            log.error('Failed to seed benchmark credentials:', error);
+            presentToast(message);
+        } finally {
+            setIsSeeding(false);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!backendUrl.trim()) {
             presentToast('Please enter a backend URL.');
@@ -221,6 +318,7 @@ const LearnerContextPromptTestPage: FC = () => {
         setIsSubmitting(true);
         setResponse(null);
         setResponseError(null);
+        setFormatterTimingMs(null);
 
         try {
             const personalData = parseJsonObject(personalDataJson, 'Personal data');
@@ -232,6 +330,8 @@ const LearnerContextPromptTestPage: FC = () => {
             const endpoint = getLearnerContextEndpoint(backendUrl);
 
             localStorage.setItem(LEARNER_CONTEXT_BACKEND_URL_KEY, backendUrl);
+
+            const formatterStartedAt = performance.now();
 
             const result = await fetch(endpoint, {
                 method: 'POST',
@@ -245,6 +345,8 @@ const LearnerContextPromptTestPage: FC = () => {
                     maxCredentials: credentials.length,
                 }),
             });
+
+            setFormatterTimingMs(performance.now() - formatterStartedAt);
 
             const data = (await result.json().catch(() => null)) as
                 | LearnerContextResponse
@@ -268,6 +370,7 @@ const LearnerContextPromptTestPage: FC = () => {
             const message =
                 error instanceof Error ? error.message : 'Failed to generate learner context.';
             setResponse(null);
+            setFormatterTimingMs(null);
             setResponseError(message);
             presentToast(message);
         } finally {
@@ -391,6 +494,20 @@ const LearnerContextPromptTestPage: FC = () => {
                         </p>
                     </div>
 
+                    <div className="flex flex-wrap gap-[10px]">
+                        {[5, 50, 500].map(count => (
+                            <button
+                                key={count}
+                                type="button"
+                                onClick={() => handleSeedBenchmarkCredentials(count)}
+                                disabled={isSeeding}
+                                className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-[600] font-notoSans text-emerald-700 disabled:opacity-50"
+                            >
+                                {isSeeding ? 'Seeding...' : `Seed ${count} Benchmark Credentials`}
+                            </button>
+                        ))}
+                    </div>
+
                     <div className="grid gap-[12px] md:grid-cols-2 xl:grid-cols-3">
                         {categories.map(category => (
                             <CategorySelectionRow
@@ -431,6 +548,42 @@ const LearnerContextPromptTestPage: FC = () => {
                         {responseError && (
                             <div className="rounded-[16px] border border-red-200 bg-red-50 px-[16px] py-[14px] text-red-700 text-[14px] font-notoSans">
                                 {responseError}
+                            </div>
+                        )}
+                        {response && (
+                            <div className="rounded-[16px] border border-emerald-100 bg-emerald-50 px-[16px] py-[14px] text-[14px] font-notoSans text-grayscale-800">
+                                <div>
+                                    Formatter wall-clock:{' '}
+                                    <strong>
+                                        {formatterTimingMs === null
+                                            ? 'n/a'
+                                            : `${formatterTimingMs.toFixed(1)}ms`}
+                                    </strong>
+                                </div>
+                                <div>
+                                    promptCacheHit:{' '}
+                                    <strong>
+                                        {String(response.metadata?.promptCacheHit ?? 'n/a')}
+                                    </strong>
+                                </div>
+                                <div>
+                                    summaryCacheHits:{' '}
+                                    <strong>
+                                        {String(response.metadata?.summaryCacheHits ?? 'n/a')}
+                                    </strong>
+                                </div>
+                                <div>
+                                    summaryCacheMisses:{' '}
+                                    <strong>
+                                        {String(response.metadata?.summaryCacheMisses ?? 'n/a')}
+                                    </strong>
+                                </div>
+                                <div className="mt-[6px]">
+                                    tokenUsage:{' '}
+                                    <code>
+                                        {JSON.stringify(response.metadata?.tokenUsage ?? null)}
+                                    </code>
+                                </div>
                             </div>
                         )}
 
