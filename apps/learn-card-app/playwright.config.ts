@@ -22,6 +22,9 @@ const config: PlaywrightTestConfig = {
          */
         timeout: 5000,
     },
+    /* The mocked-network tier (playwright.mock.config.ts) owns @mocked tests and
+       runs them without a backend; the real-backend run skips them. */
+    grepInvert: /@mocked/,
     /* Run tests in files in parallel */
     fullyParallel: false,
     /* Fail the build on CI if you accidentally left test.only in the source code. */

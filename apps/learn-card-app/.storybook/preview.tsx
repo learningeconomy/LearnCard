@@ -3,7 +3,11 @@ import type { Preview } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { IonApp, setupIonicReact } from '@ionic/react';
-import { ModalsProvider } from 'learn-card-base';
+import {
+    ModalsProvider,
+    TenantConfigProvider,
+    DEFAULT_LEARNCARD_TENANT_CONFIG,
+} from 'learn-card-base';
 import { Buffer } from 'buffer';
 
 (window as any).Buffer = (window as any).Buffer ?? Buffer;
@@ -51,21 +55,25 @@ const preview: Preview = {
                 IonApp,
                 null,
                 React.createElement(
-                    QueryClientProvider,
-                    { client: queryClient },
+                    TenantConfigProvider,
+                    { config: DEFAULT_LEARNCARD_TENANT_CONFIG },
                     React.createElement(
-                        MemoryRouter,
-                        null,
+                        QueryClientProvider,
+                        { client: queryClient },
                         React.createElement(
-                            ModalsProvider,
+                            MemoryRouter,
                             null,
                             React.createElement(
-                                'div',
-                                {
-                                    className:
-                                        'font-poppins bg-grayscale-100 h-screen overflow-y-auto',
-                                },
-                                React.createElement(Story)
+                                ModalsProvider,
+                                null,
+                                React.createElement(
+                                    'div',
+                                    {
+                                        className:
+                                            'font-poppins bg-grayscale-100 h-screen overflow-y-auto',
+                                    },
+                                    React.createElement(Story)
+                                )
                             )
                         )
                     )

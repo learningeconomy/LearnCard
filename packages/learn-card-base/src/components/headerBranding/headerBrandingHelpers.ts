@@ -56,6 +56,7 @@ export const getLearnCardHeaderBrandingColors = (path: string = '/') => {
         path.includes('/share-boost') ||
         path.includes('/verify/resume') ||
         path.startsWith('/launchpad') ||
+        path === '/issue' ||
         path.includes('/contacts') ||
         path.includes('/skills') ||
         path === '/ai/insights' ||

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('wallet-page');
 
@@ -18,6 +19,7 @@ import {
     useToast,
     ToastTypeEnum,
     useDeviceTypeByWidth,
+    QRCodeScannerStore,
 } from 'learn-card-base';
 
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
@@ -31,6 +33,9 @@ import WalletPageItemWrapper from './WalletPageItemWrapper';
 import { filterPassportCategories } from './passportCategories';
 import PassportActivityFeed from './activity-feed/PassportActivityFeed';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
+import Plus from 'learn-card-base/svgs/Plus';
+import ScanIcon from 'learn-card-base/svgs/ScanIcon';
+import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
@@ -241,6 +246,34 @@ const WalletPage: React.FC = () => {
                                                 <WalletPageViewModeSelector />
                                             </div>
                                         )}
+
+                                        {Capacitor.isNativePlatform() && (
+                                            <button
+                                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                                aria-label="Scan a QR code"
+                                                onClick={() =>
+                                                    QRCodeScannerStore.set.showScanner(true)
+                                                }
+                                            >
+                                                <ScanIcon className="w-5 h-5 text-grayscale-900" />
+                                            </button>
+                                        )}
+                                        <button
+                                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                            aria-label="Add to Passport"
+                                            onClick={() => {
+                                                newModal(
+                                                    <AddToPassportMenu />,
+                                                    { sectionClassName: '!max-w-[500px]' },
+                                                    {
+                                                        desktop: ModalTypes.Center,
+                                                        mobile: ModalTypes.BottomSheet,
+                                                    }
+                                                );
+                                            }}
+                                        >
+                                            <Plus className="w-5 h-5 text-grayscale-900" />
+                                        </button>
                                     </div>
                                 </div>
                             </IonRow>

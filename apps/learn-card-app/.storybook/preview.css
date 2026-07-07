@@ -8,11 +8,36 @@
     font-family: 'Poppins', 'Lucida Sans', Geneva, Verdana, sans-serif;
 }
 
-/* Storybook's fullscreen layout pins the body with position:fixed and clips
-   overflow, so tall stories like DashboardView can't scroll. Unpin it and let
-   the body own the scroll. */
-.sb-main-fullscreen {
+/* The Ionic CSS imported into the preview sets `body { position: fixed;
+   overflow: hidden }`, which pins the story body and clips any content taller
+   than the viewport. Storybook puts its layout class on that same <body>, so we
+   unpin each layout and give the body its own scroll. `position: static` is the
+   load-bearing line — without it Ionic's fixed positioning keeps clipping. */
+.sb-main-fullscreen,
+.sb-main-padded,
+.sb-main-centered {
     position: static !important;
     overflow-y: auto !important;
     height: 100vh !important;
+}
+
+/* Safe centering falls back to top-alignment when content is taller than the
+   viewport, so the top of tall centered stories stays reachable. */
+.sb-main-centered {
+    align-items: safe center !important;
+}
+
+/* Many components animate in with `animate-fade-in-up` (0.5s, starts at
+   opacity:0). Play functions assert immediately, so mid-animation elements read
+   as opacity:0 and fail `toBeVisible()`. The @storybook/test-runner disables
+   animations via test-runner.ts, but Chromatic runs play functions itself and
+   never applies that hook — so the durations must be zeroed here, in the preview
+   CSS that Chromatic actually loads, to keep interaction tests deterministic. */
+*,
+*::before,
+*::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
 }
