@@ -150,6 +150,9 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 deletedUris,
             });
 
+            const didWeb = switchedProfileStore.get.switchedDid();
+            queryClient.invalidateQueries({ queryKey: ['useGetCredentials', didWeb ?? ''] });
+            queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', didWeb ?? ''] });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
 
             await queueAiInsightCredentialRefresh({
