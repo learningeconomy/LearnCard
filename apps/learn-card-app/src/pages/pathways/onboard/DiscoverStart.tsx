@@ -45,7 +45,7 @@ import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
 
 import { IonIcon } from '@ionic/react';
-import { cloudDownloadOutline } from 'ionicons/icons';
+import { cloudDownloadOutline, sparklesOutline } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
@@ -62,6 +62,8 @@ interface DiscoverStartProps {
     onContinueWithGoal: (text: string) => void;
     /** Skip the goal entirely and go straight to scan/suggestions. */
     onSkip: () => void;
+    /** Launch the quick-build wizard (sketch a pathway from scratch). */
+    onQuickBuild: () => void;
 }
 
 /**
@@ -78,6 +80,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
     initialGoal = '',
     onContinueWithGoal,
     onSkip,
+    onQuickBuild,
 }) => {
     const history = useHistory();
     const analytics = useAnalytics();
@@ -168,6 +171,37 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                     </div>
                 </section>
             )}
+
+            <section aria-labelledby="discover-quick-build" className="space-y-3">
+                <SectionLabel id="discover-quick-build">Build one on the fly</SectionLabel>
+
+                <button
+                    type="button"
+                    onClick={onQuickBuild}
+                    disabled={isPicking}
+                    className="w-full text-left p-4 rounded-2xl bg-white border border-grayscale-200
+                               hover:border-grayscale-300 hover:bg-grayscale-10 hover:shadow-md
+                               transition-all duration-150 flex gap-3 items-center group
+                               disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                    <div
+                        aria-hidden
+                        className="shrink-0 w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600
+                                   flex items-center justify-center group-hover:bg-emerald-100 transition-colors"
+                    >
+                        <IonIcon icon={sparklesOutline} className="text-2xl" />
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="text-sm font-semibold text-grayscale-900 leading-tight">
+                            Quick-build a pathway
+                        </div>
+                        <div className="text-xs text-grayscale-600 leading-snug">
+                            Sketch a journey in under a minute — add steps and link real apps.
+                        </div>
+                    </div>
+                </button>
+            </section>
 
             {/*
                 Inline goal capture. Lives here rather than on its

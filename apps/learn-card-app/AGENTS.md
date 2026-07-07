@@ -106,6 +106,20 @@ bunx playwright test wallet-credentials.spec.ts --retries=0
 
 **Config**: `playwright.config.ts` — Firefox only, 120s timeout, 1 worker, `docker compose up` for backend.
 
+### Two E2E tiers
+
+| Tier       | Config                      | Backend                   | Runs                                                                  | Specs                                  |
+| ---------- | --------------------------- | ------------------------- | --------------------------------------------------------------------- | -------------------------------------- |
+| **Real**   | `playwright.config.ts`      | docker                    | gated EC2 job (`test.yml`, changeset-release / dispatch)              | `tests/*.spec.ts` (excludes `@mocked`) |
+| **Mocked** | `playwright.mock.config.ts` | none (vite + HAR + stubs) | every affected PR (`mock-e2e.yml`, `nx run learn-card-app:test-mock`) | `tests/*.mocked.spec.ts`               |
+
+The **mocked tier** replays a recorded HAR for auth/boot + reads — no docker. Prefer it for
+fast, frequently-run coverage of UI logic (gating, form flow, tabs, JSON toggle, error
+paths). Anything that **completes an issuance** (self, person, link) is a real signing +
+multi-service flow and stays in the real tier as the semantic net.
+Commands: `bun test:e2e:mock` (replay), `bun test:e2e:mock:record` (re-record vs docker).
+**Full guide: [`tests/mocks/README.md`](tests/mocks/README.md).**
+
 ### Infrastructure
 
 | Component             | URL                     | Purpose                          |

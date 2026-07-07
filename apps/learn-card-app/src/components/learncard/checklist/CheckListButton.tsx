@@ -20,7 +20,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-type CheckListButtonMode = 'default' | 'inline';
+type CheckListButtonMode = 'default' | 'inline' | 'sidemenu';
 
 export const CheckListButton: React.FC<{ className?: string; mode?: CheckListButtonMode }> = ({
     className = '',
@@ -63,6 +63,58 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     if (!flags?.enableOnboardingChecklist) return null;
 
     const progressBarFill = primaryColor ? `bg-${primaryColor}` : 'bg-emerald-600';
+
+    if (mode === 'sidemenu') {
+        // Theme color family (e.g. `indigo` / `blue`) drives the card tint +
+        // progress track per the LC-1921 colorful/neutral Side Nav variants.
+        // Strip only the trailing shade so multi-word families survive
+        // (e.g. `baltic-blue-500` → `baltic-blue`, not `baltic`).
+        const family = primaryColor?.replace(/-\d+$/, '') || 'indigo';
+
+        return (
+            <div
+                role="button"
+                onClick={handleCheckListButton}
+                className={`flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] bg-${family}-50 ${className}`}
+            >
+                <div className="shrink-0 w-[40px] h-[40px] rounded-[10px] overflow-hidden flex items-center justify-center">
+                    {isParsing ? (
+                        <CustomSpinner className={`w-[30px] h-[30px] text-${primaryColor}`} />
+                    ) : (
+                        <img
+                            src={buildMyLCIcon}
+                            className="w-[40px] h-[40px] object-contain"
+                            alt="blocks"
+                        />
+                    )}
+                </div>
+                <div className="flex flex-col gap-[5px] flex-1 min-w-0">
+                    <div className="flex flex-col">
+                        <span className="text-[16px] font-poppins text-grayscale-900 leading-[normal]">
+                            Build My {brandingConfig.name}
+                        </span>
+                        <span className="text-[12px] font-poppins font-medium text-grayscale-600 leading-[normal]">
+                            {isParsing
+                                ? 'Processing documents...'
+                                : hasPendingReview
+                                ? `${pendingReviewCount} ready for review`
+                                : `${optimizedPercent}% Optimized`}
+                        </span>
+                    </div>
+                    {!isParsing && !hasPendingReview && (
+                        <div
+                            className={`w-full h-[5px] rounded-[10px] overflow-hidden bg-${family}-200`}
+                        >
+                            <div
+                                className={`h-full rounded-[10px] ${progressBarFill}`}
+                                style={{ width: `${Math.max(optimizedPercent, 2)}%` }}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     if (mode === 'inline') {
         return (

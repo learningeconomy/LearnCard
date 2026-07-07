@@ -234,19 +234,21 @@ const pickExpectedArtifactType = (
  * large rounded corners, soft dismiss affordance. Kept local to
  * NodeDetail until another surface wants the same chrome.
  */
-const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({
-    children,
-    onClose,
-}) => (
+const OverlayFrame: React.FC<{
+    children: React.ReactNode;
+    onClose: () => void;
+    hidden?: boolean;
+}> = ({ children, onClose, hidden = false }) => (
     <PathwayPortal>
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
+            className={`${hidden ? 'invisible pointer-events-none' : ''}
+                   fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
                    flex items-start sm:items-center justify-center
-                   p-0 sm:p-6 overflow-y-auto font-poppins"
+                   p-0 sm:p-6 overflow-y-auto font-poppins`}
             style={{ overscrollBehavior: 'contain' }}
             onClick={onClose}
         >
@@ -303,6 +305,12 @@ const NodeDetail: React.FC = () => {
     const isOnline = offlineQueueStore.use.isOnline();
 
     const [completing, setCompleting] = useState(false);
+
+    // Suppress this overlay while a launched app modal (install / iframe
+    // / AI tutor) is open — the overlay is a body-level portal that would
+    // otherwise paint above the modal. Restored on the modal's close so
+    // the learner returns to the node.
+    const [suppressed, setSuppressed] = useState(false);
 
     // Where to send the learner when they dismiss or complete.
     // Defaults to Today for back-compat (direct deep-links and
@@ -594,7 +602,7 @@ const NodeDetail: React.FC = () => {
     const image = node.credentialProjection?.image ?? null;
 
     return (
-        <OverlayFrame onClose={close}>
+        <OverlayFrame onClose={close} hidden={suppressed}>
             <div className="px-6 pt-10 pb-8 space-y-5">
                 {/* -------------------------------------------------- */}
                 {/* Header: title, short context, progress ring         */}
@@ -717,6 +725,8 @@ const NodeDetail: React.FC = () => {
                         listing={listingForNode.listing}
                         isInstalled={listingForNode.isInstalled}
                         isInstalledLoading={listingForNode.isInstalledLoading}
+                        onSuppressHost={() => setSuppressed(true)}
+                        onRestoreHost={() => setSuppressed(false)}
                         onInstallSuccess={() => {
                             // Fire the same analytics event the
                             // LaunchRow emits on dispatch, so the
