@@ -1220,7 +1220,8 @@
       "linkADevice": "Associer un appareil",
       "switchAccount": "Changer de compte",
       "buildMyLearnCard": "Construire mon {{brand}}",
-      "stepsCompleted": "{{completed}} sur {{total}}"
+      "stepsCompleted": "{{completed}} sur {{total}}",
+      "completeProfile": "Compléter le profil"
     }
   },
   "settings": {

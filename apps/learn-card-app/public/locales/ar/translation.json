@@ -1220,7 +1220,8 @@
       "linkADevice": "ربط جهاز",
       "switchAccount": "تبديل الحساب",
       "buildMyLearnCard": "ابنِ {{brand}} الخاص بي",
-      "stepsCompleted": "{{completed}} من {{total}}"
+      "stepsCompleted": "{{completed}} من {{total}}",
+      "completeProfile": "إكمال الملف الشخصي"
     }
   },
   "settings": {

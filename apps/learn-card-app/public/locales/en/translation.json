@@ -1190,7 +1190,8 @@
       "linkADevice": "Link a Device",
       "switchAccount": "Switch Account",
       "buildMyLearnCard": "Build My {{brand}}",
-      "stepsCompleted": "{{completed}} of {{total}}"
+      "stepsCompleted": "{{completed}} of {{total}}",
+      "completeProfile": "Complete Profile"
     },
     "needParentGuardian": "You'll need a parent or guardian to set up a Family Account before you can join.",
     "notifications": "Notifications",
