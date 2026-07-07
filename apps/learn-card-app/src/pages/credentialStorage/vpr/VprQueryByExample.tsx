@@ -240,12 +240,12 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                     }
                                 />
                                 <IonGrid className="max-w-[1000px] min-[1400px]:ml-[65px]">
-                                    <IonRow className="p-0 flex flex-row items-center flex-wrap w-full mobile:mb-60 xl:mb-64 achievements-list-container">
+                                    <IonRow className="p-0 flex flex-row items-center flex-wrap w-full mb-60 xl:mb-64 achievements-list-container">
                                         {renderCredentialList}
                                         <div role="presentation" ref={infiniteScrollRef} />
                                     </IonRow>
                                 </IonGrid>
-                                <footer className="fixed mobile:bottom-0 mobile:w-full lg:bottom-5 lg:right-10 lg:w-[500px] z-9999 bg-white border-t border-grayscale-200 mobile:p-2.5 lg:p-5 lg:rounded-[20px] mobile:shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
+                                <footer className="fixed bottom-0 w-full lg:bottom-5 lg:right-10 lg:w-[500px] z-9999 bg-white border-t border-grayscale-200 p-2.5 lg:p-5 lg:rounded-[20px] shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
                                     <h1 className="text-left text-base text-grayscale-900 font-bold font-poppins mobile:pt-[5px] mobile:pl-[20px]">
                                         {selectedVcs?.length > 1
                                             ? selectedVcs?.length + ' Credentials'
@@ -261,8 +261,8 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                         <button
                                             className={
                                                 selectedVcs?.length === 0
-                                                    ? 'bg-indigo-700 opacity-50 rounded-[40px] text-white font-poppins h-12 mobile:w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                                    : 'bg-indigo-700 rounded-[40px] text-white font-poppins h-12 mobile:w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
+                                                    ? 'bg-indigo-700 opacity-50 rounded-[40px] text-white font-poppins h-12 w-full max-w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
+                                                    : 'bg-indigo-700 rounded-[40px] text-white font-poppins h-12 w-full max-w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
                                             }
                                             onClick={() => presentModal()}
                                             disabled={selectedVcs?.length === 0 ? true : false}
@@ -270,7 +270,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                             REVIEW
                                         </button>
                                         <button
-                                            className="bg-grayscale-700 rounded-[40px] text-white font-poppins h-12 mobile:w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]"
+                                            className="bg-grayscale-700 rounded-[40px] text-white font-poppins h-12 w-full max-w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]"
                                             onClick={reject}
                                         >
                                             QUIT

@@ -66,7 +66,7 @@ const VCToShare: React.FC<{
             const presentation =
                 event?.credentialRequestOptions?.web?.VerifiablePresentation ||
                 verifiablePresentationRequest;
-            const { challenge, domain } = presentation;
+            const { challenge, domain } = presentation ?? {};
 
             try {
                 chapiStore.set.isChapiInteraction(null);
@@ -75,16 +75,7 @@ const VCToShare: React.FC<{
                 log.error(e);
             }
 
-            // TODO: Move this logic into LearnCard - LearnCard should handle presentation flow.
-            const vpToShare = {
-                '@context': [
-                    'https://www.w3.org/2018/credentials/v1',
-                    'https://w3id.org/security/suites/ed25519-2020/v1',
-                ],
-                type: ['VerifiablePresentation'],
-                verifiableCredential: vcsToShare,
-                holder: wallet.id.did(),
-            };
+            const vpToShare = await wallet.invoke.newPresentation(vcsToShare as any);
 
             log.info('✍️ Issuing VP to respond to CHAPI event', vpToShare);
 
@@ -109,7 +100,9 @@ const VCToShare: React.FC<{
             }
             setIsLoading(false);
             handleCloseModal();
-        } catch {
+        } catch (e) {
+            log.error('share.credentials.failed', e);
+            setIsLoading(false);
             setError('Error sharing credential(s). Please try again.');
         }
     };
