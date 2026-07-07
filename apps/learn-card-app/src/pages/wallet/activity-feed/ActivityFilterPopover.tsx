@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ACTIVITY_FILTERS, type ActivityFilterId } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
+import { tFilterLabel } from './activityFeedI18n';
 
 type Props = {
     selected: ActivityFilterId;
@@ -35,7 +37,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({ selected, onApply, onRe
                             }`}
                         >
                             {Icon && <Icon className="h-[18px] w-[18px]" />}
-                            {label}
+                            {tFilterLabel(String(id))}
                         </button>
                     );
                 })}
@@ -49,7 +51,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({ selected, onApply, onRe
                     }}
                     className="flex-1 rounded-full py-[11px] font-poppins text-[15px] font-medium text-grayscale-600"
                 >
-                    Reset
+                    {m['passport.activity.reset']()}
                 </button>
                 <button
                     type="button"
@@ -59,7 +61,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({ selected, onApply, onRe
                         dirty ? 'bg-[#1C2444]' : 'bg-grayscale-300'
                     }`}
                 >
-                    Apply Filter
+                    {m['passport.activity.applyFilter']()}
                 </button>
             </div>
         </div>

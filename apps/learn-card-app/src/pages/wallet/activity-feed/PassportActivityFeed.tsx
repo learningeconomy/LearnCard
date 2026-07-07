@@ -12,6 +12,8 @@ import {
 } from './activityFeed.helpers';
 import { ActivityFeedItem } from './ActivityFeedItem';
 import { ActivityFilterPopover } from './ActivityFilterPopover';
+import * as m from '../../../paraglide/messages.js';
+import { tMonthGroupLabel } from './activityFeedI18n';
 
 export const PassportActivityFeed: React.FC = () => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
@@ -54,7 +56,7 @@ export const PassportActivityFeed: React.FC = () => {
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
-                ACTIVITY
+                {m['passport.activity.heading']()}
             </h3>
             <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm px-[16px] pt-[16px] pb-[8px]">
                 <div className="flex items-center gap-2 mb-4 relative">
@@ -62,10 +64,10 @@ export const PassportActivityFeed: React.FC = () => {
                         <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-grayscale-500" />
                         <input
                             type="search"
-                            aria-label="Search activity"
+                            aria-label={m['passport.activity.searchAria']()}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder="Search..."
+                            placeholder={m['passport.activity.searchPlaceholder']()}
                             className="w-full rounded-[12px] bg-grayscale-100 py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-500 focus:outline-none"
                         />
                     </div>
@@ -74,7 +76,7 @@ export const PassportActivityFeed: React.FC = () => {
                         onClick={() => setFilterOpen(o => !o)}
                         className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] text-[#5457C7]"
                     >
-                        Filter
+                        {m['passport.activity.filter']()}
                         <SortButton className="h-[18px] w-[18px]" />
                     </button>
                     {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
@@ -101,7 +103,7 @@ export const PassportActivityFeed: React.FC = () => {
                     {isError && (
                         <div className="flex-1 flex items-center justify-center">
                             <p className="font-poppins text-[14px] text-rose-600 text-center">
-                                Something went wrong — we couldn’t load your activity.
+                                {m['passport.activity.error']()}
                             </p>
                         </div>
                     )}
@@ -113,7 +115,7 @@ export const PassportActivityFeed: React.FC = () => {
                     {isEmpty && (
                         <div className="flex-1 flex items-center justify-center">
                             <p className="font-poppins text-[14px] text-grayscale-500 text-center">
-                                No activity yet.
+                                {m['passport.activity.empty']()}
                             </p>
                         </div>
                     )}
