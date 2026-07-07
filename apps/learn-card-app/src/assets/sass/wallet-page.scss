@@ -14,7 +14,9 @@
 
     &.grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); // 3 columns for desktop
+        // Responsive: fills as many ~175px columns as fit (4 on wide desktop
+        // per Figma, dropping to 3 then 2 as the container narrows).
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
         gap: 20px;
     }
 
