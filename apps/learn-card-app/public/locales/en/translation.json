@@ -1706,7 +1706,11 @@
         "unfinished": "Unfinished",
         "untitledSession": "Untitled Session",
         "browseTopicsPlaceholder": "Browse topics...",
-        "personalizeMyAi": "Personalize My AI"
+        "personalizeMyAi": "Personalize My AI",
+        "noSessionsForTopicBody": "You don't have any sessions for \"{{topic}}\" yet. Start a new one to begin chatting about this topic.",
+        "completedOn": "<0>Completed</0> on {{date}}",
+        "topicLabel": "Topic",
+        "appLabel": "App"
     },
     "pathways": {
         "addSkill": "Add Skill",
@@ -2250,7 +2254,8 @@
                 "Finalizing everything now...",
                 "AI is crafting your proof...",
                 "Almost there..."
-            ]
+            ],
+            "generatingDetails": "Generating boost details..."
         },
         "template": {
             "custom": "Custom",

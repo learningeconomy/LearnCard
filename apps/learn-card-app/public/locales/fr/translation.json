@@ -1706,7 +1706,11 @@
         "unfinished": "Inachevé",
         "untitledSession": "Session sans titre",
         "browseTopicsPlaceholder": "Parcourir les sujets...",
-        "personalizeMyAi": "Personnaliser mon IA"
+        "personalizeMyAi": "Personnaliser mon IA",
+        "noSessionsForTopicBody": "Vous n’avez pas encore de sessions pour « {{topic}} ». Démarrez-en une nouvelle pour discuter de ce sujet.",
+        "completedOn": "<0>Terminé</0> le {{date}}",
+        "topicLabel": "Sujet",
+        "appLabel": "App"
     },
     "pathways": {
         "title": "Parcours",
@@ -2013,7 +2017,8 @@
                 "Finalisation en cours...",
                 "L'IA élabore votre preuve...",
                 "Presque terminé..."
-            ]
+            ],
+            "generatingDetails": "Génération des détails du boost..."
         },
         "template": {
             "custom": "Personnalisé",
