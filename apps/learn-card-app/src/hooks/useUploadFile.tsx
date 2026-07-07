@@ -80,6 +80,11 @@ const SUCCESS_TOAST_OPTIONS = {
 
 const TOAST_PAUSE_MS = 100;
 
+// Stable, user-facing copy for inline file errors. Raw parser / validation / storage
+// details are logged, never rendered.
+const FRIENDLY_FILE_ERROR =
+    'We could not add that credential. Please check the file and try again.';
+
 export const getFileInfo = (file: File) => {
     const match = file.name.match(/\.([0-9a-z]+)(?=[?#])?|(\.)(?:[\w]+)$/i);
     const extension = match?.[1]?.toLowerCase() ?? 'unknown';
@@ -265,16 +270,19 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
                         // Only surface inline file errors when nothing was added from this
                         // file. On partial success the summary toast already reports failures,
-                        // so avoid double-signaling (inline error box + toast).
-                        if (aggregate.errors.length > 0 && aggregate.addedCount === 0)
-                            onFail?.(aggregate.errors);
+                        // so avoid double-signaling (inline error box + toast). Keep the raw
+                        // reasons in logs; show stable friendly copy in the UI.
+                        if (aggregate.errors.length > 0 && aggregate.addedCount === 0) {
+                            log.error('File VC upload failed', aggregate.errors);
+                            onFail?.([FRIENDLY_FILE_ERROR]);
+                        }
 
                         return entries;
                     } catch (err) {
                         failedTotal += 1;
                         filesWithFailures += 1;
                         log.error('❌ Error processing file:', err);
-                        onFail?.(err instanceof Error ? err.message : String(err));
+                        onFail?.([FRIENDLY_FILE_ERROR]);
                         return [];
                     }
                 })

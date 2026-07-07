@@ -36,6 +36,11 @@ export type RawVCFileType = {
     uri: string;
 };
 
+// Stable, user-facing copy. Raw parser / validation / storage details are logged, never
+// rendered — they can contain JSON parser internals, Zod field paths, or index errors.
+const FRIENDLY_PASTE_ERROR =
+    'We could not add that credential. Please check the text and try again.';
+
 export const CheckListUploadRawVC: React.FC = () => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -152,14 +157,11 @@ export const CheckListUploadRawVC: React.FC = () => {
         loadRawVCs();
     }, []);
 
-    // Validate VC on input change
+    // Validate VC on input change. Show friendly copy only — validateTextVC can return raw
+    // Zod field paths, which shouldn't reach the user.
     useEffect(() => {
         const errors = validateTextVC(rawVcText);
-        if (errors?.length > 0) {
-            setRawTextErrors(errors);
-        } else {
-            setRawTextErrors([]);
-        }
+        setRawTextErrors(errors && errors.length > 0 ? [FRIENDLY_PASTE_ERROR] : []);
     }, [rawVcText]);
 
     const handleAddRawVcText = async () => {
@@ -199,12 +201,13 @@ export const CheckListUploadRawVC: React.FC = () => {
                     }
                 );
             } else {
-                setRawTextErrors(
-                    result?.errors?.length ? result.errors : ['Failed to parse JSON VC.']
-                );
+                // Keep the raw reasons in logs; show stable friendly copy in the UI.
+                log.error('Paste VC upload failed', result?.errors);
+                setRawTextErrors([FRIENDLY_PASTE_ERROR]);
             }
         } catch (error: any) {
-            setRawTextErrors([error.message]);
+            log.error('Paste VC upload threw', error);
+            setRawTextErrors([FRIENDLY_PASTE_ERROR]);
         } finally {
             setIsUploadingRawVC(false);
         }

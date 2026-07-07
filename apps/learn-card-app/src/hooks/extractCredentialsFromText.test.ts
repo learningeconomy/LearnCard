@@ -135,4 +135,48 @@ describe('extractCredentialsFromText', () => {
         expect(credentials).toHaveLength(1);
         expect(credentials[0]).toEqual(arr);
     });
+
+    it('keeps scanning past an earlier non-JSON bracketed block to find a valid credential', () => {
+        const vc = { type: ['VerifiableCredential'], name: 'Later' };
+        // `[wallet export]` is a balanced block that is NOT valid JSON; the valid VC comes after.
+        const messy = `from [wallet export]: ${JSON.stringify(vc)}`;
+
+        const { credentials, errors } = extractCredentialsFromText(messy);
+
+        expect(errors).toEqual([]);
+        expect(credentials).toHaveLength(1);
+        expect(credentials[0].name).toBe('Later');
+    });
+
+    it('keeps scanning past an unbalanced earlier bracket to find a valid credential', () => {
+        const vc = { type: ['VerifiableCredential'], name: 'Survivor' };
+        // The first `[` never closes; the scanner must not get stuck on it.
+        const messy = `note [ unclosed bracket then ${JSON.stringify(vc)}`;
+
+        const { credentials, errors } = extractCredentialsFromText(messy);
+
+        expect(errors).toEqual([]);
+        expect(credentials).toHaveLength(1);
+        expect(credentials[0].name).toBe('Survivor');
+    });
+
+    it('keeps scanning past an empty VP to find a later usable credential', () => {
+        const emptyVp = { type: ['VerifiablePresentation'], verifiableCredential: [] };
+        const vc = { type: ['VerifiableCredential'], name: 'Real' };
+        const messy = `${JSON.stringify(emptyVp)} and also ${JSON.stringify(vc)}`;
+
+        const { credentials, errors } = extractCredentialsFromText(messy);
+
+        expect(errors).toEqual([]);
+        expect(credentials.map(c => c.name)).toEqual(['Real']);
+    });
+
+    it('does not surface raw parser messages in errors', () => {
+        const { credentials, errors } = extractCredentialsFromText('{ not: valid json ]');
+
+        expect(credentials).toEqual([]);
+        // Friendly copy only — no "Unexpected token"/parser internals.
+        expect(errors.join(' ')).not.toMatch(/unexpected|token|position|JSON\.parse/i);
+        expect(errors.length).toBeGreaterThan(0);
+    });
 });
