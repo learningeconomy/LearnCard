@@ -57,37 +57,15 @@ export const useUploadVcFromText = () => {
         return false;
     };
 
-    const validateTextVC = (vcText: string) => {
-        if (!vcText) return undefined;
+    // Validate a single, already-parsed credential object directly. Does NOT re-extract —
+    // callers that hold an object (extracted from a VP, or a bare VC) must use this so a
+    // nested `verifiableCredential` field can't cause the object's children to be validated
+    // in place of the object itself.
+    const validateCredentialObject = (parsed: any): string[] | undefined => {
+        if (isOpenBadgeV2(parsed)) return undefined;
 
-        let rawCredential: any;
-        if (typeof vcText === 'string') {
-            rawCredential = vcText;
-        } else if (typeof vcText === 'object') {
-            rawCredential = JSON.stringify(vcText);
-        }
-
-        // Resilient extraction first — handles VPs, wrapped VCs, and JSON-in-text.
-        const { credentials, errors: extractionErrors } = extractCredentialsFromText(rawCredential);
-        if (credentials.length === 0) {
-            return extractionErrors.length ? extractionErrors : ['Could not parse credential.'];
-        }
-
-        // A VP (or any multi-credential input) is valid as long as one candidate validates.
-        for (const parsed of credentials) {
-            if (isOpenBadgeV2(parsed)) return undefined;
-
-            try {
-                const vcValidation = VCValidator.safeParse(parsed);
-                if (!vcValidation.error) return undefined;
-            } catch {
-                // fall through to try the next candidate
-            }
-        }
-
-        // None validated — surface the first candidate's field errors for a useful message.
         try {
-            const vcValidation = VCValidator.safeParse(credentials[0]);
+            const vcValidation = VCValidator.safeParse(parsed);
             if (vcValidation.error) {
                 const flattened = vcValidation.error.flatten();
                 const fieldErrors = Object.entries(flattened.fieldErrors).flatMap(([field, errs]) =>
@@ -102,6 +80,28 @@ export const useUploadVcFromText = () => {
         }
 
         return undefined;
+    };
+
+    // Validate raw text/paste input for the live paste-box feedback. Extracts candidates
+    // (unwrapping a VP) and treats the input as valid when at least one candidate validates.
+    const validateTextVC = (vcText: string) => {
+        if (!vcText) return undefined;
+
+        const rawCredential = typeof vcText === 'string' ? vcText : JSON.stringify(vcText);
+
+        // Resilient extraction first — handles VPs, wrapped VCs, and JSON-in-text.
+        const { credentials, errors: extractionErrors } = extractCredentialsFromText(rawCredential);
+        if (credentials.length === 0) {
+            return extractionErrors.length ? extractionErrors : ['Could not parse credential.'];
+        }
+
+        // A VP (or any multi-credential input) is valid as long as one candidate validates.
+        for (const parsed of credentials) {
+            if (!validateCredentialObject(parsed)) return undefined;
+        }
+
+        // None validated — surface the first candidate's errors for a useful message.
+        return validateCredentialObject(credentials[0]) ?? ['Invalid credential.'];
     };
 
     const uploadSingleCredential = async (
@@ -149,7 +149,7 @@ export const useUploadVcFromText = () => {
         }
 
         try {
-            const errors = validateTextVC(parsed);
+            const errors = validateCredentialObject(parsed);
             if (errors) {
                 return {
                     success: false,
@@ -274,7 +274,7 @@ export const useUploadVcFromText = () => {
                 rawCredential = input; // already parsed
             }
 
-            const errors = validateTextVC(rawCredential);
+            const errors = validateCredentialObject(rawCredential);
             if (errors) {
                 return {
                     success: false,

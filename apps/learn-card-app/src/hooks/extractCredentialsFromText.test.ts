@@ -101,4 +101,38 @@ describe('extractCredentialsFromText', () => {
         expect(credentials).toEqual([]);
         expect(errors.length).toBeGreaterThan(0);
     });
+
+    it('substring-scans a VP-in-prose whose verifiableCredential is a nested array of objects', () => {
+        const vpObject = {
+            type: ['VerifiablePresentation'],
+            verifiableCredential: [
+                { type: ['VerifiableCredential'], name: 'One', nested: { arr: [1, 2, 3] } },
+                { type: ['VerifiableCredential'], name: 'Two' },
+            ],
+        };
+        // Leading prose forces JSON.parse to fail, exercising findFirstJsonBlock over a
+        // `{…}` block that contains nested `[…]` and `{…}`.
+        const messy = `Please import these:\n${JSON.stringify(vpObject)}\n-- end --`;
+
+        const { credentials, errors } = extractCredentialsFromText(messy);
+
+        expect(errors).toEqual([]);
+        expect(credentials.map(c => c.name)).toEqual(['One', 'Two']);
+    });
+
+    it('substring-scans a top-level array containing objects without truncating', () => {
+        const arr = [
+            { type: ['VerifiableCredential'], name: 'A' },
+            { type: ['VerifiableCredential'], name: 'B' },
+        ];
+        const messy = `header text ${JSON.stringify(arr)} footer`;
+
+        const { credentials, errors } = extractCredentialsFromText(messy);
+
+        // A `}` inside an object must NOT decrement the depth of the top-level `[`; the
+        // scan must capture the FULL array rather than a truncated substring.
+        expect(errors).toEqual([]);
+        expect(credentials).toHaveLength(1);
+        expect(credentials[0]).toEqual(arr);
+    });
 });

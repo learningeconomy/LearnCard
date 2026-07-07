@@ -263,7 +263,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                                 };
                             });
 
-                        if (aggregate.errors.length > 0) onFail?.(aggregate.errors);
+                        // Only surface inline file errors when nothing was added from this
+                        // file. On partial success the summary toast already reports failures,
+                        // so avoid double-signaling (inline error box + toast).
+                        if (aggregate.errors.length > 0 && aggregate.addedCount === 0)
+                            onFail?.(aggregate.errors);
 
                         return entries;
                     } catch (err) {
