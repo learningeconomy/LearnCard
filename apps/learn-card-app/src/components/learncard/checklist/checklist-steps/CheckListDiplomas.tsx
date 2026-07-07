@@ -22,6 +22,7 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type DiplomaType = {
     id: string;
@@ -29,6 +30,15 @@ export type DiplomaType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type DiplomaCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListDiplomas: React.FC = () => {
@@ -79,7 +89,7 @@ export const CheckListDiplomas: React.FC = () => {
                 return;
             }
 
-            const diplomaCredentials = await Promise.all(
+            const diplomaCredentials: DiplomaCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -88,11 +98,11 @@ export const CheckListDiplomas: React.FC = () => {
                 })
             );
 
-            const _diplomas = diplomaCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _diplomas = diplomaCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Diploma,
             }));
 
@@ -116,11 +126,11 @@ export const CheckListDiplomas: React.FC = () => {
             try {
                 const wallet = await initWallet();
                 const record = await wallet.index.LearnCloud.get({ id });
-                const targetRecord = record?.[0];
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
 
-                await deleteCredentialRecord(targetRecord as any);
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteDiploma::error', error);

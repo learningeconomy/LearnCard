@@ -182,6 +182,13 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         demoSchoolStatus === 'disconnecting' ||
         demoSchoolStatus === 'deleting';
 
+    const getDemoSchoolButtonClassName = (): string => {
+        if (isDeleteLoading) return 'bg-red-500';
+        if (isSyncLoading) return `bg-${primaryColor}`;
+
+        return hasConsented ? 'bg-rose-500' : `bg-${primaryColor}`;
+    };
+
     return (
         <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
             <div className="flex flex-col gap-[5px]">
@@ -196,15 +203,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             </div>
 
             <button
-                className={`py-[7px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px] ${
-                    isSyncLoading || isDeleteLoading
-                        ? isDeleteLoading
-                            ? 'bg-red-500'
-                            : `bg-${primaryColor}`
-                        : hasConsented
-                        ? 'bg-rose-500'
-                        : `bg-${primaryColor}`
-                }`}
+                className={`py-[7px] px-[20px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full flex gap-[10px] items-center justify-center disabled:opacity-60 max-w-[650px] ${getDemoSchoolButtonClassName()}`}
                 onClick={hasConsented ? handleEndDemoClick : handleStartDemoClick}
                 disabled={
                     isSyncLoading || isDeleteLoading || (hasConsented && !contractCredentialsExist)

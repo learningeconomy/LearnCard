@@ -22,6 +22,7 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type CertType = {
     id: string;
@@ -29,6 +30,15 @@ export type CertType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type CertificateCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListCerts: React.FC = () => {
@@ -79,7 +89,7 @@ export const CheckListCerts: React.FC = () => {
                 return;
             }
 
-            const certCredentials = await Promise.all(
+            const certCredentials: CertificateCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -88,11 +98,11 @@ export const CheckListCerts: React.FC = () => {
                 })
             );
 
-            const _certs = certCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _certs = certCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Certificate,
             }));
 
@@ -116,11 +126,11 @@ export const CheckListCerts: React.FC = () => {
             try {
                 const wallet = await initWallet();
                 const record = await wallet.index.LearnCloud.get({ id });
-                const targetRecord = record?.[0];
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
 
-                await deleteCredentialRecord(targetRecord as any);
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('Failed to delete certificate', error);

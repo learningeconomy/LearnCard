@@ -25,6 +25,7 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type ResumeType = {
     id: string;
@@ -158,11 +159,11 @@ export const CheckListUploadResume: React.FC = () => {
                 const record = await wallet.index.LearnCloud.get({
                     category: UploadTypesEnum.Resume,
                 });
-                const targetRecord = record?.[0];
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
 
-                await deleteCredentialRecord(targetRecord as any);
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);

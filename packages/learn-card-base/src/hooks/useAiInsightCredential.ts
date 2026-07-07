@@ -54,6 +54,19 @@ const clearAiInsightCredentialQueryData = (queryClient: QueryClient) => {
     queryClient.setQueryData(existingAiInsightCredentialQueryKey, null);
 };
 
+const syncAiInsightCredentialQueryData = (
+    queryClient: QueryClient,
+    aiInsightCredential: VC | null
+) => {
+    if (aiInsightCredential) {
+        queryClient.setQueryData(queryKey, aiInsightCredential);
+        queryClient.setQueryData(existingAiInsightCredentialQueryKey, aiInsightCredential);
+        return;
+    }
+
+    clearAiInsightCredentialQueryData(queryClient);
+};
+
 const clearAiInsightCredentialFromWallet = async (wallet: BespokeLearnCard): Promise<void> => {
     const existingRecords = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
     const existingRecord = existingRecords?.[0];
@@ -233,7 +246,13 @@ export const createAiInsightCredential = async (
     const inFlightCreation = inFlightAiInsightCreations.get(inFlightKey);
 
     if (inFlightCreation) {
-        return inFlightCreation;
+        if (!queryClient) return inFlightCreation;
+
+        return inFlightCreation.then(aiInsightCredential => {
+            syncAiInsightCredentialQueryData(queryClient, aiInsightCredential);
+
+            return aiInsightCredential;
+        });
     }
 
     const creation = createAiInsightCredentialInternal(wallet, queryClient).finally(() => {

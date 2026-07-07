@@ -24,6 +24,7 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type TranscriptType = {
     id: string;
@@ -31,6 +32,15 @@ export type TranscriptType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type TranscriptCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListTranscripts: React.FC = () => {
@@ -132,7 +142,7 @@ export const CheckListTranscripts: React.FC = () => {
                 return;
             }
 
-            const transcriptsCredentials = await Promise.all(
+            const transcriptsCredentials: TranscriptCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -141,11 +151,11 @@ export const CheckListTranscripts: React.FC = () => {
                 })
             );
 
-            const _transcripts = transcriptsCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _transcripts = transcriptsCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Transcript,
             }));
 
@@ -169,11 +179,11 @@ export const CheckListTranscripts: React.FC = () => {
             try {
                 const wallet = await initWallet();
                 const record = await wallet.index.LearnCloud.get({ id });
-                const targetRecord = record?.[0];
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
 
-                await deleteCredentialRecord(targetRecord as any);
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteTranscript::error', error);

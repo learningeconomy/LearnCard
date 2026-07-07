@@ -177,7 +177,6 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
 
         if (saveResults.some(Boolean)) {
             void (async () => {
-                console.log('[ConsentSync] My Skills Profile saved, triggering full wallet resync');
                 await syncAllCredentialsToContracts.mutateAsync();
 
                 try {
