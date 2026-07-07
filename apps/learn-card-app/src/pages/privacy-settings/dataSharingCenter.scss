@@ -1,0 +1,84 @@
+ion-content.ds-content {
+    --background: linear-gradient(165deg, #f1fbf6 0%, #f5f8ff 48%, #f9f6ff 100%);
+}
+
+.ds-aurora {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.ds-aurora__blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(100px);
+    opacity: 0.4;
+    will-change: transform;
+}
+
+.ds-aurora__blob--emerald {
+    width: 520px;
+    height: 520px;
+    top: -160px;
+    left: -120px;
+    background: #6ee7b7;
+    animation: ds-drift-1 22s ease-in-out infinite alternate;
+}
+
+.ds-aurora__blob--sky {
+    width: 460px;
+    height: 460px;
+    top: 18%;
+    right: -180px;
+    background: #7dd3fc;
+    animation: ds-drift-2 26s ease-in-out infinite alternate;
+}
+
+.ds-aurora__blob--violet {
+    width: 420px;
+    height: 420px;
+    bottom: -180px;
+    left: 28%;
+    background: #c4b5fd;
+    animation: ds-drift-3 30s ease-in-out infinite alternate;
+}
+
+@keyframes ds-drift-1 {
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+    to {
+        transform: translate(60px, 40px) scale(1.12);
+    }
+}
+
+@keyframes ds-drift-2 {
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+    to {
+        transform: translate(-50px, 60px) scale(1.06);
+    }
+}
+
+@keyframes ds-drift-3 {
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+    to {
+        transform: translate(40px, -50px) scale(1.14);
+    }
+}
+
+ion-toggle.ds-toggle {
+    --track-background: #e2e3e9;
+    --track-background-checked: #00ba88;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ds-aurora__blob {
+        animation: none !important;
+    }
+}

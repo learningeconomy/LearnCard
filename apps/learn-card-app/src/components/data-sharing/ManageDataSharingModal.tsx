@@ -215,19 +215,31 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
     );
 };
 
-type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
+export type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
 
 type ConsentedContractRowProps = {
     contract: ConsentedContract;
     onUpdate?: () => Promise<unknown> | void;
 };
 
-const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, onUpdate }) => {
+export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
+    contract,
+    onUpdate,
+}) => {
     const { newModal, closeModal } = useModal();
     // Contract details are already in the record
     const contractDetails = contract.contract;
 
     const handleOpenDetails = () => {
+        void (async () => {
+            try {
+                const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+                await Haptics.impact({ style: ImpactStyle.Light });
+            } catch (e) {
+                log.debug('haptics unavailable', e);
+            }
+        })();
+
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
             {
@@ -246,7 +258,7 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     return (
         <button
             onClick={handleOpenDetails}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-grayscale-10 transition-colors text-left w-full"
+            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
         >
             {image ? (
                 <img src={image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
@@ -271,7 +283,7 @@ type ContractDetailViewProps = {
     onUpdate?: () => Promise<unknown> | void;
 };
 
-const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
+export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
     const contractDetails = contract.contract;
     const { closeModal, newModal } = useModal();
     const { initWallet } = useWallet();
