@@ -827,7 +827,6 @@ export const useSyncConsentFlow = (enabled = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     const queryClient = useQueryClient();
-    const processingRef = useRef(false);
     const processingPromiseRef = useRef<Promise<void> | null>(null);
 
     const syncContracts = useSyncConsentContractsMutation();
@@ -904,6 +903,10 @@ export const useSyncConsentFlow = (enabled = true) => {
             if (!processingPromiseRef.current && allRecords.length > 0) {
                 processingPromiseRef.current = (async () => {
                     try {
+                        // Invariant: this queryFn can refetch on mount/focus, but the
+                        // credential claim below makes the accept/store + sync chain
+                        // single-flight across hook instances. Keep the global claim and
+                        // this in-flight promise guard together if this flow is refactored.
                         // First, atomically claim any unclaimed credentials
                         const claimedRecords: ConsentRecord[] = [];
                         for (const record of allRecords) {
@@ -958,7 +961,8 @@ export const useSyncConsentFlow = (enabled = true) => {
                             throw error;
                         }
                     } finally {
-                        processingRef.current = false;
+                        // The query refetches can overlap, so the promise guard is the
+                        // only local completion signal we keep around here.
                     }
                 })().finally(() => {
                     processingPromiseRef.current = null;
@@ -966,7 +970,6 @@ export const useSyncConsentFlow = (enabled = true) => {
             }
 
             if (processingPromiseRef.current) {
-                processingRef.current = true;
                 await processingPromiseRef.current;
             }
 
