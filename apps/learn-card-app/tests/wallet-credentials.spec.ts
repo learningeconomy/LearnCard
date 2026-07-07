@@ -23,14 +23,22 @@ test.describe('Wallet Credentials', () => {
     test('Issue credential to yourself', async ({ page }) => {
         await issueCredentialToSelf(page);
 
-        // issueCredentialToSelf drives the boost flow from /launchpad. Navigate to
-        // the wallet with a hard load (not a soft nav): BoostCMS registers a
-        // history.block() "Leave This Page?" guard that intercepts React Router
-        // navigation and flakily blocks a nav-link click, but a full page load
-        // bypasses it. The self-issued credential is persisted, so it appears
-        // after the reload. /passport, /wallet and /home all render WalletPage.
-        await page.goto('/wallet');
-        await page.waitForURL(/\/wallet/, { timeout: 30_000 });
+        // Navigate to the Passport with a SOFT nav (nav-link click, not
+        // page.goto): a self-boost is added optimistically to the in-memory
+        // wallet cache but is not yet persisted to the backend, so a hard reload
+        // refetches an empty category. issueCredentialToSelf issues without a
+        // publish step, so BoostCMS keeps its history.block() "Leave This Page?"
+        // guard active — confirm it via "Leave Page" if it appears, which also
+        // unblocks the later soft navigations (Badges -> socialBadges -> detail).
+        await page.getByRole('link', { name: 'Passport', exact: true }).click();
+        const leavePageButton = page.getByRole('button', { name: 'Leave Page' });
+        try {
+            await leavePageButton.waitFor({ state: 'visible', timeout: 5_000 });
+            await leavePageButton.click();
+        } catch {
+            // The guard didn't appear (no unsaved changes) — the soft nav proceeded.
+        }
+        await page.waitForURL(/\/(passport|wallet|home)/, { timeout: 30_000 });
 
         // Verify the Badges (social badge) category exists on the passport page.
         // The LC-1919 Passport reorg renamed the "Boosts" category to "Badges".
