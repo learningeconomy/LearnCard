@@ -312,11 +312,11 @@ const pickPlatform = async (): Promise<Platform> => {
 };
 
 const startAppOnly = (stage?: string): void => {
-    const stageId = stage ?? 'local';
+    const stageId = stage ?? 'production';
 
     runCommand(
-        'bun run docker-start',
-        `Starting Scouts app only (env: ${stageId})`,
+        'vite --host',
+        `Starting Scouts frontend only (env: ${stageId})`,
         'bun run lc start',
         APP_ROOT,
         resolveStageEnv(stageId)
@@ -358,15 +358,16 @@ const startDev = async (devMode?: DevMode, noBuild?: boolean, stage?: string): P
         noBuild = buildAnswer.trim().toLowerCase() === 'n';
     }
 
-    // Dev flows default to the local stage — its env matches the docker stack.
-    // Pass a stage arg (e.g. `bun run lc dev app production`) to point elsewhere.
-    const stageId = stage ?? 'local';
+    // Full-stack and services flows default to the local stage — its env matches the docker stack.
+    // Frontend-only flows default to production so they point at the live backend by default.
+    // Pass a stage arg (e.g. `bun run lc dev app local`) to point elsewhere.
+    const stageId = stage ?? (devMode === 'app' ? 'production' : 'local');
     const stageEnv = resolveStageEnv(stageId);
 
     if (devMode === 'app') {
         runCommand(
-            'bun run docker-start',
-            `Starting Scouts app only (env: ${stageId})`,
+            'vite --host',
+            `Starting Scouts frontend only (env: ${stageId})`,
             'bun run lc dev app',
             APP_ROOT,
             stageEnv
@@ -511,7 +512,11 @@ const printHelp = (): void => {
             'Interactive dev launcher'
         )}`
     );
-    log.info(`  ${cyan('bun run lc start [stage]')}                ${dim('Vite dev server only')}`);
+    log.info(
+        `  ${cyan('bun run lc start [stage]')}                ${dim(
+            'Frontend only (production by default)'
+        )}`
+    );
     log.info(`  ${cyan('bun run lc services')}                     ${dim('Docker services only')}`);
     log.info(
         `  ${cyan('bun run lc docker-start [stage]')}         ${dim(
@@ -535,7 +540,7 @@ const printHelp = (): void => {
         dim(
             `  Currently available: ${discoverStages().join(
                 ', '
-            )} — dev commands default to 'local'.`
+            )} — full-stack dev defaults to 'local', while frontend-only start defaults to 'production'.`
         )
     );
     log.info(dim(`  LCA API env file: ${getEnvFileLabel()}`));
@@ -608,15 +613,9 @@ const handleShortcuts = async (): Promise<boolean> => {
             return true;
 
         case 'start': {
-            const stageId = asStage(args[1]) ?? 'local';
+            const stageId = asStage(args[1]);
 
-            runCommand(
-                'bun run start',
-                `Starting Scouts app only (env: ${stageId})`,
-                'bun run lc start',
-                APP_ROOT,
-                resolveStageEnv(stageId)
-            );
+            startAppOnly(stageId);
             return true;
         }
 
@@ -711,7 +710,7 @@ const main = async (): Promise<void> => {
     log.info('');
     log.info(bold('🛡️ Scouts Developer Tools'));
     log.info('');
-    log.info(`  ${cyan('1')}  ${bold('Dev server')}        ${dim('— app only')}`);
+    log.info(`  ${cyan('1')}  ${bold('Dev server')}        ${dim('— frontend only')}`);
     log.info(`  ${cyan('2')}  ${bold('Docker dev')}        ${dim('— full stack')}`);
     log.info(`  ${cyan('3')}  ${bold('Docker services')}   ${dim('— backend services only')}`);
     log.info(`  ${cyan('4')}  ${bold('Native menu')}       ${dim('— sync, open, run, package')}`);
