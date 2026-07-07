@@ -42,9 +42,10 @@
 -   Rewrite `apps/learn-card-app/src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity.ts` — react-query `useInfiniteQuery` (A4).
 -   Modify `apps/learn-card-app/src/components/issuances/IssuanceList.tsx` + `IssuanceDetailModal.tsx` — remove `onActionComplete`/`refreshKey` plumbing (A4).
 -   Modify `apps/learn-card-app/src/components/issuances/IssuancesSummary.tsx` — show revoked/suspended counts (A3 FE).
--   New `apps/learn-card-app/src/components/credential-status/CredentialStatusBadge.tsx` — seal-badge variant (`active | revoked | suspended`) (B3).
--   Modify holder credential card (`BoostEarnedCard.tsx` / issuer row) + wallet Earned-tab render (B2 + B3 + B4).
--   New/modify `apps/learn-card-app/src/stores/autoVerifyStore.ts` consumers — lazy per-card status hook (B2).
+-   New `packages/learn-card-base/src/components/CredentialBadge/CredentialStatusSealIcon.tsx` — red/orange X seal icon (B3).
+-   Modify shared card chain — `CredentialVerificationDisplay.tsx`, `BoostGenericCardWrapper.tsx` (learn-card-base) + `BoostGenericCard.tsx`, `types.ts` (react-learn-card) — additive `lifecycleStatus` prop: badge swap + pill + desaturation (B3).
+-   New `apps/learn-card-app/src/hooks/useCredentialStatus.ts` — lazy per-card status via react-query keyed by URI (B2). (The spec named `autoVerifyStore`, but that store is only a success tick — react-query is the actual cache.)
+-   Modify `apps/learn-card-app/.../BoostEarnedCard.tsx` — compute + pass `lifecycleStatus` (B2/B3). Earned-tab render (`BoostEarnedList.tsx`) needs no status filter (B4).
 
 > **Execution order:** Tasks 1–4 are backend (A1, A2, A3, B1). Tasks 5–6 are the issuer-side frontend (A4 react-query migration, A3 summary). Tasks 7–9 are the holder-side frontend (B3 shared-card treatment, B2 lazy status, B4 earned-tab confirmation). Backend and frontend commit groups are separable into coordinated PRs.
 
