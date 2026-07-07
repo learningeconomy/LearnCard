@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('v-c-to-share');
 
-import { IonHeader, IonRow, IonCol, IonGrid, IonPage } from '@ionic/react';
+import { IonRow, IonPage } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostEarnedCard from 'apps/learn-card-app/src/components/boost/boost-earned-card/BoostEarnedCard';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -107,31 +107,94 @@ const VCToShare: React.FC<{
         }
     };
 
+    const selectedCount = vcsToShare?.length ?? 0;
+
     return (
         <IonPage>
-            <IonRow className="bg-grayscale-100 m-auto flex mobile:w-[85%] md:w-[509px] lg:w-[724px] h-5/6 rounded-3xl overflow-auto">
-                <IonHeader className="bg-white flex items-center justify-between mobile:px-5 mobile:py-2.5 md:px-10 md:py-5">
-                    <button
-                        className="flex items-center justify-center font-poppins text-grayscale-900 text-xl m-1.5"
-                        onClick={() => handleCloseModal()}
-                    >
-                        <CaretLeft className="h-auto w-3 mr-5" />
-                        Review
-                    </button>
-                    <button
-                        className="bg-grayscale-900 rounded-[20px] text-white font-poppins font-medium h-10 px-6 text-sm m-1.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                        onClick={accept}
-                        disabled={vcsToShare.length === 0 || (isLoading && !error)}
-                    >
-                        {isLoading && !error ? 'SHARING...' : 'SHARE'}
-                    </button>
-                </IonHeader>
-                <IonGrid>
-                    {error && <p className="text-center text-rose-600 text-lg">{error}</p>}
-                    <div className="flex flex-row flex-wrap items-start justify-center gap-4 mb-48 w-full achievements-list-container [&>ion-col]:!w-[220px] [&>ion-col]:!max-w-[220px] [&>ion-col]:!flex-none [&>ion-col]:!p-0">
-                        {renderCredentialList}
+            <IonRow className="bg-grayscale-100 m-auto flex flex-col mobile:w-[85%] md:w-[509px] lg:w-[724px] h-5/6 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)] rounded-3xl overflow-hidden font-poppins">
+                <header className="shrink-0 bg-white flex items-center justify-between gap-3 px-6 py-4 border-b border-grayscale-200">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            type="button"
+                            aria-label="Go back"
+                            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full hover:bg-grayscale-10 transition-colors"
+                            onClick={() => handleCloseModal()}
+                        >
+                            <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                        </button>
+                        <div className="text-left min-w-0">
+                            <h1 className="text-xl font-semibold text-grayscale-900 leading-tight">
+                                Review
+                            </h1>
+                            <p className="text-xs text-grayscale-500 mt-0.5 truncate">
+                                {selectedCount === 0
+                                    ? 'No credentials selected'
+                                    : `Sharing ${selectedCount} credential${
+                                          selectedCount === 1 ? '' : 's'
+                                      }`}
+                            </p>
+                        </div>
                     </div>
-                </IonGrid>
+                    <button
+                        className="shrink-0 bg-grayscale-900 rounded-[20px] text-white font-medium h-10 px-6 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                        onClick={accept}
+                        disabled={selectedCount === 0 || (isLoading && !error)}
+                    >
+                        {isLoading && !error ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Sharing...
+                            </span>
+                        ) : (
+                            'SHARE'
+                        )}
+                    </button>
+                </header>
+
+                <div className="flex-1 overflow-auto px-4 py-5">
+                    {error && (
+                        <div className="mb-5 mx-auto max-w-[420px] p-3 bg-red-50 border border-red-100 rounded-2xl">
+                            <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+                        </div>
+                    )}
+
+                    {selectedCount === 0 ? (
+                        <div className="flex flex-col items-center justify-center text-center px-6 py-16">
+                            <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mb-4">
+                                <svg
+                                    className="w-8 h-8 text-grayscale-400"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.75"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <rect x="3" y="4" width="18" height="16" rx="3" />
+                                    <path d="M3 9h18" />
+                                    <path d="M8 14h5" />
+                                </svg>
+                            </div>
+                            <h2 className="text-base font-semibold text-grayscale-900">
+                                No credentials selected
+                            </h2>
+                            <p className="text-sm text-grayscale-500 mt-1 max-w-[260px]">
+                                Go back and choose the credentials you'd like to share.
+                            </p>
+                            <button
+                                type="button"
+                                className="mt-5 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                onClick={() => handleCloseModal()}
+                            >
+                                Back to Selection
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-row flex-wrap items-start justify-center gap-4 pb-6 w-full achievements-list-container [&>ion-col]:!w-[220px] [&>ion-col]:!max-w-[220px] [&>ion-col]:!flex-none [&>ion-col]:!p-0">
+                            {renderCredentialList}
+                        </div>
+                    )}
+                </div>
             </IonRow>
         </IonPage>
     );

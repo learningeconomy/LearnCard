@@ -256,33 +256,38 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                         <div role="presentation" ref={infiniteScrollRef} />
                                     </IonRow>
                                 </IonGrid>
-                                <footer className="fixed bottom-0 w-full lg:bottom-5 lg:right-10 lg:w-[500px] z-9999 bg-white border-t border-grayscale-200 p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] lg:p-5 lg:pb-5 lg:rounded-[20px] shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
-                                    <h1 className="text-left text-base text-grayscale-900 font-bold font-poppins mobile:pt-[5px] mobile:pl-[20px]">
-                                        {selectedVcs?.length > 1
-                                            ? selectedVcs?.length + ' Credentials'
-                                            : selectedVcs?.length + ' Credential'}{' '}
-                                        Selected
-                                    </h1>
-                                    {credentialQuery.length === 0 || hasSuggested ? (
-                                        <></>
-                                    ) : (
-                                        <span>Loading credential suggestions...</span>
-                                    )}
-                                    <section className="flex items-center justify-evenly flex-wrap mt-5">
-                                        <button
-                                            className="bg-grayscale-900 rounded-[20px] text-white font-poppins font-medium h-12 w-full max-w-[300px] lg:w-[200px] text-base m-1.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                                            onClick={() => presentModal()}
-                                            disabled={selectedVcs?.length === 0 ? true : false}
-                                        >
-                                            REVIEW
-                                        </button>
-                                        <button
-                                            className="bg-white border border-grayscale-300 rounded-[20px] text-grayscale-700 font-poppins font-medium h-12 w-full max-w-[300px] lg:w-[200px] text-base m-1.5 hover:bg-grayscale-10 transition-colors"
-                                            onClick={reject}
-                                        >
-                                            QUIT
-                                        </button>
-                                    </section>
+                                <footer className="fixed bottom-0 w-full lg:bottom-5 lg:right-10 lg:w-[520px] z-9999 bg-white border-t border-grayscale-200 lg:border lg:rounded-[20px] shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] font-poppins">
+                                    <div className="mx-auto w-full max-w-[720px] px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="text-center sm:text-left">
+                                            <p className="text-sm font-medium text-grayscale-700">
+                                                {selectedVcs?.length}{' '}
+                                                {selectedVcs?.length === 1
+                                                    ? 'credential'
+                                                    : 'credentials'}{' '}
+                                                selected
+                                            </p>
+                                            {credentialQuery.length > 0 && !hasSuggested && (
+                                                <p className="text-xs text-grayscale-500 mt-0.5">
+                                                    Loading suggestions...
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                            <button
+                                                className="flex-1 sm:flex-none sm:w-[130px] h-12 rounded-[20px] bg-white border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                                onClick={reject}
+                                            >
+                                                Quit
+                                            </button>
+                                            <button
+                                                className="flex-1 sm:flex-none sm:w-[180px] h-12 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                                onClick={() => presentModal()}
+                                                disabled={selectedVcs?.length === 0 ? true : false}
+                                            >
+                                                Review
+                                            </button>
+                                        </div>
+                                    </div>
                                 </footer>
                             </div>
                         )}
