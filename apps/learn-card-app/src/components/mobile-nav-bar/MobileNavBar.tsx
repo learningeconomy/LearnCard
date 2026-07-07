@@ -30,6 +30,7 @@ import { IconSetEnum, NavbarIcons } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 
 import * as m from '../../paraglide/messages.js';
+import { getNavBarLinkLabel } from './mobileNavBarI18n';
 
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',
@@ -131,7 +132,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
@@ -190,7 +191,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
