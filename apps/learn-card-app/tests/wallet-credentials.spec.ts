@@ -23,13 +23,14 @@ test.describe('Wallet Credentials', () => {
     test('Issue credential to yourself', async ({ page }) => {
         await issueCredentialToSelf(page);
 
-        // issueCredentialToSelf drives the boost flow from /launchpad, so after
-        // its history.goBack() we're on /launchpad. Navigate to the Passport via
-        // the nav link (SPA navigation, not page.goto) so the just-issued
-        // credential stays in the in-memory wallet cache — a hard reload would
-        // refetch from the backend before the write has synced and show an empty
-        // category. /passport, /wallet and /home all render WalletPage.
-        await page.getByRole('link', { name: 'Passport', exact: true }).click();
+        // issueCredentialToSelf drives the boost flow from /launchpad. Navigate to
+        // the wallet with a hard load (not a soft nav): BoostCMS registers a
+        // history.block() "Leave This Page?" guard that intercepts React Router
+        // navigation and flakily blocks a nav-link click, but a full page load
+        // bypasses it. The self-issued credential is persisted, so it appears
+        // after the reload. /passport, /wallet and /home all render WalletPage.
+        await page.goto('/wallet');
+        await page.waitForURL(/\/wallet/, { timeout: 30_000 });
 
         // Verify the Badges (social badge) category exists on the passport page.
         // The LC-1919 Passport reorg renamed the "Boosts" category to "Badges".
