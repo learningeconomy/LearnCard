@@ -117,7 +117,14 @@ const PrivacySettingsPage: React.FC = () => {
             contracts,
             onContractsUpdate: refetch,
             ai: isMinor
-                ? null
+                ? {
+                      checked: false,
+                      disabled: true,
+                      showConsentWarning: false,
+                      lockedNote: 'Turned off to keep you safe. A guardian can enable this.',
+                      onToggle: handleAiToggle,
+                      onRetryConsent: () => handleAiToggle(true),
+                  }
                 : {
                       checked: isAiEnabled,
                       disabled: aiReason === 'disabled_minor',
@@ -153,6 +160,10 @@ const PrivacySettingsPage: React.FC = () => {
                 brandName,
                 analyticsEnabled,
                 bugReportsEnabled,
+                disabled: isMinor,
+                lockedNote: isMinor
+                    ? 'Turned off to keep you safe. A guardian can change this.'
+                    : undefined,
                 onToggleAnalytics: enabled => {
                     updatePreferences({ analyticsEnabled: enabled });
                     setAnalyticsEnabled(enabled);

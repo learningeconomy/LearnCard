@@ -7,6 +7,7 @@ import ConnectedAppsSection from './components/ConnectedAppsSection';
 import AiPersonalizationCard from './components/AiPersonalizationCard';
 import ProfileVisibilityCard from './components/ProfileVisibilityCard';
 import AppDiagnosticsCard from './components/AppDiagnosticsCard';
+import MinorProtectionCard from './components/MinorProtectionCard';
 import type { DataSharingCenterViewModel } from './DataSharingCenter.types';
 import './dataSharingCenter.scss';
 
@@ -33,11 +34,8 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
             ) : (
                 <div className="relative z-10 mx-auto w-full max-w-[820px] px-5 desktop:px-6 pt-[max(24px,calc(env(safe-area-inset-top)+12px))] pb-14">
                     {isMinor && (
-                        <div className="mb-6 bg-sky-50 border border-sky-200 rounded-[16px] p-4 animate-fade-in-up">
-                            <p className="text-sm text-sky-800 leading-relaxed">
-                                Some features like AI and analytics are turned off to keep things
-                                safe for younger users.
-                            </p>
+                        <div className="mb-6">
+                            <MinorProtectionCard brandName={profile.brandName} />
                         </div>
                     )}
 

@@ -12,6 +12,7 @@ export type DataSharingAiViewModel = {
     checked: boolean;
     disabled: boolean;
     showConsentWarning: boolean;
+    lockedNote?: string;
     onToggle: (enabled: boolean) => Promise<boolean>;
     onRetryConsent: () => Promise<boolean>;
 };
@@ -31,6 +32,8 @@ export type DataSharingDiagnosticsViewModel = {
     brandName: string;
     analyticsEnabled: boolean;
     bugReportsEnabled: boolean;
+    disabled?: boolean;
+    lockedNote?: string;
     onToggleAnalytics: (enabled: boolean) => void;
     onToggleBugReports: (enabled: boolean) => void;
 };

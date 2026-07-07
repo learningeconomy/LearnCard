@@ -10,6 +10,8 @@ const AppDiagnosticsCard: React.FC<AppDiagnosticsCardProps> = ({
     brandName,
     analyticsEnabled,
     bugReportsEnabled,
+    disabled = false,
+    lockedNote,
     onToggleAnalytics,
     onToggleBugReports,
     delay = 0,
@@ -30,12 +32,16 @@ const AppDiagnosticsCard: React.FC<AppDiagnosticsCardProps> = ({
                 title="Usage Analytics"
                 description={`Help improve ${brandName} by sharing anonymous app usage data.`}
                 checked={analyticsEnabled}
+                disabled={disabled}
+                lockedNote={lockedNote}
                 onChange={onToggleAnalytics}
             />
             <SettingRow
                 title="Crash Reports"
                 description="Share technical details if the app crashes so we can fix issues faster."
                 checked={bugReportsEnabled}
+                disabled={disabled}
+                lockedNote={lockedNote}
                 onChange={onToggleBugReports}
             />
         </GlassCard>

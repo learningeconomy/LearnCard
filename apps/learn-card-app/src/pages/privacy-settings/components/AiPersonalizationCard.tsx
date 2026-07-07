@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { IonToggle } from '@ionic/react';
-import { Check } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 
 import type { DataSharingAiViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
@@ -13,6 +13,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
     checked,
     disabled,
     showConsentWarning,
+    lockedNote,
     onToggle,
     onRetryConsent,
     delay = 0,
@@ -128,6 +129,12 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                             AI tutoring, insights, and personalization. This may share relevant
                             messages and records with AI providers.
                         </p>
+                        {lockedNote && (
+                            <p className="flex items-center gap-1.5 text-xs text-sky-700 mt-2 leading-relaxed">
+                                <Lock className="w-3.5 h-3.5 shrink-0" />
+                                {lockedNote}
+                            </p>
+                        )}
                     </div>
                     <IonToggle
                         className="ds-toggle"
