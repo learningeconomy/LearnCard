@@ -61,7 +61,10 @@ const preview: Preview = {
                             null,
                             React.createElement(
                                 'div',
-                                { className: 'font-poppins bg-grayscale-100 min-h-screen' },
+                                {
+                                    className:
+                                        'font-poppins bg-grayscale-100 h-screen overflow-y-auto',
+                                },
                                 React.createElement(Story)
                             )
                         )
