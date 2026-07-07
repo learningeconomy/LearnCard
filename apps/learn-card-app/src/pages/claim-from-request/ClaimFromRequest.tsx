@@ -70,7 +70,7 @@ import {
     homeOutline,
     refreshOutline,
 } from 'ionicons/icons';
-import { AlertCircle, RefreshCw, Home, HelpCircle, MessageCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw, Home, HelpCircle, MessageCircle, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
@@ -415,6 +415,38 @@ const ExchangeErrorDisplay: React.FC<{
     );
 };
 
+const ExchangeSuccessDisplay: React.FC<{
+    title?: string;
+    description?: string;
+    onDone: () => void;
+}> = ({
+    title = 'Shared Successfully',
+    description = 'Your credentials were shared successfully.',
+    onDone,
+}) => (
+    <div className="min-h-full bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
+                <p className="text-emerald-100 text-sm">You're all set</p>
+            </div>
+            <div className="p-6">
+                <p className="text-grayscale-600 text-center text-sm mb-6">{description}</p>
+                <button
+                    onClick={onDone}
+                    className="w-full py-4 px-6 bg-grayscale-900 text-white font-semibold rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                    <Home className="w-5 h-5" />
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
 const ClaimFromRequest: React.FC = () => {
     const [isFront, setIsFront] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -471,7 +503,16 @@ const ClaimFromRequest: React.FC = () => {
 
             if (!response.ok) throw new Error(`${response.status}`);
 
-            const responseData = await response.json();
+            const responseText = await response.text();
+            let responseData: any = {};
+            if (responseText) {
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (parseError) {
+                    log.warn('Non-JSON exchange response, treating as empty', parseError);
+                    responseData = {};
+                }
+            }
             const { type, data, strategy } = normalizeRequestResponseData(responseData);
 
             // Server sent a Verifiable Presentation Request
@@ -511,6 +552,21 @@ const ClaimFromRequest: React.FC = () => {
                 setExchangeState({ state: ExchangeState.Redirect, data, strategy });
                 // Server sent something else: https://w3c-ccg.github.io/vc-api/#participate-in-an-exchange
             } else {
+                const submittedPresentation =
+                    !!body?.verifiablePresentation ||
+                    Object.prototype.hasOwnProperty.call(body ?? {}, '@context');
+                const isEmptyResponse = !responseData || Object.keys(responseData).length === 0;
+
+                // VC-API: an empty 2xx response after presenting means the exchange completed
+                // with no further steps — an implicit success (not an error).
+                if (submittedPresentation && isEmptyResponse) {
+                    setExchangeState({
+                        state: ExchangeState.Finished,
+                        data: { description: 'Your credentials were shared successfully.' },
+                    });
+                    return;
+                }
+
                 setExchangeState({
                     state: ExchangeState.Error,
                     data: responseData?.message || 'Unknown response from server',
@@ -633,6 +689,14 @@ const ClaimFromRequest: React.FC = () => {
                         verifiablePresentationRequest={exchangeState.data}
                         onSubmit={handleRequest}
                         strategy={exchangeState.strategy}
+                    />
+                );
+            case ExchangeState.Finished:
+                return (
+                    <ExchangeSuccessDisplay
+                        title={exchangeState.data?.title}
+                        description={exchangeState.data?.description}
+                        onDone={() => history.push('/')}
                     />
                 );
             case ExchangeState.Loading:
