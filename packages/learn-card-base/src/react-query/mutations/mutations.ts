@@ -167,6 +167,11 @@ export const useDeleteCredentialRecord = () => {
         uri: string;
         category: string | undefined;
         contractUri?: string;
+        skipPostDeleteCleanup?: boolean;
+    };
+
+    type DeleteCredentialInput = LCR & {
+        skipPostDeleteCleanup?: boolean;
     };
 
     type DeleteCredentialContext = {
@@ -175,6 +180,7 @@ export const useDeleteCredentialRecord = () => {
         oldListStaleTime?: unknown;
         category?: string;
         uri: string;
+        skipPostDeleteCleanup?: boolean;
     };
 
     const isMissingDeleteCredentialFromAllContractsProcedureError = (error: unknown) => {
@@ -188,7 +194,12 @@ export const useDeleteCredentialRecord = () => {
         );
     };
 
-    return useMutation<DeleteCredentialResult, Error, LCR, DeleteCredentialContext>({
+    return useMutation<
+        DeleteCredentialResult,
+        Error,
+        DeleteCredentialInput,
+        DeleteCredentialContext
+    >({
         mutationFn: async record => {
             try {
                 log.debug('deleting record (in mutation)', record);
@@ -222,6 +233,7 @@ export const useDeleteCredentialRecord = () => {
                     uri: record.uri,
                     category: record.metadata?.category,
                     contractUri: record.metadata?.contractUri,
+                    skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
@@ -231,6 +243,14 @@ export const useDeleteCredentialRecord = () => {
             log.debug('deleting record (in mutation onMutate)', record);
             const uri = record.uri;
             const category = record.category;
+
+            if (record.skipPostDeleteCleanup) {
+                return {
+                    uri,
+                    skipPostDeleteCleanup: true,
+                } satisfies DeleteCredentialContext;
+            }
+
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (!category) {
@@ -318,6 +338,7 @@ export const useDeleteCredentialRecord = () => {
                     ...(currentQuery ? { currentQuery } : {}),
                     oldStaleTime,
                     oldListStaleTime,
+                    skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
 
                 return context;
@@ -329,6 +350,10 @@ export const useDeleteCredentialRecord = () => {
             };
         },
         onError: (_, __, context) => {
+            if (context?.skipPostDeleteCleanup) {
+                return;
+            }
+
             // On error, restore previous query data if it exists
             if (context?.category && context?.currentQuery) {
                 const didWeb = switchedProfileStore.get.switchedDid();
@@ -341,6 +366,10 @@ export const useDeleteCredentialRecord = () => {
             }
         },
         onSuccess: async result => {
+            if (result.skipPostDeleteCleanup) {
+                return;
+            }
+
             const { category } = result;
             const didWeb = switchedProfileStore.get.switchedDid();
 

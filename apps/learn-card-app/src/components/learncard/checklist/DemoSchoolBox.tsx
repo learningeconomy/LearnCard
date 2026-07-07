@@ -7,6 +7,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { LCR } from 'learn-card-base/types/credential-records';
 import { switchedProfileStore, useCurrentUser, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useConsentFlowByUri } from 'apps/learn-card-app/src/pages/consentFlow/useConsentFlow';
 import useJoinLCNetworkModal from '../../network-prompts/hooks/useJoinLCNetworkModal';
@@ -17,10 +18,13 @@ import {
     useConsentToContract,
     useContract,
     useDeleteCredentialRecord,
+    useWallet,
     useModal,
     useSyncConsentFlow,
     useWithdrawConsent,
     useGetCredentialsFromContract,
+    deleteCredentialFromAllContracts,
+    queueAiInsightCredentialRefresh,
     ToastTypeEnum,
     useToast,
     newCredsStore,
@@ -40,13 +44,14 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { colors } = useTheme();
     const brandingConfig = useBrandingConfig();
     const primaryColor = colors?.defaults?.primaryColor;
+    const { initWallet } = useWallet();
 
     const flags = useFlags();
     const confirm = useConfirmation();
     const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { closeAllModals } = useModal();
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser();
     const [demoSchoolStatus, setDemoSchoolStatus] = useState<DemoSchoolStatus>('idle');
 
     const demoContractUri = isProductionNetwork() ? flags.demoContractUri : undefined;
@@ -122,17 +127,43 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
             setDemoSchoolStatus('deleting');
 
-            for (const contractCred of contractCredentials ?? []) {
-                await deleteCredentialRecord(contractCred);
-            }
+            const credentialsToDelete: LCR[] = contractCredentials ?? [];
+            const deletedUris = credentialsToDelete.map((contractCred: LCR) => contractCred.uri);
+
+            await Promise.all(
+                credentialsToDelete.map((contractCred: LCR) =>
+                    deleteCredentialRecord({
+                        ...contractCred,
+                        skipPostDeleteCleanup: true,
+                    })
+                )
+            );
 
             // clear creds from newCredsStore
-            const credentialUris =
-                contractCredentials?.map((contractCred: any) => contractCred.uri) ?? [];
-            newCredsStore.set.removeCreds(credentialUris);
+            newCredsStore.set.removeCreds(deletedUris);
+
+            const wallet = await initWallet();
+
+            const cleanupResult = await deleteCredentialFromAllContracts({
+                wallet,
+                queryClient,
+                deletedUris,
+            });
+
+            queryClient.invalidateQueries({ queryKey: ['boosts'] });
+
+            await queueAiInsightCredentialRefresh({
+                wallet,
+                queryClient,
+            });
 
             presentToast(`Deleted ${contractCredentials?.length ?? 0} Demo credentials`, {
                 hasDismissButton: true,
+            });
+            log.debug('Demo School cleanup completed', {
+                deletedUriCount: deletedUris.length,
+                contractsUpdated: cleanupResult.contractsUpdated,
+                removedSharedUris: cleanupResult.removedSharedUris,
             });
             resetCache();
         } catch (error) {
