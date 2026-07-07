@@ -1,6 +1,8 @@
 import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
+export const PRODUCTION_NETWORK_URL = 'https://network.learncard.com/trpc';
+
 /**
  * Returns true when the effective LearnCard Network URL points to production
  * (network.learncard.com). Use this to gate features that depend on
