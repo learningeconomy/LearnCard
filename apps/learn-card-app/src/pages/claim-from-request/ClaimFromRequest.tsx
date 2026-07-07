@@ -671,6 +671,7 @@ const ClaimFromRequest: React.FC = () => {
                         verifiablePresentationRequest={exchangeState.data}
                         onSubmit={handleRequest}
                         strategy={exchangeState.strategy}
+                        onCancel={() => history.push('/')}
                     />
                 );
             case ExchangeState.AcceptCredentials:
