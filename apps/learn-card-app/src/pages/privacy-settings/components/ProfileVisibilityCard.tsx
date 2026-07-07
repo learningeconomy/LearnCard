@@ -1,50 +1,25 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { IonToggle } from '@ionic/react';
 import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
 
-import {
-    RadioGroup,
-    ToastTypeEnum,
-    useGetCurrentLCNUser,
-    useToast,
-    useWallet,
-    useBrandingConfig,
-} from 'learn-card-base';
+import { RadioGroup } from 'learn-card-base';
 
+import type { DataSharingProfileViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
 
-type ProfileVisibilityValue =
-    (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
+type ProfileVisibilityCardProps = DataSharingProfileViewModel & { delay?: number };
 
-type ConnectionRequestsValue =
-    (typeof AllowConnectionRequestsEnum.enum)[keyof typeof AllowConnectionRequestsEnum.enum];
-
-type PrivacySettingsProfile = {
-    profileVisibility?: ProfileVisibilityValue;
-    isPrivate?: boolean;
-    showEmail?: boolean;
-    allowConnectionRequests?: ConnectionRequestsValue;
-};
-
-const ProfileVisibilityCard: React.FC<{ delay?: number }> = ({ delay = 0 }) => {
-    const { currentLCNUser, refetch } = useGetCurrentLCNUser();
-    const { initWallet } = useWallet();
-    const { presentToast } = useToast();
-    const { name: brandName } = useBrandingConfig();
-    const [savingField, setSavingField] = useState<string | null>(null);
-
-    const profile = currentLCNUser as PrivacySettingsProfile | null;
-
-    let profileVisibility: ProfileVisibilityValue = ProfileVisibilityEnum.enum.public;
-    if (profile?.profileVisibility) {
-        profileVisibility = profile.profileVisibility;
-    } else if (profile?.isPrivate) {
-        profileVisibility = ProfileVisibilityEnum.enum.private;
-    }
-    const showEmail = profile?.showEmail ?? false;
-    const allowConnectionRequests =
-        profile?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
-
+const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
+    brandName,
+    visibility,
+    showEmail,
+    allowConnectionRequests,
+    savingField,
+    onChangeVisibility,
+    onToggleShowEmail,
+    onChangeConnectionRequests,
+    delay = 0,
+}) => {
     const visibilityOptions = useMemo(
         () => [
             { value: ProfileVisibilityEnum.enum.public, label: 'Public' },
@@ -60,48 +35,6 @@ const ProfileVisibilityCard: React.FC<{ delay?: number }> = ({ delay = 0 }) => {
             { value: AllowConnectionRequestsEnum.enum.invite_only, label: 'Invite only' },
         ],
         []
-    );
-
-    const handleProfileUpdate = useCallback(
-        async (field: string, updates: Record<string, string | boolean>) => {
-            try {
-                setSavingField(field);
-                const wallet = await initWallet();
-                await wallet?.invoke?.updateProfile(updates);
-                await refetch?.();
-            } catch (error: any) {
-                presentToast(error?.message ?? 'Unable to update privacy settings.', {
-                    type: ToastTypeEnum.Error,
-                });
-            } finally {
-                setSavingField(null);
-            }
-        },
-        [initWallet, presentToast, refetch]
-    );
-
-    const handleVisibilityChange = useCallback(
-        (value: string | null) => {
-            if (!value || value === profileVisibility) return;
-            handleProfileUpdate('profileVisibility', { profileVisibility: value });
-        },
-        [handleProfileUpdate, profileVisibility]
-    );
-
-    const handleShowEmailToggle = useCallback(
-        (enabled: boolean) => {
-            if (enabled === showEmail) return;
-            handleProfileUpdate('showEmail', { showEmail: enabled });
-        },
-        [handleProfileUpdate, showEmail]
-    );
-
-    const handleConnectionRequestsChange = useCallback(
-        (value: string | null) => {
-            if (!value || value === allowConnectionRequests) return;
-            handleProfileUpdate('allowConnectionRequests', { allowConnectionRequests: value });
-        },
-        [allowConnectionRequests, handleProfileUpdate]
     );
 
     return (
@@ -122,8 +55,8 @@ const ProfileVisibilityCard: React.FC<{ delay?: number }> = ({ delay = 0 }) => {
                     </p>
                     <RadioGroup
                         name="profile-visibility"
-                        value={profileVisibility}
-                        onChange={handleVisibilityChange}
+                        value={visibility}
+                        onChange={onChangeVisibility}
                         options={visibilityOptions}
                         columns={1}
                         disabled={savingField === 'profileVisibility'}
@@ -146,7 +79,7 @@ const ProfileVisibilityCard: React.FC<{ delay?: number }> = ({ delay = 0 }) => {
                         className="ds-toggle"
                         checked={showEmail}
                         disabled={savingField === 'showEmail'}
-                        onIonChange={e => handleShowEmailToggle(e.detail.checked)}
+                        onIonChange={e => onToggleShowEmail(e.detail.checked)}
                         aria-label="Show email to connections"
                     />
                 </div>
@@ -163,7 +96,7 @@ const ProfileVisibilityCard: React.FC<{ delay?: number }> = ({ delay = 0 }) => {
                     <RadioGroup
                         name="allow-connection-requests"
                         value={allowConnectionRequests}
-                        onChange={handleConnectionRequestsChange}
+                        onChange={onChangeConnectionRequests}
                         options={connectionRequestOptions}
                         columns={1}
                         disabled={savingField === 'allowConnectionRequests'}

@@ -1,27 +1,52 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
+import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
 
 import {
     getAiFeatureAgeGateState,
     useGetCurrentLCNUser,
     useGetPreferencesForDid,
+    useUpdatePreferences,
+    useWallet,
+    useToast,
+    useBrandingConfig,
+    useAiFeatureGate,
+    ToastTypeEnum,
+    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
 } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
-import TrustSummaryCard from './components/TrustSummaryCard';
-import ConnectedAppsSection from './components/ConnectedAppsSection';
-import AiPersonalizationCard from './components/AiPersonalizationCard';
-import ProfileVisibilityCard from './components/ProfileVisibilityCard';
-import AppDiagnosticsCard from './components/AppDiagnosticsCard';
-import './dataSharingCenter.scss';
+import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
+import { useAnalytics } from '../../analytics';
+import DataSharingCenterView from './DataSharingCenterView';
+import type {
+    ConnectionRequestsValue,
+    DataSharingCenterViewModel,
+    ProfileVisibilityValue,
+} from './DataSharingCenter.types';
+
+type PrivacySettingsProfile = {
+    profileVisibility?: ProfileVisibilityValue;
+    isPrivate?: boolean;
+    showEmail?: boolean;
+    allowConnectionRequests?: ConnectionRequestsValue;
+};
 
 const PrivacySettingsPage: React.FC = () => {
-    const { currentLCNUser } = useGetCurrentLCNUser();
+    const { currentLCNUser, refetch: refetchUser } = useGetCurrentLCNUser();
     const { data: preferences } = useGetPreferencesForDid();
+    const { mutate: updatePreferences } = useUpdatePreferences();
+    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { data: consentedContracts, isLoading, refetch } = useConsentedContracts();
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const { name: brandName } = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
+    const { isAiEnabled, reason: aiReason } = useAiFeatureGate();
+    const { handleAiToggle } = useAiConsentToggle();
+    const [savingField, setSavingField] = useState<string | null>(null);
 
     const ageGate = getAiFeatureAgeGateState({
         profileType,
@@ -46,59 +71,123 @@ const PrivacySettingsPage: React.FC = () => {
         [consentedContracts]
     );
 
+    const handleProfileUpdate = useCallback(
+        async (field: string, updates: Record<string, string | boolean>) => {
+            try {
+                setSavingField(field);
+                const wallet = await initWallet();
+                await wallet?.invoke?.updateProfile(updates);
+                await refetchUser?.();
+            } catch (error: any) {
+                presentToast(error?.message ?? 'Unable to update privacy settings.', {
+                    type: ToastTypeEnum.Error,
+                });
+            } finally {
+                setSavingField(null);
+            }
+        },
+        [initWallet, presentToast, refetchUser]
+    );
+
+    const profileData = currentLCNUser as PrivacySettingsProfile | null;
+
+    let visibility: ProfileVisibilityValue = ProfileVisibilityEnum.enum.public;
+    if (profileData?.profileVisibility) {
+        visibility = profileData.profileVisibility;
+    } else if (profileData?.isPrivate) {
+        visibility = ProfileVisibilityEnum.enum.private;
+    }
+    const showEmail = profileData?.showEmail ?? false;
+    const allowConnectionRequests =
+        profileData?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
+
+    const hasAiConsent = contracts.some(
+        consent =>
+            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            consent?.status !== 'withdrawn'
+    );
+
+    const vm = useMemo<DataSharingCenterViewModel>(() => {
+        const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
+        const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
+
+        return {
+            isLoading,
+            isMinor,
+            contracts,
+            onContractsUpdate: refetch,
+            ai: isMinor
+                ? null
+                : {
+                      checked: isAiEnabled,
+                      disabled: aiReason === 'disabled_minor',
+                      showConsentWarning:
+                          !!preferences?.aiEnabled &&
+                          !hasAiConsent &&
+                          aiReason !== 'disabled_minor',
+                      onToggle: handleAiToggle,
+                      onRetryConsent: () => handleAiToggle(true),
+                  },
+            profile: {
+                brandName,
+                visibility,
+                showEmail,
+                allowConnectionRequests,
+                savingField,
+                onChangeVisibility: value => {
+                    if (!value || value === visibility) return;
+                    handleProfileUpdate('profileVisibility', { profileVisibility: value });
+                },
+                onToggleShowEmail: enabled => {
+                    if (enabled === showEmail) return;
+                    handleProfileUpdate('showEmail', { showEmail: enabled });
+                },
+                onChangeConnectionRequests: value => {
+                    if (!value || value === allowConnectionRequests) return;
+                    handleProfileUpdate('allowConnectionRequests', {
+                        allowConnectionRequests: value,
+                    });
+                },
+            },
+            diagnostics: {
+                brandName,
+                analyticsEnabled,
+                bugReportsEnabled,
+                onToggleAnalytics: enabled => {
+                    updatePreferences({ analyticsEnabled: enabled });
+                    setAnalyticsEnabled(enabled);
+                },
+                onToggleBugReports: enabled => {
+                    updatePreferences({ bugReportsEnabled: enabled });
+                },
+            },
+        };
+    }, [
+        isLoading,
+        isMinor,
+        contracts,
+        refetch,
+        isAiEnabled,
+        aiReason,
+        preferences?.aiEnabled,
+        preferences?.analyticsEnabled,
+        preferences?.bugReportsEnabled,
+        hasAiConsent,
+        handleAiToggle,
+        brandName,
+        visibility,
+        showEmail,
+        allowConnectionRequests,
+        savingField,
+        handleProfileUpdate,
+        updatePreferences,
+        setAnalyticsEnabled,
+    ]);
+
     return (
         <IonPage>
-            <IonContent className="ds-content">
-                <div aria-hidden className="ds-aurora">
-                    <span className="ds-aurora__blob ds-aurora__blob--emerald" />
-                    <span className="ds-aurora__blob ds-aurora__blob--sky" />
-                    <span className="ds-aurora__blob ds-aurora__blob--violet" />
-                </div>
-
-                {isLoading ? (
-                    <div className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] gap-3">
-                        <IonSpinner name="crescent" className="w-8 h-8" />
-                        <p className="text-grayscale-600 text-sm">Loading your privacy center...</p>
-                    </div>
-                ) : (
-                    <div className="relative z-10 mx-auto w-full max-w-[820px] px-5 desktop:px-6 pt-[max(24px,calc(env(safe-area-inset-top)+12px))] pb-14">
-                        {isMinor && (
-                            <div className="mb-6 bg-sky-50 border border-sky-200 rounded-[16px] p-4 animate-fade-in-up">
-                                <p className="text-sm text-sky-800 leading-relaxed">
-                                    Some features like AI and analytics are turned off to keep
-                                    things safe for younger users.
-                                </p>
-                            </div>
-                        )}
-
-                        <div className="flex flex-col gap-6">
-                            <TrustSummaryCard contracts={contracts} />
-
-                            <ConnectedAppsSection
-                                contracts={contracts}
-                                onUpdate={refetch}
-                                delay={60}
-                            />
-
-                            {!isMinor && (
-                                <AiPersonalizationCard
-                                    consentedContracts={contracts}
-                                    aiStoredPreference={!!preferences?.aiEnabled}
-                                    delay={120}
-                                />
-                            )}
-
-                            <ProfileVisibilityCard delay={180} />
-
-                            <AppDiagnosticsCard isMinor={isMinor} delay={240} />
-
-                            <p className="text-xs text-grayscale-500 text-center px-6 mt-1">
-                                You can change any of this anytime. Turning something off takes
-                                effect right away.
-                            </p>
-                        </div>
-                    </div>
-                )}
+            <IonContent>
+                <DataSharingCenterView vm={vm} />
             </IonContent>
         </IonPage>
     );

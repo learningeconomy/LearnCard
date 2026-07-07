@@ -1,29 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { IonToggle } from '@ionic/react';
 import { Check } from 'lucide-react';
 
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI, useAiFeatureGate } from 'learn-card-base';
-
-import { useAiConsentToggle } from '../../../hooks/useAiConsentToggle';
-import type { ConsentedContract } from '../../../components/data-sharing/consentSummary';
+import type { DataSharingAiViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
 
 type AiConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnecting' | 'disconnected';
 
-type AiPersonalizationCardProps = {
-    consentedContracts: ConsentedContract[];
-    aiStoredPreference: boolean;
-    delay?: number;
-};
+type AiPersonalizationCardProps = DataSharingAiViewModel & { delay?: number };
 
 const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
-    consentedContracts,
-    aiStoredPreference,
+    checked,
+    disabled,
+    showConsentWarning,
+    onToggle,
+    onRetryConsent,
     delay = 0,
 }) => {
-    const { isAiEnabled: aiEnabled, reason: aiFeatureGateReason } = useAiFeatureGate();
-    const { handleAiToggle } = useAiConsentToggle();
-
     const [aiToggleOverride, setAiToggleOverride] = useState<boolean | null>(null);
     const [retryingAiConsent, setRetryingAiConsent] = useState(false);
     const [isSyncingAiConsent, setIsSyncingAiConsent] = useState(false);
@@ -32,32 +25,15 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
     const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const isAiRestricted = aiFeatureGateReason === 'disabled_minor';
-    const aiToggleChecked = aiToggleOverride ?? aiEnabled;
-
-    const hasAiConsent = useMemo(
-        () =>
-            consentedContracts?.some(
-                consent =>
-                    consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-                    consent?.status !== 'withdrawn'
-            ),
-        [consentedContracts]
-    );
-
-    const showAiConsentWarning =
-        aiStoredPreference &&
-        !hasAiConsent &&
-        !isAiRestricted &&
-        !isSyncingAiConsent &&
-        !retryingAiConsent;
-
+    const aiToggleChecked = aiToggleOverride ?? checked;
     const showAiConnectionStatus = aiConnectionStatus !== 'idle';
+    const shouldShowConsentWarning =
+        showConsentWarning && !isSyncingAiConsent && !retryingAiConsent;
 
     useEffect(() => {
         if (aiToggleOverride === null) return;
-        if (aiToggleOverride === aiEnabled) setAiToggleOverride(null);
-    }, [aiEnabled, aiToggleOverride]);
+        if (aiToggleOverride === checked) setAiToggleOverride(null);
+    }, [checked, aiToggleOverride]);
 
     useEffect(() => {
         if (hideTimeoutRef.current) {
@@ -94,7 +70,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
 
             void (async () => {
                 try {
-                    const synced = await handleAiToggle(enabled);
+                    const synced = await onToggle(enabled);
                     if (synced) {
                         setAiConnectionStatus(enabled ? 'connected' : 'disconnected');
                         return;
@@ -107,7 +83,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                 }
             })();
         },
-        [handleAiToggle]
+        [onToggle]
     );
 
     const handleRetryAiConsent = useCallback(async () => {
@@ -117,7 +93,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
             setAiConnectionStatus('connecting');
             setIsAiConnectionVisible(true);
 
-            const synced = await handleAiToggle(true);
+            const synced = await onRetryConsent();
             if (synced) {
                 setAiConnectionStatus('connected');
             } else {
@@ -128,7 +104,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
         } finally {
             setRetryingAiConsent(false);
         }
-    }, [handleAiToggle]);
+    }, [onRetryConsent]);
 
     return (
         <div
@@ -156,10 +132,8 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                     <IonToggle
                         className="ds-toggle"
                         checked={aiToggleChecked}
-                        disabled={isAiRestricted || isSyncingAiConsent || retryingAiConsent}
-                        onIonChange={e =>
-                            !isAiRestricted && handleAiFeatureToggle(e.detail.checked)
-                        }
+                        disabled={disabled || isSyncingAiConsent || retryingAiConsent}
+                        onIonChange={e => !disabled && handleAiFeatureToggle(e.detail.checked)}
                         aria-label="AI Features"
                     />
                 </div>
@@ -191,7 +165,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                     </div>
                 )}
 
-                {showAiConsentWarning && (
+                {shouldShowConsentWarning && (
                     <div className="px-5 pb-4">
                         <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
                             <p className="text-sm text-red-700 leading-relaxed">
