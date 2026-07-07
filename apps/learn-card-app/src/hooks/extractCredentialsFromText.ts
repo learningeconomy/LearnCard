@@ -18,6 +18,19 @@ const unwrapPresentation = (vp: any): any[] => {
 };
 
 /**
+ * Flatten a parsed JSON value into individual credential candidates:
+ * - a VerifiablePresentation → its verifiableCredential(s)
+ * - a bare array → each element, flattened (VP elements are unwrapped too)
+ * - a single object → itself
+ * Non-object values (strings, numbers, null) yield nothing.
+ */
+const collectCandidates = (parsed: any): any[] => {
+    if (isVerifiablePresentation(parsed)) return unwrapPresentation(parsed);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean).flatMap(collectCandidates);
+    return parsed && typeof parsed === 'object' ? [parsed] : [];
+};
+
+/**
  * Extract the balanced JSON object/array that begins at `start` (which must index a
  * `{` or `[`). Respects string literals and escape sequences so brackets inside strings
  * don't confuse the depth counter. Returns null if the block never closes.
@@ -82,10 +95,10 @@ function* iterateJsonBlocks(text: string): Generator<string> {
  *
  * Pipeline: trim → scan every balanced JSON block left-to-right → parse → classify, and
  * return the first block that yields at least one usable credential. A VerifiablePresentation
- * is unwrapped to its verifiableCredential(s); anything else is returned as a single candidate
- * (single VC or OpenBadge v2 — the caller decides how to store each one). This means JSON
- * embedded in surrounding prose still resolves even when earlier bracketed text isn't valid
- * JSON. Never throws, and never surfaces raw parser messages.
+ * is unwrapped to its verifiableCredential(s), a bare array is flattened to its elements, and
+ * a lone object is used as-is (single VC or OpenBadge v2 — the caller decides how to store
+ * each one). This means JSON embedded in surrounding prose still resolves even when earlier
+ * bracketed text isn't valid JSON. Never throws, and never surfaces raw parser messages.
  */
 export const extractCredentialsFromText = (text: string): ExtractionResult => {
     const trimmed = (text ?? '').trim();
@@ -105,16 +118,12 @@ export const extractCredentialsFromText = (text: string): ExtractionResult => {
 
         sawParseableJson = true;
 
-        if (isVerifiablePresentation(parsed)) {
-            const list = unwrapPresentation(parsed);
-            if (list.length > 0) return { credentials: list, errors: [] };
-            // An empty VP is parseable but unusable — remember it, but keep looking in
-            // case a usable credential appears later in the text.
-            sawEmptyPresentation = true;
-            continue;
-        }
+        const candidates = collectCandidates(parsed);
+        if (candidates.length > 0) return { credentials: candidates, errors: [] };
 
-        return { credentials: [parsed], errors: [] };
+        // Parseable but nothing usable (empty VP, empty array, non-credential values).
+        // Remember an empty VP for a more specific message, and keep scanning.
+        if (isVerifiablePresentation(parsed)) sawEmptyPresentation = true;
     }
 
     if (sawEmptyPresentation) {

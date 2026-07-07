@@ -120,7 +120,19 @@ describe('extractCredentialsFromText', () => {
         expect(credentials.map(c => c.name)).toEqual(['One', 'Two']);
     });
 
-    it('substring-scans a top-level array containing objects without truncating', () => {
+    it('unwraps a bare top-level array of VCs into individual candidates', () => {
+        const arr = [
+            { type: ['VerifiableCredential'], name: 'A' },
+            { type: ['VerifiableCredential'], name: 'B' },
+        ];
+
+        const { credentials, errors } = extractCredentialsFromText(JSON.stringify(arr));
+
+        expect(errors).toEqual([]);
+        expect(credentials.map(c => c.name)).toEqual(['A', 'B']);
+    });
+
+    it('substring-scans a bare array containing objects without truncating', () => {
         const arr = [
             { type: ['VerifiableCredential'], name: 'A' },
             { type: ['VerifiableCredential'], name: 'B' },
@@ -130,10 +142,31 @@ describe('extractCredentialsFromText', () => {
         const { credentials, errors } = extractCredentialsFromText(messy);
 
         // A `}` inside an object must NOT decrement the depth of the top-level `[`; the
-        // scan must capture the FULL array rather than a truncated substring.
+        // scan must capture the FULL array, and each element becomes a candidate.
         expect(errors).toEqual([]);
-        expect(credentials).toHaveLength(1);
-        expect(credentials[0]).toEqual(arr);
+        expect(credentials.map(c => c.name)).toEqual(['A', 'B']);
+    });
+
+    it('flattens a mixed bare array of VCs and VPs', () => {
+        const mixed = [
+            { type: ['VerifiableCredential'], name: 'Loose' },
+            {
+                type: ['VerifiablePresentation'],
+                verifiableCredential: [{ type: ['VerifiableCredential'], name: 'Wrapped' }],
+            },
+        ];
+
+        const { credentials, errors } = extractCredentialsFromText(JSON.stringify(mixed));
+
+        expect(errors).toEqual([]);
+        expect(credentials.map(c => c.name)).toEqual(['Loose', 'Wrapped']);
+    });
+
+    it('returns an error for a bare empty array', () => {
+        const { credentials, errors } = extractCredentialsFromText('[]');
+
+        expect(credentials).toEqual([]);
+        expect(errors.length).toBeGreaterThan(0);
     });
 
     it('keeps scanning past an earlier non-JSON bracketed block to find a valid credential', () => {
