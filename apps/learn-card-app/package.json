@@ -175,7 +175,8 @@
         "ionic:serve": "vite",
         "appflow:install": "bun install --ignore-scripts --frozen-lockfile && bunx nx build learn-card-app",
         "preview": "vite preview --host --port=3000",
-        "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH"
+        "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
+        "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line"
     },
     "browserslist": {
         "production": [
