@@ -10,7 +10,9 @@ import {
     IonTitle,
 } from '@ionic/react';
 
-import { getLogger } from 'learn-card-base';
+import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
+import { Network } from '@capacitor/network';
+import { AppEmbedOfflineState } from './AppEmbedOfflineState';
 const log = getLogger('embed-app-full-screen');
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
@@ -47,6 +49,31 @@ export const EmbedAppFullScreen: React.FC = () => {
     }>();
     const { appId } = useParams<EmbedAppParams>();
     const [isLoading, setIsLoading] = useState(true);
+    const [hasLoadFailed, setHasLoadFailed] = useState(false);
+    const [iframeKey, setIframeKey] = useState(0);
+    const isOffline = useIsOffline();
+
+    // Timeout for iframe loading
+    React.useEffect(() => {
+        if (!isLoading || isOffline || hasLoadFailed) return;
+
+        const timer = setTimeout(() => {
+            setHasLoadFailed(true);
+            setIsLoading(false);
+        }, 12000);
+
+        return () => clearTimeout(timer);
+    }, [isLoading, isOffline, hasLoadFailed, iframeKey]);
+
+    const handleRetry = async () => {
+        const status = await Network.getStatus();
+        connectivityStore.set.report(status.connected);
+        setHasLoadFailed(false);
+        if (status.connected) {
+            setIsLoading(true);
+            setIframeKey(prev => prev + 1);
+        }
+    };
 
     // Credential claim modal state
     const [pendingCredential, setPendingCredential] = useState<{
@@ -187,35 +214,48 @@ export const EmbedAppFullScreen: React.FC = () => {
             </IonHeader>
             <IonContent fullscreen>
                 <div className="relative w-full h-full">
-                    {isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
-                            <div className="flex flex-col items-center gap-4">
-                                {/* Animated spinner */}
-                                <div className="relative">
-                                    <div className="w-16 h-16 border-4 border-indigo-200 rounded-full"></div>
-                                    <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
+                    {isOffline || hasLoadFailed ? (
+                        <AppEmbedOfflineState appName={appName} onRetry={handleRetry} />
+                    ) : (
+                        <>
+                            {isLoading && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                                    <div className="flex flex-col items-center gap-4">
+                                        {/* Animated spinner */}
+                                        <div className="relative">
+                                            <div className="w-16 h-16 border-4 border-indigo-200 rounded-full"></div>
+                                            <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-lg font-semibold text-grayscale-800">
+                                                Loading {appName}...
+                                            </p>
+                                            <p className="text-sm text-grayscale-600 mt-1">
+                                                Please wait
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-lg font-semibold text-grayscale-800">
-                                        Loading {appName}...
-                                    </p>
-                                    <p className="text-sm text-grayscale-600 mt-1">Please wait</p>
-                                </div>
-                            </div>
-                        </div>
+                            )}
+                            <iframe
+                                key={iframeKey}
+                                ref={iframeRef}
+                                src={embedUrlWithOverride}
+                                onLoad={() => setIsLoading(false)}
+                                onError={() => {
+                                    setHasLoadFailed(true);
+                                    setIsLoading(false);
+                                }}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    display: 'block',
+                                }}
+                                title={`${appName} - Full Screen`}
+                            />
+                        </>
                     )}
-                    <iframe
-                        ref={iframeRef}
-                        src={embedUrlWithOverride}
-                        onLoad={() => setIsLoading(false)}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            border: 'none',
-                            display: 'block',
-                        }}
-                        title={`${appName} - Full Screen`}
-                    />
                 </div>
             </IonContent>
 
