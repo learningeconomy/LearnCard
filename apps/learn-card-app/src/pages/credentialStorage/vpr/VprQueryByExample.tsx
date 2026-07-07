@@ -10,9 +10,12 @@ import {
     CredentialCategoryEnum,
     CurrentUser,
     categoryMetadata,
+    isVerifiableDataRecord,
     useGetCredentialList,
     useGetResolvedCredentials,
 } from 'learn-card-base';
+
+import { isVerifiableDataContractCategory } from '../../../helpers/contract.helpers';
 
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import Lottie from 'react-lottie-player';
@@ -98,6 +101,9 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
 
     const vcsToDisplay = allCredentials.filter(credential => {
         if (credential.category === 'Hidden') return false;
+        // Internal "My Skills Profile" data is self-issued verifiable data, not shareable credentials — exclude it like the wallet does.
+        if (isVerifiableDataRecord(credential.record)) return false;
+        if (isVerifiableDataContractCategory(credential.category)) return false;
         if (!credential.loading && !credential.vc) return false;
 
         if (!searchInput) return true;
@@ -259,18 +265,14 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                     )}
                                     <section className="flex items-center justify-evenly flex-wrap mt-5">
                                         <button
-                                            className={
-                                                selectedVcs?.length === 0
-                                                    ? 'bg-indigo-700 opacity-50 rounded-[40px] text-white font-poppins h-12 w-full max-w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                                    : 'bg-indigo-700 rounded-[40px] text-white font-poppins h-12 w-full max-w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                            }
+                                            className="bg-grayscale-900 rounded-[20px] text-white font-poppins font-medium h-12 w-full max-w-[300px] lg:w-[200px] text-base m-1.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                                             onClick={() => presentModal()}
                                             disabled={selectedVcs?.length === 0 ? true : false}
                                         >
                                             REVIEW
                                         </button>
                                         <button
-                                            className="bg-grayscale-700 rounded-[40px] text-white font-poppins h-12 w-full max-w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]"
+                                            className="bg-white border border-grayscale-300 rounded-[20px] text-grayscale-700 font-poppins font-medium h-12 w-full max-w-[300px] lg:w-[200px] text-base m-1.5 hover:bg-grayscale-10 transition-colors"
                                             onClick={reject}
                                         >
                                             QUIT

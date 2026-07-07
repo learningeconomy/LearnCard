@@ -119,13 +119,9 @@ const VCToShare: React.FC<{
                         Review
                     </button>
                     <button
-                        className={
-                            vcsToShare.length === 0
-                                ? 'bg-indigo-700 opacity-50 rounded-full text-white font-poppins h-10 w-24 text-2xl m-1.5 shadow-bottom'
-                                : 'bg-indigo-700 rounded-full text-white font-poppins h-10 w-24 text-2xl m-1.5 shadow-bottom'
-                        }
+                        className="bg-grayscale-900 rounded-[20px] text-white font-poppins font-medium h-10 px-6 text-sm m-1.5 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         onClick={accept}
-                        disabled={vcsToShare.length === 0 ? true : false}
+                        disabled={vcsToShare.length === 0 || (isLoading && !error)}
                     >
                         {isLoading && !error ? 'SHARING...' : 'SHARE'}
                     </button>
