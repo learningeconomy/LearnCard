@@ -793,10 +793,11 @@ export class PartnerConnect {
      * console.log('Credentials count:', context.raw?.credentials.length);
      * ```
      */
-    public requestLearnerContext(
+    public async requestLearnerContext(
         options?: RequestLearnerContextOptions
     ): Promise<LearnerContextResponse> {
-        return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+        const startedAt = performance.now();
+        const response = await this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
             includeCredentials: options?.includeCredentials ?? true,
             includePersonalData: options?.includePersonalData ?? false,
             format: options?.format ?? 'prompt',
@@ -804,6 +805,12 @@ export class PartnerConnect {
             detailLevel: options?.detailLevel ?? 'compact',
             waitForSync: options?.waitForSync ?? false,
         });
+
+        response.metadata ??= {};
+        response.metadata.timings ??= { totalMs: 0 };
+        response.metadata.timings.sdkRoundTripMs = performance.now() - startedAt;
+
+        return response;
     }
 
     /**

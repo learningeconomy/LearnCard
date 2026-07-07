@@ -38,6 +38,7 @@ import { AI_ROUTES } from '../../constants/aiRoutes';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -52,6 +53,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const isLoggedIn = useIsLoggedIn();
     const { page: setCurrentScreen } = useAnalytics();
     const { gate } = useLCNGatedAction();
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
     const { openNewAiSessionModal } = useAiSession();
     const openMyLearnCard = useOpenMyLearnCard();
 
@@ -105,6 +107,13 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
 
         const { prompted } = await gate();
         if (prompted) return;
+
+        // With simple-send on, "Issue Credentials" is a direct shortcut to the
+        // /issue page rather than the launchpad action grid.
+        if (flags?.enableSimpleSend) {
+            checkAndPromptRecovery(() => history.push('/issue'));
+            return;
+        }
 
         // Both desktop and mobile open the launchpad action modal (LC-1921) —
         // the same Freeform modal used by the launchpad greeting card's

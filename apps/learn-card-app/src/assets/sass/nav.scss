@@ -79,11 +79,31 @@ ion-tab-bar.lc-footer-nav {
     }
 }
 
+// Pin Ionic's side-pane width from the first paint. Without this the pane
+// renders at Ionic's default (--side-max-width: 28% ≈ 400px on desktop) and
+// then the min/max-width below + `transition` animate it DOWN to 290 — which
+// reads as a width "shrink" on initial load. Setting the vars on the split-pane
+// host makes it 290 (and 135 collapsed) immediately; the transition still drives
+// the collapse animation.
+.side-menu-split-pane-container-visible {
+    --side-min-width: 290px;
+    --side-max-width: 290px;
+    --side-width: 290px;
+}
+
+.side-menu-split-pane-container-collapsed {
+    --side-min-width: 135px;
+    --side-max-width: 135px;
+    --side-width: 135px;
+}
+
 .side-menu-split-pane-container-visible.split-pane-md.split-pane-visible > .split-pane-side {
     // LC-1921: Side Nav widened 270 → 290 to match Figma.
     min-width: 290px;
     max-width: 290px;
-    border-right: var(--border);
+    // border-right removed: the drop shadow is the edge treatment. Ionic's
+    // default --border (1px solid rgba(0,0,0,0.13)) was painting a dark hairline.
+    border-right: none;
     border-left: 0;
     // LC-1921: subtle drop shadow on the desktop side nav's right edge.
     // position + z-index are required so the shadow paints OVER the adjacent
@@ -99,7 +119,9 @@ ion-tab-bar.lc-footer-nav {
 .side-menu-split-pane-container-collapsed.split-pane-md.split-pane-visible > .split-pane-side {
     min-width: 135px;
     max-width: 135px;
-    border-right: var(--border);
+    // border-right removed: the drop shadow is the edge treatment. Ionic's
+    // default --border (1px solid rgba(0,0,0,0.13)) was painting a dark hairline.
+    border-right: none;
     border-left: 0;
     transition: all 0.3s ease-in;
 }

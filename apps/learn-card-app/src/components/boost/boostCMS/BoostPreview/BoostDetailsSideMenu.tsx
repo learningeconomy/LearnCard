@@ -20,6 +20,7 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import PreviewVerificationBox from './PreviewVerificationBox';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -44,6 +45,7 @@ type BoostDetailsSideMenuProps = {
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
     issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -58,6 +60,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     isClrChildCredential = false,
     renderMethodCredential,
     issuancesSummaryComponent,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
@@ -213,8 +216,13 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
                     {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
-                    {verificationItems && verificationItems.length > 0 && (
-                        <VerificationsBox verificationItems={verificationItems} />
+                    {isPreview ? (
+                        <PreviewVerificationBox />
+                    ) : (
+                        verificationItems &&
+                        verificationItems.length > 0 && (
+                            <VerificationsBox verificationItems={verificationItems} />
+                        )
                     )}
                 </>
             );
