@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
 
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
-import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import {
     getAiFeatureAgeGateState,
@@ -20,7 +18,6 @@ import AppDiagnosticsCard from './components/AppDiagnosticsCard';
 import './dataSharingCenter.scss';
 
 const PrivacySettingsPage: React.FC = () => {
-    const history = useHistory();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: preferences } = useGetPreferencesForDid();
     const { data: consentedContracts, isLoading, refetch } = useConsentedContracts();
@@ -64,16 +61,7 @@ const PrivacySettingsPage: React.FC = () => {
                         <p className="text-grayscale-600 text-sm">Loading your privacy center...</p>
                     </div>
                 ) : (
-                    <div className="relative z-10 mx-auto w-full max-w-[820px] px-5 desktop:px-6 pt-[max(env(safe-area-inset-top),16px)] pb-14">
-                        <button
-                            onClick={() => history.goBack()}
-                            aria-label="Go back"
-                            className="mb-4 -ml-1.5 inline-flex items-center gap-1.5 py-1.5 pl-1.5 pr-3 rounded-full text-grayscale-700 hover:text-grayscale-900 hover:bg-white/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                        >
-                            <CaretLeft className="h-auto w-3" />
-                            <span className="text-sm font-medium">Back</span>
-                        </button>
-
+                    <div className="relative z-10 mx-auto w-full max-w-[820px] px-5 desktop:px-6 pt-[max(24px,calc(env(safe-area-inset-top)+12px))] pb-14">
                         {isMinor && (
                             <div className="mb-6 bg-sky-50 border border-sky-200 rounded-[16px] p-4 animate-fade-in-up">
                                 <p className="text-sm text-sky-800 leading-relaxed">

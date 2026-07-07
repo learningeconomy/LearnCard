@@ -75,6 +75,8 @@ ion-content.ds-content {
 ion-toggle.ds-toggle {
     --track-background: #e2e3e9;
     --track-background-checked: #00ba88;
+    --handle-background: #ffffff;
+    --handle-background-checked: #ffffff;
 }
 
 @media (prefers-reduced-motion: reduce) {

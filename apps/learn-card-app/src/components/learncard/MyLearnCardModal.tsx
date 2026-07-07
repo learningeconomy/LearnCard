@@ -30,7 +30,6 @@ import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
 import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
-import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
@@ -333,18 +332,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'Manage Data Sharing',
-                Icon: DataSharingIcon,
-                caretText: '',
-                onClick: async () => {
-                    const { prompted } = await gate();
-                    if (prompted) return;
-                    closeModal();
-                    history.push('/privacy-and-data');
-                },
-            },
-            {
-                title: 'Privacy & Data',
+                title: 'Data Sharing',
                 Icon: PrivacyLock,
                 caretText: '',
                 onClick: () => {
