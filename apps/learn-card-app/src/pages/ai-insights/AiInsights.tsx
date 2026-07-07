@@ -162,10 +162,10 @@ const AiInsights: React.FC = () => {
         !autoGenerateAiInsightsAttemptedRef.current;
 
     useEffect(() => {
-        if (walletCredentialsLoading || hasWalletCredentials) return;
+        if (hasWalletCredentials) return;
 
         autoGenerateAiInsightsAttemptedRef.current = false;
-    }, [hasWalletCredentials, walletCredentialsLoading]);
+    }, [hasWalletCredentials]);
 
     const learningSnapshotsIsLoading = useMemo(() => {
         if (hasExistingAiInsightCredential) {
