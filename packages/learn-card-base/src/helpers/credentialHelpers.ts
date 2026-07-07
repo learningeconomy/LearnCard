@@ -146,7 +146,6 @@ export const CATEGORY_MAP: Record<
     MovieTicketCredential: 'Achievement',
 
     // extending ( Achievement ) category
-    Degree: 'Achievement',
     Certificate: 'Achievement',
     'ext:CourseCompletion': 'Achievement',
     'ext:Attendance': 'Achievement',
@@ -162,7 +161,7 @@ export const CATEGORY_MAP: Record<
     'ext:Upskilling': 'Achievement',
 
     License: 'ID',
-    Membership: 'Membership',
+    Membership: 'ID',
     'Student Buckcard': 'ID',
     PermanentResidentCard: 'ID',
     AlumniCredential: 'ID',
@@ -211,6 +210,7 @@ export const CATEGORY_MAP: Record<
     'ext:Board': 'Work History',
 
     Assignment: 'Learning History',
+    Degree: 'Learning History',
     AssociateDegree: 'Learning History',
     BachelorDegree: 'Learning History',
     CertificateOfCompletion: 'Learning History',
@@ -591,16 +591,17 @@ export const getDefaultCategoryForCredential = (
         }
     }
 
-    // Not OBv3 credential, default category to achievement
+    // Strict validation can fail for reasons unrelated to categorization — e.g. a
+    // reusable template whose numeric field holds a `{{mustache}}` placeholder, or
+    // an LER embedded credential without full @context. In those cases the
+    // achievementType is still the canonical category signal, so fall back to it
+    // rather than discarding it and defaulting everything to Achievement.
     if (!verificationResult.success) {
-        // For LER embedded credentials without full @context, extract achievementType as fallback
-        if (options?.skipValidation) {
-            const lerAchievementType = Array.isArray(_credential?.credentialSubject)
-                ? _credential.credentialSubject[0]?.achievement?.achievementType
-                : _credential?.credentialSubject?.achievement?.achievementType;
-            if (lerAchievementType && CATEGORY_MAP[lerAchievementType]) {
-                return CATEGORY_MAP[lerAchievementType];
-            }
+        const fallbackAchievementType = Array.isArray(_credential?.credentialSubject)
+            ? _credential.credentialSubject[0]?.achievement?.achievementType
+            : _credential?.credentialSubject?.achievement?.achievementType;
+        if (fallbackAchievementType && CATEGORY_MAP[fallbackAchievementType]) {
+            return CATEGORY_MAP[fallbackAchievementType];
         }
         return 'Achievement';
     }
@@ -796,6 +797,10 @@ export const getFallBackImage = (credCategory: string) => {
         return 'https://cdn.filestackcontent.com/F9yva92WQ0CPisIeQRmr';
     if (credCategory === 'Accommodation')
         return 'https://cdn.filestackcontent.com/cHt9WgJQdCMWMnLFFQh1';
+    if (credCategory === 'Membership')
+        return 'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH';
+    if (credCategory === 'Course') return 'https://cdn.filestackcontent.com/zBtHw5EqTJDb5r6Pw7cg';
+    if (credCategory === 'Job') return 'https://cdn.filestackcontent.com/2eR985mSrur9mK4V4mzQ';
     if (credCategory === 'Family') return 'https://cdn.filestackcontent.com/9HELycBJSKGEhQtiu9Is';
 };
 
@@ -1343,6 +1348,17 @@ export const isPdfAttachmentSource = (value?: string | null): boolean => {
     return PDF_DATA_URL_PATTERN.test(trimmedValue) || trimmedValue.startsWith(PDF_BASE64_PREFIX);
 };
 
+const EVIDENCE_ATTACHMENT_TYPES = ['photo', 'video', 'document', 'link', 'text'] as const;
+type EvidenceAttachmentType = (typeof EVIDENCE_ATTACHMENT_TYPES)[number];
+
+export const normalizeEvidenceGenreType = (
+    genre?: string | null
+): EvidenceAttachmentType | undefined => {
+    const normalized = genre?.toLowerCase();
+
+    return EVIDENCE_ATTACHMENT_TYPES.find(type => type === normalized);
+};
+
 export const getEvidenceAttachmentType = async (url: string) => {
     if (isPdfAttachmentSource(url)) {
         return 'document';
@@ -1374,9 +1390,15 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
             let url;
             let type;
 
+            // Trust an explicit genre (e.g. Filestack URLs carry no file extension,
+            // so URL sniffing can't classify them). 'link' still goes through
+            // detection so e.g. YouTube URLs render as video.
+            const genreType = normalizeEvidenceGenreType(ev?.genre);
+            const trustedGenreType = genreType !== 'link' ? genreType : undefined;
+
             if (ev?.url) {
                 url = ev?.url;
-                type = await getEvidenceAttachmentType(ev?.url);
+                type = trustedGenreType ?? (await getEvidenceAttachmentType(ev?.url));
             } else if (isPdfAttachmentSource(ev?.id)) {
                 url = ev?.id;
                 type = 'document';
@@ -1385,7 +1407,7 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
                 type = ev?.genre;
             } else {
                 url = ev?.id;
-                type = await getEvidenceAttachmentType(ev?.id);
+                type = trustedGenreType ?? (await getEvidenceAttachmentType(ev?.id));
             }
 
             return {
