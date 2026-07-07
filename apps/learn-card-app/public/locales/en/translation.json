@@ -459,6 +459,11 @@
         "description1": "This link and QR code let others view your shared resume.",
         "description2": "Share with recruiters, hiring managers, friends, or anyone you want to review your resume."
       }
+    },
+    "wallet": {
+      "newCredentials": "New Credentials",
+      "scanQrCode": "Scan a QR code",
+      "addToPassport": "Add to Passport"
     }
   },
   "launchpad": {

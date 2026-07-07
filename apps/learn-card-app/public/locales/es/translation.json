@@ -459,7 +459,12 @@
         "description2": "Compártelo con reclutadores, responsables de contratación, amigos o cualquier persona que quieras que revise tu currículum."
       }
     },
-    "explore": "Explorar"
+    "explore": "Explorar",
+    "wallet": {
+      "newCredentials": "Credenciales nuevas",
+      "scanQrCode": "Escanear un código QR",
+      "addToPassport": "Añadir al Pasaporte"
+    }
   },
   "launchpad": {
     "title": "Aplicaciones",

@@ -459,7 +459,12 @@
         "description2": "Partagez-le avec des recruteurs, des responsables du recrutement, des amis ou toute personne à qui vous souhaitez faire consulter votre CV."
       }
     },
-    "explore": "Explorer"
+    "explore": "Explorer",
+    "wallet": {
+      "newCredentials": "Nouveaux justificatifs",
+      "scanQrCode": "Scannez un code QR",
+      "addToPassport": "Ajouter au Passeport"
+    }
   },
   "launchpad": {
     "title": "Applications",
