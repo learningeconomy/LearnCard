@@ -77,6 +77,21 @@ export const fieldToJson = (field: TemplateFieldValue | undefined): string | und
     return trimmed || undefined;
 };
 
+// OBv3 types creditsEarned / creditsAvailable as numbers, so a string value makes
+// the whole credential fail schema validation. Emit a JSON number for static
+// numeric input, keep {{mustache}} placeholders for dynamic templates, and omit
+// anything non-numeric rather than poison the credential.
+export const numericFieldToJson = (
+    field: TemplateFieldValue | undefined
+): number | string | undefined => {
+    if (!field) return undefined;
+    if (field.isDynamic && field.variableName) return `{{${field.variableName}}}`;
+    const trimmed = field.value?.trim();
+    if (!trimmed) return undefined;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 /**
  * Parse a JSON value back to a TemplateFieldValue
  * Detects Mustache syntax and extracts variable name
@@ -107,6 +122,32 @@ export const jsonToField = (value: unknown): TemplateFieldValue => {
 };
 
 /**
+ * Serialize an achievement `creator` Profile. Unlike `serializeIssuer`, this
+ * never injects a `{{issuer_did}}` fallback id — `creator` is descriptive
+ * provenance (the org that defined the achievement) and must never collapse
+ * into the signing issuer. Returns undefined when there is nothing to describe.
+ */
+const serializeCreatorProfile = (
+    creator: IssuerTemplate | undefined
+): Record<string, unknown> | undefined => {
+    if (!creator) return undefined;
+    const profile: Record<string, unknown> = { type: ['Profile'] };
+    const id = fieldToJson(creator.id);
+    if (id) profile.id = id;
+    const name = fieldToJson(creator.name);
+    if (name) profile.name = name;
+    const url = fieldToJson(creator.url);
+    if (url) profile.url = url;
+    const image = fieldToJson(creator.image);
+    if (image) profile.image = image;
+    const email = fieldToJson(creator.email);
+    if (email) profile.email = email;
+    return profile.id || profile.name || profile.url || profile.image || profile.email
+        ? profile
+        : undefined;
+};
+
+/**
  * Serialize a single AchievementTemplate to JSON (shared between OBv3 and CLR)
  */
 export const serializeAchievement = (ach: AchievementTemplate): Record<string, unknown> => {
@@ -127,6 +168,11 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
 
     if (ach.image?.value || ach.image?.isDynamic) {
         achievement.image = fieldToJson(ach.image);
+    }
+
+    const creator = serializeCreatorProfile(ach.creator);
+    if (creator) {
+        achievement.creator = creator;
     }
 
     // Criteria
@@ -153,7 +199,8 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
         achievement.specialization = fieldToJson(ach.specialization);
     }
     if (ach.creditsAvailable?.value || ach.creditsAvailable?.isDynamic) {
-        achievement.creditsAvailable = fieldToJson(ach.creditsAvailable);
+        const creditsAvailable = numericFieldToJson(ach.creditsAvailable);
+        if (creditsAvailable !== undefined) achievement.creditsAvailable = creditsAvailable;
     }
     if (ach.tag && ach.tag.length > 0) {
         achievement.tag = ach.tag;
@@ -212,6 +259,9 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
             }
             if (a.targetCode?.value || a.targetCode?.isDynamic) {
                 align.targetCode = fieldToJson(a.targetCode);
+            }
+            if (a.targetType?.value || a.targetType?.isDynamic) {
+                align.targetType = fieldToJson(a.targetType);
             }
             alignments.push(align);
         }
@@ -371,6 +421,7 @@ export const parseAchievement = (achievementObj: Record<string, unknown>): Achie
             ? jsonToField(achievementObj.achievementType)
             : undefined,
         image: achievementObj.image ? jsonToField(achievementObj.image) : undefined,
+        creator: achievementObj.creator ? parseIssuer(achievementObj.creator) : undefined,
         criteria: criteriaObj
             ? {
                   id: criteriaObj.id ? jsonToField(criteriaObj.id) : undefined,
@@ -384,6 +435,7 @@ export const parseAchievement = (achievementObj: Record<string, unknown>): Achie
             targetDescription: a.targetDescription ? jsonToField(a.targetDescription) : undefined,
             targetFramework: a.targetFramework ? jsonToField(a.targetFramework) : undefined,
             targetCode: a.targetCode ? jsonToField(a.targetCode) : undefined,
+            targetType: a.targetType ? jsonToField(a.targetType) : undefined,
         })),
         humanCode: achievementObj.humanCode ? jsonToField(achievementObj.humanCode) : undefined,
         fieldOfStudy: achievementObj.fieldOfStudy
@@ -622,7 +674,8 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
     const subj = template.credentialSubject;
 
     if (subj.creditsEarned?.value || subj.creditsEarned?.isDynamic) {
-        credentialSubject.creditsEarned = fieldToJson(subj.creditsEarned);
+        const creditsEarned = numericFieldToJson(subj.creditsEarned);
+        if (creditsEarned !== undefined) credentialSubject.creditsEarned = creditsEarned;
     }
 
     if (subj.activityStartDate?.value || subj.activityStartDate?.isDynamic) {
@@ -939,6 +992,11 @@ const checkAchievementFields = (
     checkField(ach.inLanguage);
     checkField(ach.version);
     checkField(ach.ctid);
+    checkField(ach.creator?.id);
+    checkField(ach.creator?.name);
+    checkField(ach.creator?.url);
+    checkField(ach.creator?.image);
+    checkField(ach.creator?.email);
     ach.otherIdentifier?.forEach(oi => {
         checkField(oi.identifier);
         checkField(oi.identifierType);
@@ -954,6 +1012,7 @@ const checkAchievementFields = (
         checkField(a.targetDescription);
         checkField(a.targetFramework);
         checkField(a.targetCode);
+        checkField(a.targetType);
     });
 };
 
