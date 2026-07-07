@@ -1,9 +1,12 @@
 ion-split-pane {
-    --side-max-width: 270px;
-
+    // LC-1921: Side Nav surface is white (was legacy navy). Width is pinned
+    // to 290px by `.side-menu-split-pane-container-visible` in nav.scss.
     & > ion-menu {
+        // Soft right-edge shadow per the Figma Side Nav.
+        --box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
+
         & > ion-content {
-            --background: #18224e;
+            --background: #ffffff;
         }
     }
 }
@@ -73,14 +76,16 @@ ion-split-pane {
     // color: #212121;
     display: flex;
     font-family: 'Poppins', sans-serif;
-    padding: 10px 4px 10px 4px;
+    // LC-1921: 17px label, 35px icons, px-10/py-5 to match the Figma Side Nav rows.
+    font-size: 17px;
+    padding: 5px 10px;
     width: 100%;
 
     & > svg {
         // color: #212121;
-        height: 30px;
+        height: 35px;
         margin-right: 10px;
-        width: 30px;
+        width: 35px;
         fill-opacity: 0.9;
         stroke-opacity: 0.9;
     }
@@ -98,4 +103,17 @@ ion-split-pane {
 
 .side-menu-logo {
     padding-top: calc(env(safe-area-inset-top) + 0px);
+}
+
+// LC-1921: suppress the browser focus ring on side-menu nav links/buttons.
+// The selected row is already conveyed by its background highlight; the default
+// outline drew an unwanted box around the focused/just-clicked item.
+.lc-side-menu-content {
+    a,
+    button {
+        &:focus,
+        &:focus-visible {
+            outline: none;
+        }
+    }
 }
