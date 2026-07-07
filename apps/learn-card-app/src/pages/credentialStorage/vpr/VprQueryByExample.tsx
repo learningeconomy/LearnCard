@@ -201,7 +201,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         <IonPage>
             <IonContent fullscreen>
                 <IonRow className="bg-grayscale-100 w-full flex items-center justify-center h-full">
-                    <IonCol className="text-center p-0 h-full">
+                    <IonCol className="text-center p-0 h-full pt-[env(safe-area-inset-top)]">
                         {!credentialsLoading && (
                             <h1 className="md:text-5xl mobile:text-4xl text-left m-5 md:ml-[5%] min-[1400px]:ml-[100px] text-grayscale-900 font-poppins font-bold">
                                 Select Credentials
@@ -245,7 +245,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                         <div role="presentation" ref={infiniteScrollRef} />
                                     </IonRow>
                                 </IonGrid>
-                                <footer className="fixed bottom-0 w-full lg:bottom-5 lg:right-10 lg:w-[500px] z-9999 bg-white border-t border-grayscale-200 p-2.5 lg:p-5 lg:rounded-[20px] shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
+                                <footer className="fixed bottom-0 w-full lg:bottom-5 lg:right-10 lg:w-[500px] z-9999 bg-white border-t border-grayscale-200 p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] lg:p-5 lg:pb-5 lg:rounded-[20px] shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
                                     <h1 className="text-left text-base text-grayscale-900 font-bold font-poppins mobile:pt-[5px] mobile:pl-[20px]">
                                         {selectedVcs?.length > 1
                                             ? selectedVcs?.length + ' Credentials'
