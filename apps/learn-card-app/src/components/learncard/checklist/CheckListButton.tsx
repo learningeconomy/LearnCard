@@ -91,14 +91,18 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 <div className="flex flex-col gap-[5px] flex-1 min-w-0">
                     <div className="flex flex-col">
                         <span className="text-[16px] font-poppins text-grayscale-900 leading-[normal]">
-                            Build My {brandingConfig.name}
+                            {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                         </span>
                         <span className="text-[12px] font-poppins font-medium text-grayscale-600 leading-[normal]">
                             {isParsing
-                                ? 'Processing documents...'
+                                ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? `${pendingReviewCount} ready for review`
-                                : `${optimizedPercent}% Optimized`}
+                                  ? m['passport.buildMyLearnCard.pendingReview']({
+                                        count: pendingReviewCount,
+                                    })
+                                  : m['passport.buildMyLearnCard.progress']({
+                                        percent: optimizedPercent,
+                                    })}
                         </span>
                     </div>
                     {!isParsing && !hasPendingReview && (
@@ -134,8 +138,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             isParsing
                                 ? `bg-${primaryColor}`
                                 : featuredCardBgColor
-                                ? 'bg-transparent'
-                                : 'bg-white'
+                                  ? 'bg-transparent'
+                                  : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
@@ -214,8 +218,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         isParsing
                             ? `bg-${primaryColor}`
                             : featuredCardBgColor
-                            ? 'bg-transparent'
-                            : 'bg-white'
+                              ? 'bg-transparent'
+                              : 'bg-white'
                     }`}
                 >
                     {isParsing ? (
