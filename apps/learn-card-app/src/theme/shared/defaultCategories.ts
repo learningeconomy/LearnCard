@@ -24,7 +24,7 @@ export const DEFAULT_CATEGORIES: ThemeCategory[] = [
         categoryId: CredentialCategoryEnum.skill,
     },
     {
-        labels: { singular: 'Boost', plural: 'Boosts' },
+        labels: { singular: 'Badge', plural: 'Badges' },
         categoryId: CredentialCategoryEnum.socialBadge,
     },
     {
@@ -32,7 +32,7 @@ export const DEFAULT_CATEGORIES: ThemeCategory[] = [
         categoryId: CredentialCategoryEnum.achievement,
     },
     {
-        labels: { singular: 'Study', plural: 'Studies' },
+        labels: { singular: 'Course', plural: 'Courses' },
         categoryId: CredentialCategoryEnum.learningHistory,
     },
     {
