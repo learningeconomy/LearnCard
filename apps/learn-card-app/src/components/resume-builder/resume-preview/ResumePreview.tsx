@@ -27,9 +27,17 @@ const ResumePreview = forwardRef<
         resolvedCredentialsByUri?: Record<string, VC | null | undefined>;
         qrCodeValue?: string;
         profileDid?: string;
+        onOpenCredentialPanel?: (sectionKey?: ResumeSectionKey) => void;
     }
 >(function ResumePreview(
-    { isMobile = false, readOnly = false, resolvedCredentialsByUri, qrCodeValue, profileDid },
+    {
+        isMobile = false,
+        readOnly = false,
+        resolvedCredentialsByUri,
+        qrCodeValue,
+        profileDid,
+        onOpenCredentialPanel,
+    },
     ref
 ) {
     const sectionOrder = resumeBuilderStore.useTracked.sectionOrder();
@@ -115,6 +123,7 @@ const ResumePreview = forwardRef<
                                 readOnly={readOnly}
                                 filteredUris={entries.map(entry => entry.uri)}
                                 resolvedCredentialsByUri={resolvedCredentialsByUri}
+                                onOpenCredentialPanel={onOpenCredentialPanel}
                             />
                         );
                     })}
