@@ -167,7 +167,14 @@ export const getTenantHeaders = (): Record<string, string> => {
 };
 
 export const getAppBaseUrl = (): string => {
-    return getTenantBaseUrl(getResolvedTenantConfig());
+    const url = getTenantBaseUrl(getResolvedTenantConfig());
+
+    // Scouts local dev runs over HTTPS, so normalize the shared helper's HTTP localhost URL.
+    if (url === 'http://localhost:3000') {
+        return 'https://localhost:3000';
+    }
+
+    return url;
 };
 
 export const getFirebaseRedirectDomain = (): string => {
