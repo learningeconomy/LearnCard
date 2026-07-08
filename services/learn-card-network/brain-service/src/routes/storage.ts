@@ -59,6 +59,7 @@ const resolveStoredContent = async ({
     | JWE
     | z.infer<typeof ConsentFlowContractValidator>
     | z.infer<typeof ConsentFlowTermsValidator>
+    | z.infer<typeof StoredCredentialEnvelopeValidator>
 > => {
     const { domain: localDomain } = ctx;
 
@@ -371,7 +372,11 @@ export const storageRouter = t.router({
             })
         )
         .output(
-            UnsignedVCValidator.or(VCValidator)
+            // StoredCredentialEnvelopeValidator FIRST: same union-ordering invariant as
+            // the resolve route — envelope's strict `format` enum must be tried before
+            // ConsentFlowContractValidator's .prefault() greedily matches any object.
+            StoredCredentialEnvelopeValidator.or(UnsignedVCValidator)
+                .or(VCValidator)
                 .or(VPValidator)
                 .or(JWEValidator)
                 .or(ConsentFlowContractValidator)

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import cache from '@cache';
 import {
     UnsignedVC,
@@ -6,7 +7,7 @@ import {
     JWE,
     ConsentFlowContract,
     ConsentFlowTerms,
-    StoredCredentialEnvelope,
+    StoredCredentialEnvelopeValidator,
 } from '@learncard/types';
 import { createHash } from 'crypto';
 
@@ -30,7 +31,7 @@ type StorageCacheItem =
     | JWE
     | ConsentFlowContract
     | ConsentFlowTerms
-    | StoredCredentialEnvelope;
+    | z.infer<typeof StoredCredentialEnvelopeValidator>;
 
 export const getCachedStorageByUri = async (
     uri: string
