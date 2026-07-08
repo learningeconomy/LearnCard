@@ -107,6 +107,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 unknownVerifierTitle={unknownVerifierTitle}
                 relativeDate={relativeDate}
                 compact={compact}
+                lifecycleStatus={lifecycleStatus}
             />
         );
     }

@@ -27,6 +27,7 @@ import CredentialMediaBadge from '../CredentialBadge/CredentialMediaBadge';
 import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
+import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
 
 type BoostListItemProps = {
     title?: string;
@@ -46,6 +47,7 @@ type BoostListItemProps = {
     unknownVerifierTitle?: string;
     relativeDate?: boolean;
     compact?: boolean;
+    lifecycleStatus?: CredentialLifecycleStatus;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -68,7 +70,17 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     unknownVerifierTitle,
     relativeDate = false,
     compact = false,
+    lifecycleStatus = 'active',
 }) => {
+    const isInactive = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
+    // Inline styles (see BoostGenericCard): keep the revoked/suspended treatment
+    // independent of Tailwind content scanning + arbitrary-value generation.
+    const inactiveMediaStyle: React.CSSProperties | undefined = isInactive
+        ? { filter: 'grayscale(1) brightness(0.9)' }
+        : undefined;
+    const pillBg = lifecycleStatus === 'revoked' ? '#DC2626' : '#EA580C';
+    const pillLabel = lifecycleStatus === 'revoked' ? 'Revoked' : 'Suspended';
+
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
     const showNewItemIndicator = newCredsForCategory?.includes(uri) ?? false;
@@ -198,7 +210,10 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             data-testid="boost-list-item"
         >
             {displayType === DisplayTypeEnum.Media ? (
-                <div className="relative min-h-[100px] max-w-[100px] flex-1 flex items-center justify-center relative">
+                <div
+                    className="relative min-h-[100px] max-w-[100px] flex-1 flex items-center justify-center relative"
+                    style={inactiveMediaStyle}
+                >
                     <CredentialMediaBadge
                         credential={credential}
                         backgroundColor={backgroundColor}
@@ -208,7 +223,10 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     />
                 </div>
             ) : (
-                <div className={`relative ${thumbSize} rounded-full bg-${subColor}`}>
+                <div
+                    className={`relative ${thumbSize} rounded-full bg-${subColor}`}
+                    style={inactiveMediaStyle}
+                >
                     <BadgeThumbnailImg
                         src={
                             thumbImgSrc ||
@@ -245,9 +263,19 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     </>
                 )}
                 {!isMediaDisplay && (
-                    <h3 className="text-grayscale-900 font-semibold truncate w-full leading-tight">
-                        {title}
-                    </h3>
+                    <div className="flex items-center gap-1.5 w-full min-w-0">
+                        <h3 className="text-grayscale-900 font-semibold truncate min-w-0 leading-tight">
+                            {title}
+                        </h3>
+                        {isInactive && (
+                            <span
+                                className="shrink-0 rounded-full px-[6px] py-[1px] text-[9px] font-extrabold uppercase tracking-wide text-white"
+                                style={{ backgroundColor: pillBg }}
+                            >
+                                {pillLabel}
+                            </span>
+                        )}
+                    </div>
                 )}
                 {!isMediaDisplay && !compact && (
                     <span className="text-grayscale-500 font-normal">
@@ -268,6 +296,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             credential={credential}
                             iconClassName={verificationIconClass}
                             unknownVerifierTitle={unknownVerifierTitle}
+                            lifecycleStatus={lifecycleStatus}
                         />
                     )}
                     {compact ? (
