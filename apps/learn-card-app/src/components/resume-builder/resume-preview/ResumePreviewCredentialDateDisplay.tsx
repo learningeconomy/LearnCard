@@ -27,7 +27,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
         <div className="flex items-center gap-1">
             {!isEditing ? (
                 <span className="block sm:inline font-medium text-grayscale-600 leading-tight">
-                    {dateLabel ? `• ${dateLabel}` : ''}
+                    {dateLabel}
                 </span>
             ) : (
                 <>
@@ -35,7 +35,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                         data-pdf-hide
                         type="button"
                         onClick={onOpenStartDatePicker}
-                        className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                        className="sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                     >
                         <span className="font-medium text-sm text-grayscale-900">
                             {formattedStartDate || startLabel || 'Start date'}
@@ -46,7 +46,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                         data-pdf-hide
                         type="button"
                         onClick={onOpenEndDatePicker}
-                        className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                        className="sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                     >
                         <span className="font-medium text-sm text-grayscale-900">
                             {formattedEndDate || 'End date'}
@@ -60,7 +60,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                 style={{ display: 'none' }}
                 className="font-medium text-grayscale-600"
             >
-                {dateLabel ? `• ${dateLabel}` : ''}
+                {dateLabel}
             </span>
         </div>
     );

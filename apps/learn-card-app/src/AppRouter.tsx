@@ -41,6 +41,9 @@ import {
     redirectStore,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
+import { useAuthStatus } from 'learn-card-base';
+import { OfflineBootGate } from './components/network-listener/OfflineBootGate';
+import { connectivityStore } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
@@ -81,6 +84,16 @@ const AppRouter: React.FC = () => {
     // Everything else (`authenticating`, `authenticated`, `checking_key_status`,
     // `needs_migration`, `deriving_key`, and the brief
     // `ready`-without-wallet window) is a transition we bridge with the loader.
+
+    const authStatus = useAuthStatus();
+    const isOffline = connectivityStore.use.status() === 'offline';
+
+    // If offline and auth is not settled into a usable state (no wallet and unauthenticated/resolving)
+    const showOfflineBootGate =
+        isOffline &&
+        !walletReady &&
+        (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
+
     const initLoading = !(
         walletReady ||
         coordinatorState.status === 'idle' ||
@@ -411,7 +424,9 @@ const AppRouter: React.FC = () => {
     // live modal instance across the transition.
     return (
         <GenericErrorBoundary>
-            {initLoading ? (
+            {showOfflineBootGate ? (
+                <OfflineBootGate />
+            ) : initLoading ? (
                 <LoginLoadingPage />
             ) : (
                 <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
