@@ -1,0 +1,18 @@
+{
+    "name": "LearnCard",
+    "implementation": "LearnCard",
+    "issuers": [
+        {
+            "id": "did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh",
+            "endpoint": "https://vc-api.learncard.com/credentials/issue",
+            "tags": ["Ed25519Signature2020"]
+        }
+    ],
+    "verifiers": [
+        {
+            "id": "did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh",
+            "endpoint": "https://vc-api.learncard.com/credentials/verify",
+            "tags": ["Ed25519Signature2020"]
+        }
+    ]
+}
