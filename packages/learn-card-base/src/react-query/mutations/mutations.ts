@@ -550,6 +550,10 @@ export const useRevokeBoostRecipient = () => {
             });
             queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
             queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
+            // Refresh the holder-facing lifecycle badge (useCredentialStatus, keyed by
+            // ['credentialStatus', uri]) so a session that both issued and holds the
+            // credential updates immediately instead of waiting out the 5m staleTime.
+            queryClient.invalidateQueries({ queryKey: ['credentialStatus'] });
         },
     });
 };
@@ -597,6 +601,10 @@ export const useSuspendBoostRecipient = () => {
             });
             queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
             queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
+            // Refresh the holder-facing lifecycle badge (useCredentialStatus, keyed by
+            // ['credentialStatus', uri]) so a session that both issued and holds the
+            // credential updates immediately instead of waiting out the 5m staleTime.
+            queryClient.invalidateQueries({ queryKey: ['credentialStatus'] });
         },
     });
 };
@@ -641,6 +649,10 @@ export const useUnsuspendBoostRecipient = () => {
             });
             queryClient.invalidateQueries({ queryKey: ['getMyActivities'] });
             queryClient.invalidateQueries({ queryKey: ['getActivityStats'] });
+            // Refresh the holder-facing lifecycle badge (useCredentialStatus, keyed by
+            // ['credentialStatus', uri]) so a session that both issued and holds the
+            // credential updates immediately instead of waiting out the 5m staleTime.
+            queryClient.invalidateQueries({ queryKey: ['credentialStatus'] });
         },
     });
 };

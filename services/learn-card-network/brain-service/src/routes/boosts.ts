@@ -2217,6 +2217,10 @@ export const boostsRouter = t.router({
                 });
             }
 
+            // Look up the recipient so we can forward their notifications webhook
+            // (parity with revoke/suspend), if they registered one.
+            const recipientProfile = await getProfileByProfileId(resolvedRecipientProfileId);
+
             // Notify the holder (fire-and-forget — must not fail the unsuspend)
             try {
                 await addNotificationToQueue({
@@ -2224,6 +2228,9 @@ export const boostsRouter = t.router({
                     to: {
                         did: getDidWeb(ctx.domain, resolvedRecipientProfileId),
                         profileId: resolvedRecipientProfileId,
+                        ...(recipientProfile?.notificationsWebhook && {
+                            notificationsWebhook: recipientProfile.notificationsWebhook,
+                        }),
                     },
                     from: {
                         did: getDidWeb(ctx.domain, profile.profileId),
