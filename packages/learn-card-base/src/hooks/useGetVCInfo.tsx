@@ -15,6 +15,8 @@ import {
     getSubjectImage,
     getAchievementTypeDisplayText,
     getImageUrlFromCredential,
+    getCredentialSubjectAchievement,
+    getUrlFromImage,
     getCredentialName,
     isClrCredential as checkIsClrCredential,
     getClrLinkedCredentialCounts,
@@ -396,6 +398,11 @@ export const useGetVCInfo = (
     const idDimBackgroundImage = vc?.boostID?.dimBackgroundImage;
     const idFontColor = vc?.boostID?.fontColor;
     const idAccentColor = vc?.boostID?.accentColor;
+    const achievementImage = getUrlFromImage(getCredentialSubjectAchievement(vc)?.image);
+    const idDisplayBackgroundImage = idBackgroundImage ?? achievementImage;
+    const idDisplayDimBackgroundImage = Boolean(
+        idBackgroundImage ? idDimBackgroundImage : achievementImage
+    );
 
     // Generic display settings
     const backgroundImage = vc?.display?.backgroundImage;
@@ -480,6 +487,8 @@ export const useGetVCInfo = (
         idDimBackgroundImage,
         idFontColor,
         idAccentColor,
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
         backgroundImage,
         backgroundColor,
 
