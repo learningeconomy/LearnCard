@@ -51,7 +51,7 @@ export const CredentialIDBadge: React.FC<{
             {/* bg-blue-500 frames the header image on top.
                 Removed px-2 so the header image and glass shelf span the full width,
                 eliminating any awkward blue side-slivers. */}
-            <div className="relative w-full z-0 pt-5 pb-0 bg-blue-500 rounded-t-[20px] overflow-hidden">
+            <div className="relative w-full z-0 pb-0 bg-blue-500 rounded-t-[20px] overflow-hidden">
                 {/* 1) Background card at z-0 */}
                 <div className="relative w-full">
                     <IDDisplayCard credential={credential} backgroundColor={backgroundColor} />
@@ -64,11 +64,11 @@ export const CredentialIDBadge: React.FC<{
                         className="w-full h-full bg-white/70 backdrop-blur-md border-t border-white/50 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
                         style={{
                             // Scalloped notch cut into the glass shelf for the ID icon bubble
-                            // Center is at calc(100% - 38px) to align with the bubble
+                            // Center follows the bubble and drops slightly with the lower placement.
                             maskImage:
-                                'radial-gradient(circle 24px at calc(100% - 38px) 0px, transparent 100%, black 100%)',
+                                'radial-gradient(circle 24px at calc(100% - 38px) 8px, transparent 100%, black 100%)',
                             WebkitMaskImage:
-                                'radial-gradient(circle 24px at calc(100% - 38px) 0px, transparent 100%, black 100%)',
+                                'radial-gradient(circle 24px at calc(100% - 38px) 8px, transparent 100%, black 100%)',
                         }}
                     />
                     {/* Gradient to solid white to blend perfectly into the card body below */}
@@ -76,7 +76,7 @@ export const CredentialIDBadge: React.FC<{
                 </div>
 
                 {/* 3) Prominent circular profile photo straddling the header/glass boundary */}
-                <div className="absolute bottom-[36px] left-[24px] transform translate-y-1/2 z-20">
+                <div className="absolute bottom-[28px] left-[24px] transform translate-y-1/2 z-20">
                     <ProfilePicture
                         customContainerClass="flex justify-center items-center h-[64px] w-[64px] rounded-full overflow-hidden text-white font-medium text-3xl bg-grayscale-100 border-[4px] border-white shadow-sm"
                         customImageClass="flex justify-center items-center h-full w-full rounded-full overflow-hidden object-cover"
@@ -85,7 +85,7 @@ export const CredentialIDBadge: React.FC<{
                 </div>
 
                 {/* 4) Frosted-glass ID icon bubble nested into the scalloped notch */}
-                <div className="absolute bottom-[36px] right-[20px] transform translate-y-1/2 z-20">
+                <div className="absolute bottom-[28px] right-[20px] transform translate-y-1/2 z-20">
                     <div className="w-[36px] h-[36px] rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/60">
                         <IDsIconSolid className="w-[18px] h-[18px] text-grayscale-800" />
                     </div>
