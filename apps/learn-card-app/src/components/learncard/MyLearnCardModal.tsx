@@ -66,6 +66,7 @@ import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModa
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../paraglide/messages.js';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 
 type MyLearnCardModalProps = {
@@ -90,7 +91,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { theme } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
     const brandingConfig = useBrandingConfig();
-    const buildMyLCTitle = `Build My ${brandingConfig.name}`;
+    const buildMyLCTitle = m['profile.menu.buildMyLearnCard']({ brand: brandingConfig.name });
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -116,7 +117,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     } = useAppAuth();
 
     const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
-    const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
+    const checkListItemText = m['profile.menu.stepsCompleted']({
+        completed: completedItems,
+        total: checklistItems?.length ?? 0,
+    });
     const numConnectedApps = connections?.filter(c => c.isServiceProfile)?.length;
 
     const description = user?.bio ?? user?.shortBio;
@@ -184,6 +188,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const rows: {
         Icon: React.FC;
         title: string;
+        iconVersion?: string;
         caretText?: string;
         onClick?: () => void;
         hide?: boolean;
@@ -192,7 +197,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'My Contacts',
+                title: m['profile.menu.myContacts'](),
                 Icon: GreenGlobeStand,
                 caretText: connections?.length.toString() ?? '...',
                 onClick: () => {
@@ -202,7 +207,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 hide: notInNetwork,
             },
             {
-                title: 'My Account',
+                title: m['profile.menu.myAccount'](),
                 Icon: OrangeProfileIcon,
                 caretText: '',
                 onClick: async () => {
@@ -225,7 +230,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Personalize AI Sessions',
+                title: m['profile.menu.personalizeAiSessions'](),
                 Icon: BlueMagicWand,
                 caretText: '',
                 onClick: async () => {
@@ -237,7 +242,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Email Addresses',
+                title: m['profile.menu.emailAddresses'](),
+                iconVersion: '2',
                 Icon: EmailIcon,
                 caretText: '',
                 onClick: async () => {
@@ -277,7 +283,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     if (!hideEdit) {
         rows.push({
-            title: 'Edit Contact Card',
+            title: m['profile.menu.editContactCard'](),
             Icon: BluePaintBrush,
             caretText: '',
             onClick: () => {
@@ -332,7 +338,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'Data Sharing',
+                title: m['profile.menu.manageDataSharing'](),
                 Icon: PrivacyLock,
                 caretText: '',
                 onClick: () => {
@@ -341,7 +347,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Admin Tools',
+                title: m['profile.menu.adminTools'](),
                 Icon: WrenchColorFillIcon,
                 caretText: '',
                 onClick: async () => {
@@ -358,7 +364,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
-                title: 'Account Recovery',
+                title: m['profile.menu.accountRecovery'](),
                 Icon: ShieldCheck,
                 caretText: '',
                 onClick: async () => {
@@ -600,7 +606,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.deviceLinking) {
             rows.push({
-                title: 'Link a Device',
+                title: m['profile.menu.linkADevice'](),
                 Icon: QRCodeScanner,
                 caretText: '',
                 onClick: () => {
@@ -745,17 +751,17 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                 }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
-                                Complete Profile
+                                {m['profile.menu.completeProfile']()}
                             </button>
                         )}
 
                         <div>
                             {rows.map((r, index) => {
-                                const { title, Icon, caretText, onClick, hide } = r;
+                                const { title, Icon, iconVersion, caretText, onClick, hide } = r;
 
                                 if (hide) return undefined;
 
-                                const version = title === 'Email Addresses' ? '2' : '1';
+                                const version = r.iconVersion ?? '1';
 
                                 let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
 
@@ -788,7 +794,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                 disabled={isLoggingOut}
                             >
                                 <SignOutIcon />
-                                Logout
+                                {m['sidemenu.footer.logout']()}
                             </button>
                         )}
                     </div>

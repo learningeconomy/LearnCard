@@ -66,7 +66,11 @@
             "connectionsEncrypted": "جميع الاتصالات <0>مشفرة.</0>",
             "privacyPolicy": "سياسة الخصوصية",
             "termsOfService": "شروط الخدمة",
-            "copyright": "© {{year}} Learning Economy"
+            "copyright": "© {{year}} Learning Economy",
+            "privacy": "الخصوصية",
+            "terms": "الشروط",
+            "logout": "تسجيل الخروج",
+            "viewVersionDetails": "عرض تفاصيل الإصدار"
         },
         "links": {
             "dashboard": "لوحة التحكم",
@@ -91,7 +95,9 @@
             "families": "العائلات",
             "ids": "الهويات",
             "pathways": "المسارات"
-        }
+        },
+        "settings": "الإعدادات",
+        "closeMenu": "إغلاق القائمة"
     },
     "passport": {
         "buildMyLearnCard": {
@@ -453,7 +459,73 @@
                 "description2": "شاركها مع جهات التوظيف ومديري التوظيف والأصدقاء أو أي شخص تريد أن يطّلع على سيرتك الذاتية."
             }
         },
-        "explore": "استكشاف"
+        "explore": "استكشاف",
+        "wallet": {
+            "newCredentials": "بيانات اعتماد جديدة",
+            "scanQrCode": "مسح رمز QR",
+            "addToPassport": "إضافة إلى جواز السفر"
+        },
+        "activity": {
+            "heading": "النشاط",
+            "searchAria": "البحث في النشاط",
+            "searchPlaceholder": "بحث...",
+            "filter": "تصفية",
+            "error": "حدث خطأ ما — لم نتمكن من تحميل نشاطك.",
+            "empty": "لا يوجد نشاط حتى الآن.",
+            "reset": "إعادة تعيين",
+            "applyFilter": "تطبيق الفلتر",
+            "you": "أنت",
+            "someone": "شخص ما",
+            "credential": "بيان اعتماد",
+            "sentYou": "{actorName} أرسل لك {article} {categoryLabel}",
+            "youSent": "لقد أرسلت {article} {categoryLabel} إلى {recipientName}",
+            "months": {
+                "jan": "يناير",
+                "feb": "فبراير",
+                "mar": "مارس",
+                "apr": "أبريل",
+                "may": "مايو",
+                "jun": "يونيو",
+                "jul": "يوليو",
+                "aug": "أغسطس",
+                "sep": "سبتمبر",
+                "oct": "أكتوبر",
+                "nov": "نوفمبر",
+                "dec": "ديسمبر",
+                "JANUARY": "يناير",
+                "FEBRUARY": "فبراير",
+                "MARCH": "مارس",
+                "APRIL": "أبريل",
+                "MAY": "مايو",
+                "JUNE": "يونيو",
+                "JULY": "يوليو",
+                "AUGUST": "أغسطس",
+                "SEPTEMBER": "سبتمبر",
+                "OCTOBER": "أكتوبر",
+                "NOVEMBER": "نوفمبر",
+                "DECEMBER": "ديسمبر"
+            },
+            "categories": {
+                "all": "الكل",
+                "socialBadge": "شارة",
+                "achievement": "إنجاز",
+                "learningHistory": "دورة",
+                "accomplishment": "عنصر محفظة",
+                "accommodation": "مساعدة",
+                "workHistory": "خبرة",
+                "credential": "بيان اعتماد"
+            },
+            "categoriesPlural": {
+                "all": "الكل",
+                "socialBadge": "الشارات",
+                "achievement": "الإنجازات",
+                "learningHistory": "الدورات",
+                "accomplishment": "المحفظة",
+                "accommodation": "المساعدة",
+                "workHistory": "الخبرات",
+                "id": "معرفات"
+            }
+        }
     },
     "launchpad": {
         "title": "التطبيقات",
@@ -1148,7 +1220,8 @@
             "linkADevice": "ربط جهاز",
             "switchAccount": "تبديل الحساب",
             "buildMyLearnCard": "ابنِ {{brand}} الخاص بي",
-            "stepsCompleted": "{{completed}} من {{total}}"
+            "stepsCompleted": "{{completed}} من {{total}}",
+            "completeProfile": "إكمال الملف الشخصي"
         }
     },
     "settings": {
@@ -3147,7 +3220,23 @@
         "readAccess": "وصول القراءة",
         "noReadPermissions": "لم يتم منح أذونات قراءة",
         "writeAccess": "وصول الكتابة",
-        "noWritePermissions": "لم يتم منح أذونات كتابة"
+        "noWritePermissions": "لم يتم منح أذونات كتابة",
+        "loadingCenter": "جاري تحميل مركز الخصوصية الخاص بك...",
+        "centerFooter": "يمكنك تغيير هذا في أي وقت. إيقاف تشغيل شيء ما يسري مفعوله فورًا.",
+        "activityFeed": "خلاصة النشاط",
+        "loadingActivityData": "جاري تحميل بيانات النشاط...",
+        "noActivityYet": "لا توجد بيانات نشاط بعد",
+        "noActivitySubtitle": "سيظهر نشاط هذا التطبيق هنا عندما يصبح متاحًا.",
+        "activityCount": "عرض {{count}} أنشطة من هذا التطبيق",
+        "editAccess": "تعديل الوصول",
+        "dataAccess": "الوصول إلى البيانات",
+        "connecting": "جارٍ الاتصال...",
+        "disconnecting": "جارٍ قطع الاتصال...",
+        "connected": "متصل",
+        "disconnected": "تم قطع الاتصال بنجاح",
+        "aiConsentWarning": "الذكاء الاصطناعي قيد التشغيل، ولكن الموافقة على عقد LearnCard AI مفقودة.",
+        "tryAgain": "حاول مرة أخرى",
+        "retrying": "إعادة المحاولة..."
     },
     "recoveryPrompt": {
         "title": "استعادة تقدّمك",

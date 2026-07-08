@@ -66,7 +66,11 @@
             "connectionsEncrypted": "Toutes les connexions sont <0>chiffrées.</0>",
             "privacyPolicy": "Politique de confidentialité",
             "termsOfService": "Conditions d'utilisation",
-            "copyright": "© {{year}} Learning Economy"
+            "copyright": "© {{year}} Learning Economy",
+            "privacy": "Confidentialité",
+            "terms": "Conditions",
+            "logout": "Déconnexion",
+            "viewVersionDetails": "Voir les détails de la version"
         },
         "links": {
             "dashboard": "Tableau de bord",
@@ -91,7 +95,9 @@
             "families": "Familles",
             "ids": "Identifiants",
             "pathways": "Parcours"
-        }
+        },
+        "settings": "Paramètres",
+        "closeMenu": "Fermer le menu"
     },
     "passport": {
         "buildMyLearnCard": {
@@ -453,7 +459,73 @@
                 "description2": "Partagez-le avec des recruteurs, des responsables du recrutement, des amis ou toute personne à qui vous souhaitez faire consulter votre CV."
             }
         },
-        "explore": "Explorer"
+        "explore": "Explorer",
+        "wallet": {
+            "newCredentials": "Nouveaux justificatifs",
+            "scanQrCode": "Scannez un code QR",
+            "addToPassport": "Ajouter au Passeport"
+        },
+        "activity": {
+            "heading": "Activité",
+            "searchAria": "Rechercher une activité",
+            "searchPlaceholder": "Rechercher...",
+            "filter": "Filtrer",
+            "error": "Quelque chose s'est mal passé — nous n'avons pas pu charger votre activité.",
+            "empty": "Aucune activité pour l'instant.",
+            "reset": "Réinitialiser",
+            "applyFilter": "Appliquer le filtre",
+            "you": "Vous",
+            "someone": "Quelqu'un",
+            "credential": "Justificatif",
+            "sentYou": "{actorName} vous a envoyé {article} {categoryLabel}",
+            "youSent": "Vous avez envoyé {article} {categoryLabel} à {recipientName}",
+            "months": {
+                "jan": "Jan",
+                "feb": "Fév",
+                "mar": "Mar",
+                "apr": "Avr",
+                "may": "Mai",
+                "jun": "Juin",
+                "jul": "Juil",
+                "aug": "Août",
+                "sep": "Sep",
+                "oct": "Oct",
+                "nov": "Nov",
+                "dec": "Déc",
+                "JANUARY": "Janvier",
+                "FEBRUARY": "Février",
+                "MARCH": "Mars",
+                "APRIL": "Avril",
+                "MAY": "Mai",
+                "JUNE": "Juin",
+                "JULY": "Juillet",
+                "AUGUST": "Août",
+                "SEPTEMBER": "Septembre",
+                "OCTOBER": "Octobre",
+                "NOVEMBER": "Novembre",
+                "DECEMBER": "Décembre"
+            },
+            "categories": {
+                "all": "Tout",
+                "socialBadge": "Badge",
+                "achievement": "Réalisation",
+                "learningHistory": "Cours",
+                "accomplishment": "Élément de portfolio",
+                "accommodation": "Assistance",
+                "workHistory": "Expérience",
+                "credential": "Justificatif"
+            },
+            "categoriesPlural": {
+                "all": "Tout",
+                "socialBadge": "Badges",
+                "achievement": "Réalisations",
+                "learningHistory": "Cours",
+                "accomplishment": "Portfolio",
+                "accommodation": "Assistance",
+                "workHistory": "Expériences",
+                "id": "IDs"
+            }
+        }
     },
     "launchpad": {
         "title": "Applications",
@@ -586,7 +658,7 @@
             "aiPathways": "Pathways",
             "aiInsights": "Insights",
             "skills": "Compétences",
-            "socialBadges": "Boosts",
+            "socialBadges": "Badges",
             "achievements": "Réalisations",
             "studies": "Études",
             "portfolio": "Portfolio",
@@ -633,7 +705,7 @@
             "aiPathways": "IA Pathway",
             "aiInsights": "IA Insight",
             "skills": "Compétence",
-            "socialBadges": "Boost",
+            "socialBadges": "Badge",
             "achievements": "Réalisation",
             "studies": "Étude",
             "portfolio": "Portfolio",
@@ -1148,7 +1220,8 @@
             "linkADevice": "Associer un appareil",
             "switchAccount": "Changer de compte",
             "buildMyLearnCard": "Construire mon {{brand}}",
-            "stepsCompleted": "{{completed}} sur {{total}}"
+            "stepsCompleted": "{{completed}} sur {{total}}",
+            "completeProfile": "Compléter le profil"
         }
     },
     "settings": {
@@ -3147,7 +3220,23 @@
         "readAccess": "Accès en lecture",
         "noReadPermissions": "Aucune autorisation de lecture accordée",
         "writeAccess": "Accès en écriture",
-        "noWritePermissions": "Aucune autorisation d'écriture accordée"
+        "noWritePermissions": "Aucune autorisation d'écriture accordée",
+        "loadingCenter": "Chargement de votre centre de confidentialité...",
+        "centerFooter": "Vous pouvez modifier ceci à tout moment. La désactivation prend effet immédiatement.",
+        "activityFeed": "Flux d'activité",
+        "loadingActivityData": "Chargement des données d'activité...",
+        "noActivityYet": "Pas encore de données d'activité",
+        "noActivitySubtitle": "L'activité de cette application apparaîtra ici lorsqu'elle sera disponible.",
+        "activityCount": "Affichage de {{count}} activités de cette application",
+        "editAccess": "Modifier l'accès",
+        "dataAccess": "Accès aux données",
+        "connecting": "Connexion...",
+        "disconnecting": "Déconnexion...",
+        "connected": "Connecté",
+        "disconnected": "Déconnecté avec succès",
+        "aiConsentWarning": "L'IA est activée, mais le consentement au contrat IA LearnCard est manquant.",
+        "tryAgain": "Réessayer",
+        "retrying": "Nouvelle tentative..."
     },
     "recoveryPrompt": {
         "title": "Récupérez votre progression",

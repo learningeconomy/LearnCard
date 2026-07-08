@@ -6,6 +6,8 @@ import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import VersionInfoModal from '../versionInfoModal/VersionInfoModal';
 import useLogout from '../../hooks/useLogout';
 
+import * as m from '../../paraglide/messages.js';
+
 const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version }) => {
     const currentYear = new Date().getFullYear();
     const { colors } = useTheme();
@@ -20,7 +22,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
 
         newModal(<VersionInfoModal fallbackVersion={version} />, {
             sectionClassName: '!max-w-[420px]',
-            cancelButtonTextOverride: 'Close',
+            cancelButtonTextOverride: m['common.close'](),
         });
     };
 
@@ -28,11 +30,11 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
         <div className="w-full px-4 pt-[10px] pb-8 flex flex-col items-start text-left font-poppins">
             <p className="text-[13px] font-bold">
                 <button className={`text-${primaryColor} font-bold no-underline`} onClick={openPP}>
-                    Privacy
+                    {m['sidemenu.footer.privacy']()}
                 </button>
                 <span className="text-grayscale-600"> • </span>
                 <button className={`text-${primaryColor} font-bold no-underline`} onClick={openToS}>
-                    Terms
+                    {m['sidemenu.footer.terms']()}
                 </button>
                 <span className="text-grayscale-600"> • </span>
                 <button
@@ -41,7 +43,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
                     onClick={() => handleLogout()}
                     disabled={isLoggingOut}
                 >
-                    Logout
+                    {m['sidemenu.footer.logout']()}
                 </button>
             </p>
 
@@ -50,7 +52,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
                     <button
                         type="button"
                         onClick={openVersionInfo}
-                        aria-label="View version details"
+                        aria-label={m['sidemenu.footer.viewVersionDetails']()}
                         className="text-grayscale-600 transition-colors focus:outline-none focus-visible:underline"
                     >
                         V {version}

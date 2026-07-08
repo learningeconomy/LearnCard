@@ -65,7 +65,11 @@
             "connectionsEncrypted": "All connections are <0>encrypted.</0>",
             "privacyPolicy": "Privacy Policy",
             "termsOfService": "Terms of Service",
-            "copyright": "© {{year}} Learning Economy"
+            "copyright": "© {{year}} Learning Economy",
+            "privacy": "Privacy",
+            "terms": "Terms",
+            "logout": "Logout",
+            "viewVersionDetails": "View version details"
         },
         "links": {
             "dashboard": "Dashboard",
@@ -91,7 +95,9 @@
             "ids": "IDs",
             "pathways": "Journeys"
         },
-        "newAiSession": "New AI Session"
+        "newAiSession": "New AI Session",
+        "settings": "Settings",
+        "closeMenu": "Close menu"
     },
     "passport": {
         "buildMyLearnCard": {
@@ -453,6 +459,72 @@
                 "description1": "This link and QR code let others view your shared resume.",
                 "description2": "Share with recruiters, hiring managers, friends, or anyone you want to review your resume."
             }
+        },
+        "wallet": {
+            "newCredentials": "New Credentials",
+            "scanQrCode": "Scan a QR code",
+            "addToPassport": "Add to Passport"
+        },
+        "activity": {
+            "heading": "Activity",
+            "searchAria": "Search activity",
+            "searchPlaceholder": "Search...",
+            "filter": "Filter",
+            "error": "Something went wrong — we couldn't load your activity.",
+            "empty": "No activity yet.",
+            "reset": "Reset",
+            "applyFilter": "Apply Filter",
+            "you": "You",
+            "someone": "Someone",
+            "credential": "Credential",
+            "sentYou": "{actorName} sent you {article} {categoryLabel}",
+            "youSent": "You sent {article} {categoryLabel} to {recipientName}",
+            "months": {
+                "jan": "Jan",
+                "feb": "Feb",
+                "mar": "Mar",
+                "apr": "Apr",
+                "may": "May",
+                "jun": "Jun",
+                "jul": "Jul",
+                "aug": "Aug",
+                "sep": "Sep",
+                "oct": "Oct",
+                "nov": "Nov",
+                "dec": "Dec",
+                "JANUARY": "January",
+                "FEBRUARY": "February",
+                "MARCH": "March",
+                "APRIL": "April",
+                "MAY": "May",
+                "JUNE": "June",
+                "JULY": "July",
+                "AUGUST": "August",
+                "SEPTEMBER": "September",
+                "OCTOBER": "October",
+                "NOVEMBER": "November",
+                "DECEMBER": "December"
+            },
+            "categories": {
+                "all": "All",
+                "socialBadge": "Badge",
+                "achievement": "Achievement",
+                "learningHistory": "Course",
+                "accomplishment": "Portfolio item",
+                "accommodation": "Assistance",
+                "workHistory": "Experience",
+                "credential": "Credential"
+            },
+            "categoriesPlural": {
+                "all": "All",
+                "socialBadge": "Badges",
+                "achievement": "Achievements",
+                "learningHistory": "Courses",
+                "accomplishment": "Portfolio",
+                "accommodation": "Assistance",
+                "workHistory": "Experiences",
+                "id": "IDs"
+            }
         }
     },
     "launchpad": {
@@ -588,7 +660,7 @@
             "aiPathways": "Pathways",
             "aiInsights": "Insights",
             "skills": "Skills",
-            "socialBadges": "Boosts",
+            "socialBadges": "Badges",
             "achievements": "Achievements",
             "studies": "Studies",
             "portfolio": "Portfolio",
@@ -633,7 +705,7 @@
             "aiPathways": "AI Pathway",
             "aiInsights": "AI Insight",
             "skills": "Skill",
-            "socialBadges": "Boost",
+            "socialBadges": "Badge",
             "achievements": "Achievement",
             "studies": "Study",
             "portfolio": "Portfolio",
@@ -1118,7 +1190,8 @@
             "linkADevice": "Link a Device",
             "switchAccount": "Switch Account",
             "buildMyLearnCard": "Build My {{brand}}",
-            "stepsCompleted": "{{completed}} of {{total}}"
+            "stepsCompleted": "{{completed}} of {{total}}",
+            "completeProfile": "Complete Profile"
         },
         "needParentGuardian": "You'll need a parent or guardian to set up a Family Account before you can join.",
         "notifications": "Notifications",
@@ -3136,7 +3209,7 @@
         "revoking": "Revoking...",
         "confirmRevoke": "Yes, Revoke Access",
         "disableAiRevoke": "Disable AI & Revoke",
-        "appDetails": "App Details",
+        "appDetails": "App details",
         "dataAccessPermissions": "Data Access Permissions",
         "opening": "Opening...",
         "openApp": "Open App",
@@ -3147,7 +3220,23 @@
         "readAccess": "Read Access",
         "noReadPermissions": "No read permissions granted",
         "writeAccess": "Write Access",
-        "noWritePermissions": "No write permissions granted"
+        "noWritePermissions": "No write permissions granted",
+        "loadingCenter": "Loading your privacy center...",
+        "centerFooter": "You can change any of this anytime. Turning something off takes effect right away.",
+        "activityFeed": "Activity Feed",
+        "loadingActivityData": "Loading activity data...",
+        "noActivityYet": "No activity data yet",
+        "noActivitySubtitle": "Activity from this app will appear here when it becomes available.",
+        "activityCount": "Showing {{count}} activities from this app",
+        "editAccess": "Edit access",
+        "dataAccess": "Data access",
+        "connecting": "Connecting...",
+        "disconnecting": "Disconnecting...",
+        "connected": "Connected",
+        "disconnected": "Successfully Disconnected",
+        "aiConsentWarning": "AI is on, but consent to the LearnCard AI contract is missing.",
+        "tryAgain": "Try again",
+        "retrying": "Retrying…"
     },
     "recoveryPrompt": {
         "title": "Recover Your Progress",

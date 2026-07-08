@@ -66,7 +66,11 @@
             "connectionsEncrypted": "Todas las conexiones están <0>encriptadas.</0>",
             "privacyPolicy": "Política de privacidad",
             "termsOfService": "Términos de servicio",
-            "copyright": "© {{year}} Learning Economy"
+            "copyright": "© {{year}} Learning Economy",
+            "privacy": "Privacidad",
+            "terms": "Términos",
+            "logout": "Cerrar sesión",
+            "viewVersionDetails": "Ver detalles de la versión"
         },
         "links": {
             "dashboard": "Panel",
@@ -91,7 +95,9 @@
             "families": "Familias",
             "ids": "Identificaciones",
             "pathways": "Caminos"
-        }
+        },
+        "settings": "Ajustes",
+        "closeMenu": "Cerrar menú"
     },
     "passport": {
         "buildMyLearnCard": {
@@ -453,7 +459,73 @@
                 "description2": "Compártelo con reclutadores, responsables de contratación, amigos o cualquier persona que quieras que revise tu currículum."
             }
         },
-        "explore": "Explorar"
+        "explore": "Explorar",
+        "wallet": {
+            "newCredentials": "Credenciales nuevas",
+            "scanQrCode": "Escanear un código QR",
+            "addToPassport": "Añadir al Pasaporte"
+        },
+        "activity": {
+            "heading": "Actividad",
+            "searchAria": "Buscar actividad",
+            "searchPlaceholder": "Buscar...",
+            "filter": "Filtrar",
+            "error": "Algo salió mal — no pudimos cargar tu actividad.",
+            "empty": "Aún no hay actividad.",
+            "reset": "Restablecer",
+            "applyFilter": "Aplicar filtro",
+            "you": "Tú",
+            "someone": "Alguien",
+            "credential": "Credencial",
+            "sentYou": "{actorName} te envió {article} {categoryLabel}",
+            "youSent": "Enviaste {article} {categoryLabel} a {recipientName}",
+            "months": {
+                "jan": "Ene",
+                "feb": "Feb",
+                "mar": "Mar",
+                "apr": "Abr",
+                "may": "May",
+                "jun": "Jun",
+                "jul": "Jul",
+                "aug": "Ago",
+                "sep": "Sep",
+                "oct": "Oct",
+                "nov": "Nov",
+                "dec": "Dic",
+                "JANUARY": "Enero",
+                "FEBRUARY": "Febrero",
+                "MARCH": "Marzo",
+                "APRIL": "Abril",
+                "MAY": "Mayo",
+                "JUNE": "Junio",
+                "JULY": "Julio",
+                "AUGUST": "Agosto",
+                "SEPTEMBER": "Septiembre",
+                "OCTOBER": "Octubre",
+                "NOVEMBER": "Noviembre",
+                "DECEMBER": "Diciembre"
+            },
+            "categories": {
+                "all": "Todo",
+                "socialBadge": "Insignia",
+                "achievement": "Logro",
+                "learningHistory": "Curso",
+                "accomplishment": "Elemento de portafolio",
+                "accommodation": "Asistencia",
+                "workHistory": "Experiencia",
+                "credential": "Credencial"
+            },
+            "categoriesPlural": {
+                "all": "Todo",
+                "socialBadge": "Insignias",
+                "achievement": "Logros",
+                "learningHistory": "Cursos",
+                "accomplishment": "Portafolio",
+                "accommodation": "Asistencia",
+                "workHistory": "Experiencias",
+                "id": "IDs"
+            }
+        }
     },
     "launchpad": {
         "title": "Aplicaciones",
@@ -586,7 +658,7 @@
             "aiPathways": "Pathways",
             "aiInsights": "Insights",
             "skills": "Habilidades",
-            "socialBadges": "Boosts",
+            "socialBadges": "Insignias",
             "achievements": "Logros",
             "studies": "Estudios",
             "portfolio": "Portafolio",
@@ -633,7 +705,7 @@
             "aiPathways": "IA Pathway",
             "aiInsights": "IA Insight",
             "skills": "Habilidad",
-            "socialBadges": "Boost",
+            "socialBadges": "Insignia",
             "achievements": "Logro",
             "studies": "Estudio",
             "portfolio": "Portafolio",
@@ -1148,7 +1220,8 @@
             "linkADevice": "Vincular un dispositivo",
             "switchAccount": "Cambiar de cuenta",
             "buildMyLearnCard": "Construye mi {{brand}}",
-            "stepsCompleted": "{{completed}} de {{total}}"
+            "stepsCompleted": "{{completed}} de {{total}}",
+            "completeProfile": "Completar Perfil"
         }
     },
     "settings": {
@@ -3147,7 +3220,23 @@
         "readAccess": "Acceso de lectura",
         "noReadPermissions": "No se han concedido permisos de lectura",
         "writeAccess": "Acceso de escritura",
-        "noWritePermissions": "No se han concedido permisos de escritura"
+        "noWritePermissions": "No se han concedido permisos de escritura",
+        "loadingCenter": "Cargando tu centro de privacidad...",
+        "centerFooter": "Puedes cambiar esto en cualquier momento. Desactivar algo tiene efecto de inmediato.",
+        "activityFeed": "Feed de actividad",
+        "loadingActivityData": "Cargando datos de actividad...",
+        "noActivityYet": "Aún no hay datos de actividad",
+        "noActivitySubtitle": "La actividad de esta aplicación aparecerá aquí cuando esté disponible.",
+        "activityCount": "Mostrando {{count}} actividades de esta aplicación",
+        "editAccess": "Editar acceso",
+        "dataAccess": "Acceso a datos",
+        "connecting": "Conectando...",
+        "disconnecting": "Desconectando...",
+        "connected": "Conectado",
+        "disconnected": "Desconectado correctamente",
+        "aiConsentWarning": "La IA está activada, pero falta el consentimiento al contrato de IA de LearnCard.",
+        "tryAgain": "Intentar de nuevo",
+        "retrying": "Reintentando..."
     },
     "recoveryPrompt": {
         "title": "Recupera tu progreso",

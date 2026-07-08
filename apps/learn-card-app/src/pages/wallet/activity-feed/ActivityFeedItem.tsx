@@ -3,24 +3,12 @@ import { UserProfilePicture } from 'learn-card-base';
 import CaretRight from 'learn-card-base/svgs/CaretRight';
 import { useTheme } from '../../../theme/hooks/useTheme';
 import type { ActivityFeedItemVM } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
+import { tShortMonth } from './activityFeedI18n';
 
-const SHORT_MONTHS = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-];
 const shortDate = (iso: string) => {
     const d = new Date(iso);
-    return `${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    return `${tShortMonth(d.getUTCMonth())} ${d.getUTCDate()}`;
 };
 
 // Thin right arrow separating the avatar from the credential-category icon,
