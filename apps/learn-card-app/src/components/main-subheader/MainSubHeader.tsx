@@ -8,7 +8,6 @@ import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/c
 import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
-import DotIcon from 'learn-card-base/svgs/DotIcon';
 import Plus from 'learn-card-base/svgs/Plus';
 
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
@@ -17,6 +16,7 @@ import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
 import useTheme from '../../theme/hooks/useTheme';
 import newCredsStore from 'learn-card-base/stores/newCredsStore';
 import { usePersonalizationQA } from '../ai-passport/usePersonalizationQA';
+import NewCredentialsPill from './NewCredentialsPill';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -92,14 +92,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         if (count === 1) titleDisplay = labels?.singular;
     }
 
-    const newCredsCountDisplay =
-        newCredsCount > 0 && category !== CredentialCategoryEnum.aiPathway ? (
-            <span
-                className={`text-${colors?.indicatorColor} font-poppins text-[18px] font-[600] inline-flex items-center gap-[5px] ml-[5px]`}
-            >
-                <DotIcon className="w-[10px] h-[10px]" /> {newCredsCount} New
-            </span>
-        ) : null;
+    const showNewCredsPill = newCredsCount > 0 && category !== CredentialCategoryEnum.aiPathway;
 
     let helperTextComponent = (
         <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
@@ -157,9 +150,15 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                                 beta
                             </span>
                         )}
-                        {newCredsCountDisplay}
                     </span>
-                    {helperText && helperTextComponent}
+                    {(helperText || showNewCredsPill) && (
+                        <div className="flex items-center gap-[8px] flex-wrap">
+                            {helperText && helperTextComponent}
+                            {showNewCredsPill && (
+                                <NewCredentialsPill count={newCredsCount} tone="onColor" />
+                            )}
+                        </div>
+                    )}
                 </h2>
             </IonCol>
 
