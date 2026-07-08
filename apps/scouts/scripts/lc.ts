@@ -311,13 +311,15 @@ const pickPlatform = async (): Promise<Platform> => {
     return choice === '2' ? 'android' : 'ios';
 };
 
-const startAppOnly = (stage?: string): void => {
+const startAppOnly = (stage?: string, shortcut?: string): void => {
     const stageId = stage ?? 'production';
+    const resolvedShortcut =
+        shortcut ?? `bun run lc start${stageId === 'production' ? '' : ` ${stageId}`}`;
 
     runCommand(
         'vite --host',
         `Starting Scouts frontend only (env: ${stageId})`,
-        'bun run lc start',
+        resolvedShortcut,
         APP_ROOT,
         resolveStageEnv(stageId)
     );
@@ -710,30 +712,38 @@ const main = async (): Promise<void> => {
     log.info('');
     log.info(bold('🛡️ Scouts Developer Tools'));
     log.info('');
-    log.info(`  ${cyan('1')}  ${bold('Dev server')}        ${dim('— frontend only')}`);
-    log.info(`  ${cyan('2')}  ${bold('Docker dev')}        ${dim('— full stack')}`);
-    log.info(`  ${cyan('3')}  ${bold('Docker services')}   ${dim('— backend services only')}`);
-    log.info(`  ${cyan('4')}  ${bold('Native menu')}       ${dim('— sync, open, run, package')}`);
-    log.info(`  ${cyan('5')}  ${bold('Build web app')}     ${dim('— vite build')}`);
+    log.info(`  ${cyan('1')}  ${bold('Docker dev')}        ${dim('— full stack')}`);
+    log.info(`  ${cyan('2')}  ${bold('Local app + prod backend')} ${dim('— frontend only')}`);
+    log.info(
+        `  ${cyan('3')}  ${bold('Local dev server')}  ${dim(
+            '— local frontend, run local services separately'
+        )}`
+    );
+    log.info(`  ${cyan('4')}  ${bold('Local services')}    ${dim('— backend services only')}`);
+    log.info(`  ${cyan('5')}  ${bold('Native menu')}       ${dim('— sync, open, run, package')}`);
+    log.info(`  ${cyan('6')}  ${bold('Build web app')}     ${dim('— vite build')}`);
     log.info(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
     log.info('');
 
-    const choice = await ask('Pick an option [1-5, h]: ');
+    const choice = await ask('Pick an option [1-6, h]: ');
 
     switch (choice) {
         case '1':
-            startAppOnly();
-            break;
-        case '2':
             await startDev('full');
             break;
+        case '2':
+            startAppOnly();
+            break;
         case '3':
-            await startDev('services');
+            startAppOnly('local');
             break;
         case '4':
-            await nativeMenu();
+            await startDev('services');
             break;
         case '5':
+            await nativeMenu();
+            break;
+        case '6':
             runCommand('bun run build', 'Building Scouts web app', 'bun run lc build');
             break;
         case 'h':
@@ -742,7 +752,7 @@ const main = async (): Promise<void> => {
             printHelp();
             break;
         default:
-            log.info(yellow('Unknown option. Try 1-5 or h.'));
+            log.info(yellow('Unknown option. Try 1-6 or h.'));
             rl.close();
             break;
     }
