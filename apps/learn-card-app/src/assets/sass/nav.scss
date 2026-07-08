@@ -44,6 +44,18 @@ ion-tab-bar.lc-footer-nav {
         --background-focused: transparent;
         --background-focused-opacity: 0;
         --background-activated: transparent;
+
+        // Ionic's default tab label truncates (overflow:hidden + ellipsis),
+        // which turned "Dashboard" into "Dashboa…". Let the label size to its
+        // content and stay on one line so the full word renders. The button
+        // keeps flex:1, so a slightly wider label just overflows its column
+        // center-aligned (whitespace only) rather than clipping.
+        ion-label {
+            overflow: visible;
+            white-space: nowrap;
+            text-overflow: unset;
+            max-width: none;
+        }
     }
 
     // Figma "LearnCard Footer Nav - V3" (node 2364-82185): the row is inset 20px
