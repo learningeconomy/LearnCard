@@ -256,10 +256,10 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                         <div role="presentation" ref={infiniteScrollRef} />
                                     </IonRow>
                                 </IonGrid>
-                                <footer className="fixed bottom-0 w-full lg:bottom-5 lg:right-10 lg:w-[520px] z-9999 bg-white border-t border-grayscale-200 lg:border lg:rounded-[20px] shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] font-poppins">
-                                    <div className="mx-auto w-full max-w-[720px] px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="text-center sm:text-left">
-                                            <p className="text-sm font-medium text-grayscale-700">
+                                <footer className="fixed bottom-0 w-full desktop:bottom-5 desktop:right-10 desktop:w-[520px] z-9999 bg-white border-t border-grayscale-200 desktop:border desktop:rounded-[20px] shadow-footer desktop:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] font-poppins">
+                                    <div className="mx-auto w-full max-w-[720px] px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] desktop:py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="text-center sm:text-left shrink-0">
+                                            <p className="text-sm font-medium text-grayscale-700 whitespace-nowrap">
                                                 {selectedVcs?.length}{' '}
                                                 {selectedVcs?.length === 1
                                                     ? 'credential'
@@ -267,20 +267,20 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                                 selected
                                             </p>
                                             {credentialQuery.length > 0 && !hasSuggested && (
-                                                <p className="text-xs text-grayscale-500 mt-0.5">
+                                                <p className="text-xs text-grayscale-500 mt-0.5 whitespace-nowrap">
                                                     Loading suggestions...
                                                 </p>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-3 w-full sm:w-auto">
                                             <button
-                                                className="flex-1 sm:flex-none sm:w-[130px] h-12 rounded-[20px] bg-white border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                                className="flex-1 sm:flex-none sm:w-[104px] h-12 rounded-[20px] bg-white border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                                                 onClick={reject}
                                             >
                                                 Quit
                                             </button>
                                             <button
-                                                className="flex-1 sm:flex-none sm:w-[180px] h-12 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                                className="flex-1 sm:flex-none sm:w-[150px] h-12 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                                                 onClick={() => presentModal()}
                                                 disabled={selectedVcs?.length === 0 ? true : false}
                                             >

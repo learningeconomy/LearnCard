@@ -111,7 +111,7 @@ const VCToShare: React.FC<{
 
     return (
         <IonPage>
-            <IonRow className="bg-grayscale-100 m-auto flex flex-col mobile:w-[85%] md:w-[509px] lg:w-[724px] h-5/6 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)] rounded-3xl overflow-hidden font-poppins">
+            <IonRow className="bg-grayscale-100 m-auto flex flex-col mobile:w-[85%] md:w-[509px] desktop:w-[724px] h-5/6 max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)] rounded-3xl overflow-hidden font-poppins">
                 <header className="shrink-0 bg-white flex items-center justify-between gap-3 px-6 py-4 border-b border-grayscale-200">
                     <div className="flex items-center gap-3 min-w-0">
                         <button
@@ -146,7 +146,7 @@ const VCToShare: React.FC<{
                                 Sharing...
                             </span>
                         ) : (
-                            'SHARE'
+                            'Share'
                         )}
                     </button>
                 </header>
