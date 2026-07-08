@@ -1,23 +1,23 @@
-import express from 'express';
+import express, { type Express } from 'express';
 import { FastifyPluginAsync } from 'fastify';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { getSkillsByIds, getSkillByFrameworkAndId } from '@accesslayer/skill/read';
 import { renderSkillPage } from './helpers/skill-renderer';
 
 // Express app for Lambda
-export const app = express();
+export const app: Express = express();
 
 app.get('/skills/:skillId', async (req, res) => {
     try {
         const { skillId } = req.params;
         const skills = await getSkillsByIds([skillId]);
-        
+
         if (skills.length === 0) {
             return res.status(404).json({ error: 'Skill not found' });
         }
-        
+
         const skill = skills[0]!;
-        
+
         return res.json({
             id: skill.id,
             code: skill.code,
@@ -71,11 +71,11 @@ app.get('/frameworks/:frameworkId', async (req, res) => {
     try {
         const { frameworkId } = req.params;
         const framework = await getSkillFrameworkById(frameworkId);
-        
+
         if (!framework) {
             return res.status(404).json({ error: 'Framework not found' });
         }
-        
+
         return res.json({
             id: framework.id,
             name: framework.name,
@@ -96,13 +96,13 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
         try {
             const { skillId } = request.params as { skillId: string };
             const skills = await getSkillsByIds([skillId]);
-            
+
             if (skills.length === 0) {
                 return reply.status(404).send({ error: 'Skill not found' });
             }
-            
+
             const skill = skills[0]!;
-            
+
             return reply.send({
                 id: skill.id,
                 code: skill.code,
@@ -120,7 +120,10 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
     // New compound route for framework-scoped skill
     fastify.get('/frameworks/:frameworkId/skills/:skillId', async (request, reply) => {
         try {
-            const { frameworkId, skillId } = request.params as { frameworkId: string; skillId: string };
+            const { frameworkId, skillId } = request.params as {
+                frameworkId: string;
+                skillId: string;
+            };
             const skill = await getSkillByFrameworkAndId(frameworkId, skillId);
 
             if (!skill) {
@@ -128,7 +131,9 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
             }
 
             const acceptHeader = request.headers.accept || '';
-            const acceptsHtml = acceptHeader.split(',').some(type => type.trim().startsWith('text/html'));
+            const acceptsHtml = acceptHeader
+                .split(',')
+                .some(type => type.trim().startsWith('text/html'));
             if (acceptsHtml) {
                 const framework = await getSkillFrameworkById(frameworkId);
                 return reply.type('text/html').send(
@@ -158,11 +163,11 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
         try {
             const { frameworkId } = request.params as { frameworkId: string };
             const framework = await getSkillFrameworkById(frameworkId);
-            
+
             if (!framework) {
                 return reply.status(404).send({ error: 'Framework not found' });
             }
-            
+
             return reply.send({
                 id: framework.id,
                 name: framework.name,

@@ -110,8 +110,7 @@ const LaunchRow: React.FC<{
     onDispatch: (destination: string) => void;
     onInAppNavigate: (href: string) => void;
 }> = ({ copy, resolved, onDispatch, onInAppNavigate }) => {
-    const rowClass =
-        `group flex items-center justify-between gap-3
+    const rowClass = `group flex items-center justify-between gap-3
          px-4 py-3 rounded-[18px]
          bg-white/70 backdrop-blur
          border border-grayscale-200
@@ -128,9 +127,7 @@ const LaunchRow: React.FC<{
                     {copy.kicker}
                 </p>
 
-                <p className="text-sm font-medium text-grayscale-900 truncate">
-                    {copy.label}
-                </p>
+                <p className="text-sm font-medium text-grayscale-900 truncate">{copy.label}</p>
             </div>
 
             <IonIcon
@@ -216,7 +213,10 @@ const describeLaunch = (resolved: ResolvedAction): LaunchCopy | null => {
  * the policy's expected artifact (for `artifact` policies) and then
  * to `text`.
  */
-const pickExpectedArtifactType = (policy: Policy, node: { stage: { termination: unknown } }): ArtifactType => {
+const pickExpectedArtifactType = (
+    policy: Policy,
+    node: { stage: { termination: unknown } }
+): ArtifactType => {
     const termination = node.stage.termination as { kind: string; artifactType?: ArtifactType };
 
     if (termination.kind === 'artifact-count' && termination.artifactType) {
@@ -233,51 +233,53 @@ const pickExpectedArtifactType = (policy: Policy, node: { stage: { termination: 
  * large rounded corners, soft dismiss affordance. Kept local to
  * NodeDetail until another surface wants the same chrome.
  */
-const OverlayFrame: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({
-    children,
-    onClose,
-}) => (
+const OverlayFrame: React.FC<{
+    children: React.ReactNode;
+    onClose: () => void;
+    hidden?: boolean;
+}> = ({ children, onClose, hidden = false }) => (
     <PathwayPortal>
-    <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
-                   flex items-start sm:items-center justify-center
-                   p-0 sm:p-6 overflow-y-auto font-poppins"
-        style={{ overscrollBehavior: 'contain' }}
-        onClick={onClose}
-    >
         <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
-            onClick={e => e.stopPropagation()}
-            className="relative w-full max-w-xl min-h-screen sm:min-h-0
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={`${hidden ? 'invisible pointer-events-none' : ''}
+                   fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
+                   flex items-start sm:items-center justify-center
+                   p-0 sm:p-6 overflow-y-auto font-poppins`}
+            style={{ overscrollBehavior: 'contain' }}
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 220, damping: 26, mass: 0.9 }}
+                onClick={e => e.stopPropagation()}
+                className="relative w-full max-w-xl min-h-screen sm:min-h-0
                        bg-white/95 backdrop-blur-xl
                        sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
                        border border-white/60"
-            style={{ paddingTop: 'env(safe-area-inset-top)' }}
-        >
-            <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="absolute right-3 w-10 h-10 rounded-full
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
+            >
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="absolute right-3 w-10 h-10 rounded-full
                            bg-white/80 hover:bg-white hover:shadow-md
                            border border-grayscale-200
                            flex items-center justify-center
                            transition-all duration-200 z-10"
-                style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
-            >
-                <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
-            </button>
+                    style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
+                >
+                    <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
+                </button>
 
-            {children}
+                {children}
+            </motion.div>
         </motion.div>
-    </motion.div>
     </PathwayPortal>
 );
 
@@ -303,6 +305,12 @@ const NodeDetail: React.FC = () => {
 
     const [completing, setCompleting] = useState(false);
 
+    // Suppress this overlay while a launched app modal (install / iframe
+    // / AI tutor) is open — the overlay is a body-level portal that would
+    // otherwise paint above the modal. Restored on the modal's close so
+    // the learner returns to the node.
+    const [suppressed, setSuppressed] = useState(false);
+
     // Where to send the learner when they dismiss or complete.
     // Defaults to Today for back-compat (direct deep-links and
     // Today's own open path never populated router state before).
@@ -320,7 +328,7 @@ const NodeDetail: React.FC = () => {
             returnTo,
             location.state?.restoreFocusId
                 ? { initialFocusId: location.state.restoreFocusId }
-                : undefined,
+                : undefined
         );
 
     if (!pathway) {
@@ -382,12 +390,16 @@ const NodeDetail: React.FC = () => {
         pathwayStore.set.editNode(pathway.id, node.id, {
             progress: {
                 ...node.progress,
-                status: node.progress.status === 'not-started' ? 'in-progress' : node.progress.status,
+                status:
+                    node.progress.status === 'not-started' ? 'in-progress' : node.progress.status,
                 artifacts: [...node.progress.artifacts, evidence],
                 streak: {
                     ...node.progress.streak,
                     current: node.progress.streak.current + 1,
-                    longest: Math.max(node.progress.streak.longest, node.progress.streak.current + 1),
+                    longest: Math.max(
+                        node.progress.streak.longest,
+                        node.progress.streak.current + 1
+                    ),
                     lastActiveAt: evidence.submittedAt,
                 },
             },
@@ -474,16 +486,13 @@ const NodeDetail: React.FC = () => {
      * for different pending ids both land safely.
      */
     const fulfillEndorsement = (pendingEndorsementId: string) => {
-        const current = pathwayStore
-            .get.pathways()[pathway.id]
-            ?.nodes.find(n => n.id === node.id)
-            ?.endorsements;
+        const current = pathwayStore.get
+            .pathways()
+            [pathway.id]?.nodes.find(n => n.id === node.id)?.endorsements;
 
         if (!current) return;
 
-        const idx = current.findIndex(
-            e => e.endorsementId === pendingEndorsementId,
-        );
+        const idx = current.findIndex(e => e.endorsementId === pendingEndorsementId);
 
         if (idx === -1) return;
 
@@ -538,8 +547,7 @@ const NodeDetail: React.FC = () => {
     // Pretty requirement line shown beneath the header. For `ready`
     // terminations (self-attest) we omit it — the ring-check plus the
     // big "Mark as done" already say everything.
-    const requirementText =
-        view.kind === 'ready' ? null : view.requirement;
+    const requirementText = view.kind === 'ready' ? null : view.requirement;
 
     // Resolve the node's primary launch destination. The resolver
     // unifies three historically-separate signals:
@@ -569,13 +577,9 @@ const NodeDetail: React.FC = () => {
     const listingForNode = useListingForNode(node);
     const hasAppListingAction = resolved.kind === 'app-listing';
     const showAppListingCard =
-        hasAppListingAction
-        && !listingForNode.error
-        && listingForNode.listing !== null;
+        hasAppListingAction && !listingForNode.error && listingForNode.listing !== null;
     const showAppListingSkeleton =
-        hasAppListingAction
-        && listingForNode.isLoading
-        && !listingForNode.listing;
+        hasAppListingAction && listingForNode.isLoading && !listingForNode.listing;
 
     // For `ai-session` actions, render the dedicated `AiSessionCard`
     // — topic enrichment, skill chips, seed-prompt preview, modal
@@ -588,8 +592,7 @@ const NodeDetail: React.FC = () => {
     // The snapshot (when present on the action) is passed through so
     // the card renders topic title / description / skills on first
     // paint without waiting for the wallet query to resolve.
-    const aiSessionAction =
-        node.action?.kind === 'ai-session' ? node.action : null;
+    const aiSessionAction = node.action?.kind === 'ai-session' ? node.action : null;
     const showAiSessionCard = resolved.kind === 'ai-session';
 
     // Badge/certificate artwork from the CTDL import (or the proxied
@@ -598,7 +601,7 @@ const NodeDetail: React.FC = () => {
     const image = node.credentialProjection?.image ?? null;
 
     return (
-        <OverlayFrame onClose={close}>
+        <OverlayFrame onClose={close} hidden={suppressed}>
             <div className="px-6 pt-10 pb-8 space-y-5">
                 {/* -------------------------------------------------- */}
                 {/* Header: title, short context, progress ring         */}
@@ -721,6 +724,8 @@ const NodeDetail: React.FC = () => {
                         listing={listingForNode.listing}
                         isInstalled={listingForNode.isInstalled}
                         isInstalledLoading={listingForNode.isInstalledLoading}
+                        onSuppressHost={() => setSuppressed(true)}
+                        onRestoreHost={() => setSuppressed(false)}
                         onInstallSuccess={() => {
                             // Fire the same analytics event the
                             // LaunchRow emits on dispatch, so the
@@ -728,19 +733,14 @@ const NodeDetail: React.FC = () => {
                             // external-url / in-app-route shape. The
                             // actual launch telemetry lands when the
                             // learner taps Open after this.
-                            analytics.track(
-                                AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED,
-                                {
-                                    nodeId: node.id,
-                                    kind: resolved.kind,
-                                    source: resolved.source,
-                                    destination: `install:${
-                                        resolved.kind === 'app-listing'
-                                            ? resolved.listingId
-                                            : ''
-                                    }`,
-                                },
-                            );
+                            analytics.track(AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED, {
+                                nodeId: node.id,
+                                kind: resolved.kind,
+                                source: resolved.source,
+                                destination: `install:${
+                                    resolved.kind === 'app-listing' ? resolved.listingId : ''
+                                }`,
+                            });
                         }}
                     />
                 )}
@@ -775,36 +775,30 @@ const NodeDetail: React.FC = () => {
                     card's own states (loading / not-available / ready)
                     cover every branch LaunchRow would. */}
                 {showAiSessionCard && resolved.kind === 'ai-session' && (
-                    <AiSessionCard
-                        resolved={resolved}
-                        snapshot={aiSessionAction?.snapshot}
-                    />
+                    <AiSessionCard resolved={resolved} snapshot={aiSessionAction?.snapshot} />
                 )}
 
-                {launchCopy
-                    && !showAppListingCard
-                    && !showAppListingSkeleton
-                    && !showAiSessionCard
-                    && (resolved.kind === 'external-url'
-                        || resolved.kind === 'app-listing'
-                        || resolved.kind === 'in-app-route') && (
-                    <LaunchRow
-                        copy={launchCopy}
-                        resolved={resolved}
-                        onDispatch={(destination) => {
-                            analytics.track(
-                                AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED,
-                                {
+                {launchCopy &&
+                    !showAppListingCard &&
+                    !showAppListingSkeleton &&
+                    !showAiSessionCard &&
+                    (resolved.kind === 'external-url' ||
+                        resolved.kind === 'app-listing' ||
+                        resolved.kind === 'in-app-route') && (
+                        <LaunchRow
+                            copy={launchCopy}
+                            resolved={resolved}
+                            onDispatch={destination => {
+                                analytics.track(AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED, {
                                     nodeId: node.id,
                                     kind: resolved.kind,
                                     source: resolved.source,
                                     destination,
-                                },
-                            );
-                        }}
-                        onInAppNavigate={(href) => history.push(href)}
-                    />
-                )}
+                                });
+                            }}
+                            onInAppNavigate={href => history.push(href)}
+                        />
+                    )}
 
                 {/* -------------------------------------------------- */}
                 {/* Working state: composite body OR evidence/review    */}
