@@ -5,6 +5,14 @@ name: CapGo Staging Deploy
 # release commits — those go through deploy.yml's production pipeline and
 # upload to the version-pinned channel (e.g. `1.0.7`).
 #
+# The bundle is built with the *production* tenant config (no `--stage staging`
+# overlay), so it targets prod auth (web3auth) + prod APIs. This is deliberate:
+# the `staging` channel is opt-in via the in-app channel switcher, and installed
+# binaries are prod-configured — a staging-config bundle (SSS auth + staging
+# APIs) landing on a prod binary breaks auth. Tenant config wins over the
+# staging GitHub environment's VITE_* vars (see authConfig.ts "config wins"), so
+# only the freshest `main` code differs from production here.
+#
 # The bundle version is suffixed with `-staging.<short-sha>` so it never
 # collides with production bundles in Capgo's bundle list.
 
@@ -92,7 +100,6 @@ jobs:
             environment: learn-card-app-staging
             channel: staging
             tenant: learncard
-            stage: staging
             self_assign: 'true'
         secrets:
             CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
