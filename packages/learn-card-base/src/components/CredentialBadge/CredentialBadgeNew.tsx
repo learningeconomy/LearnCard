@@ -19,7 +19,7 @@ import {
     isClrCredential,
 } from 'learn-card-base';
 
-import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata, getBoostMetadata } from 'learn-card-base';
 
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
@@ -73,8 +73,9 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     clrLogoSrc,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
+    // boostType may be a CredentialCategoryEnum with no boostCategoryMetadata entry; getBoostMetadata resolves both enums and falls back to default to avoid a destructuring crash.
     const { subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
-        boostCategoryMetadata[boostType ?? defaultBoostType];
+        getBoostMetadata(boostType ?? defaultBoostType) ?? boostCategoryMetadata[defaultBoostType];
 
     let _colorOverride = badgeBackgroundColor ?? 'gray-500';
     let _subColorOverride = subColor ?? 'gray-300';
