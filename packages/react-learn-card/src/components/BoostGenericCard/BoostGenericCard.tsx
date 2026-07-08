@@ -47,9 +47,18 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
 
     const isInactive = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
-    const inactiveMedia = isInactive ? 'grayscale brightness-90' : '';
-    const inactiveText = isInactive ? 'grayscale opacity-60' : '';
-    const pillColor = lifecycleStatus === 'revoked' ? 'bg-[#DC2626]' : 'bg-[#EA580C]';
+    // Use inline styles for the revoked/suspended treatment (not Tailwind utilities):
+    // the consumer app's Tailwind `content` globs don't scan react-learn-card, and this
+    // package doesn't ship its own utility CSS, so classes like `grayscale`/`bg-[#DC2626]`
+    // defined only here have no backing CSS rule. Inline styles always apply. `filter` on
+    // the media containers cascades to their child images.
+    const inactiveMediaStyle: React.CSSProperties | undefined = isInactive
+        ? { filter: 'grayscale(1) brightness(0.9)' }
+        : undefined;
+    const inactiveTextStyle: React.CSSProperties | undefined = isInactive
+        ? { filter: 'grayscale(1)', opacity: 0.6 }
+        : undefined;
+    const pillBg = lifecycleStatus === 'revoked' ? '#DC2626' : '#EA580C';
     const pillLeft = showChecked ? 'left-[44px]' : 'left-[8px]';
 
     return (
@@ -58,7 +67,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
         >
             {isInactive && (
                 <span
-                    className={`absolute top-[8px] ${pillLeft} z-20 rounded-full px-[9px] py-[3px] text-[10px] font-extrabold uppercase tracking-wide text-white ${pillColor}`}
+                    className={`absolute top-[8px] ${pillLeft} z-20 rounded-full px-[9px] py-[3px] text-[10px] font-extrabold uppercase tracking-wide text-white`}
+                    style={{ backgroundColor: pillBg }}
                 >
                     {lifecycleStatus === 'revoked' ? 'Revoked' : 'Suspended'}
                 </span>
@@ -74,8 +84,11 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
             )}
 
             {bgImgSrc && (
-                <section className="absolute top-[-50px] left-0 rounded-b-full overflow-hidden z-0">
-                    <img className={`h-full w-full object-cover ${inactiveMedia}`} src={bgImgSrc} />
+                <section
+                    className="absolute top-[-50px] left-0 rounded-b-full overflow-hidden z-0"
+                    style={inactiveMediaStyle}
+                >
+                    <img className="h-full w-full object-cover" src={bgImgSrc} />
                 </section>
             )}
 
@@ -84,23 +97,26 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 className="z-10 flex flex-col flex-grow"
                 onClick={handleInnerClick}
             >
-                {/* Thumbnail */}
-                {customThumbComponent || (
-                    <section className={`${defaultThumbClass} ${inactiveMedia}`}>
-                        {thumbImgSrc?.trim() ? (
-                            <BadgeThumbnailImg
-                                className={`w-full h-full rounded-full object-cover ${inactiveMedia}`}
-                                src={thumbImgSrc}
-                                alt="Credential Achievement"
-                            />
-                        ) : (
-                            <img
-                                className={`max-w-full p-0 object-cover rounded-full ${inactiveMedia}`}
-                                src={imgSrc}
-                            />
-                        )}
-                    </section>
-                )}
+                {/* Thumbnail — filter on the wrapper so it desaturates a
+                    customThumbComponent too, not just the default thumb section. */}
+                <div style={inactiveMediaStyle}>
+                    {customThumbComponent || (
+                        <section className={defaultThumbClass}>
+                            {thumbImgSrc?.trim() ? (
+                                <BadgeThumbnailImg
+                                    className="w-full h-full rounded-full object-cover"
+                                    src={thumbImgSrc}
+                                    alt="Credential Achievement"
+                                />
+                            ) : (
+                                <img
+                                    className="max-w-full p-0 object-cover rounded-full"
+                                    src={imgSrc}
+                                />
+                            )}
+                        </section>
+                    )}
+                </div>
 
                 {/* Details Section: grows to fill available space */}
                 <section
@@ -121,8 +137,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                                         ? 'text-[13px] leading-tight'
                                         : 'text-[16px]'
                                 }
-                                ${inactiveText}
                             `}
+                                style={inactiveTextStyle}
                                 title={title}
                             >
                                 {title}
@@ -140,7 +156,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                                     </span>
                                 )}
                                 {customIssuerName || (
-                                    <span className={`font-bold ${inactiveText}`}>
+                                    <span className="font-bold" style={inactiveTextStyle}>
                                         {issuerName}
                                     </span>
                                 )}
