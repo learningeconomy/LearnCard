@@ -7,7 +7,7 @@ import CredentialVerificationDisplay, {
     getInfoFromCredential,
 } from '../CredentialBadge/CredentialVerificationDisplay';
 import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
-import { isDid, formatDidDisplayName } from '@learncard/react';
+import { isDid, formatDidDisplayName, getLifecycleTreatment } from '@learncard/react';
 import {
     getAchievementType,
     getAchievementTypeDisplayText,
@@ -72,14 +72,13 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     compact = false,
     lifecycleStatus = 'active',
 }) => {
-    const isInactive = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
-    // Inline styles (see BoostGenericCard): keep the revoked/suspended treatment
-    // independent of Tailwind content scanning + arbitrary-value generation.
-    const inactiveMediaStyle: React.CSSProperties | undefined = isInactive
-        ? { filter: 'grayscale(1) brightness(0.9)' }
-        : undefined;
-    const pillBg = lifecycleStatus === 'revoked' ? '#DC2626' : '#EA580C';
-    const pillLabel = lifecycleStatus === 'revoked' ? 'Revoked' : 'Suspended';
+    // Shared revoked/suspended treatment (kept in sync with the grid card).
+    const {
+        isInactive,
+        mediaStyle: inactiveMediaStyle,
+        pillBg,
+        pillLabel,
+    } = getLifecycleTreatment(lifecycleStatus);
 
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];

@@ -6,6 +6,7 @@ import AlignmentSkillsCount from './AlignmentSkillsCount';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
 import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
+import { getLifecycleTreatment } from '../../helpers/lifecycle.helpers';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -46,19 +47,16 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
 
-    const isInactive = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
-    // Use inline styles for the revoked/suspended treatment (not Tailwind utilities):
-    // the consumer app's Tailwind `content` globs don't scan react-learn-card, and this
-    // package doesn't ship its own utility CSS, so classes like `grayscale`/`bg-[#DC2626]`
-    // defined only here have no backing CSS rule. Inline styles always apply. `filter` on
-    // the media containers cascades to their child images.
-    const inactiveMediaStyle: React.CSSProperties | undefined = isInactive
-        ? { filter: 'grayscale(1) brightness(0.9)' }
-        : undefined;
-    const inactiveTextStyle: React.CSSProperties | undefined = isInactive
-        ? { filter: 'grayscale(1)', opacity: 0.6 }
-        : undefined;
-    const pillBg = lifecycleStatus === 'revoked' ? '#DC2626' : '#EA580C';
+    // Shared revoked/suspended treatment (see getLifecycleTreatment). Inline styles are
+    // used (not Tailwind classes) because the consumer app's Tailwind doesn't scan this
+    // package and it ships no utility CSS, so utility classes here have no backing rule.
+    const {
+        isInactive,
+        mediaStyle: inactiveMediaStyle,
+        textStyle: inactiveTextStyle,
+        pillBg,
+        pillLabel,
+    } = getLifecycleTreatment(lifecycleStatus);
     const pillLeft = showChecked ? 'left-[44px]' : 'left-[8px]';
 
     return (
@@ -70,7 +68,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     className={`absolute top-[8px] ${pillLeft} z-20 rounded-full px-[9px] py-[3px] text-[10px] font-extrabold uppercase tracking-wide text-white`}
                     style={{ backgroundColor: pillBg }}
                 >
-                    {lifecycleStatus === 'revoked' ? 'Revoked' : 'Suspended'}
+                    {pillLabel}
                 </span>
             )}
 
