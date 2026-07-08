@@ -44,6 +44,16 @@ const ERROR_LABELS: Record<string, Label> = {
     internal_error: { check: 'Verification', message: 'Something went wrong' },
 };
 
+// Raw resolver / engine diagnostics that must never reach the UI. did:web verification
+// resolves the issuer's DID document via an in-browser fetch, which fails (CORS / offline)
+// with messages like "Unable to resolve: Error sending HTTP request (.../.well-known/did.json)
+// ... Failed to fetch ... wasm-function[...]". Map these to friendly copy instead.
+const RESOLUTION_FAILURE_RE =
+    /unable to resolve|error sending (?:an? )?(?:http )?request|failed to fetch|well-known\/did\.json|dereferenc|could not (?:retrieve|dereference|resolve)|network ?error/i;
+
+// Obvious raw stack / engine internals: WASM frames, JS source locations, JS error types.
+const RAW_DIAGNOSTIC_RE = /wasm-function|\bat https?:\/\/|\.js:\d+|\bJsValue\(|\bTypeError\b/i;
+
 const isAlreadyPrettified = (check: string | undefined): boolean => {
     if (!check) return true;
     return /^[A-Z]/.test(check) || /\s/.test(check);
@@ -118,7 +128,29 @@ export const prettifyVerificationItem = (item: VerificationItem): VerificationIt
         // (e.g. "signature_invalid: bad signature"), which the guard would
         // otherwise treat as already-prettified and skip.
         const code = resolveErrorCode(item);
-        if (!code) return item;
+        if (!code) {
+            // No known error code. Never surface raw resolver / WASM diagnostics to the user;
+            // map them to stable friendly copy. Anything else (e.g. a humanized "Status:
+            // Revoked" detail) passes through untouched.
+            const raw = [item.message, item.details, item.check].filter(Boolean).join(' ');
+            if (RESOLUTION_FAILURE_RE.test(raw)) {
+                return {
+                    ...item,
+                    check: 'Issuer',
+                    message: 'Could not be reached',
+                    details: undefined,
+                };
+            }
+            if (RAW_DIAGNOSTIC_RE.test(raw)) {
+                return {
+                    ...item,
+                    check: 'Verification',
+                    message: 'Could not be verified',
+                    details: undefined,
+                };
+            }
+            return item;
+        }
         const label = ERROR_LABELS[code];
 
         // The UI renders failed rows as `message ?? details`. If Layer 1
