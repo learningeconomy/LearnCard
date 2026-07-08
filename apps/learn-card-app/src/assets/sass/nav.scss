@@ -77,6 +77,17 @@ ion-tab-bar.lc-footer-nav {
             margin-right: 40px;
         }
     }
+
+    // In the ~400–500px band the fixed 40px right inset is large relative to the
+    // (still-tight) flex columns, so "Apps" reads as leaning too far right vs the
+    // 20px left menu inset. Match the left inset (20px) here for balanced edges.
+    // Above 500px the columns are wide enough that the full 40px Figma inset
+    // reads as intended, so the rule above wins outside this band.
+    @media (min-width: 200px) and (max-width: 400px) {
+        ion-tab-button:last-child {
+            margin-right: 20px;
+        }
+    }
 }
 
 .mobile-nav-hamburger-button {
@@ -154,4 +165,3 @@ ion-tab-bar.lc-footer-nav {
     flex-direction: column;
     width: 100%;
 }
-
