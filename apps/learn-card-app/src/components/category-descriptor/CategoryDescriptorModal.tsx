@@ -23,7 +23,7 @@ const CategoryDescriptorModal: React.FC<{
                 category = BoostCategoryOptionsEnum.learningHistory;
                 break;
 
-            case 'Boosts':
+            case 'Badges':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
                 category = BoostCategoryOptionsEnum.socialBadge;
                 break;

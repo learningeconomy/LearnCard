@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.13.8
+
+### Patch Changes
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.45
+    -   @learncard/core@9.4.27
+    -   @learncard/helpers@1.3.9
+
 ## 2.13.7
 
 ### Patch Changes

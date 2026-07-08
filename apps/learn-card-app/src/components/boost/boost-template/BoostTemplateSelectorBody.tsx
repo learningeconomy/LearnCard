@@ -245,7 +245,13 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
                     {!boostsLoading && boostsList?.length === 0 && (
                         <div className="flex flex-col w-full h-full items-center justify-center">
                             <p className="mt-2 font-poppins text-xl text-grayscale-900">
-                                {searchInput ? 'No results found' : 'No Boosts yet!'}
+                                {searchInput
+                                    ? 'No results found'
+                                    : `No ${
+                                          selectedCategory === BoostCategoryOptionsEnum.all
+                                              ? 'Boosts'
+                                              : boostCategoryMetadata[selectedCategory].title
+                                      } yet!`}
                             </p>
                         </div>
                     )}
