@@ -48,8 +48,13 @@ const ERROR_LABELS: Record<string, Label> = {
 // resolves the issuer's DID document via an in-browser fetch, which fails (CORS / offline)
 // with messages like "Unable to resolve: Error sending HTTP request (.../.well-known/did.json)
 // ... Failed to fetch ... wasm-function[...]". Map these to friendly copy instead.
+//
+// Kept deliberately specific to DID-document resolution/network noise. In particular we do
+// NOT match a bare "could not resolve/retrieve …", because that also appears in humanized,
+// already-readable status/revocation details (e.g. "Could not retrieve revocation list")
+// that must pass through untouched rather than be mislabeled as an issuer failure.
 const RESOLUTION_FAILURE_RE =
-    /unable to resolve|error sending (?:an? )?(?:http )?request|failed to fetch|well-known\/did\.json|dereferenc|could not (?:retrieve|dereference|resolve)|network ?error/i;
+    /unable to resolve|error sending (?:an? )?(?:http )?request|failed to fetch|well-known\/did\.json|dereferenc|network ?error/i;
 
 // Obvious raw stack / engine internals: WASM frames, JS source locations, JS error types.
 const RAW_DIAGNOSTIC_RE = /wasm-function|\bat https?:\/\/|\.js:\d+|\bJsValue\(|\bTypeError\b/i;

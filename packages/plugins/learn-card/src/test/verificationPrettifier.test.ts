@@ -464,5 +464,25 @@ describe('verificationPrettifier', () => {
             expect(result.details).toBe('Status: Revoked');
             expect(result.check).toBe('status');
         });
+
+        it('does not mislabel a humanized "Could not retrieve/resolve …" status detail as an issuer failure', () => {
+            const retrieve = prettifyVerificationItem({
+                check: 'revocation',
+                details: 'Could not retrieve revocation list',
+                status: VerificationStatusEnum.Failed,
+            });
+            expect(retrieve.check).toBe('revocation');
+            expect(retrieve.details).toBe('Could not retrieve revocation list');
+            expect(retrieve.check).not.toBe('Issuer');
+
+            const resolve = prettifyVerificationItem({
+                check: 'status',
+                details: 'Could not resolve credential status',
+                status: VerificationStatusEnum.Failed,
+            });
+            expect(resolve.check).toBe('status');
+            expect(resolve.details).toBe('Could not resolve credential status');
+            expect(resolve.check).not.toBe('Issuer');
+        });
     });
 });
