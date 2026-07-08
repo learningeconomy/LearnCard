@@ -7,6 +7,8 @@ import { IonSpinner } from '@ionic/react';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 import NotificationCardContainer from './NotificationCardContainer';
+import GroupedConsentFlowCard from './GroupedConsentFlowCard';
+import { buildNotificationListItems } from './consentFlowGrouping';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
@@ -53,22 +55,29 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const queryOptions = { options, filter };
 
-    const renderNotifications =
-        data &&
-        data.pages.map((group, i) => (
-            <React.Fragment key={i}>
-                {group?.notifications?.map((notification: NotificationType) => {
-                    return (
-                        <GenericErrorBoundary key={notification?._id}>
-                            <NotificationCardContainer
-                                queryOptions={queryOptions}
-                                notification={notification}
-                            />
-                        </GenericErrorBoundary>
-                    );
-                })}
-            </React.Fragment>
-        ));
+    const flatNotifications: NotificationType[] =
+        data?.pages?.flatMap(group => group?.notifications ?? []) ?? [];
+
+    const listItems = buildNotificationListItems(flatNotifications);
+
+    const renderNotifications = listItems.map(item => {
+        if (item.kind === 'consentGroup') {
+            return (
+                <GenericErrorBoundary key={`group-${item.key}`}>
+                    <GroupedConsentFlowCard notifications={item.notifications} />
+                </GenericErrorBoundary>
+            );
+        }
+
+        return (
+            <GenericErrorBoundary key={item.notification?._id}>
+                <NotificationCardContainer
+                    queryOptions={queryOptions}
+                    notification={item.notification}
+                />
+            </GenericErrorBoundary>
+        );
+    });
 
     const handleRefetch = () => refetch();
 
