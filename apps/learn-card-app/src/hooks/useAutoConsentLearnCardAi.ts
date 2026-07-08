@@ -14,7 +14,7 @@ import {
 } from '../components/ai-passport-apps/aiPassport-apps.helpers';
 import {
     getAllCredentialUrisForCategory,
-    getFullTermsForContract,
+    getMinimumTermsForContract,
 } from '../helpers/contract.helpers';
 
 let autoConsentInFlight: Promise<boolean> | null = null;
@@ -55,6 +55,8 @@ export const useAutoConsentLearnCardAi = () => {
 
                     if (!learnCardAiContractUri) return false;
 
+                    await consentWallet.invoke.getProfile();
+
                     const consentedContracts = await getOrFetchConsentedContracts(
                         queryClient,
                         consentWallet
@@ -84,7 +86,7 @@ export const useAutoConsentLearnCardAi = () => {
                         ...(currentUser ?? {}),
                         ...(userOverrides ?? {}),
                     };
-                    const terms = getFullTermsForContract(contractDetails.contract, consentUser);
+                    const terms = getMinimumTermsForContract(contractDetails.contract, consentUser);
 
                     const categoriesWithLiveSync = Object.keys(terms.read.credentials.categories);
                     for (const category of categoriesWithLiveSync) {

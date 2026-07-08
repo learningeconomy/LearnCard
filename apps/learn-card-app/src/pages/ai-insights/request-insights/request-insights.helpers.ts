@@ -96,15 +96,19 @@ export const buildTeacherStudentContract = ({
 /**
  * Creates a Teacher → Student ConsentFlow contract
  */
+type TeacherProfileForContract = Pick<LCNProfile, 'profileId' | 'did' | 'image'>;
+
 export const createTeacherStudentContract = async ({
     teacherProfile,
 }: {
-    teacherProfile: LCNProfile;
+    teacherProfile: TeacherProfileForContract;
 }) => {
     const pk =
         currentUserStore.get.currentUserPK() || currentUserStore?.get?.currentUser()?.privateKey;
 
     if (!pk) throw new Error('Teacher private key not found');
+
+    if (!teacherProfile?.did?.trim()) throw new Error('Teacher DID not found');
 
     const teacherWallet = await getBespokeLearnCard(pk, teacherProfile.did);
 

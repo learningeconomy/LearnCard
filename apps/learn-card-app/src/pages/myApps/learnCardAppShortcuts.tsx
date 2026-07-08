@@ -6,6 +6,7 @@
 import React from 'react';
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
+import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { FamiliesIconWithShape } from 'learn-card-base/svgs/wallet/FamiliesIcon';
@@ -28,6 +29,33 @@ export type LearnCardAppShortcut = {
 };
 
 const route = (path: string) => (h: ShortcutActionHelpers) => () => h.push(path);
+
+// Retint the reused Experiences icon into the indigo family so it reads as one
+// cohesive tile on the indigo gradient (indigo = Pathways v2 wayfinding accent).
+// Yellow summit flag kept as the one warm focal pop.
+const JourneysTileIcon: React.FC<{ className?: string }> = props => (
+    <ExperiencesIconWithShape
+        {...props}
+        palette={{
+            primary: '#C7D2FE',
+            primaryLight: '#E0E7FF',
+            accent: '#FEF08A',
+            stroke: '#4F46E5',
+        }}
+    />
+);
+
+// Kept out of LEARNCARD_APP_SHORTCUTS: MyAppsLanding renders this only when
+// usePathwaysEnabled() passes, so the tile can't drift from the (identically
+// gated) /pathways route. Icon is a placeholder until design ships a real one.
+export const JOURNEYS_SHORTCUT: LearnCardAppShortcut = {
+    key: 'journeys',
+    title: 'Journeys',
+    gradientFrom: '#A5B4FC',
+    gradientTo: '#6366F1',
+    Icon: JourneysTileIcon,
+    getAction: route('/pathways'),
+};
 
 export const LEARNCARD_APP_SHORTCUTS: LearnCardAppShortcut[] = [
     {
