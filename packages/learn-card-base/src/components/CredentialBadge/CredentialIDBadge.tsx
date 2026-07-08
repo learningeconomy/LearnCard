@@ -3,6 +3,7 @@ import React from 'react';
 import { VC } from '@learncard/types';
 
 import { IDsIconSolid } from 'learn-card-base/svgs/wallet/IDsIcon';
+import { useGetVCInfo } from 'learn-card-base/hooks/useGetVCInfo';
 import ProfilePicture from '../profilePicture/ProfilePicture';
 import defaultIDCardImage from 'learn-card-base/assets/images/default-id-bg-gradient.png';
 
@@ -11,17 +12,21 @@ export const IDDisplayCard: React.FC<{ credential: VC; backgroundColor?: string 
     credential,
     backgroundColor,
 }) => {
-    let backgroundStyles: React.CSSProperties = {};
-    const backgroundImage = credential?.boostID?.backgroundImage;
-    const dimBackgroundImage = credential?.boostID?.dimBackgroundImage;
+    const {
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
+        backgroundColor: vcBackgroundColor,
+    } = useGetVCInfo(credential);
 
-    if (backgroundImage) {
-        backgroundStyles.backgroundImage = `url(${backgroundImage})`;
-        if (dimBackgroundImage) {
-            backgroundStyles.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.75)), url(${backgroundImage})`;
+    const backgroundStyles: React.CSSProperties = {};
+
+    if (idDisplayBackgroundImage) {
+        backgroundStyles.backgroundImage = `url(${idDisplayBackgroundImage})`;
+        if (idDisplayDimBackgroundImage) {
+            backgroundStyles.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.75)), url(${idDisplayBackgroundImage})`;
         }
-    } else if (backgroundColor) {
-        backgroundStyles.background = backgroundColor;
+    } else if (backgroundColor || vcBackgroundColor) {
+        backgroundStyles.background = backgroundColor ?? vcBackgroundColor;
     } else {
         backgroundStyles.backgroundImage = `url(${defaultIDCardImage})`;
     }

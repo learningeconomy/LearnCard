@@ -396,6 +396,13 @@ export const useGetVCInfo = (
     const idDimBackgroundImage = vc?.boostID?.dimBackgroundImage;
     const idFontColor = vc?.boostID?.fontColor;
     const idAccentColor = vc?.boostID?.accentColor;
+    const achievementImage = Array.isArray(vc?.credentialSubject?.achievement)
+        ? vc?.credentialSubject?.achievement?.[0]?.image
+        : vc?.credentialSubject?.achievement?.image;
+    const idDisplayBackgroundImage = idBackgroundImage ?? achievementImage;
+    const idDisplayDimBackgroundImage = Boolean(
+        idBackgroundImage ? idDimBackgroundImage : achievementImage
+    );
 
     // Generic display settings
     const backgroundImage = vc?.display?.backgroundImage;
@@ -480,6 +487,8 @@ export const useGetVCInfo = (
         idDimBackgroundImage,
         idFontColor,
         idAccentColor,
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
         backgroundImage,
         backgroundColor,
 
