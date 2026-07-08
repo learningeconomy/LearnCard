@@ -48,7 +48,9 @@ const AiPathways: React.FC = () => {
                                 <AiPathwaysWhatWouldYouLikeToDoCard />
                             )}
 
-                            <GrowSkillsPathwaysHome />
+                            <div className="w-full px-4 mx-auto max-w-[600px]">
+                                <GrowSkillsPathwaysHome />
+                            </div>
 
                             {(isLoading || (careerKeywords && occupations)) && (
                                 <AiPathwayCareers

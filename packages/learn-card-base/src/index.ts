@@ -259,6 +259,7 @@ export * from './react-query/mutations/mutation.helpers';
 export * from './react-query/queries/pins';
 export * from './react-query/mutations/pins';
 export * from './react-query/mutations/ai-passport';
+export * from './react-query/mutations/pruneConsentFlowDeletedCredentials';
 export * from './react-query/mutations/checklist';
 export * from './react-query/mutations/user-contact';
 export * from './react-query/mutations/firebase';
