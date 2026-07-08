@@ -1,5 +1,14 @@
 # @learncard/partner-connect
 
+## 0.3.10
+
+### Patch Changes
+
+-   [#1320](https://github.com/learningeconomy/LearnCard/pull/1320) [`406235e359bb45e8d341f7581cd6d235aed72ba4`](https://github.com/learningeconomy/LearnCard/commit/406235e359bb45e8d341f7581cd6d235aed72ba4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add optional learner context cache and timing metadata to request responses.
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/types@5.17.6
+
 ## 0.3.9
 
 ### Patch Changes

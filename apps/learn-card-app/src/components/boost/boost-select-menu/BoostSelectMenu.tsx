@@ -163,7 +163,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                         }}
                     >
                         <Wand color="#FFFFFF" opacity="full" className="mr-[10px]" />
-                        AI Boost Wizard
+                        AI Badge Wizard
                     </button>
                 </IonCol>
             </IonRow>
@@ -222,7 +222,11 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             <div className="flex flex-col w-full h-full items-center justify-center">
                                 <div className="max-w-[160px] m-auto flex justify-center  min-h-[50px]"></div>
                                 <p className="mt-2 font-poppins text-xl text-grayscale-900">
-                                    No Boosts yet!
+                                    {`No ${
+                                        selectedVCType === BoostCategoryOptionsEnum.all
+                                            ? 'Boosts'
+                                            : title
+                                    } yet!`}
                                 </p>
                             </div>
                         )}

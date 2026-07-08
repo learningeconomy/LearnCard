@@ -56,7 +56,7 @@ const BoostTemplateTypeModal: React.FC<BoostTemplateTypeModalProps> = ({
                         autocapitalize="on"
                         value={boostType}
                         onIonInput={e => setBoostType(e?.detail?.value)}
-                        placeholder="Boost type..."
+                        placeholder={`${titleSingular} type...`}
                         className="relative bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[5px]"
                         rows={3}
                         maxlength={22}
