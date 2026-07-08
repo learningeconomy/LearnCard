@@ -37,6 +37,7 @@ import {
     ID_CARD_DISPLAY_TYPES,
 } from 'learn-card-base/helpers/credentials/ids';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
+import { getDefaultDisplayType } from 'learn-card-base/helpers/display.helpers';
 
 import { useWallet } from 'learn-card-base';
 
@@ -386,7 +387,8 @@ export const useGetVCInfo = (
     // ========================================================================
     // DISPLAY METADATA
     // ========================================================================
-    const displayType = vc?.display?.displayType;
+    const displayType =
+        vc?.display?.displayType ?? getDefaultDisplayType(categoryType ?? '', achievementType);
     const previewType = vc?.display?.previewType;
 
     // ID card-specific display settings

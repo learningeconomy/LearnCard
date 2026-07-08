@@ -68,6 +68,10 @@ export const VERIFIABLE_DATA_CONTRACT_CATEGORIES = [
 export const isVerifiableDataContractCategory = (category: string) =>
     VERIFIABLE_DATA_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum);
 
+export const isAiContractCategory = (category: string) =>
+    AI_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum) ||
+    AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES.includes(category);
+
 export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
 
 export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {

@@ -28,7 +28,33 @@ export enum PreviewTypeEnum {
     Media = 'media',
 }
 
-export const getDefaultDisplayType = (category: string): DisplayTypeEnum => {
+/**
+ * Map from achievementType directly to its semantically-obvious display type.
+ * These override the category-based fallback so that e.g. `Award` renders
+ * with an award-specific visual even when its category is `Achievement`.
+ */
+const ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE: Record<string, DisplayTypeEnum> = {
+    Badge: DisplayTypeEnum.Badge,
+    Award: DisplayTypeEnum.Award,
+    Course: DisplayTypeEnum.Course,
+    Certificate: DisplayTypeEnum.Certificate,
+    ApprenticeshipCertificate: DisplayTypeEnum.Certificate,
+    JourneymanCertificate: DisplayTypeEnum.Certificate,
+    MasterCertificate: DisplayTypeEnum.Certificate,
+};
+
+export const getDefaultDisplayType = (
+    category: string,
+    achievementType?: string
+): DisplayTypeEnum => {
+    if (achievementType) {
+        const directMatch =
+            ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE[
+                achievementType as keyof typeof ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE
+            ];
+        if (directMatch) return directMatch;
+    }
+
     if (category === CredentialCategoryEnum.accomplishment) {
         return DisplayTypeEnum.Media;
     }

@@ -18,6 +18,7 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
 const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
+const MyAppsLanding = lazyWithRetry(() => import('./pages/myApps/MyAppsLanding'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
 const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
 const NotificationsPage = lazyWithRetry(
@@ -45,6 +46,7 @@ const CredentialStorageGet = lazyWithRetry(
 const AddressBook = lazyWithRetry(() => import('./pages/addressBook/AddressBook'));
 const BoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/BoostCMS'));
 const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/UpdateBoostCMS'));
+const IssueCredentialPage = lazyWithRetry(() => import('./pages/issue/IssueCredentialPage'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
 const PrivacySettingsPage = lazyWithRetry(
@@ -247,7 +249,8 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/home" component={WalletPage} />
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
                         <PrivateRoute exact path="/passport" component={WalletPage} />
-                        <PrivateRoute exact path="/launchpad" component={LaunchPad} />
+                        <PrivateRoute exact path="/launchpad" component={MyAppsLanding} />
+                        <PrivateRoute exact path="/launchpad/browse" component={LaunchPad} />
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
@@ -313,6 +316,7 @@ export const Routes: React.FC = () => {
                         />
                         <PrivateRoute exact path="/boost" component={BoostCMS} />
                         <PrivateRoute exact path="/boost/update" component={UpdateBoostCMS} />
+                        <PrivateRoute exact path="/issue" component={IssueCredentialPage} />
                         <PrivateRoute exact path="/test" component={VprQueryByExample} />
                         <SentryRoute exact path="/wallet-worker" component={WalletServiceWorker} />
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
@@ -493,11 +497,13 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/ai/topics': () => AiSessionTopicsContainer.preload(),
     '/ai/sessions': () => AiSessionsContainer.preload(),
     // Side menu root links.
-    '/launchpad': () => LaunchPad.preload(),
+    '/launchpad': () => MyAppsLanding.preload(),
+    '/launchpad/browse': () => LaunchPad.preload(),
     '/contacts': () => AddressBook.preload(),
     '/notifications': () => NotificationsPage.preload(),
     // Mobile navbar / wallet header.
     '/boost': () => BoostCMS.preload(),
+    '/issue': () => IssueCredentialPage.preload(),
     // Other commonly side-menu-linked routes.
     '/privacy-and-data': () => PrivacySettingsPage.preload(),
     '/resume-builder': () => ResumeBuilderPage.preload(),

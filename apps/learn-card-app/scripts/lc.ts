@@ -33,7 +33,7 @@ import { createInterface } from 'readline';
 import { readdirSync, existsSync, readFileSync, writeFileSync, statSync } from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { spawn, execSync } from 'child_process';
+import { spawn, execSync, execFileSync } from 'child_process';
 import { networkInterfaces } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -61,6 +61,7 @@ const green = (s: string): string => `\x1b[32m${s}\x1b[0m`;
 const cyan = (s: string): string => `\x1b[36m${s}\x1b[0m`;
 const dim = (s: string): string => `\x1b[2m${s}\x1b[0m`;
 const yellow = (s: string): string => `\x1b[33m${s}\x1b[0m`;
+const red = (s: string): string => `\x1b[31m${s}\x1b[0m`;
 
 const discoverTenants = (): string[] => {
     if (!existsSync(ENVIRONMENTS_DIR)) return [];
@@ -327,17 +328,27 @@ const seedTestData = async () => {
 // Menu actions
 // ---------------------------------------------------------------------------
 
-const pickStage = async (tenantId: string): Promise<string> => {
+const pickStage = async (
+    tenantId: string,
+    defaultStage: 'local' | 'production' = 'local'
+): Promise<string> => {
     const stages = discoverStages(tenantId);
 
     if (stages.length === 0) {
-        return 'local';
+        return defaultStage;
     }
+
+    const lastIdx = stages.length + 1;
+    const defaultIdx = defaultStage === 'production' ? lastIdx : 1;
 
     log.info('');
     log.info(bold('Available stages:'));
     log.info('');
-    log.info(`  ${cyan('1')}  ${bold('local')} — local dev ${dim('(default)')}`);
+    log.info(
+        `  ${cyan('1')}  ${bold('local')} — local dev ${
+            defaultStage === 'local' ? dim('(default)') : ''
+        }`
+    );
 
     stages
         .filter(s => s !== 'local')
@@ -345,23 +356,25 @@ const pickStage = async (tenantId: string): Promise<string> => {
             log.info(`  ${cyan(`${i + 2}`)}  ${bold(s)}`);
         });
 
-    log.info(`  ${cyan(`${stages.length + 1}`)}  ${bold('production')} — no stage overlay`);
+    log.info(
+        `  ${cyan(`${lastIdx}`)}  ${bold('production')} — no stage overlay ${
+            defaultStage === 'production' ? dim('(default)') : ''
+        }`
+    );
     log.info('');
 
     const choice = await ask(
-        `Pick a stage [1-${stages.length + 1}] ${dim('(default: 1 / local)')}: `
+        `Pick a stage [1-${lastIdx}] ${dim(`(default: ${defaultIdx} / ${defaultStage})`)}: `
     );
 
-    if (!choice || choice === '1') return 'local';
-
-    const lastIdx = stages.length + 1;
-
+    if (!choice) return defaultStage;
+    if (choice === '1') return 'local';
     if (choice === String(lastIdx)) return 'production';
 
     const allStages = ['local', ...stages.filter(s => s !== 'local')];
     const idx = parseInt(choice, 10) - 1;
 
-    return allStages[idx] ?? 'local';
+    return allStages[idx] ?? defaultStage;
 };
 
 type DevMode = 'full' | 'app' | 'services';
@@ -1035,16 +1048,41 @@ const setNativeBuildEnv = (stageId: string): void => {
     process.env.VITE_ENABLE_AUTH_DEBUG_WIDGET = isProduction ? 'false' : 'true';
 };
 
-const execBlocking = (cmd: string, label: string): void => {
+const execBlocking = (cmd: string, label: string, cwd: string = APP_ROOT): void => {
     log.info('');
     log.info(green(`▶ ${label}`));
     log.info(dim(`  $ ${cmd}`));
     log.info('');
 
     try {
-        execSync(cmd, { cwd: APP_ROOT, stdio: 'inherit' });
+        execSync(cmd, { cwd, stdio: 'inherit' });
     } catch (err) {
         log.error(`\n❌ Command failed: ${cmd}`);
+        throw err;
+    }
+};
+
+/**
+ * Argument-array exec (no shell). Use this whenever any argument is derived from
+ * user input or config (tenant, stage, channel, appId, version) so values are
+ * passed verbatim to the binary and never parsed by a shell — closes the
+ * command-injection surface that string interpolation into `execBlocking` opens.
+ */
+const execFileBlocking = (
+    file: string,
+    args: string[],
+    label: string,
+    cwd: string = APP_ROOT
+): void => {
+    log.info('');
+    log.info(green(`▶ ${label}`));
+    log.info(dim(`  $ ${file} ${args.join(' ')}`));
+    log.info('');
+
+    try {
+        execFileSync(file, args, { cwd, stdio: 'inherit' });
+    } catch (err) {
+        log.error(`\n❌ Command failed: ${file} ${args.join(' ')}`);
         throw err;
     }
 };
@@ -1441,6 +1479,302 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     child.on('exit', code => process.exit(code ?? 0));
 };
 
+// ---------------------------------------------------------------------------
+// Capgo OTA preview (local build → PR channel)
+// ---------------------------------------------------------------------------
+
+const getAppVersion = (): string => {
+    try {
+        return JSON.parse(readFileSync(join(APP_ROOT, 'package.json'), 'utf-8')).version ?? '0.0.0';
+    } catch {
+        return '0.0.0';
+    }
+};
+
+const getShortSha = (): string => {
+    try {
+        return execSync('git rev-parse --short HEAD', {
+            cwd: APP_ROOT,
+            stdio: ['ignore', 'pipe', 'ignore'],
+        })
+            .toString()
+            .trim();
+    } catch {
+        return 'local';
+    }
+};
+
+/**
+ * Best-effort lookup of the PR number for the current branch via the GitHub
+ * CLI. Used only to suggest a `pr-<n>` channel name (which surfaces as
+ * "Beta #<n>" in the app's Version Info channel switcher). Returns undefined
+ * when `gh` isn't installed / authed or the branch has no open PR.
+ */
+const getPrNumberForBranch = (): string | undefined => {
+    try {
+        const out = execSync('gh pr view --json number -q .number', {
+            cwd: APP_ROOT,
+            stdio: ['ignore', 'pipe', 'ignore'],
+        })
+            .toString()
+            .trim();
+
+        return /^\d+$/.test(out) ? out : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+interface CapgoArgs {
+    tenant?: string;
+    stage?: string;
+    channel?: string;
+}
+
+/**
+ * Flexible arg parse for `lc capgo [tenant] [stage] [channel]`. Order-agnostic:
+ *   - a known stage (local / production / <stage>) → stage
+ *   - a `pr-*` token → channel (other channel names must be entered interactively)
+ *   - anything else → tenant
+ */
+const parseCapgoArgs = (parts: Array<string | undefined>): CapgoArgs => {
+    const result: CapgoArgs = {};
+
+    for (const p of parts) {
+        if (!p) continue;
+
+        const stage = asStage(p);
+
+        if (!result.stage && stage) {
+            result.stage = stage;
+            continue;
+        }
+
+        if (!result.channel && (/^pr-/i.test(p) || RESERVED_CHANNEL_RE.test(p))) {
+            result.channel = p;
+            continue;
+        }
+
+        if (!result.tenant) result.tenant = p;
+    }
+
+    return result;
+};
+
+const RESERVED_CHANNEL_RE = /^\d+\.\d+\.\d+$/;
+const VALID_CHANNEL_RE = /^[A-Za-z0-9._-]+$/;
+
+const isReservedChannel = (name: string): boolean =>
+    RESERVED_CHANNEL_RE.test(name) || name === 'staging' || name === 'production';
+
+const rejectChannel = (name: string): 'invalid' | 'reserved' | undefined => {
+    if (!VALID_CHANNEL_RE.test(name)) return 'invalid';
+    if (isReservedChannel(name)) return 'reserved';
+
+    return undefined;
+};
+
+const logChannelRejection = (name: string): void => {
+    if (!VALID_CHANNEL_RE.test(name)) {
+        log.error(red(`❌ Invalid channel name "${name}".`));
+        log.error(dim('   Use only letters, numbers, and . _ - (e.g. `pr-123`, `pr-local`).'));
+        return;
+    }
+
+    log.error(red(`❌ Refusing to target channel "${name}".`));
+    log.error(dim('   Semver channels (e.g. 1.0.9) are the live production OTA channels and'));
+    log.error(dim('   `staging` is CI-managed — targeting them would replace the bundle real'));
+    log.error(dim('   users receive. Use a preview channel like `pr-123` or `pr-local`.'));
+};
+
+/**
+ * Build the web app locally with a selectable tenant config/stage (defaults to
+ * production) and push an OTA bundle to a Capgo channel — without waiting on CI.
+ *
+ * Naming the channel `pr-<n>` makes it show up as "Beta #<n>" in the app's
+ * Version Info → "Switch update channel" picker. `--self-assign` marks the
+ * uploaded bundle as the channel default so `CapacitorUpdater.setChannel()`
+ * (the in-app switcher) can opt into it.
+ *
+ * Capgo commands run from the monorepo root with the same paths CI uses
+ * (`.github/workflows/capgo-upload.yml`) so delta/dependency calc matches.
+ */
+const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: string) => {
+    const token = process.env.CAPGO_TOKEN;
+
+    if (!token) {
+        log.error(red('\n❌ CAPGO_TOKEN is not set in your environment.'));
+        log.error(dim('   The Capgo CLI reads it to authenticate uploads. Export it first:'));
+        log.error(dim('     export CAPGO_TOKEN=<your-capgo-api-key>'));
+        log.error(
+            dim('   Grab a key from the Capgo dashboard (Account → API keys) or the team vault.')
+        );
+        rl.close();
+        process.exit(1);
+    }
+
+    if (!tenantId) {
+        tenantId = await pickTenant();
+    }
+
+    if (!discoverTenants().includes(tenantId)) {
+        log.error(red(`\n❌ Unknown tenant "${tenantId}".`));
+        log.error(dim(`   Available: ${discoverTenants().join(', ')}`));
+        rl.close();
+        process.exit(1);
+    }
+
+    // Default to production config — the whole point of a local Capgo build is
+    // to skip CI's production-branch gating.
+    if (!stageId) {
+        stageId = await pickStage(tenantId, 'production');
+    }
+
+    const appId = getTenantBundleId(tenantId);
+    const displayName = getTenantDisplayName(tenantId);
+
+    let channel = channelArg?.trim();
+
+    if (channel && rejectChannel(channel)) {
+        log.error('');
+        logChannelRejection(channel);
+        rl.close();
+        process.exit(1);
+    }
+
+    if (!channel) {
+        const prNumber = getPrNumberForBranch();
+        const suggested = prNumber ? `pr-${prNumber}` : 'pr-local';
+
+        log.info('');
+        log.info(dim('  Channels named `pr-<number>` show up as "Beta #<number>" in the app\'s'));
+        log.info(dim('  Version Info → "Switch update channel" picker.'));
+        log.info('');
+
+        while (!channel) {
+            const answer = await ask(`Channel name ${dim(`(default: ${suggested})`)}: `);
+            const candidate = (answer || suggested).trim();
+
+            if (rejectChannel(candidate)) {
+                logChannelRejection(candidate);
+                log.info('');
+                continue;
+            }
+
+            channel = candidate;
+        }
+    }
+
+    const stageArgs = stageId === 'production' ? [] : ['--stage', stageId];
+    const stageLabel = stageId;
+    const bundleVersion = `${getAppVersion()}-${channel}.${getShortSha()}`;
+
+    log.info('');
+    log.info(bold(`📲 Capgo preview: ${displayName} → channel ${cyan(channel)}`));
+    log.info(`   App ID:  ${cyan(appId)}`);
+    log.info(`   Config:  ${cyan(`${tenantId} (${stageLabel})`)}`);
+    log.info(`   Bundle:  ${cyan(bundleVersion)}`);
+
+    execFileBlocking(
+        'bun',
+        ['scripts/prepare-native-config.ts', tenantId, ...stageArgs],
+        `Step 1/4 — Preparing tenant config (${stageLabel})`
+    );
+
+    setNativeBuildEnv(stageId);
+    execFileBlocking('npx', ['vite', 'build'], 'Step 2/4 — Building web app');
+
+    log.info('');
+    log.info(green('▶ Step 3/4 — Ensuring Capgo channel exists'));
+    log.info(dim(`  $ bunx @capgo/cli@latest channel add ${channel} ${appId}`));
+
+    try {
+        execFileSync('bunx', ['@capgo/cli@latest', 'channel', 'add', channel, appId], {
+            cwd: MONOREPO_ROOT,
+            stdio: 'pipe',
+            env: { ...process.env, CAPGO_TOKEN: token },
+        });
+        log.info(`   ${green('✓')} Created channel ${channel}`);
+    } catch (err) {
+        const e = err as { stdout?: Buffer; stderr?: Buffer };
+        const out = `${e.stdout?.toString() ?? ''}${e.stderr?.toString() ?? ''}`;
+
+        if (/already exist|duplicate key value violates unique constraint/i.test(out)) {
+            log.info(`   ${green('✓')} Channel ${channel} already exists — continuing.`);
+        } else {
+            if (out) log.error(out);
+            log.error(red('\n❌ Failed to create Capgo channel.'));
+            rl.close();
+            process.exit(1);
+        }
+    }
+
+    execFileBlocking(
+        'bunx',
+        [
+            '@capgo/cli@latest',
+            'bundle',
+            'upload',
+            appId,
+            '--delta',
+            '--path',
+            'apps/learn-card-app/build',
+            '--channel',
+            channel,
+            '--bundle',
+            bundleVersion,
+            '--package-json',
+            'apps/learn-card-app/package.json',
+            '--node-modules',
+            'node_modules',
+        ],
+        'Step 4/4 — Uploading bundle to Capgo',
+        MONOREPO_ROOT
+    );
+
+    execFileBlocking(
+        'bunx',
+        [
+            '@capgo/cli@latest',
+            'channel',
+            'set',
+            channel,
+            '--bundle',
+            bundleVersion,
+            '--self-assign',
+            appId,
+        ],
+        'Setting channel default (self-assign)',
+        MONOREPO_ROOT
+    );
+
+    log.info('');
+    log.info(
+        green(`✅ Uploaded ${bundleVersion} to channel ${cyan(channel)} (${stageLabel} config)`)
+    );
+    log.info('');
+    log.info(bold('  Try it on a device:'));
+    log.info(`  ${dim('1.')} Open the installed ${displayName} app (native build).`);
+    log.info(`  ${dim('2.')} Side menu → tap the version line in the footer.`);
+    log.info(`  ${dim('3.')} Expand ${bold('Advanced')} → ${bold('Switch update channel…')}`);
+
+    if (/^pr-\d+$/.test(channel)) {
+        log.info(`  ${dim('4.')} Pick ${bold(`Beta #${channel.slice(3)}`)} (channel ${channel}).`);
+    } else {
+        log.info(`  ${dim('4.')} Enter ${bold(channel)} in the custom channel field.`);
+    }
+
+    log.info(`  ${dim('5.')} The bundle installs on next app reload.`);
+    log.info('');
+    log.info(
+        yellow('  ⚠️  The device must run a native binary whose defaultChannel is compatible ')
+    );
+    log.info(yellow('     with this bundle. OTA can only swap JS, not native code.'));
+    log.info('');
+
+    rl.close();
+};
+
 const nativeMenu = async () => {
     log.info('');
     log.info(bold('📱 Native / Capacitor'));
@@ -1468,15 +1802,20 @@ const nativeMenu = async () => {
             '— sync + fastlane (beta, release, appetize)'
         )}`
     );
+    log.info(
+        `  ${cyan('6')}  ${bold('Capgo preview')}      ${dim(
+            '— local OTA build → PR channel (selectable config)'
+        )}`
+    );
     log.info('');
     log.info(
         dim(
-            '  Or run directly: bun run lc native dev|sync|open|run|build [tenant] [stage] [ios|android] [beta|release|appetize]'
+            '  Or run directly: bun run lc native dev|sync|open|run|build|capgo [tenant] [stage] [ios|android] [beta|release|appetize]'
         )
     );
     log.info('');
 
-    const choice = await ask('Pick an option [1-5]: ');
+    const choice = await ask('Pick an option [1-6]: ');
 
     switch (choice) {
         case '1':
@@ -1499,8 +1838,12 @@ const nativeMenu = async () => {
             await nativeBuild();
             break;
 
+        case '6':
+            await capgoPreview();
+            break;
+
         default:
-            log.info(yellow('Unknown option. Try 1-5.'));
+            log.info(yellow('Unknown option. Try 1-6.'));
             rl.close();
             break;
     }
@@ -1597,6 +1940,13 @@ const handleNativeShortcut = async (args: string[]): Promise<boolean> => {
             const tenant = allArgs.find(a => a && !asPlatform(a) && !parseLaneArg(a));
 
             await nativeBuild(tenant, platform, lane);
+            return true;
+        }
+
+        case 'capgo': {
+            const { tenant, stage, channel } = parseCapgoArgs([arg1, arg2, args[3]]);
+
+            await capgoPreview(tenant, stage, channel);
             return true;
         }
 
@@ -1748,7 +2098,7 @@ const handleShortcuts = async (): Promise<boolean> => {
 
             if (!handled) {
                 log.info(yellow(`Unknown native subcommand: ${nativeArgs[0]}`));
-                log.info(dim('  Available: dev, sync, open, run'));
+                log.info(dim('  Available: dev, sync, open, run, build, capgo'));
                 rl.close();
             }
 
@@ -1791,6 +2141,13 @@ const handleShortcuts = async (): Promise<boolean> => {
                     ? `bun run lc bump-default-capgo-channel ${arg}`
                     : 'bun run lc bump-default-capgo-channel'
             );
+            return true;
+        }
+
+        case 'capgo': {
+            const { tenant, stage, channel } = parseCapgoArgs([arg, arg2, args[3]]);
+
+            await capgoPreview(tenant, stage, channel);
             return true;
         }
 
@@ -1928,6 +2285,11 @@ const printHelp = () => {
     log.info(
         `  ${cyan('bun run lc native')}                     ${dim(
             'Full native menu (dev, run, build)'
+        )}`
+    );
+    log.info(
+        `  ${cyan('bun run lc capgo [tenant] [stage] [channel]')} ${dim(
+            'Local OTA build → PR/Beta channel (default: prod config)'
         )}`
     );
     log.info('');

@@ -16,7 +16,42 @@ const log = getLogger('auth-coordinator');
  * to the KeyDerivationStrategy, keeping itself a pure state machine.
  */
 
+import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
+import { withNetworkFault } from '../helpers/networkFault';
+
 import { AuthSessionError } from './types';
+
+const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
+const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
+
+/**
+ * Whether a thrown error is a transient connectivity failure rather than a real
+ * fault. Offline boot must treat these as "no session yet" (→ idle) instead of
+ * a hard `error`, which would otherwise surface an error overlay and drive a
+ * re-init loop while the device is offline. Covers Firebase's
+ * `auth/network-request-failed`, our own deadline timeouts, and common fetch
+ * failure messages across browsers/webviews.
+ */
+const isNetworkError = (e: unknown): boolean => {
+    if (isDeadlineError(e)) return true;
+
+    if (typeof (e as { code?: unknown })?.code === 'string') {
+        const code = (e as { code: string }).code.toLowerCase();
+        if (code.includes('network-request-failed') || code.includes('network_error')) return true;
+    }
+
+    const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
+
+    return (
+        msg.includes('network-request-failed') ||
+        msg.includes('network request failed') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('networkerror') ||
+        msg.includes('network error') ||
+        msg.includes('err_internet_disconnected') ||
+        msg.includes('load failed')
+    );
+};
 
 import type {
     AuthProvider,
@@ -81,13 +116,20 @@ export class AuthCoordinator {
                         const did = await this.config.didFromPrivateKey(cachedKey);
 
                         if (did) {
-                            let authUser: AuthUser | null = null;
-
-                            try {
-                                authUser = await this.config.authProvider.getCurrentUser();
-                            } catch {
-                                // Auth session unavailable — that's fine, we have the key
-                            }
+                            // Opportunistic + bounded: offline/slow auth must not
+                            // block a cached-key resume from reaching `ready`.
+                            const authUser: AuthUser | null = await withDeadlineOr(
+                                withNetworkFault('getCurrentUser(pk-first)', () =>
+                                    this.config.authProvider.getCurrentUser()
+                                ),
+                                null,
+                                {
+                                    ms:
+                                        this.config.authSessionTimeoutMs ??
+                                        DEFAULT_AUTH_SESSION_TIMEOUT_MS,
+                                    label: 'getCurrentUser(pk-first)',
+                                }
+                            );
 
                             // Scope storage even on pk-first path so getLocalKey works later
                             if (authUser && this.keyDerivation.setActiveUser) {
@@ -101,12 +143,25 @@ export class AuthCoordinator {
                             // so it's protected by split shares + recovery methods.
                             if (authUser && this.keyDerivation.capabilities?.recovery) {
                                 try {
-                                    const { token, providerType } = await this.getAuthCredentials();
-                                    const serverStatus =
-                                        await this.keyDerivation.fetchServerKeyStatus(
-                                            token,
-                                            providerType
-                                        );
+                                    const serverStatus = await withDeadline(
+                                        withNetworkFault(
+                                            'fetchServerKeyStatus(pk-first)',
+                                            async () => {
+                                                const { token, providerType } =
+                                                    await this.getAuthCredentials();
+                                                return this.keyDerivation.fetchServerKeyStatus(
+                                                    token,
+                                                    providerType
+                                                );
+                                            }
+                                        ),
+                                        {
+                                            ms:
+                                                this.config.serverStatusTimeoutMs ??
+                                                DEFAULT_SERVER_STATUS_TIMEOUT_MS,
+                                            label: 'fetchServerKeyStatus(pk-first)',
+                                        }
+                                    );
 
                                     if (!serverStatus.exists || serverStatus.needsMigration) {
                                         this.setState({
@@ -146,7 +201,18 @@ export class AuthCoordinator {
             // --- Standard auth-provider-first path ---
             this.setState({ status: 'authenticating' });
 
-            const authUser = await this.config.authProvider.getCurrentUser();
+            // Bound the probe so a stalled network can't hang boot; a timeout
+            // surfaces as a retryable error (via the outer catch), while real
+            // provider errors propagate unchanged to preserve existing handling.
+            const authUser = await withDeadline(
+                withNetworkFault('getCurrentUser(standard)', () =>
+                    this.config.authProvider.getCurrentUser()
+                ),
+                {
+                    ms: this.config.authSessionTimeoutMs ?? DEFAULT_AUTH_SESSION_TIMEOUT_MS,
+                    label: 'getCurrentUser(standard)',
+                }
+            );
 
             if (!authUser) {
                 this.setState({ status: 'idle' });
@@ -165,7 +231,15 @@ export class AuthCoordinator {
             const { token, providerType } = await this.getAuthCredentials();
 
             const hasLocalKey = await this.keyDerivation.hasLocalKey();
-            const serverStatus = await this.keyDerivation.fetchServerKeyStatus(token, providerType);
+            const serverStatus = await withDeadline(
+                withNetworkFault('fetchServerKeyStatus(standard)', () =>
+                    this.keyDerivation.fetchServerKeyStatus(token, providerType)
+                ),
+                {
+                    ms: this.config.serverStatusTimeoutMs ?? DEFAULT_SERVER_STATUS_TIMEOUT_MS,
+                    label: 'fetchServerKeyStatus(standard)',
+                }
+            );
 
             // Resolve recovery methods through the strategy (which may inject
             // client-side-only methods like email backup) when available,
@@ -270,6 +344,15 @@ export class AuthCoordinator {
             // Typed auth session errors → idle (not error)
             if (e instanceof AuthSessionError) {
                 log.warn('Auth session expired or missing — returning to idle');
+                this.setState({ status: 'idle' });
+                return this.state;
+            }
+
+            // Connectivity failures are not hard errors: fall back to idle so
+            // the offline UI (banner / boot gate) owns the UX and initialize()
+            // re-runs cleanly on reconnect — never an error overlay + retry loop.
+            if (isNetworkError(e)) {
+                log.warn('Network unavailable during init — returning to idle', e);
                 this.setState({ status: 'idle' });
                 return this.state;
             }
