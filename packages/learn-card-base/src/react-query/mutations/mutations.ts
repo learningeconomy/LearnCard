@@ -11,6 +11,19 @@ import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('mutations');
 
+export const getDeletedUrisForCredentialRecord = (record: LCR): string[] => {
+    const sharedUris = Object.values(record.sharedUris ?? {}).reduce<string[]>(
+        (allSharedUris, recordSharedUris) => {
+            return allSharedUris.concat(
+                recordSharedUris.filter((uri): uri is string => Boolean(uri))
+            );
+        },
+        []
+    );
+
+    return [...new Set([record.uri, ...sharedUris])];
+};
+
 // ** CONNECTION MUTATIONS **
 
 type ProfileIdParam = { profileId: string };
@@ -151,6 +164,23 @@ export const useDeleteCredentialRecord = () => {
 
     const getRecordCategory = (record: LCR) => record.metadata?.category ?? record.category;
 
+    const resolveRecordForDeletion = async (
+        wallet: Awaited<ReturnType<typeof initWallet>>,
+        record: LCR
+    ) => {
+        if (record.sharedUris && Object.keys(record.sharedUris).length > 0) {
+            return record;
+        }
+
+        try {
+            const resolvedRecord = (await wallet.index.LearnCloud.get?.({ uri: record.uri }))?.[0];
+
+            return (resolvedRecord ?? record) as LCR;
+        } catch {
+            return record;
+        }
+    };
+
     const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
         if (!ENABLE_DELETE_CREDENTIAL_LOGS) return;
 
@@ -169,6 +199,7 @@ export const useDeleteCredentialRecord = () => {
         uri: string;
         category: string | undefined;
         contractUri?: string;
+        deletedUris: string[];
         skipPostDeleteCleanup?: boolean;
     };
 
@@ -206,21 +237,25 @@ export const useDeleteCredentialRecord = () => {
             try {
                 log.debug('deleting record (in mutation)', record);
                 const wallet = await initWallet();
+                const recordToDelete = await resolveRecordForDeletion(wallet, record);
                 const category = getRecordCategory(record);
+                const deletedUris = getDeletedUrisForCredentialRecord(recordToDelete);
                 // Preemptively empty LC cache
                 await wallet.cache.flushIndex();
 
                 // Direct deletion using the record ID - no need to search for it
-                if (record.id) {
+                if (recordToDelete.id) {
                     // Delete from LearnCloud index
-                    await wallet.index.LearnCloud.remove(record.id);
+                    await wallet.index.LearnCloud.remove(recordToDelete.id);
 
                     // Also try SQLite index for completeness (if available)
                     try {
                         const sqliteIndex = await wallet.index.SQLite?.get?.().catch(err =>
                             log.error('SQLite index get failed', err)
                         );
-                        const foundIndex = sqliteIndex?.find(index => index?.uri === record.uri);
+                        const foundIndex = sqliteIndex?.find(
+                            index => index?.uri === recordToDelete.uri
+                        );
 
                         if (foundIndex?.id) {
                             await wallet.index.SQLite?.remove?.(foundIndex.id);
@@ -233,10 +268,11 @@ export const useDeleteCredentialRecord = () => {
                 }
 
                 return {
-                    uri: record.uri,
+                    uri: recordToDelete.uri,
                     category,
-                    contractUri: record.metadata?.contractUri,
-                    skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
+                    contractUri: recordToDelete.metadata?.contractUri,
+                    deletedUris,
+                    skipPostDeleteCleanup: Boolean(recordToDelete.skipPostDeleteCleanup),
                 };
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
@@ -393,6 +429,7 @@ export const useDeleteCredentialRecord = () => {
                 uri: result.uri,
                 category,
                 contractUri: result.contractUri ?? null,
+                deletedUriCount: result.deletedUris.length,
             });
 
             const wallet = await initWallet();
@@ -401,13 +438,14 @@ export const useDeleteCredentialRecord = () => {
                 const cleanupResult = await deleteCredentialFromAllContracts({
                     wallet,
                     queryClient,
-                    deletedUris: [result.uri],
+                    deletedUris: result.deletedUris,
                 });
 
                 logDeleteCredentialRefresh('Credential cleanup completed after delete', {
                     uri: result.uri,
                     category,
                     contractUri: result.contractUri ?? null,
+                    deletedUriCount: result.deletedUris.length,
                     contractsUpdated: cleanupResult.contractsUpdated,
                     removedSharedUris: cleanupResult.removedSharedUris,
                 });
@@ -416,6 +454,7 @@ export const useDeleteCredentialRecord = () => {
                     uri: result.uri,
                     category,
                     contractUri: result.contractUri ?? null,
+                    deletedUriCount: result.deletedUris.length,
                     contractsUpdated: cleanupResult.contractsUpdated,
                     removedSharedUris: cleanupResult.removedSharedUris,
                 });
@@ -431,6 +470,7 @@ export const useDeleteCredentialRecord = () => {
                             uri: result.uri,
                             category,
                             contractUri: result.contractUri ?? null,
+                            deletedUriCount: result.deletedUris.length,
                         }
                     );
 
@@ -442,6 +482,7 @@ export const useDeleteCredentialRecord = () => {
                             uri: result.uri,
                             category,
                             contractUri: result.contractUri ?? null,
+                            deletedUriCount: result.deletedUris.length,
                         }
                     );
 
