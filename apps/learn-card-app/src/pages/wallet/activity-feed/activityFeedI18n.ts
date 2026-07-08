@@ -46,7 +46,7 @@ const MONTHS_FULL = [
 
 /** Translate a full month name from the MONTHS array (e.g. "JANUARY" → "January"). */
 export const tFullMonth = (englishName: string): string => {
-    const idx = MONTHS_FULL.indexOf(englishName);
+    const idx = (MONTHS_FULL as readonly string[]).indexOf(englishName);
     if (idx === -1) return englishName;
     const key = `passport.activity.months.${MONTHS_SHORT[idx]}` as const;
     const fn = (m as Record<string, unknown>)[key];
