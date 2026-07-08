@@ -186,6 +186,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
         idDimBackgroundImage,
         idFontColor,
         idAccentColor,
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
     } = useGetVCInfo(credential, categoryType || _category);
 
     const { data: knownDIDRegistry } = useKnownDIDRegistry(issuerDid);
@@ -328,8 +330,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                             issueeName={useCurrentUserName ? currentUser?.name : issueeName}
                             issuerThumbnail={idIssuerThumbnailSrc}
                             showIssuerImage={showIdIssuerThumbnail}
-                            backgroundImage={idBackgroundImage}
-                            dimBackgroundImage={idDimBackgroundImage}
+                            backgroundImage={idDisplayBackgroundImage}
+                            dimBackgroundImage={idDisplayDimBackgroundImage}
                             fontColor={idFontColor}
                             accentColor={idAccentColor}
                             idIssuerName={issuerName}
