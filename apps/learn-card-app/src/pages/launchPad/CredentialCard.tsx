@@ -38,7 +38,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
     const categoryDisplayMap: Record<string, string> = {
         'Learning History': 'Studies',
         'Work History': 'Experiences',
-        'Social Badge': 'Boosts',
+        'Social Badge': 'Badges',
         'Accomodation': 'Assistance',
         'Accomplishment': 'Portfolio',
     };
