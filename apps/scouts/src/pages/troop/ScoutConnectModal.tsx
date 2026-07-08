@@ -20,6 +20,7 @@ import useBoost from '../../components/boost/hooks/useBoost';
 import { BoostCMSIssueTo, ShortBoostState } from '../../components/boost/boost';
 import { useHistory } from 'react-router';
 import { BoostIssuanceLoading } from '../../components/boost/boostLoader/BoostLoader';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 import {
     useCountBoostRecipients,
@@ -140,7 +141,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                 );
 
                 setClaimLink(
-                    `${window.location.origin}/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
+                    `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                        boostClaimLink?.boostUri
+                    }&challenge=${boostClaimLink?.challenge}`
                 );
             } else {
                 // Handle new signing authority creation
@@ -167,7 +170,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                     );
 
                     setClaimLink(
-                        `${window.location.origin}/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            boostClaimLink?.boostUri
+                        }&challenge=${boostClaimLink?.challenge}`
                     );
                 }
             }
