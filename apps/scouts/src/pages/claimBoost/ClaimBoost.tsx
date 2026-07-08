@@ -255,6 +255,10 @@ export const ClaimBoostModal: React.FC<{
             setIsClaimLoading(false);
             closeLoaderModal();
 
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            const isExpired =
+                errorMsg.includes('Challenge not found') || errorMsg.includes('expired');
+
             presentToast(`Unable to claim Credential`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -263,7 +267,9 @@ export const ClaimBoostModal: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `The boost claim link has expired or has reached the maximum number of times it can be claimed.`,
+                header: isExpired
+                    ? 'The boost claim link has expired or has reached the maximum number of times it can be claimed.'
+                    : 'Something went wrong while claiming this credential. Please try again.',
                 buttons: [
                     {
                         text: 'Okay',
