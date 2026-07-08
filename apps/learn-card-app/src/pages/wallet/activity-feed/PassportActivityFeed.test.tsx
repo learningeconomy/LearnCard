@@ -11,8 +11,21 @@ vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
     useWallet: () => ({ initWallet: vi.fn() }),
     useGetCurrentLCNUser: () => lcn,
+    getLogger: () => ({
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        breadcrumb: vi.fn(),
+        withContext: vi.fn(),
+    }),
 }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
+// Stub the theme hook so importing the feed (via ActivityFilterPopover /
+// ActivityCredentialIcon) doesn't pull the full theme -> nav-bar module chain.
+vi.mock('../../../theme/hooks/useTheme', () => ({
+    useTheme: () => ({ getThemedCategory: () => ({ icons: {} }) }),
+}));
 // The row's presentation (avatar/category icon) is covered by ActivityFeedItem's
 // own test; here we only assert the feed renders a row per record.
 vi.mock('./ActivityFeedItem', () => ({
