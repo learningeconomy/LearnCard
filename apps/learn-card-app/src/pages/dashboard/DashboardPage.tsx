@@ -32,7 +32,6 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
-import ManageDataSharingModal from '../../components/data-sharing/ManageDataSharingModal';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
@@ -228,12 +227,8 @@ const DashboardPage: React.FC = () => {
         );
     };
     const openManageDataSharing = useCallback(() => {
-        openHeaderModal(
-            <ManageDataSharingModal />,
-            { sectionClassName: '!bg-transparent !shadow-none' },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-        );
-    }, [openHeaderModal]);
+        history.push('/privacy-and-data');
+    }, [history]);
 
     const pathways = pathwayStore.use.pathways();
     const activePathwayId = pathwayStore.use.activePathwayId();
