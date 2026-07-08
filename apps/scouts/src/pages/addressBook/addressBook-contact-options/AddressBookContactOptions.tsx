@@ -16,6 +16,7 @@ import { QRCodeScannerStore, useToast, ToastTypeEnum, useModal, ModalTypes } fro
 import { useWallet } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
 import ModalLayout from '../../../layout/ModalLayout';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
@@ -91,7 +92,7 @@ const AddressBookContactOptions: React.FC<{
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://pass.scout.org/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
             presentToast('Contact link copied to clipboard', {
                 type: ToastTypeEnum.Success,
@@ -110,7 +111,7 @@ const AddressBookContactOptions: React.FC<{
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://pass.scout.org/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {
