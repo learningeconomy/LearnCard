@@ -29,9 +29,16 @@ type SideMenuRootLinksProps = {
     branding: BrandingEnum;
 };
 
+type SideMenuIconProps = {
+    className?: string;
+    shadeColor?: string;
+    isCompleted?: boolean;
+    isSyncing?: boolean;
+};
+
 const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setActiveTab }) => {
     const { theme, getIconSet, getColorSet } = useTheme();
-    const iconSet = getIconSet(IconSetEnum.sideMenu);
+    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<any>>;
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
     const isWalletSyncing = walletStore.useTracked.syncState();
@@ -119,7 +126,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         // side menu on mobile (LC-1921).
         if (link.path === '/notifications' && !isMobile) return null;
 
-        const IconComponent = iconSet[link.id as keyof typeof iconSet];
+        const IconComponent = iconSet[link.id as keyof typeof iconSet] as React.FC<any>;
         const linkPath = link.path;
 
         const iconStyles = getIconStyles(linkPath);
@@ -180,21 +187,23 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     to={linkPath}
                     className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
                 >
-                    {(isSyncing || isCompleted) && (
-                        <div className="flex items-center justify-center absolute top-[12px] z-50 h-[28px] w-[28px] rounded-[10px]">
-                            {isSyncing && (
-                                <CustomSpinner
-                                    className={`${colors?.syncingColor} h-[18px] w-[18px]`}
-                                />
-                            )}
-                        </div>
-                    )}
-                    <IconComponent
-                        className={`${iconStyles}`}
-                        shadeColor={shadeColor}
-                        isCompleted={isCompleted}
-                        isSyncing={isSyncing}
-                    />
+                    <div className="relative mr-[10px] h-[35px] w-[35px] shrink-0">
+                        {(isSyncing || isCompleted) && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[10px]">
+                                {isSyncing && (
+                                    <CustomSpinner
+                                        className={`${colors?.syncingColor} h-[18px] w-[18px]`}
+                                    />
+                                )}
+                            </div>
+                        )}
+                        <IconComponent
+                            className={`${iconStyles} h-[35px] w-[35px]`}
+                            shadeColor={shadeColor}
+                            isCompleted={isCompleted}
+                            isSyncing={isSyncing}
+                        />
+                    </div>
                     {walletText}
                 </PreloadingLink>
             );

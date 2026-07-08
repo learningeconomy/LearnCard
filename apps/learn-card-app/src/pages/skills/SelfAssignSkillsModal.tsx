@@ -35,11 +35,13 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     useEffect(() => {
         if (sasBoostSkills) {
             setSelectedSkills(
-                sasBoostSkills.map(s => ({
-                    id: s.id,
-                    frameworkId: s.frameworkId,
-                    proficiency: s.proficiencyLevel,
-                }))
+                sasBoostSkills.map(
+                    (s: { id: string; frameworkId: string; proficiencyLevel: number }) => ({
+                        id: s.id,
+                        frameworkId: s.frameworkId,
+                        proficiency: s.proficiencyLevel,
+                    })
+                )
             );
         }
     }, [sasBoostSkills]);

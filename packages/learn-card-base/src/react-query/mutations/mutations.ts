@@ -149,6 +149,8 @@ export const useDeleteCredentialRecord = () => {
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
     const ENABLE_DELETE_CREDENTIAL_LOGS = false;
 
+    const getRecordCategory = (record: LCR) => record.metadata?.category ?? record.category;
+
     const logDeleteCredentialRefresh = (message: string, data?: Record<string, unknown>) => {
         if (!ENABLE_DELETE_CREDENTIAL_LOGS) return;
 
@@ -167,6 +169,11 @@ export const useDeleteCredentialRecord = () => {
         uri: string;
         category: string | undefined;
         contractUri?: string;
+        skipPostDeleteCleanup?: boolean;
+    };
+
+    type DeleteCredentialInput = LCR & {
+        skipPostDeleteCleanup?: boolean;
     };
 
     type DeleteCredentialContext = {
@@ -175,6 +182,7 @@ export const useDeleteCredentialRecord = () => {
         oldListStaleTime?: unknown;
         category?: string;
         uri: string;
+        skipPostDeleteCleanup?: boolean;
     };
 
     const isMissingDeleteCredentialFromAllContractsProcedureError = (error: unknown) => {
@@ -188,11 +196,17 @@ export const useDeleteCredentialRecord = () => {
         );
     };
 
-    return useMutation<DeleteCredentialResult, Error, LCR, DeleteCredentialContext>({
+    return useMutation<
+        DeleteCredentialResult,
+        Error,
+        DeleteCredentialInput,
+        DeleteCredentialContext
+    >({
         mutationFn: async record => {
             try {
                 log.debug('deleting record (in mutation)', record);
                 const wallet = await initWallet();
+                const category = getRecordCategory(record);
                 // Preemptively empty LC cache
                 await wallet.cache.flushIndex();
 
@@ -220,8 +234,9 @@ export const useDeleteCredentialRecord = () => {
 
                 return {
                     uri: record.uri,
-                    category: record.metadata?.category,
+                    category,
                     contractUri: record.metadata?.contractUri,
+                    skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
@@ -230,7 +245,15 @@ export const useDeleteCredentialRecord = () => {
         onMutate: async record => {
             log.debug('deleting record (in mutation onMutate)', record);
             const uri = record.uri;
-            const category = record.category;
+            const category = getRecordCategory(record);
+
+            if (record.skipPostDeleteCleanup) {
+                return {
+                    uri,
+                    skipPostDeleteCleanup: true,
+                } satisfies DeleteCredentialContext;
+            }
+
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (!category) {
@@ -318,6 +341,7 @@ export const useDeleteCredentialRecord = () => {
                     ...(currentQuery ? { currentQuery } : {}),
                     oldStaleTime,
                     oldListStaleTime,
+                    skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
 
                 return context;
@@ -329,6 +353,10 @@ export const useDeleteCredentialRecord = () => {
             };
         },
         onError: (_, __, context) => {
+            if (context?.skipPostDeleteCleanup) {
+                return;
+            }
+
             // On error, restore previous query data if it exists
             if (context?.category && context?.currentQuery) {
                 const didWeb = switchedProfileStore.get.switchedDid();
@@ -340,7 +368,11 @@ export const useDeleteCredentialRecord = () => {
                 );
             }
         },
-        onSuccess: result => {
+        onSuccess: async result => {
+            if (result.skipPostDeleteCleanup) {
+                return;
+            }
+
             const { category } = result;
             const didWeb = switchedProfileStore.get.switchedDid();
 
@@ -357,98 +389,73 @@ export const useDeleteCredentialRecord = () => {
                 });
             }
 
-            logDeleteCredentialRefresh('Scheduling credential cleanup task', {
+            logDeleteCredentialRefresh('Running credential cleanup after delete', {
                 uri: result.uri,
                 category,
                 contractUri: result.contractUri ?? null,
             });
 
-            setTimeout(() => {
-                const walletPromise = initWallet();
+            const wallet = await initWallet();
 
-                void (async () => {
-                    logDeleteCredentialRefresh('Running credential cleanup after delete', {
-                        uri: result.uri,
-                        category,
-                        contractUri: result.contractUri ?? null,
-                    });
+            try {
+                const cleanupResult = await deleteCredentialFromAllContracts({
+                    wallet,
+                    queryClient,
+                    deletedUris: [result.uri],
+                });
 
-                    const wallet = await walletPromise;
+                logDeleteCredentialRefresh('Credential cleanup completed after delete', {
+                    uri: result.uri,
+                    category,
+                    contractUri: result.contractUri ?? null,
+                    contractsUpdated: cleanupResult.contractsUpdated,
+                    removedSharedUris: cleanupResult.removedSharedUris,
+                });
 
-                    const cleanupResult = await deleteCredentialFromAllContracts({
-                        wallet,
-                        queryClient,
-                        deletedUris: [result.uri],
-                    });
-
-                    logDeleteCredentialRefresh('Credential cleanup completed after delete', {
-                        uri: result.uri,
-                        category,
-                        contractUri: result.contractUri ?? null,
-                        contractsUpdated: cleanupResult.contractsUpdated,
-                        removedSharedUris: cleanupResult.removedSharedUris,
-                    });
-
+                logDeleteCredentialRefresh('Queueing AI Insight refresh after credential cleanup', {
+                    uri: result.uri,
+                    category,
+                    contractUri: result.contractUri ?? null,
+                    contractsUpdated: cleanupResult.contractsUpdated,
+                    removedSharedUris: cleanupResult.removedSharedUris,
+                });
+                await queueAiInsightCredentialRefresh({
+                    wallet,
+                    queryClient,
+                });
+            } catch (error) {
+                if (isMissingDeleteCredentialFromAllContractsProcedureError(error)) {
                     logDeleteCredentialRefresh(
-                        'Queueing AI Insight refresh after credential cleanup',
+                        'Credential cleanup procedure missing; running full sync fallback',
                         {
                             uri: result.uri,
                             category,
                             contractUri: result.contractUri ?? null,
-                            contractsUpdated: cleanupResult.contractsUpdated,
-                            removedSharedUris: cleanupResult.removedSharedUris,
                         }
                     );
+
+                    await syncAllCredentialsToContracts.mutateAsync();
+
+                    logDeleteCredentialRefresh(
+                        'Queueing AI Insight refresh after full sync fallback',
+                        {
+                            uri: result.uri,
+                            category,
+                            contractUri: result.contractUri ?? null,
+                        }
+                    );
+
                     await queueAiInsightCredentialRefresh({
                         wallet,
                         queryClient,
                     });
-                })().catch(error => {
-                    if (isMissingDeleteCredentialFromAllContractsProcedureError(error)) {
-                        logDeleteCredentialRefresh(
-                            'Credential cleanup procedure missing; running full sync fallback',
-                            {
-                                uri: result.uri,
-                                category,
-                                contractUri: result.contractUri ?? null,
-                            }
-                        );
+                    return;
+                }
 
-                        void (async () => {
-                            const wallet = await walletPromise;
-
-                            await syncAllCredentialsToContracts.mutateAsync();
-
-                            logDeleteCredentialRefresh(
-                                'Queueing AI Insight refresh after full sync fallback',
-                                {
-                                    uri: result.uri,
-                                    category,
-                                    contractUri: result.contractUri ?? null,
-                                }
-                            );
-
-                            await queueAiInsightCredentialRefresh({
-                                wallet,
-                                queryClient,
-                            });
-                        })().catch(cleanupFallbackError => {
-                            if (ENABLE_DELETE_CREDENTIAL_LOGS) {
-                                log.error(
-                                    'Failed to run full sync fallback after cleanup failure:',
-                                    cleanupFallbackError
-                                );
-                            }
-                        });
-
-                        return;
-                    }
-
-                    if (ENABLE_DELETE_CREDENTIAL_LOGS) {
-                        log.error('Failed to run post-delete cleanup:', error);
-                    }
-                });
-            }, 0);
+                if (ENABLE_DELETE_CREDENTIAL_LOGS) {
+                    log.error('Failed to run post-delete cleanup:', error);
+                }
+            }
 
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
         },

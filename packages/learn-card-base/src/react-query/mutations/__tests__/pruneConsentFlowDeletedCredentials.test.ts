@@ -21,7 +21,7 @@ describe('pruneDeletedUrisFromConsentTerms', () => {
                     },
                 },
             },
-        } as ConsentFlowTerms;
+        } as unknown as ConsentFlowTerms;
 
         const result = pruneDeletedUrisFromConsentTerms(terms, ['delete-uri']);
 
@@ -41,7 +41,7 @@ describe('pruneDeletedUrisFromConsentTerms', () => {
                     },
                 },
             },
-        } as ConsentFlowTerms;
+        } as unknown as ConsentFlowTerms;
 
         const result = pruneDeletedUrisFromConsentTerms(terms, ['missing-uri']);
 
@@ -84,9 +84,7 @@ describe('deleteCredentialFromAllContracts', () => {
         });
 
         expect(deleteCredentialFromAllContractsRoute).toHaveBeenCalledOnce();
-        expect(deleteCredentialFromAllContractsRoute).toHaveBeenCalledWith({
-            deletedUris: ['shared-delete'],
-        });
+        expect(deleteCredentialFromAllContractsRoute).toHaveBeenCalledWith(['shared-delete']);
         expect(result).toEqual({
             contractsUpdated: 1,
             removedSharedUris: 1,

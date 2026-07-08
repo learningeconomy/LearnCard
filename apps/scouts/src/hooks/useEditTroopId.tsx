@@ -39,7 +39,7 @@ export const useEditTroopId = (credential: VC, uri?: string) => {
     const { credentialWithEdits } = useGetCredentialWithEdits(credential);
     credential = credentialWithEdits ?? credential;
 
-    const network = useGetTroopNetwork(credential, uri);
+    const { network: networkData } = useGetTroopNetwork({ credential, uri });
 
     const role = getRoleFromCred(credential);
 
@@ -120,7 +120,7 @@ export const useEditTroopId = (credential: VC, uri?: string) => {
                 credential={credential}
                 handleCloseModal={closeModal}
                 viewMode={idViewMode}
-                parentUri={network?.uri}
+                parentUri={networkData?.uri}
                 onSuccess={(_, updatedState) => {
                     if (updatedState) {
                         setState(updatedState);
