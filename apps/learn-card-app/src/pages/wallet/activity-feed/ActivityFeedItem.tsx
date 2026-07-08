@@ -43,7 +43,11 @@ export const ActivityFeedItem: React.FC<{
                 <div className="relative shrink-0 h-[44px] w-[44px]">
                     {item.isSelf ? (
                         <div className="flex items-center justify-center h-[44px] w-[44px]">
-                            <ActivityCredentialIcon item={item} className="w-[38px] h-[38px]" />
+                            <ActivityCredentialIcon
+                                category={item.category}
+                                isGeneric={item.isGenericCredential}
+                                className="w-[38px] h-[38px]"
+                            />
                         </div>
                     ) : (
                         <>
@@ -57,7 +61,11 @@ export const ActivityFeedItem: React.FC<{
                                 customImageClass="h-[44px] w-[44px] object-cover"
                             />
                             <span className="absolute -right-[3px] -bottom-[3px] flex items-center justify-center h-[22px] w-[22px] rounded-full bg-white ring-2 ring-white shadow-sm">
-                                <ActivityCredentialIcon item={item} className="w-[20px] h-[20px]" />
+                                <ActivityCredentialIcon
+                                    category={item.category}
+                                    isGeneric={item.isGenericCredential}
+                                    className="w-[20px] h-[20px]"
+                                />
                             </span>
                         </>
                     )}

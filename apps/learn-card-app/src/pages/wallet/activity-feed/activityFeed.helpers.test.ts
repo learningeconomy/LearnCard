@@ -8,7 +8,15 @@ import {
     toActivityFeedVM,
     groupActivitiesByMonth,
     isHiddenActivity,
+    relativeTimeBucket,
+    groupByRelativeTime,
 } from './activityFeed.helpers';
+
+const isoDaysAgo = (days: number): string => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString();
+};
 
 const record = (over: Partial<any> = {}) => ({
     id: 'a1',
@@ -155,6 +163,32 @@ describe('toActivityFeedVM', () => {
         );
         expect(vm.titleLead).toBe('You added a Badge to your passport');
         expect(vm.titleSubject).toBeUndefined();
+    });
+});
+
+describe('relativeTimeBucket', () => {
+    it('labels today and yesterday', () => {
+        expect(relativeTimeBucket(isoDaysAgo(0))).toBe('Today');
+        expect(relativeTimeBucket(isoDaysAgo(1))).toBe('Yesterday');
+    });
+    it('labels a prior year by its year and missing dates as Earlier', () => {
+        expect(relativeTimeBucket('2020-03-04T00:00:00Z')).toBe('2020');
+        expect(relativeTimeBucket(undefined)).toBe('Earlier');
+        expect(relativeTimeBucket('not-a-date')).toBe('Earlier');
+    });
+});
+
+describe('groupByRelativeTime', () => {
+    it('groups consecutive same-bucket items and preserves order', () => {
+        const items = [
+            { uri: 'a', date: isoDaysAgo(0) },
+            { uri: 'b', date: isoDaysAgo(0) },
+            { uri: 'c', date: '2019-06-15T12:00:00Z' },
+        ];
+        const groups = groupByRelativeTime(items, i => i.date);
+        expect(groups.map(g => g.label)).toEqual(['Today', '2019']);
+        expect(groups[0].items.map(i => i.uri)).toEqual(['a', 'b']);
+        expect(groups[1].items.map(i => i.uri)).toEqual(['c']);
     });
 });
 

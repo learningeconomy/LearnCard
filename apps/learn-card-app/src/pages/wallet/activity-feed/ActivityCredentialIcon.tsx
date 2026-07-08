@@ -1,6 +1,6 @@
 import React from 'react';
+import { CredentialCategoryEnum } from 'learn-card-base';
 import { useTheme } from '../../../theme/hooks/useTheme';
-import type { ActivityFeedItemVM } from './activityFeed.helpers';
 
 const GenericCredentialGlyph: React.FC<{ className?: string }> = ({ className }) => (
     <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
@@ -24,14 +24,15 @@ const GenericCredentialGlyph: React.FC<{ className?: string }> = ({ className })
 );
 
 export const ActivityCredentialIcon: React.FC<{
-    item: ActivityFeedItemVM;
+    category: CredentialCategoryEnum;
+    isGeneric?: boolean;
     className?: string;
-}> = ({ item, className }) => {
+}> = ({ category, isGeneric, className }) => {
     const { getThemedCategory } = useTheme();
 
-    if (item.isGenericCredential) return <GenericCredentialGlyph className={className} />;
+    if (isGeneric) return <GenericCredentialGlyph className={className} />;
 
-    const { icons } = getThemedCategory(item.category);
+    const { icons } = getThemedCategory(category);
     const CategoryIcon = icons?.IconWithShape ?? icons?.Icon;
 
     if (!CategoryIcon) return <GenericCredentialGlyph className={className} />;

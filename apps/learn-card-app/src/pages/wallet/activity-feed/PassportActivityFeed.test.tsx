@@ -11,6 +11,7 @@ vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
     useWallet: () => ({ initWallet: vi.fn() }),
     useGetCurrentLCNUser: () => lcn,
+    useGetCredentialList: () => ({ data: undefined }),
     getLogger: () => ({
         debug: vi.fn(),
         info: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('learn-card-base', async () => ({
         withContext: vi.fn(),
     }),
 }));
+vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: vi.fn() }) }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
 // Stub the theme hook so importing the feed (via ActivityFilterPopover /
 // ActivityCredentialIcon) doesn't pull the full theme -> nav-bar module chain.
@@ -31,6 +33,9 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 vi.mock('./ActivityFeedItem', () => ({
     ActivityFeedItem: ({ item }: { item: { title: string } }) => <div>{item.title}</div>,
 }));
+// Covered by RecentlyAdded's own test; stub it so this test doesn't pull the
+// heavy BoostEarnedCard module chain.
+vi.mock('./RecentlyAdded', () => ({ RecentlyAdded: () => null }));
 
 import { PassportActivityFeed } from './PassportActivityFeed';
 

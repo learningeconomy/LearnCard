@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, arrowForwardOutline, calendarOutline } from 'ionicons/icons';
 import { UserProfilePicture } from 'learn-card-base';
+import { CATEGORY_TO_ROUTE } from '../../../helpers/categoryRoutes';
 import { ActivityCredentialIcon } from './ActivityCredentialIcon';
 import type { ActivityFeedItemVM } from './activityFeed.helpers';
 
@@ -9,6 +11,16 @@ export const ActivityDetailOverlay: React.FC<{
     item: ActivityFeedItemVM;
     onClose: () => void;
 }> = ({ item, onClose }) => {
+    const history = useHistory();
+
+    const viewInPassport = () => {
+        const route =
+            (item.isGenericCredential ? undefined : CATEGORY_TO_ROUTE[item.category]) ??
+            '/passport';
+        onClose();
+        history.push(route);
+    };
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -51,7 +63,11 @@ export const ActivityDetailOverlay: React.FC<{
     );
     const credentialNode = (
         <div className="flex items-center justify-center w-[64px] h-[64px]">
-            <ActivityCredentialIcon item={item} className="w-[44px] h-[44px]" />
+            <ActivityCredentialIcon
+                category={item.category}
+                isGeneric={item.isGenericCredential}
+                className="w-[44px] h-[44px]"
+            />
         </div>
     );
     // Sent: the credential travels to the person (credential → person). Received:
@@ -88,7 +104,11 @@ export const ActivityDetailOverlay: React.FC<{
                     <div className="flex items-center justify-center gap-4 mb-5">
                         {item.isSelf ? (
                             <div className="flex items-center justify-center w-[64px] h-[64px]">
-                                <ActivityCredentialIcon item={item} className="w-[44px] h-[44px]" />
+                                <ActivityCredentialIcon
+                                    category={item.category}
+                                    isGeneric={item.isGenericCredential}
+                                    className="w-[44px] h-[44px]"
+                                />
                             </div>
                         ) : (
                             <>
@@ -152,10 +172,22 @@ export const ActivityDetailOverlay: React.FC<{
                     </div>
                 </div>
 
-                <div className="p-6 pt-4">
+                <div className="p-6 pt-4 flex flex-col gap-3">
+                    {item.isSelf && (
+                        <button
+                            onClick={viewInPassport}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            View in your passport
+                        </button>
+                    )}
                     <button
                         onClick={onClose}
-                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        className={`w-full py-3 px-4 rounded-[20px] font-medium text-sm transition-colors ${
+                            item.isSelf
+                                ? 'border border-grayscale-300 text-grayscale-700 hover:bg-grayscale-10'
+                                : 'bg-grayscale-900 text-white hover:opacity-90 transition-opacity'
+                        }`}
                     >
                         Done
                     </button>

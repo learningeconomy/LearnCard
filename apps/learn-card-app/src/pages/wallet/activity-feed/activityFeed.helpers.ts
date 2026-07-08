@@ -251,6 +251,53 @@ export const groupActivitiesByMonth = (items: ActivityFeedItemVM[]): ActivityMon
     return Array.from(byLabel, ([label, groupItems]) => ({ label, items: groupItems }));
 };
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const startOfDay = (d: Date): number =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+// Relative-time bucket label for a "recently added" style list (Today, Yesterday,
+// Earlier This Week, Last Week, month name, or year). Mirrors the wallet's import
+// reuse list so chronological credential lists read consistently.
+export const relativeTimeBucket = (iso?: string): string => {
+    if (!iso) return 'Earlier';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return 'Earlier';
+
+    const now = new Date();
+    const daysAgo = Math.round((startOfDay(now) - startOfDay(date)) / MS_PER_DAY);
+
+    if (daysAgo <= 0) return 'Today';
+    if (daysAgo === 1) return 'Yesterday';
+    if (daysAgo <= now.getDay()) return 'Earlier This Week';
+    if (daysAgo <= now.getDay() + 7) return 'Last Week';
+    if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) {
+        return 'Earlier This Month';
+    }
+    if (date.getFullYear() === now.getFullYear()) {
+        return date.toLocaleDateString(undefined, { month: 'long' });
+    }
+    return String(date.getFullYear());
+};
+
+export type TimeBucketGroup<T> = { label: string; items: T[] };
+
+// Groups an ALREADY newest-first-sorted list into consecutive relative-time
+// buckets. Consecutive grouping (vs. map-keyed) keeps paged results stable: a
+// newly fetched older page only extends the bottom of the last bucket.
+export const groupByRelativeTime = <T>(
+    items: T[],
+    getIso: (item: T) => string | undefined
+): TimeBucketGroup<T>[] => {
+    const ordered: TimeBucketGroup<T>[] = [];
+    for (const item of items) {
+        const label = relativeTimeBucket(getIso(item));
+        const last = ordered[ordered.length - 1];
+        if (last && last.label === label) last.items.push(item);
+        else ordered.push({ label, items: [item] });
+    }
+    return ordered;
+};
+
 export type ActivityFilterId = 'all' | CredentialCategoryEnum;
 
 // STUB: category filtering is applied client-side over the actor-scoped feed.

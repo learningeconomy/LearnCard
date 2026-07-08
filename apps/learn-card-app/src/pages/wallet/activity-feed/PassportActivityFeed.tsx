@@ -15,6 +15,7 @@ import {
 import { ActivityFeedItem } from './ActivityFeedItem';
 import { ActivityFilterPopover } from './ActivityFilterPopover';
 import { ActivityDetailOverlay } from './ActivityDetailOverlay';
+import { RecentlyAdded } from './RecentlyAdded';
 
 export const PassportActivityFeed: React.FC = () => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
@@ -59,6 +60,7 @@ export const PassportActivityFeed: React.FC = () => {
 
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
+            <RecentlyAdded />
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
                 ACTIVITY
             </h3>
