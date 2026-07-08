@@ -19,7 +19,7 @@ import {
     isClrCredential,
 } from 'learn-card-base';
 
-import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata, getBoostMetadata } from 'learn-card-base';
 
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
@@ -73,8 +73,9 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     clrLogoSrc,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
+    // boostType may be a CredentialCategoryEnum with no boostCategoryMetadata entry; getBoostMetadata resolves both enums and falls back to default to avoid a destructuring crash.
     const { subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
-        boostCategoryMetadata[boostType ?? defaultBoostType];
+        getBoostMetadata(boostType ?? defaultBoostType) ?? boostCategoryMetadata[defaultBoostType];
 
     let _colorOverride = badgeBackgroundColor ?? 'gray-500';
     let _subColorOverride = subColor ?? 'gray-300';
@@ -233,12 +234,13 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                     <div
                         className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
                     >
-                        <img
-                            src={insertParamsToFilestackUrl(
-                                badgeThumbnail,
-                                'resize=width:200/quality=value:75/'
-                            )}
-                            alt="badge thumbnail"
+                        <BadgeThumbnailImg
+                            src={
+                                insertParamsToFilestackUrl(
+                                    badgeThumbnail,
+                                    'resize=width:200/quality=value:75/'
+                                ) ?? ''
+                            }
                             className={`h-full w-full object-cover ${badgeThumbnailCustomClass}`}
                         />
                     </div>

@@ -1,8 +1,9 @@
 import React, { Suspense } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { connectivityStore } from 'learn-card-base';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
@@ -56,6 +57,21 @@ const history = createBrowserHistory();
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
+
+// Drive React Query's online state from our connectivity model (fed by
+// Capacitor Network on native) instead of the default `navigator.onLine`, which
+// is unreliable in the Android webview. This makes every query refetch on
+// reconnect and mutations resume — so data that went stale offline (feature
+// flags, notifications, etc.) reloads automatically when connectivity returns.
+onlineManager.setEventListener(setOnline => {
+    setOnline(connectivityStore.get.status() !== 'offline');
+
+    const unsubscribe = connectivityStore.store.subscribe(({ status }) => {
+        setOnline(status !== 'offline');
+    });
+
+    return unsubscribe;
+});
 
 const persister = createAsyncStoragePersister({
     storage: {

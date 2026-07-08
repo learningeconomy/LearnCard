@@ -3,22 +3,37 @@ import React from 'react';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
-import { useModal, ModalTypes } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    ModalTypes,
+    useGetCredentialList,
+    useModal,
+} from 'learn-card-base';
+import type { CredentialCategory } from 'learn-card-base/types/credentials';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
-import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
-import { CredentialCategoryEnum } from 'learn-card-base';
+import {
+    getResumeCredentialRecordsForSection,
+    RESUME_SECTIONS,
+    ResumeSectionKey,
+    toResumeCredentialRecords,
+} from '../resume-builder.helpers';
 import ResumeSelfAttestModal from '../ResumeSelfAttestModal';
 
 export const ResumePreviewSectionPlaceholder: React.FC<{
     category: ResumeSectionKey;
     className?: string;
-}> = ({ category, className = '' }) => {
+    onOpenCredentialPanel?: (sectionKey?: ResumeSectionKey) => void;
+}> = ({ category, className = '', onOpenCredentialPanel }) => {
     const { getThemedCategory } = useTheme();
     const { newModal } = useModal();
     const brandingConfig = useBrandingConfig();
     const brandingName = brandingConfig?.name ?? 'LearnCard';
     const { colors, icons } = getThemedCategory(category);
+    const { data: exactCredentialResults, isLoading: isLoadingExactCredentials } =
+        useGetCredentialList(category as CredentialCategory);
+    const { data: allCredentialResults, isLoading: isLoadingAllCredentials } =
+        useGetCredentialList();
     const EMPTY_SECTION_COPY: Partial<
         Record<
             CredentialCategoryEnum,
@@ -63,6 +78,40 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
 
     const IconComponent = icons.IconWithLightShape ?? icons.IconWithShape ?? icons.Icon;
     const emphasizedDescription = copy.description.replace(copy.emphasis, '');
+    const exactRecords = toResumeCredentialRecords(
+        exactCredentialResults?.pages.flatMap(page => page?.records ?? [])
+    );
+    const allRecords = toResumeCredentialRecords(
+        allCredentialResults?.pages.flatMap(page => page?.records ?? [])
+    );
+    const availableCredentialRecords = getResumeCredentialRecordsForSection(
+        category,
+        exactRecords,
+        allRecords
+    );
+    const hasAvailableCredentials = availableCredentialRecords.length > 0;
+    const title =
+        isLoadingExactCredentials || isLoadingAllCredentials
+            ? 'Checking credentials...'
+            : hasAvailableCredentials
+            ? 'No credentials selected'
+            : 'No credentials found';
+    const shouldSelectExistingCredentials = hasAvailableCredentials && onOpenCredentialPanel;
+    const actionLabel = shouldSelectExistingCredentials ? 'Select Credentials' : copy.actionLabel;
+    const handleActionClick = () => {
+        if (shouldSelectExistingCredentials) {
+            onOpenCredentialPanel(category);
+            return;
+        }
+
+        newModal(
+            <ResumeSelfAttestModal category={category} />,
+            {
+                sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none !overflow-visible',
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+        );
+    };
 
     return (
         <div className={className} data-pdf-screen-only>
@@ -72,33 +121,32 @@ export const ResumePreviewSectionPlaceholder: React.FC<{
                         {IconComponent && <IconComponent className="h-[64px] w-[64px]" />}
                     </div>
                     <div className="min-w-0">
-                        <p className="text-xl font-bold text-grayscale-900">No credentials found</p>
-                        <p className="mt-2 text-sm text-grayscale-600 max-w-[520px]">
-                            <span className="font-semibold text-grayscale-800">
-                                {copy.emphasis}
-                            </span>
-                            {emphasizedDescription}
-                        </p>
+                        <p className="text-xl font-bold text-grayscale-900">{title}</p>
+                        {hasAvailableCredentials ? (
+                            <p className="mt-2 text-sm text-grayscale-600 max-w-[520px]">
+                                Select{' '}
+                                <span className="font-semibold text-grayscale-800">
+                                    {section.label}
+                                </span>{' '}
+                                from the Credentials panel to include them in this section.
+                            </p>
+                        ) : (
+                            <p className="mt-2 text-sm text-grayscale-600 max-w-[520px]">
+                                <span className="font-semibold text-grayscale-800">
+                                    {copy.emphasis}
+                                </span>
+                                {emphasizedDescription}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <div className="shrink-0 w-full md:w-auto">
                     <button
                         type="button"
-                        onClick={() =>
-                            newModal(
-                                <ResumeSelfAttestModal category={category} />,
-                                {
-                                    sectionClassName:
-                                        '!max-w-[500px] !bg-transparent !shadow-none !overflow-visible',
-                                },
-                                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                            )
-                        }
+                        onClick={handleActionClick}
                         className={`flex w-full md:inline-flex md:w-auto items-center justify-between gap-4 px-4 py-1.5 rounded-full shadow-sm bg-${colors.primaryColor}`}
                     >
-                        <span className="text-[15px] font-semibold text-white">
-                            {copy.actionLabel}
-                        </span>
+                        <span className="text-[15px] font-semibold text-white">{actionLabel}</span>
                         <div className="h-[30px] w-[30px] rounded-full flex items-center justify-center shadow-sm">
                             <GearPlusIcon className="h-full w-full text-grayscale-900" />
                         </div>

@@ -72,6 +72,7 @@ export interface AchievementTemplate {
     description: TemplateFieldValue;
     achievementType?: TemplateFieldValue;
     image?: TemplateFieldValue;
+    creator?: IssuerTemplate; // Profile that originally defined the achievement (provenance, distinct from issuer)
     criteria?: {
         id?: TemplateFieldValue;
         narrative?: TemplateFieldValue;
@@ -98,6 +99,7 @@ export interface AlignmentTemplate {
     targetDescription?: TemplateFieldValue;
     targetFramework?: TemplateFieldValue;
     targetCode?: TemplateFieldValue;
+    targetType?: TemplateFieldValue; // e.g. ceterms:Credential, ceasn:Competency, CTDL
 }
 
 // OBv3 Evidence structure
