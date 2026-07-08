@@ -31,6 +31,7 @@ import InfinityIcon from 'learn-card-base/svgs/Infinity';
 import useDebounce from '../../../../../hooks/useDebounce';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
 import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../../../config/bootstrapTenantConfig';
 const log = getLogger('boost-shareable-code');
 
 export const BoostShareableCode: React.FC<{
@@ -141,7 +142,9 @@ export const BoostShareableCode: React.FC<{
                     );
 
                     setBoostClaimLink(
-                        `https://pass.scout.org/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            _boostClaimLink?.boostUri
+                        }&challenge=${_boostClaimLink?.challenge}`
                     );
                     logAnalyticsEvent('generate_claim_link', {
                         category: state?.basicInfo?.type,
@@ -192,7 +195,9 @@ export const BoostShareableCode: React.FC<{
                         );
 
                         setBoostClaimLink(
-                            `https://pass.scout.org/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                                _boostClaimLink?.boostUri
+                            }&challenge=${_boostClaimLink?.challenge}`
                         );
                         logAnalyticsEvent('generate_claim_link', {
                             category: state?.basicInfo?.type,

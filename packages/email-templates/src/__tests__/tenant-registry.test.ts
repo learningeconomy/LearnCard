@@ -86,6 +86,22 @@ describe('resolveTenantFromRequest', () => {
             expect(result.resolvedVia).toBe('origin');
         });
 
+        it('resolves scoutpass from pass.scout.org', () => {
+            const headers: RequestHeaders = { origin: 'https://pass.scout.org' };
+            const result = resolveTenantFromRequest(headers);
+
+            expect(result.id).toBe('scoutpass');
+            expect(result.resolvedVia).toBe('origin');
+        });
+
+        it('resolves scoutpass from scout.org', () => {
+            const headers: RequestHeaders = { origin: 'https://scout.org' };
+            const result = resolveTenantFromRequest(headers);
+
+            expect(result.id).toBe('scoutpass');
+            expect(result.resolvedVia).toBe('origin');
+        });
+
         it('resolves learncard from staging.learncard.app', () => {
             const headers: RequestHeaders = { origin: 'https://staging.learncard.app' };
             const result = resolveTenantFromRequest(headers);
@@ -184,6 +200,14 @@ describe('resolveTenantFromRequest', () => {
             expect(result.emailBranding.brandName).toBe('VetPass');
             expect(result.emailBranding.primaryColor).toBe('#1B5E20');
             expect(result.emailBranding.supportEmail).toBe('support@vetpass.app');
+        });
+
+        it('returns ScoutPass overrides for scoutpass tenant', () => {
+            const result = resolveTenantFromRequest({ 'x-tenant-id': 'scoutpass' });
+
+            expect(result.emailBranding.brandName).toBe('ScoutPass');
+            expect(result.emailBranding.primaryColor).toBe('#00BA88');
+            expect(result.emailBranding.supportEmail).toBe('support@scout.org');
         });
 
         it('returns empty branding for unknown tenant', () => {
