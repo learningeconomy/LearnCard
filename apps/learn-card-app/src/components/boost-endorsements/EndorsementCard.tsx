@@ -21,7 +21,8 @@ export const EndorsementCard: React.FC<{
 }> = ({ credential, categoryType, existingEndorsements = [] }) => {
     const isLoggedIn = useIsLoggedIn();
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const { title, isCurrentUserSubject } = useGetVCInfo(credential, categoryType);
+    const { title, badgeThumbnail, achievementType, displayType, isCurrentUserSubject } =
+        useGetVCInfo(credential, categoryType);
 
     const categoryTypeString = categoryType as CredentialCategoryEnum;
 
@@ -44,15 +45,13 @@ export const EndorsementCard: React.FC<{
                 ) : (
                     <div className="mr-3 shrink-0">
                         <CredentialBadgeNew
-                            achievementType={
-                                credential?.credentialSubject?.achievement?.achievementType
-                            }
+                            achievementType={achievementType}
                             fallbackCircleText={title}
                             boostType={categoryType}
-                            badgeThumbnail={credential?.credentialSubject?.achievement?.image}
+                            badgeThumbnail={badgeThumbnail}
                             badgeCircleCustomClass="!w-[80px] h-[80px] mt-1 shadow-3xl"
                             badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                            displayType={credential?.display?.displayType}
+                            displayType={displayType}
                             credential={credential}
                             hideMediaBadge
                         />

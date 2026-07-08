@@ -182,8 +182,6 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
 
         // VC Display Metadata
         displayType,
-        idBackgroundImage,
-        idDimBackgroundImage,
         idFontColor,
         idAccentColor,
         idDisplayBackgroundImage,
