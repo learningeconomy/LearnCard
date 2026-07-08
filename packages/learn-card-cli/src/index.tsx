@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
 import dns from 'node:dns';
-import { emitKeypressEvents } from 'node:readline';
 import { createInterface } from 'node:readline/promises';
 import { Writable } from 'node:stream';
+import { inspect } from 'node:util';
 
 import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
@@ -35,12 +35,27 @@ import packageJson from '../package.json';
 
 dns.setDefaultResultOrder('ipv4first');
 
-type ReplCompletion = [string[], string];
-type ReplKey = {
-    ctrl?: boolean;
-    name?: string;
-    sequence?: string;
+type CliGlobals = {
+    seed: string;
+    generateRandomSeed: typeof generateRandomSeed;
+    emptyLearnCard: typeof emptyLearnCard;
+    learnCardFromSeed: typeof learnCardFromSeed;
+    initLearnCard: typeof initLearnCard;
+    learnCard: any;
+    types: typeof types;
+    getTestCache: typeof getTestCache;
+    copy: typeof copyFunction;
+    getLearnCardBundlePassword: typeof getLearnCardBundlePassword;
+    exportLearnCardBundle: ReturnType<typeof createExportLearnCardBundleHelper>;
+    importLearnCardBundle: typeof importLearnCardBundle;
+    createLearnCardBundle: typeof createLearnCardBundle;
+    readLearnCardBundle: typeof readLearnCardBundle;
+    restoreLearnCardFromBundle: ReturnType<typeof createRestoreLearnCardFromBundleHelper>;
 };
+
+const cliGlobals = globalThis as typeof globalThis & CliGlobals;
+
+type ReplCompletion = [string[], string];
 
 const replGlobals = [
     'learnCard',
@@ -147,7 +162,10 @@ const parseGlobalAssignment = (
 
     if (!match) return;
 
-    const [, name, initializer] = match;
+    const name = match[1];
+    const initializer = match[2];
+
+    if (!name || !initializer) return;
 
     return { name, initializer };
 };
@@ -218,10 +236,28 @@ const completeBunReplInput = (line: string): ReplCompletion => {
 };
 
 const evaluateBunReplInput = async (source: string): Promise<unknown> => {
+    const trimmedSource = source.trim();
+    const expressionSource = trimmedSource.replace(/;+\s*$/, '');
+    const statements = trimmedSource
+        .split(';')
+        .map(statement => statement.trim())
+        .filter(Boolean);
+
     try {
-        return await globalThis.eval(`(async () => (${source}))()`);
+        return await globalThis.eval(`(async () => (${expressionSource}))()`);
     } catch {
-        const globalAssignment = parseGlobalAssignment(source);
+        if (statements.length > 1) {
+            const lastStatement = statements[statements.length - 1];
+
+            if (lastStatement && !/^(?:const|let|var)\b/.test(lastStatement)) {
+                const body = statements.slice(0, -1).join(';\n');
+                const wrappedSource = `${body ? `${body};\n` : ''}return (${lastStatement});`;
+
+                return await globalThis.eval(`(async () => { ${wrappedSource} })()`);
+            }
+        }
+
+        const globalAssignment = parseGlobalAssignment(trimmedSource);
 
         if (globalAssignment) {
             const value = await globalThis.eval(
@@ -231,42 +267,15 @@ const evaluateBunReplInput = async (source: string): Promise<unknown> => {
             return value;
         }
 
-        return await globalThis.eval(`(async () => { ${source} })()`);
+        return await globalThis.eval(`(async () => { ${trimmedSource} })()`);
     }
-};
-
-const getSharedCompletion = (matches: string[]): string | undefined => {
-    if (!matches.length) return;
-
-    return matches.reduce((prefix, match) => {
-        let index = 0;
-
-        while (index < prefix.length && prefix[index] === match[index]) index += 1;
-
-        return prefix.slice(0, index);
-    });
-};
-
-const renderBunReplLine = (
-    prompt: string,
-    line: string,
-    cursor: number,
-    colorize: (input: string) => string
-): void => {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    process.stdout.write(prompt + colorize(line));
-
-    const trailingLength = line.length - cursor;
-
-    if (trailingLength > 0) process.stdout.write(`\x1b[${trailingLength}D`);
 };
 
 const startReadlineRepl = async (colorize?: (input: string) => string): Promise<void> => {
     const rl = createInterface({
         input: process.stdin,
         output: process.stdout,
-        prompt: '> ',
+        prompt: colorize ? colorize('> ') : '> ',
         completer: completeBunReplInput,
     });
 
@@ -286,12 +295,14 @@ const startReadlineRepl = async (colorize?: (input: string) => string): Promise<
         try {
             const result = await evaluateBunReplInput(source);
 
-            if (result !== undefined) console.dir(result, { depth: 6 });
+            process.stdout.write(
+                `${inspect(result, { depth: 6, colors: process.stdout.isTTY })}\n`
+            );
         } catch (error) {
-            console.error(error);
+            process.stdout.write(
+                `${error instanceof Error ? error.stack ?? error.message : String(error)}\n`
+            );
         }
-
-        if (colorize) process.stdout.write(colorize(''));
 
         rl.prompt();
     }
@@ -300,203 +311,14 @@ const startReadlineRepl = async (colorize?: (input: string) => string): Promise<
 };
 
 const startBunRepl = async (colorize: (input: string) => string): Promise<void> => {
-    if (!process.stdin.isTTY || !process.stdin.setRawMode) {
-        await startReadlineRepl(colorize);
-
-        return;
-    }
-
-    const prompt = '> ';
-    const history: string[] = [];
-
-    let line = '';
-    let cursor = 0;
-    let historyIndex = 0;
-    let draft = '';
-    let pending = Promise.resolve();
-
-    const resetHistory = (): void => {
-        historyIndex = history.length;
-        draft = '';
-    };
-
-    const setLine = (nextLine: string): void => {
-        line = nextLine;
-        cursor = line.length;
-        renderBunReplLine(prompt, line, cursor, colorize);
-    };
-
-    const insertText = (text: string): void => {
-        line = line.slice(0, cursor) + text + line.slice(cursor);
-        cursor += text.length;
-        renderBunReplLine(prompt, line, cursor, colorize);
-    };
-
-    const applyCompletion = (): void => {
-        const linePrefix = line.slice(0, cursor);
-        const [matches, token] = completeBunReplInput(linePrefix);
-        const completion = matches.length === 1 ? matches[0] : getSharedCompletion(matches);
-
-        if (completion && completion !== token) {
-            line = line.slice(0, cursor - token.length) + completion + line.slice(cursor);
-            cursor += completion.length - token.length;
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return;
-        }
-
-        if (matches.length > 1) {
-            process.stdout.write(`\n${matches.join('    ')}\n`);
-            renderBunReplLine(prompt, line, cursor, colorize);
-        }
-    };
-
-    const evaluateLine = async (): Promise<boolean> => {
-        process.stdout.write('\n');
-
-        const source = line.trim();
-
-        if (source === '.exit') return false;
-
-        if (source) {
-            history.push(source);
-
-            try {
-                const result = await evaluateBunReplInput(source);
-
-                if (result !== undefined) console.dir(result, { depth: 6 });
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        line = '';
-        cursor = 0;
-        resetHistory();
-        renderBunReplLine(prompt, line, cursor, colorize);
-
-        return true;
-    };
-
-    const handleKey = async (input: string, key: ReplKey): Promise<boolean> => {
-        if (key.ctrl && key.name === 'c') return false;
-
-        if (key.name === 'return' || key.name === 'enter') return await evaluateLine();
-
-        if (key.ctrl && key.name === 'd' && !line) return false;
-
-        if (key.name === 'tab') {
-            applyCompletion();
-
-            return true;
-        }
-
-        if (key.name === 'backspace') {
-            if (cursor === 0) return true;
-
-            line = line.slice(0, cursor - 1) + line.slice(cursor);
-            cursor -= 1;
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return true;
-        }
-
-        if (key.name === 'delete') {
-            if (cursor >= line.length) return true;
-
-            line = line.slice(0, cursor) + line.slice(cursor + 1);
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return true;
-        }
-
-        if (key.name === 'left') {
-            if (cursor > 0) cursor -= 1;
-
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return true;
-        }
-
-        if (key.name === 'right') {
-            if (cursor < line.length) cursor += 1;
-
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return true;
-        }
-
-        if (key.name === 'home') {
-            cursor = 0;
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return true;
-        }
-
-        if (key.name === 'end') {
-            cursor = line.length;
-            renderBunReplLine(prompt, line, cursor, colorize);
-
-            return true;
-        }
-
-        if (key.name === 'up') {
-            if (historyIndex === history.length) draft = line;
-            if (historyIndex > 0) historyIndex -= 1;
-
-            setLine(history[historyIndex] ?? draft);
-
-            return true;
-        }
-
-        if (key.name === 'down') {
-            if (historyIndex < history.length) historyIndex += 1;
-
-            setLine(historyIndex === history.length ? draft : history[historyIndex] ?? '');
-
-            return true;
-        }
-
-        if (input && !key.ctrl && input >= ' ') {
-            insertText(input);
-            resetHistory();
-        }
-
-        return true;
-    };
-
-    await new Promise<void>(resolve => {
-        const onKeypress = (input: string, key: ReplKey): void => {
-            pending = pending.then(async () => {
-                const keepRunning = await handleKey(input, key);
-
-                if (!keepRunning) cleanup();
-            });
-        };
-
-        const cleanup = (): void => {
-            process.stdin.off('keypress', onKeypress);
-            process.stdin.setRawMode?.(false);
-            process.stdin.pause();
-            process.stdout.write('\n');
-            resolve();
-        };
-
-        emitKeypressEvents(process.stdin);
-        process.stdin.setRawMode?.(true);
-        process.stdin.resume();
-
-        console.log('Bun dev REPL ready. Tab completes globals/properties. Type .exit to quit.');
-        renderBunReplLine(prompt, line, cursor, colorize);
-        process.stdin.on('keypress', onKeypress);
-    });
+    await startReadlineRepl(colorize);
 };
 
 const startCliRepl = async (colorize: (input: string) => string): Promise<void> => {
     if (!('Bun' in globalThis)) {
         const repl = await import('pretty-repl');
 
-        repl.default.start({ colorize });
+        repl.default.start();
 
         return;
     }
@@ -510,20 +332,28 @@ program
     .action(async (_seed: string = generateRandomSeed()) => {
         console.clear();
 
-        const seed = _seed.padStart(64, '0');
+        const envSeed = process.env.LEARNCARD_CLI_SEED ?? process.env.SEED;
+        const seedInput = envSeed ?? _seed;
+        const seed = seedInput.padStart(64, '0');
 
-        console.log(gradient(['cyan', 'green'])(figlet.textSync('Learn Card', 'Big Money-ne')));
+        console.log(
+            gradient(['cyan', 'green'])(figlet.textSync('Learn Card', 'Big Money-ne' as any))
+        );
         console.log('Welcome to the Learn Card CLI!\n');
 
         console.log(`Your seed is ${seed}\n`);
 
+        if (envSeed) {
+            console.log('Using seed from LEARNCARD_CLI_SEED / SEED.\n');
+        }
+
         console.log('Creating wallet...');
 
-        globalThis.seed = seed;
-        globalThis.generateRandomSeed = generateRandomSeed;
-        globalThis.emptyLearnCard = emptyLearnCard;
-        globalThis.learnCardFromSeed = learnCardFromSeed;
-        globalThis.initLearnCard = initLearnCard;
+        cliGlobals.seed = seed;
+        cliGlobals.generateRandomSeed = generateRandomSeed;
+        cliGlobals.emptyLearnCard = emptyLearnCard;
+        cliGlobals.learnCardFromSeed = learnCardFromSeed;
+        cliGlobals.initLearnCard = initLearnCard;
 
         const didkit = fs.readFile(
             require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
@@ -537,36 +367,36 @@ program
         });
 
         const simpleSigningLc = await _learnCard.addPlugin(
-            await getSimpleSigningPlugin(_learnCard, 'https://api.learncard.app/trpc')
+            await getSimpleSigningPlugin(_learnCard as any, 'https://api.learncard.app/trpc')
         );
 
-        globalThis.learnCard = await simpleSigningLc.addPlugin(getLerRsPlugin(simpleSigningLc));
+        cliGlobals.learnCard = await simpleSigningLc.addPlugin(getLerRsPlugin(simpleSigningLc));
         // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
-        globalThis.learnCard = await globalThis.learnCard.addPlugin(
-            getLinkedClaimsPlugin(globalThis.learnCard)
+        cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
+            getLinkedClaimsPlugin(cliGlobals.learnCard)
         );
 
         // Add OpenBadge v2 wrapper plugin for backwards-compatible OBv2 -> VC wrapping
-        globalThis.learnCard = await globalThis.learnCard.addPlugin(
-            openBadgeV2Plugin(globalThis.learnCard)
+        cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
+            openBadgeV2Plugin(cliGlobals.learnCard)
         );
 
         // Add Render Method plugin for attaching W3C renderMethod to VCs
-        globalThis.learnCard = await globalThis.learnCard.addPlugin(
-            getRenderMethodPlugin(globalThis.learnCard)
+        cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
+            getRenderMethodPlugin(cliGlobals.learnCard)
         );
 
-        globalThis.types = types;
-        globalThis.getTestCache = getTestCache;
+        cliGlobals.types = types;
+        cliGlobals.getTestCache = getTestCache;
 
-        globalThis.copy = copyFunction;
-        globalThis.getLearnCardBundlePassword = getLearnCardBundlePassword;
-        globalThis.exportLearnCardBundle = createExportLearnCardBundleHelper(
+        cliGlobals.copy = copyFunction;
+        cliGlobals.getLearnCardBundlePassword = getLearnCardBundlePassword;
+        cliGlobals.exportLearnCardBundle = createExportLearnCardBundleHelper(
             writeLearnCardBundle,
-            globalThis.learnCard
+            cliGlobals.learnCard
         );
 
-        globalThis.restoreLearnCardFromBundle = createRestoreLearnCardFromBundleHelper(
+        cliGlobals.restoreLearnCardFromBundle = createRestoreLearnCardFromBundleHelper(
             restoreBundle,
             {
                 network: true,
@@ -574,9 +404,9 @@ program
                 didkit,
             }
         );
-        globalThis.importLearnCardBundle = importLearnCardBundle;
-        globalThis.createLearnCardBundle = createLearnCardBundle;
-        globalThis.readLearnCardBundle = readLearnCardBundle;
+        cliGlobals.importLearnCardBundle = importLearnCardBundle;
+        cliGlobals.createLearnCardBundle = createLearnCardBundle;
+        cliGlobals.readLearnCardBundle = readLearnCardBundle;
 
         // delete 'Creating wallet...' message
         process.stdout.moveCursor?.(0, -1);

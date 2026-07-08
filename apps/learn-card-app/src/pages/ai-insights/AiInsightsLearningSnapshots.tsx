@@ -3,11 +3,10 @@ import React from 'react';
 import Trophy from 'learn-card-base/svgs/Trophy';
 import SproutIcon from 'learn-card-base/svgs/SproutIcon';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
+import RefreshIcon from 'learn-card-base/svgs/RefreshIcon';
 import AiInsightsEmptyPlaceholder from './AiInsightsEmptyPlaceholder';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 import AiInsightsLearningSnapshotsSkeletonLoader from './AiInsightsLearningSnapshotSkeletonLoader';
-
-import { useAiInsightCredential } from 'learn-card-base';
 
 enum AiInsightsLearningSnapshotType {
     StrongestArea = 'strongest-area',
@@ -25,15 +24,25 @@ interface AiInsightsLearningSnapshot {
 
 const AiInsightsLearningSnapshots: React.FC<{
     isLoading: boolean;
+    isRegenerating?: boolean;
     aiInsightCredential?: any;
     isSharedView?: boolean;
-}> = ({ isLoading, aiInsightCredential, isSharedView = false }) => {
-    const { data: currentUserAiInsightCredential, isLoading: aiInsightCredentialLoading } =
-        useAiInsightCredential();
-
-    const resolvedAiInsightCredential = aiInsightCredential ?? currentUserAiInsightCredential;
-
-    const shouldLoadCurrentUserCredential = aiInsightCredential === undefined;
+    showRegenerate?: boolean;
+    onRegenerate?: () => void;
+    regenerateLabel?: string;
+    regenerateDisabled?: boolean;
+}> = ({
+    isLoading,
+    isRegenerating = false,
+    aiInsightCredential,
+    isSharedView = false,
+    showRegenerate = false,
+    onRegenerate,
+    regenerateLabel,
+    regenerateDisabled,
+}) => {
+    const resolvedAiInsightCredential = aiInsightCredential;
+    const hasResolvedAiInsightCredential = typeof resolvedAiInsightCredential !== 'undefined';
     const hasSnapshotContent = [
         resolvedAiInsightCredential?.insights?.strongestArea?.title,
         resolvedAiInsightCredential?.insights?.strongestArea?.summary,
@@ -70,19 +79,45 @@ const AiInsightsLearningSnapshots: React.FC<{
         },
     ];
 
-    if (isLoading || (shouldLoadCurrentUserCredential && aiInsightCredentialLoading)) {
+    if (isLoading && !hasResolvedAiInsightCredential) {
         return <AiInsightsLearningSnapshotsSkeletonLoader />;
     }
 
-    if (!resolvedAiInsightCredential || !hasSnapshotContent) {
-        return <AiInsightsEmptyPlaceholder isSharedView={isSharedView} />;
+    if (!hasResolvedAiInsightCredential || !hasSnapshotContent) {
+        return (
+            <AiInsightsEmptyPlaceholder
+                isSharedView={isSharedView}
+                showRegenerate={showRegenerate}
+                onRegenerate={onRegenerate}
+                regenerateLabel={regenerateLabel}
+                regenerateDisabled={regenerateDisabled}
+                isRegenerating={isRegenerating}
+            />
+        );
     }
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-4-4 p-[15px] rounded-[15px]">
-            <div className="w-full flex items-center justify-start">
-                <AiPathwaysIconWithShape className="w-auto h-[40px]" />
-                <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>
+            <div className="w-full flex items-center justify-between">
+                <div className="flex items-center justify-start">
+                    <AiPathwaysIconWithShape className="w-auto h-[40px]" />
+                    <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>
+                </div>
+                {showRegenerate && (
+                    <button
+                        type="button"
+                        disabled={isLoading || isRegenerating}
+                        onClick={onRegenerate}
+                        className="flex items-center gap-1.5 py-2 px-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-xs hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <RefreshIcon
+                            className={`w-4 h-4 ${
+                                isLoading || isRegenerating ? 'animate-spin' : ''
+                            }`}
+                        />
+                        {isLoading || isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                    </button>
+                )}
             </div>
 
             <div className="w-full flex flex-col items-start justify-start mt-4">

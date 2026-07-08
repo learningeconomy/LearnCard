@@ -7,6 +7,7 @@ import {
     CredentialCategoryEnum,
     getBaseUrl,
     getCategoryForCredential,
+    queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
@@ -730,7 +731,24 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 queryKey: ['useSyncConsentFlow'],
             });
 
-            syncAllCredentialsToContracts.mutate();
+            try {
+                await syncAllCredentialsToContracts.mutateAsync();
+            } catch (error) {
+                log.warn(
+                    'Failed to sync credentials to contracts after saving self-assigned skills:',
+                    error
+                );
+            }
+
+            try {
+                const wallet = await initWallet();
+                await queueAiInsightCredentialRefresh({
+                    wallet,
+                    queryClient,
+                });
+            } catch (error) {
+                log.warn('Failed to refresh AI insights after saving skills:', error);
+            }
         },
     });
 };

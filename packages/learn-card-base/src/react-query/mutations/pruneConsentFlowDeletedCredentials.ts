@@ -75,9 +75,7 @@ export const deleteCredentialFromAllContracts = async ({
         deletedUris: uniqueDeletedUris,
     });
 
-    const cleanupResult = await wallet.invoke.deleteCredentialFromAllContracts({
-        deletedUris: uniqueDeletedUris,
-    });
+    const cleanupResult = await wallet.invoke.deleteCredentialFromAllContracts(uniqueDeletedUris);
 
     queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] });
     queryClient.invalidateQueries({ queryKey: ['useConsentFlowData'] });

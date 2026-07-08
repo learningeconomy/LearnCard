@@ -59,6 +59,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                             customContainerClass={
                                 !isExpanded ? 'w-[48px] h-[48px]' : 'w-[30px] h-[30px]'
                             }
+                            customImageClass="h-full w-full object-cover"
                         />
                         <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px] text-left">
                             My Skill Profile
