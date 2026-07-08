@@ -47,6 +47,13 @@ describe('parseNotificationWebhookResponse', () => {
         expect(warnSpy).toHaveBeenCalledOnce();
     });
 
+    it.each([{ sent: false }, { success: false }, { ok: false }])(
+        'returns false for explicit negative webhook flags: %j',
+        payload => {
+            expect(parseNotificationWebhookResponse(payload, true)).toBe(false);
+        }
+    );
+
     it('returns false for an unexpected payload when the HTTP response is not ok', () => {
         expect(parseNotificationWebhookResponse({ status: 'ok' }, false)).toBe(false);
     });

@@ -42,6 +42,8 @@ const extractNotificationWebhookSuccess = (value: unknown): boolean | null => {
 
     if (!isNotificationWebhookResponseRecord(value)) return null;
 
+    if (value.sent === false || value.success === false || value.ok === false) return false;
+
     if (value.sent === true || value.success === true || value.ok === true) return true;
 
     if ('data' in value) {
