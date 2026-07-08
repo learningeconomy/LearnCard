@@ -12,7 +12,6 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 import { isPlatformWeb } from 'learn-card-base/helpers/platformHelpers';
 import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
-import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
 import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
