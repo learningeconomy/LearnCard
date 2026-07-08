@@ -10,9 +10,14 @@ import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIslan
 import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
-import { LEARNCARD_APP_SHORTCUTS, LearnCardAppShortcut } from './learnCardAppShortcuts';
+import {
+    LEARNCARD_APP_SHORTCUTS,
+    JOURNEYS_SHORTCUT,
+    LearnCardAppShortcut,
+} from './learnCardAppShortcuts';
 import useOpenBoostTemplateSelector from './useOpenBoostTemplateSelector';
 import useMoreApps from './useMoreApps';
+import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 
@@ -36,6 +41,15 @@ const MyAppsLanding: React.FC = () => {
     const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
+    const pathwaysEnabled = usePathwaysEnabled();
+
+    const shortcuts = useMemo(
+        () =>
+            pathwaysEnabled
+                ? [JOURNEYS_SHORTCUT, ...LEARNCARD_APP_SHORTCUTS]
+                : LEARNCARD_APP_SHORTCUTS,
+        [pathwaysEnabled]
+    );
 
     // Existing /launchpad deep-link flows (partner connect, consent, embed) are
     // handled by the browse view — hand them off, preserving the query string.
@@ -170,7 +184,7 @@ const MyAppsLanding: React.FC = () => {
                     ) : (
                         <>
                             <AppGrid heading="LearnCard Apps">
-                                {LEARNCARD_APP_SHORTCUTS.map(renderShortcutTile)}
+                                {shortcuts.map(renderShortcutTile)}
                             </AppGrid>
 
                             <AppGrid heading="More Apps">

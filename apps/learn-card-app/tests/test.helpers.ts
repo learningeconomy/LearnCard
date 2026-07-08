@@ -38,23 +38,24 @@ export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
 };
 
 /**
- * Clicks the side-menu's "Add to LearnCard" and drills through the desktop
- * LaunchPadActionModal intermediate (#1243) if it appears, leaving the
- * AddToLearnCardMenu open with `Boost Someone` ready to click.
+ * Opens the Boost template picker (BoostTemplateSelector) — the entry point for
+ * issuing a credential — leaving it ready to pick a template.
+ *
+ * The Nav/App/Passport redesign (LC-1921) routed the old side-menu "Add to
+ * LearnCard" boost entry through a nested LaunchPadActionModal → AddToLearnCardMenu
+ * modal stack that is unreliable to drive (the inner modal opens on top of the
+ * still-open launcher and the stack intermittently collapses). The "Boost a
+ * Friend" shortcut tile on the /launchpad (MyAppsLanding) landing opens the *same*
+ * BoostTemplateSelector modal directly, with no nesting — see
+ * useOpenBoostTemplateSelector — so drive that instead.
+ *
+ * Note: this navigates to /launchpad, so after the boost flow's history.goBack()
+ * the app returns to /launchpad (not the wallet). Callers that verify the issued
+ * credential on the wallet should navigate there explicitly afterwards.
  */
-export const openAddToLearnCardMenu = async (page: Page) => {
-    await page.getByRole('button', { name: 'Add to LearnCard' }).click({ timeout: 30_000 });
-
-    // Desktop opens LaunchPadActionModal first; click its inner tile to reach
-    // AddToLearnCardMenu. Mobile skips this step.
-    const launcherModal = page.getByRole('complementary').filter({
-        has: page.getByRole('heading', { name: 'What would you like to do?' }),
-    });
-    if (await locatorExists(launcherModal, 2_000)) {
-        await launcherModal
-            .getByRole('button', { name: 'Add to LearnCard' })
-            .click({ timeout: 30_000 });
-    }
+export const openBoostTemplateSelector = async (page: Page) => {
+    await page.goto('/launchpad');
+    await page.getByRole('button', { name: 'Boost a Friend' }).click({ timeout: 30_000 });
 };
 
 /**
@@ -82,14 +83,11 @@ export const clickPublishAndIssueIfPresent = async (page: Page) => {
 /**
  * Issues a credential to the current user via the UI.
  *
- * Flow: Add to LearnCard → Boost Someone → pick template → fill form →
+ * Flow: Boost a Friend → pick template → fill form →
  *       Next → Publish & Issue → Plus → Boost Myself → Save
  */
 export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
-    await openAddToLearnCardMenu(page);
-
-    // Select "Boost Someone"
-    await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
+    await openBoostTemplateSelector(page);
 
     // Select the first available template
     await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });

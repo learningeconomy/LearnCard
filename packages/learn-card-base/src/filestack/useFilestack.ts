@@ -57,6 +57,16 @@ export const useFilestack: UseFileStack = ({
 
     const fileSelectorRef = useRef<HTMLInputElement>();
 
+    // The web file input's onchange handler is bound once (mount-time effect
+    // below) and async uploads resolve later, so callbacks must be read from refs
+    // to avoid invoking stale first-render closures.
+    const onUploadRef = useRef(onUpload);
+    const onFileSelectedRef = useRef(onFileSelected);
+    const onPhotoResizedRef = useRef(onPhotoResized);
+    onUploadRef.current = onUpload;
+    onFileSelectedRef.current = onFileSelected;
+    onPhotoResizedRef.current = onPhotoResized;
+
     const getFileToUpload = async (file: File) => {
         if (!resizeBeforeUploading) return file;
 
@@ -78,7 +88,7 @@ export const useFilestack: UseFileStack = ({
             filestack // single image upload
                 .upload(file, options)
                 .then((res: UploadRes) => {
-                    onUpload(res.url, file, res);
+                    onUploadRef.current(res.url, file, res);
                     resolve(res.url); // return the url if you await singleImageUpload
                 })
                 .catch(e => {
@@ -100,7 +110,7 @@ export const useFilestack: UseFileStack = ({
             return;
         }
 
-        if (resizeBeforeUploading) onPhotoResized?.(fileToUpload);
+        if (resizeBeforeUploading) onPhotoResizedRef.current?.(fileToUpload);
 
         singleImageUpload(fileToUpload);
     };
@@ -129,7 +139,7 @@ export const useFilestack: UseFileStack = ({
             const filename = `photo-${Date.now()}.${photo.format || 'jpg'}`;
             const file = await dataUrlToFile(photo.dataUrl, filename);
 
-            onFileSelected?.(file);
+            onFileSelectedRef.current?.(file);
 
             const fileToUpload = await getFileToUpload(file);
             if (!fileToUpload) {
@@ -137,7 +147,7 @@ export const useFilestack: UseFileStack = ({
                 return;
             }
 
-            if (resizeBeforeUploading) onPhotoResized?.(fileToUpload);
+            if (resizeBeforeUploading) onPhotoResizedRef.current?.(fileToUpload);
 
             await singleImageUpload(fileToUpload);
         } catch (e) {
@@ -158,7 +168,7 @@ export const useFilestack: UseFileStack = ({
 
         if (!file) return;
 
-        onFileSelected?.(file);
+        onFileSelectedRef.current?.(file);
 
         setIsLoading(true);
 
@@ -169,12 +179,12 @@ export const useFilestack: UseFileStack = ({
             return;
         }
 
-        if (resizeBeforeUploading) onPhotoResized?.(fileToUpload);
+        if (resizeBeforeUploading) onPhotoResizedRef.current?.(fileToUpload);
 
         if (file.length > 1) {
             filestack // multi image upload
                 .multiupload(fileToUpload, options)
-                .then((res: UploadRes) => onUpload(res.url, fileToUpload, res))
+                .then((res: UploadRes) => onUploadRef.current(res.url, fileToUpload, res))
                 .catch(e => {
                     log.debug('filestack::uploadFile::error', e);
                     setError(e);

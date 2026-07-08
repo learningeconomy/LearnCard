@@ -76,6 +76,7 @@ type BoostEarnedCardProps = {
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
+    isPreview?: boolean;
     relativeDate?: boolean;
     compact?: boolean;
 };
@@ -102,6 +103,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
+    isPreview = false,
     relativeDate = false,
     compact = false,
 }) => {
@@ -316,6 +318,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             },
             formattedDisplayType: formattedAchievementType,
             isEarnedBoost: true,
+            isPreview,
             isClrChildCredential,
         };
 
@@ -351,6 +354,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             isEarnedBoost: true,
             isClrChildCredential,
             isClrCredential,
+            isPreview,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;
@@ -431,27 +435,35 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         />
                     }
                     customThumbComponent={
-                        <CredentialBadgeNew
-                            achievementType={achievementType}
-                            fallbackCircleText={title}
-                            boostType={categoryType}
-                            badgeThumbnail={badgeThumbnail}
-                            showBackgroundImage
-                            backgroundImage={backgroundImage}
-                            backgroundColor={backgroundColor}
-                            badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                            badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
-                                isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
-                            }`}
-                            badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
-                            badgeRibbonCustomClass="w-[26px]"
-                            badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                            displayType={displayType}
-                            credential={cred}
-                        />
+                        showSkeleton ? (
+                            <BadgeSkeleton
+                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                            />
+                        ) : (
+                            <CredentialBadgeNew
+                                achievementType={achievementType}
+                                fallbackCircleText={title}
+                                boostType={categoryType}
+                                badgeThumbnail={badgeThumbnail}
+                                showBackgroundImage
+                                backgroundImage={backgroundImage}
+                                backgroundColor={backgroundColor}
+                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                    isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
+                                }`}
+                                badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
+                                badgeRibbonCustomClass="w-[26px]"
+                                badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
+                                displayType={displayType}
+                                credential={cred}
+                            />
+                        )
                     }
                     title={title}
-                    type={type}
+                    customTitle={customTitle}
+                    type={categoryType}
                     categoryType={categoryType}
                     boostPageViewMode={boostPageViewMode}
                     credential={cred}
