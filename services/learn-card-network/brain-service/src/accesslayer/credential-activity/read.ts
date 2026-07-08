@@ -271,9 +271,16 @@ export const getActivityStatsForProfile = async (
         WITH latestEvent, coalesce(sent.status, received.status) AS credStatus
         // Collapse the CREDENTIAL_SENT fan-out to one status per activity before
         // aggregating: AppStoreListing-issued credentials have two CREDENTIAL_SENT
-        // edges (owner Profile + listing) written with the same activityId and
-        // status, which would otherwise double every SUM below.
-        WITH latestEvent, head(collect(credStatus)) AS credStatus
+        // edges (owner Profile + listing) written with the same activityId, which
+        // would otherwise double every SUM below. Pick the most severe status
+        // deterministically (revoked > suspended > other) so ordering can't matter.
+        WITH latestEvent, collect(credStatus) AS statuses
+        WITH latestEvent,
+            CASE
+                WHEN 'revoked' IN statuses THEN 'revoked'
+                WHEN 'suspended' IN statuses THEN 'suspended'
+                ELSE head(statuses)
+            END AS credStatus
         WITH
             COUNT(DISTINCT latestEvent.activityId) as total,
             SUM(CASE WHEN latestEvent.eventType = 'CREATED' THEN 1 ELSE 0 END) as created,

@@ -159,7 +159,7 @@ import {
     removeProfileAsBoostAdmin,
     removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
-import { getDomainFromUri, getIdFromUri, getUriParts } from '@helpers/uri.helpers';
+import { constructUri, getDomainFromUri, getIdFromUri, getUriParts } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import {
     EMPTY_PERMISSIONS,
@@ -2018,7 +2018,7 @@ export const boostsRouter = t.router({
                             profile.displayName ?? profile.profileId
                         }.`,
                     },
-                    data: { vcUris: [credential.id] },
+                    data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
             } catch (e) {
                 console.error('Failed to queue CREDENTIAL_REVOKED notification', e);
@@ -2133,7 +2133,7 @@ export const boostsRouter = t.router({
                             profile.displayName ?? profile.profileId
                         }.`,
                     },
-                    data: { vcUris: [credential.id] },
+                    data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
             } catch (e) {
                 console.error('Failed to queue CREDENTIAL_SUSPENDED notification', e);
@@ -2236,7 +2236,7 @@ export const boostsRouter = t.router({
                             profile.displayName ?? profile.profileId
                         }.`,
                     },
-                    data: { vcUris: [credential.id] },
+                    data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
             } catch (e) {
                 console.error('Failed to queue CREDENTIAL_UNSUSPENDED notification', e);
