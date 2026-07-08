@@ -32,7 +32,6 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
-import ManageDataSharingModal from '../../components/data-sharing/ManageDataSharingModal';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
@@ -67,7 +66,7 @@ import {
     type RawCategorizedEntry,
 } from '../skills/skills.helpers';
 import { countReviewsDueToday } from './helpers/dueReviews';
-import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
+import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
 import useSkillProfileModal from './hooks/useSkillProfileModal';
 import useAppStore from '../launchPad/useAppStore';
@@ -89,7 +88,6 @@ const DashboardPage: React.FC = () => {
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
     const pathwaysEnabled = usePathwaysEnabled();
-    const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
     const {
         openClaimLink,
         openIssueCredential,
@@ -100,6 +98,10 @@ const DashboardPage: React.FC = () => {
     const { newModal: openHeaderModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
+    });
+    const { newModal: openAddToPassportModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.BottomSheet,
     });
 
     const onHeaderScroll = useHeaderScrollSync();
@@ -225,12 +227,8 @@ const DashboardPage: React.FC = () => {
         );
     };
     const openManageDataSharing = useCallback(() => {
-        openHeaderModal(
-            <ManageDataSharingModal />,
-            { sectionClassName: '!bg-transparent !shadow-none' },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-        );
-    }, [openHeaderModal]);
+        history.push('/privacy-and-data');
+    }, [history]);
 
     const pathways = pathwayStore.use.pathways();
     const activePathwayId = pathwayStore.use.activePathwayId();
@@ -305,7 +303,11 @@ const DashboardPage: React.FC = () => {
     }, [activePathway]);
 
     const goToCollect = () => {
-        openBuildMyLearnCard();
+        openAddToPassportModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
     };
     const goToInsights = () => history.push('/ai/insights');
     const goToSkills = () => history.push('/skills');
@@ -394,6 +396,7 @@ const DashboardPage: React.FC = () => {
 
     const actionHandlers: ActionHandlers = {
         goToAddCredential: goToCollect,
+        openAddToPassport: goToCollect,
         openClaimLink,
         goToWallet,
         goToSkills,
