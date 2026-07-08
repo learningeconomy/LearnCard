@@ -204,10 +204,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    if (
-        categoryType === LCCategoryEnum.meritBadge ||
-        credential?.display?.displayType === 'award'
-    ) {
+    const resolvedDisplayType =
+        credential?.display?.displayType ?? formattedDisplayType?.toLocaleLowerCase();
+
+    if (categoryType === LCCategoryEnum.meritBadge || resolvedDisplayType === 'award') {
         return (
             <MeritBadgeDisplayCard
                 credential={credential}
@@ -241,7 +241,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         );
     }
 
-    if (credential?.display?.displayType === 'certificate') {
+    if (resolvedDisplayType === 'certificate') {
         return (
             <CertificateDisplayCard
                 credential={credential}
@@ -273,7 +273,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 onVerifierClick={onVerifierClick}
             />
         );
-    } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
+    } else if (resolvedDisplayType === 'id' || categoryType === 'ID') {
         return (
             <div>
                 <VCIDDisplayCard

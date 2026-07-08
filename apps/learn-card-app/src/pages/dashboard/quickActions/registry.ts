@@ -14,10 +14,22 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         }),
     },
     {
+        id: 'collect-add',
+        slot: 'collect',
+        eligible: () => true,
+        weight: () => 90,
+        build: (_state, { handlers, icons }) => ({
+            Icon: icons.collect,
+            label: 'Add to Passport',
+            caption: 'Scan, paste, or upload',
+            onClick: handlers.openAddToPassport,
+        }),
+    },
+    {
         id: 'connect-active',
         slot: 'collect',
         eligible: state => state.credentialsCount > 0,
-        weight: () => 100,
+        weight: () => 80,
         build: (state, { handlers, icons }) => ({
             Icon: icons.collect,
             label: 'See Passport',
@@ -25,18 +37,6 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
                 state.credentialsCount === 1 ? '' : 's'
             }`,
             onClick: handlers.goToWallet,
-        }),
-    },
-    {
-        id: 'collect-claim',
-        slot: 'collect',
-        eligible: () => true,
-        weight: () => 10,
-        build: (_state, { handlers, icons }) => ({
-            Icon: icons.collect,
-            label: 'Use a Claim Link',
-            caption: 'Claim a credential you were sent',
-            onClick: handlers.openClaimLink,
         }),
     },
 

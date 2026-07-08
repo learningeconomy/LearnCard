@@ -23,8 +23,11 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
     }[];
 } = {
     [BoostCategoryOptionsEnum.achievement]: [
-        { title: 'Degree', type: AchievementTypes.Degree },
         { title: 'Certificate', type: AchievementTypes.Certificate },
+        { title: 'Competency', type: AchievementTypes.Competency },
+        { title: 'Assessment', type: AchievementTypes.Assessment },
+        { title: 'Certification', type: AchievementTypes.Certification },
+        { title: 'Micro-Credential', type: AchievementTypes.MicroCredential },
         { title: 'Course Completion', type: AchievementTypes.CourseCompletion },
         { title: 'Attendance', type: AchievementTypes.Attendance },
         { title: "Dean's List", type: AchievementTypes.DeansList },
@@ -45,6 +48,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         { title: 'Upskilling', type: AchievementTypes.Upskilling },
     ],
     [BoostCategoryOptionsEnum.id]: [
+        { title: 'License', type: AchievementTypes.License },
         // extended ( ID ) category types
         { title: 'School ID', type: AchievementTypes.SchoolID },
         { title: 'Employer ID', type: AchievementTypes.EmployerID },
@@ -80,11 +84,21 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         { title: 'Laboratory', type: AchievementTypes.Laboratory },
 
         { title: 'Assignment', type: AchievementTypes.Assignment },
+        { title: 'Degree', type: AchievementTypes.Degree },
         { title: 'Associate Degree', type: AchievementTypes.AssociateDegree },
         { title: 'Bachelor Degree', type: AchievementTypes.BachelorDegree },
+        { title: "Master's Degree", type: AchievementTypes.MasterDegree },
+        { title: 'Doctoral Degree', type: AchievementTypes.DoctoralDegree },
+        { title: 'Research Doctorate', type: AchievementTypes.ResearchDoctorate },
+        { title: 'Professional Doctorate', type: AchievementTypes.ProfessionalDoctorate },
+        { title: 'Diploma', type: AchievementTypes.Diploma },
+        { title: 'High School Diploma', type: AchievementTypes.SecondarySchoolDiploma },
+        { title: 'GED', type: AchievementTypes.GeneralEducationDevelopment },
         { title: 'Certificate', type: AchievementTypes.CertificateOfCompletion },
         { title: 'Co-Curricular', type: AchievementTypes.CoCurricular },
-        { title: 'Research Doctorate', type: AchievementTypes.ResearchDoctorate },
+        { title: 'Learning Program', type: AchievementTypes.LearningProgram },
+        { title: 'Fieldwork', type: AchievementTypes.Fieldwork },
+        { title: 'Quality Assurance', type: AchievementTypes.QualityAssuranceCredential },
 
         // extended ( Learning History ) category types
         { title: 'Report Card', type: AchievementTypes.ReportCard },
