@@ -1,14 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import React from 'react';
 
-import { IonRow, IonCol, IonModal, useIonModal, IonSpinner } from '@ionic/react';
-import useBoostModal from '../boost/hooks/useBoostModal';
+import { IonRow, IonCol, useIonModal, IonSpinner } from '@ionic/react';
 
-import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/components/sharecreds/ShareCredentialsModal';
-import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
-import Plus from 'learn-card-base/svgs/Plus';
 
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
@@ -53,20 +48,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const newCredsCount = newCredsForCategory?.length ?? 0;
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
-    const { headerTextColor, backgroundPrimaryColor, helperTextColor } = colors;
-
-    const history = useHistory();
-    const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
-
-    const sheetModal = useRef<HTMLIonModalElement>(null);
-    const centerModal = useRef<HTMLIonModalElement>(null);
+    const { headerTextColor, helperTextColor } = colors;
 
     const { iconPadding, helperText, helperTextClickable, showBetaLabel } =
         SubheaderContentType[subheaderType];
-
-    const handleCloseShareModal = () => {
-        setShareCredsIsOpen(false);
-    };
 
     const [presentCategoryDescriptorModal, dismissCategoryDescriptorModal] = useIonModal(
         CategoryDescriptorModal,
@@ -75,8 +60,6 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             title: labels?.plural,
         }
     );
-
-    const { handlePresentBoostModal } = useBoostModal(history, category as CredentialCategoryEnum);
 
     const handlePersonalizeMyAi = () => {
         newModal(
@@ -163,43 +146,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             </IonCol>
 
             <IonCol size="3" className="flex items-center justify-end">
-                {plusButtonOverride}
-                {!hidePlusBtn && !plusButtonOverride && (
-                    <button
-                        type="button"
-                        aria-label="plus-button"
-                        onClick={handlePresentBoostModal}
-                        className={`flex items-center justify-center h-fit w-fit p-[8px] rounded-full bg-${backgroundPrimaryColor}`}
-                    >
-                        <Plus className={`h-[20px] w-[20px] ${headerTextColor}`} />
-                    </button>
-                )}
-
-                <IonModal className="main-header-modal" isOpen={shareCredsIsOpen}>
-                    <ShareCredentialsModal onDismiss={handleCloseShareModal} />
-                </IonModal>
-
-                <IonModal ref={centerModal} trigger="open-center-modal" className="center-modal">
-                    <PlusButtonModalContent
-                        handleCloseModal={() => centerModal.current?.dismiss()}
-                        showFixedFooter={false}
-                        showCloseButton={false}
-                    />
-                </IonModal>
-                <IonModal
-                    ref={sheetModal}
-                    initialBreakpoint={0.25}
-                    breakpoints={[0, 0.25, 0.5, 0.75]}
-                    handleBehavior="cycle"
-                    trigger="open-sheet-modal"
-                    className="mobile-modal"
-                >
-                    <PlusButtonModalContent
-                        handleCloseModal={() => sheetModal.current?.dismiss()}
-                        showFixedFooter={false}
-                        showCloseButton={false}
-                    />
-                </IonModal>
+                {!hidePlusBtn && plusButtonOverride}
             </IonCol>
         </IonRow>
     );
