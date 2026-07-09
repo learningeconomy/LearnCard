@@ -28,7 +28,14 @@ export const NotificationsSubHeader: React.FC<{
     isEmptyState: boolean;
     setTab: React.Dispatch<React.SetStateAction<string>>;
     tab: string;
-}> = ({ notificationCount, isEmptyState, setTab, tab }) => {
+    /**
+     * Overrides the back-button behavior. Defaults to `history.goBack()` (used
+     * by the full-page route). The notifications modal passes `closeModal` so
+     * the back arrow dismisses the modal instead of navigating the route
+     * underneath it.
+     */
+    onBack?: () => void;
+}> = ({ notificationCount, isEmptyState, setTab, tab, onBack }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const styleSet = getStyleSet(StyleSetEnum.defaults);
     const colorSet = getColorSet(ColorSetEnum.defaults);
@@ -111,7 +118,8 @@ export const NotificationsSubHeader: React.FC<{
                     <button
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
-                            history.goBack();
+                            if (onBack) onBack();
+                            else history.goBack();
                         }}
                         aria-label="Back button"
                     >

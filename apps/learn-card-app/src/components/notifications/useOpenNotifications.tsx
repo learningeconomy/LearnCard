@@ -1,36 +1,27 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
 
 import { useModal, ModalTypes } from 'learn-card-base';
-import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 
 import NotificationsModal from './NotificationsModal';
 
 /**
- * Opens the notifications ("Alerts") list. On desktop it slides in as a
- * right-loading modal beside the nav (matching the "My LearnCard" profile modal
- * pattern — see `useOpenMyLearnCard`); on mobile it keeps navigating to the
- * full-page `/notifications` route.
+ * Opens the notifications ("Alerts") list in a right-loading modal on both
+ * desktop and mobile (matching the "My LearnCard" profile modal pattern — see
+ * `useOpenMyLearnCard`). Using a single presentation on every breakpoint keeps
+ * the logic straightforward and avoids the desktop/mobile split where a
+ * notification action (e.g. claiming a boost) would reroute the page behind the
+ * modal.
  *
- * Shared by the header Alerts button (ProfileAlertsIsland) so every desktop
- * entry point presents the same modal.
+ * The full-page `/notifications` route still exists for deep links and push
+ * notifications.
  */
 export const useOpenNotifications = () => {
-    const history = useHistory();
-    const { isMobile } = useDeviceTypeByWidth();
     const { newModal: openNotificationsModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
 
-    return () => {
-        if (isMobile) {
-            history.push('/notifications');
-            return;
-        }
-
-        openNotificationsModal(<NotificationsModal />);
-    };
+    return () => openNotificationsModal(<NotificationsModal />);
 };
 
 export default useOpenNotifications;
