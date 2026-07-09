@@ -73,7 +73,6 @@ export const useMarkAllNotificationsRead = () => {
                 });
             } catch (e) {
                 log.warn('error:OnSuccess:useMarkAllNotificationsRead', e);
-                return false;
             }
         },
     });
@@ -306,82 +305,68 @@ export const useMarkNotificationRead = () => {
     const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useMutation<boolean>({
+    return useMutation<boolean, Error, { notificationId: string }>({
         mutationFn: async ({ notificationId }) => {
             try {
                 const wallet = await initWallet();
                 const res = await wallet?.invoke?.updateNotificationMeta(notificationId, {
                     read: true,
                 });
-                return res;
+                return Boolean(res);
             } catch (error) {
-                return Promise.reject(new Error(error));
+                return Promise.reject(
+                    new Error(error instanceof Error ? error.message : String(error))
+                );
             }
         },
-        onSuccess: async updatedNotification => {
-            // TODO ABSTRACT AND GENERALIZE THIS CACHE UPDATE LOGIC
-            // Optimistically update notifications list query
-            // 1. find notifcation item in existing query list data
-            // 2. update notifications array
-            // 3. update cache
+        // NOTE: react-query passes `(data, variables, context)` here — the first
+        // arg is the mutation's return value (a boolean), NOT the variables.
+        // The previous code gated on `updatedNotification?.payload?.read`, which
+        // was always undefined, so the optimistic cache update below never ran
+        // (and referenced an undefined `notification`). Read the id from the
+        // `variables` arg instead.
+        onSuccess: async (_data, { notificationId }) => {
+            const cacheDid = switchedDid ?? '';
 
-            if (updatedNotification?.payload?.read) {
-                // Since no ui support for changing the options/filter using these defaults for now, otherwise will need a way to access current associated options and filter
-                // for a given query since the cache key for that query depends on those.
-                await queryClient.cancelQueries({
-                    queryKey: [
-                        'useGetUserNotifications',
-                        switchedDid ?? '',
-                        DEFAULT_ACTIVE_OPTIONS,
-                        DEFAULT_ACTIVE_FILTER,
-                    ],
+            const activeQueryKey = [
+                'useGetUserNotifications',
+                cacheDid,
+                DEFAULT_ACTIVE_OPTIONS,
+                DEFAULT_ACTIVE_FILTER,
+            ];
+            const unreadQueryKey = ['useGetUnreadUserNotifications', cacheDid];
+
+            await queryClient.cancelQueries({ queryKey: activeQueryKey });
+            await queryClient.cancelQueries({ queryKey: unreadQueryKey });
+
+            // Optimistically flip `read` on the item in the active list cache.
+            const currentActive = queryClient.getQueryData<InfiniteData<PageType>>(activeQueryKey);
+            if (currentActive?.pages) {
+                queryClient.setQueryData<InfiniteData<PageType>>(activeQueryKey, {
+                    ...currentActive,
+                    pages: currentActive.pages.map((page: PageType) => ({
+                        ...page,
+                        notifications: page.notifications.map((n: NotificationType) =>
+                            n?._id === notificationId ? { ...n, read: true } : n
+                        ),
+                    })),
                 });
-
-                const currentQuery = queryClient.getQueryData([
-                    'useGetUserNotifications',
-                    switchedDid ?? '',
-                    DEFAULT_ACTIVE_OPTIONS,
-                    DEFAULT_ACTIVE_FILTER,
-                ]);
-
-                if (currentQuery) {
-                    const updatedQueryNotifications = currentQuery?.pages.map(page => {
-                        return {
-                            hasMore: page?.hasMore,
-                            notifications: page?.notifications?.filter(_notification => {
-                                if (_notification?._id === notification?._id) {
-                                    _notification.actionStatus = 'COMPLETED';
-                                    _notification.read = true;
-                                    return _notification;
-                                }
-                                return _notification;
-                            }),
-                        };
-                    });
-
-                    const updatedQuery = {
-                        ...currentQuery,
-                        notifications: updatedQueryNotifications,
-                    };
-
-                    // update to the new value
-                    queryClient.setQueryData(
-                        [
-                            'useGetUserNotifications',
-                            switchedDid ?? '',
-                            DEFAULT_ACTIVE_OPTIONS,
-                            DEFAULT_ACTIVE_FILTER,
-                        ],
-                        updatedQuery
-                    );
-                }
-
-                // Return a context object with the snapshotted value
             }
 
-            queryClient.invalidateQueries({
-                queryKey: ['useGetUnreadUserNotifications', switchedDid ?? ''],
-            });
+            // Optimistically drop it from the unread cache so the header
+            // "alerts island" badge decrements immediately.
+            const currentUnread = queryClient.getQueryData<PageType>(unreadQueryKey);
+            if (currentUnread?.notifications) {
+                queryClient.setQueryData<PageType>(unreadQueryKey, {
+                    ...currentUnread,
+                    notifications: currentUnread.notifications.filter(
+                        (n: NotificationType) => n?._id !== notificationId
+                    ),
+                });
+            }
+
+            queryClient.invalidateQueries({ queryKey: unreadQueryKey });
+            queryClient.invalidateQueries({ queryKey: activeQueryKey });
         },
     });
 };

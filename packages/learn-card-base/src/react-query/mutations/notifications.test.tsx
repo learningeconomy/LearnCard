@@ -52,7 +52,11 @@ vi.mock('learn-card-base', async () => {
 });
 
 import { switchedProfileStore } from '../../stores/walletStore';
-import { useUpdateNotification, useMarkAllNotificationsRead } from './notifications';
+import {
+    useUpdateNotification,
+    useMarkAllNotificationsRead,
+    useMarkNotificationRead,
+} from './notifications';
 
 const UNREAD_KEY = ['useGetUnreadUserNotifications', ''];
 
@@ -141,6 +145,28 @@ describe('notification mutations — alerts island unread count', () => {
             .catch(() => {});
 
         expect(unreadIds(queryClient)).toEqual(['n1']);
+    });
+
+    it('useMarkNotificationRead optimistically decrements the unread cache and invalidates it', async () => {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+        seedUnread(queryClient, ['n1', 'n2']);
+
+        const { result } = renderHook(() => useMarkNotificationRead(), {
+            wrapper: makeWrapper(queryClient),
+        });
+
+        await result.current.mutateAsync({ notificationId: 'n1' }).catch(() => {});
+
+        // Optimistic decrement (the old code's optimistic block was dead because
+        // it read `read` off the boolean return value instead of the variables).
+        expect(unreadIds(queryClient)).toEqual(['n2']);
+
+        await waitFor(() =>
+            expect(invalidateSpy).toHaveBeenCalledWith(
+                expect.objectContaining({ queryKey: UNREAD_KEY })
+            )
+        );
     });
 
     it('mark-all-read invalidates and refetches the unread query (onSuccess must not throw)', async () => {
