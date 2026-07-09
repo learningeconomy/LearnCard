@@ -1,5 +1,17 @@
 # learn-card-base
 
+## 0.3.1
+
+### Patch Changes
+
+-   [#1383](https://github.com/learningeconomy/LearnCard/pull/1383) [`0a4d7e927a922d5cd6452777cd696cb64dca7a13`](https://github.com/learningeconomy/LearnCard/commit/0a4d7e927a922d5cd6452777cd696cb64dca7a13) Thanks [@goblincore](https://github.com/goblincore)! - fix(notifications): decrement header alerts-island unread count on read
+
+-   [#1373](https://github.com/learningeconomy/LearnCard/pull/1373) [`3aa32349990c964f2c809c35643a2593a24c194d`](https://github.com/learningeconomy/LearnCard/commit/3aa32349990c964f2c809c35643a2593a24c194d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow Demo School cleanup to remove credentials from legacy contract URIs after the active contract flag changes.
+
+-   [#1385](https://github.com/learningeconomy/LearnCard/pull/1385) [`f357a1adf27917978f432c348419fb1f8a9799c8`](https://github.com/learningeconomy/LearnCard/commit/f357a1adf27917978f432c348419fb1f8a9799c8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Bug Fest July UI Fixes & Polishes 🐞🎉
+
+-   [#1380](https://github.com/learningeconomy/LearnCard/pull/1380) [`b898c44f924b2560e29a17e64840a138407d545d`](https://github.com/learningeconomy/LearnCard/commit/b898c44f924b2560e29a17e64840a138407d545d) Thanks [@goblincore](https://github.com/goblincore)! - chore: open notifications in right-side modal
+
 ## 0.3.0
 
 ### Minor Changes
