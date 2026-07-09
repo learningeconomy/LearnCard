@@ -219,7 +219,7 @@ const WalletPage: React.FC = () => {
                                         <WalletPageViewModeSelector />
                                     </div>
 
-                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0">
+                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
                                         <NewCredentialsPill
                                             count={totalNewCredentialsCount}
                                             label="New"
