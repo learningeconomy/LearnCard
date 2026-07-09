@@ -162,8 +162,6 @@ const WalletPage: React.FC = () => {
     ));
 
     const isList = viewMode === PassportPageViewMode.list;
-    // The list/grid switcher is mobile-only; desktop is always the tiled grid.
-    const effectiveIsList = isMobile && isList;
 
     return (
         <IonPage
@@ -211,21 +209,23 @@ const WalletPage: React.FC = () => {
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full gap-[10px]">
-                                    <div className="flex flex-col md:flex-row md:items-center md:gap-[12px] min-w-0">
+                                    <div className="flex items-center gap-[8px] min-w-0">
                                         <h2
                                             className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
                                         >
                                             Passport
                                         </h2>
-                                        <NewCredentialsPill
-                                            count={totalNewCredentialsCount}
-                                            label="New Credentials"
-                                            tone={passportBgColor ? 'onColor' : 'light'}
-                                            className="mt-[4px] self-start md:mt-0 md:self-auto"
-                                        />
+
+                                        <WalletPageViewModeSelector />
                                     </div>
 
-                                    <div className="wallet-header-menu-options items-center flex gap-[15px] shrink-0">
+                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0">
+                                        <NewCredentialsPill
+                                            count={totalNewCredentialsCount}
+                                            label="New"
+                                            tone={passportBgColor ? 'onColor' : 'light'}
+                                        />
+
                                         {flags?.boostBundleMenu && (
                                             <WalletActionButton
                                                 location={location}
@@ -234,28 +234,19 @@ const WalletPage: React.FC = () => {
                                             />
                                         )}
 
-                                        {/* View switcher is mobile-only; on desktop the grid is
-                                            fixed. Theme switching now lives in the side menu
-                                            (Colorful Mode), so there's no per-page theme picker. */}
-                                        {isMobile && (
-                                            <div className="flex items-center justify-end">
-                                                <WalletPageViewModeSelector />
-                                            </div>
-                                        )}
-
                                         {Capacitor.isNativePlatform() && (
                                             <button
-                                                className="flex items-center justify-center h-10 w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                                className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
                                                 aria-label="Scan a QR code"
                                                 onClick={() =>
                                                     QRCodeScannerStore.set.showScanner(true)
                                                 }
                                             >
-                                                <ScanIcon className="w-5 h-5 text-grayscale-900" />
+                                                <ScanIcon className="w-6 h-6 text-grayscale-900" />
                                             </button>
                                         )}
                                         <button
-                                            className="flex items-center justify-center h-10 w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                            className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
                                             aria-label="Add to Passport"
                                             onClick={() => {
                                                 newModal(
@@ -276,7 +267,7 @@ const WalletPage: React.FC = () => {
                             <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
                                 <IonCol
                                     className={`wallet-squares-container ${
-                                        effectiveIsList ? 'list' : 'grid'
+                                        isList ? 'list' : 'grid'
                                     }`}
                                 >
                                     {renderWalletList}
