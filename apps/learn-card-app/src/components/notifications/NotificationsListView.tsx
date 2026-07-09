@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Badge } from '@capawesome/capacitor-badge';
 import { getLogger } from 'learn-card-base';
@@ -32,7 +31,6 @@ export const NotificationsListView: React.FC<{
     setIsEmptyState: React.Dispatch<React.SetStateAction<boolean>>;
     tab: string;
 }> = ({ isEmptyState, setIsEmptyState, tab }) => {
-    const location = useLocation();
     const { initWallet } = useWallet();
 
     const { mutate: markAllNotificationsRead } = useMarkAllNotificationsRead();
@@ -79,11 +77,16 @@ export const NotificationsListView: React.FC<{
         }
     }, []);
 
+    // Mark everything read when the view is torn down — this fires on modal
+    // close (the modal is unmounted from the stack) and on page navigation.
+    // Deliberately unmount-only (empty deps): keying on `location` would mark
+    // all read prematurely whenever the route behind the still-open modal
+    // changes (e.g. a notification action navigates elsewhere).
     useEffect(() => {
         return () => {
             handleMarkAllRead();
         };
-    }, [location]);
+    }, []);
 
     return (
         <section className="w-full h-full min-w-[300px] bg-white pb-7">
