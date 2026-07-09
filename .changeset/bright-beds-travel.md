@@ -2,4 +2,4 @@
 "learn-card-app": patch
 ---
 
-feat: Data Center
+fix: Bug Fest

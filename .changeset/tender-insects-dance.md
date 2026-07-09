@@ -3,4 +3,4 @@
 "learn-card-base": patch
 ---
 
-fix: Fix Verification Flow
+chore: open notifications in right-side modal

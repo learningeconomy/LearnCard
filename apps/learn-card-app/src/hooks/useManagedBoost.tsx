@@ -8,6 +8,7 @@ import {
     useModal,
     useGetProfile,
     useCurrentUser,
+    useGetVCInfo,
     useResolveBoost,
     useGetBoostRecipients,
     useCountBoostRecipients,
@@ -69,6 +70,10 @@ export const useManagedBoost = (
         isFetching: resolvedBoostFetching,
     } = useResolveBoost(boost?.uri, !_boostVC);
     const boostVC = _boostVC || resolvedBoost;
+    const { idDisplayBackgroundImage, idDisplayDimBackgroundImage } = useGetVCInfo(
+        boostVC as VC,
+        categoryType
+    );
 
     const isDraft = boost?.status === 'DRAFT';
     const isLive = boost?.status === 'LIVE';
@@ -207,8 +212,8 @@ export const useManagedBoost = (
                 location={cred?.address?.streetAddress}
                 issuerThumbnail={cred?.boostID?.issuerThumbnail}
                 showIssuerImage={cred?.boostID?.showIssuerThumbnail}
-                backgroundImage={cred?.boostID?.backgroundImage}
-                dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                backgroundImage={idDisplayBackgroundImage}
+                dimBackgroundImage={idDisplayDimBackgroundImage}
                 fontColor={cred?.boostID?.fontColor}
                 accentColor={cred?.boostID?.accentColor}
                 idIssuerName={cred?.boostID?.IDIssuerName}

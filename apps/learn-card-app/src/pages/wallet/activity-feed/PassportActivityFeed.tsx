@@ -8,10 +8,14 @@ import { usePassportActivities } from './usePassportActivities';
 import {
     toActivityFeedVM,
     groupActivitiesByMonth,
+    isHiddenActivity,
     type ActivityFilterId,
+    type ActivityFeedItemVM,
 } from './activityFeed.helpers';
 import { ActivityFeedItem } from './ActivityFeedItem';
 import { ActivityFilterPopover } from './ActivityFilterPopover';
+import { ActivityDetailOverlay } from './ActivityDetailOverlay';
+import { RecentlyAdded } from './RecentlyAdded';
 
 export const PassportActivityFeed: React.FC = () => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
@@ -19,6 +23,7 @@ export const PassportActivityFeed: React.FC = () => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<ActivityFilterId>('all');
     const [filterOpen, setFilterOpen] = useState(false);
+    const [selected, setSelected] = useState<ActivityFeedItemVM | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     const { data, isPending, isError, isFetching, hasNextPage, fetchNextPage } =
@@ -31,7 +36,9 @@ export const PassportActivityFeed: React.FC = () => {
 
     const groups = useMemo(() => {
         const records = data?.pages?.flatMap(p => p?.records ?? []) ?? [];
-        let vms = records.map(r => toActivityFeedVM(r, myProfileId));
+        let vms = records
+            .filter(r => !isHiddenActivity(r?.boost?.category))
+            .map(r => toActivityFeedVM(r, myProfileId));
         if (filter !== 'all') vms = vms.filter(vm => vm.category === filter);
         if (search.trim()) {
             const q = search.trim().toLowerCase();
@@ -53,6 +60,7 @@ export const PassportActivityFeed: React.FC = () => {
 
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
+            <RecentlyAdded />
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
                 ACTIVITY
             </h3>
@@ -125,7 +133,11 @@ export const PassportActivityFeed: React.FC = () => {
                                 </p>
                                 <ol className="flex flex-col">
                                     {group.items.map(item => (
-                                        <ActivityFeedItem key={item.id} item={item} />
+                                        <ActivityFeedItem
+                                            key={item.id}
+                                            item={item}
+                                            onSelect={setSelected}
+                                        />
                                     ))}
                                 </ol>
                             </div>
@@ -138,6 +150,9 @@ export const PassportActivityFeed: React.FC = () => {
                     )}
                 </div>
             </div>
+            {selected && (
+                <ActivityDetailOverlay item={selected} onClose={() => setSelected(null)} />
+            )}
         </section>
     );
 };

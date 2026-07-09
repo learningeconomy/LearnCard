@@ -45,7 +45,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.socialBadge, // category
         subheaderType: SubheaderTypeEnum.SocialBadge, // header type
 
-        title: 'Boosts',
+        title: 'Badges',
         iconColor: 'text-blue-700',
         dividerLineColor: 'blue-400',
         searchInputColor: 'blue-400',
