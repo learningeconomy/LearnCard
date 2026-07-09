@@ -162,8 +162,6 @@ const WalletPage: React.FC = () => {
     ));
 
     const isList = viewMode === PassportPageViewMode.list;
-    // The list/grid switcher is mobile-only; desktop is always the tiled grid.
-    const effectiveIsList = isMobile && isList;
 
     return (
         <IonPage
@@ -269,7 +267,7 @@ const WalletPage: React.FC = () => {
                             <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
                                 <IonCol
                                     className={`wallet-squares-container ${
-                                        effectiveIsList ? 'list' : 'grid'
+                                        isList ? 'list' : 'grid'
                                     }`}
                                 >
                                     {renderWalletList}
