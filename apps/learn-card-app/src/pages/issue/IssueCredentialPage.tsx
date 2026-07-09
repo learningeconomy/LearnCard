@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import {
     buildSimpleTemplate,
+    getCurrentLCNUserDid,
     issueViaBoost,
 } from '../../components/simple-send/simpleSend.helpers';
 import { getTypeByObv3, type CredentialTypeEntry } from './components/credentialTypeCatalog';
@@ -32,6 +33,7 @@ import {
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getFallBackImage } from 'learn-card-base/helpers/credentialHelpers';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -371,6 +373,19 @@ const IssueCredentialPage: React.FC = () => {
             return obj;
         };
 
+        const filledJson = fill(json) as Record<string, unknown>;
+        const rawSubject = filledJson.credentialSubject;
+        // A custom VC may carry an array (or absent) credentialSubject; only the
+        // single-object case can take the preview's name/image injection.
+        const subjectObject =
+            rawSubject && typeof rawSubject === 'object' && !Array.isArray(rawSubject)
+                ? (rawSubject as Record<string, unknown>)
+                : undefined;
+
+        const previewCategory = getDefaultCategoryForCredential(filledJson as any) || 'Achievement';
+        const fallbackImage = getFallBackImage(previewCategory);
+        const selfIssuedDid = getCurrentLCNUserDid(currentLCNUser?.profileId);
+
         let credentialSubjectName: string | undefined;
         let credentialSubjectImage: string | undefined;
         let showIssuerImage = true;
@@ -383,7 +398,7 @@ const IssueCredentialPage: React.FC = () => {
 
         if (recipientMode === 'self') {
             credentialSubjectName = currentLCNUser?.displayName || issuerName;
-            credentialSubjectImage = hasBadgeImage ? undefined : issuerImage;
+            credentialSubjectImage = hasBadgeImage ? undefined : fallbackImage;
         } else if (
             recipientMode === 'people' &&
             recipients.length === 1 &&
@@ -398,19 +413,14 @@ const IssueCredentialPage: React.FC = () => {
             showIssuerImage = false;
         }
 
-        const filledJson = fill(json) as Record<string, unknown>;
-        const rawSubject = filledJson.credentialSubject;
-        // A custom VC may carry an array (or absent) credentialSubject; only the
-        // single-object case can take the preview's name/image injection.
-        const subjectObject =
-            rawSubject && typeof rawSubject === 'object' && !Array.isArray(rawSubject)
-                ? (rawSubject as Record<string, unknown>)
-                : undefined;
+        if (subjectObject && recipientMode === 'self' && selfIssuedDid) {
+            subjectObject.id = selfIssuedDid;
+        }
 
         return {
             ...filledJson,
             issuer: {
-                id: currentLCNUser?.did || 'did:web:preview',
+                id: recipientMode === 'self' && selfIssuedDid ? selfIssuedDid : 'did:web:preview',
                 name: issuerName,
                 ...(showIssuerImage && issuerImage ? { image: issuerImage } : {}),
             },
@@ -418,7 +428,11 @@ const IssueCredentialPage: React.FC = () => {
                 ? {
                       ...subjectObject,
                       ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
-                      ...(credentialSubjectImage ? { image: credentialSubjectImage } : {}),
+                      ...(credentialSubjectImage
+                          ? { image: credentialSubjectImage }
+                          : fallbackImage
+                          ? { image: fallbackImage }
+                          : {}),
                   }
                 : rawSubject,
             validFrom: new Date().toISOString(),
@@ -427,8 +441,8 @@ const IssueCredentialPage: React.FC = () => {
         template,
         issuerName,
         issuerImage,
-        currentLCNUser?.did,
         currentLCNUser?.displayName,
+        currentLCNUser?.profileId,
         recipientMode,
         recipients,
         previewValues,
