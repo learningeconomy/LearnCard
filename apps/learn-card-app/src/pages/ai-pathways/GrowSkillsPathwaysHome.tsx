@@ -91,7 +91,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
             </div>
 
             {emptyPathways && (
-                <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
+                <div className="flex items-center justify-center w-full rounded-[10px] max-w-[600px] mt-4">
                     <AiPathwaysEmptyPlaceholder />
                 </div>
             )}
