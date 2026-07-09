@@ -259,7 +259,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 onDismiss={async () => {
                     handleReadStatus();
                     setClaimModalOpen(false);
-                    history.replace('/notifications');
                 }}
                 hideEndorsementRequestCard
             />,
@@ -315,7 +314,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 onDismiss={async () => {
                     handleReadStatus();
                     setClaimModalOpen(false);
-                    history.replace('/notifications');
                 }}
                 hideEndorsementRequestCard
             />,
