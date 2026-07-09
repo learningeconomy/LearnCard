@@ -36,9 +36,8 @@ import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/t
 import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 const log = getLogger('view-shared-boost');
-
-const websiteLink = 'https://pass.scout.org/login';
 
 const ViewSharedBoost: React.FC = () => {
     const history = useHistory();
@@ -148,6 +147,8 @@ const ViewSharedBoost: React.FC = () => {
     }, [pin, tryRefetch]);
 
     const openWebsite = async () => {
+        const websiteLink = `${getAppBaseUrl()}/login`;
+
         if (Capacitor.isNativePlatform()) {
             await Browser?.open({ url: websiteLink });
         } else {

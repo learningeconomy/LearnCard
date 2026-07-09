@@ -1,18 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
-import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
-import { LEARNCARD_APP_SHORTCUTS, LearnCardAppShortcut } from './learnCardAppShortcuts';
+import MoreAppTile from './MoreAppTile';
+import {
+    LEARNCARD_APP_SHORTCUTS,
+    JOURNEYS_SHORTCUT,
+    LearnCardAppShortcut,
+} from './learnCardAppShortcuts';
 import useOpenBoostTemplateSelector from './useOpenBoostTemplateSelector';
 import useMoreApps from './useMoreApps';
+import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 
@@ -30,12 +35,19 @@ const MOBILE_HEADER_STYLE: React.CSSProperties = {
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
-    // Initialize with a modal type so newModal renders (mirrors AppStoreListItem).
-    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const { isMobile } = useDeviceTypeByWidth();
     const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
+    const pathwaysEnabled = usePathwaysEnabled();
+
+    const shortcuts = useMemo(
+        () =>
+            pathwaysEnabled
+                ? [JOURNEYS_SHORTCUT, ...LEARNCARD_APP_SHORTCUTS]
+                : LEARNCARD_APP_SHORTCUTS,
+        [pathwaysEnabled]
+    );
 
     // Existing /launchpad deep-link flows (partner connect, consent, embed) are
     // handled by the browse view — hand them off, preserving the query string.
@@ -85,14 +97,7 @@ const MyAppsLanding: React.FC = () => {
     );
 
     const renderAppTile = (app: (typeof moreApps)[number]) => (
-        <AppGridTile
-            key={app.listing_id}
-            title={app.display_name}
-            icon={app.icon_url}
-            onClick={() =>
-                newModal(<AppStoreDetailModal listing={app} isInstalled={!isSuggested} />)
-            }
-        />
+        <MoreAppTile key={app.listing_id} listing={app} isInstalled={!isSuggested} />
     );
 
     const renderSkeletonTile = (key: string) => (
@@ -170,7 +175,7 @@ const MyAppsLanding: React.FC = () => {
                     ) : (
                         <>
                             <AppGrid heading="LearnCard Apps">
-                                {LEARNCARD_APP_SHORTCUTS.map(renderShortcutTile)}
+                                {shortcuts.map(renderShortcutTile)}
                             </AppGrid>
 
                             <AppGrid heading="More Apps">

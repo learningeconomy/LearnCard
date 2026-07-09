@@ -39,7 +39,7 @@ export const boostVCTypeOptions = {
     [BoostUserTypeEnum.self]: [
         {
             id: 1,
-            title: 'Boosts',
+            title: 'Badges',
             IconComponent: BoostsIcon,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-blue-500',
@@ -131,7 +131,7 @@ export const boostVCTypeOptions = {
         },
         {
             id: 1,
-            title: 'Boosts',
+            title: 'Badges',
             IconComponent: BoostsIcon,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-blue-500',

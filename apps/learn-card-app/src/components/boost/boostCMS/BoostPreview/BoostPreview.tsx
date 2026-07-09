@@ -97,7 +97,7 @@ export const useVerification = (credential: VC) => {
 const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ categoryType }) => {
     switch (categoryType) {
         case BoostCategoryOptionsEnum.socialBadge:
-            return <span className="text-[12px] font-semibold text-blue-500">Boost</span>;
+            return <span className="text-[12px] font-semibold text-blue-500">Badge</span>;
         case BoostCategoryOptionsEnum.achievement:
             return <span className="text-[12px] font-semibold text-pink-400">Achievement</span>;
         case BoostCategoryOptionsEnum.learningHistory:

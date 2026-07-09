@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import X from 'src/components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
 import {
@@ -6,7 +7,10 @@ import {
     TextInput,
     SelectInput,
     useSyncAllCredentialsToContractsMutation,
+    useWallet,
+    queueAiInsightCredentialRefresh,
     useVerifiableData,
+    getLogger,
 } from 'learn-card-base';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
@@ -32,6 +36,8 @@ export const SKILL_PROFILE_GOALS_KEY = 'skill-profile-goals';
 export const SKILL_PROFILE_PROFESSIONAL_TITLE_KEY = 'skill-profile-professional-title';
 export const SKILL_PROFILE_ROLE_EXPERIENCE_KEY = 'skill-profile-role-experience';
 export const SKILL_PROFILE_PROFILE_KEY = SKILL_PROFILE_PROFESSIONAL_TITLE_KEY;
+
+const log = getLogger('ai-pathways-skill-profile.step1');
 
 type SkillProfileStep1Props = {
     handleNext: () => void;
@@ -69,6 +75,8 @@ const MONTHS_OPTIONS = [
 const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => {
     const { trackProfileDataAdded } = useTrackProfileDataAdded();
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
+    const queryClient = useQueryClient();
+    const { initWallet } = useWallet();
     const { markStepCompleted } = useSkillProfileStepFunnel(1, () => {
         const fields: string[] = [];
         if (goals.length > 0) fields.push('goals');
@@ -138,11 +146,23 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
         }
     }, [roleExperienceData]);
 
-    const handleAddGoal = () => {
-        if (goalInput.trim()) {
-            setGoals([...goals, goalInput.trim().slice(0, 35)]);
-            setGoalInput('');
+    const commitGoalInput = () => {
+        const nextGoal = goalInput.trim();
+
+        if (!nextGoal) {
+            return goals;
         }
+
+        const updatedGoals = [...goals, nextGoal.slice(0, 35)];
+
+        setGoals(updatedGoals);
+        setGoalInput('');
+
+        return updatedGoals;
+    };
+
+    const handleAddGoal = () => {
+        commitGoalInput();
     };
 
     const handleRemoveGoal = (index: number) => {
@@ -150,15 +170,31 @@ const SkillProfileStep1: React.FC<SkillProfileStep1Props> = ({ handleNext }) => 
     };
 
     const handleSaveAndNext = async () => {
+        const goalsToSave = commitGoalInput();
+
         const saveResults = await Promise.all([
-            saveGoals({ goals }),
+            saveGoals({ goals: goalsToSave }),
             saveProfessionalTitle({ professionalTitle }),
             saveRoleExperience({ lifetimeExperience: { years, months } }),
         ]);
 
         if (saveResults.some(Boolean)) {
-            console.log('[ConsentSync] My Skills Profile saved, triggering full wallet resync');
-            await syncAllCredentialsToContracts.mutateAsync();
+            void (async () => {
+                await syncAllCredentialsToContracts.mutateAsync();
+
+                try {
+                    const wallet = await initWallet();
+                    await queueAiInsightCredentialRefresh({
+                        wallet,
+                        queryClient,
+                    });
+                } catch (error) {
+                    log.warn(
+                        'Failed to refresh AI insights after saving skill profile data:',
+                        error
+                    );
+                }
+            })();
         }
 
         trackProfileDataAdded();

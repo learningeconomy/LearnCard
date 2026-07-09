@@ -3,4 +3,4 @@
 "@learncard/network-brain-service": patch
 ---
 
-feat: Quick Build Journeys
+fix: Activity Feed

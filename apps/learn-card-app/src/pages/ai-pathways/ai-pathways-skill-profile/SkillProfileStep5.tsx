@@ -9,7 +9,8 @@ import {
 } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 
-import SkillSearchSelector, { SelectedSkill } from 'src/pages/skills/SkillSearchSelector';
+import SkillSearchSelector from 'src/pages/skills/SkillSearchSelector';
+import { SelectedSkill } from 'src/pages/skills/skillTypes';
 import {
     SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
     SkillProfileProfessionalTitleData,

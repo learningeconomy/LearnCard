@@ -85,7 +85,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
         initializeWallet();
     }, [initWallet]);
 
-    const title = 'AI Boost Wizard';
+    const title = 'AI Badge Wizard';
     const boostOptions = boostVCTypeOptions[boostUserType];
 
     const subtext =
