@@ -524,7 +524,6 @@
         background-color: white;
         transition: transform 300ms cubic-bezier(0.64, 0.21, 0.01, 1.15);
         animation: right-modal-intro 300ms normal none ease;
-        padding-top: env(safe-area-inset-top);
 
         &.widen {
             max-width: 600px;
