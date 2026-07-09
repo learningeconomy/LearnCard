@@ -1,24 +1,37 @@
 import React from 'react';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { useGuardianGate } from './useGuardianGate';
+import { useGuardianGate, clearGuardianVerification } from './useGuardianGate';
 
 // Mock the dependencies
-const mockNewModal = jest.fn();
-const mockCloseModal = jest.fn();
-const mockInitWallet = jest.fn();
+const mockNewModal = vi.fn();
+const mockCloseModal = vi.fn();
+const mockInitWallet = vi.fn();
 
-jest.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', () => ({
+    getLogger: () => ({
+        debug: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+    }),
     switchedProfileStore: {
         use: {
-            isSwitchedProfile: jest.fn(() => false),
-            profileType: jest.fn(() => null),
+            isSwitchedProfile: vi.fn(() => false),
+            profileType: vi.fn(() => null),
+        },
+        get: {
+            switchedDid: vi.fn(() => undefined),
         },
     },
     currentUserStore: {
         use: {
-            parentUserDid: jest.fn(() => null),
+            parentUserDid: vi.fn(() => null),
+        },
+        get: {
+            parentUser: vi.fn(() => null),
         },
     },
     useModal: () => ({
@@ -28,6 +41,10 @@ jest.mock('learn-card-base', () => ({
     useWallet: () => ({
         initWallet: mockInitWallet,
     }),
+    useGetCurrentLCNUser: () => ({
+        currentLCNUser: null,
+    }),
+    calculateAge: vi.fn(() => NaN),
     ModalTypes: {
         Center: 'Center',
         Cancel: 'Cancel',
@@ -35,7 +52,17 @@ jest.mock('learn-card-base', () => ({
     },
 }));
 
-jest.mock('../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper', () => ({
+vi.mock('learn-card-base/stores/guardianApprovalStore', () => ({
+    guardianApprovalStore: {
+        set: {
+            clearAllApprovals: vi.fn(),
+            setApproval: vi.fn(),
+            clearApproval: vi.fn(),
+        },
+    },
+}));
+
+vi.mock('../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper', () => ({
     FamilyPinWrapper: ({ handleOnSubmit }: { handleOnSubmit: () => void }) => (
         <div data-testid="family-pin-wrapper">
             <button onClick={handleOnSubmit}>Verify</button>
@@ -59,17 +86,19 @@ const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 describe('useGuardianGate', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
+        // Clear module-level verification cache so tests don't leak TTL state
+        clearGuardianVerification();
         // Reset to default non-child profile state
-        (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(false);
-        (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue(null);
-        (currentUserStore.use.parentUserDid as jest.Mock).mockReturnValue(null);
+        (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(false);
+        (switchedProfileStore.use.profileType as Mock).mockReturnValue(null);
+        (currentUserStore.use.parentUserDid as Mock).mockReturnValue(null);
     });
 
     describe('isChildProfile detection', () => {
         it('should return isChildProfile=false when not switched', () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(false);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue(null);
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(false);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue(null);
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -77,8 +106,8 @@ describe('useGuardianGate', () => {
         });
 
         it('should return isChildProfile=false when switched to service profile', () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('service');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('service');
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -86,8 +115,8 @@ describe('useGuardianGate', () => {
         });
 
         it('should return isChildProfile=false when switched to parent profile', () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('parent');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('parent');
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -95,8 +124,8 @@ describe('useGuardianGate', () => {
         });
 
         it('should return isChildProfile=true when switched to child profile', () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('child');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -106,10 +135,10 @@ describe('useGuardianGate', () => {
 
     describe('guardedAction - non-child profile passthrough', () => {
         it('should execute action immediately for non-child profiles', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(false);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue(null);
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(false);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue(null);
 
-            const action = jest.fn().mockResolvedValue(undefined);
+            const action = vi.fn().mockResolvedValue(undefined);
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -122,10 +151,10 @@ describe('useGuardianGate', () => {
         });
 
         it('should execute action immediately for parent profiles', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('parent');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('parent');
 
-            const action = jest.fn().mockResolvedValue(undefined);
+            const action = vi.fn().mockResolvedValue(undefined);
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -138,10 +167,10 @@ describe('useGuardianGate', () => {
         });
 
         it('should execute action immediately for service profiles', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('service');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('service');
 
-            const action = jest.fn().mockResolvedValue(undefined);
+            const action = vi.fn().mockResolvedValue(undefined);
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -156,11 +185,11 @@ describe('useGuardianGate', () => {
 
     describe('guardedAction - skip option', () => {
         it('should execute action immediately when skip=true regardless of profile type', async () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as jest.Mock).mockReturnValue('did:example:parent');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
+            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
 
-            const action = jest.fn().mockResolvedValue(undefined);
+            const action = vi.fn().mockResolvedValue(undefined);
 
             const { result } = renderHook(() => useGuardianGate({ skip: true }), { wrapper });
 
@@ -175,18 +204,18 @@ describe('useGuardianGate', () => {
 
     describe('guardedAction - child profile gating', () => {
         beforeEach(() => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as jest.Mock).mockReturnValue('did:example:parent');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
+            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
             mockInitWallet.mockResolvedValue({
                 invoke: {
-                    hasPin: jest.fn().mockResolvedValue(true),
+                    hasPin: vi.fn().mockResolvedValue(true),
                 },
             });
         });
 
         it('should show PIN modal for child profile when action is triggered', async () => {
-            const action = jest.fn();
+            const action = vi.fn();
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -206,12 +235,12 @@ describe('useGuardianGate', () => {
         it('should skip verification and execute action when no PIN is set', async () => {
             mockInitWallet.mockResolvedValue({
                 invoke: {
-                    hasPin: jest.fn().mockResolvedValue(false),
+                    hasPin: vi.fn().mockResolvedValue(false),
                 },
             });
 
-            const action = jest.fn();
-            const onVerified = jest.fn();
+            const action = vi.fn();
+            const onVerified = vi.fn();
 
             const { result } = renderHook(() => useGuardianGate({ onVerified }), { wrapper });
 
@@ -225,9 +254,9 @@ describe('useGuardianGate', () => {
         });
 
         it('should call onCancel when parentDid is missing', async () => {
-            (currentUserStore.use.parentUserDid as jest.Mock).mockReturnValue(null);
-            const onCancel = jest.fn();
-            const action = jest.fn();
+            (currentUserStore.use.parentUserDid as Mock).mockReturnValue(null);
+            const onCancel = vi.fn();
+            const action = vi.fn();
 
             const { result } = renderHook(() => useGuardianGate({ onCancel }), { wrapper });
 
@@ -242,9 +271,9 @@ describe('useGuardianGate', () => {
 
     describe('TTL verification caching', () => {
         it('should return isGuardianVerified=false initially', () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as jest.Mock).mockReturnValue('did:example:parent');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
+            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -252,9 +281,9 @@ describe('useGuardianGate', () => {
         });
 
         it('should clear verification when clearVerification is called', () => {
-            (switchedProfileStore.use.isSwitchedProfile as jest.Mock).mockReturnValue(true);
-            (switchedProfileStore.use.profileType as jest.Mock).mockReturnValue('child');
-            (currentUserStore.use.parentUserDid as jest.Mock).mockReturnValue('did:example:parent');
+            (switchedProfileStore.use.isSwitchedProfile as Mock).mockReturnValue(true);
+            (switchedProfileStore.use.profileType as Mock).mockReturnValue('child');
+            (currentUserStore.use.parentUserDid as Mock).mockReturnValue('did:example:parent');
 
             const { result } = renderHook(() => useGuardianGate(), { wrapper });
 
@@ -268,7 +297,7 @@ describe('useGuardianGate', () => {
 
     describe('options callbacks', () => {
         it('should accept onVerified callback', () => {
-            const onVerified = jest.fn();
+            const onVerified = vi.fn();
 
             const { result } = renderHook(() => useGuardianGate({ onVerified }), { wrapper });
 
