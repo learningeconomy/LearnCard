@@ -55,7 +55,11 @@ export const useMarkAllNotificationsRead = () => {
         },
         onSuccess: async res => {
             try {
-                const switchedDid = switchedProfileStore.use.switchedDid();
+                // Read the switched DID non-reactively — this callback runs
+                // outside a React render, so the `.use.*()` hook accessor would
+                // throw here and abort the invalidation below (the alerts-island
+                // unread-count then never refetches). Use `.get` in callbacks.
+                const switchedDid = switchedProfileStore.get.switchedDid();
 
                 // invalidate queries with consistent keys
                 queryClient.invalidateQueries({
@@ -96,7 +100,14 @@ export const useUpdateNotification = () => {
         onMutate: async (updatedNotification: UpdateNotificationVariables) => {
             const cacheDid = switchedDid ?? '';
 
-            const isArchiving = updatedNotification?.payload?.archived;
+            // `archived` is a tri-state here: `true` = archive, `false` =
+            // unarchive, `undefined` = a metadata-only update (e.g. marking
+            // read). Distinguish them explicitly so the read branch below is
+            // actually reachable — previously `else if (!isArchiving)` caught
+            // every non-archive update and the read branch was dead code.
+            const isArchiving = updatedNotification?.payload?.archived === true;
+            const isUnarchiving = updatedNotification?.payload?.archived === false;
+            const isReadUpdate = Boolean(updatedNotification?.payload?.read);
 
             // 1. Define both query keys
             const activeQueryKey = [
@@ -113,10 +124,17 @@ export const useUpdateNotification = () => {
                 DEFAULT_ARCHIVE_FILTER,
             ];
 
-            // 2. Cancel any outgoing refetches
+            // The header "alerts island" badge reads from this separate query.
+            const unreadQueryKey = ['useGetUnreadUserNotifications', cacheDid];
+
+            // 2. Cancel any outgoing refetches for the caches we're about to
+            // touch so they don't overwrite the optimistic update.
             await queryClient.cancelQueries({
                 queryKey: isArchiving ? activeQueryKey : archiveQueryKey,
             });
+            if (isReadUpdate) {
+                await queryClient.cancelQueries({ queryKey: unreadQueryKey });
+            }
 
             // 3. Get the current data for the active tab
             const currentTabData = queryClient.getQueryData<InfiniteData<PageType>>(activeQueryKey);
@@ -185,7 +203,7 @@ export const useUpdateNotification = () => {
                         pageParams: [undefined],
                     });
                 }
-            } else if (!isArchiving) {
+            } else if (isUnarchiving) {
                 // Remove from archive cache
                 const archiveData =
                     queryClient.getQueryData<PaginatedNotificationsType>(archiveQueryKey);
@@ -228,8 +246,9 @@ export const useUpdateNotification = () => {
                         pages: updatedActivePages,
                     });
                 }
-            } else if (updatedNotification?.payload?.read) {
-                // Handle marking as read
+            } else if (isReadUpdate) {
+                // Handle marking as read: flip `read` on the item in the active
+                // list cache so its unread indicator clears immediately.
                 if (currentTabData?.pages?.[0]?.notifications) {
                     const updatedPages = currentTabData.pages.map((page: PageType) => ({
                         ...page,
@@ -247,12 +266,31 @@ export const useUpdateNotification = () => {
                 }
             }
 
-            // 4. Return the previous data
-            return { previousData: currentTabData };
+            // Optimistically drop the notification from the unread cache so the
+            // header "alerts island" badge decrements immediately, without
+            // waiting for the onSuccess refetch. The unread query is a plain
+            // (non-infinite) `PageType`, not `InfiniteData`.
+            let previousUnread: PageType | undefined;
+            if (isReadUpdate) {
+                previousUnread = queryClient.getQueryData<PageType>(unreadQueryKey);
+                if (previousUnread?.notifications) {
+                    queryClient.setQueryData<PageType>(unreadQueryKey, {
+                        ...previousUnread,
+                        notifications: previousUnread.notifications.filter(
+                            (n: NotificationType) => n?._id !== updatedNotification.notificationId
+                        ),
+                    });
+                }
+            }
+
+            // 4. Return the previous data (for potential rollback)
+            return { previousData: currentTabData, previousUnread };
         },
 
         onSuccess: async () => {
-            const resolvedDid = switchedProfileStore.use.switchedDid() ?? '';
+            // Non-reactive read: this callback runs outside a React render, so
+            // the `.use.*()` hook accessor would throw and skip invalidation.
+            const resolvedDid = switchedProfileStore.get.switchedDid() ?? '';
             queryClient.invalidateQueries({
                 queryKey: ['useGetUnreadUserNotifications', resolvedDid],
             });
