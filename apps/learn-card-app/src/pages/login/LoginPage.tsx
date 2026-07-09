@@ -213,7 +213,7 @@ export const LoginContent: React.FC = () => {
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             } else {
-                history.push('/launchpad');
+                history.push('/dashboard');
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             }
