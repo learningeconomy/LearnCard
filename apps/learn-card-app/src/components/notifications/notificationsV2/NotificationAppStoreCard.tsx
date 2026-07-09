@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from '@sentry/react';
+import { useModal } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { CheckCircle, XCircle, Send, Store } from 'lucide-react';
 import { notificationCardStyles } from './types';
@@ -39,6 +40,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
     variant,
 }) => {
     const history = useHistory();
+    const { closeAllModals } = useModal();
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
@@ -53,9 +55,11 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
         // Navigate to the appropriate page based on variant
         if (variant === 'submitted') {
             // Admin notification - go to admin dashboard
+            closeAllModals();
             history.push('/app-store/admin');
         } else if (listingId) {
             // Developer notification - go to developer portal
+            closeAllModals();
             history.push('/app-store/developer');
         }
     };

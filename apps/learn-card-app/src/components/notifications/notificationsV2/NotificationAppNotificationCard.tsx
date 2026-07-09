@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@sentry/react';
 import { Bell, ExternalLink } from 'lucide-react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { useModal } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import useAppStore from '../../../pages/launchPad/useAppStore';
@@ -31,6 +32,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
     className,
 }) => {
     const history = useHistory();
+    const { closeAllModals } = useModal();
     const [isRead, setIsRead] = useState<boolean>(notification?.read ?? false);
     const [iconFailed, setIconFailed] = useState(false);
 
@@ -79,6 +81,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
         if (!listing) {
             // Fallback: navigate to the app listing page
             if (listingId) {
+                closeAllModals();
                 history.push(`/app/${listingId}`);
             }
             return;
@@ -101,6 +104,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
 
             const appSlug = (listing as Record<string, unknown>).slug as string | undefined;
 
+            closeAllModals();
             history.push(`/apps/${appSlug || listingId}`, {
                 embedUrl,
                 appName: listing.display_name,
@@ -112,6 +116,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
         }
 
         // Not embeddable — open the listing page
+        closeAllModals();
         history.push(`/app/${listingId}`);
     };
 

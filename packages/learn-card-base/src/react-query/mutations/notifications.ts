@@ -39,6 +39,16 @@ export type PageType = {
 
 type PaginatedNotificationsType = InfiniteData<PageType>;
 
+/** Snapshots returned from `useUpdateNotification`'s `onMutate` for rollback. */
+type UpdateNotificationContext = {
+    activeQueryKey: unknown[];
+    archiveQueryKey: unknown[];
+    unreadQueryKey: unknown[];
+    previousData?: InfiniteData<PageType>;
+    previousArchiveData?: InfiniteData<PageType>;
+    previousUnread?: PageType;
+};
+
 export const useMarkAllNotificationsRead = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -55,7 +65,11 @@ export const useMarkAllNotificationsRead = () => {
         },
         onSuccess: async res => {
             try {
-                const switchedDid = switchedProfileStore.use.switchedDid();
+                // Read the switched DID non-reactively — this callback runs
+                // outside a React render, so the `.use.*()` hook accessor would
+                // throw here and abort the invalidation below (the alerts-island
+                // unread-count then never refetches). Use `.get` in callbacks.
+                const switchedDid = switchedProfileStore.get.switchedDid();
 
                 // invalidate queries with consistent keys
                 queryClient.invalidateQueries({
@@ -69,7 +83,6 @@ export const useMarkAllNotificationsRead = () => {
                 });
             } catch (e) {
                 log.warn('error:OnSuccess:useMarkAllNotificationsRead', e);
-                return false;
             }
         },
     });
@@ -81,7 +94,7 @@ export const useUpdateNotification = () => {
     const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useMutation<boolean, Error, UpdateNotificationVariables>({
+    return useMutation<boolean, Error, UpdateNotificationVariables, UpdateNotificationContext>({
         mutationFn: async ({ notificationId, payload }) => {
             try {
                 const wallet = await initWallet();
@@ -96,7 +109,14 @@ export const useUpdateNotification = () => {
         onMutate: async (updatedNotification: UpdateNotificationVariables) => {
             const cacheDid = switchedDid ?? '';
 
-            const isArchiving = updatedNotification?.payload?.archived;
+            // `archived` is a tri-state here: `true` = archive, `false` =
+            // unarchive, `undefined` = a metadata-only update (e.g. marking
+            // read). Distinguish them explicitly so the read branch below is
+            // actually reachable — previously `else if (!isArchiving)` caught
+            // every non-archive update and the read branch was dead code.
+            const isArchiving = updatedNotification?.payload?.archived === true;
+            const isUnarchiving = updatedNotification?.payload?.archived === false;
+            const isReadUpdate = Boolean(updatedNotification?.payload?.read);
 
             // 1. Define both query keys
             const activeQueryKey = [
@@ -113,10 +133,17 @@ export const useUpdateNotification = () => {
                 DEFAULT_ARCHIVE_FILTER,
             ];
 
-            // 2. Cancel any outgoing refetches
+            // The header "alerts island" badge reads from this separate query.
+            const unreadQueryKey = ['useGetUnreadUserNotifications', cacheDid];
+
+            // 2. Cancel any outgoing refetches for the caches we're about to
+            // touch so they don't overwrite the optimistic update.
             await queryClient.cancelQueries({
                 queryKey: isArchiving ? activeQueryKey : archiveQueryKey,
             });
+            if (isReadUpdate) {
+                await queryClient.cancelQueries({ queryKey: unreadQueryKey });
+            }
 
             // 3. Get the current data for the active tab
             const currentTabData = queryClient.getQueryData<InfiniteData<PageType>>(activeQueryKey);
@@ -185,10 +212,8 @@ export const useUpdateNotification = () => {
                         pageParams: [undefined],
                     });
                 }
-            } else if (!isArchiving) {
+            } else if (isUnarchiving) {
                 // Remove from archive cache
-                const archiveData =
-                    queryClient.getQueryData<PaginatedNotificationsType>(archiveQueryKey);
                 if (currentArchiveData?.pages?.[0]?.notifications) {
                     const updatedArchivePages = currentArchiveData.pages.map((page: PageType) => ({
                         ...page,
@@ -228,8 +253,9 @@ export const useUpdateNotification = () => {
                         pages: updatedActivePages,
                     });
                 }
-            } else if (updatedNotification?.payload?.read) {
-                // Handle marking as read
+            } else if (isReadUpdate) {
+                // Handle marking as read: flip `read` on the item in the active
+                // list cache so its unread indicator clears immediately.
                 if (currentTabData?.pages?.[0]?.notifications) {
                     const updatedPages = currentTabData.pages.map((page: PageType) => ({
                         ...page,
@@ -247,12 +273,53 @@ export const useUpdateNotification = () => {
                 }
             }
 
-            // 4. Return the previous data
-            return { previousData: currentTabData };
+            // Optimistically drop the notification from the unread cache so the
+            // header "alerts island" badge decrements immediately, without
+            // waiting for the onSuccess refetch. The unread query is a plain
+            // (non-infinite) `PageType`, not `InfiniteData`.
+            let previousUnread: PageType | undefined;
+            if (isReadUpdate) {
+                previousUnread = queryClient.getQueryData<PageType>(unreadQueryKey);
+                if (previousUnread?.notifications) {
+                    queryClient.setQueryData<PageType>(unreadQueryKey, {
+                        ...previousUnread,
+                        notifications: previousUnread.notifications.filter(
+                            (n: NotificationType) => n?._id !== updatedNotification.notificationId
+                        ),
+                    });
+                }
+            }
+
+            // 4. Return the pre-mutation snapshots so onError can roll back
+            // every cache we optimistically wrote to.
+            return {
+                activeQueryKey,
+                archiveQueryKey,
+                unreadQueryKey,
+                previousData: currentTabData,
+                previousArchiveData: currentArchiveData,
+                previousUnread,
+            };
+        },
+
+        onError: (_error, _variables, context) => {
+            // Restore every optimistic write from onMutate. Without this, a
+            // failed mutation would leave the active/archive lists and — most
+            // visibly — the header alerts-island unread badge stuck showing the
+            // optimistic (decremented) value until the next refetch.
+            if (!context) return;
+
+            queryClient.setQueryData(context.activeQueryKey, context.previousData);
+            queryClient.setQueryData(context.archiveQueryKey, context.previousArchiveData);
+            if (context.previousUnread !== undefined) {
+                queryClient.setQueryData(context.unreadQueryKey, context.previousUnread);
+            }
         },
 
         onSuccess: async () => {
-            const resolvedDid = switchedProfileStore.use.switchedDid() ?? '';
+            // Non-reactive read: this callback runs outside a React render, so
+            // the `.use.*()` hook accessor would throw and skip invalidation.
+            const resolvedDid = switchedProfileStore.get.switchedDid() ?? '';
             queryClient.invalidateQueries({
                 queryKey: ['useGetUnreadUserNotifications', resolvedDid],
             });
@@ -268,82 +335,68 @@ export const useMarkNotificationRead = () => {
     const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useMutation<boolean>({
+    return useMutation<boolean, Error, { notificationId: string }>({
         mutationFn: async ({ notificationId }) => {
             try {
                 const wallet = await initWallet();
                 const res = await wallet?.invoke?.updateNotificationMeta(notificationId, {
                     read: true,
                 });
-                return res;
+                return Boolean(res);
             } catch (error) {
-                return Promise.reject(new Error(error));
+                return Promise.reject(
+                    new Error(error instanceof Error ? error.message : String(error))
+                );
             }
         },
-        onSuccess: async updatedNotification => {
-            // TODO ABSTRACT AND GENERALIZE THIS CACHE UPDATE LOGIC
-            // Optimistically update notifications list query
-            // 1. find notifcation item in existing query list data
-            // 2. update notifications array
-            // 3. update cache
+        // NOTE: react-query passes `(data, variables, context)` here — the first
+        // arg is the mutation's return value (a boolean), NOT the variables.
+        // The previous code gated on `updatedNotification?.payload?.read`, which
+        // was always undefined, so the optimistic cache update below never ran
+        // (and referenced an undefined `notification`). Read the id from the
+        // `variables` arg instead.
+        onSuccess: async (_data, { notificationId }) => {
+            const cacheDid = switchedDid ?? '';
 
-            if (updatedNotification?.payload?.read) {
-                // Since no ui support for changing the options/filter using these defaults for now, otherwise will need a way to access current associated options and filter
-                // for a given query since the cache key for that query depends on those.
-                await queryClient.cancelQueries({
-                    queryKey: [
-                        'useGetUserNotifications',
-                        switchedDid ?? '',
-                        DEFAULT_ACTIVE_OPTIONS,
-                        DEFAULT_ACTIVE_FILTER,
-                    ],
+            const activeQueryKey = [
+                'useGetUserNotifications',
+                cacheDid,
+                DEFAULT_ACTIVE_OPTIONS,
+                DEFAULT_ACTIVE_FILTER,
+            ];
+            const unreadQueryKey = ['useGetUnreadUserNotifications', cacheDid];
+
+            await queryClient.cancelQueries({ queryKey: activeQueryKey });
+            await queryClient.cancelQueries({ queryKey: unreadQueryKey });
+
+            // Optimistically flip `read` on the item in the active list cache.
+            const currentActive = queryClient.getQueryData<InfiniteData<PageType>>(activeQueryKey);
+            if (currentActive?.pages) {
+                queryClient.setQueryData<InfiniteData<PageType>>(activeQueryKey, {
+                    ...currentActive,
+                    pages: currentActive.pages.map((page: PageType) => ({
+                        ...page,
+                        notifications: page.notifications.map((n: NotificationType) =>
+                            n?._id === notificationId ? { ...n, read: true } : n
+                        ),
+                    })),
                 });
-
-                const currentQuery = queryClient.getQueryData([
-                    'useGetUserNotifications',
-                    switchedDid ?? '',
-                    DEFAULT_ACTIVE_OPTIONS,
-                    DEFAULT_ACTIVE_FILTER,
-                ]);
-
-                if (currentQuery) {
-                    const updatedQueryNotifications = currentQuery?.pages.map(page => {
-                        return {
-                            hasMore: page?.hasMore,
-                            notifications: page?.notifications?.filter(_notification => {
-                                if (_notification?._id === notification?._id) {
-                                    _notification.actionStatus = 'COMPLETED';
-                                    _notification.read = true;
-                                    return _notification;
-                                }
-                                return _notification;
-                            }),
-                        };
-                    });
-
-                    const updatedQuery = {
-                        ...currentQuery,
-                        notifications: updatedQueryNotifications,
-                    };
-
-                    // update to the new value
-                    queryClient.setQueryData(
-                        [
-                            'useGetUserNotifications',
-                            switchedDid ?? '',
-                            DEFAULT_ACTIVE_OPTIONS,
-                            DEFAULT_ACTIVE_FILTER,
-                        ],
-                        updatedQuery
-                    );
-                }
-
-                // Return a context object with the snapshotted value
             }
 
-            queryClient.invalidateQueries({
-                queryKey: ['useGetUnreadUserNotifications', switchedDid ?? ''],
-            });
+            // Optimistically drop it from the unread cache so the header
+            // "alerts island" badge decrements immediately.
+            const currentUnread = queryClient.getQueryData<PageType>(unreadQueryKey);
+            if (currentUnread?.notifications) {
+                queryClient.setQueryData<PageType>(unreadQueryKey, {
+                    ...currentUnread,
+                    notifications: currentUnread.notifications.filter(
+                        (n: NotificationType) => n?._id !== notificationId
+                    ),
+                });
+            }
+
+            queryClient.invalidateQueries({ queryKey: unreadQueryKey });
+            queryClient.invalidateQueries({ queryKey: activeQueryKey });
         },
     });
 };
