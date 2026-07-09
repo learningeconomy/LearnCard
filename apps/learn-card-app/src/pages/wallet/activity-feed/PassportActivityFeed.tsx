@@ -35,7 +35,15 @@ export const PassportActivityFeed: React.FC = () => {
     }, [onScreen, hasNextPage, fetchNextPage]);
 
     const groups = useMemo(() => {
-        const records = data?.pages?.flatMap(p => p?.records ?? []) ?? [];
+        // Dedupe by id: grouped/paged results can surface the same activity more
+        // than once (e.g. cursor timestamp ties across pages), and duplicate React
+        // keys corrupt list reconciliation. Keep the first occurrence.
+        const seen = new Set<string>();
+        const records = (data?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(r => {
+            if (!r?.id || seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+        });
         let vms = records
             .filter(r => !isHiddenActivity(r?.boost?.category))
             .map(r => toActivityFeedVM(r, myProfileId));
