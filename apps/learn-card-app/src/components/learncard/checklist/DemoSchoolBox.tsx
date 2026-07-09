@@ -43,19 +43,6 @@ type DemoSchoolBoxProps = {};
 
 type DemoSchoolStatus = 'idle' | 'connecting' | 'syncing' | 'disconnecting' | 'deleting';
 
-const getLegacyDemoContractUris = (legacyDemoContractFlag: unknown): string[] => {
-    const legacyUris =
-        typeof legacyDemoContractFlag === 'object' &&
-        legacyDemoContractFlag !== null &&
-        'legacyUris' in legacyDemoContractFlag
-            ? legacyDemoContractFlag.legacyUris
-            : legacyDemoContractFlag;
-
-    return Array.isArray(legacyUris)
-        ? legacyUris.filter((uri): uri is string => typeof uri === 'string' && uri.length > 0)
-        : [];
-};
-
 const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { colors } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -75,7 +62,12 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             ? flags.demoContractUri
             : undefined;
     const legacyDemoContractUris = useMemo(
-        () => getLegacyDemoContractUris(flags.legacyDemoContractUris),
+        () =>
+            Array.isArray(flags.legacyDemoContractUris)
+                ? flags.legacyDemoContractUris.filter(
+                      (uri): uri is string => typeof uri === 'string' && uri.length > 0
+                  )
+                : [],
         [flags.legacyDemoContractUris]
     );
     const demoContractUris = useMemo(

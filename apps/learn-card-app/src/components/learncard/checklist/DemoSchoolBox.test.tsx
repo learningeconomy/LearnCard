@@ -219,20 +219,6 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
         expect(mocks.deleteCredentialRecord).not.toHaveBeenCalled();
     });
 
-    it('parses LaunchDarkly JSON object legacy URI shape', () => {
-        mocks.useFlags.mockReturnValue({
-            demoContractUri: currentDemoContractUri,
-            legacyDemoContractUris: { legacyUris: [legacyDemoContractUri] },
-        });
-
-        render(<DemoSchoolBox />);
-
-        expect(mocks.useGetCredentialsFromContracts).toHaveBeenCalledWith([
-            currentDemoContractUri,
-            legacyDemoContractUri,
-        ]);
-    });
-
     it('looks up legacy demo contracts outside production without syncing the current contract', () => {
         mocks.isProductionNetwork.mockReturnValue(false);
         mocks.useFlags.mockReturnValue({
