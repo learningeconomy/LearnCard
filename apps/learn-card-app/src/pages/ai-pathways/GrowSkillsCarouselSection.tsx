@@ -11,6 +11,7 @@ type GrowSkillsCarouselSectionProps<T> = {
     viewAllLabel?: string;
     className?: string;
     slideClassName?: string;
+    maxGridItems?: number;
 };
 
 const GrowSkillsCarouselSection = <T,>({
@@ -22,10 +23,13 @@ const GrowSkillsCarouselSection = <T,>({
     viewAllLabel = 'View All',
     className = '',
     slideClassName = 'flex !h-auto overflow-visible',
+    maxGridItems = 2,
 }: GrowSkillsCarouselSectionProps<T>) => {
     const carouselItems = items ?? [];
 
     if (carouselItems.length === 0) return null;
+
+    const gridItems = carouselItems.slice(0, maxGridItems);
 
     return (
         <div className={`flex flex-col items-center gap-[10px] ${className}`.trim()}>
@@ -44,7 +48,7 @@ const GrowSkillsCarouselSection = <T,>({
                 )}
             </div>
 
-            <div className="relative w-full overflow-visible">
+            <div className="relative w-full overflow-visible desktop:hidden">
                 <Swiper
                     spaceBetween={12}
                     slidesPerView={'auto'}
@@ -63,6 +67,14 @@ const GrowSkillsCarouselSection = <T,>({
                         </SwiperSlide>
                     ))}
                 </Swiper>
+            </div>
+
+            <div className="hidden desktop:grid grid-cols-2 gap-4 w-full">
+                {gridItems.map((item, index) => (
+                    <div key={getItemKey?.(item, index) ?? index} className="h-full w-full">
+                        {renderItem(item, index)}
+                    </div>
+                ))}
             </div>
         </div>
     );
