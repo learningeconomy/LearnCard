@@ -540,7 +540,7 @@ const IssueCredentialPage: React.FC = () => {
                 })
             );
 
-            if (result.credentialUri) {
+            if (recipientMode === 'self' && result.credentialUri) {
                 await addVCtoWallet({ uri: result.credentialUri });
 
                 await queryClient.invalidateQueries({
