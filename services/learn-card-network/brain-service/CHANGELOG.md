@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.16.9
+
+### Patch Changes
+
+-   [#1374](https://github.com/learningeconomy/LearnCard/pull/1374) [`61e0a198c1166ec468f812caac8d7a3ddbd42edd`](https://github.com/learningeconomy/LearnCard/commit/61e0a198c1166ec468f812caac8d7a3ddbd42edd) Thanks [@Custard7](https://github.com/Custard7)! - fix: Activity Feed
+
 ## 3.16.8
 
 ### Patch Changes
