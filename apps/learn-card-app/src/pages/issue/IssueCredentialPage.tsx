@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useIonAlert } from '@ionic/react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     buildSimpleTemplate,
@@ -90,7 +91,8 @@ const clearSuccessSnapshot = (): void => {
 
 const IssueCredentialPage: React.FC = () => {
     const history = useHistory();
-    const { initWallet } = useWallet();
+    const { initWallet, addVCtoWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
@@ -487,12 +489,30 @@ const IssueCredentialPage: React.FC = () => {
                     mode: recipientMode,
                     recipients,
                     linkOptions,
-                    currentLCNUser,
+                    currentLCNUser: currentLCNUser ?? undefined,
                     claimLinkSA,
                     variableValues,
                     variableValuesByRecipient: recipientTemplateData,
                 })
             );
+
+            if (result.credentialUri) {
+                await addVCtoWallet({ uri: result.credentialUri });
+
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentedContracts'],
+                });
+                await queryClient.invalidateQueries({ queryKey: ['useConsentFlowData'] });
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentFlowDataForDid'],
+                });
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentFlowDataForDidByCategory'],
+                });
+                await queryClient.invalidateQueries({
+                    queryKey: ['useResolvedConsentFlowDataForDid'],
+                });
+            }
 
             presentToast('Credential issued.', {
                 type: ToastTypeEnum.Success,

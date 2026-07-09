@@ -1,5 +1,4 @@
 import base64url from 'base64url';
-import { v4 as uuidv4 } from 'uuid';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -145,6 +144,7 @@ const deliverBoost = async (
     signedCredential?: Record<string, unknown>
 ): Promise<IssueViaBoostResult> => {
     let claimLink: string | undefined;
+    let credentialUri = boostUri;
 
     const templateData =
         options.variableValues && Object.keys(options.variableValues).length > 0
@@ -174,15 +174,11 @@ const deliverBoost = async (
                         | Record<string, unknown>
                         | undefined);
                 if (credential) {
-                    const indexUri = await wallet.store.LearnCloud.uploadEncrypted(credential);
+                    const indexUri = await wallet.store.LearnCloud.uploadEncrypted(
+                        credential as any
+                    );
                     if (indexUri) {
-                        const category =
-                            getDefaultCategoryForCredential(credential as any) || 'Achievement';
-                        await wallet.index.LearnCloud.add({
-                            id: uuidv4(),
-                            uri: indexUri,
-                            category,
-                        });
+                        credentialUri = indexUri;
                     }
                 }
             }
@@ -235,7 +231,7 @@ const deliverBoost = async (
         )}?iuv=1`;
     }
 
-    return { credentialUri: boostUri, claimLink };
+    return { credentialUri, claimLink };
 };
 
 const deepReplaceVariables = (json: unknown, replacements: Record<string, string>): unknown => {
@@ -326,7 +322,10 @@ export const issueViaBoost = async (
             unknown
         >;
         const category = getDefaultCategoryForCredential(signedCredential as any) || 'Achievement';
-        const boostUri = await wallet.invoke.createBoost(signedCredential, { name, category });
+        const boostUri = await wallet.invoke.createBoost(signedCredential as any, {
+            name,
+            category,
+        });
         return deliverBoost(wallet, boostUri, options, signedCredential);
     }
 
@@ -342,11 +341,11 @@ export const issueViaBoost = async (
             options.variableValues
         );
         stripUnresolvedRecipientId(oneOff);
-        const boostUri = await wallet.invoke.createBoost(oneOff, { name, category });
+        const boostUri = await wallet.invoke.createBoost(oneOff as any, { name, category });
         return deliverBoost(wallet, boostUri, { ...options, variableValues: undefined });
     }
 
-    const boostUri = await wallet.invoke.createBoost(reusableTemplate, { name, category });
+    const boostUri = await wallet.invoke.createBoost(reusableTemplate as any, { name, category });
     return deliverBoost(wallet, boostUri, options);
 };
 
