@@ -57,6 +57,24 @@ cd vc-api-issuer-test-suite && npm i && npm test
 Mocha prints the exact failing assertion names + diffs — use those to fix the last
 two, then re-run before opening the manifest PRs.
 
+## Candidate: EdDSA (`vc-di-eddsa`) registration
+
+`candidate-eddsa-rdfc-2022.json` holds ready-to-merge issuer/verifier entries for the
+Data Integrity EdDSA suite. **Not yet registered** — pending validation.
+
+Validation status (run against staging):
+
+-   **Issuer format: 14/16 pass.** Our endpoint emits `DataIntegrityProof` +
+    `eddsa-rdfc-2022` when the manifest entry carries
+    `options: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" }` (the suite
+    forwards `issuer.settings.options` into the issue request).
+-   **2 known failures** (DIDKit `ssi`-level, shared with many vendors — fold into the
+    ssi ticket): `DATA_LOSS_DETECTION_ERROR` (issuer accepts undefined JSON-LD terms) and
+    `cryptosuiteString` subtype typing.
+-   **Verify + interop: NOT yet validated** — the suite's own `vc-generator` crashes on
+    Node 22 (`structuredClone` DataCloneError). Validate in CI or on Node 18/20 before
+    merging these entries.
+
 ## Tag expansion (follow-up)
 
 Tags select which suites run. These manifests keep the **currently-known-good** tags

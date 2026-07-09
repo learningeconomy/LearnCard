@@ -80,6 +80,20 @@ Requirements / gotchas:
     exist in the target AWS account (it does — brain-service uses it). Override target
     domain/zone via `SERVERLESS_DOMAIN_NAME` / `SERVERLESS_HOSTED_ZONE_NAMES`.
 
+## Known conformance results (W3C suites, run against staging)
+
+-   **VC-API Issuer (Data Integrity):** 13/13 pass. The endpoint defaults to
+    `Ed25519Signature2020` proofs (see `src/app.ts`) — the SDK default regressed to
+    `DataIntegrityProof`, which failed the Ed25519 suite.
+-   **VC-API Verifier (Data Integrity):** 17/18 pass. The one failure ("MUST verify a
+    valid VC") is a **DIDKit `ssi` (Rust) limitation**, not a wrapper bug: `vc.verify()`
+    fails its proof-filtering step when a VC's `issuer` is a plain HTTPS URL (valid per
+    W3C VCDM) rather than a DID, erroring with
+    `Unable to filter proofs: Unable to resolve: invalidDid`. Proven by swapping the
+    test vector's URL issuer for a DID — the error vanishes and verification proceeds to
+    the signature check. Fixing it requires upgrading/patching the vendored `didkit`/`ssi`
+    crate (repo-wide impact on all verification) and is tracked separately.
+
 ## DIDKit engine
 
 DIDKit runs via WASM. The WASM binary is marked `external` and copied next to the

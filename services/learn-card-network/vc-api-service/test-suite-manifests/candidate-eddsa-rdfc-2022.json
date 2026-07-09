@@ -1,0 +1,16 @@
+{
+    "_note": "CANDIDATE, not yet registered. Append these entries to the `issuers`/`verifiers` arrays of BOTH LearnCard.json manifests to enroll in the Data Integrity EdDSA (vc-di-eddsa) suite. The `options` on the issuer make our single /credentials/issue endpoint emit eddsa-rdfc-2022 (the same endpoint still emits Ed25519Signature2020 for that suite's entry). Issuer-format validated 14/16 against staging; verify + interop NOT yet validated (blocked locally by the suite's Node-22 vc-generator bug — validate in CI or on Node 18/20 before merging).",
+    "issuer": {
+        "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
+        "endpoint": "https://vc-api.network.learncard.com/credentials/issue",
+        "options": { "type": "DataIntegrityProof", "cryptosuite": "eddsa-rdfc-2022" },
+        "supports": { "vc": ["1.1", "2.0"] },
+        "tags": ["eddsa-rdfc-2022"]
+    },
+    "verifier": {
+        "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
+        "endpoint": "https://vc-api.network.learncard.com/credentials/verify",
+        "supports": { "vc": ["1.1", "2.0"] },
+        "tags": ["eddsa-rdfc-2022"]
+    }
+}
