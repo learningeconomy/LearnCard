@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { z } from 'zod';
@@ -109,6 +110,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         mobile: ModalTypes.Cancel,
     });
     const { initWallet, installChapi } = useWallet();
+    const queryClient = useQueryClient();
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
@@ -251,6 +253,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 country: country ?? '',
             });
             log.info('updatedProfile::res', updatedProfile);
+
+            // useGetProfile caches for 5 min and expects mutations to invalidate it.
+            // Without this, the reopened form (and displayName/image synced via
+            // useGetCurrentLCNUser) shows stale values, making saves appear to "not stick".
+            await queryClient.invalidateQueries({ queryKey: ['getProfile'] });
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
