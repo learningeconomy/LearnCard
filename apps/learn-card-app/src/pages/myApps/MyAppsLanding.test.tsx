@@ -13,7 +13,9 @@ vi.mock('react-router-dom', async orig => {
 
 vi.mock('../../components/main-header/MainHeader', () => ({ default: () => null }));
 vi.mock('../../components/main-header/ProfileAlertsIsland', () => ({ default: () => null }));
-vi.mock('../launchPad/AppStoreDetailModal', () => ({ default: () => null }));
+// MoreAppTile pulls in the full app-launch/consent-flow chain; stub it out (the
+// landing test only cares about layout + shortcut wiring, not launch behavior).
+vi.mock('./MoreAppTile', () => ({ default: () => null }));
 vi.mock('./useMoreApps', () => ({
     default: () => ({ apps: [], isSuggested: true, isLoading: false }),
 }));
@@ -22,6 +24,7 @@ vi.mock('learn-card-base', () => ({
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     ModalTypes: { Cancel: 'Cancel', Right: 'Right', Center: 'Center', FullScreen: 'FullScreen' },
     useDeviceTypeByWidth: () => ({ isMobile: false }),
+    useFeatureConfig: () => ({}),
 }));
 
 import MyAppsLanding from './MyAppsLanding';
