@@ -46,7 +46,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
             {/* Top Bar */}
             <div
                 className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100 safe-area-top-margin"
-                style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
             >
                 <button
                     onClick={onBack}
@@ -101,7 +101,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
             {/* Bottom Action Area */}
             <div
                 className="shrink-0 px-6 py-4 border-t border-grayscale-100 bg-white"
-                style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
             >
                 <div className="max-w-[500px] mx-auto">
                     <button

@@ -44,7 +44,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
     return (
         <div
             className="font-poppins flex flex-col bg-white min-h-full px-5 pb-5 desktop:px-6 desktop:pb-6"
-            style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+            style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)' }}
         >
             <div className="flex items-center justify-between mb-4">
                 <div className="flex flex-col">

@@ -22,7 +22,6 @@ import OrangeProfileIcon from 'learn-card-base/svgs/OrangeProfileIcon';
 import UserContact from '../user-profile/UserContact/UserContact';
 import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
-import AdminToolsModalFooter from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModalFooter';
 import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
@@ -199,9 +198,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     const { prompted } = await gate();
                     if (prompted) return;
                     newModal(
-                        <div className="h-full relative">
+                        <div className="h-full">
                             <UserContact />
-                            <AdminToolsModalFooter buttonTitle="Back" />
                         </div>,
                         {},
                         { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -631,7 +629,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 always scrollable from the top. */}
             <section
                 className="min-h-[calc(100%-85px)] px-[20px] pb-[20px] flex items-start justify-center"
-                style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}
+                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 20px)' }}
             >
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">

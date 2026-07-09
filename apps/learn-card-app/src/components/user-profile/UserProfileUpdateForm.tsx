@@ -53,6 +53,7 @@ import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetwo
 import { LearnCardRoles, LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import { useGetAiInsightsServicesContract } from '../../pages/ai-insights/learner-insights/learner-insights.helpers';
 
+import { Bell } from 'lucide-react';
 import GlassCard from '../../pages/privacy-settings/components/GlassCard';
 import TextInput from 'learn-card-base/components/form-inputs/TextInput';
 import { useTheme } from '../../theme/hooks/useTheme';
@@ -87,7 +88,8 @@ type UserProfileUpdateFormProps = {
     showNetworkModal?: boolean;
     showNotificationsModal?: boolean;
     handleChapiInfo: () => void;
-    children?: any;
+    onOpenNotifications?: () => void;
+    showNotificationsRow?: boolean;
 };
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
@@ -99,7 +101,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     showNetworkModal = false,
     showNotificationsModal = true,
     handleChapiInfo,
-    children,
+    onOpenNotifications,
+    showNotificationsRow,
 }) => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -494,8 +497,6 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     )}
                 </div>
 
-                {children && <div className="px-6">{children}</div>}
-
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4 sm:px-6">
                     {/* PROFILE SECTION */}
                     <div className="flex flex-col gap-2">
@@ -635,6 +636,48 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             )}
                         </GlassCard>
                     </div>
+
+                    {/* PREFERENCES SECTION */}
+                    {showNotificationsRow && Capacitor.isNativePlatform() && (
+                        <div className="flex flex-col gap-2">
+                            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
+                                Preferences
+                            </h3>
+                            <GlassCard className="flex flex-col">
+                                <button
+                                    type="button"
+                                    onClick={() => onOpenNotifications?.()}
+                                    className="flex items-center justify-between px-5 py-4 hover:bg-grayscale-50/50 transition-colors rounded-[20px]"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Bell className="w-5 h-5 text-grayscale-500" />
+                                        <div className="flex flex-col items-start">
+                                            <span className="text-[15px] font-medium text-grayscale-900">
+                                                Notifications
+                                            </span>
+                                            <span className="text-sm text-grayscale-500">
+                                                Manage push notifications
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="text-grayscale-400">
+                                        <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="m9 18 6-6-6-6" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </GlassCard>
+                        </div>
+                    )}
 
                     {/* NETWORK & IDENTITY SECTION */}
                     <div className="flex flex-col gap-2">
