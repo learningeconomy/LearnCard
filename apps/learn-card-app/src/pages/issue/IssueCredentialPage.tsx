@@ -394,7 +394,9 @@ const IssueCredentialPage: React.FC = () => {
         // achievement.image, so a recipient photo would hide the badge artwork.
         // The issued credential never sets credentialSubject.image; only inject
         // it here when there's no badge image, keeping the preview faithful.
-        const hasBadgeImage = Boolean(ach?.image?.value);
+        const hasBadgeImage = Boolean(
+            (filledJson as Record<string, unknown>).image || ach?.image?.value
+        );
 
         if (recipientMode === 'self') {
             credentialSubjectName = currentLCNUser?.displayName || issuerName;
@@ -405,7 +407,7 @@ const IssueCredentialPage: React.FC = () => {
             recipients[0].kind === 'profile'
         ) {
             credentialSubjectName = recipients[0].displayName;
-            credentialSubjectImage = hasBadgeImage ? undefined : recipients[0].image;
+            credentialSubjectImage = hasBadgeImage ? undefined : fallbackImage;
         } else {
             // No specific recipient yet (link / anyone / email / multiple): don't
             // let the badge fall back to the issuer's photo — show the category's
@@ -447,6 +449,34 @@ const IssueCredentialPage: React.FC = () => {
         recipients,
         previewValues,
     ]);
+
+    const previewCardCredential = useMemo<Record<string, unknown> | null>(() => {
+        if (!previewCredential) return null;
+
+        const credential = { ...previewCredential } as Record<string, unknown>;
+        const subject = credential.credentialSubject;
+        const hasExplicitImage = Boolean(
+            credential.image ||
+                (subject &&
+                    typeof subject === 'object' &&
+                    !Array.isArray(subject) &&
+                    (subject as Record<string, unknown>).achievement &&
+                    typeof (subject as Record<string, unknown>).achievement === 'object' &&
+                    !Array.isArray((subject as Record<string, unknown>).achievement) &&
+                    (subject as Record<string, unknown>).achievement &&
+                    typeof (
+                        (subject as Record<string, unknown>).achievement as Record<string, unknown>
+                    ).image === 'string')
+        );
+
+        if (hasExplicitImage && subject && typeof subject === 'object' && !Array.isArray(subject)) {
+            const sanitizedSubject = { ...(subject as Record<string, unknown>) };
+            delete sanitizedSubject.image;
+            credential.credentialSubject = sanitizedSubject;
+        }
+
+        return credential;
+    }, [previewCredential]);
 
     const handleIssue = useCallback(async () => {
         if (!template || !canIssue) return;
@@ -646,7 +676,7 @@ const IssueCredentialPage: React.FC = () => {
     return (
         <IssueCredentialView
             issuedUri={issuedUri}
-            previewCredential={previewCredential}
+            previewCredential={previewCardCredential}
             selectedType={selectedType}
             template={template}
             recipientMode={recipientMode}
