@@ -69,9 +69,9 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     onViewAll={() => openGrowSkillsModal('Media')}
                     renderItem={card =>
                         card.type === 'youtube-media' ? (
-                            <GrowSkillsYouTubeMediaItem video={card.video} className="h-full" />
+                            <GrowSkillsYouTubeMediaItem video={card.video} />
                         ) : (
-                            <GrowSkillsMediaItem occupation={card.occupation} className="h-full" />
+                            <GrowSkillsMediaItem occupation={card.occupation} />
                         )
                     }
                     getItemKey={card =>

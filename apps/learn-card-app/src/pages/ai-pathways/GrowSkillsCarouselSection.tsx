@@ -69,9 +69,9 @@ const GrowSkillsCarouselSection = <T,>({
                 </Swiper>
             </div>
 
-            <div className="hidden desktop:grid grid-cols-2 gap-4 w-full">
+            <div className="hidden desktop:grid grid-cols-2 items-start gap-4 w-full">
                 {gridItems.map((item, index) => (
-                    <div key={getItemKey?.(item, index) ?? index} className="h-full w-full">
+                    <div key={getItemKey?.(item, index) ?? index} className="w-full">
                         {renderItem(item, index)}
                     </div>
                 ))}
