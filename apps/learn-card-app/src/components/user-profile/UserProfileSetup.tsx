@@ -140,7 +140,7 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
     };
 
     let activeForm = (
-        <section className="py-[30px]">
+        <section className="h-full">
             <UserProfileUpdateForm
                 handleCloseModal={handleCloseModal}
                 handleLogout={handleLogout}

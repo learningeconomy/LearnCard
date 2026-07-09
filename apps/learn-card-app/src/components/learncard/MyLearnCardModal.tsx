@@ -22,6 +22,7 @@ import OrangeProfileIcon from 'learn-card-base/svgs/OrangeProfileIcon';
 import UserContact from '../user-profile/UserContact/UserContact';
 import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
+import AdminToolsModalFooter from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModalFooter';
 import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
@@ -176,20 +177,17 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 caretText: '',
                 onClick: async () => {
                     newModal(
-                        <UserProfileSetup
-                            title="Account Settings"
-                            handleCloseModal={closeModal}
-                            handleLogout={() => handleLogout()}
-                            showNetworkSettings={true}
-                            showNotificationsModal={false}
-                        />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            usePortal: true,
-                            hideButton: true,
-                            portalClassName: '!max-w-[400px]',
-                        },
-                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                        <div className="h-full">
+                            <UserProfileSetup
+                                title="Account Settings"
+                                handleCloseModal={closeModal}
+                                handleLogout={() => handleLogout()}
+                                showNetworkSettings={true}
+                                showNotificationsModal={false}
+                            />
+                        </div>,
+                        {},
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
                 },
             },
@@ -201,9 +199,12 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                     const { prompted } = await gate();
                     if (prompted) return;
                     newModal(
-                        <UserContact />,
+                        <div className="h-full relative">
+                            <UserContact />
+                            <AdminToolsModalFooter buttonTitle="Back" />
+                        </div>,
                         {},
-                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
                 },
             }
@@ -258,7 +259,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         viewMode={LearnCardIdCMSEditorModeEnum.edit}
                     />,
                     {},
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
             },
         });
