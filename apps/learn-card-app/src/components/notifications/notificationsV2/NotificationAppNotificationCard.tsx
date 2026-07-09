@@ -8,6 +8,7 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import useAppStore from '../../../pages/launchPad/useAppStore';
+import { notificationCardStyles } from './types';
 
 type NotificationAppNotificationCardProps = {
     notification: NotificationType;
@@ -116,15 +117,17 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
 
     const isHighPriority = priority === 'high';
 
-    const bgColor = isHighPriority ? 'bg-orange-50' : 'bg-sky-50';
     const showFallbackIcon = !appIcon || iconFailed;
-    const iconBgColor = showFallbackIcon ? (isHighPriority ? 'bg-orange-100' : 'bg-sky-100') : '';
-    const iconTextColor = isHighPriority ? 'text-orange-600' : 'text-sky-600';
+    const chipColor = showFallbackIcon
+        ? isHighPriority
+            ? 'bg-orange-50 text-orange-600'
+            : 'bg-sky-50 text-sky-600'
+        : '';
 
     return (
         <ErrorBoundary
             fallback={
-                <div className="flex min-h-[100px] justify-start max-w-[600px] items-start relative w-full rounded-3xl py-[10px] px-[10px] bg-gray-50 my-[15px]">
+                <div className={notificationCardStyles.fallbackShell}>
                     Unable to load notification
                 </div>
             }
@@ -132,16 +135,14 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             <div
                 ref={ref}
                 onClick={handleOpenApp}
-                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity ${className ?? ''}`}
+                className={`${
+                    notificationCardStyles.shell
+                } min-h-[100px] gap-3 !items-center cursor-pointer ${className ?? ''}`}
             >
-                {!isRead && (
-                    <div className="notification-count-mobile unread-indicator-dot" />
-                )}
+                {!isRead && <div className="notification-count-mobile unread-indicator-dot" />}
 
                 {/* App icon or fallback */}
-                <div
-                    className={`flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center ${iconBgColor} ${showFallbackIcon ? iconTextColor : ''}`}
-                >
+                <div className={`${notificationCardStyles.iconChip} ${chipColor}`}>
                     {appIcon && !iconFailed ? (
                         <img
                             src={appIcon}
@@ -158,31 +159,31 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                 <div className="text-left flex flex-col gap-[4px] items-start justify-start flex-1 min-w-0">
                     {title && (
                         <h4
-                            className="font-bold tracking-wide line-clamp-2 text-gray-900 text-[14px] pr-[20px]"
+                            className={notificationCardStyles.title}
                             data-testid="notification-title"
                         >
                             {title}
                         </h4>
                     )}
 
-                    {body && (
-                        <p className="text-gray-600 text-[13px] line-clamp-2">
-                            {body}
-                        </p>
-                    )}
+                    {body && <p className={notificationCardStyles.body}>{body}</p>}
 
                     <div className="flex items-center gap-2 mt-1">
-                        <p className="font-semibold p-0 leading-none tracking-wide line-clamp-1 text-[12px] text-gray-500">
+                        <p
+                            className={`${notificationCardStyles.meta} ${
+                                isHighPriority ? 'text-orange-600' : 'text-sky-600'
+                            }`}
+                        >
                             {appName}
 
                             {category && (
-                                <span className="ml-1 text-gray-400 font-normal">
+                                <span className={`${notificationCardStyles.date} ml-1`}>
                                     &middot; {category}
                                 </span>
                             )}
 
                             {formattedDate && (
-                                <span className="text-gray-400 normal-case font-normal text-[12px] ml-1">
+                                <span className={`${notificationCardStyles.date} ml-1`}>
                                     &middot; {formattedDate}
                                 </span>
                             )}
@@ -193,11 +194,11 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                 {/* Open app button */}
                 {listingId && (
                     <button
-                        onClick={(e) => {
+                        onClick={e => {
                             e.stopPropagation();
                             handleOpenApp();
                         }}
-                        className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/80 hover:bg-white text-gray-700 font-semibold text-[13px] border border-gray-200 transition-colors"
+                        className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-grayscale-700 font-semibold text-[13px] border border-solid border-grayscale-200 transition duration-150 hover:bg-grayscale-50 active:scale-[0.98]"
                     >
                         Open
                         <ExternalLink className="w-3.5 h-3.5" />

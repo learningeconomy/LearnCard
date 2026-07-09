@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from '@sentry/react';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { CheckCircle, XCircle, Send, Store } from 'lucide-react';
+import { notificationCardStyles } from './types';
 
 type NotificationAppStoreCardProps = {
     notification: NotificationType;
@@ -13,20 +14,20 @@ type NotificationAppStoreCardProps = {
 
 const VARIANT_CONFIG = {
     approved: {
-        bgColor: 'bg-green-50',
-        iconColor: 'text-green-600',
+        chipColor: 'bg-emerald-50 text-emerald-600',
+        labelColor: 'text-emerald-600',
         Icon: CheckCircle,
         label: 'App Approved',
     },
     rejected: {
-        bgColor: 'bg-amber-50',
-        iconColor: 'text-amber-600',
+        chipColor: 'bg-amber-50 text-amber-600',
+        labelColor: 'text-amber-600',
         Icon: XCircle,
         label: 'Review Required',
     },
     submitted: {
-        bgColor: 'bg-indigo-50',
-        iconColor: 'text-indigo-600',
+        chipColor: 'bg-indigo-50 text-indigo-600',
+        labelColor: 'text-indigo-600',
         Icon: Send,
         label: 'New Submission',
     },
@@ -42,7 +43,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
     const config = VARIANT_CONFIG[variant];
-    const { Icon, bgColor, iconColor, label } = config;
+    const { Icon, chipColor, labelColor, label } = config;
 
     const listingId = notification.data?.metadata?.listingId as string | undefined;
 
@@ -62,45 +63,40 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
     return (
         <ErrorBoundary
             fallback={
-                <div className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full rounded-3xl py-[10px] px-[10px] bg-gray-50 my-[15px]">
+                <div className={notificationCardStyles.fallbackShell}>
                     Unable to load notification
                 </div>
             }
         >
             <div
                 onClick={handleClick}
-                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity`}
+                className={`${notificationCardStyles.shell} min-h-[100px] gap-3 !items-center cursor-pointer`}
             >
                 {/* Icon */}
-                <div className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-white/60 flex items-center justify-center ${iconColor}`}>
+                <div className={`${notificationCardStyles.iconChip} ${chipColor}`}>
                     <Icon className="w-7 h-7" />
                 </div>
 
                 {/* Content */}
                 <div className="text-left flex flex-col gap-[6px] items-start justify-start w-full">
-                    <h4
-                        className="font-bold tracking-wide line-clamp-2 text-gray-900 text-[14px] pr-[20px]"
-                        data-testid="notification-title"
-                    >
+                    <h4 className={notificationCardStyles.title} data-testid="notification-title">
                         {notification.message?.title}
                     </h4>
 
                     <p
-                        className="font-semibold p-0 leading-none tracking-wide line-clamp-1 text-[12px] text-gray-500"
+                        className={`${notificationCardStyles.meta} ${labelColor}`}
                         data-testid="notification-type"
                     >
                         <Store className="w-3 h-3 inline-block mr-1" />
                         {label}
                         {transactionDate && (
-                            <span className="text-gray-400 normal-case font-normal text-[12px] ml-1">
+                            <span className={`${notificationCardStyles.date} ml-1`}>
                                 • {formattedDate}
                             </span>
                         )}
                     </p>
 
-                    <p className="text-gray-600 text-[13px] line-clamp-2">
-                        {notification.message?.body}
-                    </p>
+                    <p className={notificationCardStyles.body}>{notification.message?.body}</p>
                 </div>
             </div>
         </ErrorBoundary>
