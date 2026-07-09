@@ -24,7 +24,6 @@ import { ColorSetEnum } from '../../../theme/colors/index';
 import { StyleSetEnum } from '../../../theme/styles/index';
 
 export const NotificationsSubHeader: React.FC<{
-    notificationCount: number;
     isEmptyState: boolean;
     setTab: React.Dispatch<React.SetStateAction<string>>;
     tab: string;
@@ -42,7 +41,7 @@ export const NotificationsSubHeader: React.FC<{
      * would collide with the "Archive All" button.
      */
     showBackButton?: boolean;
-}> = ({ notificationCount, isEmptyState, setTab, tab, onBack, showBackButton }) => {
+}> = ({ isEmptyState, setTab, tab, onBack, showBackButton }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const styleSet = getStyleSet(StyleSetEnum.defaults);
     const colorSet = getColorSet(ColorSetEnum.defaults);
@@ -128,7 +127,7 @@ export const NotificationsSubHeader: React.FC<{
                             if (onBack) onBack();
                             else history.goBack();
                         }}
-                        aria-label="Back button"
+                        aria-label={onBack ? 'Close alerts' : 'Back button'}
                     >
                         <LeftArrow
                             className={`w-6 mr-[10px] h-auto text-black ${

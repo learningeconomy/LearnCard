@@ -11,7 +11,6 @@ import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 const NotificationsPage: React.FC = () => {
     const [isEmptyState, setIsEmptyState] = useState<boolean>(false);
     const [tab, setTab] = useState('active');
-    const notificationCount = 0;
 
     const onHeaderScroll = useHeaderScrollSync();
 
@@ -21,12 +20,7 @@ const NotificationsPage: React.FC = () => {
                 showBackButton={false}
                 customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
             >
-                <NotificationsSubHeader
-                    isEmptyState={isEmptyState}
-                    notificationCount={notificationCount}
-                    tab={tab}
-                    setTab={setTab}
-                />
+                <NotificationsSubHeader isEmptyState={isEmptyState} tab={tab} setTab={setTab} />
             </MainHeader>
             <GenericErrorBoundary>
                 <IonContent

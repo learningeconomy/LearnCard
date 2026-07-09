@@ -17,7 +17,6 @@ import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 const NotificationsModal: React.FC = () => {
     const [isEmptyState, setIsEmptyState] = useState<boolean>(false);
     const [tab, setTab] = useState('active');
-    const notificationCount = 0;
 
     const { closeModal } = useModal();
 
@@ -29,7 +28,6 @@ const NotificationsModal: React.FC = () => {
             <div className="shrink-0 bg-white pt-[15px]">
                 <NotificationsSubHeader
                     isEmptyState={isEmptyState}
-                    notificationCount={notificationCount}
                     tab={tab}
                     setTab={setTab}
                     onBack={() => closeModal()}

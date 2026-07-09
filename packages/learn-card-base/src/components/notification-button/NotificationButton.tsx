@@ -16,9 +16,9 @@ type NotificationButtonProps = {
     iconVariant?: 'bell' | 'alerts';
     /**
      * Optional click handler override. When provided it is called instead of
-     * navigating to `/notifications` — lets app-layer callers open the desktop
-     * right-side notifications modal while keeping this base component free of
-     * app dependencies.
+     * navigating to `/notifications` — lets app-layer callers open the
+     * right-side notifications modal (on both desktop and mobile) while keeping
+     * this base component free of app dependencies.
      */
     onOpen?: () => void;
 };

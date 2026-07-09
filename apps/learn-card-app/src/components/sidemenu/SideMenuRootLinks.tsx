@@ -215,10 +215,16 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             );
         }
 
+        // Alerts opens a modal rather than navigating, so skip marking it as
+        // the active route — otherwise it stays highlighted while the visible
+        // page is unchanged.
+        const handleTabClick =
+            linkPath === '/notifications' ? undefined : () => setActiveTab(linkPath);
+
         return (
             <IonMenuToggle key={link.id} autoHide={false} className="w-full">
                 <div
-                    onClick={() => setActiveTab(linkPath)}
+                    onClick={handleTabClick}
                     className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
