@@ -32,10 +32,10 @@ import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIslan
 import WalletPageItemWrapper from './WalletPageItemWrapper';
 import { filterPassportCategories } from './passportCategories';
 import PassportActivityFeed from './activity-feed/PassportActivityFeed';
-import DotIcon from 'learn-card-base/svgs/DotIcon';
 import Plus from 'learn-card-base/svgs/Plus';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
+import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
@@ -211,25 +211,21 @@ const WalletPage: React.FC = () => {
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
                                 <div className="flex justify-between items-center w-full gap-[10px]">
-                                    <h2
-                                        className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
-                                    >
-                                        Passport
-                                    </h2>
+                                    <div className="flex flex-col md:flex-row md:items-center md:gap-[12px] min-w-0">
+                                        <h2
+                                            className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
+                                        >
+                                            Passport
+                                        </h2>
+                                        <NewCredentialsPill
+                                            count={totalNewCredentialsCount}
+                                            label="New Credentials"
+                                            tone={passportBgColor ? 'onColor' : 'light'}
+                                            className="mt-[4px] self-start md:mt-0 md:self-auto"
+                                        />
+                                    </div>
 
-                                    <div className="wallet-header-menu-options items-center flex gap-[15px]">
-                                        {totalNewCredentialsCount > 0 && (
-                                            <p
-                                                className={`${
-                                                    passportBgColor
-                                                        ? 'text-white/80'
-                                                        : 'text-emerald-700'
-                                                } font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px] whitespace-nowrap`}
-                                            >
-                                                <DotIcon className="w-[10px] h-[10px]" />{' '}
-                                                {totalNewCredentialsCount} New Credentials
-                                            </p>
-                                        )}
+                                    <div className="wallet-header-menu-options items-center flex gap-[15px] shrink-0">
                                         {flags?.boostBundleMenu && (
                                             <WalletActionButton
                                                 location={location}

@@ -70,7 +70,7 @@ const TroopID: React.FC<TroopIDProps> = ({
 }) => {
     const { credentialWithEdits } = useGetCredentialWithEdits(initialCredential);
     const credential = credentialWithEdits ?? initialCredential;
-    const network = useGetTroopNetwork({ credential });
+    const { network: networkData } = useGetTroopNetwork({ credential });
     const role = getRoleFromCred(credential);
     const thumbSrc = initialThumbSrc || credential?.boostID?.idThumbnail;
     const issueDate = useMemo(
@@ -84,10 +84,10 @@ const TroopID: React.FC<TroopIDProps> = ({
             ...baseProperties,
             footerSubText:
                 role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader
-                    ? network?.name
+                    ? networkData?.name
                     : baseProperties.footerSubText,
         };
-    }, [role, network?.name]);
+    }, [role, networkData?.name]);
 
     const backgroundStyles = useMemo(
         () => getIdBackgroundStyles(undefined, credential),
