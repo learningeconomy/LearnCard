@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.97.1
+
+### Patch Changes
+
+-   [#1381](https://github.com/learningeconomy/LearnCard/pull/1381) [`604142cb067da6485e713326adf7b3461fd8d630`](https://github.com/learningeconomy/LearnCard/commit/604142cb067da6485e713326adf7b3461fd8d630) Thanks [@Custard7](https://github.com/Custard7)! - fix: Bug Fest
+
+-   [#1378](https://github.com/learningeconomy/LearnCard/pull/1378) [`0b844db213cd29e430aee5842fd9c2e7e30748be`](https://github.com/learningeconomy/LearnCard/commit/0b844db213cd29e430aee5842fd9c2e7e30748be) Thanks [@goblincore](https://github.com/goblincore)! - fix: App page tile icons + More Apps launch behavior
+
+-   [#1382](https://github.com/learningeconomy/LearnCard/pull/1382) [`e75bd4fd4699b2ac33dca2bc0ea339d22335b732`](https://github.com/learningeconomy/LearnCard/commit/e75bd4fd4699b2ac33dca2bc0ea339d22335b732) Thanks [@goblincore](https://github.com/goblincore)! - test(learn-card-app): remove dead smoke specs, salvage useGuardianGate as a vitest test
+
+-   [#1384](https://github.com/learningeconomy/LearnCard/pull/1384) [`55787f9bdbdbfd2773aae56182bf71793b01f1a1`](https://github.com/learningeconomy/LearnCard/commit/55787f9bdbdbfd2773aae56182bf71793b01f1a1) Thanks [@Custard7](https://github.com/Custard7)! - fix: Bug Fest: Profile Settings
+
+-   [#1379](https://github.com/learningeconomy/LearnCard/pull/1379) [`e5e1ff6cbce4f264a8380bfe57d23d81761c4353`](https://github.com/learningeconomy/LearnCard/commit/e5e1ff6cbce4f264a8380bfe57d23d81761c4353) Thanks [@goblincore](https://github.com/goblincore)! - fix: route to dashboard instead of launchpad after login
+
+-   [#1373](https://github.com/learningeconomy/LearnCard/pull/1373) [`3aa32349990c964f2c809c35643a2593a24c194d`](https://github.com/learningeconomy/LearnCard/commit/3aa32349990c964f2c809c35643a2593a24c194d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow Demo School cleanup to remove credentials from legacy contract URIs after the active contract flag changes.
+
+-   [#1374](https://github.com/learningeconomy/LearnCard/pull/1374) [`61e0a198c1166ec468f812caac8d7a3ddbd42edd`](https://github.com/learningeconomy/LearnCard/commit/61e0a198c1166ec468f812caac8d7a3ddbd42edd) Thanks [@Custard7](https://github.com/Custard7)! - fix: Activity Feed
+
+-   [#1385](https://github.com/learningeconomy/LearnCard/pull/1385) [`f357a1adf27917978f432c348419fb1f8a9799c8`](https://github.com/learningeconomy/LearnCard/commit/f357a1adf27917978f432c348419fb1f8a9799c8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Bug Fest July UI Fixes & Polishes 🐞🎉
+
+-   [#1380](https://github.com/learningeconomy/LearnCard/pull/1380) [`b898c44f924b2560e29a17e64840a138407d545d`](https://github.com/learningeconomy/LearnCard/commit/b898c44f924b2560e29a17e64840a138407d545d) Thanks [@goblincore](https://github.com/goblincore)! - chore: open notifications in right-side modal
+
 ## 1.97.0
 
 ### Minor Changes
