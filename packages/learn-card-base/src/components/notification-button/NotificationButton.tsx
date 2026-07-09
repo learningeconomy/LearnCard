@@ -14,11 +14,19 @@ type NotificationButtonProps = {
      * header design.
      */
     iconVariant?: 'bell' | 'alerts';
+    /**
+     * Optional click handler override. When provided it is called instead of
+     * navigating to `/notifications` — lets app-layer callers open the desktop
+     * right-side notifications modal while keeping this base component free of
+     * app dependencies.
+     */
+    onOpen?: () => void;
 };
 
 const NotificationButton: React.FC<NotificationButtonProps> = ({
     colorOverride,
     iconVariant = 'bell',
+    onOpen,
 }) => {
     const history = useHistory();
     const location = useLocation();
@@ -33,7 +41,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     return (
         <button
             className={`${color} main-header-notifications-btn relative`}
-            onClick={() => history.push('/notifications')}
+            onClick={() => (onOpen ? onOpen() : history.push('/notifications'))}
         >
             {unreadCount && <div className={`alert-indicator-dot ${color}`}>{unreadCount}</div>}
             <Icon className={`${color}`} />
