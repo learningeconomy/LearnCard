@@ -2,7 +2,7 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
-import { UserProfilePicture } from 'learn-card-base';
+import { UserProfilePicture, useModal } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
@@ -22,6 +22,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     onRead,
 }) => {
     const history = useHistory();
+    const { closeAllModals } = useModal();
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
@@ -40,6 +41,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
             // Navigate to the credential's category page if we know the type, otherwise wallet
             const achievementType = notification?.data?.achievementType as string | undefined;
             const route = getCategoryRouteForAchievementType(achievementType);
+            closeAllModals();
             history.push(route ?? '/wallet');
         }
     };

@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from '@sentry/react';
+import { useModal } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { CheckCircle, XCircle, Send, Store } from 'lucide-react';
 
@@ -38,6 +39,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
     variant,
 }) => {
     const history = useHistory();
+    const { closeAllModals } = useModal();
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
@@ -52,9 +54,11 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
         // Navigate to the appropriate page based on variant
         if (variant === 'submitted') {
             // Admin notification - go to admin dashboard
+            closeAllModals();
             history.push('/app-store/admin');
         } else if (listingId) {
             // Developer notification - go to developer portal
+            closeAllModals();
             history.push('/app-store/developer');
         }
     };
@@ -72,7 +76,9 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
                 className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity`}
             >
                 {/* Icon */}
-                <div className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-white/60 flex items-center justify-center ${iconColor}`}>
+                <div
+                    className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-white/60 flex items-center justify-center ${iconColor}`}
+                >
                     <Icon className="w-7 h-7" />
                 </div>
 

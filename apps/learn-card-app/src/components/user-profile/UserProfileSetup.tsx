@@ -5,7 +5,6 @@ const log = getLogger('user-profile-setup');
 import { pushUtilities, useWallet } from 'learn-card-base';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
-import UserProfileSetupHeader from './UserProfileSetupHeader';
 import UserProfileUpdateForm from './UserProfileUpdateForm';
 import NetworkSettings from '../network-settings/NetworkSettings';
 import JoinNetworkPrompt from '../network-prompts/JoinNetworkPrompt';
@@ -100,14 +99,6 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
         getLCNeworkProfile();
     }, []);
 
-    const handleNetworkPrompt = () => {
-        // if (lcNetworkProfile) {
-        //     setProfileFormState(UserProfileFormStateEnum.PermissionsSettings);
-        // } else {
-        setProfileFormState(UserProfileFormStateEnum.Permissions);
-        // }
-    };
-
     const handleNotificationsPrompt = async () => {
         const permissionState = await pushUtilities.getPushNotificationPermissionState();
 
@@ -140,7 +131,7 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
     };
 
     let activeForm = (
-        <section className="py-[30px]">
+        <section className="h-full">
             <UserProfileUpdateForm
                 handleCloseModal={handleCloseModal}
                 handleLogout={handleLogout}
@@ -149,14 +140,10 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
                 showNetworkModal={showNetworkModal}
                 showNotificationsModal={showNotificationsModal}
                 handleChapiInfo={handleChapiInfo}
+                onOpenNotifications={handleNotificationsPrompt}
+                showNotificationsRow={showNetworkSettings}
                 title={title}
-            >
-                <UserProfileSetupHeader
-                    showNetworkSettings={showNetworkSettings}
-                    handleNetworkPrompt={handleNetworkPrompt}
-                    handleNotificationsPrompt={handleNotificationsPrompt}
-                />
-            </UserProfileUpdateForm>
+            />
         </section>
     );
 
@@ -192,9 +179,7 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
         );
     } else if (profileFormState === UserProfileFormStateEnum.Chapi) {
         activeForm = (
-            <ChapiPrompt
-                handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
-            />
+            <ChapiPrompt onBack={() => setProfileFormState(UserProfileFormStateEnum.Account)} />
         );
     }
 
