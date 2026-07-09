@@ -43,6 +43,19 @@ type DemoSchoolBoxProps = {};
 
 type DemoSchoolStatus = 'idle' | 'connecting' | 'syncing' | 'disconnecting' | 'deleting';
 
+const getLegacyDemoContractUris = (legacyDemoContractFlag: unknown): string[] => {
+    const legacyUris =
+        typeof legacyDemoContractFlag === 'object' &&
+        legacyDemoContractFlag !== null &&
+        'legacyUris' in legacyDemoContractFlag
+            ? legacyDemoContractFlag.legacyUris
+            : legacyDemoContractFlag;
+
+    return Array.isArray(legacyUris)
+        ? legacyUris.filter((uri): uri is string => typeof uri === 'string' && uri.length > 0)
+        : [];
+};
+
 const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { colors } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -61,21 +74,20 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         isProductionNetwork() && typeof flags.demoContractUri === 'string'
             ? flags.demoContractUri
             : undefined;
-    const demoContractUris = useMemo(() => {
-        if (!isProductionNetwork()) return [];
-
-        const currentUri =
-            typeof flags.demoContractUri === 'string' ? flags.demoContractUri : undefined;
-        const legacyUris = Array.isArray(flags.legacyDemoContractUris)
-            ? flags.legacyDemoContractUris.filter(
-                  (uri): uri is string => typeof uri === 'string' && uri.length > 0
-              )
-            : [];
-
-        return [
-            ...new Set([currentUri, ...legacyUris].filter((uri): uri is string => Boolean(uri))),
-        ];
-    }, [flags.demoContractUri, flags.legacyDemoContractUris]);
+    const legacyDemoContractUris = useMemo(
+        () => getLegacyDemoContractUris(flags.legacyDemoContractUris),
+        [flags.legacyDemoContractUris]
+    );
+    const demoContractUris = useMemo(
+        () => [
+            ...new Set(
+                [demoContractUri, ...legacyDemoContractUris].filter((uri): uri is string =>
+                    Boolean(uri)
+                )
+            ),
+        ],
+        [demoContractUri, legacyDemoContractUris]
+    );
     const { data: contract } = useContract(demoContractUri);
     const { data: consentedContracts, isLoading: consentedContractsLoading } =
         useConsentedContracts();
@@ -98,8 +110,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
-    const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } =
-        useWithdrawConsent('');
+    const { mutateAsync: withdrawConsent, isPending: isWithdrawingConsent } = useWithdrawConsent();
     const { data: contractCredentials, isLoading: isLoadingContractCreds } =
         useGetCredentialsFromContracts(demoContractUris);
     const contractCredentialsExist = (contractCredentials?.length ?? 0) > 0;
@@ -165,7 +176,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
         try {
             const consentUris = consentedDemoContracts
-                .map(contract => contract.uri)
+                .map(consent => consent.uri)
                 .filter((uri): uri is string => Boolean(uri));
 
             await Promise.all(consentUris.map(uri => withdrawConsent(uri)));
@@ -199,6 +210,11 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             queryClient.invalidateQueries({ queryKey: ['useGetCredentials', didWeb ?? ''] });
             queryClient.invalidateQueries({ queryKey: ['useGetCredentialList', didWeb ?? ''] });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
+            demoContractUris.forEach(uri => {
+                queryClient.invalidateQueries({
+                    queryKey: ['useGetCredentialsFromContract', uri, didWeb ?? ''],
+                });
+            });
 
             await queueAiInsightCredentialRefresh({
                 wallet,
@@ -215,6 +231,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 removedSharedUris: cleanupResult.removedSharedUris,
             });
             resetCache();
+            closeAllModals();
         } catch (error) {
             presentToast('Unable to delete the demo school. Please try again.', {
                 type: ToastTypeEnum.Error,

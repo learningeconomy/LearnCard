@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     deleteCredentialRecord: vi.fn(),
     fetchNewContractCredentials: vi.fn(),
     initWallet: vi.fn(),
+    isProductionNetwork: vi.fn(),
     invalidateQueries: vi.fn(),
     presentToast: vi.fn(),
     queueAiInsightCredentialRefresh: vi.fn(),
@@ -23,6 +24,7 @@ const mocks = vi.hoisted(() => ({
     useContract: vi.fn(),
     useFlags: vi.fn(),
     useGetCredentialsFromContracts: vi.fn(),
+    useWithdrawConsent: vi.fn(),
     withdrawConsent: vi.fn(),
 }));
 
@@ -43,7 +45,7 @@ vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
 }));
 
 vi.mock('learn-card-base/helpers/networkHelpers', () => ({
-    isProductionNetwork: () => true,
+    isProductionNetwork: () => mocks.isProductionNetwork(),
 }));
 
 vi.mock('apps/learn-card-app/src/helpers/contract.helpers', () => ({
@@ -89,7 +91,7 @@ vi.mock('learn-card-base', () => ({
     useSyncConsentFlow: () => ({ refetch: mocks.fetchNewContractCredentials }),
     useToast: () => ({ presentToast: mocks.presentToast }),
     useWallet: () => ({ initWallet: mocks.initWallet }),
-    useWithdrawConsent: () => ({ mutateAsync: mocks.withdrawConsent, isPending: false }),
+    useWithdrawConsent: (...args: unknown[]) => mocks.useWithdrawConsent(...args),
 }));
 
 import DemoSchoolBox from './DemoSchoolBox';
@@ -119,6 +121,7 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
         });
 
         mocks.useConsentedContracts.mockReturnValue({ data: [], isLoading: false });
+        mocks.isProductionNetwork.mockReturnValue(true);
         mocks.useGetCredentialsFromContracts.mockReturnValue({ data: [], isLoading: false });
         mocks.confirm.mockResolvedValue(true);
         mocks.consentToContract.mockResolvedValue(undefined);
@@ -130,7 +133,10 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
         mocks.fetchNewContractCredentials.mockResolvedValue(undefined);
         mocks.initWallet.mockResolvedValue({});
         mocks.queueAiInsightCredentialRefresh.mockResolvedValue(undefined);
-        mocks.withdrawConsent.mockResolvedValue(undefined);
+        mocks.useWithdrawConsent.mockReturnValue({
+            mutateAsync: mocks.withdrawConsent,
+            isPending: false,
+        });
     });
 
     it('deletes credentials and consent from a legacy demo contract after the current flag URI changes', async () => {
@@ -153,11 +159,15 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
             legacyDemoContractUri,
         ]);
 
+        expect(mocks.useWithdrawConsent).toHaveBeenCalledWith();
+
         fireEvent.click(screen.getByRole('button', { name: /delete demo school/i }));
 
         await waitFor(() => {
-            expect(mocks.withdrawConsent).toHaveBeenCalledWith(legacyTermsUri);
+            expect(mocks.closeAllModals).toHaveBeenCalledOnce();
         });
+
+        expect(mocks.withdrawConsent).toHaveBeenCalledWith(legacyTermsUri);
 
         expect(mocks.withdrawConsent).toHaveBeenCalledTimes(1);
         expect(mocks.deleteCredentialRecord).toHaveBeenCalledWith({
@@ -171,6 +181,20 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
         );
         expect(mocks.presentToast).toHaveBeenCalledWith('Deleted 1 Demo credentials', {
             hasDismissButton: true,
+        });
+        expect(mocks.invalidateQueries).toHaveBeenCalledWith({
+            queryKey: [
+                'useGetCredentialsFromContract',
+                currentDemoContractUri,
+                'did:web:learner.example',
+            ],
+        });
+        expect(mocks.invalidateQueries).toHaveBeenCalledWith({
+            queryKey: [
+                'useGetCredentialsFromContract',
+                legacyDemoContractUri,
+                'did:web:learner.example',
+            ],
         });
     });
 
@@ -193,5 +217,32 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.withdrawConsent).not.toHaveBeenCalled();
         expect(mocks.deleteCredentialRecord).not.toHaveBeenCalled();
+    });
+
+    it('parses LaunchDarkly JSON object legacy URI shape', () => {
+        mocks.useFlags.mockReturnValue({
+            demoContractUri: currentDemoContractUri,
+            legacyDemoContractUris: { legacyUris: [legacyDemoContractUri] },
+        });
+
+        render(<DemoSchoolBox />);
+
+        expect(mocks.useGetCredentialsFromContracts).toHaveBeenCalledWith([
+            currentDemoContractUri,
+            legacyDemoContractUri,
+        ]);
+    });
+
+    it('looks up legacy demo contracts outside production without syncing the current contract', () => {
+        mocks.isProductionNetwork.mockReturnValue(false);
+        mocks.useFlags.mockReturnValue({
+            demoContractUri: currentDemoContractUri,
+            legacyDemoContractUris: [legacyDemoContractUri],
+        });
+
+        render(<DemoSchoolBox />);
+
+        expect(mocks.useContract).toHaveBeenCalledWith(undefined);
+        expect(mocks.useGetCredentialsFromContracts).toHaveBeenCalledWith([legacyDemoContractUri]);
     });
 });
