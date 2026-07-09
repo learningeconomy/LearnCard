@@ -18,11 +18,15 @@ type MoreAppTileProps = {
  * page so the user can install them first.
  */
 const MoreAppTile: React.FC<MoreAppTileProps> = ({ listing, isInstalled, onInstallSuccess }) => {
-    const { handleLaunch, handleOpenDetail } = useAppLaunch({
+    const { handleLaunch, handleOpenDetail, isHardBlocked } = useAppLaunch({
         listing,
         isInstalled,
         onInstallSuccess,
     });
+
+    // Mirror AppStoreListItem: hide age-hard-blocked apps entirely instead of
+    // rendering a tile that only surfaces the block modal on tap.
+    if (isHardBlocked) return null;
 
     return (
         <AppGridTile
