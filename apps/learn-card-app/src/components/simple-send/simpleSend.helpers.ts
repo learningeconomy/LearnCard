@@ -179,7 +179,9 @@ const deliverBoost = async (
         const sentCredentialUri = response.credentialUri ?? response.uri;
 
         if (sentCredentialUri) {
-            await wallet.invoke.acceptCredential(sentCredentialUri);
+            await wallet.invoke.acceptCredential(sentCredentialUri, {
+                skipNotification: true,
+            });
             if (wallet.store?.LearnCloud?.uploadEncrypted) {
                 const credential =
                     signedCredential ??
