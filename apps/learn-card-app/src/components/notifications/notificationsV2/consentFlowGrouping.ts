@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 
@@ -58,4 +59,88 @@ export const buildNotificationListItems = (
     }
 
     return items;
+};
+
+export const getTransactionDate = (notification: NotificationType): string =>
+    (notification?.data as any)?.transaction?.date ?? notification?.sent;
+
+export const getActionLabel = (notification: NotificationType): string => {
+    const body = notification?.message?.body ?? '';
+    if (/has synced/i.test(body)) return 'Shared credentials';
+    if (/reconsented/i.test(body)) return 'Reconnected';
+    if (/consented/i.test(body)) return 'Connected';
+    if (/updated their terms/i.test(body)) return 'Updated sharing';
+    if (/withdrawn/i.test(body)) return 'Stopped sharing';
+    return 'Update';
+};
+
+export type ConsentActivityBucket = {
+    dateStr: string;
+    actions: Record<string, number>;
+};
+
+export const bucketNotifications = (notifications: NotificationType[]): ConsentActivityBucket[] => {
+    const buckets: Record<string, ConsentActivityBucket> = {};
+    const order: string[] = [];
+
+    for (const notification of notifications) {
+        const date = moment(getTransactionDate(notification)).format('MMM D, YYYY');
+        const action = getActionLabel(notification);
+
+        if (!buckets[date]) {
+            buckets[date] = { dateStr: date, actions: {} };
+            order.push(date);
+        }
+
+        buckets[date].actions[action] = (buckets[date].actions[action] || 0) + 1;
+    }
+
+    return order.map(date => buckets[date]);
+};
+
+export const formatActionsText = (actions: Record<string, number>): string =>
+    Object.entries(actions)
+        .map(([action, count]) => (count > 1 ? `${action} ×${count}` : action))
+        .join(' · ');
+
+const parseSyncedCredentialCount = (body?: string): number => {
+    const match = body?.match(/synced\s+(\d+)\s+credential\(s\)/i);
+    return match ? Number(match[1]) : 0;
+};
+
+export type ConsentActivityStats = {
+    totalUpdates: number;
+    totalCredentialsShared: number;
+    firstDate: string;
+    lastDate: string;
+    actionCounts: Record<string, number>;
+};
+
+export const getConsentActivityStats = (
+    notifications: NotificationType[]
+): ConsentActivityStats => {
+    const actionCounts: Record<string, number> = {};
+    let totalCredentialsShared = 0;
+    let earliest = Number.POSITIVE_INFINITY;
+    let latest = Number.NEGATIVE_INFINITY;
+
+    for (const notification of notifications) {
+        const action = getActionLabel(notification);
+        actionCounts[action] = (actionCounts[action] || 0) + 1;
+        totalCredentialsShared += parseSyncedCredentialCount(notification?.message?.body);
+
+        const time = moment(getTransactionDate(notification)).valueOf();
+        if (Number.isFinite(time)) {
+            earliest = Math.min(earliest, time);
+            latest = Math.max(latest, time);
+        }
+    }
+
+    return {
+        totalUpdates: notifications.length,
+        totalCredentialsShared,
+        firstDate: Number.isFinite(earliest) ? moment(earliest).format('MMM D, YYYY') : '',
+        lastDate: Number.isFinite(latest) ? moment(latest).format('MMM D, YYYY') : '',
+        actionCounts,
+    };
 };

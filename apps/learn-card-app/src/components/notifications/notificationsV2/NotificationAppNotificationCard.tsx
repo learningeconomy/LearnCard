@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@sentry/react';
 import { Bell, ExternalLink } from 'lucide-react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
+import { useModal } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import useAppStore from '../../../pages/launchPad/useAppStore';
@@ -30,6 +31,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
     className,
 }) => {
     const history = useHistory();
+    const { closeAllModals } = useModal();
     const [isRead, setIsRead] = useState<boolean>(notification?.read ?? false);
     const [iconFailed, setIconFailed] = useState(false);
 
@@ -78,6 +80,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
         if (!listing) {
             // Fallback: navigate to the app listing page
             if (listingId) {
+                closeAllModals();
                 history.push(`/app/${listingId}`);
             }
             return;
@@ -100,6 +103,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
 
             const appSlug = (listing as Record<string, unknown>).slug as string | undefined;
 
+            closeAllModals();
             history.push(`/apps/${appSlug || listingId}`, {
                 embedUrl,
                 appName: listing.display_name,
@@ -111,6 +115,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
         }
 
         // Not embeddable — open the listing page
+        closeAllModals();
         history.push(`/app/${listingId}`);
     };
 
@@ -132,15 +137,17 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
             <div
                 ref={ref}
                 onClick={handleOpenApp}
-                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity ${className ?? ''}`}
+                className={`flex gap-3 min-h-[100px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[15px] px-[15px] ${bgColor} my-[15px] cursor-pointer hover:opacity-90 transition-opacity ${
+                    className ?? ''
+                }`}
             >
-                {!isRead && (
-                    <div className="notification-count-mobile unread-indicator-dot" />
-                )}
+                {!isRead && <div className="notification-count-mobile unread-indicator-dot" />}
 
                 {/* App icon or fallback */}
                 <div
-                    className={`flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center ${iconBgColor} ${showFallbackIcon ? iconTextColor : ''}`}
+                    className={`flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center ${iconBgColor} ${
+                        showFallbackIcon ? iconTextColor : ''
+                    }`}
                 >
                     {appIcon && !iconFailed ? (
                         <img
@@ -165,11 +172,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                         </h4>
                     )}
 
-                    {body && (
-                        <p className="text-gray-600 text-[13px] line-clamp-2">
-                            {body}
-                        </p>
-                    )}
+                    {body && <p className="text-gray-600 text-[13px] line-clamp-2">{body}</p>}
 
                     <div className="flex items-center gap-2 mt-1">
                         <p className="font-semibold p-0 leading-none tracking-wide line-clamp-1 text-[12px] text-gray-500">
@@ -193,7 +196,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                 {/* Open app button */}
                 {listingId && (
                     <button
-                        onClick={(e) => {
+                        onClick={e => {
                             e.stopPropagation();
                             handleOpenApp();
                         }}
