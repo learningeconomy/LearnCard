@@ -7,7 +7,6 @@ import {
     CredentialCategoryEnum,
     useAllContractRequestsForProfile,
     useCurrentUser,
-    useGetBoostSkills,
     useGetCredentialList,
     useGetConnections,
     useGetConnectionsRequests,
@@ -116,14 +115,6 @@ const DashboardPage: React.FC = () => {
     const { data: skillProfileData } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
     const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
-    const { data: selfAssignedSkills } = useGetBoostSkills(selfAssignedSkillsBoost?.uri);
-    const headerSkillPills = useMemo(
-        () =>
-            (selfAssignedSkills ?? [])
-                .filter((s: any) => s?.statement?.trim())
-                .map((s: any) => ({ id: s.id, label: s.statement.trim() })),
-        [selfAssignedSkills]
-    );
 
     const selfAssignedSkillsUri = selfAssignedSkillsBoost?.uri;
     const allCredentialRecords = useMemo(
@@ -463,19 +454,9 @@ const DashboardPage: React.FC = () => {
             heroImage: currentLCNUser?.heroImage,
             profileRole: currentLCNUser?.role,
             shortBio: currentLCNUser?.shortBio,
-            stats: {
-                credentials: totalCredentialCount,
-                skills: skillsCount,
-                contacts: connections.length,
-            },
             professionalTitle: skillProfileData?.professionalTitle,
-            experience: skillProfileData?.lifetimeExperience ?? null,
-            skills: headerSkillPills,
-            onSkillPillClick: () => history.push('/skills'),
             onAvatarClick: openMyLearnCard,
             onScanQrTopRight: openQrScanner,
-            onCredentialsClick: () => history.push('/wallet'),
-            onContactsClick: () => history.push('/contacts'),
             roleSwitcher: <DashboardRoleSwitcher />,
         },
         heroSlot,

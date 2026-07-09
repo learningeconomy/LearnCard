@@ -220,11 +220,8 @@ const baseHeader = {
     profileImage: 'https://i.pravatar.cc/160?img=68',
     profileRole: undefined,
     shortBio: undefined,
-    onSkillPillClick: noop,
     onAvatarClick: noop,
     onScanQrTopRight: noop,
-    onCredentialsClick: noop,
-    onContactsClick: noop,
 };
 
 const baseHandlers = {
@@ -254,8 +251,6 @@ export const brandNewUser: DashboardViewModel = {
     brandName: 'LearnCard',
     header: {
         ...baseHeader,
-        stats: { credentials: 0, skills: 0, contacts: 0 },
-        skills: [],
     },
     heroSlot: 'getStarted',
     checklistItems: checklist({ credential: false, goal: false, skills: false }),
@@ -315,13 +310,6 @@ export const activeLearner: DashboardViewModel = {
     header: {
         ...baseHeader,
         professionalTitle: 'Professional QA Engineer',
-        experience: { years: 10, months: 0 },
-        stats: { credentials: 12, skills: 8, contacts: 5 },
-        skills: [
-            { id: 's1', label: 'Attention to detail' },
-            { id: 's2', label: 'Giving and receiving feedback' },
-            { id: 's3', label: 'Empathy' },
-        ],
     },
     heroSlot: 'goal',
     checklistItems: checklist({ credential: true, goal: true, skills: false }),
