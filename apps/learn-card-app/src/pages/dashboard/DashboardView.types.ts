@@ -6,28 +6,6 @@ import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types
 import type { ResolvedAction } from './quickActions/types';
 import type { PathwayNode } from '../pathways/types';
 
-export type DashboardAffiliation = {
-    role: string;
-    from?: string;
-    issuedAt?: string;
-} | null;
-
-export type DashboardHeaderStats = {
-    credentials: number;
-    skills: number;
-    contacts: number;
-};
-
-export type DashboardExperience = {
-    years?: number | null;
-    months?: number | null;
-} | null;
-
-export type DashboardSkillPill = {
-    id: string;
-    label: string;
-};
-
 export type DashboardGoalSummary = {
     title: string;
     goal: string;
@@ -35,6 +13,7 @@ export type DashboardGoalSummary = {
     completed: number;
     nextNode: PathwayNode | null;
     pathwayId: string;
+    goals?: string[];
 } | null;
 
 export type DashboardChecklistItem = {
@@ -80,14 +59,10 @@ export type DashboardHeaderViewModel = {
     heroImage?: string;
     profileRole?: string;
     shortBio?: string;
-    affiliation: DashboardAffiliation;
-    stats: DashboardHeaderStats;
     professionalTitle?: string;
-    experience?: DashboardExperience;
-    skills: DashboardSkillPill[];
-    onSkillPillClick: () => void;
     onAvatarClick: () => void;
     onScanQrTopRight: () => void;
+    roleSwitcher?: React.ReactNode;
 };
 
 export type DashboardActivityViewModel = {
