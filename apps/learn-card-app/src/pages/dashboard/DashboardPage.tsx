@@ -12,7 +12,6 @@ import {
     useGetConnections,
     useGetConnectionsRequests,
     useGetCurrentLCNUser,
-    useGetResolvedCredential,
     useGetSelfAssignedSkillsBoost,
     useGetUnreadUserNotifications,
     useVerifiableData,
@@ -21,12 +20,7 @@ import {
     useAiFeatureGate,
     useGetCredentialsForSkills,
 } from 'learn-card-base';
-import {
-    getCredentialName,
-    getIssuerName,
-    unwrapBoostCredential,
-    SELF_ASSIGNED_SKILLS_BOOST_NAME,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -51,6 +45,7 @@ import {
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 
 import DashboardView from './DashboardView';
+import DashboardRoleSwitcher from './components/DashboardRoleSwitcher';
 import type {
     DashboardViewModel,
     DashboardEmptyTip,
@@ -82,7 +77,7 @@ import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 const DashboardPage: React.FC = () => {
     const history = useHistory();
     const flags = useFlags();
-    const { theme, getIconSet, getColorSet } = useTheme();
+    const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
@@ -111,14 +106,6 @@ const DashboardPage: React.FC = () => {
 
     const { data: allCredentials, isLoading: allCredentialsLoading } =
         useGetCredentialList(undefined);
-
-    const { data: idCredentials } = useGetCredentialList(CredentialCategoryEnum.id);
-    const primaryId = useMemo(() => idCredentials?.pages?.[0]?.records?.[0], [idCredentials]);
-    const { data: primaryIdVc } = useGetResolvedCredential(primaryId?.uri);
-    const unwrappedPrimaryIdVc = useMemo(
-        () => (primaryIdVc ? unwrapBoostCredential(primaryIdVc) : undefined),
-        [primaryIdVc]
-    );
 
     const { data: skillCredentials } = useGetCredentialList(CredentialCategoryEnum.skill);
     const skillsCount = useMemo(
@@ -243,43 +230,6 @@ const DashboardPage: React.FC = () => {
 
     const displayName = (currentLCNUser?.displayName?.trim() || currentUser?.name?.trim()) ?? '';
     const profileImage = currentLCNUser?.image?.trim() || currentUser?.profileImage?.trim() || '';
-
-    const categoryLabels = useMemo(() => {
-        const map: Record<string, string> = {};
-        for (const c of theme.categories ?? []) {
-            map[c.categoryId] = c.labels.singular;
-        }
-        return map;
-    }, [theme]);
-
-    const affiliation = useMemo(() => {
-        if (!primaryId) return null;
-
-        const resolvedName = unwrappedPrimaryIdVc
-            ? getCredentialName(unwrappedPrimaryIdVc)
-            : undefined;
-        const resolvedIssuer = unwrappedPrimaryIdVc
-            ? getIssuerName(unwrappedPrimaryIdVc)
-            : undefined;
-
-        const metaTitle = primaryId.title?.trim();
-        const looksGeneric = !metaTitle || /^(id|ids|identity|membership)$/i.test(metaTitle);
-
-        const role =
-            (!looksGeneric && metaTitle) ||
-            resolvedName?.trim() ||
-            categoryLabels[primaryId.category] ||
-            'Member';
-
-        const rawFrom = primaryId.from?.trim() || resolvedIssuer?.trim();
-        const from = rawFrom && !/^did:/i.test(rawFrom) ? rawFrom : undefined;
-
-        return {
-            role,
-            from,
-            issuedAt: primaryId.date,
-        };
-    }, [primaryId, unwrappedPrimaryIdVc, categoryLabels]);
 
     const goalSummary = useMemo(() => {
         if (!activePathway) return null;
@@ -513,7 +463,6 @@ const DashboardPage: React.FC = () => {
             heroImage: currentLCNUser?.heroImage,
             profileRole: currentLCNUser?.role,
             shortBio: currentLCNUser?.shortBio,
-            affiliation,
             stats: {
                 credentials: totalCredentialCount,
                 skills: skillsCount,
@@ -525,6 +474,9 @@ const DashboardPage: React.FC = () => {
             onSkillPillClick: () => history.push('/skills'),
             onAvatarClick: openMyLearnCard,
             onScanQrTopRight: openQrScanner,
+            onCredentialsClick: () => history.push('/wallet'),
+            onContactsClick: () => history.push('/contacts'),
+            roleSwitcher: <DashboardRoleSwitcher />,
         },
         heroSlot,
         checklistItems,

@@ -223,6 +223,8 @@ const baseHeader = {
     onSkillPillClick: noop,
     onAvatarClick: noop,
     onScanQrTopRight: noop,
+    onCredentialsClick: noop,
+    onContactsClick: noop,
 };
 
 const baseHandlers = {
@@ -252,7 +254,6 @@ export const brandNewUser: DashboardViewModel = {
     brandName: 'LearnCard',
     header: {
         ...baseHeader,
-        affiliation: null,
         stats: { credentials: 0, skills: 0, contacts: 0 },
         skills: [],
     },
@@ -315,11 +316,6 @@ export const activeLearner: DashboardViewModel = {
         ...baseHeader,
         professionalTitle: 'Professional QA Engineer',
         experience: { years: 10, months: 0 },
-        affiliation: {
-            role: 'Member',
-            from: 'State University',
-            issuedAt: new Date().toISOString(),
-        },
         stats: { credentials: 12, skills: 8, contacts: 5 },
         skills: [
             { id: 's1', label: 'Attention to detail' },
