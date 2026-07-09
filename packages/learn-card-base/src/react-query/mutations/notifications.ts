@@ -214,8 +214,6 @@ export const useUpdateNotification = () => {
                 }
             } else if (isUnarchiving) {
                 // Remove from archive cache
-                const archiveData =
-                    queryClient.getQueryData<PaginatedNotificationsType>(archiveQueryKey);
                 if (currentArchiveData?.pages?.[0]?.notifications) {
                     const updatedArchivePages = currentArchiveData.pages.map((page: PageType) => ({
                         ...page,
