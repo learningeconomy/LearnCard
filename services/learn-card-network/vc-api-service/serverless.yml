@@ -17,27 +17,30 @@ plugins:
 
 custom:
     esbuild:
-        # serverless-esbuild does not support Bun as a Lambda artifact packager.
-        # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
+        # packager MUST be pnpm. serverless-esbuild always runs the packager's
+        # prod-dependency query during `pack` (to resolve the didkit-plugin WASM
+        # external). The default npm packager runs `npm ls`, which crashes on this
+        # repo's pnpm override syntax in the root package.json (e.g. "astro>zod")
+        # with EINVALIDTAGNAME. Bun is not supported by serverless-esbuild as a
+        # packager, so pnpm is the only working option — matching brain-service.
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit']
-        exclude: ['aws-sdk']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
         sourcemap: external
         target: 'node20'
 
     domains:
         production:
-            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'learncard.com.'}
-            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'vc-api.learncard.com'}
-            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'vc-api.learncard.com'}
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'network.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'vc-api.network.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'vc-api.network.learncard.com'}
 
         dev:
-            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'learncard.com.'}
-            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.vc-api.learncard.com'}
-            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.vc-api.learncard.com'}
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'network.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.vc-api.network.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.vc-api.network.learncard.com'}
 
     customCertificate:
         hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}

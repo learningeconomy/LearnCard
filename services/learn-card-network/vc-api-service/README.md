@@ -48,13 +48,37 @@ curl localhost:3000/did
 
 ## Deployment
 
+Domains default to `vc-api.network.learncard.com` (production) and
+`staging.vc-api.network.learncard.com` (dev), both under the existing
+`network.learncard.com.` Route53 hosted zone — no env overrides needed.
+
+**First time only** — create the ACM certificate. The `serverless-certificate-creator`
+plugin does _not_ run on deploy; `serverless-domain-manager` expects the cert to
+already exist:
+
 ```bash
-bun run serverless-deploy                 # dev  → staging.vc-api.learncard.com
-bunx nx serverless-deploy vc-api-service --stage=production   # → vc-api.learncard.com
+COREPACK_ENABLE_PROJECT_SPEC=0 bunx serverless create-cert --stage dev
 ```
 
-Domain/hosted-zone can be overridden via `SERVERLESS_DOMAIN_NAME` /
-`SERVERLESS_HOSTED_ZONE_NAMES`.
+Then deploy:
+
+```bash
+SEED=<same-seed-as-legacy-bridge> \
+bunx nx serverless-deploy vc-api-service --stage=dev --region=us-east-1
+```
+
+Requirements / gotchas:
+
+-   **`pnpm` must be installed.** serverless-esbuild uses it as the artifact packager
+    (see `serverless.yml` — the npm packager crashes on this repo's pnpm override
+    syntax, and Bun isn't supported as a packager).
+-   The `serverless-deploy` script sets `COREPACK_ENABLE_PROJECT_SPEC=0` so a corepack
+    `pnpm` shim isn't blocked by the repo's `packageManager: bun` field.
+-   **Seed reuse is mandatory** — deploy with the same seed the legacy bridge used, or
+    `/did` won't match the DID in the test-suite manifests.
+-   The one-time `create-cert` requires the `network.learncard.com.` hosted zone to
+    exist in the target AWS account (it does — brain-service uses it). Override target
+    domain/zone via `SERVERLESS_DOMAIN_NAME` / `SERVERLESS_HOSTED_ZONE_NAMES`.
 
 ## DIDKit engine
 

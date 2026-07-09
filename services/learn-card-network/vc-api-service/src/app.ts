@@ -61,9 +61,14 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         const learnCard = await getLearnCard();
         const { credentialStatus: _credentialStatus, ...options } = validatedBody.options ?? {};
 
+        const signingOptions =
+            options.proofFormat === 'jwt' || options.type
+                ? options
+                : { type: 'Ed25519Signature2020', ...options };
+
         const issuedCredential = await learnCard.invoke.issueCredential(
             validatedBody.credential,
-            options
+            signingOptions as Parameters<typeof learnCard.invoke.issueCredential>[1]
         );
 
         return res.status(201).json(issuedCredential);

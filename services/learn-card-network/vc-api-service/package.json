@@ -11,7 +11,7 @@
         "dev": "bun --watch src/index.ts",
         "start": "bun src/index.ts",
         "start:docker": "bun src/index.ts",
-        "serverless-deploy": "serverless deploy --verbose"
+        "serverless-deploy": "COREPACK_ENABLE_PROJECT_SPEC=0 serverless deploy --verbose"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",

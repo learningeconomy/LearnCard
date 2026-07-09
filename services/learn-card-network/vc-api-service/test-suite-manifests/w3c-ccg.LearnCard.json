@@ -3,15 +3,15 @@
     "implementation": "LearnCard",
     "issuers": [
         {
-            "id": "did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh",
-            "endpoint": "https://vc-api.learncard.com/credentials/issue",
+            "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
+            "endpoint": "https://vc-api.network.learncard.com/credentials/issue",
             "tags": ["vc-api"]
         }
     ],
     "verifiers": [
         {
-            "id": "did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh",
-            "endpoint": "https://vc-api.learncard.com/credentials/verify",
+            "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
+            "endpoint": "https://vc-api.network.learncard.com/credentials/verify",
             "tags": ["vc-api"]
         }
     ]
