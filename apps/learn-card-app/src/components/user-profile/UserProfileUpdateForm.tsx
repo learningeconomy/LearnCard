@@ -336,6 +336,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await handleLCNetworkProfileUpdate();
 
             setIsLoading(false);
+            presentToast('Profile saved', { type: ToastTypeEnum.Success, hasDismissButton: true });
             handleCloseModal();
             // ! APPLE HOT FIX
         } else {
@@ -364,6 +365,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         await handleLCNetworkProfileUpdate();
 
                         setIsLoading(false);
+                        presentToast('Profile saved', {
+                            type: ToastTypeEnum.Success,
+                            hasDismissButton: true,
+                        });
                         handleCloseModal();
                         if (showNetworkModal) {
                             presentNetworkModal();
@@ -385,6 +390,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         handleStorageUpdate();
 
                         setIsLoading(false);
+                        presentToast('Profile saved', {
+                            type: ToastTypeEnum.Success,
+                            hasDismissButton: true,
+                        });
                         handleCloseModal();
                         if (showNetworkModal) {
                             presentNetworkModal();
@@ -393,6 +402,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 } catch (error) {
                     setIsLoading(false);
                     log.info('updateProfile::error', error);
+                    presentToast('Could not save your profile. Please try again.', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
                 }
             }
         }
@@ -411,6 +424,22 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
+        }
+    };
+
+    const handleConnectChapi = async () => {
+        try {
+            await installChapi();
+            presentToast('Credential handler connected', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+        } catch (e) {
+            log.info('installChapi::error', e);
+            presentToast(
+                'Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again.',
+                { type: ToastTypeEnum.Error, hasDismissButton: true }
+            );
         }
     };
 
@@ -737,7 +766,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={installChapi}
+                                                onClick={handleConnectChapi}
                                                 className="flex items-center justify-center text-grayscale-700 bg-grayscale-100 hover:bg-grayscale-200 rounded-full px-4 py-2 text-sm font-medium transition-colors"
                                             >
                                                 <HandshakeIcon className="mr-2 w-4 h-4" /> Connect

@@ -192,9 +192,7 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
         );
     } else if (profileFormState === UserProfileFormStateEnum.Chapi) {
         activeForm = (
-            <ChapiPrompt
-                handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
-            />
+            <ChapiPrompt onBack={() => setProfileFormState(UserProfileFormStateEnum.Account)} />
         );
     }
 
