@@ -400,9 +400,11 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                 <div
                                     className={`w-[90px] h-[90px] min-w-[90px] min-h-[90px] rounded-full border-4 border-solid border-white flex items-center justify-center overflow-hidden bg-${categoryCircleColor}`}
                                 >
-                                    {CategoryIcon && (
-                                        <CategoryIcon className="w-[36px] h-[36px] text-white" />
-                                    )}
+                                    <div className="w-[70%] h-[70%] rounded-full border-4 border-solid border-white flex items-center justify-center">
+                                        {CategoryIcon && (
+                                            <CategoryIcon className="w-[32px] h-[32px] text-white" />
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
