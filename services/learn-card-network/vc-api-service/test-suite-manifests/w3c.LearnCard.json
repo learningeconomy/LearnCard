@@ -6,6 +6,13 @@
             "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
             "endpoint": "https://vc-api.network.learncard.com/credentials/issue",
             "tags": ["Ed25519Signature2020"]
+        },
+        {
+            "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
+            "endpoint": "https://vc-api.network.learncard.com/credentials/issue",
+            "options": { "type": "DataIntegrityProof", "cryptosuite": "eddsa-rdfc-2022" },
+            "supports": { "vc": ["1.1", "2.0"] },
+            "tags": ["eddsa-rdfc-2022"]
         }
     ],
     "verifiers": [
@@ -13,6 +20,12 @@
             "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
             "endpoint": "https://vc-api.network.learncard.com/credentials/verify",
             "tags": ["Ed25519Signature2020"]
+        },
+        {
+            "id": "did:key:z6Mkk16aKmGEVkeFu83FsP5bwELFWNf6hqRQhJxxSjrndyFv",
+            "endpoint": "https://vc-api.network.learncard.com/credentials/verify",
+            "supports": { "vc": ["1.1", "2.0"] },
+            "tags": ["eddsa-rdfc-2022"]
         }
     ]
 }

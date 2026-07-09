@@ -57,23 +57,24 @@ cd vc-api-issuer-test-suite && npm i && npm test
 Mocha prints the exact failing assertion names + diffs — use those to fix the last
 two, then re-run before opening the manifest PRs.
 
-## Candidate: EdDSA (`vc-di-eddsa`) registration
+## Registered: EdDSA (`vc-di-eddsa`, `eddsa-rdfc-2022`)
 
-`candidate-eddsa-rdfc-2022.json` holds ready-to-merge issuer/verifier entries for the
-Data Integrity EdDSA suite. **Not yet registered** — pending validation.
+The `eddsa-rdfc-2022` issuer/verifier entries are merged into `w3c.LearnCard.json`
+(the EdDSA suite is a w3c-org suite, so it lives in the w3c manifest alongside
+`Ed25519Signature2020`). One endpoint serves both: the issuer entry carries
+`options: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" }`, which the
+suite forwards into the issue request (`issuer.settings.options`).
 
 Validation status (run against staging):
 
--   **Issuer format: 14/16 pass.** Our endpoint emits `DataIntegrityProof` +
-    `eddsa-rdfc-2022` when the manifest entry carries
-    `options: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" }` (the suite
-    forwards `issuer.settings.options` into the issue request).
--   **2 known failures** (DIDKit `ssi`-level, shared with many vendors — fold into the
-    ssi ticket): `DATA_LOSS_DETECTION_ERROR` (issuer accepts undefined JSON-LD terms) and
+-   **Issuer format: 14/16 pass.** Confirmed our endpoint emits `DataIntegrityProof` +
+    `eddsa-rdfc-2022`.
+-   **2 known failures** (DIDKit `ssi`-level, in the ssi epic):
+    `DATA_LOSS_DETECTION_ERROR` (issuer accepts undefined JSON-LD terms) and
     `cryptosuiteString` subtype typing.
--   **Verify + interop: NOT yet validated** — the suite's own `vc-generator` crashes on
-    Node 22 (`structuredClone` DataCloneError). Validate in CI or on Node 18/20 before
-    merging these entries.
+-   **Verify + interop: not yet locally validated** — the suite's own `vc-generator`
+    crashes on Node 22 (`structuredClone` DataCloneError). canivc's own CI run will
+    produce the authoritative verify/interop results once this manifest is submitted.
 
 ## Tag expansion (follow-up)
 
