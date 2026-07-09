@@ -40,7 +40,9 @@ import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 import {
     SKILL_PROFILE_PROFILE_KEY,
+    SKILL_PROFILE_GOALS_KEY,
     type SkillProfileProfileData,
+    type SkillProfileGoalsData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 
 import DashboardView from './DashboardView';
@@ -114,6 +116,8 @@ const DashboardPage: React.FC = () => {
 
     const { data: skillProfileData } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
+    const { data: skillProfileGoalsData } =
+        useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
     const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
 
     const selfAssignedSkillsUri = selfAssignedSkillsBoost?.uri;
@@ -223,6 +227,23 @@ const DashboardPage: React.FC = () => {
     const profileImage = currentLCNUser?.image?.trim() || currentUser?.profileImage?.trim() || '';
 
     const goalSummary = useMemo(() => {
+        // Pathways disabled has no pathway structure, so synthesize a step-less
+        // goal from the skills-profile goals instead of the pathway store.
+        if (!pathwaysEnabled) {
+            const goals = skillProfileGoalsData?.goals ?? [];
+            if (goals.length === 0) return null;
+            const [firstGoal, ...restGoals] = goals;
+            return {
+                title: firstGoal,
+                goal: restGoals.join(' • '),
+                total: 0,
+                completed: 0,
+                nextNode: null,
+                pathwayId: '',
+                goals,
+            };
+        }
+
         if (!activePathway) return null;
         const nodes = activePathway.nodes ?? [];
         const order = activePathway.chosenRoute?.length
@@ -241,7 +262,7 @@ const DashboardPage: React.FC = () => {
             nextNode,
             pathwayId: activePathway.id,
         };
-    }, [activePathway]);
+    }, [pathwaysEnabled, activePathway, skillProfileGoalsData]);
 
     const goToCollect = () => {
         openAddToPassportModal(
@@ -278,7 +299,7 @@ const DashboardPage: React.FC = () => {
     };
 
     const hasCredentials = totalCredentialCount > 0;
-    const hasGoal = !!activePathway;
+    const hasGoal = pathwaysEnabled ? !!activePathway : !!goalSummary;
     const hasSkillProfile = skillProfilePercentage >= 100;
     const hasDiscoveredApps = installedApps.length > 0;
 

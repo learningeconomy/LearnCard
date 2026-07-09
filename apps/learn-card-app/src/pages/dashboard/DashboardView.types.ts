@@ -13,6 +13,7 @@ export type DashboardGoalSummary = {
     completed: number;
     nextNode: PathwayNode | null;
     pathwayId: string;
+    goals?: string[];
 } | null;
 
 export type DashboardChecklistItem = {
