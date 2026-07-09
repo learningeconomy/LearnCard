@@ -63,8 +63,13 @@ const SideMenuSecondaryLinks: React.FC<{
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
+        const isPassportActive =
+            tab === '/passport' &&
+            ['/passport', '/wallet', '/home'].some(
+                prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
+            );
 
-        if (tab === activeTab || isAdminToolsActive) return true;
+        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
         return false;
     };
 
