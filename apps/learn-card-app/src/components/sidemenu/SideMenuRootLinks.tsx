@@ -17,6 +17,7 @@ import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersona
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
+import useOpenNotifications from '../notifications/useOpenNotifications';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
@@ -61,6 +62,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const dashboardAsHome = useDashboardAsHome();
 
     const { newModal } = useModal();
+    const openNotifications = useOpenNotifications();
 
     const handlePersonalizeMyAi = () => {
         newModal(
@@ -157,10 +159,14 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         }
 
         if (linkPath === '/notifications') {
+            // Alerts opens the right-side notifications modal (same as the
+            // desktop header button) instead of routing to the /notifications
+            // page, keeping a single presentation across breakpoints.
             linkEl = (
-                <PreloadingLink
-                    to={linkPath}
-                    className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
+                <button
+                    type="button"
+                    onClick={() => openNotifications()}
+                    className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <div className={`flex relative mr-[10px] text-[14px] ${textStyles}`}>
                         <IconComponent
@@ -177,7 +183,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     </div>
 
                     {link.label}
-                </PreloadingLink>
+                </button>
             );
         }
 

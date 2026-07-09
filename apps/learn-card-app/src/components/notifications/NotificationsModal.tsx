@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 import { useModal } from 'learn-card-base';
-import X from 'learn-card-base/svgs/X';
 
 import NotificationsListView from './NotificationsListView';
 import NotificationsSubHeader from './notifications-subheader/NotificationsSubheader';
@@ -24,24 +23,17 @@ const NotificationsModal: React.FC = () => {
 
     return (
         <section className="flex flex-col h-full w-full bg-white">
-            <div className="relative shrink-0 bg-white pt-[15px]">
-                {/* Desktop close affordance. On mobile the subheader's back
-                    arrow (wired to closeModal via onBack) handles dismissal. */}
-                <button
-                    type="button"
-                    onClick={() => closeModal()}
-                    aria-label="Close alerts"
-                    className="absolute right-[15px] top-[15px] z-10 hidden h-[32px] w-[32px] items-center justify-center rounded-full border border-solid border-grayscale-200 text-grayscale-800 desktop:flex"
-                >
-                    <X className="h-[15px] w-[15px]" />
-                </button>
-
+            {/* The subheader's back arrow (shown on every breakpoint via
+                showBackButton, wired to closeModal via onBack) is the close
+                control. It sits on the left, clear of the "Archive All" button. */}
+            <div className="shrink-0 bg-white pt-[15px]">
                 <NotificationsSubHeader
                     isEmptyState={isEmptyState}
                     notificationCount={notificationCount}
                     tab={tab}
                     setTab={setTab}
                     onBack={() => closeModal()}
+                    showBackButton
                 />
             </div>
 

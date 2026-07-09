@@ -35,7 +35,14 @@ export const NotificationsSubHeader: React.FC<{
      * underneath it.
      */
     onBack?: () => void;
-}> = ({ notificationCount, isEmptyState, setTab, tab, onBack }) => {
+    /**
+     * Forces the back arrow to render on desktop too (it is hidden on desktop
+     * by default). The notifications modal enables this so the arrow acts as the
+     * close control on every breakpoint — avoiding a separate close button that
+     * would collide with the "Archive All" button.
+     */
+    showBackButton?: boolean;
+}> = ({ notificationCount, isEmptyState, setTab, tab, onBack, showBackButton }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const styleSet = getStyleSet(StyleSetEnum.defaults);
     const colorSet = getColorSet(ColorSetEnum.defaults);
@@ -123,7 +130,11 @@ export const NotificationsSubHeader: React.FC<{
                         }}
                         aria-label="Back button"
                     >
-                        <LeftArrow className="w-6 mr-[10px] h-auto text-black desktop:hidden" />
+                        <LeftArrow
+                            className={`w-6 mr-[10px] h-auto text-black ${
+                                showBackButton ? '' : 'desktop:hidden'
+                            }`}
+                        />
                         <span className="text-grayscale-900 font-poppins font-semibold text-[25px] tracking-[0.01rem]">
                             Alerts
                         </span>
