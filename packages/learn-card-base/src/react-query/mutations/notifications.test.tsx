@@ -147,6 +147,24 @@ describe('notification mutations — alerts island unread count', () => {
         expect(unreadIds(queryClient)).toEqual(['n1']);
     });
 
+    it('rolls back the optimistic unread decrement when the mutation fails', async () => {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        seedUnread(queryClient, ['n1', 'n2']);
+        mockUpdateNotificationMeta.mockRejectedValue(new Error('server error'));
+
+        const { result } = renderHook(() => useUpdateNotification(), {
+            wrapper: makeWrapper(queryClient),
+        });
+
+        await result.current
+            .mutateAsync({ notificationId: 'n1', payload: { read: true } })
+            .catch(() => {});
+
+        // Optimistic removal is reverted by onError, so the badge count is
+        // restored rather than left stuck at the decremented value.
+        await waitFor(() => expect(unreadIds(queryClient)).toEqual(['n1', 'n2']));
+    });
+
     it('useMarkNotificationRead optimistically decrements the unread cache and invalidates it', async () => {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');

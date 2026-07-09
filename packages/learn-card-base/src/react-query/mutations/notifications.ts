@@ -39,6 +39,16 @@ export type PageType = {
 
 type PaginatedNotificationsType = InfiniteData<PageType>;
 
+/** Snapshots returned from `useUpdateNotification`'s `onMutate` for rollback. */
+type UpdateNotificationContext = {
+    activeQueryKey: unknown[];
+    archiveQueryKey: unknown[];
+    unreadQueryKey: unknown[];
+    previousData?: InfiniteData<PageType>;
+    previousArchiveData?: InfiniteData<PageType>;
+    previousUnread?: PageType;
+};
+
 export const useMarkAllNotificationsRead = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -84,7 +94,7 @@ export const useUpdateNotification = () => {
     const queryClient = useQueryClient();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useMutation<boolean, Error, UpdateNotificationVariables>({
+    return useMutation<boolean, Error, UpdateNotificationVariables, UpdateNotificationContext>({
         mutationFn: async ({ notificationId, payload }) => {
             try {
                 const wallet = await initWallet();
@@ -282,8 +292,30 @@ export const useUpdateNotification = () => {
                 }
             }
 
-            // 4. Return the previous data (for potential rollback)
-            return { previousData: currentTabData, previousUnread };
+            // 4. Return the pre-mutation snapshots so onError can roll back
+            // every cache we optimistically wrote to.
+            return {
+                activeQueryKey,
+                archiveQueryKey,
+                unreadQueryKey,
+                previousData: currentTabData,
+                previousArchiveData: currentArchiveData,
+                previousUnread,
+            };
+        },
+
+        onError: (_error, _variables, context) => {
+            // Restore every optimistic write from onMutate. Without this, a
+            // failed mutation would leave the active/archive lists and — most
+            // visibly — the header alerts-island unread badge stuck showing the
+            // optimistic (decremented) value until the next refetch.
+            if (!context) return;
+
+            queryClient.setQueryData(context.activeQueryKey, context.previousData);
+            queryClient.setQueryData(context.archiveQueryKey, context.previousArchiveData);
+            if (context.previousUnread !== undefined) {
+                queryClient.setQueryData(context.unreadQueryKey, context.previousUnread);
+            }
         },
 
         onSuccess: async () => {
