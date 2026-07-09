@@ -15,21 +15,14 @@ import IdViewDivetFrame from '../svgs/IdViewDivetFrame';
 import AccountSwitcherModal from './AccountSwitcherModal';
 import SignOutIcon from 'learn-card-base/svgs/SignOutIcon';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
-import CheckListContainer from './checklist/CheckListContainer';
 import UserProfileSetup from '../user-profile/UserProfileSetup';
-import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import BluePaintBrush from 'learn-card-base/svgs/BluePaintBrush';
-import GreenGlobeStand from 'learn-card-base/svgs/GreenGlobeStand';
 import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
 import OrangeProfileIcon from 'learn-card-base/svgs/OrangeProfileIcon';
-import ConnectedAppsIcon from 'learn-card-base/svgs/ConnectedAppsIcon';
-import PurpleWrenchIcon from 'learn-card-base/svgs/PurpleWrenchIcon';
 import UserContact from '../user-profile/UserContact/UserContact';
-import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
 import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
 import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
-import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
@@ -44,14 +37,11 @@ import {
     useGetCurrentLCNUser,
     useCurrentUser,
     useWallet,
-    useGetCheckListStatus,
     getAuthConfig,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
 import ReAuthOverlay from '../auth/ReAuthOverlay';
-
-import { useTheme } from '../../theme/hooks/useTheme';
 
 import {
     DEFAULT_COLOR_LIGHT,
@@ -61,11 +51,9 @@ import {
 import { FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { LCNProfile } from '@learncard/types';
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
-import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
 
 type MyLearnCardModalProps = {
@@ -87,10 +75,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 }) => {
     const flags = useFlags();
     const [user, setUser] = useState(_user);
-    const { theme } = useTheme();
-    const { buildMyLCIcon } = theme.defaults;
-    const brandingConfig = useBrandingConfig();
-    const buildMyLCTitle = `Build My ${brandingConfig.name}`;
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -103,7 +87,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { handleLogout, isLoggingOut } = useLogout();
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
-    const notInNetwork = isNetworkUser === false;
 
     const { data: connections } = useGetConnections();
 
@@ -114,10 +97,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         authProvider: contextAuthProvider,
         refreshAuthSession,
     } = useAppAuth();
-
-    const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
-    const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
-    const numConnectedApps = connections?.filter(c => c.isServiceProfile)?.length;
 
     const description = user?.bio ?? user?.shortBio;
 
@@ -192,23 +171,13 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'My Contacts',
-                Icon: GreenGlobeStand,
-                caretText: connections?.length.toString() ?? '...',
-                onClick: () => {
-                    closeModal();
-                    history.push('/contacts');
-                },
-                hide: notInNetwork,
-            },
-            {
-                title: 'My Account',
+                title: 'Account Settings',
                 Icon: OrangeProfileIcon,
                 caretText: '',
                 onClick: async () => {
                     newModal(
                         <UserProfileSetup
-                            title="My Account"
+                            title="Account Settings"
                             handleCloseModal={closeModal}
                             handleLogout={() => handleLogout()}
                             showNetworkSettings={true}
@@ -225,18 +194,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Personalize AI Sessions',
-                Icon: BlueMagicWand,
-                caretText: '',
-                onClick: async () => {
-                    newModal(
-                        <AiPassportPersonalizationContainer />,
-                        { className: '!bg-transparent' },
-                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-                    );
-                },
-            },
-            {
                 title: 'Email Addresses',
                 Icon: EmailIcon,
                 caretText: '',
@@ -249,29 +206,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                     );
                 },
-            },
-            {
-                title: buildMyLCTitle,
-                Icon: BuildColorBlocksIcon,
-                caretText: checkListItemText,
-                onClick: async () => {
-                    // closeModal();
-                    const { prompted } = await gate();
-                    if (prompted) return;
-                    newModal(
-                        <CheckListContainer />,
-                        { className: '!bg-transparent' },
-                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-                    );
-                },
             }
-            // {
-            //     title: 'Engagement Styles',
-            //     Icon: BlueBoostOutline2,
-            //     caretText: '',
-            //     onClick: () => { },
-            //     hide: notInNetwork, // ?
-            // },
         );
     }
 
@@ -611,19 +546,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         }
     }
 
-    // if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
-    //     rows.push({
-    //         title: 'Connections',
-    //         Icon: ConnectedAppsIcon,
-    //         caretText: numConnectedApps ?? '',
-    //         onClick: () => {
-    //             closeModal();
-    //             history.push('/launchpad');
-    //         },
-    //         hide: notInNetwork,
-    //     });
-    // }
-
     const handleSwitchAccountsClick = () => {
         newModal(
             <AccountSwitcherModal
@@ -760,17 +682,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                                 const version = title === 'Email Addresses' ? '2' : '1';
 
-                                let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
-
-                                if (title === buildMyLCTitle) {
-                                    icon = (
-                                        <img
-                                            src={buildMyLCIcon}
-                                            className="w-[30px] h-[30px]"
-                                            alt="blocks"
-                                        />
-                                    );
-                                }
+                                const icon = (
+                                    <Icon className="h-[30px] w-[30px]" version={version} />
+                                );
 
                                 return (
                                     <CaretListItem
