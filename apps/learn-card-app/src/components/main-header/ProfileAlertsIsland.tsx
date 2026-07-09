@@ -4,6 +4,7 @@ import { useIsLoggedIn, ProfilePicture } from 'learn-card-base';
 import NotificationButton from 'learn-card-base/components/notification-button/NotificationButton';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
+import useOpenNotifications from '../notifications/useOpenNotifications';
 
 type ProfileAlertsIslandProps = {
     branding?: BrandingEnum;
@@ -26,6 +27,7 @@ const ProfileAlertsIsland: React.FC<ProfileAlertsIslandProps> = ({
 }) => {
     const isLoggedIn = useIsLoggedIn();
     const openMyLearnCard = useOpenMyLearnCard(branding);
+    const openNotifications = useOpenNotifications();
 
     if (!isLoggedIn) return null;
 
@@ -49,6 +51,7 @@ const ProfileAlertsIsland: React.FC<ProfileAlertsIslandProps> = ({
             <NotificationButton
                 colorOverride={notificationColorOverride ?? 'text-grayscale-900'}
                 iconVariant="alerts"
+                onOpen={openNotifications}
             />
         </div>
     );
