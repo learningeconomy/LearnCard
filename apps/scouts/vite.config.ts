@@ -40,6 +40,7 @@ export default defineConfig(({ mode }) => {
                 : 'undefined',
             API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
             'process.version': '"1.0.0"',
             'process.env': env,
             IS_PRODUCTION: env.NODE_ENV === 'production',

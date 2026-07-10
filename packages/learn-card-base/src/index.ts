@@ -142,6 +142,7 @@ export * from './hooks/useSharedUrisInTerms';
 export * from './hooks/usePendingContractSync';
 export * from './hooks/useConsentedContracts';
 export * from './hooks/useLaunchDarklyIdentify';
+export * from './in-app-messages';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';

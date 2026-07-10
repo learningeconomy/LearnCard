@@ -24,6 +24,7 @@ import {
     useSQLiteInitWeb,
     lazyWithRetry,
     Toast,
+    InAppMessageHost,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
@@ -119,6 +120,7 @@ const FullApp: React.FC = () => {
                                 <PushNotificationListener />
                                 <PresentVcModalListener />
                                 <AppRouter />
+                                <InAppMessageHost />
                                 <QRCodeScannerListener />
                                 {showScannerOverlay && <QRCodeScannerOverlay />}
                                 <AuthKeyDebugWidget />
