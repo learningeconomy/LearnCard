@@ -570,6 +570,8 @@ const IssueCredentialPage: React.FC = () => {
         presentToast,
         getRegisteredSigningAuthorities,
         getRegisteredSigningAuthority,
+        // addVCtoWallet, // not memoized, so this would recreate handleIssue on every render
+        queryClient,
     ]);
 
     useEffect(() => {
