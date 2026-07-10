@@ -32,8 +32,10 @@ import {
     type OBv3CredentialTemplate,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { getFallBackImage } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    getFallBackImage,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 
