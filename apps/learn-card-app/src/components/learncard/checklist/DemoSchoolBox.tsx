@@ -182,9 +182,12 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 const deleteResult = await deleteCredentialRecord({
                     ...contractCred,
                     skipPostDeleteCleanup: true,
+                    ignoreMissingRemoteRecord: true,
                 });
 
-                deleteResult.deletedUris.forEach(uri => deletedUris.add(uri));
+                const deletedCredentialUris =
+                    deleteResult?.deletedUris ?? (contractCred.uri ? [contractCred.uri] : []);
+                deletedCredentialUris.forEach(uri => deletedUris.add(uri));
             }
 
             // clear creds from newCredsStore
