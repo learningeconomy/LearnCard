@@ -78,59 +78,39 @@ const DISPLAY_TYPE_OPTIONS: {
 
 const CATEGORY_OPTIONS: { value: string; displayText: string; description: string }[] = [
     {
+        value: 'Social Badge',
+        displayText: 'Badge',
+        description: 'Community and social recognition badges.',
+    },
+    {
         value: 'Achievement',
         displayText: 'Achievement',
         description: 'Awards, certificates, and accomplishments.',
     },
     {
-        value: 'Social Badge',
-        displayText: 'Social Badge',
-        description: 'Community and social recognition badges.',
+        value: 'Learning History',
+        displayText: 'Course',
+        description: 'Courses, classes, and learning programs.',
+    },
+    {
+        value: 'Accomplishment',
+        displayText: 'Portfolio',
+        description: 'Portfolio pieces and personal work.',
+    },
+    {
+        value: 'Accommodation',
+        displayText: 'Assistance',
+        description: 'Support needs and accommodations.',
+    },
+    {
+        value: 'Work History',
+        displayText: 'Experience',
+        description: 'Jobs, internships, and professional experience.',
     },
     {
         value: 'ID',
         displayText: 'ID',
         description: 'Identity cards and official credentials.',
-    },
-    {
-        value: 'Membership',
-        displayText: 'Membership',
-        description: 'Group, club, or organization membership.',
-    },
-    {
-        value: 'Work History',
-        displayText: 'Work History',
-        description: 'Jobs, internships, and professional experience.',
-    },
-    {
-        value: 'Learning History',
-        displayText: 'Learning History',
-        description: 'Courses, classes, and learning programs.',
-    },
-    {
-        value: 'Course',
-        displayText: 'Course',
-        description: 'A single course or class.',
-    },
-    {
-        value: 'Skill',
-        displayText: 'Skill',
-        description: 'Demonstrated skills and competencies.',
-    },
-    {
-        value: 'Accomplishment',
-        displayText: 'Accomplishment',
-        description: 'Portfolio pieces and personal accomplishments.',
-    },
-    {
-        value: 'Accommodation',
-        displayText: 'Accommodation',
-        description: 'Support needs and accommodations.',
-    },
-    {
-        value: 'Family',
-        displayText: 'Family',
-        description: 'Family and relationship credentials.',
     },
 ];
 

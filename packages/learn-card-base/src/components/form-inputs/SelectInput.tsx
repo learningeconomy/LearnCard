@@ -37,14 +37,24 @@ const SelectInput: React.FC<SelectInputProps> = ({
 
     const selectedOption = options.find(o => o.value === value);
 
+    const hasDescriptions = options.some(o => o.description);
+
     const openSelectModal = () => {
         if (disabled) return;
 
         newModal(
-            <div className="text-grayscale-900 flex flex-col py-[10px]">
+            <div
+                className={`text-grayscale-900 flex flex-col max-h-[70vh] overflow-y-auto ${
+                    hasDescriptions ? 'py-[8px] px-[6px] gap-[2px]' : 'py-[10px]'
+                }`}
+            >
                 {allowDeselect && value !== null && value !== undefined && (
                     <button
-                        className="py-[10px] text-grayscale-500 italic"
+                        className={`text-grayscale-500 italic ${
+                            hasDescriptions
+                                ? 'py-[10px] px-[16px] text-left rounded-[12px] hover:bg-grayscale-10 transition-colors'
+                                : 'py-[10px]'
+                        }`}
                         onClick={() => {
                             onChange(null);
                             closeModal();
@@ -92,7 +102,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
                     )
                 )}
             </div>,
-            { sectionClassName: '!max-w-[300px]' }
+            { sectionClassName: hasDescriptions ? '!max-w-[400px] !w-[90%]' : '!max-w-[300px]' }
         );
     };
 
