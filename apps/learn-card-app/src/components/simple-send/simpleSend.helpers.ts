@@ -1,4 +1,5 @@
 import base64url from 'base64url';
+import type { UnsignedVC, VC } from '@learncard/types';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
@@ -96,7 +97,7 @@ export const fillTemplateSystemVars = (
     issuerDid: string,
     recipientDid?: string,
     variableValues?: Record<string, string>
-): Record<string, unknown> => {
+): UnsignedVC => {
     const json = templateToJson(template);
     const now = new Date().toISOString();
     const replacements: Record<string, string> = {
@@ -131,7 +132,7 @@ export const fillTemplateSystemVars = (
     if (!recipientDid && subject && typeof subject.id === 'string' && subject.id.includes('{{')) {
         delete subject.id;
     }
-    return filled;
+    return filled as unknown as UnsignedVC;
 };
 
 export interface IssueViaBoostOptions {
@@ -153,7 +154,7 @@ const deliverBoost = async (
     wallet: BespokeLearnCard,
     boostUri: string,
     options: IssueViaBoostOptions,
-    signedCredential?: Record<string, unknown>
+    signedCredential?: VC
 ): Promise<IssueViaBoostResult> => {
     let claimLink: string | undefined;
     let credentialUri = boostUri;
@@ -185,13 +186,9 @@ const deliverBoost = async (
             if (wallet.store?.LearnCloud?.uploadEncrypted) {
                 const credential =
                     signedCredential ??
-                    ((await wallet.read.get(sentCredentialUri).catch(() => undefined)) as
-                        | Record<string, unknown>
-                        | undefined);
+                    (await wallet.read.get(sentCredentialUri).catch(() => undefined));
                 if (credential) {
-                    const indexUri = await wallet.store.LearnCloud.uploadEncrypted(
-                        credential as any
-                    );
+                    const indexUri = await wallet.store.LearnCloud.uploadEncrypted(credential);
                     if (indexUri) {
                         credentialUri = indexUri;
                     }
@@ -286,7 +283,7 @@ const buildReusableBoostTemplate = (
     template: OBv3CredentialTemplate,
     issuerDid: string,
     recipientDid?: string
-): Record<string, unknown> => {
+): UnsignedVC => {
     const credential = deepReplaceVariables(templateToJson(template), {
         issuer_did: issuerDid,
         ...(recipientDid ? { recipient_did: recipientDid } : {}),
@@ -296,7 +293,7 @@ const buildReusableBoostTemplate = (
     delete credential.validFrom;
     delete credential.issuanceDate;
 
-    return credential;
+    return credential as unknown as UnsignedVC;
 };
 
 export const issueViaBoost = async (
@@ -340,21 +337,17 @@ export const issueViaBoost = async (
             options.variableValues
         );
 
-        const signedCredential = (await wallet.invoke.issueCredential(unsigned as any)) as Record<
-            string,
-            unknown
-        >;
+        const signedCredential = await wallet.invoke.issueCredential(unsigned);
 
-        const category = getDefaultCategoryForCredential(signedCredential as any) || 'Achievement';
-        const boostUri = await wallet.invoke.createBoost(signedCredential as any, {
+        const category = getDefaultCategoryForCredential(signedCredential) || 'Achievement';
+        const boostUri = await wallet.invoke.createBoost(signedCredential, {
             name,
             category,
         });
         return deliverBoost(wallet, boostUri, options, signedCredential);
     }
 
-    const category =
-        getDefaultCategoryForCredential(reusableTemplateForMode as any) || 'Achievement';
+    const category = getDefaultCategoryForCredential(reusableTemplateForMode) || 'Achievement';
 
     // Claim links can't substitute templateData at claim time, so a dynamic link
     // is issued from a one-off boost with the values already baked in.
@@ -366,11 +359,11 @@ export const issueViaBoost = async (
             options.variableValues
         );
         stripUnresolvedRecipientId(oneOff);
-        const boostUri = await wallet.invoke.createBoost(oneOff as any, { name, category });
+        const boostUri = await wallet.invoke.createBoost(oneOff, { name, category });
         return deliverBoost(wallet, boostUri, { ...options, variableValues: undefined });
     }
 
-    const boostUri = await wallet.invoke.createBoost(reusableTemplateForMode as any, {
+    const boostUri = await wallet.invoke.createBoost(reusableTemplateForMode, {
         name,
         category,
     });
