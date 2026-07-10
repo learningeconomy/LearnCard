@@ -210,6 +210,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         displayType === DisplayTypeEnum.ID ||
         credential?.display?.displayType === 'id' ||
         categoryType === 'ID';
+    const isMedia =
+        !isClrCredential &&
+        !isClrChildCredential &&
+        (displayType === DisplayTypeEnum.Media || credential?.display?.displayType === 'media');
     const isIssuerViewSelected =
         enableRenderMethod &&
         Boolean(renderMethod) &&
@@ -231,6 +235,19 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     );
     const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
     const hasClrEvidence = clrEvidence.length > 0;
+
+    if (isMedia) {
+        return (
+            <BoostMediaPreview
+                credential={credential}
+                openDetailsSideModal={openDetailsSideModal}
+                handleShareBoost={handleShareBoost}
+                onDotsClick={onDotsClick}
+                verifications={verifications}
+                handleCloseModal={handleCloseModal}
+            />
+        );
+    }
 
     const credentialDisplay = (
         <VCDisplayCardWrapper2

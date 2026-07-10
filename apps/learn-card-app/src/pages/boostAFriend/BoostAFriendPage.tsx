@@ -17,7 +17,12 @@ import { BadgePicker } from './components/BadgePicker';
 import { BadgePersonalize } from './components/BadgePersonalize';
 import { BoostRecipientPicker } from './components/BoostRecipientPicker';
 import { Confetti } from '../issue/components/Confetti';
-import { RecipientMode, Recipient, LinkOptions } from '../issue/components/recipientTypes';
+import {
+    RecipientMode,
+    Recipient,
+    LinkOptions,
+    summarizeRecipients,
+} from '../issue/components/recipientTypes';
 import { issueViaBoost } from '../../components/simple-send/simpleSend.helpers';
 import {
     buildBoostFriendTemplate,
@@ -31,14 +36,6 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
-
-const formatRecipients = (recs: Recipient[]) => {
-    if (recs.length === 0) return '';
-    const names = recs.map(r => (r.kind === 'profile' ? r.displayName : r.email));
-    if (names.length === 1) return names[0];
-    if (names.length === 2) return `${names[0]} and ${names[1]}`;
-    return `${names[0]}, ${names[1]} +${names.length - 2}`;
-};
 
 const BoostAFriendPage: React.FC = () => {
     const history = useHistory();
@@ -334,7 +331,7 @@ const BoostAFriendPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex-1 min-h-0 flex flex-col pb-20">
+                                <div className="flex-1 min-h-0 flex flex-col">
                                     <div className="max-w-sm mx-auto w-full flex-1 flex flex-col min-h-0">
                                         <BoostRecipientPicker
                                             mode={recipientMode}
@@ -355,7 +352,7 @@ const BoostAFriendPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="pt-4 mt-auto">
+                                <div className="pt-4 mt-auto pb-[env(safe-area-inset-bottom,0px)]">
                                     <button
                                         type="button"
                                         onClick={handleIssue}
@@ -385,101 +382,112 @@ const BoostAFriendPage: React.FC = () => {
                         )}
 
                         {step === 'celebrate' && claimLink && (
-                            <div className="relative w-full max-w-[860px] mx-auto my-auto animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center">
-                                <Confetti />
+                            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
+                                <div className="relative w-full max-w-[860px] mx-auto min-h-full flex flex-col justify-center animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center">
+                                    <Confetti />
 
-                                <div className="text-center space-y-6 mb-8 desktop:mb-0">
-                                    {celebrateCard && (
-                                        <div className="flex justify-center">
-                                            <div className="w-[160px] sm:w-[200px]">
-                                                {celebrateCard}
+                                    <div className="text-center space-y-6 mb-8 desktop:mb-0">
+                                        {celebrateCard && (
+                                            <div className="flex justify-center">
+                                                <div className="w-[160px] sm:w-[200px]">
+                                                    {celebrateCard}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    <div className="animate-fade-in-up">
-                                        <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
-                                            Link ready!
-                                        </h1>
-                                        <p className="text-sm text-grayscale-600 leading-relaxed">
-                                            Anyone with this link or QR code can claim it.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="animate-fade-in-up space-y-6 text-center max-w-[420px] mx-auto w-full">
-                                    <div className="bg-white p-6 rounded-[20px] shadow-sm border border-grayscale-200 flex flex-col items-center gap-4">
-                                        <div className="w-48 h-48 relative">
-                                            <QRCodeSVG
-                                                className="w-full h-full"
-                                                value={claimLink}
-                                                bgColor="transparent"
-                                            />
-                                            <div className="hidden">
-                                                <QRCodeCanvas
-                                                    value={claimLink}
-                                                    size={1024}
-                                                    bgColor="#ffffff"
-                                                    fgColor="#000000"
-                                                    level="H"
-                                                    includeMargin={true}
-                                                    ref={qrCanvasRef}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full bg-grayscale-10 p-3 rounded-xl border border-grayscale-200 text-center">
-                                            <p
-                                                className="text-xs text-grayscale-600 font-mono truncate"
-                                                title={claimLink}
-                                            >
-                                                {truncateLink(claimLink)}
+                                        )}
+                                        <div className="animate-fade-in-up">
+                                            <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
+                                                Link ready!
+                                            </h1>
+                                            <p className="text-sm text-grayscale-600 leading-relaxed">
+                                                Anyone with this link or QR code can claim it.
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <button
-                                            type="button"
-                                            onClick={handleCopyLink}
-                                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                                        >
-                                            {copied ? (
-                                                <Check className="w-4 h-4 text-emerald-500" />
-                                            ) : (
-                                                <Copy className="w-4 h-4" />
-                                            )}
-                                            {copied ? 'Copied' : 'Copy link'}
-                                        </button>
-                                        <div className="flex gap-3">
-                                            {typeof navigator !== 'undefined' &&
-                                                navigator.share && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleShareLink}
-                                                        className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
-                                                    >
-                                                        <Share className="w-4 h-4" />
-                                                        Share
-                                                    </button>
-                                                )}
+                                    <div className="animate-fade-in-up space-y-6 text-center max-w-[420px] mx-auto w-full">
+                                        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-grayscale-200 flex flex-col items-center gap-4">
+                                            <div className="w-48 h-48 relative">
+                                                <QRCodeSVG
+                                                    className="w-full h-full"
+                                                    value={claimLink}
+                                                    bgColor="transparent"
+                                                />
+                                                <div className="hidden">
+                                                    <QRCodeCanvas
+                                                        value={claimLink}
+                                                        size={1024}
+                                                        bgColor="#ffffff"
+                                                        fgColor="#000000"
+                                                        level="H"
+                                                        includeMargin={true}
+                                                        ref={qrCanvasRef}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full bg-grayscale-10 p-3 rounded-xl border border-grayscale-200 text-center">
+                                                <p
+                                                    className="text-xs text-grayscale-600 font-mono truncate"
+                                                    title={claimLink}
+                                                >
+                                                    {truncateLink(claimLink)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
                                             <button
                                                 type="button"
-                                                onClick={handleDownloadQR}
-                                                className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                                                onClick={handleCopyLink}
+                                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                             >
-                                                <Download className="w-4 h-4" />
-                                                Download QR
+                                                {copied ? (
+                                                    <Check className="w-4 h-4 text-emerald-500" />
+                                                ) : (
+                                                    <Copy className="w-4 h-4" />
+                                                )}
+                                                {copied ? 'Copied' : 'Copy link'}
+                                            </button>
+                                            <div className="flex gap-3">
+                                                {typeof navigator !== 'undefined' &&
+                                                    navigator.share && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleShareLink}
+                                                            className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                                                        >
+                                                            <Share className="w-4 h-4" />
+                                                            Share
+                                                        </button>
+                                                    )}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDownloadQR}
+                                                    className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    Download QR
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleBoostAnother}
+                                                className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                            >
+                                                Boost Another
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => history.push('/wallet')}
+                                                className="w-full text-sm text-grayscale-500 hover:text-grayscale-900 transition-colors"
+                                            >
+                                                Done
                                             </button>
                                         </div>
                                     </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleBoostAnother}
-                                        className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                                    >
-                                        Boost Another
-                                    </button>
                                 </div>
                             </div>
                         )}

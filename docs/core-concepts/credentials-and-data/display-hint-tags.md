@@ -39,13 +39,14 @@ lc:<key>:<value>
 
 ## Recognized keys
 
-| Tag                     | Meaning                                                                                              | Value format                                                    |
-| ----------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `lc:subtype:<Label>`    | Human-facing subtype label, shown in place of the coarse category. Decoupled from `achievementType`. | Free text, e.g. `Trailblazer`, `Event`                          |
-| `lc:displayType:<type>` | Preferred visual layout                                                                              | One of `badge`, `certificate`, `id`, `course`, `award`, `media` |
-| `lc:bgColor:<hex>`      | Background color                                                                                     | Hex, with or without leading `#` (`353E64` or `#353E64`)        |
-| `lc:bgImage:<url>`      | Background image                                                                                     | An `https` URL                                                  |
-| `lc:accentColor:<hex>`  | Accent color (reserved)                                                                              | Hex, with or without leading `#`                                |
+| Tag                     | Meaning                                                                                              | Value format                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `lc:category:<name>`    | Credential category. Only accepted if it matches a known LearnCard category.                         | One of the known credential categories (e.g. `Achievement`, `ID`) |
+| `lc:subtype:<Label>`    | Human-facing subtype label, shown in place of the coarse category. Decoupled from `achievementType`. | Free text, e.g. `Trailblazer`, `Event`                            |
+| `lc:displayType:<type>` | Preferred visual layout                                                                              | One of `badge`, `certificate`, `id`, `course`, `award`, `media`   |
+| `lc:bgColor:<hex>`      | Background color                                                                                     | Hex, with or without leading `#` (`353E64` or `#353E64`)          |
+| `lc:bgImage:<url>`      | Background image                                                                                     | An `https` URL                                                    |
+| `lc:accentColor:<hex>`  | Accent color used for the badge ring and accent text                                                 | Hex, with or without leading `#`                                  |
 
 ## Why `subtype` is decoupled from `achievementType`
 
@@ -62,7 +63,7 @@ When a wallet resolves a credential's display type, hints are weighted in this o
 3. The credential's `achievementType`.
 4. The credential's category.
 
-Background color and image resolve to the legacy `display` object first, then fall back to the corresponding `lc:` tag.
+Background color, background image, and accent color resolve the same way: the legacy `display` object wins, then the corresponding `lc:` tag is used as a fallback.
 
 ## Backwards compatibility
 
