@@ -475,6 +475,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
+                    trustedVerifierOnly
                 />
             </ErrorBoundary>
         );
@@ -548,6 +549,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         relativeDate={relativeDate}
                         compact={compact}
                         isCLR={isClrCredential}
+                        trustedVerifierOnly
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -662,6 +664,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
+                    trustedVerifierOnly
                 />
             </IonCol>
         </ErrorBoundary>

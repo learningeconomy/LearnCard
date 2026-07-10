@@ -22,7 +22,9 @@ interface BadgePersonalizeProps {
     isCustom: boolean;
     vibeColor: string;
     onVibeColorChange: (color: string) => void;
+    description?: string;
     note: string;
+    notePlaceholder?: string;
     onNoteChange: (note: string) => void;
     onNext: () => void;
     onBack: () => void;
@@ -39,7 +41,9 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     isCustom,
     vibeColor,
     onVibeColorChange,
+    description,
     note,
+    notePlaceholder,
     onNoteChange,
     onNext,
     onBack,
@@ -53,12 +57,13 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
         return buildPreviewCredential({
             title: displayTitle,
             subtype: subtype.trim() || displayTitle,
-            note,
+            description,
+            note: note.trim() || notePlaceholder,
             vibeColor,
             imageUrl,
             issuerName,
         });
-    }, [title, subtype, note, vibeColor, imageUrl, issuerName]);
+    }, [title, subtype, description, note, notePlaceholder, vibeColor, imageUrl, issuerName]);
 
     return (
         <div className="flex flex-col h-full animate-fade-in-up pt-[calc(env(safe-area-inset-top)+1rem)]">
@@ -155,7 +160,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                             <textarea
                                 value={note}
                                 onChange={e => onNoteChange(e.target.value)}
-                                placeholder="You're awesome because..."
+                                placeholder={notePlaceholder?.trim() || "You're awesome because..."}
                                 rows={3}
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all resize-none shadow-sm"
                             />

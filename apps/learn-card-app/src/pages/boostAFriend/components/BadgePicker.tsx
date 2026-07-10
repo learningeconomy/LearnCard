@@ -4,7 +4,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import {
     BadgePreset,
-    getSocialBadgePresets,
+    getStylePackPresets,
     VIBE_COLORS,
     resolveBadgeStyle,
 } from '../boostAFriend.helpers';
@@ -24,7 +24,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     badgeGroups,
 }) => {
     const [search, setSearch] = useState('');
-    const presets = useMemo(() => getSocialBadgePresets(), []);
+    const presets = useMemo(() => getStylePackPresets(stylePacks), [stylePacks]);
 
     const filteredPresets = useMemo(() => {
         if (!search) return presets;
@@ -66,7 +66,10 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     const handleCustom = () => {
         const trimmedSearch = search.trim();
         const randomColor = VIBE_COLORS[Math.floor(Math.random() * VIBE_COLORS.length)];
-        handleSelect({ title: trimmedSearch, type: 'ext:Custom' }, randomColor);
+        handleSelect(
+            { title: trimmedSearch, type: 'ext:Custom', category: 'Social Badge' },
+            randomColor
+        );
     };
 
     const groupedPresets = useMemo(() => {

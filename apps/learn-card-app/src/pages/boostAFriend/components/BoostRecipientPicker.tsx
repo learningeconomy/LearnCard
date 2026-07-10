@@ -116,7 +116,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex gap-1 sm:gap-2 bg-grayscale-100 p-1 rounded-full mb-6 shrink-0">
+            <div className="flex gap-1 sm:gap-2 bg-grayscale-200 p-1 rounded-full mb-6 shrink-0">
                 <button
                     type="button"
                     onClick={() => onModeChange('people')}

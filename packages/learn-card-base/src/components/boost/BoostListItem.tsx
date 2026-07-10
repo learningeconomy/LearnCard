@@ -46,6 +46,7 @@ type BoostListItemProps = {
     unknownVerifierTitle?: string;
     relativeDate?: boolean;
     compact?: boolean;
+    trustedVerifierOnly?: boolean;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -68,6 +69,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     unknownVerifierTitle,
     relativeDate = false,
     compact = false,
+    trustedVerifierOnly = false,
 }) => {
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
@@ -276,6 +278,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             credential={credential}
                             iconClassName={verificationIconClass}
                             unknownVerifierTitle={unknownVerifierTitle}
+                            trustedOnly={trustedVerifierOnly}
                         />
                     )}
                     {compact ? (

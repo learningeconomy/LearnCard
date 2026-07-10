@@ -59,6 +59,7 @@ export type LCAStylesPackRegistryEntry = {
     backgroundImage?: string;
     title?: string;
     description?: string;
+    criteria?: string;
 };
 
 export type BadgeGroup = {

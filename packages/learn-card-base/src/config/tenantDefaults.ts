@@ -112,9 +112,9 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         stylePackUrls: [
             'https://raw.githubusercontent.com/WeLibraryOS/metaversity-registry/main/lca-style-packs-registry.json',
         ],
-        stylePackAssets: ['learncard'],
+        stylePackAssets: ['badge-summit', 'learncard'],
         badgeGroupUrls: [],
-        badgeGroupAssets: ['learncard'],
+        badgeGroupAssets: ['badge-summit', 'learncard'],
     },
 
     links: {

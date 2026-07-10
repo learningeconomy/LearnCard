@@ -56,6 +56,8 @@ const BoostAFriendPage: React.FC = () => {
     const [subtype, setSubtype] = useState('');
     const [vibeColor, setVibeColor] = useState<string>('#3B82F6');
     const [note, setNote] = useState('');
+    const [criteria, setCriteria] = useState('');
+    const [description, setDescription] = useState('');
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>('people');
     const [recipients, setRecipients] = useState<Recipient[]>([]);
@@ -66,11 +68,18 @@ const BoostAFriendPage: React.FC = () => {
     const [claimLink, setClaimLink] = useState<string | null>(null);
 
     const handleSelectBadge = (badge: BadgePreset, color: string) => {
-        const { backgroundColor } = resolveBadgeStyle(badge, stylePacks);
+        const {
+            backgroundColor,
+            description: presetDescription,
+            criteria: presetCriteria,
+        } = resolveBadgeStyle(badge, stylePacks);
         setSelectedBadge(badge);
         setTitle(badge.title);
         setSubtype(badge.title);
         setVibeColor(backgroundColor || color);
+        setDescription(presetDescription ?? '');
+        setNote('');
+        setCriteria(presetCriteria ?? '');
         setStep('personalize');
     };
 
@@ -123,8 +132,8 @@ const BoostAFriendPage: React.FC = () => {
             const template = buildBoostFriendTemplate({
                 title: title.trim(),
                 subtype: subtype.trim(),
-                description: `A social badge for being a ${title.trim()}`,
-                note,
+                description: description.trim() || `A social badge for being a ${title.trim()}`,
+                note: note.trim() || criteria,
                 vibeColor,
                 imageUrl: imageUrl || categoryFallback,
             });
@@ -183,6 +192,8 @@ const BoostAFriendPage: React.FC = () => {
         setTitle('');
         setSubtype('');
         setNote('');
+        setCriteria('');
+        setDescription('');
         setRecipients([]);
         setClaimLink(null);
         setError(null);
@@ -223,7 +234,9 @@ const BoostAFriendPage: React.FC = () => {
                                     isCustom={selectedBadge?.type === 'ext:Custom'}
                                     vibeColor={vibeColor}
                                     onVibeColorChange={setVibeColor}
+                                    description={description}
                                     note={note}
+                                    notePlaceholder={criteria}
                                     onNoteChange={setNote}
                                     onNext={() => setStep('send')}
                                     onBack={() => setStep('pick')}
@@ -324,7 +337,8 @@ const BoostAFriendPage: React.FC = () => {
                                                                 subtype.trim() ||
                                                                 title.trim() ||
                                                                 'Your Badge',
-                                                            note,
+                                                            description,
+                                                            note: note.trim() || criteria,
                                                             vibeColor,
                                                             imageUrl:
                                                                 resolveBadgeStyle(
@@ -405,7 +419,13 @@ const BoostAFriendPage: React.FC = () => {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => history.push('/wallet')}
+                                        onClick={() =>
+                                            history.push(
+                                                recipientMode === 'self'
+                                                    ? '/socialBadges'
+                                                    : '/wallet'
+                                            )
+                                        }
                                         className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-base hover:bg-white transition-colors"
                                     >
                                         Done

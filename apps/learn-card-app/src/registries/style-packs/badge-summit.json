@@ -1,0 +1,182 @@
+[
+    {
+        "category": "Social Badge",
+        "type": "ext:VibeCurator",
+        "title": "Vibe Curator",
+        "url": "",
+        "backgroundColor": "#8B5CF6",
+        "description": "Reserved for the community members who know exactly how to make a room feel better, warmer, stranger, or more alive.",
+        "criteria": "Award this to the person who brings the perfect music, mood, lighting, playlist, or general atmosphere to any gathering."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:ChaosCoordinator",
+        "title": "Chaos Coordinator",
+        "url": "",
+        "backgroundColor": "#EF4444",
+        "description": "For the person who somehow turns confusion, missed messages, late arrivals, and half-formed plans into an actual functioning experience.",
+        "criteria": "Award this to the person who saves the day when the group chat becomes a disaster and everyone else has emotionally resigned."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:HypeArchitect",
+        "title": "Hype Architect",
+        "url": "",
+        "backgroundColor": "#F97316",
+        "description": "Reserved for the rare friend who makes other people feel braver, cooler, funnier, and more capable than they did five minutes ago.",
+        "criteria": "Award this to someone who consistently celebrates others, boosts confidence, and brings main-character energy to their peers."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:LoreKeeper",
+        "title": "Lore Keeper",
+        "url": "",
+        "backgroundColor": "#A16207",
+        "description": "For the community member who remembers every inside joke, legendary night, strange detail, and oddly important piece of group history.",
+        "criteria": "Award this to the person who preserves the stories, explains the references, and keeps the mythology of the group alive."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:SideQuestSpecialist",
+        "title": "Side Quest Specialist",
+        "url": "",
+        "backgroundColor": "#0EA5E9",
+        "description": "Reserved for the person who can turn a normal day into an unexpected adventure with one suspiciously casual suggestion.",
+        "criteria": "Award this to someone known for spontaneous detours, weird little missions, hidden gems, and unusually successful side quests."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:QuietGenius",
+        "title": "Quiet Genius",
+        "url": "",
+        "backgroundColor": "#0D9488",
+        "description": "For the person who may not always take the spotlight, but regularly drops the exact idea, fix, or observation everyone needed.",
+        "criteria": "Award this to the person whose thoughtful contributions, subtle brilliance, or perfectly timed insight make the whole team better."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:CommunityHelper",
+        "title": "Community Helper",
+        "url": "",
+        "backgroundColor": "#16A34A",
+        "description": "Reserved for the community members who show up when someone needs a hand, a pointer, a fix, or just a little extra kindness.",
+        "criteria": "Award this to the person who helped another community member solve a problem, feel welcome, find their way, or get unstuck."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:FoodSniper",
+        "title": "Food Sniper",
+        "url": "",
+        "backgroundColor": "#EA580C",
+        "description": "Reserved for the community members with impeccable taste and a talent for discovering the best culinary spots.",
+        "criteria": "Award this to the person known for providing the ultimate restaurant recommendations or leading the team to the best local eats."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:VisualStoryteller",
+        "title": "Visual Storyteller",
+        "url": "",
+        "backgroundColor": "#EC4899",
+        "description": "For the community member who turns ideas, data, moments, and messy concepts into visuals that people can actually feel and understand.",
+        "criteria": "Award this to someone who contributes strong creative assets, presentation design, diagrams, images, brand moments, or visual explanations."
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:LogicMaster",
+        "title": "Logic Master",
+        "url": "",
+        "backgroundColor": "#2563EB",
+        "description": "Reserved for the person who brings structure to complexity, catches the hidden flaw, and makes the whole system make sense.",
+        "criteria": "Award this to someone who contributes technical thinking, clear reasoning, elegant problem-solving, or the decisive \u201cwait, actually\u2026\u201d that saves the project."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:SchemaWhisperer",
+        "title": "Schema Whisperer",
+        "url": "",
+        "backgroundColor": "#7C3AED",
+        "description": "Reserved for the community member who can stare into a tangled credential payload and somehow emerge with elegance, order, and valid JSON-LD.",
+        "criteria": "Award this to the person who helps make badge data cleaner, more interoperable, and less likely to summon ancient standards demons."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:AlignmentWizard",
+        "title": "Alignment Wizard",
+        "url": "",
+        "backgroundColor": "#9333EA",
+        "description": "For the person who can connect a badge to a skill, a skill to a framework, a framework to a job, and somehow make it all seem obvious.",
+        "criteria": "Award this to someone known for mapping competencies, standards, occupations, and learning outcomes into something humans can actually use."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:CLRCartographer",
+        "title": "CLR Cartographer",
+        "url": "",
+        "backgroundColor": "#0369A1",
+        "description": "Reserved for the brave soul who helps communities navigate the wild territory between transcripts, credentials, skills, evidence, and learner records.",
+        "criteria": "Award this to the person who makes Comprehensive Learner Records feel less like a maze and more like a map."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:VerifiableVibes",
+        "title": "Verifiable Vibes",
+        "url": "",
+        "backgroundColor": "#10B981",
+        "description": "For the community member who believes trust is beautiful, signatures are poetry, and verification should work before anyone starts the demo.",
+        "criteria": "Award this to someone who helps ensure badges can be issued, held, shared, checked, and trusted without theatrical hand-waving."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:BadgeGoblin",
+        "title": "Badge Goblin",
+        "url": "",
+        "backgroundColor": "#059669",
+        "description": "Reserved for the person who wants everything to be a badge, and is usually, annoyingly, kind of right.",
+        "criteria": "Award this to someone who keeps finding delightful, useful, or deeply unnecessary things that deserve to be credentialed."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:MetadataMystic",
+        "title": "Metadata Mystic",
+        "url": "",
+        "backgroundColor": "#6D28D9",
+        "description": "For the person who understands that the visible badge is only the charm on the necklace. The real magic is in the structured data underneath.",
+        "criteria": "Award this to someone who improves descriptions, evidence, criteria, tags, alignments, issuers, expiration, revocation, or any other sacred metadata field."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:InteropDiplomat",
+        "title": "Interop Diplomat",
+        "url": "",
+        "backgroundColor": "#0284C7",
+        "description": "Reserved for the patient negotiator who can bring platforms, vendors, wallets, registries, and institutions into the same room without causing a standards incident.",
+        "criteria": "Award this to the person who advances interoperability through grace, persistence, and the occasional heroic spreadsheet."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:BackpackElder",
+        "title": "Backpack Elder",
+        "url": "",
+        "backgroundColor": "#B45309",
+        "description": "For the community member who remembers where the badges came from, why they mattered, and which conversations everyone keeps accidentally rediscovering.",
+        "criteria": "Award this to someone who carries the lore of Open Badges and helps newer people understand the movement, not just the spec."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:IssuerTherapist",
+        "title": "Issuer Therapist",
+        "url": "",
+        "backgroundColor": "#DB2777",
+        "description": "Reserved for the person who gently helps organizations admit that their badge criteria are unclear, their evidence is vibes, and their taxonomy needs love.",
+        "criteria": "Award this to someone who helps issuers design better badges with clearer value, stronger evidence, and fewer existential credentialing crises."
+    },
+    {
+        "category": "Standards Badge",
+        "type": "ext:SpecGremlin",
+        "title": "Spec Gremlin",
+        "url": "",
+        "backgroundColor": "#B91C1C",
+        "description": "For the person who reads the implementation notes, finds the edge case, asks the terrifying question, and saves everyone six months of pain.",
+        "criteria": "Award this to someone who catches ambiguity, breaks assumptions, stress-tests the standard, or says, \u201cTechnically\u2026\u201d and is unfortunately correct."
+    }
+]

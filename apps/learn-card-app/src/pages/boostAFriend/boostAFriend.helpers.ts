@@ -9,8 +9,6 @@ import { templateToJson } from '../appStoreDeveloper/partner-onboarding/componen
 import { buildLcTags } from 'learn-card-base/helpers/displayTags.helpers';
 import { deriveAccentColor } from 'learn-card-base/helpers/colorHelpers';
 import { DisplayTypeEnum } from 'learn-card-base/helpers/display-types';
-import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../components/boost/boost-options/boostOptions';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { LCAStylesPackRegistryEntry } from 'learn-card-base';
 
 export interface BoostFriendInput {
@@ -26,6 +24,7 @@ export interface BoostFriendInput {
 export const buildPreviewCredential = (input: {
     title: string;
     subtype?: string;
+    description?: string;
     note?: string;
     vibeColor?: string;
     imageUrl?: string;
@@ -34,7 +33,7 @@ export const buildPreviewCredential = (input: {
     const template = buildBoostFriendTemplate({
         title: input.title,
         subtype: input.subtype,
-        description: `A social badge for being a ${input.title}`,
+        description: input.description?.trim() || `A social badge for being a ${input.title}`,
         note: input.note,
         vibeColor: input.vibeColor,
         imageUrl: input.imageUrl,
@@ -90,20 +89,58 @@ export const buildBoostFriendTemplate = (input: BoostFriendInput): OBv3Credentia
 export interface BadgePreset {
     title: string;
     type: string;
+    category?: string;
 }
 
-export const getSocialBadgePresets = (): BadgePreset[] => {
-    const list = CATEGORY_TO_SUBCATEGORY_LIST[BoostCategoryOptionsEnum.socialBadge] || [];
-    return list.map(item => ({ title: item.title, type: item.type }));
+export const PICKER_BADGE_CATEGORIES = ['Social Badge', 'Standards Badge'];
+
+export const humanizeBadgeType = (type: string): string =>
+    type
+        .replace(/^ext:/, '')
+        // split camelCase/PascalCase and acronym boundaries: "CLRCartographer" -> "CLR Cartographer"
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+        .replace(/[_-]+/g, ' ')
+        .trim();
+
+export const getStylePackPresets = (
+    stylePacks: LCAStylesPackRegistryEntry[] | undefined
+): BadgePreset[] => {
+    if (!stylePacks) return [];
+
+    const seen = new Set<string>();
+    const presets: BadgePreset[] = [];
+
+    for (const entry of stylePacks) {
+        if (!entry?.type || !PICKER_BADGE_CATEGORIES.includes(entry.category)) continue;
+        const key = `${entry.category}::${entry.type}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        presets.push({
+            title: entry.title?.trim() || humanizeBadgeType(entry.type),
+            type: entry.type,
+            category: entry.category,
+        });
+    }
+
+    return presets;
 };
 
 export const resolveBadgeStyle = (
     preset: BadgePreset,
     stylePacks: LCAStylesPackRegistryEntry[] | undefined
-): { imageUrl: string; backgroundColor?: string } => {
-    const entry = stylePacks?.find(e => e.category === 'Social Badge' && e.type === preset.type);
+): { imageUrl: string; backgroundColor?: string; description?: string; criteria?: string } => {
+    const entry =
+        stylePacks?.find(
+            e => (!preset.category || e.category === preset.category) && e.type === preset.type
+        ) ?? stylePacks?.find(e => e.type === preset.type);
     const imageUrl = entry?.url && entry.url.trim() ? entry.url : '';
-    return { imageUrl, backgroundColor: entry?.backgroundColor };
+    return {
+        imageUrl,
+        backgroundColor: entry?.backgroundColor,
+        description: entry?.description,
+        criteria: entry?.criteria,
+    };
 };
 
 export const VIBE_COLORS = [
