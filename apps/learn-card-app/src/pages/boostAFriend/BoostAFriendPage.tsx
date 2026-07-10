@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useHistory } from 'react-router';
 import { IonPage, IonContent } from '@ionic/react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Media } from '@capacitor-community/media';
 import { ArrowLeft, Copy, Check, Share, Download, Loader2 } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import {
@@ -10,6 +13,7 @@ import {
     useToast,
     ToastTypeEnum,
     walletSubtypeToDefaultImageSrc,
+    getLogger,
 } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
@@ -37,6 +41,23 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
+
+const log = getLogger('boost-a-friend-page');
+
+const QR_ALBUM_NAME = 'LearnCard';
+
+const ensureQrAlbumExists = async (): Promise<string | undefined> => {
+    if (Capacitor.getPlatform() !== 'android') return undefined;
+
+    let { albums } = await Media.getAlbums();
+    let album = albums.find(a => a.name === QR_ALBUM_NAME);
+    if (album?.identifier) return album.identifier;
+
+    await Media.createAlbum({ name: QR_ALBUM_NAME });
+    ({ albums } = await Media.getAlbums());
+    album = albums.find(a => a.name === QR_ALBUM_NAME);
+    return album?.identifier;
+};
 
 const BoostAFriendPage: React.FC = () => {
     const history = useHistory();
@@ -204,17 +225,44 @@ const BoostAFriendPage: React.FC = () => {
         }
     };
 
-    const handleDownloadQR = () => {
+    const handleDownloadQR = async () => {
         if (!qrCanvasRef.current) return;
         try {
             const dataUrl = qrCanvasRef.current.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = 'badge-qr.png';
-            link.href = dataUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch {
+
+            if (!Capacitor.isNativePlatform()) {
+                const link = document.createElement('a');
+                link.download = 'badge-qr.png';
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return;
+            }
+
+            const base64 = dataUrl.split(',')[1];
+            const fileName = `qrcode_${Date.now()}.png`;
+
+            const savedFile = await Filesystem.writeFile({
+                path: fileName,
+                data: base64,
+                directory: Directory.Documents,
+            });
+
+            const albumIdentifier = await ensureQrAlbumExists();
+
+            await Media.savePhoto({
+                path: savedFile.uri,
+                fileName,
+                ...(albumIdentifier ? { albumIdentifier } : {}),
+            });
+
+            presentToast('QR code saved to Photos.', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+        } catch (err) {
+            log.error('boost-a-friend.qr_download_failed', err);
             presentToast('Failed to download QR code.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
