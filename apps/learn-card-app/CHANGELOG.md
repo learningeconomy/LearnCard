@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.97.2
+
+### Patch Changes
+
+-   [#1392](https://github.com/learningeconomy/LearnCard/pull/1392) [`a0279fba0a6a9d265cafef760b0a6b971b82a87b`](https://github.com/learningeconomy/LearnCard/commit/a0279fba0a6a9d265cafef760b0a6b971b82a87b) Thanks [@goblincore](https://github.com/goblincore)! - fix: native notifications route + side-menu logout redirect
+
+-   [#1397](https://github.com/learningeconomy/LearnCard/pull/1397) [`6d17eace1fc99377db54b4317dfd69bd40c8e021`](https://github.com/learningeconomy/LearnCard/commit/6d17eace1fc99377db54b4317dfd69bd40c8e021) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Issue flow
+
+-   [#1389](https://github.com/learningeconomy/LearnCard/pull/1389) [`43be4f491751008d410c486742156256614205c5`](https://github.com/learningeconomy/LearnCard/commit/43be4f491751008d410c486742156256614205c5) Thanks [@Custard7](https://github.com/Custard7)! - feat: Desktop AI Pathways
+
+-   [#1391](https://github.com/learningeconomy/LearnCard/pull/1391) [`8272ac35f75364319d75c53887c7a9682b4eed8f`](https://github.com/learningeconomy/LearnCard/commit/8272ac35f75364319d75c53887c7a9682b4eed8f) Thanks [@goblincore](https://github.com/goblincore)! - fix: eliminate the loading-screen flash on hard refresh and cold login. The wallet now survives the auth coordinator re-initialization that follows Firebase session restore (instead of being torn down and rebuilt while flashing the loader over the rendered app), and the coordinator bridges the login provider swap with a transitional state so the login screen no longer flashes between loaders.
+
+-   [#1395](https://github.com/learningeconomy/LearnCard/pull/1395) [`1dfc4fa94555071ccb2ed02eaa24c560503934ec`](https://github.com/learningeconomy/LearnCard/commit/1dfc4fa94555071ccb2ed02eaa24c560503934ec) Thanks [@Custard7](https://github.com/Custard7)! - chore: Update Claim Page Styles
+
+-   [#1396](https://github.com/learningeconomy/LearnCard/pull/1396) [`4f9f29069f2abc179a50fb2cd052dc06751b0e15`](https://github.com/learningeconomy/LearnCard/commit/4f9f29069f2abc179a50fb2cd052dc06751b0e15) Thanks [@goblincore](https://github.com/goblincore)! - fix: refresh claim-credential view + land on credential's category page
+
 ## 1.97.1
 
 ### Patch Changes

@@ -3,33 +3,12 @@ import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, VP } from '@learncard/types';
-import {
-    IonLoading,
-    IonContent,
-    IonPage,
-    IonRow,
-    IonFooter,
-    IonToolbar,
-    useIonModal,
-    IonButton,
-    IonButtons,
-    IonCol,
-    IonGrid,
-    IonHeader,
-    IonIcon,
-    IonMenuButton,
-    IonText,
-    IonTitle,
-    IonSpinner,
-} from '@ionic/react';
+import { IonContent, IonPage, useIonModal } from '@ionic/react';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-from-request');
 
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
-import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import FatArrow from 'learn-card-base/svgs/FatArrow';
-import X from 'learn-card-base/svgs/X';
 
 import {
     ProfilePicture,
@@ -67,13 +46,7 @@ import ExchangeInitiate from './ExchangeInitiate';
 import ExchangeDidAuth from './ExchangeDidAuth';
 import ExchangeLoading from './ExchangeLoading';
 
-import {
-    checkmarkCircleOutline,
-    closeCircleOutline,
-    homeOutline,
-    refreshOutline,
-} from 'ionicons/icons';
-import { AlertCircle, RefreshCw, Home, HelpCircle, MessageCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
@@ -206,7 +179,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
                                 customSize={500}
                             />
                         ) : (
-                            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
+                            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-grayscale-100 text-emerald-700 font-semibold text-xl">
                                 {getEmojiFromDidString(issuer)}
                             </div>
                         )}
@@ -349,44 +322,48 @@ const ExchangeErrorDisplay: React.FC<{
     const friendlyError = getFriendlyErrorInfo(rawErrorMessage);
 
     return (
-        <div className="min-h-full bg-gradient-to-br from-rose-50 via-white to-orange-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                 {/* Header with icon */}
-                <div className="bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-8 text-center">
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <AlertCircle className="w-10 h-10 text-white" />
+                <div className="bg-white px-6 py-8 text-center border-b border-grayscale-200">
+                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <AlertCircle className="w-8 h-8 text-red-500" />
                     </div>
 
-                    <h1 className="text-2xl font-bold text-white mb-2">{friendlyError.title}</h1>
+                    <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                        {friendlyError.title}
+                    </h1>
 
-                    <p className="text-rose-100 text-sm">We couldn't complete your request</p>
+                    <p className="text-grayscale-500 text-sm">We couldn't complete your request</p>
                 </div>
 
                 {/* Content */}
                 <div className="p-6">
-                    <div className="space-y-4 mb-6">
-                        <p className="text-gray-600 text-center text-sm">
+                    <div className="space-y-5 mb-6">
+                        <p className="text-grayscale-600 text-center text-sm leading-relaxed">
                             {friendlyError.description}
                         </p>
 
                         {/* Suggestion box */}
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                            <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">
+                        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+                            <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">
                                 What to do
                             </p>
 
-                            <p className="text-sm text-amber-800">{friendlyError.suggestion}</p>
+                            <p className="text-sm text-amber-800 leading-relaxed">
+                                {friendlyError.suggestion}
+                            </p>
                         </div>
 
                         {/* Technical details (collapsed by default feeling) */}
                         {errorData && rawErrorMessage !== friendlyError.description && (
                             <details className="group">
-                                <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
+                                <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
                                     Show technical details
                                 </summary>
 
-                                <div className="mt-2 bg-gray-100 rounded-lg p-3">
-                                    <p className="text-xs text-gray-600 font-mono break-words">
+                                <div className="mt-3 bg-grayscale-100 rounded-xl p-4">
+                                    <p className="text-xs text-grayscale-600 font-mono break-words">
                                         {rawErrorMessage}
                                     </p>
                                 </div>
@@ -398,18 +375,18 @@ const ExchangeErrorDisplay: React.FC<{
                     <div className="space-y-3">
                         <button
                             onClick={() => onRetry()}
-                            className="w-full py-4 px-6 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-semibold rounded-xl hover:from-rose-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/25"
+                            className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                         >
-                            <RefreshCw className="w-5 h-5" />
-                            Try Again
+                            <RefreshCw className="w-4 h-4" />
+                            Try again
                         </button>
 
                         <button
                             onClick={onCancel}
-                            className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                         >
                             <Home className="w-4 h-4" />
-                            Go Back Home
+                            Go back home
                         </button>
                     </div>
                 </div>
@@ -423,26 +400,28 @@ const ExchangeSuccessDisplay: React.FC<{
     description?: string;
     onDone: () => void;
 }> = ({
-    title = 'Shared Successfully',
+    title = 'Shared successfully',
     description = 'Your credentials were shared successfully.',
     onDone,
 }) => (
-    <div className="min-h-full bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-8 text-center">
-                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-10 h-10 text-white" />
+    <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+        <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
-                <p className="text-emerald-100 text-sm">You're all set</p>
+                <h1 className="text-xl font-semibold text-white mb-2">{title}</h1>
+                <p className="text-emerald-50 text-sm">You're all set</p>
             </div>
             <div className="p-6">
-                <p className="text-grayscale-600 text-center text-sm mb-6">{description}</p>
+                <p className="text-grayscale-600 text-center text-sm leading-relaxed mb-6">
+                    {description}
+                </p>
                 <button
                     onClick={onDone}
-                    className="w-full py-4 px-6 bg-grayscale-900 text-white font-semibold rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >
-                    <Home className="w-5 h-5" />
+                    <Home className="w-4 h-4" />
                     Done
                 </button>
             </div>

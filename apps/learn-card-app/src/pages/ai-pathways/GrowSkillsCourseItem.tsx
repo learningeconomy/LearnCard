@@ -81,7 +81,7 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
             onClick={openCourseDetailsModal}
             className="w-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-emerald-500 text-left"
         >
-            <div className="px-[15px] py-[20px] flex flex-col gap-[5px]">
+            <div className="px-[15px] py-[20px] flex h-full flex-col gap-[5px]">
                 <div className="flex items-start gap-[10px]">
                     <ThickStudiesIconWithShape className="w-[35px] h-[35px] flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -113,7 +113,10 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
                     />
                 </div>
 
-                <GrowSkillsSkillChips searchQuery={program?.ProgramName ?? ''} />
+                <GrowSkillsSkillChips
+                    searchQuery={program?.ProgramName ?? ''}
+                    className="mt-auto"
+                />
             </div>
         </div>
     );
