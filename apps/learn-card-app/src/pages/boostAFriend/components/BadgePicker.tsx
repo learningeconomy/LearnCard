@@ -286,7 +286,7 @@ const BadgeTile: React.FC<{
                 }`}
             >
                 <span
-                    className={`text-sm font-semibold text-white line-clamp-1 w-full ${
+                    className={`text-sm font-semibold text-white line-clamp-2 break-normal w-full leading-tight ${
                         isRealImage ? 'drop-shadow-md' : ''
                     }`}
                 >

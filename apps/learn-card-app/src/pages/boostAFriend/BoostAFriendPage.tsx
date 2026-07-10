@@ -325,7 +325,7 @@ const BoostAFriendPage: React.FC = () => {
                             <div className="max-w-xl mx-auto w-full flex flex-col h-full text-center animate-pop-in relative py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] overflow-y-auto scrollbar-hide">
                                 <Confetti />
 
-                                <div className="my-auto w-full py-6 space-y-8">
+                                <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full py-6 space-y-8">
                                     <div className="flex flex-col items-center justify-center max-w-sm w-full mx-auto">
                                         {selectedBadge && (
                                             <div className="w-[160px] sm:w-[200px] mb-6">
@@ -409,7 +409,7 @@ const BoostAFriendPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="w-full max-w-sm mx-auto space-y-3 mt-auto pt-6">
+                                <div className="w-full max-w-sm mx-auto space-y-3 shrink-0 pt-6">
                                     <button
                                         type="button"
                                         onClick={handleBoostAnother}

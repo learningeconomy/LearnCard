@@ -3,7 +3,7 @@
         "id": "summit-social",
         "label": "Summit Social",
         "description": "For the people who make the community feel alive.",
-        "order": 7,
+        "order": -2,
         "types": [
             "ext:VibeCurator",
             "ext:ChaosCoordinator",
@@ -21,7 +21,7 @@
         "id": "summit-standards",
         "label": "Standards & Interop",
         "description": "For the ones who keep credentials clean, aligned, and verifiable.",
-        "order": 8,
+        "order": -1,
         "types": [
             "ext:SchemaWhisperer",
             "ext:AlignmentWizard",
