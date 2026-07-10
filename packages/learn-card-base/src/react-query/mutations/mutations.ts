@@ -274,6 +274,12 @@ export const useDeleteCredentialRecord = () => {
                     }
                 } else {
                     log.error('Record ID not provided for deletion');
+
+                    try {
+                        record.onLocalDeleteComplete?.();
+                    } catch (error) {
+                        log.error('Local delete completion callback failed:', error);
+                    }
                 }
 
                 return {
