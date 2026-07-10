@@ -62,6 +62,7 @@ import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
+    const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState } = useAppAuth();
     const isLoggedIn = useIsLoggedIn();
@@ -264,6 +265,33 @@ export const LoginContent: React.FC = () => {
         ],
         [appleLogin, googleLogin]
     );
+
+    // Redirect-pending gate: once the wallet is built and the user counts as
+    // logged in, the effect above will history.push away from /login — but
+    // only on the tick AFTER React has already painted this component,
+    // flashing the login form between the boot loader and the app. Bridge
+    // that gap with a loader-colored overlay instead. Intentionally NOT
+    // LoginLoadingPage (an IonPage): nesting a page inside this route
+    // triggers Ionic's page transition twice — same reasoning as
+    // RouteTransitionLoader. needs_setup is excluded so the form stays
+    // visible under the onboarding modal.
+    const redirectPending =
+        (isLoggedIn || !!currentUser) && coordinatorState.status !== 'needs_setup';
+
+    if (redirectPending) {
+        return (
+            <div
+                className="fixed inset-0 z-[1000] flex items-center justify-center"
+                style={{ backgroundColor: theme.colors.defaults.loaders?.[0] ?? '#8B5CF6' }}
+            >
+                <img
+                    src={textLogo}
+                    alt="Logo"
+                    className="max-w-[300px] max-h-[80px] object-contain"
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
