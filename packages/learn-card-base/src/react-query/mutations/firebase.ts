@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useIonAlert } from '@ionic/react';
+import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
 
 import { getLogger } from '../../logging/logger';
 const log = getLogger('firebase');
@@ -98,7 +99,12 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
         {
             mutationFn: async ({ token }: { token: string }) => {
                 try {
-                    const wallet = await initWallet('aaa');
+                    // The server route is open (only the firebase token is verified;
+                    // the caller's DID is ignored), so prefer the logged-in user's
+                    // wallet — it's already built and cached. The throwaway 'aaa'
+                    // seed is only needed pre-login, and otherwise forces an entire
+                    // second wallet (and its network clients) to boot.
+                    const wallet = await initWallet((await getCurrentUserPrivateKey()) ?? 'aaa');
                     const data = await wallet?.invoke?.getProofOfLoginVp(token);
 
                     return data;
