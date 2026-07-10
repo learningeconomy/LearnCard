@@ -70,6 +70,7 @@ import { useSkillProfileCompletion } from '../ai-pathways/ai-pathways-skill-prof
 import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
+import { isHiddenActivity } from '../wallet/activity-feed/activityFeed.helpers';
 
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -125,6 +126,7 @@ const DashboardPage: React.FC = () => {
         () =>
             (allCredentials?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(record => {
                 if (isVerifiableDataRecord(record)) return false;
+                if (isHiddenActivity(record.category)) return false;
                 if (selfAssignedSkillsUri && record.uri === selfAssignedSkillsUri) return false;
                 if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
                 return true;
