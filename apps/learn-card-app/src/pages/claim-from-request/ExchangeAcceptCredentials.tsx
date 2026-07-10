@@ -280,21 +280,21 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     };
 
     const renderMultipleCredentials = () => (
-        <div className="min-h-full bg-gradient-to-br from-emerald-50 via-white to-cyan-50 pb-[120px]">
-            <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="min-h-full bg-grayscale-100 pb-[120px] font-poppins">
+            <div className="max-w-4xl mx-auto px-4 py-6 animate-fade-in-up">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/25">
-                        <Gift className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm border border-grayscale-200">
+                        <Gift className="w-8 h-8 text-emerald-600" />
                     </div>
 
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        {credentials.length} Credentials Ready to Claim
+                    <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                        {credentials.length} credentials ready to claim
                     </h1>
 
-                    <p className="text-gray-600 text-sm max-w-md mx-auto">
+                    <p className="text-grayscale-600 text-sm max-w-md mx-auto leading-relaxed">
                         Tap each credential to select or deselect it. Only selected credentials will
-                        be added to your wallet.
+                        be added to your account.
                     </p>
                 </div>
 
@@ -323,35 +323,35 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 </div>
 
                 {/* Summary footer */}
-                <div className="mt-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="mt-6 p-5 bg-white rounded-[20px] border border-grayscale-200 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center ${
                                     selectedCredentials.length > 0
-                                        ? 'bg-emerald-100'
-                                        : 'bg-gray-100'
+                                        ? 'bg-emerald-50'
+                                        : 'bg-grayscale-100'
                                 }`}
                             >
                                 <Check
                                     className={`w-5 h-5 ${
                                         selectedCredentials.length > 0
                                             ? 'text-emerald-600'
-                                            : 'text-gray-400'
+                                            : 'text-grayscale-400'
                                     }`}
                                 />
                             </div>
 
                             <div>
-                                <p className="font-medium text-gray-900">
+                                <p className="font-medium text-grayscale-900 text-sm">
                                     {selectedCredentials.length} of {credentials.length} credential
                                     {credentials.length !== 1 ? 's' : ''} selected
                                 </p>
 
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-grayscale-500">
                                     {selectedCredentials.length === 0
                                         ? 'Select at least one to continue'
-                                        : 'These will be added to your wallet'}
+                                        : 'These will be added to your account'}
                                 </p>
                             </div>
                         </div>
@@ -365,11 +365,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     setSelectedIndices(new Set(credentials.map((_, i) => i)));
                                 }
                             }}
-                            className="text-sm text-cyan-600 hover:text-cyan-700 font-medium"
+                            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
                         >
                             {selectedCredentials.length === credentials.length
-                                ? 'Deselect All'
-                                : 'Select All'}
+                                ? 'Deselect all'
+                                : 'Select all'}
                         </button>
                     </div>
                 </div>
@@ -381,32 +381,32 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         return (
             <IonPage>
                 <IonContent fullscreen className="ion-padding">
-                    <div className="min-h-full bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+                    <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+                        <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                             {/* Header with icon */}
-                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-8 text-center">
-                                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <AlertCircle className="w-10 h-10 text-white" />
+                            <div className="bg-white px-6 py-8 text-center border-b border-grayscale-200">
+                                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                                    <AlertCircle className="w-8 h-8 text-amber-500" />
                                 </div>
 
-                                <h1 className="text-2xl font-bold text-white mb-2">
-                                    No Credentials Found
+                                <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                                    No credentials found
                                 </h1>
 
-                                <p className="text-amber-100 text-sm">
+                                <p className="text-grayscale-500 text-sm">
                                     This link doesn't contain any credentials
                                 </p>
                             </div>
 
                             {/* Content */}
                             <div className="p-6">
-                                <div className="space-y-4 mb-6">
-                                    <p className="text-gray-600 text-center text-sm">
+                                <div className="space-y-5 mb-6">
+                                    <p className="text-grayscale-600 text-center text-sm leading-relaxed">
                                         The credential link you followed doesn't have any
                                         credentials to claim. This could happen if:
                                     </p>
 
-                                    <ul className="text-sm text-gray-500 space-y-2 pl-4">
+                                    <ul className="text-sm text-grayscale-600 space-y-2 pl-4">
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
                                             The credential has already been claimed
@@ -417,17 +417,17 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
-                                            The issuer removed the credential
+                                            The sender removed the credential
                                         </li>
                                     </ul>
 
                                     {/* Suggestion box */}
-                                    <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
-                                        <p className="text-xs font-medium text-cyan-600 uppercase tracking-wide mb-2">
+                                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+                                        <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">
                                             What to do
                                         </p>
 
-                                        <p className="text-sm text-cyan-800">
+                                        <p className="text-sm text-amber-800 leading-relaxed">
                                             Contact the person or organization that sent you this
                                             link to request a new one.
                                         </p>
@@ -438,20 +438,20 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 <div className="space-y-3">
                                     <button
                                         onClick={() => history.push('/')}
-                                        className="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+                                        className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                     >
-                                        <Home className="w-5 h-5" />
-                                        Go to Home
+                                        <Home className="w-4 h-4" />
+                                        Go to home
                                     </button>
 
                                     <button
                                         onClick={() =>
                                             window.open('mailto:support@learncard.com', '_blank')
                                         }
-                                        className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                                        className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                     >
                                         <HelpCircle className="w-4 h-4" />
-                                        Contact Support
+                                        Contact support
                                     </button>
                                 </div>
                             </div>

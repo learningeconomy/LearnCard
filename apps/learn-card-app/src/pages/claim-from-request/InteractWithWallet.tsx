@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { IonList, IonItem } from '@ionic/react';
+import { IonList } from '@ionic/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
+import { AlertCircle } from 'lucide-react';
 
 // Simple wallet option type
 interface WalletOption {
@@ -52,9 +53,9 @@ const InteractWithWallet: React.FC<{
     }, [vcRequestUrl]);
 
     const headingText = useMemo(() => {
-        if (workflowId === 'claim') return 'You Have a Credential to Claim';
-        if (workflowId === 'verify') return 'Present Your Credentials';
-        return 'Continue in Your Wallet';
+        if (workflowId === 'claim') return 'You have a credential to claim';
+        if (workflowId === 'verify') return 'Present your credentials';
+        return 'Continue in your wallet';
     }, [workflowId]);
 
     const subheadingText = useMemo(() => {
@@ -66,7 +67,7 @@ const InteractWithWallet: React.FC<{
     }, [workflowId]);
 
     const buttonText = useMemo(() => {
-        if (workflowId === 'claim') return 'Claim with Wallet';
+        if (workflowId === 'claim') return 'Claim in LearnCard';
         if (workflowId === 'verify') return 'Verify with Wallet';
         return 'Open in Wallet';
     }, [workflowId]);
@@ -93,8 +94,7 @@ const InteractWithWallet: React.FC<{
         const lcwWallet: WalletOption = {
             name: 'Learner Credential Wallet',
 
-            urlTemplate: url =>
-                `https://lcw.app/request?vc_request_url=${encodeURIComponent(url)}`,
+            urlTemplate: url => `https://lcw.app/request?vc_request_url=${encodeURIComponent(url)}`,
         };
 
         if (isLearnCardTenant) return [learnCardWallet, lcwWallet];
@@ -131,28 +131,43 @@ const InteractWithWallet: React.FC<{
 
     if (!vcRequestUrl) {
         return (
-            <div className="w-full h-full flex items-center justify-center p-6">
-                <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 text-center">
-                    <h2 className="text-xl font-semibold mb-2">Invalid request link</h2>
-                    <p className="text-gray-600">Missing or invalid vc_request_url.</p>
+            <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+                <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
+                    <div className="bg-white px-6 py-8 text-center border-b border-grayscale-200">
+                        <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                            <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                            Invalid request link
+                        </h1>
+                        <p className="text-grayscale-500 text-sm">
+                            Missing or invalid vc_request_url.
+                        </p>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full h-full flex justify-center  p-3">
-            <div className="max-w-lg w-full bg-white">
-                <div className="flex flex-col items-center text-center">
-                    <div className="mb-4 mt-[20px]">
-                        <img src={brandMark} alt="Brand mark" className="rounded-2xl h-16 w-16" />
+        <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+            <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
+                <div className="p-6 flex flex-col items-center text-center">
+                    <div className="mb-5 mt-2">
+                        <img
+                            src={brandMark}
+                            alt="Brand mark"
+                            className="rounded-2xl h-16 w-16 shadow-sm border border-grayscale-200"
+                        />
                     </div>
 
-                    <h1 className="text-2xl font-bold mb-2">{headingText}</h1>
-                    <p className="text-gray-600 mb-6">{subheadingText}</p>
+                    <h1 className="text-xl font-semibold text-grayscale-900 mb-2">{headingText}</h1>
+                    <p className="text-grayscale-600 text-sm leading-relaxed mb-6">
+                        {subheadingText}
+                    </p>
 
-                    <div className="mb-6 p-4 border rounded-lg inline-block bg-white">
-                        <div className="w-[220px] h-[220px]">
+                    <div className="mb-6 p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl inline-block">
+                        <div className="w-[200px] h-[200px] bg-white p-2 rounded-xl">
                             <QRCodeSVG
                                 value={deeplink}
                                 className="w-full h-full"
@@ -161,27 +176,25 @@ const InteractWithWallet: React.FC<{
                         </div>
                     </div>
 
-                    <div className="mb-4 w-full">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="mb-6 w-full text-left">
+                        <label className="block text-xs font-medium text-grayscale-700 uppercase tracking-wide mb-2">
                             Open with:
                         </label>
-                        <div className="flex items-center gap-3">
-                            <InteractSelector
-                                wallets={wallets}
-                                selectedIndex={selectedIndex}
-                                setSelectedIndex={setSelectedIndex}
-                            />
-                        </div>
+                        <InteractSelector
+                            wallets={wallets}
+                            selectedIndex={selectedIndex}
+                            setSelectedIndex={setSelectedIndex}
+                        />
                     </div>
 
                     <a
                         href={deeplink}
-                        className="block w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300"
+                        className="w-full py-3 px-4 bg-emerald-600 text-white font-medium text-sm rounded-[20px] hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
                     >
                         {buttonText}
                     </a>
 
-                    <p className="mt-6 text-sm text-gray-500">
+                    <p className="mt-5 text-xs text-grayscale-500">
                         Scan the QR code or tap the button above.
                     </p>
                 </div>
@@ -202,9 +215,9 @@ const InteractSelectorOptions: React.FC<{
         mobile: ModalTypes.Cancel,
     });
     return (
-        <div className="p-6">
-            <p>Select a wallet:</p>
-            <IonList className="mb-6 w-full h-full">
+        <div className="p-6 font-poppins">
+            <p className="text-lg font-semibold text-grayscale-900 mb-4">Select a wallet</p>
+            <IonList className="w-full h-full bg-transparent">
                 {wallets.map((wallet, idx) => {
                     const isSelected = idx === selectedIndex;
                     return (
@@ -214,18 +227,18 @@ const InteractSelectorOptions: React.FC<{
                                 closeModal();
                                 setSelectedIndex(idx);
                             }}
-                            className={`w-full rounded-full pl-[10px] pr-4 py-[6px] flex items-center justify-between  mt-4 mb-4 cursor-pointer ${
+                            className={`w-full rounded-[20px] p-3 flex items-center justify-between mb-3 cursor-pointer transition-colors border ${
                                 isSelected
-                                    ? 'bg-indigo-50 border-indigo-50 bg-indigo-50'
-                                    : 'bg-white'
+                                    ? 'bg-grayscale-10 border-grayscale-300'
+                                    : 'bg-white border-transparent hover:bg-grayscale-10'
                             }`}
                         >
                             <div className="flex items-center justify-start">
-                                <div className="w-[40px] bg-indigo-100 h-[40px] rounded-full  mr-2 overflow-hidden  cursor-pointer">
+                                <div className="w-10 h-10 bg-grayscale-100 rounded-2xl mr-3 overflow-hidden flex items-center justify-center">
                                     {wallet.icon}
                                 </div>
                                 <div className="flex flex-col items-start justify-center">
-                                    <h4 className="text-grayscale-800 text-left text-[17px]">
+                                    <h4 className="text-grayscale-900 font-medium text-sm">
                                         {wallet.name}
                                     </h4>
                                 </div>
@@ -258,19 +271,19 @@ const InteractSelector: React.FC<{
                     />
                 );
             }}
-            className="w-full rounded-full pl-[2px] pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-100 bg-grayscale-100 mt-4 mb-4"
+            className="w-full rounded-[20px] p-2 flex items-center justify-between border border-grayscale-200 bg-grayscale-10 hover:bg-grayscale-100 transition-colors"
         >
             <div className="flex items-center justify-start">
-                <div className="w-[40px] h-[40px] rounded-full bg-indigo-100 ml-[8px] mr-2 overflow-hidden">
+                <div className="w-10 h-10 rounded-2xl bg-grayscale-100 mr-3 overflow-hidden flex items-center justify-center">
                     {wallets[selectedIndex]?.icon}
                 </div>
                 <div className="flex flex-col items-start justify-center">
-                    <h4 className="text-grayscale-800 text-left text-[17px] line-clamp-1">
+                    <h4 className="text-grayscale-900 font-medium text-sm line-clamp-1">
                         {wallets[selectedIndex]?.name}
                     </h4>
                 </div>
             </div>
-            <CaretDown className="w-[20px] h-[20px] text-grayscale-800" />
+            <CaretDown className="w-5 h-5 text-grayscale-500 mr-2" />
         </button>
     );
 };
