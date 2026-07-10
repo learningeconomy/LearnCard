@@ -176,26 +176,27 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             setDemoSchoolStatus('deleting');
 
             const credentialsToDelete: LCR[] = contractCredentials ?? [];
-            const deletedUris = credentialsToDelete.map((contractCred: LCR) => contractCred.uri);
+            const deletedUris = new Set<string>();
 
-            await Promise.all(
-                credentialsToDelete.map((contractCred: LCR) =>
-                    deleteCredentialRecord({
-                        ...contractCred,
-                        skipPostDeleteCleanup: true,
-                    })
-                )
-            );
+            for (const contractCred of credentialsToDelete) {
+                const deleteResult = await deleteCredentialRecord({
+                    ...contractCred,
+                    skipPostDeleteCleanup: true,
+                });
+
+                deleteResult.deletedUris.forEach(uri => deletedUris.add(uri));
+            }
 
             // clear creds from newCredsStore
-            newCredsStore.set.removeCreds(deletedUris);
+            const deletedUrisList = [...deletedUris];
+            newCredsStore.set.removeCreds(deletedUrisList);
 
             const wallet = await initWallet();
 
             const cleanupResult = await deleteCredentialFromAllContracts({
                 wallet,
                 queryClient,
-                deletedUris,
+                deletedUris: deletedUrisList,
             });
 
             const didWeb = switchedProfileStore.get.switchedDid();
@@ -217,7 +218,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 hasDismissButton: true,
             });
             log.debug('Demo School cleanup completed', {
-                deletedUriCount: deletedUris.length,
+                deletedUriCount: deletedUrisList.length,
                 contractsWithdrawn: consentedDemoContracts.length,
                 contractsUpdated: cleanupResult.contractsUpdated,
                 removedSharedUris: cleanupResult.removedSharedUris,
