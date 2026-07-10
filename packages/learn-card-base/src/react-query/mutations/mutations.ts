@@ -1,13 +1,12 @@
 import { InfiniteData, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CredentialCategory } from 'learn-card-base';
 import { useWallet } from 'learn-card-base';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { LCR } from '../../types/credential-records';
 import { cloneDeep } from 'lodash';
-import { UnsignedVC, VC } from '@learncard/types';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
+import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('mutations');
 
@@ -160,6 +159,7 @@ export const useDeleteCredentialRecord = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
+    const { presentToast } = useToast();
     const ENABLE_DELETE_CREDENTIAL_LOGS = false;
 
     const getRecordCategory = (record: LCR) => record.metadata?.category ?? record.category;
@@ -503,6 +503,15 @@ export const useDeleteCredentialRecord = () => {
                     if (ENABLE_DELETE_CREDENTIAL_LOGS) {
                         log.error('Failed to run post-delete cleanup:', error);
                     }
+
+                    presentToast(
+                        'Credential deleted. Some connected data may take a moment to update. We’ll try again automatically.',
+                        {
+                            title: 'Update delayed',
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        }
+                    );
                 } finally {
                     queryClient.invalidateQueries({ queryKey: ['boosts'] });
                 }
