@@ -30,15 +30,13 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
                 Credential Verifications
             </h3>
             <button
-                className="absolute top-[17px] right-[17px]"
+                className="absolute top-[0px] right-[0px] p-2"
                 onClick={e => {
                     e.stopPropagation();
                     setShowInfo(!showInfo);
                 }}
             >
-                <InfoIcon
-                    className={`h-[21px] w-[22px] ${showInfo ? `text-${primaryColor}` : undefined}`}
-                />
+                <InfoIcon className={`h-full w-full text-${primaryColor}`} />
             </button>
             {showInfo && (
                 <InfoBox
