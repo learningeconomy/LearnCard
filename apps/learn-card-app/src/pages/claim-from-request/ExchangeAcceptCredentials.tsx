@@ -11,6 +11,7 @@ const log = getLogger('exchange-accept-credentials');
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
+import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
 
 import {
     useWallet,
@@ -455,6 +456,22 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             useFullCloseButton={!isMobile}
                         />
                     </footer>
+
+                    {/* On desktop the Details footer button is hidden; show the
+                        persistent Details/Endorsements sidebar instead, matching
+                        the credential detail view (ClaimBoost/BoostPreview). */}
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={credential}
+                            categoryType={
+                                getDefaultCategoryForCredential(
+                                    credential
+                                ) as CredentialCategoryEnum
+                            }
+                            verificationItems={[] as VerificationItem[]}
+                            renderMethodCredential={credential}
+                        />
+                    )}
                 </div>
             </IonPage>
         );
