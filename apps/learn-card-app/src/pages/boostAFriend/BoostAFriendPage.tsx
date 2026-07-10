@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useHistory } from 'react-router';
 import { IonPage, IonContent } from '@ionic/react';
-import { ArrowLeft, CheckCircle2, Copy, Share, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Share, Download, Loader2 } from 'lucide-react';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import {
     useWallet,
     useGetCurrentLCNUser,
@@ -66,6 +67,8 @@ const BoostAFriendPage: React.FC = () => {
     const [isIssuing, setIsIssuing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [claimLink, setClaimLink] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
     const handleSelectBadge = (badge: BadgePreset, color: string) => {
         const {
@@ -162,6 +165,8 @@ const BoostAFriendPage: React.FC = () => {
         if (!claimLink) return;
         try {
             await navigator.clipboard.writeText(claimLink);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
             presentToast('Link copied to clipboard', {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
@@ -187,6 +192,27 @@ const BoostAFriendPage: React.FC = () => {
         }
     };
 
+    const handleDownloadQR = () => {
+        if (!qrCanvasRef.current) return;
+        try {
+            const dataUrl = qrCanvasRef.current.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'badge-qr.png';
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch {
+            presentToast('Failed to download QR code.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
+    const truncateLink = (link: string) =>
+        link.length <= 44 ? link : `${link.slice(0, 28)}…${link.slice(-10)}`;
+
     const handleBoostAnother = () => {
         setSelectedBadge(null);
         setTitle('');
@@ -199,6 +225,43 @@ const BoostAFriendPage: React.FC = () => {
         setError(null);
         setStep('pick');
     };
+
+    const celebrateCredential = useMemo(() => {
+        if (!selectedBadge) return null;
+        return buildPreviewCredential({
+            title: title.trim() || 'Your Badge',
+            subtype: subtype.trim() || title.trim() || 'Your Badge',
+            description,
+            note: note.trim() || criteria,
+            vibeColor,
+            imageUrl: resolveBadgeStyle(selectedBadge, stylePacks).imageUrl || categoryFallback,
+            issuerName: currentLCNUser?.displayName || currentLCNUser?.profileId || '',
+        });
+    }, [
+        selectedBadge,
+        title,
+        subtype,
+        description,
+        note,
+        criteria,
+        vibeColor,
+        stylePacks,
+        categoryFallback,
+        currentLCNUser,
+    ]);
+
+    const celebrateCard = celebrateCredential && (
+        <BoostEarnedCard
+            credential={celebrateCredential as any}
+            categoryType={BoostCategoryOptionsEnum.socialBadge}
+            boostPageViewMode={BoostPageViewMode.Card}
+            useWrapper={false}
+            verifierState={false}
+            hideOptionsMenu
+            isPreview
+            className="shadow-xl"
+        />
+    );
 
     return (
         <IonPage className="bg-white">
@@ -321,95 +384,132 @@ const BoostAFriendPage: React.FC = () => {
                             </div>
                         )}
 
-                        {step === 'celebrate' && (
-                            <div className="max-w-xl mx-auto w-full flex flex-col h-full justify-center text-center animate-pop-in relative py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] overflow-y-auto scrollbar-hide">
+                        {step === 'celebrate' && claimLink && (
+                            <div className="relative w-full max-w-[860px] mx-auto my-auto animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center">
                                 <Confetti />
 
-                                <div className="flex flex-col items-center justify-center w-full py-6 space-y-8">
-                                    <div className="flex flex-col items-center justify-center max-w-sm w-full mx-auto">
-                                        {selectedBadge && (
-                                            <div className="w-[160px] sm:w-[200px] mb-6">
-                                                <BoostEarnedCard
-                                                    credential={
-                                                        buildPreviewCredential({
-                                                            title: title.trim() || 'Your Badge',
-                                                            subtype:
-                                                                subtype.trim() ||
-                                                                title.trim() ||
-                                                                'Your Badge',
-                                                            description,
-                                                            note: note.trim() || criteria,
-                                                            vibeColor,
-                                                            imageUrl:
-                                                                resolveBadgeStyle(
-                                                                    selectedBadge,
-                                                                    stylePacks
-                                                                ).imageUrl || categoryFallback,
-                                                            issuerName:
-                                                                currentLCNUser?.displayName ||
-                                                                currentLCNUser?.profileId ||
-                                                                '',
-                                                        }) as any
-                                                    }
-                                                    categoryType={
-                                                        BoostCategoryOptionsEnum.socialBadge
-                                                    }
-                                                    boostPageViewMode={BoostPageViewMode.Card}
-                                                    useWrapper={false}
-                                                    verifierState={false}
-                                                    hideOptionsMenu
-                                                    isPreview
-                                                    className="shadow-xl"
-                                                />
+                                <div className="text-center space-y-6 mb-8 desktop:mb-0">
+                                    {celebrateCard && (
+                                        <div className="flex justify-center">
+                                            <div className="w-[160px] sm:w-[200px]">
+                                                {celebrateCard}
                                             </div>
-                                        )}
-
-                                        <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
-                                            {recipientMode === 'link'
-                                                ? 'Link ready!'
-                                                : recipientMode === 'self'
-                                                ? 'Added to your Passport!'
-                                                : 'Badge sent!'}
+                                        </div>
+                                    )}
+                                    <div className="animate-fade-in-up">
+                                        <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
+                                            Link ready!
                                         </h1>
-                                        <p className="text-base text-grayscale-600 mb-10">
-                                            {recipientMode === 'link'
-                                                ? 'Your badge is ready to be shared. Anyone with the link can claim it.'
-                                                : recipientMode === 'self'
-                                                ? "You'll find it in your badges."
-                                                : `Sent to ${formatRecipients(recipients)}`}
+                                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                                            Anyone with this link or QR code can claim it.
                                         </p>
-
-                                        {claimLink && (
-                                            <div className="w-full mb-10 space-y-3">
-                                                <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl break-all text-sm text-grayscale-900 border border-grayscale-200 shadow-sm">
-                                                    {claimLink}
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleCopyLink}
-                                                        className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-sm hover:bg-white transition-colors"
-                                                    >
-                                                        <Copy className="w-4 h-4" />
-                                                        Copy
-                                                    </button>
-                                                    {navigator.share && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleShareLink}
-                                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity shadow-sm"
-                                                        >
-                                                            <Share className="w-4 h-4" />
-                                                            Share
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
-                                <div className="w-full max-w-sm mx-auto space-y-3 shrink-0 pt-12">
+                                <div className="animate-fade-in-up space-y-6 text-center max-w-[420px] mx-auto w-full">
+                                    <div className="bg-white p-6 rounded-[20px] shadow-sm border border-grayscale-200 flex flex-col items-center gap-4">
+                                        <div className="w-48 h-48 relative">
+                                            <QRCodeSVG
+                                                className="w-full h-full"
+                                                value={claimLink}
+                                                bgColor="transparent"
+                                            />
+                                            <div className="hidden">
+                                                <QRCodeCanvas
+                                                    value={claimLink}
+                                                    size={1024}
+                                                    bgColor="#ffffff"
+                                                    fgColor="#000000"
+                                                    level="H"
+                                                    includeMargin={true}
+                                                    ref={qrCanvasRef}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="w-full bg-grayscale-10 p-3 rounded-xl border border-grayscale-200 text-center">
+                                            <p
+                                                className="text-xs text-grayscale-600 font-mono truncate"
+                                                title={claimLink}
+                                            >
+                                                {truncateLink(claimLink)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <button
+                                            type="button"
+                                            onClick={handleCopyLink}
+                                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                        >
+                                            {copied ? (
+                                                <Check className="w-4 h-4 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-4 h-4" />
+                                            )}
+                                            {copied ? 'Copied' : 'Copy link'}
+                                        </button>
+                                        <div className="flex gap-3">
+                                            {typeof navigator !== 'undefined' &&
+                                                navigator.share && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleShareLink}
+                                                        className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        <Share className="w-4 h-4" />
+                                                        Share
+                                                    </button>
+                                                )}
+                                            <button
+                                                type="button"
+                                                onClick={handleDownloadQR}
+                                                className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Download QR
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleBoostAnother}
+                                        className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                    >
+                                        Boost Another
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'celebrate' && !claimLink && (
+                            <div className="relative w-full max-w-[420px] mx-auto my-auto text-center space-y-6 animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)]">
+                                <Confetti />
+
+                                {celebrateCard && (
+                                    <div className="flex justify-center">
+                                        <div className="w-[160px] sm:w-[200px]">
+                                            {celebrateCard}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="animate-fade-in-up">
+                                    <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
+                                        {recipientMode === 'self'
+                                            ? 'Added to your Passport!'
+                                            : 'Badge sent!'}
+                                    </h1>
+                                    <p className="text-base text-grayscale-600">
+                                        {recipientMode === 'self'
+                                            ? "You'll find it in your badges."
+                                            : `Sent to ${formatRecipients(recipients)}`}
+                                    </p>
+                                </div>
+
+                                <div className="w-full max-w-sm mx-auto space-y-3">
                                     <button
                                         type="button"
                                         onClick={handleBoostAnother}

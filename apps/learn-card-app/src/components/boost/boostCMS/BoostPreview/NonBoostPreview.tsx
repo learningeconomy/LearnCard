@@ -11,6 +11,7 @@ import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import BoostMediaPreview from './BoostMediaPreview';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import {

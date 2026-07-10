@@ -66,24 +66,26 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     }, [title, subtype, description, note, notePlaceholder, vibeColor, imageUrl, issuerName]);
 
     return (
-        <div className="flex flex-col h-full animate-fade-in-up pt-[calc(env(safe-area-inset-top)+1rem)]">
-            <div className="flex items-center gap-3 mb-6">
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className="p-2 -ml-2 rounded-full hover:bg-white/50 text-grayscale-600 transition-colors"
-                    aria-label="Go back"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                    <h1 className="text-2xl font-semibold text-grayscale-900">Personalize</h1>
-                    <p className="text-sm text-grayscale-600 mt-1">Add a note and pick a color.</p>
+        <div className="flex flex-col h-full animate-fade-in-up">
+            <div className="flex-1 overflow-y-auto pb-20 flex flex-col scrollbar-hide -mx-4 sm:mx-0">
+                <div className="sticky top-0 z-30 flex items-center gap-3 mb-6 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4 bg-white/70 backdrop-blur-xl border-b border-grayscale-200/60 sm:bg-transparent sm:backdrop-blur-none sm:border-0">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="p-2 -ml-2 rounded-full hover:bg-white/50 text-grayscale-600 transition-colors"
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-semibold text-grayscale-900">Personalize</h1>
+                        <p className="text-sm text-grayscale-600 mt-1">
+                            Add a note and pick a color.
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto pb-20 flex flex-col scrollbar-hide">
-                <div className="my-auto w-full py-6 space-y-8">
+                <div className="w-full py-6 space-y-8 px-6 sm:px-2 relative z-0">
                     <div className="flex justify-center">
                         <div className="w-[160px] sm:w-[200px]">
                             <BoostEarnedCard
