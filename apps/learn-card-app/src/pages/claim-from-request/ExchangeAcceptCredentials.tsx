@@ -53,7 +53,6 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     onAccept,
     strategy,
 }) => {
-    const [isFront, setIsFront] = useState(true);
     const [claiming, setClaiming] = useState(false);
     const [isClaimed, setIsClaimed] = useState(false);
 
@@ -227,8 +226,12 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 checkProof={false}
                 hideNavButtons
                 hideFrontFaceDetails={false}
-                isFrontOverride={isFront}
-                setIsFrontOverride={setIsFront}
+                // Disable the click-to-flip: the back face is superseded by the
+                // Details overlay. Passing a no-op setter (and omitting
+                // isFrontOverride) keeps the card fixed on its front face, the
+                // same way the read-only detail views (BoostPreview/ClaimBoost)
+                // suppress the flip.
+                setIsFrontOverride={() => {}}
             />
         );
     };

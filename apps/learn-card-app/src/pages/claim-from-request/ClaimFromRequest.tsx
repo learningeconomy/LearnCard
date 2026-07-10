@@ -58,6 +58,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
+import { ROUTE_PRELOAD } from '../../Routes';
 
 import ExchangePresentationRequest from './ExchangePresentationRequest';
 import ExchangeRedirect from './ExchangeRedirect';
@@ -480,6 +481,29 @@ const ClaimFromRequest: React.FC = () => {
 
     const { presentToast } = useToast();
 
+    // Resolve the wallet category route for a just-claimed credential (e.g.
+    // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
+    // when the category can't be resolved.
+    const resolvePostClaimRoute = (claimedCredential?: VC): string => {
+        if (!claimedCredential) return '/home';
+        try {
+            const category = getDefaultCategoryForCredential(claimedCredential);
+            return CATEGORY_TO_ROUTE[category as CredentialCategoryEnum] ?? '/home';
+        } catch (err) {
+            log.warn('Failed to resolve post-claim category route', err);
+            return '/home';
+        }
+    };
+
+    // Warm the destination category chunk ahead of navigation. The credential
+    // itself is already inserted optimistically into the category list cache by
+    // storeAndAddVCToWallet, so warming the lazy route chunk while the user is
+    // still on the accept screen makes the post-claim hop feel instant (no
+    // Suspense fallback flash). Fire-and-forget.
+    const warmPostClaimRoute = (claimedCredential?: VC): void => {
+        void ROUTE_PRELOAD[resolvePostClaimRoute(claimedCredential)]?.();
+    };
+
     const handleRedirectTo = () => {
         const redirectTo = `/request?vc_request_url=${vc_request_url}`;
         redirectStore.set.lcnRedirect(redirectTo);
@@ -543,7 +567,7 @@ const ClaimFromRequest: React.FC = () => {
                     case 'DIDAuth':
                     default:
                         if (credentialClaimCount && credentialClaimCount > 0) {
-                            handleAfterCredentialClaim();
+                            void handleAfterCredentialClaim();
                             setExchangeState({ state: ExchangeState.Finished });
                             return;
                         } else {
@@ -556,6 +580,9 @@ const ClaimFromRequest: React.FC = () => {
                 // Remember the (first) credential being claimed for post-claim routing.
                 const vpCreds = data?.verifiableCredential;
                 claimedCredentialRef.current = Array.isArray(vpCreds) ? vpCreds[0] : vpCreds;
+                // Warm the destination category chunk while the user reviews the
+                // card so the post-claim navigation is instant.
+                warmPostClaimRoute(claimedCredentialRef.current);
                 setExchangeState({ state: ExchangeState.AcceptCredentials, data, strategy });
                 // Server sent a redirect URL
             } else if (type === RequestResponseDataType.RedirectUrl) {
@@ -594,25 +621,26 @@ const ClaimFromRequest: React.FC = () => {
         }
     }, [isLoggedIn]);
 
-    // Resolve the wallet category route for a just-claimed credential (e.g.
-    // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
-    // when the category can't be resolved.
-    const resolvePostClaimRoute = (claimedCredential?: VC): string => {
-        if (!claimedCredential) return '/home';
-        try {
-            const category = getDefaultCategoryForCredential(claimedCredential);
-            return CATEGORY_TO_ROUTE[category as CredentialCategoryEnum] ?? '/home';
-        } catch (err) {
-            log.warn('Failed to resolve post-claim category route', err);
-            return '/home';
-        }
-    };
-
-    const handleAfterCredentialClaim = (claimedCredential?: VC) => {
+    const handleAfterCredentialClaim = async (claimedCredential?: VC) => {
         setExchangeState({ state: ExchangeState.Finished });
+
         // Land the user on the specific wallet category page of the credential
         // they just claimed (not the generic passport) so they see it in context.
-        history?.push(resolvePostClaimRoute(claimedCredential ?? claimedCredentialRef.current));
+        const route = resolvePostClaimRoute(claimedCredential ?? claimedCredentialRef.current);
+
+        // Await the destination chunk before navigating so the current view stays
+        // mounted (no Suspense fallback). warmPostClaimRoute already kicked this
+        // off when the accept screen appeared, so this usually resolves instantly;
+        // cap the wait so a stalled fetch can't block navigation.
+        const preload = ROUTE_PRELOAD[route];
+        if (preload) {
+            await Promise.race([
+                preload(),
+                new Promise<void>(resolve => setTimeout(resolve, 4000)),
+            ]).catch(() => undefined);
+        }
+
+        history?.push(route);
     };
 
     const handleClaimCredential = async () => {
@@ -662,7 +690,7 @@ const ClaimFromRequest: React.FC = () => {
             }
 
             setClaimingCredential(false);
-            handleAfterCredentialClaim(credential);
+            void handleAfterCredentialClaim(credential);
 
             presentToast(`Successfully claimed Credential!`, {
                 type: ToastTypeEnum.Success,
@@ -678,7 +706,7 @@ const ClaimFromRequest: React.FC = () => {
                     hasDismissButton: true,
                 });
 
-                handleAfterCredentialClaim(credential);
+                void handleAfterCredentialClaim(credential);
             } else {
                 presentToast(`Oops, we couldn't claim the credential.`, {
                     type: ToastTypeEnum.Error,
