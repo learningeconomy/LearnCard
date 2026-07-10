@@ -493,51 +493,53 @@ const BoostAFriendPage: React.FC = () => {
                         )}
 
                         {step === 'celebrate' && !claimLink && (
-                            <div className="relative w-full max-w-[420px] mx-auto my-auto text-center space-y-6 animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)]">
-                                <Confetti />
+                            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
+                                <div className="relative w-full max-w-[420px] mx-auto min-h-full flex flex-col justify-center text-center space-y-6 animate-pop-in py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+                                    <Confetti />
 
-                                {celebrateCard && (
-                                    <div className="flex justify-center">
-                                        <div className="w-[160px] sm:w-[200px]">
-                                            {celebrateCard}
+                                    {celebrateCard && (
+                                        <div className="flex justify-center">
+                                            <div className="w-[160px] sm:w-[200px]">
+                                                {celebrateCard}
+                                            </div>
                                         </div>
+                                    )}
+
+                                    <div className="animate-fade-in-up">
+                                        <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
+                                            {recipientMode === 'self'
+                                                ? 'Added to your Passport!'
+                                                : 'Badge sent!'}
+                                        </h1>
+                                        <p className="text-base text-grayscale-600">
+                                            {recipientMode === 'self'
+                                                ? "You'll find it in your badges."
+                                                : `Sent to ${summarizeRecipients(recipients)}`}
+                                        </p>
                                     </div>
-                                )}
 
-                                <div className="animate-fade-in-up">
-                                    <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
-                                        {recipientMode === 'self'
-                                            ? 'Added to your Passport!'
-                                            : 'Badge sent!'}
-                                    </h1>
-                                    <p className="text-base text-grayscale-600">
-                                        {recipientMode === 'self'
-                                            ? "You'll find it in your badges."
-                                            : `Sent to ${formatRecipients(recipients)}`}
-                                    </p>
-                                </div>
-
-                                <div className="w-full max-w-sm mx-auto space-y-3">
-                                    <button
-                                        type="button"
-                                        onClick={handleBoostAnother}
-                                        className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
-                                    >
-                                        Boost Another
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            history.push(
-                                                recipientMode === 'self'
-                                                    ? '/socialBadges'
-                                                    : '/wallet'
-                                            )
-                                        }
-                                        className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-base hover:bg-white transition-colors"
-                                    >
-                                        Done
-                                    </button>
+                                    <div className="w-full max-w-sm mx-auto space-y-3">
+                                        <button
+                                            type="button"
+                                            onClick={handleBoostAnother}
+                                            className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
+                                        >
+                                            Boost Another
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                history.push(
+                                                    recipientMode === 'self'
+                                                        ? '/socialBadges'
+                                                        : '/wallet'
+                                                )
+                                            }
+                                            className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-base hover:bg-white transition-colors"
+                                        >
+                                            Done
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

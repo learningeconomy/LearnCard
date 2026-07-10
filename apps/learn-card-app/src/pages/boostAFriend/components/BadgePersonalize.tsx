@@ -171,7 +171,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                 </div>
             </div>
 
-            <div className="pt-4 mt-auto">
+            <div className="pt-4 mt-auto pb-[env(safe-area-inset-bottom,0px)]">
                 <button
                     type="button"
                     onClick={onNext}
