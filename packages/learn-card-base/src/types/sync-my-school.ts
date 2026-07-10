@@ -55,4 +55,16 @@ export type LCAStylesPackRegistryEntry = {
     category: string;
     type: string;
     url: string;
+    backgroundColor?: string;
+    backgroundImage?: string;
+    title?: string;
+    description?: string;
+};
+
+export type BadgeGroup = {
+    id: string;
+    label: string;
+    description?: string;
+    order?: number;
+    types: string[];
 };
