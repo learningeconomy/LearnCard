@@ -169,8 +169,8 @@ const BoostAFriendPage: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <IonContent>
-                <div className="min-h-full font-poppins relative">
+            <IonContent scrollY={false}>
+                <div className="h-full font-poppins relative">
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                         <div
                             className="absolute inset-0 transition-colors duration-700 ease-in-out opacity-25"

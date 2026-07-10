@@ -97,146 +97,147 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     }, [presets, badgeGroups, search]);
 
     return (
-        <div
-            className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0 animate-fade-in-up"
-            onScroll={handleScroll}
-        >
-            <div
-                className={`sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 transition-all duration-300 motion-reduce:transition-none ${
-                    isCollapsed ? 'pb-3 mb-4 sm:pb-4 sm:mb-6' : 'pb-4 mb-6'
-                }`}
-            >
-                <div className="relative">
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className={`absolute right-0 z-10 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-all duration-300 motion-reduce:transition-none ${
-                            isCollapsed ? 'top-4 sm:top-1' : 'top-1'
-                        }`}
-                    >
-                        Cancel
-                    </button>
-
-                    <div
-                        className={`transition-all duration-300 motion-reduce:transition-none overflow-hidden pr-14 ${
-                            isCollapsed
-                                ? 'max-h-0 opacity-0 mb-0 sm:max-h-none sm:opacity-100 sm:mb-3'
-                                : 'max-h-24 opacity-100 mb-3 sm:max-h-none sm:opacity-100 sm:mb-3'
-                        }`}
-                    >
-                        <h1 className="text-xl font-semibold text-grayscale-900">Pick a Badge</h1>
-                        <p className="text-sm text-grayscale-600 mt-0.5">
-                            Send a fun badge to a friend to show appreciation.
-                        </p>
-                    </div>
-
-                    <div
-                        className={`relative transition-all duration-300 motion-reduce:transition-none ${
-                            isCollapsed ? 'pr-14 sm:pr-0 mb-0 sm:mb-4' : 'mb-4'
-                        }`}
-                    >
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Search or create custom..."
-                            className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
-                        />
-                    </div>
-                </div>
-
+        <div className="flex flex-col h-full animate-fade-in-up">
+            <div className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0" onScroll={handleScroll}>
                 <div
-                    className={`flex gap-3 overflow-x-auto scrollbar-hide transition-all duration-300 motion-reduce:transition-none ${
-                        isCollapsed
-                            ? 'max-h-0 opacity-0 pb-0 sm:max-h-none sm:opacity-100 sm:pb-1'
-                            : 'max-h-16 opacity-100 pb-1 sm:max-h-none sm:opacity-100 sm:pb-1'
+                    className={`sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 transition-all duration-300 motion-reduce:transition-none ${
+                        isCollapsed ? 'pb-3 mb-4 sm:pb-4 sm:mb-6' : 'pb-4 mb-6'
                     }`}
                 >
-                    <button
-                        type="button"
-                        onClick={handleSurpriseMe}
-                        className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
-                    >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        Surprise me
-                    </button>
-                    {search &&
-                        !presets.some(p => p.title.toLowerCase() === search.toLowerCase()) && (
-                            <button
-                                type="button"
-                                onClick={handleCustom}
-                                className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Create "{search}"
-                            </button>
-                        )}
-                </div>
-            </div>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className={`absolute right-0 z-10 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-all duration-300 motion-reduce:transition-none ${
+                                isCollapsed ? 'top-4 sm:top-1' : 'top-1'
+                            }`}
+                        >
+                            Cancel
+                        </button>
 
-            <div className="px-0">
-                {search ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 px-6 sm:px-0">
-                        {filteredPresets.map((preset, index) => {
-                            const color = VIBE_COLORS[index % VIBE_COLORS.length];
-                            return (
-                                <BadgeTile
-                                    key={preset.title}
-                                    preset={preset}
-                                    color={color}
-                                    onSelect={() => handleSelect(preset, color)}
-                                    stylePacks={stylePacks}
-                                    index={index}
-                                />
-                            );
-                        })}
-                        {filteredPresets.length === 0 && (
-                            <div className="col-span-full text-center py-10 text-grayscale-500">
-                                No badges found.
-                            </div>
-                        )}
+                        <div
+                            className={`transition-all duration-300 motion-reduce:transition-none overflow-hidden pr-14 ${
+                                isCollapsed
+                                    ? 'max-h-0 opacity-0 mb-0 sm:max-h-none sm:opacity-100 sm:mb-3'
+                                    : 'max-h-24 opacity-100 mb-3 sm:max-h-none sm:opacity-100 sm:mb-3'
+                            }`}
+                        >
+                            <h1 className="text-xl font-semibold text-grayscale-900">
+                                Pick a Badge
+                            </h1>
+                            <p className="text-sm text-grayscale-600 mt-0.5">
+                                Send a fun badge to a friend to show appreciation.
+                            </p>
+                        </div>
+
+                        <div
+                            className={`relative transition-all duration-300 motion-reduce:transition-none ${
+                                isCollapsed ? 'pr-14 sm:pr-0 mb-0 sm:mb-4' : 'mb-4'
+                            }`}
+                        >
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Search or create custom..."
+                                className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
+                            />
+                        </div>
                     </div>
-                ) : (
-                    <div className="space-y-8">
-                        {groupedPresets?.map((groupData, groupIndex) => (
-                            <div key={groupData.group.id} className="space-y-3">
-                                <div className="px-6 sm:px-1">
-                                    <h2 className="text-lg sm:text-xl font-semibold text-grayscale-900">
-                                        {groupData.group.label}
-                                    </h2>
-                                    {groupData.group.description && (
-                                        <p className="text-sm text-grayscale-500 mt-0.5">
-                                            {groupData.group.description}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide px-6 sm:px-0 scroll-pl-6 sm:scroll-pl-0">
-                                    {groupData.presets.map((preset, index) => {
-                                        const color =
-                                            VIBE_COLORS[
-                                                (groupIndex * 10 + index) % VIBE_COLORS.length
-                                            ];
-                                        return (
-                                            <div
-                                                key={preset.title}
-                                                className="snap-start shrink-0 w-32 sm:w-auto"
-                                            >
-                                                <BadgeTile
-                                                    preset={preset}
-                                                    color={color}
-                                                    onSelect={() => handleSelect(preset, color)}
-                                                    stylePacks={stylePacks}
-                                                    index={index}
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
+
+                    <div
+                        className={`flex gap-3 overflow-x-auto scrollbar-hide transition-all duration-300 motion-reduce:transition-none ${
+                            isCollapsed
+                                ? 'max-h-0 opacity-0 pb-0 sm:max-h-none sm:opacity-100 sm:pb-1'
+                                : 'max-h-16 opacity-100 pb-1 sm:max-h-none sm:opacity-100 sm:pb-1'
+                        }`}
+                    >
+                        <button
+                            type="button"
+                            onClick={handleSurpriseMe}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
+                        >
+                            <Sparkles className="w-4 h-4 text-amber-300" />
+                            Surprise me
+                        </button>
+                        {search &&
+                            !presets.some(p => p.title.toLowerCase() === search.toLowerCase()) && (
+                                <button
+                                    type="button"
+                                    onClick={handleCustom}
+                                    className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Create "{search}"
+                                </button>
+                            )}
                     </div>
-                )}
+                </div>
+
+                <div className="px-0">
+                    {search ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 px-6 sm:px-0">
+                            {filteredPresets.map((preset, index) => {
+                                const color = VIBE_COLORS[index % VIBE_COLORS.length];
+                                return (
+                                    <BadgeTile
+                                        key={preset.title}
+                                        preset={preset}
+                                        color={color}
+                                        onSelect={() => handleSelect(preset, color)}
+                                        stylePacks={stylePacks}
+                                        index={index}
+                                    />
+                                );
+                            })}
+                            {filteredPresets.length === 0 && (
+                                <div className="col-span-full text-center py-10 text-grayscale-500">
+                                    No badges found.
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            {groupedPresets?.map((groupData, groupIndex) => (
+                                <div key={groupData.group.id} className="space-y-3">
+                                    <div className="px-6 sm:px-1">
+                                        <h2 className="text-lg sm:text-xl font-semibold text-grayscale-900">
+                                            {groupData.group.label}
+                                        </h2>
+                                        {groupData.group.description && (
+                                            <p className="text-sm text-grayscale-500 mt-0.5">
+                                                {groupData.group.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide px-6 sm:px-0 scroll-pl-6 sm:scroll-pl-0">
+                                        {groupData.presets.map((preset, index) => {
+                                            const color =
+                                                VIBE_COLORS[
+                                                    (groupIndex * 10 + index) % VIBE_COLORS.length
+                                                ];
+                                            return (
+                                                <div
+                                                    key={preset.title}
+                                                    className="snap-start shrink-0 w-32 sm:w-auto"
+                                                >
+                                                    <BadgeTile
+                                                        preset={preset}
+                                                        color={color}
+                                                        onSelect={() => handleSelect(preset, color)}
+                                                        stylePacks={stylePacks}
+                                                        index={index}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
