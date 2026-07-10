@@ -86,7 +86,7 @@ const GrowSkillsCarouselSection = <T,>({
                                     className="flex h-[30px] w-[30px] items-center justify-center text-grayscale-900 transition-colors hover:text-grayscale-700 disabled:text-grayscale-400 disabled:cursor-not-allowed"
                                     onClick={() => swiperRef.current?.slidePrev()}
                                 >
-                                    <SlimCaretLeft className="h-[30px] w-[30px]" />
+                                    <SlimCaretLeft className="h-[20px] w-[20px]" />
                                 </button>
 
                                 <button
@@ -96,7 +96,7 @@ const GrowSkillsCarouselSection = <T,>({
                                     className="flex h-[30px] w-[30px] items-center justify-center text-grayscale-900 transition-colors hover:text-grayscale-700 disabled:text-grayscale-400 disabled:cursor-not-allowed"
                                     onClick={() => swiperRef.current?.slideNext()}
                                 >
-                                    <SlimCaretRight className="h-[30px] w-[30px]" />
+                                    <SlimCaretRight className="h-[20px] w-[20px]" />
                                 </button>
                             </div>
                         )}
