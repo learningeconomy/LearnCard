@@ -387,27 +387,38 @@ const IssueCredentialPage: React.FC = () => {
         const selfIssuedDid = getCurrentLCNUserDid(currentLCNUser?.profileId);
 
         let credentialSubjectName: string | undefined;
-        let credentialSubjectImage: string | undefined;
         let showIssuerImage = true;
 
         // getImageUrlFromCredential ranks credentialSubject.image above
         // achievement.image, so a recipient photo would hide the badge artwork.
         // The issued credential never sets credentialSubject.image; only inject
         // it here when there's no badge image, keeping the preview faithful.
+        const hasImageValue = (value: unknown): boolean =>
+            typeof value === 'string' ||
+            Boolean(value && typeof value === 'object' && (value as Record<string, unknown>).id);
         const hasBadgeImage = Boolean(
-            (filledJson as Record<string, unknown>).image || ach?.image?.value
+            hasImageValue((filledJson as Record<string, unknown>).image) ||
+                hasImageValue(ach?.image?.value)
         );
+        const hasSpecificRecipient =
+            recipientMode === 'self' ||
+            (recipientMode === 'people' &&
+                recipients.length === 1 &&
+                recipients[0].kind === 'profile');
+        const imageForSubject = hasSpecificRecipient
+            ? hasBadgeImage
+                ? undefined
+                : fallbackImage
+            : fallbackImage;
 
         if (recipientMode === 'self') {
             credentialSubjectName = currentLCNUser?.displayName || issuerName;
-            credentialSubjectImage = hasBadgeImage ? undefined : fallbackImage;
         } else if (
             recipientMode === 'people' &&
             recipients.length === 1 &&
             recipients[0].kind === 'profile'
         ) {
             credentialSubjectName = recipients[0].displayName;
-            credentialSubjectImage = hasBadgeImage ? undefined : fallbackImage;
         } else {
             // No specific recipient yet (link / anyone / email / multiple): don't
             // let the badge fall back to the issuer's photo — show the category's
@@ -430,11 +441,7 @@ const IssueCredentialPage: React.FC = () => {
                 ? {
                       ...subjectObject,
                       ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
-                      ...(credentialSubjectImage
-                          ? { image: credentialSubjectImage }
-                          : fallbackImage
-                          ? { image: fallbackImage }
-                          : {}),
+                      ...(imageForSubject ? { image: imageForSubject } : {}),
                   }
                 : rawSubject,
             validFrom: new Date().toISOString(),
@@ -450,33 +457,7 @@ const IssueCredentialPage: React.FC = () => {
         previewValues,
     ]);
 
-    const previewCardCredential = useMemo<Record<string, unknown> | null>(() => {
-        if (!previewCredential) return null;
-
-        const credential = { ...previewCredential } as Record<string, unknown>;
-        const subject = credential.credentialSubject;
-        const hasExplicitImage = Boolean(
-            credential.image ||
-                (subject &&
-                    typeof subject === 'object' &&
-                    !Array.isArray(subject) &&
-                    (subject as Record<string, unknown>).achievement &&
-                    typeof (subject as Record<string, unknown>).achievement === 'object' &&
-                    !Array.isArray((subject as Record<string, unknown>).achievement) &&
-                    (subject as Record<string, unknown>).achievement &&
-                    typeof (
-                        (subject as Record<string, unknown>).achievement as Record<string, unknown>
-                    ).image === 'string')
-        );
-
-        if (hasExplicitImage && subject && typeof subject === 'object' && !Array.isArray(subject)) {
-            const sanitizedSubject = { ...(subject as Record<string, unknown>) };
-            delete sanitizedSubject.image;
-            credential.credentialSubject = sanitizedSubject;
-        }
-
-        return credential;
-    }, [previewCredential]);
+    const previewCardCredential = previewCredential;
 
     const handleIssue = useCallback(async () => {
         if (!template || !canIssue) return;
