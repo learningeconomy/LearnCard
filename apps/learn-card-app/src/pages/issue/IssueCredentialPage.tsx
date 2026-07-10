@@ -93,6 +93,26 @@ const clearSuccessSnapshot = (): void => {
     }
 };
 
+const hasAchievementImage = (subject: unknown): boolean => {
+    if (!subject || typeof subject !== 'object' || Array.isArray(subject)) return false;
+
+    const image = (subject as Record<string, unknown>).image;
+    const imageRecord =
+        image && typeof image === 'object' && !Array.isArray(image)
+            ? (image as Record<string, unknown>)
+            : undefined;
+    const imageValue = imageRecord && imageRecord.value !== undefined ? imageRecord.value : image;
+
+    return (
+        typeof imageValue === 'string' ||
+        Boolean(
+            imageValue &&
+                typeof imageValue === 'object' &&
+                (imageValue as Record<string, unknown>).id
+        )
+    );
+};
+
 const IssueCredentialPage: React.FC = () => {
     const history = useHistory();
     const { initWallet, addVCtoWallet } = useWallet();
@@ -395,13 +415,7 @@ const IssueCredentialPage: React.FC = () => {
         // achievement.image, so a recipient photo would hide the badge artwork.
         // The issued credential never sets credentialSubject.image; only inject
         // it here when there's no badge image, keeping the preview faithful.
-        const hasImageValue = (value: unknown): boolean =>
-            typeof value === 'string' ||
-            Boolean(value && typeof value === 'object' && (value as Record<string, unknown>).id);
-        const hasBadgeImage = Boolean(
-            hasImageValue((filledJson as Record<string, unknown>).image) ||
-                hasImageValue(ach?.image?.value)
-        );
+        const hasBadgeImage = hasAchievementImage(filledJson) || hasAchievementImage(ach);
         const specificProfileRecipient =
             recipientMode === 'people' &&
             recipients.length === 1 &&
