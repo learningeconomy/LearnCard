@@ -180,7 +180,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                             <UserProfileSetup
                                 title="Account Settings"
                                 handleCloseModal={closeModal}
-                                handleLogout={() => handleLogout()}
+                                handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 showNetworkSettings={true}
                                 showNotificationsModal={false}
                             />

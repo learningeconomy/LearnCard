@@ -85,8 +85,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
+        const isPassportActive =
+            tab === '/passport' &&
+            ['/passport', '/wallet', '/home'].some(
+                prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
+            );
 
-        if (tab === activeTab || isAdminToolsActive) return true;
+        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
         return false;
     };
 
@@ -159,9 +164,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         }
 
         if (linkPath === '/notifications') {
-            // Alerts opens the right-side notifications modal (same as the
-            // desktop header button) instead of routing to the /notifications
-            // page, keeping a single presentation across breakpoints.
+            // Alerts uses the shared open handler (same as the header button):
+            // right-side modal on web, and a route to the /notifications page on
+            // native — see useOpenNotifications.
             linkEl = (
                 <button
                     type="button"
@@ -215,9 +220,10 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             );
         }
 
-        // Alerts opens a modal rather than navigating, so skip marking it as
-        // the active route — otherwise it stays highlighted while the visible
-        // page is unchanged.
+        // Alerts opens a modal (web) or routes to /notifications (native); in
+        // neither case should it be marked as the active tab here — on web the
+        // visible page is unchanged, and on native the IonMenuToggle closes the
+        // menu on tap anyway.
         const handleTabClick =
             linkPath === '/notifications' ? undefined : () => setActiveTab(linkPath);
 
