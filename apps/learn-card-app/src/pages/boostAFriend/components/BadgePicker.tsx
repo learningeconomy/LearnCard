@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Search, Sparkles, Plus } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
@@ -31,6 +31,20 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
         const lower = search.toLowerCase();
         return presets.filter(p => p.title.toLowerCase().includes(lower));
     }, [presets, search]);
+
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const handleScroll = useCallback(
+        (e: React.UIEvent<HTMLDivElement>) => {
+            const scrollTop = e.currentTarget.scrollTop;
+            if (scrollTop > 24 && !isCollapsed) {
+                setIsCollapsed(true);
+            } else if (scrollTop <= 8 && isCollapsed) {
+                setIsCollapsed(false);
+            }
+        },
+        [isCollapsed]
+    );
 
     const handleSelect = (badge: BadgePreset, color: string) => {
         if (Capacitor.isNativePlatform()) {
@@ -83,36 +97,62 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     }, [presets, badgeGroups, search]);
 
     return (
-        <div className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0 animate-fade-in-up">
-            <div className="sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 pb-4 mb-6">
-                <div className="flex items-center justify-between mb-3">
-                    <div>
+        <div
+            className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0 animate-fade-in-up"
+            onScroll={handleScroll}
+        >
+            <div
+                className={`sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 transition-all duration-300 motion-reduce:transition-none ${
+                    isCollapsed ? 'pb-3 mb-4 sm:pb-4 sm:mb-6' : 'pb-4 mb-6'
+                }`}
+            >
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className={`absolute right-0 z-10 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-all duration-300 motion-reduce:transition-none ${
+                            isCollapsed ? 'top-4 sm:top-1' : 'top-1'
+                        }`}
+                    >
+                        Cancel
+                    </button>
+
+                    <div
+                        className={`transition-all duration-300 motion-reduce:transition-none overflow-hidden pr-14 ${
+                            isCollapsed
+                                ? 'max-h-0 opacity-0 mb-0 sm:max-h-none sm:opacity-100 sm:mb-3'
+                                : 'max-h-24 opacity-100 mb-3 sm:max-h-none sm:opacity-100 sm:mb-3'
+                        }`}
+                    >
                         <h1 className="text-xl font-semibold text-grayscale-900">Pick a Badge</h1>
                         <p className="text-sm text-grayscale-600 mt-0.5">
                             Send a fun badge to a friend to show appreciation.
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+
+                    <div
+                        className={`relative transition-all duration-300 motion-reduce:transition-none ${
+                            isCollapsed ? 'pr-14 sm:pr-0 mb-0 sm:mb-4' : 'mb-4'
+                        }`}
                     >
-                        Cancel
-                    </button>
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search or create custom..."
+                            className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
+                        />
+                    </div>
                 </div>
 
-                <div className="relative mb-4">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="Search or create custom..."
-                        className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
-                    />
-                </div>
-
-                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                <div
+                    className={`flex gap-3 overflow-x-auto scrollbar-hide transition-all duration-300 motion-reduce:transition-none ${
+                        isCollapsed
+                            ? 'max-h-0 opacity-0 pb-0 sm:max-h-none sm:opacity-100 sm:pb-1'
+                            : 'max-h-16 opacity-100 pb-1 sm:max-h-none sm:opacity-100 sm:pb-1'
+                    }`}
+                >
                     <button
                         type="button"
                         onClick={handleSurpriseMe}

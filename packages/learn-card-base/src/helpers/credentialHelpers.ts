@@ -141,7 +141,7 @@ export const CATEGORY_MAP: Record<
 > = {
     Achievement: 'Achievement',
     Award: 'Achievement',
-    Badge: 'Achievement',
+    Badge: 'Social Badge',
     CommunityService: 'Achievement',
     MovieTicketCredential: 'Achievement',
 
