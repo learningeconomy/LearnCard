@@ -40,6 +40,7 @@ import {
 } from 'learn-card-base/helpers/credentials/ids';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
 import { getDefaultDisplayType } from 'learn-card-base/helpers/display.helpers';
+import { parseLcTags } from 'learn-card-base/helpers/displayTags.helpers';
 
 import { useWallet } from 'learn-card-base';
 
@@ -389,9 +390,14 @@ export const useGetVCInfo = (
     // ========================================================================
     // DISPLAY METADATA
     // ========================================================================
+    const lcTagHints = parseLcTags(getCredentialSubjectAchievement(vc)?.tag);
+
     const displayType =
-        vc?.display?.displayType ?? getDefaultDisplayType(categoryType ?? '', achievementType);
+        vc?.display?.displayType ??
+        getDefaultDisplayType(categoryType ?? '', achievementType, lcTagHints.displayType);
     const previewType = vc?.display?.previewType;
+
+    const subtype = lcTagHints.subtype;
 
     // ID card-specific display settings
     const idBackgroundImage = vc?.boostID?.backgroundImage;
@@ -405,8 +411,8 @@ export const useGetVCInfo = (
     );
 
     // Generic display settings
-    const backgroundImage = vc?.display?.backgroundImage;
-    const backgroundColor = vc?.display?.backgroundColor;
+    const backgroundImage = vc?.display?.backgroundImage ?? lcTagHints.backgroundImage;
+    const backgroundColor = vc?.display?.backgroundColor ?? lcTagHints.backgroundColor;
 
     // ========================================================================
     // CLR
@@ -469,7 +475,8 @@ export const useGetVCInfo = (
         results,
         creditsEarned,
         achievementType,
-        formattedAchievementType,
+        subtype,
+        formattedAchievementType: subtype || formattedAchievementType,
         badgeThumbnail,
         isClrCredential,
         linkedCredentialCount,
