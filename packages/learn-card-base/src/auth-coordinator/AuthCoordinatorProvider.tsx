@@ -176,6 +176,12 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     const [state, setState] = useState<UnifiedAuthState>({ status: 'idle' });
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
 
+    // Mirror of `state` readable inside the (re)creation effect without adding
+    // `state` to its deps (which would recreate the coordinator on every
+    // state transition).
+    const stateRef = useRef(state);
+    stateRef.current = state;
+
     // Helper to determine event level from state
     const getStateEventLevel = useCallback((newState: UnifiedAuthState): DebugEventLevel => {
         if (newState.status === 'error') return 'error';
@@ -264,6 +270,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
 
         coordinatorRef.current = coordinator;
 
+        // Bridge the async gap until initialize() emits its first state. When
+        // a real auth provider arrives while the previous coordinator instance
+        // had settled in 'idle' (interactive login, or Firebase restoring the
+        // session), initialize() awaits the cached-key read before any
+        // setState — leaving consumers on the stale 'idle' long enough to
+        // paint the logged-out UI between two loading screens.
+        if (authProvider && stateRef.current.status === 'idle') {
+            handleStateChange({ status: 'authenticating' });
+        }
+
         coordinator.initialize();
 
         return () => {
@@ -273,6 +289,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, [
         enabled,
         effectiveAuthProvider,
+        authProvider,
         keyDerivation,
         didFromPrivateKey,
         signDidAuthVp,
