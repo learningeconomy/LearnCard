@@ -250,6 +250,21 @@ export const tenantEcosystemConfigSchema = z
     })
     .passthrough();
 
+/**
+ * External data registries a tenant pulls in. `stylePackUrls` are remote JSON
+ * files (LCAStylesPackRegistryEntry[]); `stylePackAssets` are names of bundled
+ * JSON files shipped with the app (apps/learn-card-app/src/registries/style-packs/<name>.json).
+ * All sources merge left→right, deduped by category+type, later source wins per field.
+ */
+export const tenantRegistriesConfigSchema = z
+    .object({
+        stylePackUrls: z.array(z.string()).default([]),
+        stylePackAssets: z.array(z.string()).default([]),
+        badgeGroupUrls: z.array(z.string()).default([]),
+        badgeGroupAssets: z.array(z.string()).default([]),
+    })
+    .passthrough();
+
 // -----------------------------------------------------------------
 // Schema version — bump when making breaking changes to the config shape.
 // Used by resolveTenantConfig() to invalidate stale caches.
@@ -278,6 +293,7 @@ export const tenantConfigSchema = z
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
+        registries: tenantRegistriesConfigSchema.default({}),
     })
     .passthrough();
 

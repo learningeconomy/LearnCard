@@ -108,6 +108,15 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         posthogHost: undefined,
     },
 
+    registries: {
+        stylePackUrls: [
+            'https://raw.githubusercontent.com/WeLibraryOS/metaversity-registry/main/lca-style-packs-registry.json',
+        ],
+        stylePackAssets: ['learncard'],
+        badgeGroupUrls: [],
+        badgeGroupAssets: ['learncard'],
+    },
+
     links: {
         appStoreUrl: 'https://apps.apple.com/us/app/learncard/id1635841898',
         playStoreUrl: 'https://play.google.com/store/apps/details?id=com.learncard.app',

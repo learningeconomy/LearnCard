@@ -1,0 +1,38 @@
+[
+    {
+        "id": "summit-social",
+        "label": "Summit Social",
+        "description": "For the people who make the community feel alive.",
+        "order": -2,
+        "types": [
+            "ext:VibeCurator",
+            "ext:ChaosCoordinator",
+            "ext:HypeArchitect",
+            "ext:LoreKeeper",
+            "ext:SideQuestSpecialist",
+            "ext:QuietGenius",
+            "ext:CommunityHelper",
+            "ext:FoodSniper",
+            "ext:VisualStoryteller",
+            "ext:LogicMaster"
+        ]
+    },
+    {
+        "id": "summit-standards",
+        "label": "Standards & Interop",
+        "description": "For the ones who keep credentials clean, aligned, and verifiable.",
+        "order": -1,
+        "types": [
+            "ext:SchemaWhisperer",
+            "ext:AlignmentWizard",
+            "ext:CLRCartographer",
+            "ext:VerifiableVibes",
+            "ext:BadgeGoblin",
+            "ext:MetadataMystic",
+            "ext:InteropDiplomat",
+            "ext:BackpackElder",
+            "ext:IssuerTherapist",
+            "ext:SpecGremlin"
+        ]
+    }
+]
