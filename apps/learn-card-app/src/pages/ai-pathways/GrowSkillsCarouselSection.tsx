@@ -49,6 +49,7 @@ const GrowSkillsCarouselSection = <T,>({
         // 'auto'-width slides aren't measured yet on first render, so isEnd can be
         // wrong here — recompute after layout settles.
         requestAnimationFrame(() => {
+            if (swiper.destroyed) return;
             swiper.update();
             handleSwiperUpdate(swiper);
         });

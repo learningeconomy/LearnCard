@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -20,11 +20,21 @@ type MySkillProfileProps = {
 const isNativePlatform = Capacitor.isNativePlatform();
 
 const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
-    const { percentage, lastEditedDate } = useSkillProfileCompletion();
+    const { percentage, lastEditedDate, isFetched } = useSkillProfileCompletion();
     const { openSkillProfile } = useSkillProfileModal();
 
-    const [isExpanded, setIsExpanded] = useState(isNativePlatform && percentage === 0);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+
+    const hasAutoExpanded = useRef(false);
+
+    useEffect(() => {
+        if (!isNativePlatform || hasAutoExpanded.current) return;
+        if (isFetched && percentage === 0) {
+            hasAutoExpanded.current = true;
+            setIsExpanded(true);
+        }
+    }, [isFetched, percentage]);
 
     const formattedEditDate = lastEditedDate
         ? new Date(lastEditedDate).toLocaleDateString('en-US', {
