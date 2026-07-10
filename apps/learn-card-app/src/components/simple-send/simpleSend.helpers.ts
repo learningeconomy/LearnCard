@@ -147,7 +147,7 @@ export interface IssueViaBoostOptions {
 }
 
 export interface IssueViaBoostResult {
-    credentialUri: string;
+    credentialUri?: string;
     claimLink?: string;
 }
 
@@ -158,7 +158,7 @@ const deliverBoost = async (
     signedCredential?: VC
 ): Promise<IssueViaBoostResult> => {
     let claimLink: string | undefined;
-    let credentialUri = boostUri;
+    let credentialUri: string | undefined = options.mode === 'self' ? undefined : boostUri;
 
     const templateData =
         options.variableValues && Object.keys(options.variableValues).length > 0
