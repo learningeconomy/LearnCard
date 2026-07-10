@@ -1,4 +1,5 @@
 import { DisplayTypeEnum } from './display-types';
+import { CREDENTIAL_CATEGORIES } from '../types/credentials';
 
 /**
  * LearnCard display-tag convention (`lc:` namespace)
@@ -33,6 +34,7 @@ import { DisplayTypeEnum } from './display-types';
 export const LC_TAG_NAMESPACE = 'lc';
 
 export enum LcTagKey {
+    Category = 'category',
     Subtype = 'subtype',
     DisplayType = 'displaytype',
     BgColor = 'bgcolor',
@@ -41,6 +43,7 @@ export enum LcTagKey {
 }
 
 const LC_TAG_CANONICAL_KEY: Record<LcTagKey, string> = {
+    [LcTagKey.Category]: 'category',
     [LcTagKey.Subtype]: 'subtype',
     [LcTagKey.DisplayType]: 'displayType',
     [LcTagKey.BgColor]: 'bgColor',
@@ -49,12 +52,16 @@ const LC_TAG_CANONICAL_KEY: Record<LcTagKey, string> = {
 };
 
 export type LcDisplayHints = {
+    category?: string;
     subtype?: string;
     displayType?: DisplayTypeEnum;
     backgroundColor?: string;
     backgroundImage?: string;
     accentColor?: string;
 };
+
+const isValidCategory = (value: string): boolean =>
+    (CREDENTIAL_CATEGORIES as readonly string[]).includes(value);
 
 const HEX_COLOR_REGEX = /^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
@@ -103,6 +110,11 @@ export const parseLcTags = (tags?: string[]): LcDisplayHints => {
         if (!value) continue;
 
         switch (key) {
+            case LcTagKey.Category: {
+                const candidate = value.trim();
+                if (isValidCategory(candidate)) hints.category = candidate;
+                break;
+            }
             case LcTagKey.Subtype:
                 hints.subtype = value.trim();
                 break;
@@ -144,6 +156,10 @@ export const buildLcTags = (hints: LcDisplayHints): string[] => {
 
     const push = (key: LcTagKey, value: string) =>
         tags.push(`${LC_TAG_NAMESPACE}:${LC_TAG_CANONICAL_KEY[key]}:${value}`);
+
+    if (hints.category?.trim() && isValidCategory(hints.category.trim())) {
+        push(LcTagKey.Category, hints.category.trim());
+    }
 
     if (hints.subtype?.trim()) push(LcTagKey.Subtype, hints.subtype.trim());
 

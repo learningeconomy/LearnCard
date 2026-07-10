@@ -64,9 +64,9 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     };
 
     const handleCustom = () => {
-        if (!search) return;
+        const trimmedSearch = search.trim();
         const randomColor = VIBE_COLORS[Math.floor(Math.random() * VIBE_COLORS.length)];
-        handleSelect({ title: search, type: `ext:${search.replace(/\s+/g, '')}` }, randomColor);
+        handleSelect({ title: trimmedSearch, type: 'ext:Custom' }, randomColor);
     };
 
     const groupedPresets = useMemo(() => {
@@ -98,7 +98,10 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
 
     return (
         <div className="flex flex-col h-full animate-fade-in-up">
-            <div className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0" onScroll={handleScroll}>
+            <div
+                className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0 scrollbar-hide"
+                onScroll={handleScroll}
+            >
                 <div
                     className={`sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 transition-all duration-300 motion-reduce:transition-none ${
                         isCollapsed ? 'pb-3 mb-4 sm:pb-4 sm:mb-6' : 'pb-4 mb-6'
@@ -109,7 +112,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             type="button"
                             onClick={onBack}
                             className={`absolute right-0 z-10 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-all duration-300 motion-reduce:transition-none ${
-                                isCollapsed ? 'top-4 sm:top-1' : 'top-1'
+                                isCollapsed ? 'top-[18px] sm:top-1' : 'top-1'
                             }`}
                         >
                             Cancel
@@ -131,16 +134,16 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                         </div>
 
                         <div
-                            className={`relative transition-all duration-300 motion-reduce:transition-none ${
-                                isCollapsed ? 'pr-14 sm:pr-0 mb-0 sm:mb-4' : 'mb-4'
+                            className={`relative py-0.5 pl-0.5 transition-all duration-300 motion-reduce:transition-none ${
+                                isCollapsed ? 'pr-14 sm:pr-0.5 mb-0 sm:mb-4' : 'pr-0.5 mb-4'
                             }`}
                         >
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400 ml-0.5" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder="Search or create custom..."
+                                placeholder="Search badges..."
                                 className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
                             />
                         </div>
@@ -161,17 +164,14 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             <Sparkles className="w-4 h-4 text-amber-300" />
                             Surprise me
                         </button>
-                        {search &&
-                            !presets.some(p => p.title.toLowerCase() === search.toLowerCase()) && (
-                                <button
-                                    type="button"
-                                    onClick={handleCustom}
-                                    className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Create "{search}"
-                                </button>
-                            )}
+                        <button
+                            type="button"
+                            onClick={handleCustom}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New
+                        </button>
                     </div>
                 </div>
 

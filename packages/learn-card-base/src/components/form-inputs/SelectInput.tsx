@@ -8,6 +8,7 @@ type SelectOption = {
     value: string | number;
     displayText?: string;
     selectedText?: string;
+    description?: string;
 };
 
 type SelectInputProps = {
@@ -52,18 +53,44 @@ const SelectInput: React.FC<SelectInputProps> = ({
                         Clear selection
                     </button>
                 )}
-                {options.map(o => (
-                    <button
-                        key={o.value}
-                        className={`py-[10px] ${o.value === value ? 'font-[700]' : ''}`}
-                        onClick={() => {
-                            onChange(o.value);
-                            closeModal();
-                        }}
-                    >
-                        {o.displayText ?? o.value}
-                    </button>
-                ))}
+                {options.map(o =>
+                    o.description ? (
+                        <button
+                            key={o.value}
+                            className={`flex flex-col gap-[2px] text-left px-[16px] py-[12px] rounded-[12px] transition-colors hover:bg-grayscale-10 ${
+                                o.value === value ? 'bg-grayscale-100' : ''
+                            }`}
+                            onClick={() => {
+                                onChange(o.value);
+                                closeModal();
+                            }}
+                        >
+                            <span
+                                className={`${
+                                    o.value === value
+                                        ? 'font-[700] text-grayscale-900'
+                                        : 'font-[600] text-grayscale-800'
+                                }`}
+                            >
+                                {o.displayText ?? o.value}
+                            </span>
+                            <span className="text-[13px] leading-[130%] text-grayscale-500">
+                                {o.description}
+                            </span>
+                        </button>
+                    ) : (
+                        <button
+                            key={o.value}
+                            className={`py-[10px] ${o.value === value ? 'font-[700]' : ''}`}
+                            onClick={() => {
+                                onChange(o.value);
+                                closeModal();
+                            }}
+                        >
+                            {o.displayText ?? o.value}
+                        </button>
+                    )
+                )}
             </div>,
             { sectionClassName: '!max-w-[300px]' }
         );

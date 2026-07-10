@@ -1,7 +1,14 @@
-import React, { useCallback, useState } from 'react';
-import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 
-import { useFilestack } from 'learn-card-base';
+import {
+    useFilestack,
+    SelectInput,
+    parseLcTags,
+    buildLcTags,
+    DisplayTypeEnum,
+} from 'learn-card-base';
+import type { LcDisplayHints } from 'learn-card-base';
 import { isPlausibleRecipient } from './recipientValidation';
 import { RecipientPicker } from './RecipientPicker';
 import { RecipientMode, Recipient, LinkOptions } from './recipientTypes';
@@ -31,6 +38,103 @@ const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
+
+const DISPLAY_TYPE_OPTIONS: {
+    value: DisplayTypeEnum;
+    displayText: string;
+    description: string;
+}[] = [
+    {
+        value: DisplayTypeEnum.Badge,
+        displayText: 'Badge',
+        description: 'A circular emblem with a ribbon. Best for social badges and achievements.',
+    },
+    {
+        value: DisplayTypeEnum.Certificate,
+        displayText: 'Certificate',
+        description: 'A formal, document-style frame. Good for completions and certifications.',
+    },
+    {
+        value: DisplayTypeEnum.Award,
+        displayText: 'Award',
+        description: 'A trophy-style ribbon that emphasizes recognition and honors.',
+    },
+    {
+        value: DisplayTypeEnum.ID,
+        displayText: 'ID card',
+        description: 'A wallet-style ID layout with photo and issuer. Great for memberships.',
+    },
+    {
+        value: DisplayTypeEnum.Course,
+        displayText: 'Course',
+        description: 'Tuned for courses, classes, and learning programs.',
+    },
+    {
+        value: DisplayTypeEnum.Media,
+        displayText: 'Media',
+        description: 'A rich tile that showcases an image or video front-and-center.',
+    },
+];
+
+const CATEGORY_OPTIONS: { value: string; displayText: string; description: string }[] = [
+    {
+        value: 'Achievement',
+        displayText: 'Achievement',
+        description: 'Awards, certificates, and accomplishments.',
+    },
+    {
+        value: 'Social Badge',
+        displayText: 'Social Badge',
+        description: 'Community and social recognition badges.',
+    },
+    {
+        value: 'ID',
+        displayText: 'ID',
+        description: 'Identity cards and official credentials.',
+    },
+    {
+        value: 'Membership',
+        displayText: 'Membership',
+        description: 'Group, club, or organization membership.',
+    },
+    {
+        value: 'Work History',
+        displayText: 'Work History',
+        description: 'Jobs, internships, and professional experience.',
+    },
+    {
+        value: 'Learning History',
+        displayText: 'Learning History',
+        description: 'Courses, classes, and learning programs.',
+    },
+    {
+        value: 'Course',
+        displayText: 'Course',
+        description: 'A single course or class.',
+    },
+    {
+        value: 'Skill',
+        displayText: 'Skill',
+        description: 'Demonstrated skills and competencies.',
+    },
+    {
+        value: 'Accomplishment',
+        displayText: 'Accomplishment',
+        description: 'Portfolio pieces and personal accomplishments.',
+    },
+    {
+        value: 'Accommodation',
+        displayText: 'Accommodation',
+        description: 'Support needs and accommodations.',
+    },
+    {
+        value: 'Family',
+        displayText: 'Family',
+        description: 'Family and relationship credentials.',
+    },
+];
+
+const HEX_INPUT_REGEX = /[^0-9a-fA-F]/g;
 
 interface IssuePaletteProps {
     selectedType: CredentialTypeEntry | null;
@@ -106,6 +210,47 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         resizeBeforeUploading: true,
         onUpload: (url: string) => patchAchievement({ image: staticField(url) }),
     });
+
+    // Display hints are a projection of the OBv3 `achievement.tag` array (`lc:` convention); non-`lc:` tags are preserved on write.
+    const hints = parseLcTags(ach?.tag);
+
+    const setHints = useCallback(
+        (patch: Partial<LcDisplayHints>) => {
+            const nonLcTags = (ach?.tag ?? []).filter(t => !t.toLowerCase().startsWith('lc:'));
+            patchAchievement({ tag: [...nonLcTags, ...buildLcTags({ ...hints, ...patch })] });
+        },
+        [ach, hints, patchAchievement]
+    );
+
+    const { handleFileSelect: handleBgSelect, isLoading: bgUploading } = useFilestack({
+        fileType: 'image/*',
+        resizeBeforeUploading: true,
+        onUpload: (url: string) => setHints({ backgroundImage: url }),
+    });
+
+    // Buffer the hex text locally: buildLcTags drops invalid-length hex, so binding the input straight to the tag would erase digits mid-typing.
+    const [colorText, setColorText] = useState((hints.backgroundColor ?? '').replace(/^#/, ''));
+    useEffect(() => {
+        setColorText((hints.backgroundColor ?? '').replace(/^#/, ''));
+    }, [hints.backgroundColor]);
+
+    const handleHexChange = (raw: string) => {
+        const cleaned = raw.replace(HEX_INPUT_REGEX, '').slice(0, 8).toUpperCase();
+        setColorText(cleaned);
+        if ([3, 6, 8].includes(cleaned.length)) setHints({ backgroundColor: `#${cleaned}` });
+        else if (cleaned.length === 0) setHints({ backgroundColor: undefined });
+    };
+
+    const handleSwatchChange = (value: string) => setHints({ backgroundColor: value });
+
+    const handleClearColor = () => {
+        setColorText('');
+        setHints({ backgroundColor: undefined });
+    };
+
+    const swatchValue = /^#[0-9a-fA-F]{6}$/.test(hints.backgroundColor ?? '')
+        ? (hints.backgroundColor as string)
+        : '#FFFFFF';
 
     const name = ach?.name?.value ?? '';
     const nameInvalid = nameTouched && !ach?.name?.isDynamic && !name.trim();
@@ -295,6 +440,144 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                     </span>
                                     section.
                                 </p>
+
+                                <div className="pt-4 mt-4 border-t border-grayscale-200 space-y-4">
+                                    <h4 className="text-sm font-semibold text-grayscale-900">
+                                        Display (optional)
+                                    </h4>
+                                    <p className="text-xs text-grayscale-400 leading-relaxed">
+                                        Fine-tune how this credential looks. Wallets that don’t
+                                        support these hints simply ignore them.
+                                    </p>
+
+                                    <div>
+                                        <label className={LABEL_CLASS}>Category</label>
+                                        <SelectInput
+                                            value={hints.category ?? null}
+                                            onChange={value =>
+                                                setHints({
+                                                    category: (value as string) || undefined,
+                                                })
+                                            }
+                                            allowDeselect
+                                            placeholder="Automatic (based on type)"
+                                            options={CATEGORY_OPTIONS}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL_CLASS}>Subtype label</label>
+                                        <input
+                                            type="text"
+                                            value={hints.subtype ?? ''}
+                                            onChange={e =>
+                                                setHints({ subtype: e.target.value || undefined })
+                                            }
+                                            placeholder="e.g. Trailblazer"
+                                            className={INPUT_CLASS}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL_CLASS}>Display style</label>
+                                        <SelectInput
+                                            value={hints.displayType ?? null}
+                                            onChange={value =>
+                                                setHints({
+                                                    displayType:
+                                                        (value as DisplayTypeEnum) || undefined,
+                                                })
+                                            }
+                                            allowDeselect
+                                            placeholder="Automatic (based on type)"
+                                            options={DISPLAY_TYPE_OPTIONS}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL_CLASS}>Background color</label>
+                                        <div className="flex items-center gap-3">
+                                            <label className="relative h-11 w-11 shrink-0 rounded-xl border border-grayscale-300 overflow-hidden cursor-pointer shadow-sm hover:ring-2 hover:ring-emerald-500 transition-all">
+                                                <span
+                                                    className="absolute inset-0"
+                                                    style={{
+                                                        backgroundColor:
+                                                            hints.backgroundColor ?? '#FFFFFF',
+                                                    }}
+                                                />
+                                                <input
+                                                    type="color"
+                                                    value={swatchValue}
+                                                    onChange={e =>
+                                                        handleSwatchChange(e.target.value)
+                                                    }
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                />
+                                            </label>
+                                            <div className="relative flex-1">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-grayscale-400 text-base pointer-events-none select-none">
+                                                    #
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={colorText}
+                                                    onChange={e => handleHexChange(e.target.value)}
+                                                    placeholder="353E64"
+                                                    maxLength={8}
+                                                    spellCheck={false}
+                                                    className="w-full py-3 pl-8 pr-10 border border-grayscale-300 rounded-xl text-base text-grayscale-900 uppercase tracking-wide placeholder:text-grayscale-400 placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
+                                                />
+                                                {colorText && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleClearColor}
+                                                        aria-label="Clear color"
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL_CLASS}>Background image</label>
+                                        {hints.backgroundImage && (
+                                            <div className="mb-2 flex items-center gap-3">
+                                                <img
+                                                    src={hints.backgroundImage}
+                                                    alt="Background preview"
+                                                    className="h-12 w-12 rounded-xl object-cover border border-grayscale-200"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setHints({ backgroundImage: undefined })
+                                                    }
+                                                    className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={e => handleBgSelect(e as any)}
+                                            disabled={bgUploading}
+                                            className="w-full py-3 px-4 rounded-xl border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2 disabled:opacity-40"
+                                        >
+                                            {bgUploading ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <ImagePlus className="w-4 h-4" />
+                                            )}
+                                            {hints.backgroundImage
+                                                ? 'Change background image'
+                                                : 'Add a background image'}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </section>

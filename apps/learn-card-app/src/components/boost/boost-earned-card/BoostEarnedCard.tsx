@@ -162,6 +162,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         idAccentColor,
         backgroundImage,
         backgroundColor,
+        accentColor,
 
         loading: vcInfoLoading,
     } = useGetVCInfo(cred, categoryType);
@@ -444,6 +445,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 showBackgroundImage
                                 backgroundImage={backgroundImage}
                                 backgroundColor={backgroundColor}
+                                accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                 badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
@@ -517,6 +519,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     showBackgroundImage
                                     backgroundImage={backgroundImage}
                                     backgroundColor={backgroundColor}
+                                    accentColor={accentColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                     badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
@@ -619,6 +622,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 showBackgroundImage
                                 backgroundImage={backgroundImage}
                                 backgroundColor={backgroundColor}
+                                accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                 badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'

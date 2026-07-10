@@ -24,6 +24,7 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata, getBoostMetadata } fro
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
     achievementType: string;
+    accentColor?: string;
     fallbackCircleText?: string;
     badgeThumbnail: string;
     showBackgroundImage: boolean;
@@ -50,6 +51,7 @@ type CredentialBadgeProps = {
 export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     boostType,
     achievementType,
+    accentColor,
     fallbackCircleText,
     badgeThumbnail,
     showBackgroundImage = false,
@@ -230,6 +232,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
             ) : (
                 <div
                     className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}
+                    style={accentColor ? { backgroundColor: accentColor } : undefined}
                 >
                     <div
                         className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}

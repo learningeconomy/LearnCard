@@ -26,6 +26,8 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
     achievementType: string;
+    subtype?: string;
+    accentColor?: string;
     fallbackCircleText?: string;
     badgeThumbnail: string;
     showBackgroundImage: boolean;
@@ -52,6 +54,8 @@ type CredentialBadgeProps = {
 export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     boostType,
     achievementType,
+    subtype,
+    accentColor,
     fallbackCircleText,
     badgeThumbnail,
     showBackgroundImage = false,
@@ -104,11 +108,13 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
         _subColorOverride = 'bg-lime-500';
     }
 
-    let badgeCircleText = getAchievementTypeDisplayText(
-        achievementType,
-        boostType ?? defaultBoostType,
-        fallbackCircleText
-    );
+    let badgeCircleText =
+        subtype ||
+        getAchievementTypeDisplayText(
+            achievementType,
+            boostType ?? defaultBoostType,
+            fallbackCircleText
+        );
 
     // check what display type to render
     const isBadgeDisplayType = displayType === 'badge';
@@ -243,6 +249,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
             ) : (
                 <div
                     className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}
+                    style={accentColor ? { backgroundColor: accentColor } : undefined}
                 >
                     <div
                         className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}

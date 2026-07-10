@@ -14,7 +14,7 @@ import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
 import { BadgePicker } from './components/BadgePicker';
 import { BadgePersonalize } from './components/BadgePersonalize';
-import { RecipientPicker } from '../issue/components/RecipientPicker';
+import { BoostRecipientPicker } from './components/BoostRecipientPicker';
 import { Confetti } from '../issue/components/Confetti';
 import { RecipientMode, Recipient, LinkOptions } from '../issue/components/recipientTypes';
 import { issueViaBoost } from '../../components/simple-send/simpleSend.helpers';
@@ -37,6 +37,8 @@ const BoostAFriendPage: React.FC = () => {
 
     const [step, setStep] = useState<Step>('pick');
     const [selectedBadge, setSelectedBadge] = useState<BadgePreset | null>(null);
+    const [title, setTitle] = useState('');
+    const [subtype, setSubtype] = useState('');
     const [vibeColor, setVibeColor] = useState<string>('#3B82F6');
     const [note, setNote] = useState('');
 
@@ -51,6 +53,8 @@ const BoostAFriendPage: React.FC = () => {
     const handleSelectBadge = (badge: BadgePreset, color: string) => {
         const { backgroundColor } = resolveBadgeStyle(badge, stylePacks);
         setSelectedBadge(badge);
+        setTitle(badge.title);
+        setSubtype(badge.title);
         setVibeColor(backgroundColor || color);
         setStep('personalize');
     };
@@ -102,8 +106,9 @@ const BoostAFriendPage: React.FC = () => {
             const { imageUrl } = resolveBadgeStyle(selectedBadge, stylePacks);
 
             const template = buildBoostFriendTemplate({
-                title: selectedBadge.title,
-                description: `A social badge for being a ${selectedBadge.title}`,
+                title: title.trim(),
+                subtype: subtype.trim(),
+                description: `A social badge for being a ${title.trim()}`,
                 note,
                 vibeColor,
                 imageUrl: imageUrl || categoryFallback,
@@ -160,6 +165,8 @@ const BoostAFriendPage: React.FC = () => {
 
     const handleBoostAnother = () => {
         setSelectedBadge(null);
+        setTitle('');
+        setSubtype('');
         setNote('');
         setRecipients([]);
         setClaimLink(null);
@@ -198,6 +205,11 @@ const BoostAFriendPage: React.FC = () => {
                             <div className="max-w-xl mx-auto w-full h-full">
                                 <BadgePersonalize
                                     badge={selectedBadge}
+                                    title={title}
+                                    onTitleChange={setTitle}
+                                    subtype={subtype}
+                                    onSubtypeChange={setSubtype}
+                                    isCustom={selectedBadge?.type === 'ext:Custom'}
                                     vibeColor={vibeColor}
                                     onVibeColorChange={setVibeColor}
                                     note={note}
@@ -205,6 +217,11 @@ const BoostAFriendPage: React.FC = () => {
                                     onNext={() => setStep('send')}
                                     onBack={() => setStep('pick')}
                                     stylePacks={stylePacks}
+                                    issuerName={
+                                        currentLCNUser?.displayName ||
+                                        currentLCNUser?.profileId ||
+                                        ''
+                                    }
                                 />
                             </div>
                         )}
@@ -230,20 +247,19 @@ const BoostAFriendPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto pb-20 flex flex-col justify-center">
-                                    <div className="max-w-sm mx-auto w-full">
-                                        <RecipientPicker
+                                <div className="flex-1 min-h-0 flex flex-col pb-20">
+                                    <div className="max-w-sm mx-auto w-full flex-1 flex flex-col min-h-0">
+                                        <BoostRecipientPicker
                                             mode={recipientMode}
                                             onModeChange={setRecipientMode}
                                             recipients={recipients}
                                             onRecipientsChange={setRecipients}
                                             linkOptions={linkOptions}
                                             onLinkOptionsChange={setLinkOptions}
-                                            hideHeader
                                         />
 
                                         {error && (
-                                            <div className="mt-6 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 animate-fade-in-up shadow-sm">
+                                            <div className="mt-6 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 animate-fade-in-up shadow-sm shrink-0">
                                                 <span className="text-sm text-red-700 leading-relaxed">
                                                     {error}
                                                 </span>
@@ -271,6 +287,8 @@ const BoostAFriendPage: React.FC = () => {
                                             </>
                                         ) : recipientMode === 'link' ? (
                                             'Create Link'
+                                        ) : recipientMode === 'self' ? (
+                                            'Boost Myself'
                                         ) : (
                                             'Send Badge'
                                         )}
@@ -280,53 +298,57 @@ const BoostAFriendPage: React.FC = () => {
                         )}
 
                         {step === 'celebrate' && (
-                            <div className="max-w-xl mx-auto w-full flex flex-col h-full items-center justify-center text-center animate-pop-in relative py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)]">
+                            <div className="max-w-xl mx-auto w-full flex flex-col h-full text-center animate-pop-in relative py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)] overflow-y-auto scrollbar-hide">
                                 <Confetti />
 
-                                <div className="flex flex-col items-center justify-center max-w-sm w-full mx-auto flex-1">
-                                    <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                                        <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                                    </div>
+                                <div className="my-auto w-full py-6 space-y-8">
+                                    <div className="flex flex-col items-center justify-center max-w-sm w-full mx-auto">
+                                        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                                            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                                        </div>
 
-                                    <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
-                                        {recipientMode === 'link' ? 'Link Created!' : 'Badge Sent!'}
-                                    </h1>
-                                    <p className="text-base text-grayscale-600 mb-10">
-                                        {recipientMode === 'link'
-                                            ? 'Your badge is ready to be shared. Anyone with the link can claim it.'
-                                            : "They'll be notified about their new badge."}
-                                    </p>
+                                        <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
+                                            {recipientMode === 'link'
+                                                ? 'Link Created!'
+                                                : 'Badge Sent!'}
+                                        </h1>
+                                        <p className="text-base text-grayscale-600 mb-10">
+                                            {recipientMode === 'link'
+                                                ? 'Your badge is ready to be shared. Anyone with the link can claim it.'
+                                                : "They'll be notified about their new badge."}
+                                        </p>
 
-                                    {claimLink && (
-                                        <div className="w-full mb-10 space-y-3">
-                                            <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl break-all text-sm text-grayscale-900 border border-grayscale-200 shadow-sm">
-                                                {claimLink}
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={handleCopyLink}
-                                                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-sm hover:bg-white transition-colors"
-                                                >
-                                                    <Copy className="w-4 h-4" />
-                                                    Copy
-                                                </button>
-                                                {navigator.share && (
+                                        {claimLink && (
+                                            <div className="w-full mb-10 space-y-3">
+                                                <div className="p-4 bg-white/80 backdrop-blur-sm rounded-2xl break-all text-sm text-grayscale-900 border border-grayscale-200 shadow-sm">
+                                                    {claimLink}
+                                                </div>
+                                                <div className="flex gap-3">
                                                     <button
                                                         type="button"
-                                                        onClick={handleShareLink}
-                                                        className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity shadow-sm"
+                                                        onClick={handleCopyLink}
+                                                        className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-sm hover:bg-white transition-colors"
                                                     >
-                                                        <Share className="w-4 h-4" />
-                                                        Share
+                                                        <Copy className="w-4 h-4" />
+                                                        Copy
                                                     </button>
-                                                )}
+                                                    {navigator.share && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleShareLink}
+                                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity shadow-sm"
+                                                        >
+                                                            <Share className="w-4 h-4" />
+                                                            Share
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="w-full max-w-sm space-y-3 mt-auto pt-6">
+                                <div className="w-full max-w-sm mx-auto space-y-3 mt-auto pt-6">
                                     <button
                                         type="button"
                                         onClick={handleBoostAnother}

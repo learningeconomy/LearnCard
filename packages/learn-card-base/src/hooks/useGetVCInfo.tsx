@@ -413,6 +413,7 @@ export const useGetVCInfo = (
     // Generic display settings
     const backgroundImage = vc?.display?.backgroundImage ?? lcTagHints.backgroundImage;
     const backgroundColor = vc?.display?.backgroundColor ?? lcTagHints.backgroundColor;
+    const accentColor = vc?.display?.accentColor ?? lcTagHints.accentColor;
 
     // ========================================================================
     // CLR
@@ -476,6 +477,7 @@ export const useGetVCInfo = (
         creditsEarned,
         achievementType,
         subtype,
+        accentColor,
         formattedAchievementType: subtype || formattedAchievementType,
         badgeThumbnail,
         isClrCredential,

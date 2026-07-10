@@ -6,6 +6,7 @@ import {
     DEFAULT_TYPES,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { buildLcTags } from 'learn-card-base/helpers/displayTags.helpers';
+import { deriveAccentColor } from 'learn-card-base/helpers/colorHelpers';
 import { DisplayTypeEnum } from 'learn-card-base/helpers/display-types';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../components/boost/boost-options/boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -13,6 +14,7 @@ import { LCAStylesPackRegistryEntry } from 'learn-card-base';
 
 export interface BoostFriendInput {
     title: string;
+    subtype?: string;
     description: string;
     note?: string;
     issuerName?: string;
@@ -22,9 +24,10 @@ export interface BoostFriendInput {
 
 export const buildBoostFriendTemplate = (input: BoostFriendInput): OBv3CredentialTemplate => {
     const tags = buildLcTags({
-        subtype: input.title,
+        subtype: input.subtype?.trim() || input.title,
         displayType: DisplayTypeEnum.Badge,
         backgroundColor: input.vibeColor,
+        accentColor: deriveAccentColor(input.vibeColor),
     });
 
     return {
