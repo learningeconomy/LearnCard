@@ -1,5 +1,6 @@
 export * from './predicates';
 export * from './debug';
+export * from './debugOverrideStore';
 export * from './debugGlobals';
 export * from './dismissalStore';
 export * from './storeLinks';

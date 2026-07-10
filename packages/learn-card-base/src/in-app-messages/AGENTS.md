@@ -125,6 +125,16 @@ When adding logging: call `iamDebug(...)` (never raw `console`), keep the report
 every evaluation), and add a `tracePredicate` branch for any new predicate leaf so the trace labels
 stay complete.
 
+### Force/preview override (dev-only)
+
+`debugOverrideStore.ts` holds an optional `overrideMessage`. When set (via
+`__inAppMessages.forceShow(id)` / `.preview(obj)`), the host renders it **regardless of gate,
+targeting, frequency, or `closedIds`, and does NOT call `markMessageSeen`** — closing it just clears
+the override. `forceShow` looks the full message up in `getLastInAppMessages()` (the last parsed
+flag, stashed by `useInAppMessages`); `preview` runs its arg through `parseInAppMessagesFlag` to
+apply schema defaults. Keep this override strictly presentation-only — never let it write dismissal
+state or affect the real evaluation path.
+
 ## Verify before you finish
 
 ```bash

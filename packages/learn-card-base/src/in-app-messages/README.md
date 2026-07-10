@@ -301,7 +301,24 @@ __inAppMessages.report(); // structured snapshot of the last evaluation (see sha
 __inAppMessages.reset(); // clear "once"/"everyDays" dismissals so messages can re-show
 __inAppMessages.disable(); // turn tracing OFF
 __inAppMessages.isEnabled();
+
+// Preview / force a message on demand (bypasses gate, targeting, AND frequency):
+__inAppMessages.list(); // ["pathways-launch-2026", ...] ids from the current flag
+__inAppMessages.forceShow('pathways-launch-2026'); // show that flag message right now
+__inAppMessages.preview({
+    // render an ad-hoc message not in the flag
+    title: 'Test',
+    body: 'Hello',
+    presentation: 'modal',
+    actions: [{ label: 'OK', style: 'primary', action: { type: 'dismiss' } }],
+});
+__inAppMessages.clearForce(); // stop forcing / close the preview
 ```
+
+> `forceShow` / `preview` are **dev-only inspection tools**: they ignore the presentation gate,
+> targeting, and frequency, and they **never** mark a message as seen (so they won't burn a `"once"`
+> impression). Closing a forced/preview message just clears the override — it doesn't record a
+> dismissal. This is the fastest way to eyeball any message's design without editing the flag.
 
 You can also enable it **without the console**:
 

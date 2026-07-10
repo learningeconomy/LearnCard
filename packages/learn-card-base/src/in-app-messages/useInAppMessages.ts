@@ -50,8 +50,11 @@ const EMPTY_REPORT: InAppMessagesReport = {
 };
 
 let lastReport: InAppMessagesReport = EMPTY_REPORT;
+let lastMessages: InAppMessage[] = [];
 
 export const getLastInAppMessagesReport = (): InAppMessagesReport => lastReport;
+
+export const getLastInAppMessages = (): InAppMessage[] => lastMessages;
 
 export const useInAppMessages = (
     flagKey: string = IN_APP_MESSAGES_FLAG_KEY
@@ -60,6 +63,10 @@ export const useInAppMessages = (
     const { context, ready } = useInAppMessageRuntimeContext();
 
     const flag = useMemo(() => parseInAppMessagesFlag(flags?.[flagKey]), [flags, flagKey]);
+
+    useEffect(() => {
+        lastMessages = flag.messages;
+    }, [flag]);
 
     const { message, report } = useMemo(() => {
         if (!ready || !context) {
