@@ -18,7 +18,7 @@
     {
         "category": "Social Badge",
         "type": "ext:Trailblazer",
-        "url": "",
+        "url": "https://cdn.filestackcontent.com/j24CZf4T8qU1gKCA8M1H",
         "backgroundColor": "#F97316"
     },
     {
@@ -29,7 +29,7 @@
     {
         "category": "Social Badge",
         "type": "ext:Connector",
-        "url": "",
+        "url": "https://cdn.filestackcontent.com/mhN7hkORBGzYuZGA3xRg",
         "backgroundColor": "#14B8A6"
     },
     {
@@ -132,7 +132,82 @@
     {
         "category": "Social Badge",
         "type": "ext:ChangeMaker",
-        "url": "",
+        "url": "https://cdn.filestackcontent.com/QcA0gdlFSH2ytJCGFT6U",
         "backgroundColor": "#10B981"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Ambassador",
+        "url": "https://cdn.filestackcontent.com/xJkEdiJpTNygR0lDr5FO"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Catalyst",
+        "url": "https://cdn.filestackcontent.com/KwQaPi0gS96De50CZ2b1"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:ChallengeMaker",
+        "url": "https://cdn.filestackcontent.com/2eMAX1kKTeGajsKsj2JK"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Challenger",
+        "url": "https://cdn.filestackcontent.com/buHdErlfQMSUPcfWtvuW"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Enabler",
+        "url": "https://cdn.filestackcontent.com/GhCazGwjTBmLdYZitnGv"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Enthusiast",
+        "url": "https://cdn.filestackcontent.com/Kd7Xac9VQKSMDcBMt2db"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:HotShot",
+        "url": "https://cdn.filestackcontent.com/nRf4UswXS3CK3uJuNhAL"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Informer",
+        "url": "https://cdn.filestackcontent.com/iKlFIG7XQquBg6Tv2kX8"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Maven",
+        "url": "https://cdn.filestackcontent.com/ZxTE4EaBQIaVwIWaMCU8"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Maverick",
+        "url": "https://cdn.filestackcontent.com/L4A3VUJSROG2i8Q27JNQ"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:PartyPlanner",
+        "url": "https://cdn.filestackcontent.com/eIlTJ6KQouftIobNJIFw"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Promoter",
+        "url": "https://cdn.filestackcontent.com/LLdN9m9qToK18LaquIBs"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Propagator",
+        "url": "https://cdn.filestackcontent.com/NIscu9pOQ6So1xJMsy2y"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Sage",
+        "url": "https://cdn.filestackcontent.com/emac9VJT1yNN1BExQxa7"
+    },
+    {
+        "category": "Social Badge",
+        "type": "ext:Tastemaker",
+        "url": "https://cdn.filestackcontent.com/KpTCUDLsTYiAmhVCClDx"
     }
 ]
