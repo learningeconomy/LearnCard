@@ -138,7 +138,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
     };
 
     return (
-        <div className="flex flex-col gap-[20px] relative">
+        <div className="flex flex-col flex-1 min-h-0 gap-[20px] relative">
             {isUpdating && (
                 <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
                     <IonSpinner color="dark" name="crescent" />
@@ -151,7 +151,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 </h3>
             </div>
 
-            <div className="px-[3px] max-h-[450px] overflow-y-auto">
+            <div className="px-[3px] flex-1 min-h-0 overflow-y-auto">
                 <SkillSearchSelector
                     selectedSkills={selectedSkills}
                     onSelectedSkillsChange={setSelectedSkills}
@@ -161,7 +161,7 @@ const SkillProfileStep5: React.FC<SkillProfileStep5Props> = ({ handleNext, handl
                 />
             </div>
 
-            <div className="flex gap-[10px] w-full">
+            <div className="flex gap-[10px] w-full mt-auto">
                 <button
                     className="bg-grayscale-50 text-grayscale-800 rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 border-[1px] border-solid border-grayscale-200 h-[44px]"
                     onClick={handleBack}
