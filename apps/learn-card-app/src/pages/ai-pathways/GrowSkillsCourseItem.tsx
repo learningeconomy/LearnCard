@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { CalendarClock, ChevronRight } from 'lucide-react';
+import { CalendarClock } from 'lucide-react';
 
 import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
 import AiPathwaySchoolProgramDetails from './ai-pathway-courses/AiPathwaySchoolProgramDetails';
@@ -89,7 +89,6 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
                             {program?.ProgramName}
                         </h3>
                     </div>
-                    <ChevronRight className="w-[20px] h-[20px] text-grayscale-700 flex-shrink-0" />
                 </div>
 
                 <div className="flex gap-[10px]">
