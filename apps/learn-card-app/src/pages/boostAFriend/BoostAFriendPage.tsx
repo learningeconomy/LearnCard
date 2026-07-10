@@ -24,6 +24,7 @@ import {
     summarizeRecipients,
 } from '../issue/components/recipientTypes';
 import { issueViaBoost } from '../../components/simple-send/simpleSend.helpers';
+import { getFriendlyIssueError, withTransientRetry } from '../issue/issueErrors';
 import {
     buildBoostFriendTemplate,
     BadgePreset,
@@ -39,7 +40,7 @@ type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
 
 const BoostAFriendPage: React.FC = () => {
     const history = useHistory();
-    const { initWallet } = useWallet();
+    const { initWallet, addVCtoWallet } = useWallet();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthorities, getRegisteredSigningAuthority } =
         useSigningAuthority();
@@ -56,6 +57,7 @@ const BoostAFriendPage: React.FC = () => {
     const [note, setNote] = useState('');
     const [criteria, setCriteria] = useState('');
     const [description, setDescription] = useState('');
+    const [customImageUrl, setCustomImageUrl] = useState('');
 
     const [recipientMode, setRecipientMode] = useState<RecipientMode>('people');
     const [recipients, setRecipients] = useState<Recipient[]>([]);
@@ -80,6 +82,7 @@ const BoostAFriendPage: React.FC = () => {
         setDescription(presetDescription ?? '');
         setNote('');
         setCriteria(presetCriteria ?? '');
+        setCustomImageUrl('');
         setStep('personalize');
     };
 
@@ -128,6 +131,7 @@ const BoostAFriendPage: React.FC = () => {
             }
 
             const { imageUrl } = resolveBadgeStyle(selectedBadge, stylePacks);
+            const badgeImageUrl = customImageUrl.trim() || imageUrl;
 
             const template = buildBoostFriendTemplate({
                 title: title.trim(),
@@ -135,16 +139,27 @@ const BoostAFriendPage: React.FC = () => {
                 description: description.trim() || `A social badge for being a ${title.trim()}`,
                 note: note.trim() || criteria,
                 vibeColor,
-                imageUrl: imageUrl || categoryFallback,
+                imageUrl: badgeImageUrl || categoryFallback,
             });
 
-            const result = await issueViaBoost(wallet, template, {
-                mode: recipientMode,
-                recipients,
-                linkOptions,
-                currentLCNUser,
-                claimLinkSA,
-            });
+            const result = await withTransientRetry(() =>
+                issueViaBoost(wallet, template, {
+                    mode: recipientMode,
+                    recipients,
+                    linkOptions,
+                    currentLCNUser,
+                    claimLinkSA,
+                })
+            );
+
+            if (recipientMode === 'self') {
+                if (!result.credentialUri) {
+                    throw new Error(
+                        'Badge was issued, but it could not be saved to your Passport.'
+                    );
+                }
+                await addVCtoWallet({ uri: result.credentialUri });
+            }
 
             if (result.claimLink) {
                 setClaimLink(result.claimLink);
@@ -152,7 +167,7 @@ const BoostAFriendPage: React.FC = () => {
 
             setStep('celebrate');
         } catch (err: any) {
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError(getFriendlyIssueError(err, recipientMode).message);
         } finally {
             setIsIssuing(false);
         }
@@ -217,6 +232,7 @@ const BoostAFriendPage: React.FC = () => {
         setNote('');
         setCriteria('');
         setDescription('');
+        setCustomImageUrl('');
         setRecipients([]);
         setClaimLink(null);
         setError(null);
@@ -231,7 +247,10 @@ const BoostAFriendPage: React.FC = () => {
             description,
             note: note.trim() || criteria,
             vibeColor,
-            imageUrl: resolveBadgeStyle(selectedBadge, stylePacks).imageUrl || categoryFallback,
+            imageUrl:
+                customImageUrl.trim() ||
+                resolveBadgeStyle(selectedBadge, stylePacks).imageUrl ||
+                categoryFallback,
             issuerName: currentLCNUser?.displayName || currentLCNUser?.profileId || '',
         });
     }, [
@@ -242,6 +261,7 @@ const BoostAFriendPage: React.FC = () => {
         note,
         criteria,
         vibeColor,
+        customImageUrl,
         stylePacks,
         categoryFallback,
         currentLCNUser,
@@ -298,6 +318,8 @@ const BoostAFriendPage: React.FC = () => {
                                     note={note}
                                     notePlaceholder={criteria}
                                     onNoteChange={setNote}
+                                    imageUrl={customImageUrl}
+                                    onImageUrlChange={setCustomImageUrl}
                                     onNext={() => setStep('send')}
                                     onBack={() => setStep('pick')}
                                     stylePacks={stylePacks}

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ImagePlus, Loader2, X } from 'lucide-react';
 import {
     BadgePreset,
     VIBE_COLORS,
@@ -10,6 +10,7 @@ import {
     LCAStylesPackRegistryEntry,
     BoostCategoryOptionsEnum,
     BoostPageViewMode,
+    useFilestack,
 } from 'learn-card-base';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
@@ -26,6 +27,8 @@ interface BadgePersonalizeProps {
     note: string;
     notePlaceholder?: string;
     onNoteChange: (note: string) => void;
+    imageUrl?: string;
+    onImageUrlChange?: (url: string) => void;
     onNext: () => void;
     onBack: () => void;
     stylePacks: LCAStylesPackRegistryEntry[] | undefined;
@@ -45,12 +48,19 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     note,
     notePlaceholder,
     onNoteChange,
+    imageUrl,
+    onImageUrlChange,
     onNext,
     onBack,
     stylePacks,
     issuerName,
 }) => {
-    const { imageUrl } = resolveBadgeStyle(badge, stylePacks);
+    const stylePackImageUrl = resolveBadgeStyle(badge, stylePacks).imageUrl;
+    const effectiveImageUrl = imageUrl?.trim() || stylePackImageUrl;
+
+    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+        onUpload: url => onImageUrlChange?.(url),
+    });
 
     const previewCredential = useMemo(() => {
         const displayTitle = title.trim() || 'Your Badge';
@@ -60,10 +70,19 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
             description,
             note: note.trim() || notePlaceholder,
             vibeColor,
-            imageUrl,
+            imageUrl: effectiveImageUrl,
             issuerName,
         });
-    }, [title, subtype, description, note, notePlaceholder, vibeColor, imageUrl, issuerName]);
+    }, [
+        title,
+        subtype,
+        description,
+        note,
+        notePlaceholder,
+        vibeColor,
+        effectiveImageUrl,
+        issuerName,
+    ]);
 
     return (
         <div className="flex flex-col h-full animate-fade-in-up">
@@ -130,6 +149,62 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                     placeholder="e.g. Trailblazer"
                                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all shadow-sm"
                                 />
+                            </div>
+                        )}
+
+                        {isCustom && (
+                            <div>
+                                <label className="block text-sm font-medium text-grayscale-900 mb-2">
+                                    Badge image (optional)
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleFileSelect()}
+                                        disabled={isUploadingImage}
+                                        className="relative w-16 h-16 rounded-2xl border border-grayscale-300 bg-white flex items-center justify-center overflow-hidden shrink-0 hover:bg-grayscale-10 transition-colors disabled:opacity-60"
+                                        aria-label="Upload badge image"
+                                    >
+                                        {isUploadingImage ? (
+                                            <Loader2 className="w-5 h-5 text-grayscale-400 animate-spin" />
+                                        ) : effectiveImageUrl ? (
+                                            <img
+                                                src={effectiveImageUrl}
+                                                alt="Badge"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <ImagePlus className="w-6 h-6 text-grayscale-400" />
+                                        )}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleFileSelect()}
+                                            disabled={isUploadingImage}
+                                            className="text-sm font-medium text-grayscale-900 hover:text-grayscale-600 transition-colors disabled:opacity-60"
+                                        >
+                                            {isUploadingImage
+                                                ? 'Uploading...'
+                                                : effectiveImageUrl
+                                                ? 'Change image'
+                                                : 'Upload image'}
+                                        </button>
+                                        {imageUrl?.trim() && !isUploadingImage && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onImageUrlChange?.('')}
+                                                className="flex items-center gap-1 text-xs text-grayscale-500 hover:text-red-600 transition-colors mt-1"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                                Remove
+                                            </button>
+                                        )}
+                                        <p className="text-xs text-grayscale-500 mt-1">
+                                            PNG, JPG, or GIF.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
