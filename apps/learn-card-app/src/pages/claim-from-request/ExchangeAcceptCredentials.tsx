@@ -198,48 +198,14 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         }
     };
 
-    // Themed background derived from the credential's display appearance —
-    // mirrors ClaimBoost so the claim view reads as a full credential view
-    // (wallpaper / brand color / fade / tile) rather than a bare gray card.
-    const getSingleCredentialBackgroundStyles = (credential: VC): React.CSSProperties => {
-        const appearance = credential?.display;
-        const wallpaperImage = appearance?.backgroundImage;
-        const wallpaperBackgroundColor = appearance?.backgroundColor;
-        const isWallpaperFaded = appearance?.fadeBackgroundImage;
-        const isWallpaperTiled = appearance?.repeatBackgroundImage;
-
-        let backgroundStyles: React.CSSProperties = {
-            backgroundPosition: 'center',
-            backgroundAttachment: 'fixed',
-            backgroundSize: 'cover',
-            backgroundImage: wallpaperImage ? `url(${wallpaperImage})` : undefined,
-            backgroundRepeat: 'no-repeat',
-        };
-
-        if (isWallpaperFaded && wallpaperImage) {
-            const overlay = wallpaperBackgroundColor
-                ? `${wallpaperBackgroundColor}80`
-                : '#353E6480';
-            backgroundStyles = {
-                ...backgroundStyles,
-                backgroundImage: `linear-gradient(${overlay}, ${overlay}), url(${wallpaperImage})`,
-            };
-        }
-
-        if (isWallpaperTiled && wallpaperImage) {
-            backgroundStyles = {
-                ...backgroundStyles,
-                backgroundRepeat: 'repeat',
-                backgroundSize: 'auto',
-            };
-        }
-
-        if (!isWallpaperFaded && wallpaperBackgroundColor) {
-            backgroundStyles.backgroundColor = wallpaperBackgroundColor;
-        }
-
-        return backgroundStyles;
-    };
+    // The claim view intentionally does NOT paint the credential's wallpaper
+    // photo behind the card — matching the credential detail view, which shows
+    // a plain dimmed backdrop rather than a full-bleed image. We use the app's
+    // canonical dark dim color (`#353E64`) so the card stays legible.
+    const CLAIM_BACKDROP_COLOR = '#353E64';
+    const getSingleCredentialBackgroundStyles = (): React.CSSProperties => ({
+        backgroundColor: CLAIM_BACKDROP_COLOR,
+    });
 
     // Mobile "Details" side panel — parity with ClaimBoost's footer.
     const openSingleCredentialDetails = (credential: VC) => {
@@ -472,7 +438,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
                 <div className="flex h-full bg-grayscale-100">
                     <section
-                        style={getSingleCredentialBackgroundStyles(credential)}
+                        style={getSingleCredentialBackgroundStyles()}
                         className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0"
                     >
                         <section
