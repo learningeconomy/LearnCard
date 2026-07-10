@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { VC, VP, VerificationItem } from '@learncard/types';
+import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 import { IonContent, IonPage, IonFooter, IonLoading } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 
@@ -86,12 +87,40 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const history = useHistory();
     const { presentToast } = useToast();
-    const { storeAndAddVCToWallet } = useWallet();
+    const { storeAndAddVCToWallet, initWallet } = useWallet();
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const { newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const flowStartedAt = useRef(Date.now());
+
+    // Verify the (single) credential so the Details panel/sidebar shows real
+    // Proof / Status / Expiration rows. Always run — the verification block is
+    // shown on both mobile (Details modal) and desktop (persistent sidebar).
+    const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
+    useEffect(() => {
+        const cred = credentials[0];
+        if (!cred) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(cred, {}, true);
+                if (!cancelled) {
+                    setVerificationItems(prettifyVerificationItems(verifications ?? []));
+                }
+            } catch (err) {
+                log.warn('Failed to verify claim credential', err);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+        // `credentials` is captured once from the VP at mount and never changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -204,7 +233,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             <BoostDetailsSideMenu
                 credential={credential}
                 categoryType={getDefaultCategoryForCredential(credential) as CredentialCategoryEnum}
-                verificationItems={[] as VerificationItem[]}
+                verificationItems={verificationItems}
                 renderMethodCredential={credential}
             />,
             {
@@ -468,7 +497,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     credential
                                 ) as CredentialCategoryEnum
                             }
-                            verificationItems={[] as VerificationItem[]}
+                            verificationItems={verificationItems}
                             renderMethodCredential={credential}
                         />
                     )}
