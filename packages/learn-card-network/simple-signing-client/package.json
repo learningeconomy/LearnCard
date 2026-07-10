@@ -24,7 +24,9 @@
         "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts"
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "keywords": [],
     "author": "WeLibrary, LLC (www.welibrary.io)",
@@ -35,7 +37,8 @@
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
         "rimraf": "^3.0.2",
-        "shx": "^0.3.4"
+        "shx": "^0.3.4",
+        "vitest": "^1.4.0"
     },
     "dependencies": {
         "@trpc/client": "^11.7.2",

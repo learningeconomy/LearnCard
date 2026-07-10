@@ -23,7 +23,21 @@ export const getClient = async (
         return challengeRequester.utilities.getChallenges.query({ amount });
     };
 
-    getChallenges().then(result => (challenges = result));
+    // Challenges are fetched lazily on first use so that constructing a client
+    // that is never used doesn't cost a network round-trip
+    let refillPromise: Promise<void> | undefined;
+
+    const refillChallenges = (): Promise<void> => {
+        refillPromise ??= getChallenges()
+            .then(result => {
+                challenges.push(...result);
+            })
+            .finally(() => {
+                refillPromise = undefined;
+            });
+
+        return refillPromise;
+    };
 
     const trpc = createTRPCClient<AppRouter>({
         links: [
@@ -33,7 +47,7 @@ export const getClient = async (
             httpBatchLink({
                 url,
                 headers: async () => {
-                    if (challenges.length === 0) challenges.push(...(await getChallenges()));
+                    if (challenges.length === 0) await refillChallenges();
 
                     return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
                 },
