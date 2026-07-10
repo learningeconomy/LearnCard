@@ -1,27 +1,43 @@
 import React from 'react';
 
+import { Capacitor } from '@capacitor/core';
+import { useHistory } from 'react-router-dom';
+
 import { useModal, ModalTypes } from 'learn-card-base';
 
 import NotificationsModal from './NotificationsModal';
 
 /**
- * Opens the notifications ("Alerts") list in a right-loading modal on both
- * desktop and mobile (matching the "My LearnCard" profile modal pattern — see
- * `useOpenMyLearnCard`). Using a single presentation on every breakpoint keeps
- * the logic straightforward and avoids the desktop/mobile split where a
- * notification action (e.g. claiming a boost) would reroute the page behind the
- * modal.
+ * Opens the notifications ("Alerts") list.
  *
- * The full-page `/notifications` route still exists for deep links and push
- * notifications.
+ * On desktop/web it presents in a right-loading modal (matching the "My
+ * LearnCard" profile modal pattern — see `useOpenMyLearnCard`). On native
+ * platforms it navigates to the full-page `/notifications` route instead:
+ * the right modal sits under the status bar/notch on notched devices and had
+ * other overlay quirks on native, and routing sidesteps both while giving
+ * notification actions (e.g. claiming a boost) a real page to route from.
+ *
+ * The `/notifications` route is also the deep-link / push-notification target.
  */
 export const useOpenNotifications = () => {
+    const history = useHistory();
+
     const { newModal: openNotificationsModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
 
-    return () => openNotificationsModal(<NotificationsModal />);
+    return () => {
+        if (Capacitor.isNativePlatform()) {
+            // Guard against pushing a duplicate entry when already on the page.
+            if (history.location.pathname !== '/notifications') {
+                history.push('/notifications');
+            }
+            return;
+        }
+
+        openNotificationsModal(<NotificationsModal />);
+    };
 };
 
 export default useOpenNotifications;
