@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { UnsignedVC } from '@learncard/types';
 import { useHistory } from 'react-router-dom';
 import { useIonAlert } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -404,7 +405,8 @@ const IssueCredentialPage: React.FC = () => {
                 ? (rawSubject as Record<string, unknown>)
                 : undefined;
 
-        const previewCategory = getDefaultCategoryForCredential(filledJson as any) || 'Achievement';
+        const previewCategory =
+            getDefaultCategoryForCredential(filledJson as UnsignedVC) || 'Achievement';
         const fallbackImage = getFallBackImage(previewCategory);
         const selfIssuedDid = getCurrentLCNUserDid(currentLCNUser?.profileId);
 
@@ -477,8 +479,6 @@ const IssueCredentialPage: React.FC = () => {
         previewValues,
     ]);
 
-    const previewCardCredential = previewCredential;
-
     const handleIssue = useCallback(async () => {
         if (!template || !canIssue) return;
         setError(null);
@@ -541,7 +541,13 @@ const IssueCredentialPage: React.FC = () => {
                 })
             );
 
-            if (recipientMode === 'self' && result.credentialUri) {
+            if (recipientMode === 'self') {
+                if (!result.credentialUri) {
+                    throw new Error(
+                        'Credential was issued, but it could not be saved to your account.'
+                    );
+                }
+
                 await addVCtoWallet({ uri: result.credentialUri });
 
                 await queryClient.invalidateQueries({
@@ -563,7 +569,7 @@ const IssueCredentialPage: React.FC = () => {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
-            setIssuedUri(result.credentialUri);
+            setIssuedUri(result.credentialUri ?? null);
             if (result.claimLink) {
                 setClaimLink(result.claimLink);
             }
@@ -667,7 +673,7 @@ const IssueCredentialPage: React.FC = () => {
     const handleViewWallet = useCallback(() => {
         clearSuccessSnapshot();
         const category = previewCredential
-            ? getDefaultCategoryForCredential(previewCredential as any)
+            ? getDefaultCategoryForCredential(previewCredential as UnsignedVC)
             : undefined;
         const route =
             recipientMode === 'self' && category
@@ -679,7 +685,7 @@ const IssueCredentialPage: React.FC = () => {
     return (
         <IssueCredentialView
             issuedUri={issuedUri}
-            previewCredential={previewCardCredential}
+            previewCredential={previewCredential}
             selectedType={selectedType}
             template={template}
             recipientMode={recipientMode}
