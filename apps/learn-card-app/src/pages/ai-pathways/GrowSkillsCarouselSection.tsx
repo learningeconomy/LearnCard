@@ -31,7 +31,7 @@ const GrowSkillsCarouselSection = <T,>({
 }: GrowSkillsCarouselSectionProps<T>) => {
     const carouselItems = items ?? [];
 
-    const width = useScreenWidth(true);
+    const width = useScreenWidth();
     const swiperRef = useRef<SwiperInstance | null>(null);
     const [atBeginning, setAtBeginning] = useState<boolean>(true);
     const [atEnd, setAtEnd] = useState<boolean>(false);
