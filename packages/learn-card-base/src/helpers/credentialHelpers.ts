@@ -796,7 +796,7 @@ export const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Work History')
         return 'https://cdn.filestackcontent.com/5r2T383T0mic3wrSbi3W';
     if (credCategory === 'Social Badge')
-        return 'https://cdn.filestackcontent.com/ynPzjedXTn2JBUNQHeEm';
+        return 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF';
     if (credCategory === 'Learning History')
         return 'https://cdn.filestackcontent.com/OSTqZlxSCe6B62jwPm7O';
     if (credCategory === 'Accomplishment')

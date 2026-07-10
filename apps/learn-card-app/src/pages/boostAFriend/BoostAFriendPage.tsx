@@ -18,11 +18,26 @@ import { BoostRecipientPicker } from './components/BoostRecipientPicker';
 import { Confetti } from '../issue/components/Confetti';
 import { RecipientMode, Recipient, LinkOptions } from '../issue/components/recipientTypes';
 import { issueViaBoost } from '../../components/simple-send/simpleSend.helpers';
-import { buildBoostFriendTemplate, BadgePreset, resolveBadgeStyle } from './boostAFriend.helpers';
+import {
+    buildBoostFriendTemplate,
+    BadgePreset,
+    resolveBadgeStyle,
+    buildPreviewCredential,
+} from './boostAFriend.helpers';
 import { useStylePackRegistry } from '../../registries/useStylePackRegistry';
 import { useBadgeGroups } from '../../registries/useBadgeGroups';
+import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
+
+const formatRecipients = (recs: Recipient[]) => {
+    if (recs.length === 0) return '';
+    const names = recs.map(r => (r.kind === 'profile' ? r.displayName : r.email));
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} and ${names[1]}`;
+    return `${names[0]}, ${names[1]} +${names.length - 2}`;
+};
 
 const BoostAFriendPage: React.FC = () => {
     const history = useHistory();
@@ -180,13 +195,9 @@ const BoostAFriendPage: React.FC = () => {
                 <div className="h-full font-poppins relative">
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                         <div
-                            className="absolute inset-0 transition-colors duration-700 ease-in-out opacity-25"
+                            className="absolute inset-0 transition-colors duration-700 ease-in-out opacity-[0.16]"
                             style={{
-                                background: `
-                                    radial-gradient(circle at 50% 0%, ${vibeColor} 0%, transparent 60%),
-                                    radial-gradient(circle at 100% 100%, #10B981 0%, transparent 50%),
-                                    radial-gradient(circle at 0% 100%, #94A3B8 0%, transparent 50%)
-                                `,
+                                background: `radial-gradient(120% 60% at 50% 0%, ${vibeColor} 0%, transparent 60%)`,
                             }}
                         />
                     </div>
@@ -303,19 +314,55 @@ const BoostAFriendPage: React.FC = () => {
 
                                 <div className="my-auto w-full py-6 space-y-8">
                                     <div className="flex flex-col items-center justify-center max-w-sm w-full mx-auto">
-                                        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                                            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
-                                        </div>
+                                        {selectedBadge && (
+                                            <div className="w-[160px] sm:w-[200px] mb-6">
+                                                <BoostEarnedCard
+                                                    credential={
+                                                        buildPreviewCredential({
+                                                            title: title.trim() || 'Your Badge',
+                                                            subtype:
+                                                                subtype.trim() ||
+                                                                title.trim() ||
+                                                                'Your Badge',
+                                                            note,
+                                                            vibeColor,
+                                                            imageUrl:
+                                                                resolveBadgeStyle(
+                                                                    selectedBadge,
+                                                                    stylePacks
+                                                                ).imageUrl || categoryFallback,
+                                                            issuerName:
+                                                                currentLCNUser?.displayName ||
+                                                                currentLCNUser?.profileId ||
+                                                                '',
+                                                        }) as any
+                                                    }
+                                                    categoryType={
+                                                        BoostCategoryOptionsEnum.socialBadge
+                                                    }
+                                                    boostPageViewMode={BoostPageViewMode.Card}
+                                                    useWrapper={false}
+                                                    verifierState={false}
+                                                    hideOptionsMenu
+                                                    isPreview
+                                                    className="shadow-xl"
+                                                />
+                                            </div>
+                                        )}
 
                                         <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
                                             {recipientMode === 'link'
-                                                ? 'Link Created!'
-                                                : 'Badge Sent!'}
+                                                ? 'Link ready!'
+                                                : recipientMode === 'self'
+                                                ? 'Added to your Passport!'
+                                                : 'Badge sent!'}
                                         </h1>
                                         <p className="text-base text-grayscale-600 mb-10">
                                             {recipientMode === 'link'
                                                 ? 'Your badge is ready to be shared. Anyone with the link can claim it.'
-                                                : "They'll be notified about their new badge."}
+                                                : recipientMode === 'self'
+                                                ? "You'll find it in your badges."
+                                                : `Sent to ${formatRecipients(recipients)}`}
                                         </p>
 
                                         {claimLink && (

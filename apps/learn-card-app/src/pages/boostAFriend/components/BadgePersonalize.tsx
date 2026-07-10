@@ -4,7 +4,7 @@ import {
     BadgePreset,
     VIBE_COLORS,
     resolveBadgeStyle,
-    buildBoostFriendTemplate,
+    buildPreviewCredential,
 } from '../boostAFriend.helpers';
 import {
     LCAStylesPackRegistryEntry,
@@ -12,7 +12,6 @@ import {
     BoostPageViewMode,
 } from 'learn-card-base';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
-import { templateToJson } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 
 interface BadgePersonalizeProps {
     badge: BadgePreset;
@@ -51,25 +50,14 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
 
     const previewCredential = useMemo(() => {
         const displayTitle = title.trim() || 'Your Badge';
-        const template = buildBoostFriendTemplate({
+        return buildPreviewCredential({
             title: displayTitle,
             subtype: subtype.trim() || displayTitle,
-            description: `A social badge for being a ${displayTitle}`,
             note,
             vibeColor,
             imageUrl,
             issuerName,
         });
-        const json = templateToJson(template) as Record<string, any>;
-
-        json.validFrom = new Date().toISOString();
-        if (json.issuer) {
-            json.issuer.id = 'did:key:preview';
-        }
-        if (json.credentialSubject) {
-            delete json.credentialSubject.id;
-        }
-        return json;
     }, [title, subtype, note, vibeColor, imageUrl, issuerName]);
 
     return (

@@ -5,6 +5,7 @@ import {
     DEFAULT_CONTEXTS,
     DEFAULT_TYPES,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import { templateToJson } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 import { buildLcTags } from 'learn-card-base/helpers/displayTags.helpers';
 import { deriveAccentColor } from 'learn-card-base/helpers/colorHelpers';
 import { DisplayTypeEnum } from 'learn-card-base/helpers/display-types';
@@ -21,6 +22,35 @@ export interface BoostFriendInput {
     imageUrl?: string;
     vibeColor?: string;
 }
+
+export const buildPreviewCredential = (input: {
+    title: string;
+    subtype?: string;
+    note?: string;
+    vibeColor?: string;
+    imageUrl?: string;
+    issuerName?: string;
+}): Record<string, unknown> => {
+    const template = buildBoostFriendTemplate({
+        title: input.title,
+        subtype: input.subtype,
+        description: `A social badge for being a ${input.title}`,
+        note: input.note,
+        vibeColor: input.vibeColor,
+        imageUrl: input.imageUrl,
+        issuerName: input.issuerName,
+    });
+    const json = templateToJson(template) as Record<string, any>;
+
+    json.validFrom = new Date().toISOString();
+    if (json.issuer) {
+        json.issuer.id = 'did:key:preview';
+    }
+    if (json.credentialSubject) {
+        delete json.credentialSubject.id;
+    }
+    return json;
+};
 
 export const buildBoostFriendTemplate = (input: BoostFriendInput): OBv3CredentialTemplate => {
     const tags = buildLcTags({

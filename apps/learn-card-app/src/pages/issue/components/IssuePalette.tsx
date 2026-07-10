@@ -136,6 +136,74 @@ const CATEGORY_OPTIONS: { value: string; displayText: string; description: strin
 
 const HEX_INPUT_REGEX = /[^0-9a-fA-F]/g;
 
+const ColorField: React.FC<{
+    label: string;
+    value?: string;
+    placeholder?: string;
+    hint?: string;
+    onChange: (hex: string | undefined) => void;
+}> = ({ label, value, placeholder = '353E64', hint, onChange }) => {
+    const [text, setText] = useState((value ?? '').replace(/^#/, ''));
+    useEffect(() => setText((value ?? '').replace(/^#/, '')), [value]);
+
+    const handleHex = (raw: string) => {
+        const cleaned = raw.replace(HEX_INPUT_REGEX, '').slice(0, 8).toUpperCase();
+        setText(cleaned);
+        if ([3, 6, 8].includes(cleaned.length)) onChange(`#${cleaned}`);
+        else if (cleaned.length === 0) onChange(undefined);
+    };
+
+    const swatch = /^#[0-9a-fA-F]{6}$/.test(value ?? '') ? (value as string) : '#FFFFFF';
+
+    return (
+        <div>
+            <label className={LABEL_CLASS}>{label}</label>
+            <div className="flex items-center gap-3">
+                <label className="relative h-11 w-11 shrink-0 rounded-xl border border-grayscale-300 overflow-hidden cursor-pointer shadow-sm hover:ring-2 hover:ring-emerald-500 transition-all">
+                    <span
+                        className="absolute inset-0"
+                        style={{ backgroundColor: value ?? '#FFFFFF' }}
+                    />
+                    <input
+                        type="color"
+                        value={swatch}
+                        onChange={e => onChange(e.target.value)}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                </label>
+                <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-grayscale-400 text-base pointer-events-none select-none">
+                        #
+                    </span>
+                    <input
+                        type="text"
+                        value={text}
+                        onChange={e => handleHex(e.target.value)}
+                        placeholder={placeholder}
+                        maxLength={8}
+                        spellCheck={false}
+                        className="w-full py-3 pl-8 pr-10 border border-grayscale-300 rounded-xl text-base text-grayscale-900 uppercase tracking-wide placeholder:text-grayscale-400 placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
+                    />
+                    {text && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setText('');
+                                onChange(undefined);
+                            }}
+                            aria-label={`Clear ${label.toLowerCase()}`}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+            </div>
+            {hint && <p className="mt-1.5 text-xs text-grayscale-400 leading-relaxed">{hint}</p>}
+        </div>
+    );
+};
+
 interface IssuePaletteProps {
     selectedType: CredentialTypeEntry | null;
     template: OBv3CredentialTemplate | null;
@@ -227,30 +295,6 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         resizeBeforeUploading: true,
         onUpload: (url: string) => setHints({ backgroundImage: url }),
     });
-
-    // Buffer the hex text locally: buildLcTags drops invalid-length hex, so binding the input straight to the tag would erase digits mid-typing.
-    const [colorText, setColorText] = useState((hints.backgroundColor ?? '').replace(/^#/, ''));
-    useEffect(() => {
-        setColorText((hints.backgroundColor ?? '').replace(/^#/, ''));
-    }, [hints.backgroundColor]);
-
-    const handleHexChange = (raw: string) => {
-        const cleaned = raw.replace(HEX_INPUT_REGEX, '').slice(0, 8).toUpperCase();
-        setColorText(cleaned);
-        if ([3, 6, 8].includes(cleaned.length)) setHints({ backgroundColor: `#${cleaned}` });
-        else if (cleaned.length === 0) setHints({ backgroundColor: undefined });
-    };
-
-    const handleSwatchChange = (value: string) => setHints({ backgroundColor: value });
-
-    const handleClearColor = () => {
-        setColorText('');
-        setHints({ backgroundColor: undefined });
-    };
-
-    const swatchValue = /^#[0-9a-fA-F]{6}$/.test(hints.backgroundColor ?? '')
-        ? (hints.backgroundColor as string)
-        : '#FFFFFF';
 
     const name = ach?.name?.value ?? '';
     const nameInvalid = nameTouched && !ach?.name?.isDynamic && !name.trim();
@@ -494,52 +538,18 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className={LABEL_CLASS}>Background color</label>
-                                        <div className="flex items-center gap-3">
-                                            <label className="relative h-11 w-11 shrink-0 rounded-xl border border-grayscale-300 overflow-hidden cursor-pointer shadow-sm hover:ring-2 hover:ring-emerald-500 transition-all">
-                                                <span
-                                                    className="absolute inset-0"
-                                                    style={{
-                                                        backgroundColor:
-                                                            hints.backgroundColor ?? '#FFFFFF',
-                                                    }}
-                                                />
-                                                <input
-                                                    type="color"
-                                                    value={swatchValue}
-                                                    onChange={e =>
-                                                        handleSwatchChange(e.target.value)
-                                                    }
-                                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                                />
-                                            </label>
-                                            <div className="relative flex-1">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-grayscale-400 text-base pointer-events-none select-none">
-                                                    #
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    value={colorText}
-                                                    onChange={e => handleHexChange(e.target.value)}
-                                                    placeholder="353E64"
-                                                    maxLength={8}
-                                                    spellCheck={false}
-                                                    className="w-full py-3 pl-8 pr-10 border border-grayscale-300 rounded-xl text-base text-grayscale-900 uppercase tracking-wide placeholder:text-grayscale-400 placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
-                                                />
-                                                {colorText && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleClearColor}
-                                                        aria-label="Clear color"
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <ColorField
+                                        label="Background color"
+                                        value={hints.backgroundColor}
+                                        onChange={c => setHints({ backgroundColor: c })}
+                                    />
+
+                                    <ColorField
+                                        label="Accent color (badge ring)"
+                                        value={hints.accentColor}
+                                        hint="Colors the badge ring. Defaults to the category color if unset."
+                                        onChange={c => setHints({ accentColor: c })}
+                                    />
 
                                     <div>
                                         <label className={LABEL_CLASS}>Background image</label>

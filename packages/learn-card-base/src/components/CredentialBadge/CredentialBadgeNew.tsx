@@ -258,9 +258,20 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         className={`absolute flex items-center justify-center left-[37%] bottom-[-12%] ${badgeRibbonContainerCustomClass}`}
                     >
                         <Ribbon className={badgeRibbonCustomClass} />
-                        <IconComponentOverride
-                            className={`absolute text-${_colorOverride} h-[18px] mb-3 ${badgeRibbonIconCustomClass}`}
-                        />
+                        {accentColor ? (
+                            <span
+                                className="absolute mb-3 flex items-center justify-center"
+                                style={{ color: accentColor }}
+                            >
+                                <IconComponentOverride
+                                    className={`h-[18px] ${badgeRibbonIconCustomClass}`}
+                                />
+                            </span>
+                        ) : (
+                            <IconComponentOverride
+                                className={`absolute text-${_colorOverride} h-[18px] mb-3 ${badgeRibbonIconCustomClass}`}
+                            />
+                        )}
                     </div>
                 </div>
             )}
