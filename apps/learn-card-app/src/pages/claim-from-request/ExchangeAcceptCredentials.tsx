@@ -227,12 +227,25 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         }
     };
 
+    // getDefaultCategoryForCredential can throw on malformed credentials, so
+    // resolve defensively for the detail views (categoryType is optional on
+    // both BoostDetailsSideMenu and BoostDetailsSideBar). Mirrors the guarded
+    // resolution used for post-claim routing in ClaimFromRequest.
+    const resolveDetailsCategoryType = (cred: VC): CredentialCategoryEnum | undefined => {
+        try {
+            return getDefaultCategoryForCredential(cred) as CredentialCategoryEnum;
+        } catch (err) {
+            log.warn('Failed to resolve credential category for details view', err);
+            return undefined;
+        }
+    };
+
     // Mobile "Details" side panel — parity with ClaimBoost's footer.
     const openSingleCredentialDetails = (credential: VC) => {
         newModal(
             <BoostDetailsSideMenu
                 credential={credential}
-                categoryType={getDefaultCategoryForCredential(credential) as CredentialCategoryEnum}
+                categoryType={resolveDetailsCategoryType(credential)}
                 verificationItems={verificationItems}
                 renderMethodCredential={credential}
             />,
@@ -492,11 +505,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     {!isMobile && (
                         <BoostDetailsSideBar
                             credential={credential}
-                            categoryType={
-                                getDefaultCategoryForCredential(
-                                    credential
-                                ) as CredentialCategoryEnum
-                            }
+                            categoryType={resolveDetailsCategoryType(credential)}
                             verificationItems={verificationItems}
                             renderMethodCredential={credential}
                         />

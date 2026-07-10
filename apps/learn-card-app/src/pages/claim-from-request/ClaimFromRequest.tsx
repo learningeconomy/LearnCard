@@ -567,8 +567,8 @@ const ClaimFromRequest: React.FC = () => {
                     case 'DIDAuth':
                     default:
                         if (credentialClaimCount && credentialClaimCount > 0) {
+                            // handleAfterCredentialClaim sets ExchangeState.Finished itself.
                             void handleAfterCredentialClaim();
-                            setExchangeState({ state: ExchangeState.Finished });
                             return;
                         } else {
                             setExchangeState({ state: ExchangeState.DidAuth, data, strategy });
