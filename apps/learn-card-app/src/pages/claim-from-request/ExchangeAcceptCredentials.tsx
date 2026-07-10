@@ -198,15 +198,6 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         }
     };
 
-    // The claim view intentionally does NOT paint the credential's wallpaper
-    // photo behind the card — matching the credential detail view, which shows
-    // a plain dimmed backdrop rather than a full-bleed image. We use the app's
-    // canonical dark dim color (`#353E64`) so the card stays legible.
-    const CLAIM_BACKDROP_COLOR = '#353E64';
-    const getSingleCredentialBackgroundStyles = (): React.CSSProperties => ({
-        backgroundColor: CLAIM_BACKDROP_COLOR,
-    });
-
     // Mobile "Details" side panel — parity with ClaimBoost's footer.
     const openSingleCredentialDetails = (credential: VC) => {
         newModal(
@@ -437,10 +428,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             <IonPage>
                 <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
                 <div className="flex h-full bg-grayscale-100">
-                    <section
-                        style={getSingleCredentialBackgroundStyles()}
-                        className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0"
-                    >
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
                         <section
                             className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
