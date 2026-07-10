@@ -83,58 +83,61 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     }, [presets, badgeGroups, search]);
 
     return (
-        <div className="flex flex-col h-full animate-fade-in-up">
-            <div className="flex items-center justify-between mb-3 shrink-0">
-                <div>
-                    <h1 className="text-xl font-semibold text-grayscale-900">Pick a Badge</h1>
-                    <p className="text-sm text-grayscale-600 mt-0.5">
-                        Send a fun badge to a friend to show appreciation.
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                >
-                    Cancel
-                </button>
-            </div>
-
-            <div className="relative mb-4 shrink-0">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
-                <input
-                    type="text"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search or create custom..."
-                    className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
-                />
-            </div>
-
-            <div className="flex gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide shrink-0">
-                <button
-                    type="button"
-                    onClick={handleSurpriseMe}
-                    className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
-                >
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    Surprise me
-                </button>
-                {search && !presets.some(p => p.title.toLowerCase() === search.toLowerCase()) && (
+        <div className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0 animate-fade-in-up">
+            <div className="sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 pb-4 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h1 className="text-xl font-semibold text-grayscale-900">Pick a Badge</h1>
+                        <p className="text-sm text-grayscale-600 mt-0.5">
+                            Send a fun badge to a friend to show appreciation.
+                        </p>
+                    </div>
                     <button
                         type="button"
-                        onClick={handleCustom}
-                        className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                        onClick={onBack}
+                        className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                     >
-                        <Plus className="w-4 h-4" />
-                        Create "{search}"
+                        Cancel
                     </button>
-                )}
+                </div>
+
+                <div className="relative mb-4">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search or create custom..."
+                        className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
+                    />
+                </div>
+
+                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                    <button
+                        type="button"
+                        onClick={handleSurpriseMe}
+                        className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
+                    >
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        Surprise me
+                    </button>
+                    {search &&
+                        !presets.some(p => p.title.toLowerCase() === search.toLowerCase()) && (
+                            <button
+                                type="button"
+                                onClick={handleCustom}
+                                className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Create "{search}"
+                            </button>
+                        )}
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0">
+            <div className="px-0">
                 {search ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 px-6 sm:px-0">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 px-6 sm:px-0">
                         {filteredPresets.map((preset, index) => {
                             const color = VIBE_COLORS[index % VIBE_COLORS.length];
                             return (
@@ -168,7 +171,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                         </p>
                                     )}
                                 </div>
-                                <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide px-6 sm:px-0 scroll-pl-6 sm:scroll-pl-0">
+                                <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide px-6 sm:px-0 scroll-pl-6 sm:scroll-pl-0">
                                     {groupData.presets.map((preset, index) => {
                                         const color =
                                             VIBE_COLORS[
@@ -235,12 +238,12 @@ const BadgeTile: React.FC<{
 
             <div
                 className={`absolute inset-x-0 bottom-0 pt-12 pb-3 px-3 sm:px-4 flex items-end ${
-                    isRealImage ? 'bg-gradient-to-t from-black/70 via-black/25 to-transparent' : ''
+                    isRealImage ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : ''
                 }`}
             >
                 <span
-                    className={`text-sm sm:text-base font-semibold text-white line-clamp-1 w-full ${
-                        isRealImage ? 'drop-shadow-sm' : ''
+                    className={`text-sm font-semibold text-white line-clamp-1 w-full ${
+                        isRealImage ? 'drop-shadow-md' : ''
                     }`}
                 >
                     {preset.title}

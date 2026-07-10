@@ -30,7 +30,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     const isRealImage = Boolean(imageUrl) && !imgError;
 
     return (
-        <div className="flex flex-col h-full animate-fade-in-up">
+        <div className="flex flex-col h-full animate-fade-in-up pt-[calc(env(safe-area-inset-top)+1rem)]">
             <div className="flex items-center gap-3 mb-6">
                 <button
                     type="button"

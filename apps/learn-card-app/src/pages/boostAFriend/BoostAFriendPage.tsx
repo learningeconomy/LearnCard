@@ -12,7 +12,6 @@ import {
 } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
-import MainHeader from '../../components/main-header/MainHeader';
 import { BadgePicker } from './components/BadgePicker';
 import { BadgePersonalize } from './components/BadgePersonalize';
 import { RecipientPicker } from '../issue/components/RecipientPicker';
@@ -170,19 +169,22 @@ const BoostAFriendPage: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader showBackButton customClassName="bg-white" />
             <IonContent>
                 <div className="min-h-full font-poppins relative">
                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                         <div
-                            className="absolute inset-0 transition-colors duration-700 ease-in-out opacity-20"
+                            className="absolute inset-0 transition-colors duration-700 ease-in-out opacity-25"
                             style={{
-                                background: `radial-gradient(circle at 50% 0%, ${vibeColor} 0%, transparent 70%)`,
+                                background: `
+                                    radial-gradient(circle at 50% 0%, ${vibeColor} 0%, transparent 60%),
+                                    radial-gradient(circle at 100% 100%, #10B981 0%, transparent 50%),
+                                    radial-gradient(circle at 0% 100%, #94A3B8 0%, transparent 50%)
+                                `,
                             }}
                         />
                     </div>
 
-                    <div className="max-w-xl mx-auto h-full flex flex-col px-4 sm:px-6 py-4 relative z-10">
+                    <div className="max-w-xl sm:max-w-2xl lg:max-w-4xl mx-auto h-full flex flex-col px-4 sm:px-6 pb-4 relative z-10 w-full">
                         {step === 'pick' && (
                             <BadgePicker
                                 onSelect={handleSelectBadge}
@@ -193,20 +195,22 @@ const BoostAFriendPage: React.FC = () => {
                         )}
 
                         {step === 'personalize' && selectedBadge && (
-                            <BadgePersonalize
-                                badge={selectedBadge}
-                                vibeColor={vibeColor}
-                                onVibeColorChange={setVibeColor}
-                                note={note}
-                                onNoteChange={setNote}
-                                onNext={() => setStep('send')}
-                                onBack={() => setStep('pick')}
-                                stylePacks={stylePacks}
-                            />
+                            <div className="max-w-xl mx-auto w-full h-full">
+                                <BadgePersonalize
+                                    badge={selectedBadge}
+                                    vibeColor={vibeColor}
+                                    onVibeColorChange={setVibeColor}
+                                    note={note}
+                                    onNoteChange={setNote}
+                                    onNext={() => setStep('send')}
+                                    onBack={() => setStep('pick')}
+                                    stylePacks={stylePacks}
+                                />
+                            </div>
                         )}
 
                         {step === 'send' && (
-                            <div className="flex flex-col h-full animate-fade-in-up">
+                            <div className="max-w-xl mx-auto w-full flex flex-col h-full animate-fade-in-up pt-[calc(env(safe-area-inset-top)+1rem)]">
                                 <div className="flex items-center gap-3 mb-6">
                                     <button
                                         type="button"
@@ -276,7 +280,7 @@ const BoostAFriendPage: React.FC = () => {
                         )}
 
                         {step === 'celebrate' && (
-                            <div className="flex flex-col h-full items-center justify-center text-center animate-pop-in relative py-10">
+                            <div className="max-w-xl mx-auto w-full flex flex-col h-full items-center justify-center text-center animate-pop-in relative py-10 pt-[calc(env(safe-area-inset-top)+2.5rem)]">
                                 <Confetti />
 
                                 <div className="flex flex-col items-center justify-center max-w-sm w-full mx-auto flex-1">
