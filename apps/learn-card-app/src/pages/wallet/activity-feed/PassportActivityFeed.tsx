@@ -65,6 +65,7 @@ export const PassportActivityFeed: React.FC = () => {
     // profile still loading as part of the pending state and hold the rows.
     const waiting = isPending || currentLCNUserLoading;
     const isEmpty = !waiting && !isError && groups.length === 0;
+    const activeFilterCount = filter === 'all' ? 0 : 1;
 
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
@@ -88,10 +89,13 @@ export const PassportActivityFeed: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => setFilterOpen(o => !o)}
-                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] text-[#5457C7]"
+                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px]"
                     >
-                        Filter
-                        <SortButton className="h-[18px] w-[18px]" />
+                        <span className="text-grayscale-700">Filter</span>
+                        {activeFilterCount > 0 && (
+                            <span className="text-indigo-500">{activeFilterCount}</span>
+                        )}
+                        <SortButton className="h-[18px] w-[18px] text-indigo-500" />
                     </button>
                     {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
                     {filterOpen && (
