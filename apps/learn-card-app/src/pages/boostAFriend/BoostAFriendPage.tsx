@@ -471,20 +471,20 @@ const BoostAFriendPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <button
-                                                type="button"
-                                                onClick={handleBoostAnother}
-                                                className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                                            >
-                                                Boost Another
-                                            </button>
+                                        <div className="space-y-3 pt-5 border-t border-grayscale-200">
                                             <button
                                                 type="button"
                                                 onClick={() => history.push('/wallet')}
-                                                className="w-full text-sm text-grayscale-500 hover:text-grayscale-900 transition-colors"
+                                                className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
                                             >
                                                 Done
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleBoostAnother}
+                                                className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-base hover:bg-grayscale-10 transition-colors"
+                                            >
+                                                Boost Another
                                             </button>
                                         </div>
                                     </div>
