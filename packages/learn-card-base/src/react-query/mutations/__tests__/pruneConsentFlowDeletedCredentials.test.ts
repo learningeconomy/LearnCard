@@ -5,6 +5,8 @@ import {
     deleteCredentialFromAllContracts,
     pruneDeletedUrisFromConsentTerms,
 } from '../pruneConsentFlowDeletedCredentials';
+import { getDeletedUrisForCredentialRecord } from '../mutations';
+import { LCR } from '../../../types/credential-records';
 
 describe('pruneDeletedUrisFromConsentTerms', () => {
     it('removes deleted URIs from every shared category and preserves the rest', () => {
@@ -48,6 +50,26 @@ describe('pruneDeletedUrisFromConsentTerms', () => {
         expect(result.removedSharedUris).toBe(0);
         expect(result.terms).not.toBe(terms);
         expect(result.terms.read.credentials.categories.Achievement.shared).toEqual(['keep-uri']);
+    });
+});
+
+describe('getDeletedUrisForCredentialRecord', () => {
+    it('returns the credential uri and all shared uris without duplicates', () => {
+        const record = {
+            id: 'record-1',
+            uri: 'cred:root',
+            sharedUris: {
+                'did:web:contract-owner': ['shared:1', 'shared:2', 'shared:2'],
+                'did:web:another-owner': ['shared:3'],
+            },
+        } as unknown as LCR;
+
+        expect(getDeletedUrisForCredentialRecord(record)).toEqual([
+            'cred:root',
+            'shared:1',
+            'shared:2',
+            'shared:3',
+        ]);
     });
 });
 

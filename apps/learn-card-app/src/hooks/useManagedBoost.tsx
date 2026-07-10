@@ -88,7 +88,7 @@ export const useManagedBoost = (
 
     const cred = unwrapBoostCredential(boostVC);
     const credImg = cred?.credentialSubject?.image;
-    const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
+    const thumbImage = (cred && getImageUrlFromCredential(cred, categoryType)) || defaultImg;
     const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : thumbImage;
 
     const credentialBackgroundFetching = resolvedBoostFetching && !resolvedBoostLoading;

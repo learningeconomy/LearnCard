@@ -262,10 +262,17 @@ export const useWallet = () => {
                                 termsUri,
                                 category,
                             });
-                            await queueAiInsightCredentialRefresh({
+                            void queueAiInsightCredentialRefresh({
                                 wallet: learnCard,
                                 queryClient,
-                            });
+                            }).catch(error =>
+                                logWalletSyncError('Failed to queue AI Passport refresh', error, {
+                                    ownerDid: contract.owner.did,
+                                    contractUri: contract.uri,
+                                    termsUri,
+                                    category,
+                                })
+                            );
                         }
 
                         queryClient.invalidateQueries({
