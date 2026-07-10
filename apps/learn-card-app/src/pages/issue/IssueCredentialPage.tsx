@@ -400,11 +400,13 @@ const IssueCredentialPage: React.FC = () => {
             hasImageValue((filledJson as Record<string, unknown>).image) ||
                 hasImageValue(ach?.image?.value)
         );
-        const hasSpecificRecipient =
-            recipientMode === 'self' ||
-            (recipientMode === 'people' &&
-                recipients.length === 1 &&
-                recipients[0].kind === 'profile');
+        const specificProfileRecipient =
+            recipientMode === 'people' &&
+            recipients.length === 1 &&
+            recipients[0].kind === 'profile'
+                ? recipients[0]
+                : undefined;
+        const hasSpecificRecipient = recipientMode === 'self' || Boolean(specificProfileRecipient);
         const imageForSubject = hasSpecificRecipient
             ? hasBadgeImage
                 ? undefined
@@ -426,8 +428,10 @@ const IssueCredentialPage: React.FC = () => {
             showIssuerImage = false;
         }
 
-        if (subjectObject && recipientMode === 'self' && selfIssuedDid) {
-            subjectObject.id = selfIssuedDid;
+        if (subjectObject) {
+            const previewSubjectDid =
+                recipientMode === 'self' ? selfIssuedDid : specificProfileRecipient?.did;
+            if (previewSubjectDid) subjectObject.id = previewSubjectDid;
         }
 
         return {
