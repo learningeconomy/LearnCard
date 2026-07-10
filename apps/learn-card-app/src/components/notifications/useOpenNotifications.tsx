@@ -29,7 +29,10 @@ export const useOpenNotifications = () => {
 
     return () => {
         if (Capacitor.isNativePlatform()) {
-            history.push('/notifications');
+            // Guard against pushing a duplicate entry when already on the page.
+            if (history.location.pathname !== '/notifications') {
+                history.push('/notifications');
+            }
             return;
         }
 
