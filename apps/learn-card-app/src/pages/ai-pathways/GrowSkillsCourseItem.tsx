@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { CalendarClock, ChevronRight } from 'lucide-react';
+import { CalendarClock } from 'lucide-react';
 
 import careerOneStopLogo from '../../assets/images/career-one-stop-logo.png';
 import AiPathwaySchoolProgramDetails from './ai-pathway-courses/AiPathwaySchoolProgramDetails';
@@ -79,9 +79,9 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
             onPointerCancel={handlePointerUp}
             onClickCapture={handleClickCapture}
             onClick={openCourseDetailsModal}
-            className="w-full h-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-emerald-500 text-left"
+            className="w-full flex flex-col rounded-[15px] bg-white shadow-bottom-4-4 overflow-hidden cursor-pointer border-b-[3px] border-emerald-500 text-left"
         >
-            <div className="px-[15px] py-[20px] flex flex-col gap-[5px] h-full">
+            <div className="px-[15px] py-[20px] flex flex-col gap-[5px]">
                 <div className="flex items-start gap-[10px]">
                     <ThickStudiesIconWithShape className="w-[35px] h-[35px] flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -89,7 +89,6 @@ const GrowSkillsCourseItem: React.FC<GrowSkillsCourseItemProps> = ({ program }) 
                             {program?.ProgramName}
                         </h3>
                     </div>
-                    <ChevronRight className="w-[20px] h-[20px] text-grayscale-700 flex-shrink-0" />
                 </div>
 
                 <div className="flex gap-[10px]">

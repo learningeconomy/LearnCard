@@ -1,16 +1,29 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { VC, VP } from '@learncard/types';
-import { IonContent, IonPage, IonFooter, IonToolbar, IonRow, IonLoading } from '@ionic/react';
-import { Gift, Check, X as XIcon, Loader2, AlertCircle, Home, HelpCircle } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { VC, VP, VerificationItem } from '@learncard/types';
+import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
+import { IonContent, IonPage, IonFooter, IonLoading } from '@ionic/react';
+import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import X from 'learn-card-base/svgs/X';
+import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
+import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
 
-import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
+import {
+    useWallet,
+    useToast,
+    ToastTypeEnum,
+    BoostPageViewMode,
+    useModal,
+    ModalTypes,
+    useDeviceTypeByWidth,
+    CredentialCategoryEnum,
+} from 'learn-card-base';
 import {
     useAnalytics,
     AnalyticsEvents,
@@ -31,8 +44,6 @@ import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
-import useTheme from '../../theme/hooks/useTheme';
-
 interface ExchangeAcceptCredentialsProps {
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
     onAccept: (body: any, credentialClaimCount: number) => void; // Callback to continue the exchange
@@ -44,10 +55,6 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     onAccept,
     strategy,
 }) => {
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-
-    const [isFront, setIsFront] = useState(true);
     const [claiming, setClaiming] = useState(false);
     const [isClaimed, setIsClaimed] = useState(false);
 
@@ -80,10 +87,40 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const history = useHistory();
     const { presentToast } = useToast();
-    const { storeAndAddVCToWallet } = useWallet();
+    const { storeAndAddVCToWallet, initWallet } = useWallet();
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const { newModal } = useModal();
+    const { isMobile } = useDeviceTypeByWidth();
     const flowStartedAt = useRef(Date.now());
+
+    // Verify the (single) credential so the Details panel/sidebar shows real
+    // Proof / Status / Expiration rows. Always run — the verification block is
+    // shown on both mobile (Details modal) and desktop (persistent sidebar).
+    const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
+    useEffect(() => {
+        const cred = credentials[0];
+        if (!cred) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(cred, {}, true);
+                if (!cancelled) {
+                    setVerificationItems(prettifyVerificationItems(verifications ?? []));
+                }
+            } catch (err) {
+                log.warn('Failed to verify claim credential', err);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+        // `credentials` is captured once from the VP at mount and never changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -190,23 +227,55 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         }
     };
 
-    const renderSingleCredential = () => {
-        const credential = credentials[0];
+    // getDefaultCategoryForCredential can throw on malformed credentials, so
+    // resolve defensively for the detail views (categoryType is optional on
+    // both BoostDetailsSideMenu and BoostDetailsSideBar). Mirrors the guarded
+    // resolution used for post-claim routing in ClaimFromRequest.
+    const resolveDetailsCategoryType = (cred: VC): CredentialCategoryEnum | undefined => {
+        try {
+            return getDefaultCategoryForCredential(cred) as CredentialCategoryEnum;
+        } catch (err) {
+            log.warn('Failed to resolve credential category for details view', err);
+            return undefined;
+        }
+    };
+
+    // Mobile "Details" side panel — parity with ClaimBoost's footer.
+    const openSingleCredentialDetails = (credential: VC) => {
+        newModal(
+            <BoostDetailsSideMenu
+                credential={credential}
+                categoryType={resolveDetailsCategoryType(credential)}
+                verificationItems={verificationItems}
+                renderMethodCredential={credential}
+            />,
+            {
+                className: '!bg-transparent',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
+    const renderSingleCredentialCard = (credential: VC) => {
         const name = credential.name || 'Credential';
 
         return (
-            <div className="px-[40px] pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto">
-                <section className="w-full flex justify-center py-16">
-                    <VCDisplayCardWrapper2
-                        overrideCardTitle={name}
-                        credential={credential}
-                        checkProof={false}
-                        hideNavButtons
-                        isFrontOverride={isFront}
-                        setIsFrontOverride={setIsFront}
-                    />
-                </section>
-            </div>
+            <VCDisplayCardWrapper2
+                useCurrentUserName
+                credential={credential}
+                overrideCardTitle={name}
+                customFooterComponent={<div />}
+                checkProof={false}
+                hideNavButtons
+                hideFrontFaceDetails={false}
+                // Disable the click-to-flip: the back face is superseded by the
+                // Details overlay. Passing a no-op setter (and omitting
+                // isFrontOverride) keeps the card fixed on its front face, the
+                // same way the read-only detail views (BoostPreview/ClaimBoost)
+                // suppress the flip.
+                setIsFrontOverride={() => {}}
+            />
         );
     };
 
@@ -393,34 +462,77 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         );
     }
 
+    const claimBtnText = isClaimed ? 'Claimed' : claiming ? 'Loading...' : 'Accept';
+
+    // Single-credential claim — full credential view, matching ClaimBoost:
+    // themed background, edge-to-edge scroll area (no phantom padding / inset
+    // scrollbar), and the shared frosted BoostFooter (Close / Details / Accept).
+    if (credentials.length === 1) {
+        const credential = credentials[0];
+
+        return (
+            <IonPage>
+                <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
+                <div className="flex h-full bg-grayscale-100">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
+                        <section
+                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
+                            }`}
+                        >
+                            <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                                {renderSingleCredentialCard(credential)}
+                            </div>
+                        </section>
+                    </section>
+
+                    <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
+                        <BoostFooter
+                            handleClose={() => history.push('/')}
+                            handleDetails={
+                                isMobile ? () => openSingleCredentialDetails(credential) : undefined
+                            }
+                            handleClaim={handleClaim}
+                            claimBtnText={claimBtnText}
+                            disableClaimButton={claiming || isClaimed}
+                            useFullCloseButton={!isMobile}
+                        />
+                    </footer>
+
+                    {/* On desktop the Details footer button is hidden; show the
+                        persistent Details/Endorsements sidebar instead, matching
+                        the credential detail view (ClaimBoost/BoostPreview). */}
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={credential}
+                            categoryType={resolveDetailsCategoryType(credential)}
+                            verificationItems={verificationItems}
+                            renderMethodCredential={credential}
+                        />
+                    )}
+                </div>
+            </IonPage>
+        );
+    }
+
+    // Multiple-credential claim — grid selection view (unchanged).
     return (
         <IonPage>
             <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
             <IonContent fullscreen color="grayscale-100" className="ion-padding">
-                {credentials.length === 1 ? renderSingleCredential() : renderMultipleCredentials()}
+                {renderMultipleCredentials()}
             </IonContent>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
+                className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
             >
-                <IonToolbar color="transparent" mode="ios">
-                    <IonRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
-                        <button
-                            onClick={() => history.push('/')} // Or some other cancel action
-                            className="w-[50px] h-[50px] min-h-[50px] min-w-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
-                        >
-                            <X className="text-black w-[30px]" />
-                        </button>
-
-                        <button
-                            onClick={handleClaim}
-                            disabled={claiming || isClaimed}
-                            className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
-                        >
-                            {isClaimed ? 'Claimed' : 'Accept'}
-                        </button>
-                    </IonRow>
-                </IonToolbar>
+                <BoostFooter
+                    handleClose={() => history.push('/')}
+                    handleClaim={handleClaim}
+                    claimBtnText={claimBtnText}
+                    disableClaimButton={claiming || isClaimed}
+                    useFullCloseButton={false}
+                />
             </IonFooter>
         </IonPage>
     );
