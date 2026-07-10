@@ -77,13 +77,15 @@ Hook that servers as a simple wrapper exposing aspects of core wallet functional
 
 // These modify the storage prototype to allow for storing an object in local storage
 // It is temporary solution that will be removed in the near future
-Storage.prototype.setObject = function (key: string, value: unknown) {
-    this.setItem(key, JSON.stringify(value));
-};
+if (typeof Storage !== 'undefined') {
+    Storage.prototype.setObject = function (key: string, value: unknown) {
+        this.setItem(key, JSON.stringify(value));
+    };
 
-Storage.prototype.getObject = function (key: string) {
-    return JSON.parse(this.getItem(key) ?? '');
-};
+    Storage.prototype.getObject = function (key: string) {
+        return JSON.parse(this.getItem(key) ?? '');
+    };
+}
 
 export const useWallet = () => {
     const isLoggedIn = useIsLoggedIn();
