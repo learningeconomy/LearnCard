@@ -1,5 +1,6 @@
 import base64url from 'base64url';
 import type { UnsignedVC, VC } from '@learncard/types';
+import { getDidWeb } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getDefaultCategoryForCredential } from 'learn-card-base';
 import { getAppBaseUrl, getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
@@ -60,7 +61,7 @@ export const getCurrentLCNUserDid = (profileId?: string): string | undefined => 
     if (!profileId) return undefined;
 
     const domain = getResolvedTenantConfig().domain;
-    return `did:web:${encodeURIComponent(domain)}:users:${profileId}`;
+    return getDidWeb(domain, profileId);
 };
 
 export const buildSimpleTemplate = (input: SimpleSendInput): OBv3CredentialTemplate => {
