@@ -50,7 +50,7 @@ const BoostAFriendPage: React.FC = () => {
     const [claimLink, setClaimLink] = useState<string | null>(null);
 
     const handleSelectBadge = (badge: BadgePreset, color: string) => {
-        const { backgroundColor } = resolveBadgeStyle(badge, stylePacks, categoryFallback);
+        const { backgroundColor } = resolveBadgeStyle(badge, stylePacks);
         setSelectedBadge(badge);
         setVibeColor(backgroundColor || color);
         setStep('personalize');
@@ -100,14 +100,14 @@ const BoostAFriendPage: React.FC = () => {
                 await getRegisteredSigningAuthority(wallet);
             }
 
-            const { imageUrl } = resolveBadgeStyle(selectedBadge, stylePacks, categoryFallback);
+            const { imageUrl } = resolveBadgeStyle(selectedBadge, stylePacks);
 
             const template = buildBoostFriendTemplate({
                 title: selectedBadge.title,
                 description: `A social badge for being a ${selectedBadge.title}`,
                 note,
                 vibeColor,
-                imageUrl,
+                imageUrl: imageUrl || categoryFallback,
             });
 
             const result = await issueViaBoost(wallet, template, {
@@ -172,22 +172,23 @@ const BoostAFriendPage: React.FC = () => {
         <IonPage className="bg-white">
             <MainHeader showBackButton customClassName="bg-white" />
             <IonContent>
-                <div className="min-h-full font-poppins relative overflow-hidden">
-                    <div
-                        className="absolute inset-0 pointer-events-none transition-colors duration-700 ease-in-out opacity-20"
-                        style={{
-                            background: `radial-gradient(circle at 50% 0%, ${vibeColor} 0%, transparent 70%)`,
-                        }}
-                    />
+                <div className="min-h-full font-poppins relative">
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div
+                            className="absolute inset-0 transition-colors duration-700 ease-in-out opacity-20"
+                            style={{
+                                background: `radial-gradient(circle at 50% 0%, ${vibeColor} 0%, transparent 70%)`,
+                            }}
+                        />
+                    </div>
 
-                    <div className="max-w-xl mx-auto h-full flex flex-col px-4 sm:px-6 py-6 relative z-10">
+                    <div className="max-w-xl mx-auto h-full flex flex-col px-4 sm:px-6 py-4 relative z-10">
                         {step === 'pick' && (
                             <BadgePicker
                                 onSelect={handleSelectBadge}
                                 onBack={() => history.goBack()}
                                 stylePacks={stylePacks}
                                 badgeGroups={badgeGroups}
-                                categoryFallback={categoryFallback}
                             />
                         )}
 
@@ -201,7 +202,6 @@ const BoostAFriendPage: React.FC = () => {
                                 onNext={() => setStep('send')}
                                 onBack={() => setStep('pick')}
                                 stylePacks={stylePacks}
-                                categoryFallback={categoryFallback}
                             />
                         )}
 

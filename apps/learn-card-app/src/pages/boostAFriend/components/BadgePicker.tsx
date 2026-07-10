@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { Search, Sparkles, Plus } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
-import BoostsIcon from 'learn-card-base/svgs/wallet/BoostsIcon';
 import {
     BadgePreset,
     getSocialBadgePresets,
@@ -16,7 +15,6 @@ interface BadgePickerProps {
     onBack: () => void;
     stylePacks: LCAStylesPackRegistryEntry[] | undefined;
     badgeGroups: BadgeGroup[] | undefined;
-    categoryFallback: string;
 }
 
 export const BadgePicker: React.FC<BadgePickerProps> = ({
@@ -24,7 +22,6 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
     onBack,
     stylePacks,
     badgeGroups,
-    categoryFallback,
 }) => {
     const [search, setSearch] = useState('');
     const presets = useMemo(() => getSocialBadgePresets(), []);
@@ -87,10 +84,10 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
 
     return (
         <div className="flex flex-col h-full animate-fade-in-up">
-            <div className="flex items-center justify-between mb-6 shrink-0">
+            <div className="flex items-center justify-between mb-3 shrink-0">
                 <div>
-                    <h1 className="text-2xl font-semibold text-grayscale-900">Pick a Badge</h1>
-                    <p className="text-sm text-grayscale-600 mt-1">
+                    <h1 className="text-xl font-semibold text-grayscale-900">Pick a Badge</h1>
+                    <p className="text-sm text-grayscale-600 mt-0.5">
                         Send a fun badge to a friend to show appreciation.
                     </p>
                 </div>
@@ -103,7 +100,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                 </button>
             </div>
 
-            <div className="relative mb-6 shrink-0">
+            <div className="relative mb-4 shrink-0">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400" />
                 <input
                     type="text"
@@ -114,13 +111,13 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                 />
             </div>
 
-            <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-hide shrink-0">
+            <div className="flex gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide shrink-0">
                 <button
                     type="button"
                     onClick={handleSurpriseMe}
-                    className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-100 text-grayscale-900 font-medium text-sm hover:bg-grayscale-200 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
                 >
-                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <Sparkles className="w-4 h-4 text-amber-300" />
                     Surprise me
                 </button>
                 {search && !presets.some(p => p.title.toLowerCase() === search.toLowerCase()) && (
@@ -135,9 +132,9 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-20 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0">
                 {search ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 px-6 sm:px-0">
                         {filteredPresets.map((preset, index) => {
                             const color = VIBE_COLORS[index % VIBE_COLORS.length];
                             return (
@@ -147,7 +144,6 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                     color={color}
                                     onSelect={() => handleSelect(preset, color)}
                                     stylePacks={stylePacks}
-                                    categoryFallback={categoryFallback}
                                     index={index}
                                 />
                             );
@@ -162,7 +158,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                     <div className="space-y-8">
                         {groupedPresets?.map((groupData, groupIndex) => (
                             <div key={groupData.group.id} className="space-y-3">
-                                <div className="px-1">
+                                <div className="px-6 sm:px-1">
                                     <h2 className="text-lg sm:text-xl font-semibold text-grayscale-900">
                                         {groupData.group.label}
                                     </h2>
@@ -172,7 +168,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                         </p>
                                     )}
                                 </div>
-                                <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide">
+                                <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide px-6 sm:px-0 scroll-pl-6 sm:scroll-pl-0">
                                     {groupData.presets.map((preset, index) => {
                                         const color =
                                             VIBE_COLORS[
@@ -188,7 +184,6 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                                     color={color}
                                                     onSelect={() => handleSelect(preset, color)}
                                                     stylePacks={stylePacks}
-                                                    categoryFallback={categoryFallback}
                                                     index={index}
                                                 />
                                             </div>
@@ -209,14 +204,13 @@ const BadgeTile: React.FC<{
     color: string;
     onSelect: () => void;
     stylePacks: LCAStylesPackRegistryEntry[] | undefined;
-    categoryFallback: string;
     index: number;
-}> = ({ preset, color, onSelect, stylePacks, categoryFallback, index }) => {
+}> = ({ preset, color, onSelect, stylePacks, index }) => {
     const [imgError, setImgError] = useState(false);
-    const { imageUrl, backgroundColor } = resolveBadgeStyle(preset, stylePacks, categoryFallback);
+    const { imageUrl, backgroundColor } = resolveBadgeStyle(preset, stylePacks);
     const tileColor = backgroundColor || color;
 
-    const isRealImage = imageUrl && imageUrl !== categoryFallback && !imgError;
+    const isRealImage = Boolean(imageUrl) && !imgError;
 
     return (
         <button
@@ -234,18 +228,21 @@ const BadgeTile: React.FC<{
                 />
             ) : (
                 <div
-                    className="absolute inset-0 w-full h-full flex items-center justify-center transition-transform duration-300 motion-safe:group-hover:scale-105"
-                    style={{
-                        background: `linear-gradient(135deg, ${tileColor}CC 0%, ${tileColor}77 100%)`,
-                        color: '#FFFFFF',
-                    }}
-                >
-                    <BoostsIcon className="w-12 h-12 sm:w-16 sm:h-16 opacity-90" />
-                </div>
+                    className="absolute inset-0 w-full h-full transition-transform duration-300 motion-safe:group-hover:scale-105"
+                    style={{ backgroundColor: tileColor }}
+                />
             )}
 
-            <div className="absolute inset-x-0 bottom-0 pt-12 pb-3 px-3 sm:px-4 bg-gradient-to-t from-black/70 via-black/25 to-transparent flex items-end">
-                <span className="text-sm sm:text-base font-semibold text-white line-clamp-1 w-full drop-shadow-sm">
+            <div
+                className={`absolute inset-x-0 bottom-0 pt-12 pb-3 px-3 sm:px-4 flex items-end ${
+                    isRealImage ? 'bg-gradient-to-t from-black/70 via-black/25 to-transparent' : ''
+                }`}
+            >
+                <span
+                    className={`text-sm sm:text-base font-semibold text-white line-clamp-1 w-full ${
+                        isRealImage ? 'drop-shadow-sm' : ''
+                    }`}
+                >
                     {preset.title}
                 </span>
             </div>

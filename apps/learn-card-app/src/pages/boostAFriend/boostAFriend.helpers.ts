@@ -10,7 +10,6 @@ import { DisplayTypeEnum } from 'learn-card-base/helpers/display-types';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../components/boost/boost-options/boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { LCAStylesPackRegistryEntry } from 'learn-card-base';
-import { getDefaultAchievementTypeImage } from '../../components/boost/boostHelpers';
 
 export interface BoostFriendInput {
     title: string;
@@ -67,20 +66,11 @@ export const getSocialBadgePresets = (): BadgePreset[] => {
 
 export const resolveBadgeStyle = (
     preset: BadgePreset,
-    stylePacks: LCAStylesPackRegistryEntry[] | undefined,
-    categoryFallbackImage: string
+    stylePacks: LCAStylesPackRegistryEntry[] | undefined
 ): { imageUrl: string; backgroundColor?: string } => {
-    const imageUrl =
-        getDefaultAchievementTypeImage(
-            'Social Badge',
-            preset.type,
-            categoryFallbackImage,
-            stylePacks
-        ) || categoryFallbackImage;
-    const backgroundColor = stylePacks?.find(
-        e => e.category === 'Social Badge' && e.type === preset.type
-    )?.backgroundColor;
-    return { imageUrl, backgroundColor };
+    const entry = stylePacks?.find(e => e.category === 'Social Badge' && e.type === preset.type);
+    const imageUrl = entry?.url && entry.url.trim() ? entry.url : '';
+    return { imageUrl, backgroundColor: entry?.backgroundColor };
 };
 
 export const VIBE_COLORS = [

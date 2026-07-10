@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import BoostsIcon from 'learn-card-base/svgs/wallet/BoostsIcon';
 import { BadgePreset, VIBE_COLORS, resolveBadgeStyle } from '../boostAFriend.helpers';
 import { LCAStylesPackRegistryEntry } from 'learn-card-base';
 
@@ -13,7 +12,6 @@ interface BadgePersonalizeProps {
     onNext: () => void;
     onBack: () => void;
     stylePacks: LCAStylesPackRegistryEntry[] | undefined;
-    categoryFallback: string;
 }
 
 export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
@@ -25,12 +23,11 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     onNext,
     onBack,
     stylePacks,
-    categoryFallback,
 }) => {
     const [imgError, setImgError] = useState(false);
-    const { imageUrl } = resolveBadgeStyle(badge, stylePacks, categoryFallback);
+    const { imageUrl } = resolveBadgeStyle(badge, stylePacks);
 
-    const isRealImage = imageUrl && imageUrl !== categoryFallback && !imgError;
+    const isRealImage = Boolean(imageUrl) && !imgError;
 
     return (
         <div className="flex flex-col h-full animate-fade-in-up">
@@ -73,14 +70,9 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                 </>
                             ) : (
                                 <div
-                                    className="w-full h-full rounded-2xl flex items-center justify-center shadow-sm overflow-hidden transition-colors duration-300"
-                                    style={{
-                                        background: `linear-gradient(135deg, ${vibeColor}40 0%, ${vibeColor}10 100%)`,
-                                        color: vibeColor,
-                                    }}
-                                >
-                                    <BoostsIcon className="w-12 h-12" />
-                                </div>
+                                    className="absolute inset-0 w-full h-full transition-colors duration-300 rounded-2xl"
+                                    style={{ backgroundColor: vibeColor }}
+                                />
                             )}
                         </div>
                         <span className="text-xl font-semibold text-center text-grayscale-900 line-clamp-2">
