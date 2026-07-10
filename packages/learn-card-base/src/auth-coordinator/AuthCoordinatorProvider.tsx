@@ -276,6 +276,11 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         // session), initialize() awaits the cached-key read before any
         // setState — leaving consumers on the stale 'idle' long enough to
         // paint the logged-out UI between two loading screens.
+        //
+        // The condition is intentionally broad: ANY recreation of the
+        // coordinator from 'idle' with a real provider (not just the
+        // noOp→real swap) is about to re-run initialize(), and a loader is
+        // always a better paint for that window than the logged-out UI.
         if (authProvider && stateRef.current.status === 'idle') {
             handleStateChange({ status: 'authenticating' });
         }
