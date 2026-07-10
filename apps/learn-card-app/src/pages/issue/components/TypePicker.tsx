@@ -22,7 +22,7 @@ const TypePill: React.FC<{
             type="button"
             onClick={onClick}
             title={entry.pickWhen}
-            className={`flex items-center gap-2 py-2.5 px-3 rounded-full border text-sm font-medium transition-all duration-200 ${
+            className={`min-w-0 flex items-center gap-2 py-2.5 px-3 rounded-full border text-sm font-medium transition-all duration-200 ${
                 active
                     ? 'bg-grayscale-900 border-grayscale-900 text-white'
                     : 'bg-white border-grayscale-300 text-grayscale-700 motion-safe:hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'
@@ -59,7 +59,7 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
 
     return (
         <div className="space-y-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 [@media(min-width:992px)_and_(max-width:1155px)]:grid-cols-2 gap-2">
                 {COMMON_TYPES.map(entry => (
                     <TypePill
                         key={entry.obv3Type}
