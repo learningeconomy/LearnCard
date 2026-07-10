@@ -281,7 +281,7 @@ export const useDeleteCredentialRecord = () => {
                     category,
                     contractUri: recordToDelete.metadata?.contractUri,
                     deletedUris,
-                    skipPostDeleteCleanup: Boolean(recordToDelete.skipPostDeleteCleanup),
+                    skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                     deferPostDeleteCleanup: Boolean(record.deferPostDeleteCleanup),
                 };
             } catch (error) {
