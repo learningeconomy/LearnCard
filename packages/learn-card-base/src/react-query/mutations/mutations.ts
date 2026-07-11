@@ -168,10 +168,6 @@ export const useDeleteCredentialRecord = () => {
         wallet: Awaited<ReturnType<typeof initWallet>>,
         record: LCR
     ) => {
-        if (record.sharedUris && Object.keys(record.sharedUris).length > 0) {
-            return record;
-        }
-
         try {
             const resolvedRecord = (await wallet.index.LearnCloud.get?.({ uri: record.uri }))?.[0];
 
@@ -206,6 +202,7 @@ export const useDeleteCredentialRecord = () => {
 
     type DeleteCredentialInput = LCR & {
         skipPostDeleteCleanup?: boolean;
+        ignoreMissingRemoteRecord?: boolean;
         onLocalDeleteComplete?: () => void;
         deferPostDeleteCleanup?: boolean;
     };
@@ -230,6 +227,12 @@ export const useDeleteCredentialRecord = () => {
         );
     };
 
+    const isMissingCredentialRecordError = (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+
+        return message.includes('Could not delete record');
+    };
+
     return useMutation<
         DeleteCredentialResult,
         Error,
@@ -240,16 +243,23 @@ export const useDeleteCredentialRecord = () => {
             try {
                 log.debug('deleting record (in mutation)', record);
                 const wallet = await initWallet();
+                await wallet.cache.flushIndex();
                 const recordToDelete = await resolveRecordForDeletion(wallet, record);
                 const category = getRecordCategory(record);
                 const deletedUris = getDeletedUrisForCredentialRecord(recordToDelete);
-                // Preemptively empty LC cache
-                await wallet.cache.flushIndex();
 
                 // Direct deletion using the record ID - no need to search for it
                 if (recordToDelete.id) {
-                    // Delete from LearnCloud index
-                    await wallet.index.LearnCloud.remove(recordToDelete.id);
+                    try {
+                        await wallet.index.LearnCloud.remove(recordToDelete.id);
+                    } catch (error) {
+                        if (
+                            !record.ignoreMissingRemoteRecord ||
+                            !isMissingCredentialRecordError(error)
+                        ) {
+                            throw error;
+                        }
+                    }
 
                     // Also try SQLite index for completeness (if available)
                     try {
