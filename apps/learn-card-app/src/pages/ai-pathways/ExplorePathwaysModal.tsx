@@ -71,6 +71,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
     const skillsSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingSkillsRef = useRef<SelectedSkill[] | null>(null);
     const lastSavedSkillsRef = useRef<SelectedSkill[]>([]);
+    const skillsDirtyRef = useRef(false);
     const skillsSwiperRef = useRef<any>(null);
     const goalsSwiperRef = useRef<any>(null);
     const [skillsAtBeginning, setSkillsAtBeginning] = useState(true);
@@ -129,7 +130,9 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
     }, [hasSearchQuery, selectedSkills, semanticSearchSkillsData?.records]);
 
     useEffect(() => {
-        if (sasBoostSkills) {
+        // Skip syncing server state while a local edit is pending/saving, otherwise
+        // an in-flight refetch can clobber selections the user just made.
+        if (sasBoostSkills && !skillsDirtyRef.current) {
             const nextSkills = sasBoostSkills.map(
                 (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
                     id: s.id,
@@ -166,6 +169,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
     const persistSkills = (nextSkills: SelectedSkill[]) => {
         setSelectedSkills(nextSkills);
         pendingSkillsRef.current = nextSkills;
+        skillsDirtyRef.current = true;
         if (skillsSaveTimerRef.current) clearTimeout(skillsSaveTimerRef.current);
 
         skillsSaveTimerRef.current = setTimeout(async () => {
@@ -190,6 +194,10 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                 });
             } finally {
                 skillsSaveTimerRef.current = null;
+                // Only clear dirty if no newer edit was queued while this save was in flight.
+                if (pendingSkillsRef.current === null) {
+                    skillsDirtyRef.current = false;
+                }
             }
         }, 400);
     };
