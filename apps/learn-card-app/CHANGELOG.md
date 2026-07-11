@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.97.3
+
+### Patch Changes
+
+-   [#1401](https://github.com/learningeconomy/LearnCard/pull/1401) [`86557d270445ebc7cdb192adf2256306e6ab84fe`](https://github.com/learningeconomy/LearnCard/commit/86557d270445ebc7cdb192adf2256306e6ab84fe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Rich Tags
+
+-   [#1398](https://github.com/learningeconomy/LearnCard/pull/1398) [`b9ee9b1d331257b4bbd088e11d4fe0f55d98ae91`](https://github.com/learningeconomy/LearnCard/commit/b9ee9b1d331257b4bbd088e11d4fe0f55d98ae91) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Always show edge cards on swiper carousel
+
+-   [#1404](https://github.com/learningeconomy/LearnCard/pull/1404) [`6417de04cfb15ab10eb85ba3a934b09ff7835c52`](https://github.com/learningeconomy/LearnCard/commit/6417de04cfb15ab10eb85ba3a934b09ff7835c52) Thanks [@smurflo2](https://github.com/smurflo2)! - Speed up Self Assigned Skills save
+
+-   [#1387](https://github.com/learningeconomy/LearnCard/pull/1387) [`8a14a233d2faee61151c552c3eeddc87cfbade2d`](https://github.com/learningeconomy/LearnCard/commit/8a14a233d2faee61151c552c3eeddc87cfbade2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix pruning credentials from contracts + bug fest fixes
+
+-   [#1403](https://github.com/learningeconomy/LearnCard/pull/1403) [`948100f45b11a76c961eadf2eb3224646bd38d09`](https://github.com/learningeconomy/LearnCard/commit/948100f45b11a76c961eadf2eb3224646bd38d09) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix new credential indicators
+
+-   [#1406](https://github.com/learningeconomy/LearnCard/pull/1406) [`98584bb0af8525961d2196d4d372772480b241c3`](https://github.com/learningeconomy/LearnCard/commit/98584bb0af8525961d2196d4d372772480b241c3) Thanks [@Custard7](https://github.com/Custard7)! - feat: Peer Badges
+
 ## 1.97.2
 
 ### Patch Changes
