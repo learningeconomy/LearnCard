@@ -255,6 +255,11 @@ export const tenantEcosystemConfigSchema = z
  * files (LCAStylesPackRegistryEntry[]); `stylePackAssets` are names of bundled
  * JSON files shipped with the app (apps/learn-card-app/src/registries/style-packs/<name>.json).
  * All sources merge left→right, deduped by category+type, later source wins per field.
+ *
+ * A `stylePackUrls`/`badgeGroupUrls` entry may point at a bare array (the
+ * legacy shape) or at a single combined document shaped like
+ * `{ categories: [...], badges: [...] }` (e.g. peerbadges.com) — the same URL
+ * can then be listed in both arrays, since each hook extracts its own half.
  */
 export const tenantRegistriesConfigSchema = z
     .object({

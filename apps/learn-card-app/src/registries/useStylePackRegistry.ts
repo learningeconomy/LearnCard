@@ -36,9 +36,43 @@ export const mergeStylePackEntries = (
     return [...merged.values()];
 };
 
+// Some registries (e.g. peerbadges.com) publish a single combined document
+// shaped like `{ categories: [...], badges: [...] }` instead of a bare array,
+// so `useBadgeGroups` and `useStylePackRegistry` can both point at the same
+// URL. `category` there is a fine-grained persona label (e.g. "Bold &
+// Adventurous"), which doesn't match the picker's coarse `PICKER_BADGE_CATEGORIES`
+// gate — normalize it the same way the bundled `badge-summit.json` snapshot of
+// this same catalog does, so entries also dedupe/enrich against it instead of
+// appearing as duplicate tiles.
+type PeerBadgeDocumentEntry = {
+    category: string;
+    type: string;
+    title?: string;
+    url: string;
+    backgroundColor?: string;
+    description?: string;
+    criteria?: string;
+};
+
+const fromCombinedDocument = (data: unknown): LCAStylesPackRegistryEntry[] => {
+    const badges = (data as { badges?: PeerBadgeDocumentEntry[] })?.badges;
+    if (!Array.isArray(badges)) return [];
+
+    return badges.map(badge => ({
+        category: badge.category === 'Standards & Specs' ? 'Standards Badge' : 'Social Badge',
+        type: badge.type,
+        url: badge.url,
+        backgroundColor: badge.backgroundColor,
+        title: badge.title,
+        description: badge.description,
+        criteria: badge.criteria,
+    }));
+};
+
 const fetchStylePackUrl = async (url: string): Promise<LCAStylesPackRegistryEntry[]> => {
     const data = await (await fetch(url)).json();
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data)) return data;
+    return fromCombinedDocument(data);
 };
 
 export const useStylePackRegistry = () => {

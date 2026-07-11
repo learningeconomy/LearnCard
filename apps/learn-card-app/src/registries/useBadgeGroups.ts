@@ -24,9 +24,15 @@ export const mergeBadgeGroups = (sources: BadgeGroup[][]): BadgeGroup[] => {
     return [...merged.values()].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 };
 
+// Some registries (e.g. peerbadges.com) publish a single combined document
+// shaped like `{ categories: [...], badges: [...] }` instead of a bare array,
+// so this hook and `useStylePackRegistry` can both point at the same URL.
+// `categories[]` already matches the `BadgeGroup` shape field-for-field.
 const fetchBadgeGroupUrl = async (url: string): Promise<BadgeGroup[]> => {
     const data = await (await fetch(url)).json();
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data)) return data;
+    const categories = (data as { categories?: BadgeGroup[] })?.categories;
+    return Array.isArray(categories) ? categories : [];
 };
 
 export const useBadgeGroups = () => {
