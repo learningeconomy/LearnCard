@@ -161,7 +161,15 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                         proficiencyLevel: skill.proficiency,
                     })),
                 })
-                .catch(error => log.error('Error flushing skills save:', error));
+                .catch((error: any) => {
+                    log.error('Error flushing skills save:', error);
+                    // presentToast is a global store setter, safe to call after this
+                    // component has unmounted.
+                    presentToast(
+                        `Error saving skills!${error?.message ? ` ${error.message}` : ''}`,
+                        { type: ToastTypeEnum.Error }
+                    );
+                });
         },
         []
     );
@@ -202,12 +210,12 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         }, 400);
     };
 
-    const handleAddSkill = async (skill: SkillFrameworkNode, proficiencyLevel: number) => {
+    const handleAddSkill = (skill: SkillFrameworkNode, proficiencyLevel: number) => {
         if (!skill.id) return;
         const resolvedFrameworkId = skill.frameworkId ?? skill.targetFramework ?? frameworkIds[0];
         if (!resolvedFrameworkId) return;
 
-        await persistSkills([
+        persistSkills([
             ...selectedSkills.filter(
                 selected =>
                     !(selected.id === skill.id && selected.frameworkId === resolvedFrameworkId)
@@ -216,12 +224,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         ]);
     };
 
-    const handleEditSkill = async (
-        frameworkId: string,
-        skillId: string,
-        proficiencyLevel: number
-    ) => {
-        await persistSkills(
+    const handleEditSkill = (frameworkId: string, skillId: string, proficiencyLevel: number) => {
+        persistSkills(
             selectedSkills.map(skill =>
                 skill.id === skillId && skill.frameworkId === frameworkId
                     ? { ...skill, proficiency: proficiencyLevel }
@@ -230,8 +234,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         );
     };
 
-    const handleRemoveSkill = async (frameworkId: string, skillId: string) => {
-        await persistSkills(
+    const handleRemoveSkill = (frameworkId: string, skillId: string) => {
+        persistSkills(
             selectedSkills.filter(
                 skill => !(skill.id === skillId && skill.frameworkId === frameworkId)
             )
@@ -692,9 +696,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                 <SkillSearchSelector
                     selectedSkills={selectedSkillsBySemanticScore}
-                    onSelectedSkillsChange={async (nextSkills: SelectedSkill[]) => {
-                        await persistSkills(nextSkills);
-                    }}
+                    onSelectedSkillsChange={persistSkills}
                     showSuggestSkill={true}
                     showSearchInput={false}
                     showSelectedSkills={false}
