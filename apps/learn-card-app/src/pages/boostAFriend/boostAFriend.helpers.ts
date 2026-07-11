@@ -92,8 +92,6 @@ export interface BadgePreset {
     category?: string;
 }
 
-export const PICKER_BADGE_CATEGORIES = ['Social Badge', 'Standards Badge'];
-
 export const humanizeBadgeType = (type: string): string =>
     type
         .replace(/^ext:/, '')
@@ -112,10 +110,12 @@ export const getStylePackPresets = (
     const presets: BadgePreset[] = [];
 
     for (const entry of stylePacks) {
-        if (!entry?.type || !PICKER_BADGE_CATEGORIES.includes(entry.category)) continue;
-        const key = `${entry.category}::${entry.type}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
+        if (!entry?.type) continue;
+        // Dedupe by type: the same badge type may appear under different category
+        // labels across packs (e.g. peerbadges "Culture & Cool" vs bundled "Social Badge").
+        // Sources merge remote-first, so the remote pack's labeling wins.
+        if (seen.has(entry.type)) continue;
+        seen.add(entry.type);
         presets.push({
             title: entry.title?.trim() || humanizeBadgeType(entry.type),
             type: entry.type,

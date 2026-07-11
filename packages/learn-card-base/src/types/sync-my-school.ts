@@ -69,3 +69,8 @@ export type BadgeGroup = {
     order?: number;
     types: string[];
 };
+
+export type BadgePack = {
+    categories?: BadgeGroup[];
+    badges?: LCAStylesPackRegistryEntry[];
+};

@@ -251,17 +251,17 @@ export const tenantEcosystemConfigSchema = z
     .passthrough();
 
 /**
- * External data registries a tenant pulls in. `stylePackUrls` are remote JSON
- * files (LCAStylesPackRegistryEntry[]); `stylePackAssets` are names of bundled
- * JSON files shipped with the app (apps/learn-card-app/src/registries/style-packs/<name>.json).
- * All sources merge left→right, deduped by category+type, later source wins per field.
+ * External badge-pack registries a tenant pulls in. A badge pack is a single JSON
+ * document of shape { categories: BadgeGroup[]; badges: LCAStylesPackRegistryEntry[] }.
+ * `badgePackUrls` are remote JSON files; `badgePackAssets` are names of bundled files
+ * shipped with the app (apps/learn-card-app/src/registries/badge-packs/<name>.json).
+ * All sources merge (remote then bundled): badges deduped by category+type, categories
+ * by id, later source wins per field.
  */
 export const tenantRegistriesConfigSchema = z
     .object({
-        stylePackUrls: z.array(z.string()).default([]),
-        stylePackAssets: z.array(z.string()).default([]),
-        badgeGroupUrls: z.array(z.string()).default([]),
-        badgeGroupAssets: z.array(z.string()).default([]),
+        badgePackUrls: z.array(z.string()).default([]),
+        badgePackAssets: z.array(z.string()).default([]),
     })
     .passthrough();
 
