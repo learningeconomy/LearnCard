@@ -363,7 +363,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             newCredsStore.set.removeCreds([record?.uri]);
         }
 
-        if (isBoost) {
+        // CLR transcripts only render in NonBoostPreview; a boost-wrapped CLR
+        // (isBoost === true) must be excluded here or it renders as a plain boost.
+        if (isBoost && !isClrCredential) {
             newModal(<BoostPreview {...props} showEndorsementBadge />, {
                 backgroundImage: bgImage,
             });

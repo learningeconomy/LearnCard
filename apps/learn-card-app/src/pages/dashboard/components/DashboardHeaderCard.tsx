@@ -11,6 +11,8 @@ type DashboardHeaderCardProps = {
     shortBio?: string;
     professionalTitle?: string;
     onAvatarClick?: () => void;
+    onNotificationsClick?: () => void;
+    unreadCount?: number;
     topRightAction?: React.ReactNode;
     roleSwitcher?: React.ReactNode;
 };
@@ -48,11 +50,14 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     shortBio,
     professionalTitle,
     onAvatarClick,
+    onNotificationsClick,
+    unreadCount = 0,
     topRightAction,
     roleSwitcher,
 }) => {
     const initials = getInitials(displayName);
     const greeting = getTimeOfDayGreeting();
+    const hasUnread = (unreadCount ?? 0) > 0 && Boolean(onNotificationsClick);
     const descriptor = resolveDescriptor(professionalTitle, shortBio);
     const roleFallback = profileRole?.trim() ? capitalize(profileRole) : null;
 
@@ -97,7 +102,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
 
             <div className="relative p-5">
                 <div className="flex items-center gap-4">
-                    <div className="shrink-0">
+                    <div className="shrink-0 relative">
                         {onAvatarClick ? (
                             <button
                                 type="button"
@@ -109,6 +114,20 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             </button>
                         ) : (
                             avatar
+                        )}
+
+                        {hasUnread && (
+                            <button
+                                type="button"
+                                onClick={onNotificationsClick}
+                                aria-label={`You have ${
+                                    unreadCount > 99 ? '99+' : unreadCount
+                                } unread ${unreadCount === 1 ? 'alert' : 'alerts'}. Open alerts`}
+                                className="absolute top-0 right-0 flex items-center justify-center active:scale-90 transition-transform"
+                            >
+                                <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-red-500 opacity-60 animate-ping" />
+                                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white shadow-soft-bottom" />
+                            </button>
                         )}
                     </div>
 
