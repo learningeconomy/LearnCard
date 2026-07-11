@@ -3,7 +3,7 @@ import {
     SKILL_PROFILE_PROFESSIONAL_TITLE_KEY,
     SKILL_PROFILE_ROLE_EXPERIENCE_KEY,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
-import { SKILL_PROFILE_WORK_HISTORY_KEY } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep2';
+import { SKILL_PROFILE_WORK_HISTORY_KEY } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep2.constants';
 import { SKILL_PROFILE_SALARY_KEY } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
 import {
     SKILL_PROFILE_JOB_STABILITY_KEY,
