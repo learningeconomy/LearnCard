@@ -68,6 +68,10 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
     const [search, setSearch] = useState(initialSearchQuery);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
+    const skillsSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingSkillsRef = useRef<SelectedSkill[] | null>(null);
+    const lastSavedSkillsRef = useRef<SelectedSkill[]>([]);
+    const skillsDirtyRef = useRef(false);
     const skillsSwiperRef = useRef<any>(null);
     const goalsSwiperRef = useRef<any>(null);
     const [skillsAtBeginning, setSkillsAtBeginning] = useState(true);
@@ -82,6 +86,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         sasBoostData?.uri
     );
     const { mutateAsync: saveSkills, isPending: skillsSaving } = useManageSelfAssignedSkillsBoost();
+    const saveSkillsRef = useRef(saveSkills);
+    saveSkillsRef.current = saveSkills;
 
     const searchQuery = search.trim();
     const hasSearchQuery = Boolean(searchQuery);
@@ -124,46 +130,92 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
     }, [hasSearchQuery, selectedSkills, semanticSearchSkillsData?.records]);
 
     useEffect(() => {
-        if (sasBoostSkills) {
-            setSelectedSkills(
-                sasBoostSkills.map(
-                    (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
-                        id: s.id,
-                        frameworkId: s.frameworkId ?? frameworkIds[0] ?? '',
-                        proficiency: s.proficiencyLevel,
-                    })
-                )
+        // Skip syncing server state while a local edit is pending/saving, otherwise
+        // an in-flight refetch can clobber selections the user just made.
+        if (sasBoostSkills && !skillsDirtyRef.current) {
+            const nextSkills = sasBoostSkills.map(
+                (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
+                    id: s.id,
+                    frameworkId: s.frameworkId ?? frameworkIds[0] ?? '',
+                    proficiency: s.proficiencyLevel,
+                })
             );
+            setSelectedSkills(nextSkills);
+            lastSavedSkillsRef.current = nextSkills;
         }
     }, [frameworkIds, sasBoostSkills]);
 
-    const persistSkills = async (nextSkills: SelectedSkill[]) => {
-        const previousSkills = selectedSkills;
-        setSelectedSkills(nextSkills);
+    useEffect(
+        () => () => {
+            if (skillsSaveTimerRef.current) clearTimeout(skillsSaveTimerRef.current);
 
-        try {
-            await saveSkills({
-                skills: nextSkills.map(skill => ({
-                    frameworkId: skill.frameworkId,
-                    id: skill.id,
-                    proficiencyLevel: skill.proficiency,
-                })),
-            });
-        } catch (error: any) {
-            log.error('Error creating or updating skills:', error);
-            setSelectedSkills(previousSkills);
-            presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
-                type: ToastTypeEnum.Error,
-            });
-        }
+            const pendingSkills = pendingSkillsRef.current;
+            if (!pendingSkills) return;
+
+            pendingSkillsRef.current = null;
+            void saveSkillsRef
+                .current({
+                    skills: pendingSkills.map(skill => ({
+                        frameworkId: skill.frameworkId,
+                        id: skill.id,
+                        proficiencyLevel: skill.proficiency,
+                    })),
+                })
+                .catch((error: any) => {
+                    log.error('Error flushing skills save:', error);
+                    // presentToast is a global store setter, safe to call after this
+                    // component has unmounted.
+                    presentToast(
+                        `Error saving skills!${error?.message ? ` ${error.message}` : ''}`,
+                        { type: ToastTypeEnum.Error }
+                    );
+                });
+        },
+        []
+    );
+
+    const persistSkills = (nextSkills: SelectedSkill[]) => {
+        setSelectedSkills(nextSkills);
+        pendingSkillsRef.current = nextSkills;
+        skillsDirtyRef.current = true;
+        if (skillsSaveTimerRef.current) clearTimeout(skillsSaveTimerRef.current);
+
+        skillsSaveTimerRef.current = setTimeout(async () => {
+            const skillsToSave = pendingSkillsRef.current;
+            pendingSkillsRef.current = null;
+            if (!skillsToSave) return;
+
+            try {
+                await saveSkillsRef.current({
+                    skills: skillsToSave.map(skill => ({
+                        frameworkId: skill.frameworkId,
+                        id: skill.id,
+                        proficiencyLevel: skill.proficiency,
+                    })),
+                });
+                lastSavedSkillsRef.current = skillsToSave;
+            } catch (error: any) {
+                log.error('Error creating or updating skills:', error);
+                setSelectedSkills(lastSavedSkillsRef.current);
+                presentToast(`Error saving skills!${error?.message ? ` ${error.message}` : ''}`, {
+                    type: ToastTypeEnum.Error,
+                });
+            } finally {
+                skillsSaveTimerRef.current = null;
+                // Only clear dirty if no newer edit was queued while this save was in flight.
+                if (pendingSkillsRef.current === null) {
+                    skillsDirtyRef.current = false;
+                }
+            }
+        }, 400);
     };
 
-    const handleAddSkill = async (skill: SkillFrameworkNode, proficiencyLevel: number) => {
+    const handleAddSkill = (skill: SkillFrameworkNode, proficiencyLevel: number) => {
         if (!skill.id) return;
         const resolvedFrameworkId = skill.frameworkId ?? skill.targetFramework ?? frameworkIds[0];
         if (!resolvedFrameworkId) return;
 
-        await persistSkills([
+        persistSkills([
             ...selectedSkills.filter(
                 selected =>
                     !(selected.id === skill.id && selected.frameworkId === resolvedFrameworkId)
@@ -172,12 +224,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         ]);
     };
 
-    const handleEditSkill = async (
-        frameworkId: string,
-        skillId: string,
-        proficiencyLevel: number
-    ) => {
-        await persistSkills(
+    const handleEditSkill = (frameworkId: string, skillId: string, proficiencyLevel: number) => {
+        persistSkills(
             selectedSkills.map(skill =>
                 skill.id === skillId && skill.frameworkId === frameworkId
                     ? { ...skill, proficiency: proficiencyLevel }
@@ -186,8 +234,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         );
     };
 
-    const handleRemoveSkill = async (frameworkId: string, skillId: string) => {
-        await persistSkills(
+    const handleRemoveSkill = (frameworkId: string, skillId: string) => {
+        persistSkills(
             selectedSkills.filter(
                 skill => !(skill.id === skillId && skill.frameworkId === frameworkId)
             )
@@ -648,9 +696,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                 <SkillSearchSelector
                     selectedSkills={selectedSkillsBySemanticScore}
-                    onSelectedSkillsChange={async (nextSkills: SelectedSkill[]) => {
-                        await persistSkills(nextSkills);
-                    }}
+                    onSelectedSkillsChange={persistSkills}
                     showSuggestSkill={true}
                     showSearchInput={false}
                     showSelectedSkills={false}
