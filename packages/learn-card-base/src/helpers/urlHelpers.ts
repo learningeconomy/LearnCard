@@ -11,9 +11,13 @@ export const isValidUrl = (str: string): boolean => {
  * Sets query params on a URL, merging with any existing query string. Unlike
  * `${url}?key=value` concatenation, this stays well-formed when `url` already
  * has a query string (which would otherwise produce a malformed double-`?` URL
- * that silently drops the appended param). Throws on invalid absolute URLs.
+ * that silently drops the appended param). Returns `rawUrl` unchanged if it
+ * isn't a valid absolute URL, matching the old concatenation behavior of
+ * never throwing.
  */
 export const appendQueryParams = (rawUrl: string, params: Record<string, string>): string => {
+    if (!isValidUrl(rawUrl)) return rawUrl;
+
     const url = new URL(rawUrl);
 
     for (const [key, value] of Object.entries(params)) {

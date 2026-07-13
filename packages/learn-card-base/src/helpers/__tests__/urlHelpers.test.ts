@@ -47,7 +47,7 @@ describe('appendQueryParams', () => {
         expect(params.get('b')).toBe('2');
     });
 
-    it('throws on an invalid absolute URL', () => {
-        expect(() => appendQueryParams('/relative/path', { a: 'b' })).toThrow();
+    it('returns the input unchanged for an invalid absolute URL instead of throwing', () => {
+        expect(appendQueryParams('/relative/path', { a: 'b' })).toBe('/relative/path');
     });
 });
