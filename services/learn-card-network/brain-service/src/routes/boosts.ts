@@ -222,12 +222,12 @@ const getCredentialNoun = (category?: string | null): string => {
 
 /**
  * Builds the subject phrase for a lifecycle notification body, e.g.
- * `Spec Gremlin badge` (name + category noun) or just `badge` when the boost is
- * unnamed. Keep the leading `Your ` in the caller.
+ * `"Spec Gremlin" badge` (quoted name + category noun) or just `badge` when the
+ * boost is unnamed. Keep the leading `Your ` in the caller.
  */
 const getCredentialSubject = (name?: string | null, category?: string | null): string => {
     const noun = getCredentialNoun(category);
-    return name ? `${name} ${noun}` : noun;
+    return name ? `"${name}" ${noun}` : noun;
 };
 
 /**
