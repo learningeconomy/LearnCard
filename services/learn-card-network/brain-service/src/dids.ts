@@ -53,15 +53,17 @@ const dedupeRefs = <T>(entries: T[] = []): T[] => {
     });
 };
 
-// A locally-hosted method's controller MUST be the base DID, never a fragment URI:
-// ControllerProofPurpose dereferences the controller, and a fragment resolves to
-// only the key node (no assertionMethod), which fails proof authorization.
+// Only repair controllers that point at a fragment of THIS document's own DID —
+// the exact corruption behind the bug. ControllerProofPurpose dereferences the
+// controller, and a self-fragment resolves to only the key node (no
+// assertionMethod), which fails proof authorization. Foreign or user-supplied
+// controllers (e.g. from addDidMetadata) are left untouched.
 const normalizeMethodController = (entry: any, did: string): any => {
     if (
         entry &&
         typeof entry === 'object' &&
-        typeof entry.id === 'string' &&
-        entry.id.startsWith(`${did}#`)
+        typeof entry.controller === 'string' &&
+        entry.controller.startsWith(`${did}#`)
     ) {
         return { ...entry, controller: did };
     }
@@ -69,7 +71,7 @@ const normalizeMethodController = (entry: any, did: string): any => {
     return entry;
 };
 
-const normalizeDidDocument = (doc: DidDocument): DidDocument => {
+export const normalizeDidDocument = (doc: DidDocument): DidDocument => {
     const did = doc.id;
 
     return {
