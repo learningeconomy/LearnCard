@@ -18,6 +18,7 @@ import NotificationAppStoreCard from './NotificationAppStoreCard';
 import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard';
 import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
+import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
 
@@ -43,6 +44,9 @@ export const NOTIFICATION_TYPES = {
     GUARDIAN_APPROVED: 'GUARDIAN_APPROVED',
     GUARDIAN_REJECTED: 'GUARDIAN_REJECTED',
     APP_NOTIFICATION: 'APP_NOTIFICATION',
+    CREDENTIAL_REVOKED: 'CREDENTIAL_REVOKED',
+    CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
+    CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
 };
 
 import { getLogger } from 'learn-card-base';
@@ -435,6 +439,39 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 notification={notification}
                 onRead={handleMarkAsRead}
                 onArchive={handleArchiveNotification}
+            />
+        );
+    }
+
+    /* A credential you hold was revoked by its issuer */
+    if (type === NOTIFICATION_TYPES.CREDENTIAL_REVOKED) {
+        return (
+            <NotificationCredentialStatusCard
+                notification={notification}
+                variant="revoked"
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
+
+    /* A credential you hold was suspended by its issuer */
+    if (type === NOTIFICATION_TYPES.CREDENTIAL_SUSPENDED) {
+        return (
+            <NotificationCredentialStatusCard
+                notification={notification}
+                variant="suspended"
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
+
+    /* A previously-suspended credential was restored (unsuspended) */
+    if (type === NOTIFICATION_TYPES.CREDENTIAL_UNSUSPENDED) {
+        return (
+            <NotificationCredentialStatusCard
+                notification={notification}
+                variant="unsuspended"
+                onRead={handleMarkAsRead}
             />
         );
     }
