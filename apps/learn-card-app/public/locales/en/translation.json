@@ -85,7 +85,7 @@
             "aiInsights": "AI Insights",
             "aiPathways": "AI Pathways",
             "skills": "Skills",
-            "socialBadges": "Boosts",
+            "socialBadges": "Badges",
             "achievements": "Achievements",
             "studies": "Studies",
             "portfolio": "Portfolio",
@@ -2621,7 +2621,18 @@
         "yourMarketComparison": "Your Market Comparison",
         "shareChildInsights": "Share <0>{{child}}</0>'s insights with <1>{{teacher}}</1>",
         "successfullyShared": "You've successfully shared insights with {{name}}",
-        "approveDescription": "If you approve, your teacher will be able to see your Top Skills, Learning Snapshots, Suggested Pathways. They will also be able to send learning pathway suggestions to you."
+        "approveDescription": "If you approve, your teacher will be able to see your Top Skills, Learning Snapshots, Suggested Pathways. They will also be able to send learning pathway suggestions to you.",
+        "regenerate": "Regenerate",
+        "regenLoad": "Regenerating...",
+        "sort": {
+            "az": "A-Z",
+            "recentlyAdded": "Recently Added"
+        },
+        "filter": {
+            "all": "All",
+            "pending": "Pending",
+            "accepted": "Accepted"
+        }
     },
     "aiPathways": {
         "searchSkillGoalJob": "Search by skill, goal, or job...",
@@ -2777,7 +2788,9 @@
             "viewLess": "View Less",
             "viewAll": "View All",
             "didntFind": "Didn't find what you're looking for?",
-            "suggestionThankYou": "Thank you for your suggestion!"
+            "suggestionThankYou": "Thank you for your suggestion!",
+            "prev": "Previous",
+            "next": "Next"
         },
         "adminPanel": {
             "createFramework": "Create Framework",
