@@ -309,7 +309,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                 <IonRow class="w-full">
                     <IonRow className="flex w-full flex-col items-center justify-center mb-2">
                         <div className="flex w-full items-center justify-center">
-                            <h6
+                            <h5
                                 className={`font-notoSans select-none text-xl font-medium tracking-wider text-center`}
                             >
                                 <span className="font-notoSans font-normal text-center">
@@ -319,7 +319,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                 <h6 className="tracking-[12px] text-lg font-bold text-black">
                                     SCOUTPASS
                                 </h6>
-                            </h6>
+                            </h5>
                         </div>
                         <div className="flex w-full items-center justify-center text-center">
                             <h1 className="text-center text-base mt-2 font-normal text-black">
