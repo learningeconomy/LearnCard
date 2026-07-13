@@ -216,8 +216,7 @@ const ViewSharedBoost: React.FC<{
     // getLifecycleTreatment helper (kept inline here to avoid a cross-package import
     // for a distinct card surface). Inline filter style so it applies regardless of
     // Tailwind scanning.
-    const isInactiveCredential =
-        lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
+    const isInactiveCredential = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
     const inactiveMediaStyle: React.CSSProperties | undefined = isInactiveCredential
         ? { filter: 'grayscale(1) brightness(0.9)' }
         : undefined;

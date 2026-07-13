@@ -2054,9 +2054,10 @@ export const boostsRouter = t.router({
                     },
                     message: {
                         title: 'Credential revoked',
-                        body: `Your ${getCredentialSubject(boost.name, boost.category)} was revoked by ${
-                            profile.displayName ?? profile.profileId
-                        }.`,
+                        body: `Your ${getCredentialSubject(
+                            boost.name,
+                            boost.category
+                        )} was revoked by ${profile.displayName ?? profile.profileId}.`,
                     },
                     data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
@@ -2169,9 +2170,10 @@ export const boostsRouter = t.router({
                     },
                     message: {
                         title: 'Credential suspended',
-                        body: `Your ${getCredentialSubject(boost.name, boost.category)} was suspended by ${
-                            profile.displayName ?? profile.profileId
-                        }.`,
+                        body: `Your ${getCredentialSubject(
+                            boost.name,
+                            boost.category
+                        )} was suspended by ${profile.displayName ?? profile.profileId}.`,
                     },
                     data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
@@ -2279,9 +2281,10 @@ export const boostsRouter = t.router({
                     },
                     message: {
                         title: 'Credential reinstated',
-                        body: `Your ${getCredentialSubject(boost.name, boost.category)} was reinstated by ${
-                            profile.displayName ?? profile.profileId
-                        }.`,
+                        body: `Your ${getCredentialSubject(
+                            boost.name,
+                            boost.category
+                        )} was reinstated by ${profile.displayName ?? profile.profileId}.`,
                     },
                     data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
