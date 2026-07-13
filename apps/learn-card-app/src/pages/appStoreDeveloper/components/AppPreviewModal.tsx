@@ -4,7 +4,7 @@ import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-preview-modal');
 
-import { useModal } from 'learn-card-base';
+import { useModal, appendQueryParams } from 'learn-card-base';
 import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLearnCardMessageHandlers';
 
@@ -173,7 +173,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     };
 
     const embedUrlWithOverride = embedUrl
-        ? `${embedUrl}?lc_host_override=${window.location.origin}`
+        ? appendQueryParams(embedUrl, { lc_host_override: window.location.origin })
         : '';
 
     if (!isEmbeddable) {
