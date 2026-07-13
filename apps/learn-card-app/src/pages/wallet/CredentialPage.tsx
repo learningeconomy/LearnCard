@@ -131,6 +131,13 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const config =
         categoryToConfig[category] ?? categoryToConfig[CredentialCategoryEnum.workHistory];
 
+    useEffect(
+        () => () => {
+            newCredsStore.set.clearNewCreds(config.boostCategory);
+        },
+        [config.boostCategory]
+    );
+
     const _activeTab = query.get('managed')
         ? CredentialListTabEnum.Managed
         : CredentialListTabEnum.Earned;

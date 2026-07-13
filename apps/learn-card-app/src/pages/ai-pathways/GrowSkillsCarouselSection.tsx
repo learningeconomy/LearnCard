@@ -36,8 +36,9 @@ const GrowSkillsCarouselSection = <T,>({
     const [atBeginning, setAtBeginning] = useState<boolean>(true);
     const [atEnd, setAtEnd] = useState<boolean>(false);
 
-    const showNavigation = width > 991;
-    const showHeaderNavigation = showNavigation && carouselItems.length > 1;
+    const isDesktop = width > 991;
+    const showHeaderNavigation = carouselItems.length > 1;
+    const slideWidth = isDesktop ? '350px' : 'clamp(240px, calc(100% - 40px), 350px)';
 
     const handleSwiperUpdate = (swiper: SwiperInstance) => {
         setAtBeginning(swiper.isBeginning);
@@ -85,7 +86,7 @@ const GrowSkillsCarouselSection = <T,>({
                                     className="flex h-[30px] w-[30px] items-center justify-center text-grayscale-900 transition-colors hover:text-grayscale-700 disabled:text-grayscale-400 disabled:cursor-not-allowed"
                                     onClick={() => swiperRef.current?.slidePrev()}
                                 >
-                                    <SlimCaretLeft className="h-[30px] w-[30px]" />
+                                    <SlimCaretLeft className="h-[20px] w-[20px]" />
                                 </button>
 
                                 <button
@@ -95,7 +96,7 @@ const GrowSkillsCarouselSection = <T,>({
                                     className="flex h-[30px] w-[30px] items-center justify-center text-grayscale-900 transition-colors hover:text-grayscale-700 disabled:text-grayscale-400 disabled:cursor-not-allowed"
                                     onClick={() => swiperRef.current?.slideNext()}
                                 >
-                                    <SlimCaretRight className="h-[30px] w-[30px]" />
+                                    <SlimCaretRight className="h-[20px] w-[20px]" />
                                 </button>
                             </div>
                         )}
@@ -105,6 +106,7 @@ const GrowSkillsCarouselSection = <T,>({
 
             <div className="relative w-full overflow-visible">
                 <Swiper
+                    className="[&_.swiper-wrapper]:items-stretch"
                     onSwiper={handleSwiperInit}
                     onResize={handleSwiperUpdate}
                     onSlideChange={handleSwiperUpdate}
@@ -128,9 +130,11 @@ const GrowSkillsCarouselSection = <T,>({
                         <SwiperSlide
                             key={getItemKey?.(item, index) ?? index}
                             className={slideClassName}
-                            style={{ width: '350px' }}
+                            style={{ width: slideWidth }}
                         >
-                            {renderItem(item, index)}
+                            <div className="flex h-full w-full [&>*]:h-full">
+                                {renderItem(item, index)}
+                            </div>
                         </SwiperSlide>
                     ))}
                 </Swiper>

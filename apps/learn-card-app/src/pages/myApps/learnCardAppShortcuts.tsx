@@ -17,6 +17,7 @@ import DataSharingTileIcon from './icons/DataSharingTileIcon';
 export type ShortcutActionHelpers = {
     push: (path: string) => void;
     openBoost: () => void;
+    openBoostAFriend: () => void;
 };
 
 export type LearnCardAppShortcut = {
@@ -120,6 +121,6 @@ export const LEARNCARD_APP_SHORTCUTS: LearnCardAppShortcut[] = [
         gradientFrom: '#93C5FD',
         gradientTo: '#3B82F6',
         Icon: BoostsIconWithShape,
-        getAction: h => () => h.openBoost(),
+        getAction: h => () => h.openBoostAFriend(),
     },
 ];

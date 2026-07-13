@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import Search from 'learn-card-base/svgs/Search';
@@ -40,6 +41,15 @@ const MyAppsLanding: React.FC = () => {
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
     const pathwaysEnabled = usePathwaysEnabled();
+    const flags = useFlags();
+
+    const openBoostAFriend = useMemo(
+        () => () => {
+            if (flags?.boostAFriendV2 === true) history.push('/boost-a-friend');
+            else openBoost();
+        },
+        [flags?.boostAFriendV2, history, openBoost]
+    );
 
     const shortcuts = useMemo(
         () =>
@@ -61,8 +71,8 @@ const MyAppsLanding: React.FC = () => {
     }, [hasDeepLink, search, history]);
 
     const helpers = useMemo(
-        () => ({ push: (path: string) => history.push(path), openBoost }),
-        [history, openBoost]
+        () => ({ push: (path: string) => history.push(path), openBoost, openBoostAFriend }),
+        [history, openBoost, openBoostAFriend]
     );
 
     const query = searchInput.trim().toLowerCase();

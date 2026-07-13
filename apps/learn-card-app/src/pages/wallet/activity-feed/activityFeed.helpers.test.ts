@@ -197,6 +197,9 @@ describe('isHiddenActivity', () => {
         expect(isHiddenActivity('Self-Assigned Skills')).toBe(true);
         expect(isHiddenActivity('VerifiableData')).toBe(true);
         expect(isHiddenActivity('AI Summary')).toBe(true);
+        expect(isHiddenActivity('AI Topic')).toBe(true);
+        expect(isHiddenActivity('AI Sessions')).toBe(true);
+        expect(isHiddenActivity('ai-topic')).toBe(true);
         expect(isHiddenActivity('Pay Rate')).toBe(true);
     });
     it('shows normal and unknown categories', () => {
