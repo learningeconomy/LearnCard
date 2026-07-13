@@ -531,7 +531,18 @@
                 "accommodation": "Assistance",
                 "workHistory": "Experiences",
                 "id": "IDs"
-            }
+            },
+            "selfAdded": "You added this to your passport.",
+            "sentShare": "You shared this with {{name}}.",
+            "rcvdShare": "{{name}} shared this with you.",
+            "what": "What",
+            "type": "Type",
+            "date": "Date",
+            "viewInPass": "View in your passport",
+            "allCreds": "All credentials",
+            "emptyAll": "Nothing in your passport yet.",
+            "recent": "RECENTLY ADDED",
+            "seeAll": "See all"
         }
     },
     "launchpad": {
@@ -3593,6 +3604,89 @@
         },
         "appLaunch": {
             "error": "Couldn't open this app. Please try again."
+        },
+        "roleSwitcher": {
+            "iconAlt": "{{role}} icon",
+            "roleAria": "Role: {{role}}",
+            "switchAria": "Switch role — current: {{role}}"
+        }
+    },
+    "notifications": {
+        "contract": "your contract",
+        "loadErr": "Unable to load activity",
+        "updates": "Updates",
+        "credShared": "Credentials shared",
+        "firstAct": "First activity",
+        "sharedWith": "Shared with {{name}}",
+        "sharedCred": "Shared credentials with {{name}}",
+        "updateCnt": "{{count}} updates",
+        "latest": "Latest {{date}}"
+    },
+    "boostAFriend": {
+        "yourBadge": "Your Badge",
+        "page": {
+            "noRecip": "Please add at least one recipient.",
+            "descDflt": "A social badge for being a {{title}}",
+            "saveErr": "Badge was issued, but it could not be saved to your Passport.",
+            "copyFail": "Failed to copy link",
+            "shareTtl": "Claim your badge!",
+            "shareTxt": "I sent you a {{badge}} badge!",
+            "qrSaved": "QR code saved to Photos.",
+            "qrFail": "Failed to download QR code.",
+            "sendTo": "Send to",
+            "whoGets": "Who gets this badge?",
+            "creating": "Creating link...",
+            "createLnk": "Create Link",
+            "sendBadge": "Send Badge",
+            "linkReady": "Link ready!",
+            "claimAny": "Anyone with this link or QR code can claim it.",
+            "copied": "Copied",
+            "copyLink": "Copy link",
+            "dlQr": "Download QR",
+            "another": "Boost Another",
+            "added": "Added to your Passport!",
+            "sent": "Badge sent!",
+            "findBadge": "You'll find it in your badges.",
+            "sentTo": "Sent to {{recipients}}"
+        },
+        "pick": {
+            "moreBadge": "More Badges",
+            "title": "Pick a Badge",
+            "subtitle": "Send a fun badge to a friend to show appreciation.",
+            "search": "Search badges...",
+            "surprise": "Surprise me",
+            "noBadges": "No badges found."
+        },
+        "person": {
+            "subtitle": "Add a note and pick a color.",
+            "name": "Badge name",
+            "namePlace": "e.g. Trailblazer",
+            "subtype": "Subtype",
+            "subDesc": "A short label for this kind of badge.",
+            "image": "Badge image (optional)",
+            "uploadAria": "Upload badge image",
+            "change": "Change image",
+            "uploadImg": "Upload image",
+            "fileTypes": "PNG, JPG, or GIF.",
+            "vibe": "Vibe Color",
+            "colorAria": "Select color {{color}}",
+            "note": "Add a note (optional)",
+            "notePlace": "You're awesome because..."
+        },
+        "recip": {
+            "justMe": "Just me",
+            "shareLnk": "Share link",
+            "rmRecip": "Remove recipient",
+            "search": "Search people...",
+            "sendTo": "Send to {{query}}",
+            "emailHint": "They'll get an email to claim it",
+            "noResults": "No results found. Enter a valid email to send an invite.",
+            "hint": "Search for someone by name, @username, or email.",
+            "selfDesc": "This badge will be added directly to your own Passport.",
+            "linkDesc": "Anyone with the link can claim this badge.",
+            "expires": "Expires (optional)",
+            "maxClaims": "Max claims (optional)",
+            "unlimited": "Unlimited"
         }
     }
 }

@@ -13,6 +13,7 @@ import {
     useFilestack,
 } from 'learn-card-base';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import * as m from '../../../paraglide/messages.js';
 
 interface BadgePersonalizeProps {
     badge: BadgePreset;
@@ -63,7 +64,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     });
 
     const previewCredential = useMemo(() => {
-        const displayTitle = title.trim() || 'Your Badge';
+        const displayTitle = title.trim() || m['boostAFriend.yourBadge']();
         return buildPreviewCredential({
             title: displayTitle,
             subtype: subtype.trim() || displayTitle,
@@ -92,14 +93,16 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                         type="button"
                         onClick={onBack}
                         className="p-2 -ml-2 rounded-full hover:bg-white/50 text-grayscale-600 transition-colors"
-                        aria-label="Go back"
+                        aria-label={m['settings.goBack']()}
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-semibold text-grayscale-900">Personalize</h1>
+                        <h1 className="text-2xl font-semibold text-grayscale-900">
+                            {m['sidemenu.links.personalize']()}
+                        </h1>
                         <p className="text-sm text-grayscale-600 mt-1">
-                            Add a note and pick a color.
+                            {m['boostAFriend.person.subtitle']()}
                         </p>
                     </div>
                 </div>
@@ -123,13 +126,13 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                     <div className="max-w-sm mx-auto w-full space-y-8">
                         <div>
                             <label className="block text-sm font-medium text-grayscale-900 mb-2">
-                                Badge name
+                                {m['boostAFriend.person.name']()}
                             </label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={e => onTitleChange(e.target.value)}
-                                placeholder="e.g. Trailblazer"
+                                placeholder={m['boostAFriend.person.namePlace']()}
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all shadow-sm"
                             />
                         </div>
@@ -137,16 +140,16 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                         {isCustom && (
                             <div>
                                 <label className="block text-sm font-medium text-grayscale-900 mb-1">
-                                    Subtype
+                                    {m['boostAFriend.person.subtype']()}
                                 </label>
                                 <p className="text-xs text-grayscale-500 mb-2">
-                                    A short label for this kind of badge.
+                                    {m['boostAFriend.person.subDesc']()}
                                 </p>
                                 <input
                                     type="text"
                                     value={subtype}
                                     onChange={e => onSubtypeChange(e.target.value)}
-                                    placeholder="e.g. Trailblazer"
+                                    placeholder={m['boostAFriend.person.namePlace']()}
                                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all shadow-sm"
                                 />
                             </div>
@@ -155,7 +158,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                         {isCustom && (
                             <div>
                                 <label className="block text-sm font-medium text-grayscale-900 mb-2">
-                                    Badge image (optional)
+                                    {m['boostAFriend.person.image']()}
                                 </label>
                                 <div className="flex items-center gap-3">
                                     <button
@@ -163,14 +166,14 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                         onClick={() => handleFileSelect()}
                                         disabled={isUploadingImage}
                                         className="relative w-16 h-16 rounded-2xl border border-grayscale-300 bg-white flex items-center justify-center overflow-hidden shrink-0 hover:bg-grayscale-10 transition-colors disabled:opacity-60"
-                                        aria-label="Upload badge image"
+                                        aria-label={m['boostAFriend.person.uploadAria']()}
                                     >
                                         {isUploadingImage ? (
                                             <Loader2 className="w-5 h-5 text-grayscale-400 animate-spin" />
                                         ) : effectiveImageUrl ? (
                                             <img
                                                 src={effectiveImageUrl}
-                                                alt="Badge"
+                                                alt={m['wallet.categoriesSingular.socialBadges']()}
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
@@ -185,10 +188,10 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                             className="text-sm font-medium text-grayscale-900 hover:text-grayscale-600 transition-colors disabled:opacity-60"
                                         >
                                             {isUploadingImage
-                                                ? 'Uploading...'
+                                                ? m['boost.cms.media.uploading']()
                                                 : effectiveImageUrl
-                                                ? 'Change image'
-                                                : 'Upload image'}
+                                                ? m['boostAFriend.person.change']()
+                                                : m['boostAFriend.person.uploadImg']()}
                                         </button>
                                         {imageUrl?.trim() && !isUploadingImage && (
                                             <button
@@ -197,11 +200,11 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                                 className="flex items-center gap-1 text-xs text-grayscale-500 hover:text-red-600 transition-colors mt-1"
                                             >
                                                 <X className="w-3.5 h-3.5" />
-                                                Remove
+                                                {m['profile.email.remove']()}
                                             </button>
                                         )}
                                         <p className="text-xs text-grayscale-500 mt-1">
-                                            PNG, JPG, or GIF.
+                                            {m['boostAFriend.person.fileTypes']()}
                                         </p>
                                     </div>
                                 </div>
@@ -210,7 +213,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-grayscale-900 mb-3 text-center">
-                                Vibe Color
+                                {m['boostAFriend.person.vibe']()}
                             </label>
                             <div className="grid grid-cols-8 gap-2">
                                 {VIBE_COLORS.map(color => (
@@ -224,7 +227,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                                 : 'hover:scale-105'
                                         }`}
                                         style={{ backgroundColor: color }}
-                                        aria-label={`Select color ${color}`}
+                                        aria-label={m['boostAFriend.person.colorAria']({ color })}
                                     />
                                 ))}
                             </div>
@@ -232,12 +235,14 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-grayscale-900 mb-2">
-                                Add a note (optional)
+                                {m['boostAFriend.person.note']()}
                             </label>
                             <textarea
                                 value={note}
                                 onChange={e => onNoteChange(e.target.value)}
-                                placeholder={notePlaceholder?.trim() || "You're awesome because..."}
+                                placeholder={
+                                    notePlaceholder?.trim() || m['boostAFriend.person.notePlace']()
+                                }
                                 rows={3}
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all resize-none shadow-sm"
                             />
@@ -253,7 +258,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                     disabled={!title.trim()}
                     className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                    Next
+                    {m['common.next']()}
                 </button>
             </div>
         </div>

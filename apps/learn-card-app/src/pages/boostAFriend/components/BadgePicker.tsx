@@ -9,6 +9,7 @@ import {
     resolveBadgeStyle,
 } from '../boostAFriend.helpers';
 import { LCAStylesPackRegistryEntry, BadgeGroup } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 interface BadgePickerProps {
     onSelect: (badge: BadgePreset, vibeColor: string) => void;
@@ -91,7 +92,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
         const remainingPresets = presets.filter(p => !usedTypes.has(p.type));
         if (remainingPresets.length > 0) {
             groups.push({
-                group: { id: 'more', label: 'More Badges', types: [] },
+                group: { id: 'more', label: m['boostAFriend.pick.moreBadge'](), types: [] },
                 presets: remainingPresets,
             });
         }
@@ -118,7 +119,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                 isCollapsed ? 'top-[18px] sm:top-1' : 'top-1'
                             }`}
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
 
                         <div
@@ -129,10 +130,10 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             }`}
                         >
                             <h1 className="text-xl font-semibold text-grayscale-900">
-                                Pick a Badge
+                                {m['boostAFriend.pick.title']()}
                             </h1>
                             <p className="text-sm text-grayscale-600 mt-0.5">
-                                Send a fun badge to a friend to show appreciation.
+                                {m['boostAFriend.pick.subtitle']()}
                             </p>
                         </div>
 
@@ -146,7 +147,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                 type="text"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder="Search badges..."
+                                placeholder={m['boostAFriend.pick.search']()}
                                 className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
                             />
                         </div>
@@ -165,7 +166,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
                         >
                             <Sparkles className="w-4 h-4 text-amber-300" />
-                            Surprise me
+                            {m['boostAFriend.pick.surprise']()}
                         </button>
                         <button
                             type="button"
@@ -173,7 +174,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
                         >
                             <Plus className="w-4 h-4" />
-                            New
+                            {m['passport.wallet.new']()}
                         </button>
                     </div>
                 </div>
@@ -196,7 +197,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                             })}
                             {filteredPresets.length === 0 && (
                                 <div className="col-span-full text-center py-10 text-grayscale-500">
-                                    No badges found.
+                                    {m['boostAFriend.pick.noBadges']()}
                                 </div>
                             )}
                         </div>
