@@ -256,6 +256,13 @@ export const getActivityStatsForProfile = async (
         postGroupFilter = `WHERE ${allFilters.join(' AND ')}`;
     }
 
+    // Collapse the CREDENTIAL_SENT fan-out to one status per activity before
+    // aggregating: AppStoreListing-issued credentials have two CREDENTIAL_SENT
+    // edges (owner Profile + listing) written with the same activityId, which
+    // would otherwise double every SUM below. Pick the most severe status
+    // deterministically (revoked > suspended > other) so ordering can't matter.
+    // NOTE: keep the Cypher below comment-free — the query string is flattened to a
+    // single line before execution, so any inline `//` would comment out the rest.
     const query = `
         MATCH (a:CredentialActivity)
         ${whereClause}
@@ -270,11 +277,6 @@ export const getActivityStatsForProfile = async (
             WHERE sender:Profile OR sender:AppStoreListing
         OPTIONAL MATCH (cred)-[received:CREDENTIAL_RECEIVED]->(:Profile)
         WITH latestEvent, coalesce(sent.status, received.status) AS credStatus
-        // Collapse the CREDENTIAL_SENT fan-out to one status per activity before
-        // aggregating: AppStoreListing-issued credentials have two CREDENTIAL_SENT
-        // edges (owner Profile + listing) written with the same activityId, which
-        // would otherwise double every SUM below. Pick the most severe status
-        // deterministically (revoked > suspended > other) so ordering can't matter.
         WITH latestEvent, collect(credStatus) AS statuses
         WITH latestEvent,
             CASE
