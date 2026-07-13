@@ -1,19 +1,17 @@
-import React from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { useState } from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
-import { useModal, useGetResolvedCredential, CredentialCategoryEnum } from 'learn-card-base';
-import {
-    unwrapBoostCredential,
-    getDefaultCategoryForCredential,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { useModal, ModalTypes, useGetResolvedCredential } from 'learn-card-base';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialStatusSealIcon } from 'learn-card-base/components/CredentialBadge/CredentialStatusSealIcon';
+import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 
+import { VC } from '@learncard/types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { notificationCardStyles } from './types';
-import { CATEGORY_TO_ROUTE } from '../../../helpers/categoryRoutes';
 
 export type CredentialStatusVariant = 'revoked' | 'suspended' | 'unsuspended';
 
@@ -41,6 +39,41 @@ const VARIANT_STYLES: Record<
     },
 };
 
+/**
+ * Full credential view shown when "View Credential" is tapped. Renders the same
+ * flippable card used across the app (VCDisplayCardWrapper2) with a BoostFooter for
+ * Details/Close, so the holder sees the credential in full (with its revoked/suspended
+ * treatment) rather than being routed away to a list page.
+ */
+const CredentialViewModalContent: React.FC<{ credential: VC; onClose: () => void }> = ({
+    credential,
+    onClose,
+}) => {
+    const [isFront, setIsFront] = useState(true);
+
+    return (
+        <div className="relative w-full h-full flex flex-col">
+            <section className="h-full w-full overflow-y-auto disable-scrollbars pt-6 pb-32 flex flex-col items-center">
+                <VCDisplayCardWrapper2
+                    credential={credential}
+                    checkProof={false}
+                    hideNavButtons
+                    hideQRCode
+                    isFrontOverride={isFront}
+                    setIsFrontOverride={setIsFront}
+                />
+            </section>
+            <footer className="absolute bottom-0 left-0 w-full z-[9999]">
+                <BoostFooter
+                    handleClose={onClose}
+                    handleDetails={isFront ? () => setIsFront(false) : undefined}
+                    handleBack={isFront ? undefined : () => setIsFront(true)}
+                />
+            </footer>
+        </div>
+    );
+};
+
 type NotificationCredentialStatusCardProps = {
     notification: NotificationType;
     variant: CredentialStatusVariant;
@@ -54,8 +87,8 @@ type NotificationCredentialStatusCardProps = {
  *
  * Renders the server-provided title/body with a state-appropriate seal icon and
  * accent color. Tapping resolves the affected credential (from data.vcUris) and
- * navigates to its category page so the holder sees it in-context (revoked and
- * suspended credentials render desaturated with a status pill).
+ * opens the full credential view in a modal (revoked/suspended credentials render
+ * desaturated with a status pill there).
  */
 const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCardProps> = ({
     notification,
@@ -63,8 +96,10 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
     onRead,
     className,
 }) => {
-    const history = useHistory();
-    const { closeAllModals } = useModal();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
 
     const uri = notification?.data?.vcUris?.[0];
     const { data: resolved } = useGetResolvedCredential(uri);
@@ -80,22 +115,13 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
     const handleClick = async () => {
         await onRead?.();
 
-        // Route to the affected credential's category page; fall back to the wallet
-        // home if the credential can't be resolved (e.g. a revoked cred removed from storage).
-        let route = '/wallet';
-        try {
-            const unwrapped = resolved && unwrapBoostCredential(resolved);
-            const cred = Array.isArray(unwrapped) ? unwrapped[0] : unwrapped;
-            const category = cred && getDefaultCategoryForCredential(cred);
-            const categoryRoute =
-                category && CATEGORY_TO_ROUTE[category as unknown as CredentialCategoryEnum];
-            if (categoryRoute) route = categoryRoute;
-        } catch {
-            /* keep /wallet fallback */
-        }
+        const unwrapped = resolved && unwrapBoostCredential(resolved);
+        const credential = (Array.isArray(unwrapped) ? unwrapped[0] : unwrapped) as VC | undefined;
+        if (!credential) return; // resolution failed (e.g. cred removed from storage); no-op
 
-        closeAllModals();
-        history.push(route);
+        newModal(
+            <CredentialViewModalContent credential={credential} onClose={() => closeModal()} />
+        );
     };
 
     return (
