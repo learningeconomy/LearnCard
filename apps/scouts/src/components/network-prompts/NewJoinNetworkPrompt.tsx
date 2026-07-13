@@ -316,9 +316,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                     Welcome to
                                 </span>
                                 <br />
-                                <h6 className="tracking-[12px] text-lg font-bold text-black">
+                                <div className="tracking-[12px] text-lg font-bold text-black">
                                     SCOUTPASS
-                                </h6>
+                                </div>
                             </h5>
                         </div>
                         <div className="flex w-full items-center justify-center text-center">
