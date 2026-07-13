@@ -36,6 +36,71 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
+const getRefId = (entry: any): string =>
+    typeof entry === 'string' ? entry : entry?.id ?? JSON.stringify(entry);
+
+const dedupeRefs = <T>(entries: T[] = []): T[] => {
+    const seen = new Set<string>();
+
+    return entries.filter(entry => {
+        const key = getRefId(entry);
+
+        if (seen.has(key)) return false;
+
+        seen.add(key);
+
+        return true;
+    });
+};
+
+// A locally-hosted method's controller MUST be the base DID, never a fragment URI:
+// ControllerProofPurpose dereferences the controller, and a fragment resolves to
+// only the key node (no assertionMethod), which fails proof authorization.
+const normalizeMethodController = (entry: any, did: string): any => {
+    if (
+        entry &&
+        typeof entry === 'object' &&
+        typeof entry.id === 'string' &&
+        entry.id.startsWith(`${did}#`)
+    ) {
+        return { ...entry, controller: did };
+    }
+
+    return entry;
+};
+
+const normalizeDidDocument = (doc: DidDocument): DidDocument => {
+    const did = doc.id;
+
+    return {
+        ...doc,
+        ...(doc.verificationMethod
+            ? {
+                  verificationMethod: dedupeRefs(
+                      doc.verificationMethod.map(entry => normalizeMethodController(entry, did))
+                  ) as DidDocument['verificationMethod'],
+              }
+            : {}),
+        ...(doc.authentication
+            ? { authentication: dedupeRefs(doc.authentication) as DidDocument['authentication'] }
+            : {}),
+        ...(doc.assertionMethod
+            ? {
+                  assertionMethod: dedupeRefs(
+                      doc.assertionMethod
+                  ) as DidDocument['assertionMethod'],
+              }
+            : {}),
+        ...(doc.keyAgreement
+            ? {
+                  keyAgreement: dedupeRefs(
+                      doc.keyAgreement.map(entry => normalizeMethodController(entry, did))
+                  ) as DidDocument['keyAgreement'],
+              }
+            : {}),
+    };
+};
+
 // Validate manager ID to prevent injection attacks
 const isValidManagerId = (id: string): boolean => {
     // Manager IDs should be valid UUIDs
@@ -136,7 +201,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                                 .replaceAll(`#${_key}`, `#${sa.relationship.name}`)
                         );
 
-                        _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
+                        _replacedDoc.verificationMethod[0].controller = did;
 
                         return _replacedDoc;
                     })
@@ -187,7 +252,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         if (saDocs) {
             saDocs.map(sa => {
-                ((finalDoc.verificationMethod = [
+                (finalDoc.verificationMethod = [
                     ...(finalDoc.verificationMethod || []),
                     ...sa.verificationMethod,
                 ]),
@@ -202,7 +267,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     (finalDoc.keyAgreement = [
                         ...(finalDoc.keyAgreement || []),
                         ...(sa.keyAgreement || []),
-                    ]));
+                    ]);
             });
         }
 
@@ -228,7 +293,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                         finalDoc.verificationMethod.unshift({
                             id,
                             type: 'Ed25519VerificationKey2018',
-                            controller: id,
+                            controller: did,
                             publicKeyJwk: targetJwk,
                         });
                         finalDoc.authentication.push(id);
@@ -236,7 +301,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                         finalDoc.keyAgreement.push({
                             id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
                             type: 'X25519KeyAgreementKey2019',
-                            controller: id,
+                            controller: did,
                             publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
                         });
                     })
@@ -255,6 +320,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 return undefined;
             });
         });
+
+        finalDoc = normalizeDidDocument(finalDoc);
 
         setDidDocForProfile(profileId, finalDoc);
 
@@ -320,7 +387,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         );
 
         if (replacedDoc?.verificationMethod?.[0]) {
-            replacedDoc.verificationMethod[0].controller = `${did}#${authorityName}`;
+            replacedDoc.verificationMethod[0].controller = did;
         }
 
         let saDocs: Record<string, any>[] = [];
@@ -345,7 +412,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     );
 
                     if (_replacedDoc?.verificationMethod?.[0]) {
-                        _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
+                        _replacedDoc.verificationMethod[0].controller = did;
                     }
 
                     return _replacedDoc;
@@ -401,6 +468,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ];
             });
         }
+
+        finalDoc = normalizeDidDocument(finalDoc);
 
         await setDidDocForApp(slug, finalDoc);
 
@@ -483,7 +552,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     finalDoc.verificationMethod!.unshift({
                         id,
                         type: 'Ed25519VerificationKey2018',
-                        controller: id,
+                        controller: did,
                         publicKeyJwk: targetJwk,
                     });
                     finalDoc.authentication!.push(id);
@@ -491,12 +560,14 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     finalDoc.keyAgreement!.push({
                         id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
                         type: 'X25519KeyAgreementKey2019',
-                        controller: id,
+                        controller: did,
                         publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
                     });
                 })
             );
         }
+
+        finalDoc = normalizeDidDocument(finalDoc);
 
         setDidDocForProfileManager(id, finalDoc);
 
@@ -542,7 +613,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm);
         const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
-        const finalDoc = {
+        const finalDoc = normalizeDidDocument({
             ...(replacedDoc as any),
             keyAgreement: [
                 {
@@ -555,7 +626,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     (ka: any) => ka?.id !== `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`
                 ),
             ],
-        } as any;
+        } as any);
 
         setDidDocForProfile('::root::', finalDoc);
 
