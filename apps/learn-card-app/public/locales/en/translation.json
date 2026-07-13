@@ -134,7 +134,13 @@
                 "noCredentials": "No Demo credentials found. Please try again.",
                 "deletedCount": "Deleted {{count}} Demo credentials",
                 "confirmSync": "Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.",
-                "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed."
+                "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed.",
+                "checking": "Checking Demo School...",
+                "connecting": "Connecting to Demo School...",
+                "syncing": "Syncing Credentials...",
+                "disconnect": "Disconnecting From Demo School...",
+                "deleting": "Deleting Demo Credentials...",
+                "delError": "Unable to delete the demo school. Please try again."
             },
             "managers": {
                 "resume": {
@@ -463,7 +469,8 @@
         "wallet": {
             "newCredentials": "New Credentials",
             "scanQrCode": "Scan a QR code",
-            "addToPassport": "Add to Passport"
+            "addToPassport": "Add to Passport",
+            "new": "New"
         },
         "activity": {
             "heading": "Activity",
@@ -1121,7 +1128,7 @@
         "back": "Back",
         "close": "Close",
         "connectingHandler": "Connect Handler",
-        "country": "Country",
+        "country": "Select Country",
         "dateOfBirth": "Date of Birth",
         "delete": {
             "title": "Delete Account?",
@@ -1191,7 +1198,8 @@
             "switchAccount": "Switch Account",
             "buildMyLearnCard": "Build My {{brand}}",
             "stepsCompleted": "{{completed}} of {{total}}",
-            "completeProfile": "Complete Profile"
+            "completeProfile": "Complete Profile",
+            "settings": "Account Settings"
         },
         "needParentGuardian": "You'll need a parent or guardian to set up a Family Account before you can join.",
         "notifications": "Notifications",
@@ -1222,7 +1230,24 @@
             "failed": "Verification Failed",
             "failedDesc": "We couldn't verify your email. The token may be invalid or expired. Please try again or request a new verification email.",
             "returnHome": "Return Home"
-        }
+        },
+        "saved": "Profile saved",
+        "saveFail": "Could not save your profile. Please try again.",
+        "yourName": "Your Name",
+        "profile": "Profile",
+        "namePlace": "Enter your full name",
+        "countryLbl": "Country",
+        "role": "Role",
+        "prefs": "Preferences",
+        "notifs": "Notifications",
+        "notifsSub": "Manage push notifications",
+        "netId": "Network & Identity",
+        "security": "Security",
+        "exportSub": "Backup your wallet recovery phrase",
+        "connectSub": "Enable web-based credential handling",
+        "connect": "Connect",
+        "danger": "Danger Zone",
+        "deleteSub": "Permanently remove your data"
     },
     "settings": {
         "aiFeatures": "AI Features",
@@ -1244,13 +1269,26 @@
                 "description": "Boosts include all types of credentials including:  Skills, IDs, Achievements, Learning History, Work History, Currency, and Badges."
             },
             "prompt": {
-                "title": "Stay in the Loop?",
-                "description": "Receive push notifications for:",
+                "title": "Notifications",
+                "description": "Get notified so you never miss what matters.",
                 "details": "New connection requests, New boosts (like achievements, credentials, and badges).",
-                "continue": "Continue",
-                "notYet": "Not Yet",
+                "continue": "Enable Notifications",
+                "notYet": "Not now",
                 "privacyPolicy": "Privacy Policy",
-                "termsOfService": "Terms of Service"
+                "termsOfService": "Terms of Service",
+                "enabled": "Notifications enabled",
+                "anytime": "You can turn on notifications anytime in Settings.",
+                "enableFail": "Couldn’t enable notifications. Please try again.",
+                "on": "On",
+                "blocked": "Blocked",
+                "off": "Off",
+                "back": "Back",
+                "about": "You'll be notified about:",
+                "benefit1": "New connection requests",
+                "benefit2": "New boosts — achievements, credentials, and badges.",
+                "working": "Working...",
+                "openSet": "Open Settings",
+                "openSys": "Open System Settings"
             }
         },
         "privacy": {
@@ -1824,28 +1862,30 @@
     },
     "claim": {
         "didAuth": {
-            "title": "You've Been Sent a Credential!",
-            "subtitle": "Someone wants to issue you a verifiable credential",
+            "title": "You've been sent a credential",
+            "subtitle": "Confirm your identity to receive it",
             "ready": "Ready to claim it?",
-            "intro": "To receive this credential, you'll need to confirm your identity. This lets the issuer securely deliver it to your wallet.",
+            "intro": "To receive this credential, you'll need to confirm your identity. This lets the sender securely deliver it to your account.",
             "whatHappens": "What happens when you continue:",
-            "step1": "Your wallet confirms your identity to the issuer",
-            "step2": "The credential is securely delivered to your wallet",
-            "step3": "You own and control this credential forever",
-            "privacy": "Your identity is only shared with the issuer to complete this exchange. You're always in control of your data.",
+            "step1": "We confirm it's really you",
+            "step2": "Your credential arrives safely",
+            "step3": "It's yours to keep, forever",
+            "privacy": "Your identity is only shared to complete this exchange. You're always in control of your data.",
             "connecting": "Connecting...",
-            "claimButton": "Claim My Credential",
+            "claimButton": "Claim my credential",
             "decline": "No thanks, take me home",
             "loginRequired": "Please log in to continue."
         },
         "initiate": {
             "heading": "You've been sent a request",
-            "description": "Click the button below to begin the exchange process.",
-            "begin": "Begin"
+            "description": "Click the button below to begin the exchange process and see what was sent to you.",
+            "begin": "Begin",
+            "subtitle": "A credential exchange is ready"
         },
         "redirect": {
-            "heading": "Redirect Required",
-            "description": "To continue, you need to complete a step on an external website."
+            "heading": "Redirect required",
+            "description": "To continue, you need to complete a step on an external website.",
+            "subtitle": "Complete the next step"
         },
         "claiming": "Claiming...",
         "claimingCredential": "Claiming Credential",
@@ -1908,6 +1948,33 @@
                 "invalidVc": "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.",
                 "unknownFormat": "We couldn't make sense of that. Paste a claim link or upload a QR code image."
             }
+        },
+        "accept": {
+            "success": "Successfully claimed {{count}} credential(s)!",
+            "exists": "You have already claimed this credential.",
+            "failed": "Oops, we couldn't claim the credential(s).",
+            "readyCount": "{{count}} credentials ready to claim",
+            "tapHint": "Tap each credential to select or deselect it. Only selected credentials will be added to your account.",
+            "selCount": {
+                "one": "{{selected}} of {{total}} credential selected",
+                "other": "{{selected}} of {{total}} credentials selected"
+            },
+            "selectOne": "Select at least one to continue",
+            "willAdd": "These will be added to your account",
+            "deselAll": "Deselect all",
+            "selAll": "Select all",
+            "noneTitle": "No credentials found",
+            "noneSub": "This link doesn't contain any credentials",
+            "noneDesc": "The credential link you followed doesn't have any credentials to claim. This could happen if:",
+            "reason1": "The credential has already been claimed",
+            "reason2": "The link has expired",
+            "reason3": "The sender removed the credential",
+            "whatToDo": "What to do",
+            "noneHelp": "Contact the person or organization that sent you this link to request a new one.",
+            "goHome": "Go to home",
+            "support": "Contact support",
+            "claimed": "Claimed",
+            "claiming": "Claiming Credential(s)..."
         }
     },
     "chapi": {
@@ -1917,7 +1984,9 @@
         "p2": "Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.",
         "p3": "It allows your digital wallet to send or receive Verifiable Credentials from an independent third-party verifier or issuer in a way that establishes trust and preserves privacy.",
         "readMore": "Read More",
-        "connectHandler": "Connect Handler"
+        "connectHandler": "Connect Handler",
+        "connected": "Credential handler connected",
+        "connFail": "Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again."
     },
     "legal": {
         "connectionsEncrypted": "All connections are encrypted.",
@@ -2337,7 +2406,8 @@
             "noBoosts": "No Boosts yet!",
             "newTemplate": "New Template",
             "brandTemplate": "{{brand}} Template",
-            "boostTypePlaceholder": "Boost type..."
+            "boostTypePlaceholder": "Boost type...",
+            "noneYet": "No {{type}} yet!"
         },
         "newBoost": {
             "study": "New Study",
@@ -3382,7 +3452,13 @@
             "statSkills": "{{count}} skills",
             "statContact": "{{count}} contact",
             "statContacts": "{{count}} contacts",
-            "overflowSkills": "+{{count}} more"
+            "overflowSkills": "+{{count}} more",
+            "greetMorn": "Good morning,",
+            "greetAft": "Good afternoon,",
+            "greetEve": "Good evening,",
+            "welcome": "Welcome",
+            "alertOne": "You have {{count}} unread alert. Open alerts",
+            "alertMany": "You have {{count}} unread alerts. Open alerts"
         },
         "tips": {
             "scanQrTitle": "Scan a QR code",

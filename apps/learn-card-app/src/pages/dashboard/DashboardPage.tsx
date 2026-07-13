@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
+import * as m from '../../paraglide/messages.js';
+
 import { IonContent, IonPage } from '@ionic/react';
 import {
     CredentialCategoryEnum,
@@ -313,13 +315,13 @@ const DashboardPage: React.FC = () => {
     const secondChecklistStep = pathwaysEnabled
         ? {
               key: 'set-goal',
-              label: 'Set a goal',
+              label: m['dashboard.checklist.setGoal'](),
               done: hasGoal,
               onClick: goToSetGoal,
           }
         : {
               key: 'discover-apps',
-              label: 'Discover apps',
+              label: m['dashboard.checklist.discoverApps'](),
               done: hasDiscoveredApps,
               onClick: goToDiscoverApps,
           };
@@ -332,14 +334,14 @@ const DashboardPage: React.FC = () => {
     const checklistItems = [
         {
             key: 'add-credential',
-            label: 'Add your first credential',
+            label: m['dashboard.checklist.addCredential'](),
             done: hasCredentials,
             onClick: goToCollect,
         },
         secondChecklistStep,
         {
             key: 'skill-profile',
-            label: 'Fill out your skills profile',
+            label: m['dashboard.checklist.skillProfile'](),
             done: hasSkillProfile,
             onClick: openSkillProfile,
         },
@@ -405,8 +407,8 @@ const DashboardPage: React.FC = () => {
             ? [
                   {
                       key: 'scan-qr',
-                      title: 'Scan a QR code',
-                      subtitle: 'Claim a credential from a poster or screen',
+                      title: m['dashboard.tips.scanQrTitle'](),
+                      subtitle: m['dashboard.tips.scanQrSubtitle'](),
                       Icon: ScanIcon,
                       onClick: openScanQrCredential,
                   },
@@ -414,15 +416,15 @@ const DashboardPage: React.FC = () => {
             : []),
         {
             key: 'claim-link',
-            title: 'Use a claim link',
-            subtitle: 'Paste or upload a credential link',
+            title: m['dashboard.tips.claimLinkTitle'](),
+            subtitle: m['dashboard.tips.claimLinkSubtitle'](),
             Icon: LinkOutlinedIcon,
             onClick: openClaimLink,
         },
         {
             key: 'issue-credential',
-            title: 'Issue a credential',
-            subtitle: 'Send a credential to someone',
+            title: m['dashboard.tips.issueTitle'](),
+            subtitle: m['dashboard.tips.issueSubtitle'](),
             Icon: AddCredentialIcon,
             onClick: openIssueCredential,
         },
