@@ -45,8 +45,10 @@ export const useJoinLCNetworkModal = (
                 }}
                 showNotificationsModal={showNotificationsModal}
             />,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            {
+                sectionClassName: '!max-w-[400px]',
+                cancelButtonTextOverride: 'Skip For Now',
+            }
         );
     }, [newModal, closeModal, showNotificationsModal]);
 

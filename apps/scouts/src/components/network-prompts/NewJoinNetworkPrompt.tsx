@@ -12,7 +12,6 @@ import {
     useSQLiteStorage,
     useWallet,
     getNotificationsEndpoint,
-    BrandingEnum,
     useGetCurrentLCNUser,
     useIsCurrentUserLCNUser,
     useGetProfile,
@@ -20,17 +19,14 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonPage, IonLoading } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
-import ModalLayout from '../../layout/ModalLayout';
-import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import Pencil from '../svgs/Pencil';
 import ErrorLogout from './ErrorLogout';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
-import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('new-join-network-prompt');
@@ -67,17 +63,8 @@ type NewJoinNetworkPromptProps = {
     children?: any;
 };
 
-const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
-    title = 'My Account',
-    handleCloseModal,
-    handleLogout,
-    showCancelButton = true,
-    showDeleteAccountButton = true,
-    showNetworkModal = false,
-    showNotificationsModal = true,
-}) => {
+const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
     const { initWallet } = useWallet();
-    // const { newModal } = useModal();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
@@ -102,9 +89,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
+    const { data: lcNetworkProfile } = useGetProfile();
 
-    const { newModal: newErrorLogoutModal, closeModal: closeErrorLogoutModal } = useModal({
+    const { newModal: newErrorLogoutModal } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
     });
@@ -302,11 +289,16 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
     };
 
     return (
-        <IonPage>
-            <ModalLayout handleOnClick={handleCloseModal} buttonText="Skip For Now" allowScroll>
-                <IonLoading mode="ios" message="Joining Network..." isOpen={createLoading} />
+        <>
+            {createLoading && (
+                <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white bg-opacity-70 backdrop-blur-[3px]">
+                    <IonSpinner color="dark" />
+                    <span className="text-grayscale-900">Joining Network...</span>
+                </div>
+            )}
 
-                <IonRow class="w-full">
+            <section className="relative pt-[36px] pb-[16px]">
+                <IonRow className="w-full">
                     <IonRow className="flex w-full flex-col items-center justify-center mb-2">
                         <div className="flex w-full items-center justify-center">
                             <h5
@@ -502,8 +494,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         </button>
                     </IonCol>
                 </IonRow>
-            </ModalLayout>
-        </IonPage>
+            </section>
+        </>
     );
 };
 

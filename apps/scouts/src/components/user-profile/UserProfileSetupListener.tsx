@@ -12,13 +12,10 @@ import {
     useIsCurrentUserLCNUser,
     useWallet,
     useCurrentUser,
-    useModal,
-    ModalTypes,
 } from 'learn-card-base';
 
 export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loading }) => {
     const history = useHistory();
-    const { newModal, closeModal } = useModal();
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
     const { data: currentUserIsLCNUser, isLoading: currentLCNUserLoading } =
@@ -61,11 +58,12 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
                 const wallet = await initWallet();
                 const profile = await wallet?.invoke?.getProfile();
                 if (profile) return;
-            } catch (err) {
+
                 if (!isUserModalOpen && currentUser && !isModalOpen) {
                     history.replace({ search: 'profileSetup=true' });
                     presentCenterModal();
                 }
+            } catch (err) {
                 log.debug('getLCNeworkProfile::err', err);
             }
         };
@@ -73,7 +71,24 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
         getLCNeworkProfile();
     }, [currentUser, currentUserIsLCNUser, currentLCNUserLoading]);
 
-    return <></>;
+    return (
+        <IonModal
+            isOpen={isModalOpen}
+            className="generic-modal show-modal ion-disable-focus-trap"
+            backdropDismiss={false}
+            onDidDismiss={() => history.replace({ search: undefined })}
+        >
+            <NewJoinNetworkPrompt
+                title="Setup Your Profile"
+                handleCloseModal={() => setIsModalOpen(false)}
+                handleLogout={() => {}}
+                showCancelButton={false}
+                showDeleteAccountButton={false}
+                showNetworkModal
+                showNotificationsModal
+            />
+        </IonModal>
+    );
 };
 
 export default UserProfileSetupListener;
