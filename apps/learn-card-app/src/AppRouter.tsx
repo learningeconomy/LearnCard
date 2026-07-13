@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -352,6 +352,24 @@ const AppRouter: React.FC = () => {
             .then(m => m.prefetchRoutes({ aiEnabled: isAiEnabled }))
             .catch(() => undefined);
     }, [enablePrefetch, isAiEnabled]);
+
+    // Warm the landing chunks immediately — while the boot loader or login
+    // form is still up, before auth resolves. The post-login redirect
+    // (→ /dashboard) and the post-boot mount of the refreshed route would
+    // otherwise only START downloading their chunk after navigation, leaving
+    // a white Suspense gap between the loader and the app on a cold cache.
+    // The full prefetch above stays gated on login; this is just the entry
+    // routes: the default landing pages plus wherever the URL already points.
+    const initialPathRef = useRef(window.location.pathname);
+    useEffect(() => {
+        import('./Routes')
+            .then(m => {
+                void m.ROUTE_PRELOAD['/dashboard']?.();
+                void m.ROUTE_PRELOAD['/wallet']?.();
+                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
+            })
+            .catch(() => undefined);
+    }, []);
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });

@@ -229,6 +229,7 @@ export * from './helpers/searchHelpers';
 export * from './helpers/urlHelpers';
 export * from './helpers/openAttachmentUrl';
 export * from './helpers/display.helpers';
+export * from './helpers/displayTags.helpers';
 export * from './helpers/youtube.helpers';
 export * from './helpers/vimeo.helpers';
 export * from './helpers/video.helpers';

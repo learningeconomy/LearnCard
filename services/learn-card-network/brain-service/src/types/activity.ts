@@ -57,6 +57,7 @@ export const CredentialActivityWithDetailsValidator = CredentialActivityValidato
         .object({
             profileId: z.string(),
             displayName: z.string().optional(),
+            image: z.string().optional(),
         })
         .optional(),
 });

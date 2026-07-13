@@ -3,10 +3,11 @@ import React from 'react';
 import BoostTextSkeleton, {
     BoostSkeleton,
 } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
+import { notificationCardStyles } from './types';
 
 export const NotificationSkeleton: React.FC = () => {
     return (
-        <div className="flex my-[15px] min-justify-start max-w-[600px] items-start relative w-full rounded-3xl py-[10px] px-[10px] bg-white">
+        <div className={notificationCardStyles.shell}>
             <div className="notification-card-left-side px-[0px] flex">
                 <BoostSkeleton
                     containerClassName="flex min-w-[90px] min-h-[90px] justify-center items-center rounded-full overflow-hidden text-white font-medium text-4xl p-[6px]"
@@ -28,7 +29,7 @@ export const NotificationSkeleton: React.FC = () => {
 
                     <div className="relative flex items-center justify-between mt-3 w-full">
                         <button
-                            className={`notification-claim-btn overflow-hidden flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] font-semibold py-2 px-3 tracking-wide`}
+                            className={`notification-claim-btn overflow-hidden flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-full font-semibold py-2 px-3 tracking-wide`}
                         >
                             <BoostSkeleton
                                 containerClassName="w-[215px] h-[44px] rounded-full"
@@ -37,7 +38,7 @@ export const NotificationSkeleton: React.FC = () => {
                         </button>
 
                         <button
-                            className={`rounded-[24px]  flex items-center justify-center  h-[44px] w-[44px] font-semibold mr-2 p-[0px] tracking-wide`}
+                            className={`rounded-full flex items-center justify-center h-[44px] w-[44px] font-semibold mr-2 p-[0px] tracking-wide`}
                         >
                             <BoostSkeleton
                                 containerClassName="w-full rounded-full h-full"

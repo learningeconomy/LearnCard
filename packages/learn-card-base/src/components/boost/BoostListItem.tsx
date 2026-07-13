@@ -48,6 +48,7 @@ type BoostListItemProps = {
     relativeDate?: boolean;
     compact?: boolean;
     lifecycleStatus?: CredentialLifecycleStatus;
+    trustedVerifierOnly?: boolean;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -71,6 +72,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     relativeDate = false,
     compact = false,
     lifecycleStatus = 'active',
+    trustedVerifierOnly = false,
 }) => {
     // Shared revoked/suspended treatment (kept in sync with the grid card).
     const {
@@ -148,6 +150,9 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
 
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
+    // Compact rows can't fit the 120px media preview badge; they fall back to the
+    // standard small circular thumbnail like every other row.
+    const showMediaBadge = isMediaDisplay && !compact;
     const attachments = credential?.attachments ?? [];
     const attachment = attachments?.[0];
     const { AttachmentIcon, title: attachmentTitle } = getAttachmentTypeIcon(
@@ -156,6 +161,10 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     );
     const attachmentFileName = attachment?.fileName;
     const attachmentUrl = attachment?.url;
+    const compactMediaThumb =
+        isMediaDisplay && compact
+            ? attachments.find(a => a.type === BoostMediaOptionsEnum.photo)?.url
+            : undefined;
 
     if (loading) {
         return (
@@ -194,13 +203,13 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         </span>
     ) : null;
 
-    const rowPadding = isMediaDisplay ? '' : compact ? 'p-[4px]' : 'p-[8px]';
+    const rowPadding = showMediaBadge ? '' : compact ? 'p-[4px]' : 'p-[8px]';
     const rowGap = compact ? 'gap-[8px]' : 'gap-[10px]';
     const thumbSize = compact ? 'h-[34px] w-[34px]' : 'h-[40px] w-[40px]';
     const textBlockSize = compact ? 'text-[13px]' : 'text-[14px]';
     const verificationIconClass = compact
-        ? 'w-[14px] h-[14px] min-w-[14px] min-h-[14px] mr-1 z-50'
-        : 'w-[20px] h-[20px] min-w-[20px] min-h-[20px] mr-1 z-50';
+        ? '!w-[14px] !h-[14px] !min-w-[14px] !min-h-[14px] mr-1 z-50'
+        : '!w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] mr-1 z-50';
 
     return (
         <IonRow
@@ -208,7 +217,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             onClick={onClick}
             data-testid="boost-list-item"
         >
-            {displayType === DisplayTypeEnum.Media ? (
+            {showMediaBadge ? (
                 <div
                     className="relative min-h-[100px] max-w-[100px] flex-1 flex items-center justify-center relative"
                     style={inactiveMediaStyle}
@@ -229,6 +238,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     <BadgeThumbnailImg
                         src={
                             thumbImgSrc ||
+                            compactMediaThumb ||
                             (typeof credential?.image === 'string' && credential.image) ||
                             credential?.credentialSubject?.image ||
                             credential?.boostCredential?.image ||
@@ -242,7 +252,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             <div
                 className={`flex flex-col items-start ${textBlockSize} font-poppins flex-1 min-w-0`}
             >
-                {isMediaDisplay && (
+                {showMediaBadge && (
                     <>
                         {attachmentFileName ? (
                             <span className="text-grayscale-700 font-semibold">
@@ -261,7 +271,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         )}
                     </>
                 )}
-                {!isMediaDisplay && (
+                {!showMediaBadge && (
                     <div className="flex items-center gap-1.5 w-full min-w-0">
                         <h3 className="text-grayscale-900 font-semibold truncate min-w-0 leading-tight">
                             {title}
@@ -276,7 +286,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         )}
                     </div>
                 )}
-                {!isMediaDisplay && !compact && (
+                {!showMediaBadge && !compact && (
                     <span className="text-grayscale-500 font-normal">
                         {newItemIndicator} {boostTypeDisplayName}
                     </span>
@@ -296,6 +306,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             iconClassName={verificationIconClass}
                             unknownVerifierTitle={unknownVerifierTitle}
                             lifecycleStatus={lifecycleStatus}
+                            trustedOnly={trustedVerifierOnly}
                         />
                     )}
                     {compact ? (

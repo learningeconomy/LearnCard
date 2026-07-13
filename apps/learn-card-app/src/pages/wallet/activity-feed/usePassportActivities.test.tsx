@@ -41,7 +41,11 @@ describe('usePassportActivities', () => {
         });
         const { result } = renderHook(() => usePassportActivities(), { wrapper });
         await waitFor(() => expect(result.current.isPending).toBe(false));
-        expect(getMyActivities).toHaveBeenCalledWith({ limit: 25, cursor: undefined });
+        expect(getMyActivities).toHaveBeenCalledWith({
+            limit: 25,
+            cursor: undefined,
+            groupByLatestStatus: true,
+        });
         expect(result.current.hasNextPage).toBe(true);
         expect(result.current.data?.pages[0].records[0].id).toBe('a1');
     });
@@ -55,6 +59,7 @@ describe('usePassportActivities', () => {
         expect(getMyActivities).toHaveBeenCalledWith({
             limit: 25,
             cursor: undefined,
+            groupByLatestStatus: true,
             eventType: 'CLAIMED',
         });
     });

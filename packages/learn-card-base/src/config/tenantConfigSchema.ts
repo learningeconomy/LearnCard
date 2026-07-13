@@ -250,6 +250,21 @@ export const tenantEcosystemConfigSchema = z
     })
     .passthrough();
 
+/**
+ * External badge-pack registries a tenant pulls in. A badge pack is a single JSON
+ * document of shape { categories: BadgeGroup[]; badges: LCAStylesPackRegistryEntry[] }.
+ * `badgePackUrls` are remote JSON files; `badgePackAssets` are names of bundled files
+ * shipped with the app (apps/learn-card-app/src/registries/badge-packs/<name>.json).
+ * All sources merge (remote then bundled): badges deduped by category+type, categories
+ * by id, later source wins per field.
+ */
+export const tenantRegistriesConfigSchema = z
+    .object({
+        badgePackUrls: z.array(z.string()).default([]),
+        badgePackAssets: z.array(z.string()).default([]),
+    })
+    .passthrough();
+
 // -----------------------------------------------------------------
 // Schema version — bump when making breaking changes to the config shape.
 // Used by resolveTenantConfig() to invalidate stale caches.
@@ -278,6 +293,7 @@ export const tenantConfigSchema = z
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
+        registries: tenantRegistriesConfigSchema.default({}),
     })
     .passthrough();
 

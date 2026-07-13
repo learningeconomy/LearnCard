@@ -101,7 +101,9 @@ const AiInsightsLearningSnapshots: React.FC<{
             <div className="w-full flex items-center justify-between">
                 <div className="flex items-center justify-start">
                     <AiPathwaysIconWithShape className="w-auto h-[40px]" />
-                    <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>
+                    <h2 className="text-base sm:text-xl text-grayscale-800 font-notoSans text-left">
+                        Learning Snapshots
+                    </h2>
                 </div>
                 {showRegenerate && (
                     <button
