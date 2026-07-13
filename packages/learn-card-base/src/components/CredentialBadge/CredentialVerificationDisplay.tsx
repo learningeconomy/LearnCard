@@ -43,6 +43,7 @@ type CredentialVerificationDisplayProps = {
     unknownVerifierTitle?: string;
     issuerDisplayName?: string;
     issuerPopoverEnabled?: boolean;
+    trustedOnly?: boolean;
 };
 
 export const CredentialVerificationDisplay: React.FC<CredentialVerificationDisplayProps> = ({
@@ -54,6 +55,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     unknownVerifierTitle,
     issuerDisplayName,
     issuerPopoverEnabled = true,
+    trustedOnly = false,
 }) => {
     const t = useT();
     const popoverId = useId().replace(/:/g, '');
@@ -104,6 +106,12 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     } else {
         verifierState = isAppIssuer ? VERIFIER_STATES.appIssuer : VERIFIER_STATES.unknownVerifier;
     }
+    const isTrustedVerifier =
+        verifierState === VERIFIER_STATES.trustedVerifier ||
+        verifierState === VERIFIER_STATES.appIssuer;
+
+    if (trustedOnly && !isTrustedVerifier) return <></>;
+
     const popoverTriggerId = `credential-issuer-trigger-${popoverId}`;
     const verifierStateLabel = unknownVerifierTitle ?? verifierState;
     const renderBadge = (badgeClassName = className, badgeIconClassName = iconClassName) => {

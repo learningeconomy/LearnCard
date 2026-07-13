@@ -4,9 +4,8 @@ import { VP } from '@learncard/types';
 import { useWallet, useIsLoggedIn } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
-import { Gift, Shield, ChevronRight, X, Loader2, CheckCircle, Info } from 'lucide-react';
+import { Gift, Shield, CheckCircle, Info } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
-import * as m from '../../paraglide/messages.js';
 const log = getLogger('exchange-did-auth');
 
 interface ExchangeDidAuthProps {
@@ -39,7 +38,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
         const wallet = await initWallet();
 
         if (!isLoggedIn || !wallet) {
-            setError(m['claim.didAuth.loginRequired']());
+            setError('Please log in to continue.');
             setIsLoading(false);
             return;
         }
@@ -57,7 +56,7 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
             }
         } catch (err) {
             log.error('Failed to create DID Auth VP:', err);
-            setError(m['error.generic']());
+            setError('Something went wrong. Please try again.');
             setIsLoading(false);
         }
     };
@@ -73,84 +72,93 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
     return (
         <IonPage>
             <IonContent fullscreen>
-                <div className="min-h-full bg-gradient-to-br from-emerald-50 via-white to-cyan-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin">
+                <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+                    <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                         {/* Header with icon */}
-                        <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-8 text-center">
-                            <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <Gift className="w-10 h-10 text-white" />
+                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 py-8 text-center">
+                            <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-5">
+                                <Gift className="w-8 h-8 text-white" />
                             </div>
 
-                            <h1 className="text-2xl font-bold text-white mb-2">
-                                {m['claim.didAuth.title']()}
+                            <h1 className="text-xl font-semibold text-white mb-2">
+                                You've been sent a credential
                             </h1>
 
-                            <p className="text-emerald-100 text-sm">
-                                {m['claim.didAuth.subtitle']()}
+                            <p className="text-emerald-50 text-sm">
+                                Confirm your identity to receive it
                             </p>
                         </div>
 
                         {/* Content */}
                         <div className="p-6">
-                            <div className="space-y-4 mb-6">
-                                <h2 className="text-lg font-semibold text-gray-900 text-center">
-                                    {m['claim.didAuth.ready']()}
-                                </h2>
+                            <div className="space-y-5 mb-6">
+                                <div className="space-y-1">
+                                    <h2 className="text-lg font-semibold text-grayscale-900 text-center">
+                                        Ready to claim it?
+                                    </h2>
 
-                                <p className="text-gray-600 text-center text-sm">
-                                    {m['claim.didAuth.intro']()}
-                                </p>
+                                    <p className="text-grayscale-600 text-center text-sm leading-relaxed">
+                                        To receive this credential, you'll need to confirm your
+                                        identity. This lets the sender securely deliver it to your
+                                        account.
+                                    </p>
+                                </div>
 
                                 {/* What happens section */}
-                                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                        {m['claim.didAuth.whatHappens']()}
+                                <div className="bg-grayscale-10 rounded-2xl p-5 space-y-4 border border-grayscale-200">
+                                    <p className="text-xs font-medium text-grayscale-700 uppercase tracking-wide">
+                                        What happens when you continue:
                                     </p>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                             <CheckCircle className="w-4 h-4 text-emerald-600" />
                                         </div>
 
-                                        <p className="text-sm text-gray-700">
-                                            {m['claim.didAuth.step1']()}
+                                        <p className="text-sm text-grayscale-800 leading-relaxed">
+                                            We confirm it's really you
                                         </p>
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                             <CheckCircle className="w-4 h-4 text-emerald-600" />
                                         </div>
 
-                                        <p className="text-sm text-gray-700">
-                                            {m['claim.didAuth.step2']()}
+                                        <p className="text-sm text-grayscale-800 leading-relaxed">
+                                            Your credential arrives safely
                                         </p>
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                             <CheckCircle className="w-4 h-4 text-emerald-600" />
                                         </div>
 
-                                        <p className="text-sm text-gray-700">
-                                            {m['claim.didAuth.step3']()}
+                                        <p className="text-sm text-grayscale-800 leading-relaxed">
+                                            It's yours to keep, forever
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Privacy note */}
-                                <div className="flex items-start gap-2 text-xs text-gray-500">
-                                    <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                <div className="flex items-start gap-2.5 text-xs text-grayscale-500">
+                                    <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-grayscale-400" />
 
-                                    <p>{m['claim.didAuth.privacy']()}</p>
+                                    <p className="leading-relaxed">
+                                        Your identity is only shared to complete this exchange.
+                                        You're always in control of your data.
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Error message */}
                             {error && (
-                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700 text-sm">
-                                    <Info className="w-4 h-4 flex-shrink-0" />
-                                    {error}
+                                <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+                                    <Info className="text-red-400 w-5 h-5 mt-0.5 shrink-0" />
+                                    <span className="text-sm text-red-700 leading-relaxed">
+                                        {error}
+                                    </span>
                                 </div>
                             )}
 
@@ -159,28 +167,24 @@ const ExchangeDidAuth: React.FC<ExchangeDidAuthProps> = ({
                                 <button
                                     onClick={handleAccept}
                                     disabled={isLoading}
-                                    className="w-full py-4 px-6 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-cyan-600 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25"
+                                    className="w-full py-3 px-4 bg-emerald-600 text-white font-medium text-sm rounded-[20px] hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? (
                                         <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            {m['claim.didAuth.connecting']()}
+                                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Connecting...
                                         </>
                                     ) : (
-                                        <>
-                                            {m['claim.didAuth.claimButton']()}
-                                            <ChevronRight className="w-5 h-5" />
-                                        </>
+                                        <>Claim my credential</>
                                     )}
                                 </button>
 
                                 <button
                                     onClick={handleDecline}
                                     disabled={isLoading}
-                                    className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                    className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    <X className="w-4 h-4" />
-                                    {m['claim.didAuth.decline']()}
+                                    No thanks, take me home
                                 </button>
                             </div>
                         </div>

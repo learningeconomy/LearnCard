@@ -2,25 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-profile-setup');
 
-import { pushUtilities, useWallet } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
-import UserProfileSetupHeader from './UserProfileSetupHeader';
 import UserProfileUpdateForm from './UserProfileUpdateForm';
 import NetworkSettings from '../network-settings/NetworkSettings';
 import JoinNetworkPrompt from '../network-prompts/JoinNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
-import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
 import ChapiPrompt from '../chapi-prompt/ChapiPrompt';
 
 import {
     NetworkSettingsEnum,
     NetworkSettingsState,
 } from '../network-settings/networkSettings.helpers';
-import {
-    PushNotificationSettingsEnum,
-    PushNotificationsSettingsState,
-} from '../push-notification-settings/pushNotifications.helpers';
 
 // i18n: no user-facing strings — composition/state component
 export enum UserProfileFormStateEnum {
@@ -28,7 +22,6 @@ export enum UserProfileFormStateEnum {
     Permissions = 'permissions',
     PermissionsSettings = 'permissionsSettings',
     Notifications = 'notifications',
-    NotificationsSettings = 'notificationsSettings',
     Chapi = 'chapi',
 }
 
@@ -68,11 +61,6 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
         showDisplayName: true,
         showProfilePicture: true,
     });
-    const [notificationSettings, setNotificationSettings] =
-        useState<PushNotificationsSettingsState>({
-            connectionRequests: true,
-            newBoosts: true,
-        });
 
     useEffect(() => {
         const getWalletDid = async () => {
@@ -101,22 +89,8 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
         getLCNeworkProfile();
     }, []);
 
-    const handleNetworkPrompt = () => {
-        // if (lcNetworkProfile) {
-        //     setProfileFormState(UserProfileFormStateEnum.PermissionsSettings);
-        // } else {
-        setProfileFormState(UserProfileFormStateEnum.Permissions);
-        // }
-    };
-
-    const handleNotificationsPrompt = async () => {
-        const permissionState = await pushUtilities.getPushNotificationPermissionState();
-
-        if (permissionState === 'GRANTED') {
-            setProfileFormState(UserProfileFormStateEnum.NotificationsSettings);
-        } else {
-            setProfileFormState(UserProfileFormStateEnum.Notifications);
-        }
+    const handleNotificationsPrompt = () => {
+        setProfileFormState(UserProfileFormStateEnum.Notifications);
     };
 
     const handleChapiInfo = () => {
@@ -130,18 +104,8 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
         setNetworkSettings({ ..._settings });
     };
 
-    const handleNotificationStateChange = (
-        settingsType: PushNotificationSettingsEnum,
-        settingState: boolean
-    ) => {
-        const _settings = notificationSettings;
-
-        _settings[settingsType] = !settingState;
-        setNotificationSettings({ ..._settings });
-    };
-
     let activeForm = (
-        <section className="py-[30px]">
+        <section className="h-full">
             <UserProfileUpdateForm
                 handleCloseModal={handleCloseModal}
                 handleLogout={handleLogout}
@@ -150,14 +114,10 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
                 showNetworkModal={showNetworkModal}
                 showNotificationsModal={showNotificationsModal}
                 handleChapiInfo={handleChapiInfo}
+                onOpenNotifications={handleNotificationsPrompt}
+                showNotificationsRow={showNetworkSettings}
                 title={title}
-            >
-                <UserProfileSetupHeader
-                    showNetworkSettings={showNetworkSettings}
-                    handleNetworkPrompt={handleNetworkPrompt}
-                    handleNotificationsPrompt={handleNotificationsPrompt}
-                />
-            </UserProfileUpdateForm>
+            />
         </section>
     );
 
@@ -183,19 +143,9 @@ const UserProfileSetup: React.FC<UserProfileSetupProps> = ({
                 handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
             />
         );
-    } else if (profileFormState === UserProfileFormStateEnum.NotificationsSettings) {
-        activeForm = (
-            <PushNotificationsSettings
-                handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
-                settings={notificationSettings}
-                handleStateChange={handleNotificationStateChange}
-            />
-        );
     } else if (profileFormState === UserProfileFormStateEnum.Chapi) {
         activeForm = (
-            <ChapiPrompt
-                handleCloseModal={() => setProfileFormState(UserProfileFormStateEnum.Account)}
-            />
+            <ChapiPrompt onBack={() => setProfileFormState(UserProfileFormStateEnum.Account)} />
         );
     }
 

@@ -40,7 +40,7 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
                 <button
                     type="button"
                     className={`text-${primaryColor} font-bold no-underline disabled:opacity-60`}
-                    onClick={() => handleLogout()}
+                    onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
                     disabled={isLoggingOut}
                 >
                     {m['sidemenu.footer.logout']()}

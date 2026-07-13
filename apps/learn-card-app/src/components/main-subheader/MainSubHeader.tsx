@@ -1,18 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
+import React from 'react';
 
-import * as m from '../../paraglide/messages.js';
-import { getSideMenuTranslationKey } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
+import { IonRow, IonCol, useIonModal, IonSpinner } from '@ionic/react';
 
-import { IonRow, IonCol, IonModal, useIonModal, IonSpinner } from '@ionic/react';
-import useBoostModal from '../boost/hooks/useBoostModal';
-
-import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/components/sharecreds/ShareCredentialsModal';
-import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import AiPassportPersonalizationContainer from '../../components/ai-passport/AiPassportPersonalizationContainer';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
-import DotIcon from 'learn-card-base/svgs/DotIcon';
-import Plus from 'learn-card-base/svgs/Plus';
 
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
@@ -20,6 +11,7 @@ import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
 import useTheme from '../../theme/hooks/useTheme';
 import newCredsStore from 'learn-card-base/stores/newCredsStore';
 import { usePersonalizationQA } from '../ai-passport/usePersonalizationQA';
+import NewCredentialsPill from './NewCredentialsPill';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -56,47 +48,18 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const newCredsCount = newCredsForCategory?.length ?? 0;
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
-    const { headerTextColor, backgroundPrimaryColor, helperTextColor } = colors;
-
-    // Resolve a Paraglide message by dotted key, returning undefined when the
-    // key has no compiled message so callers can fall back to tenant theme copy.
-    const tr = (key: string, params?: Record<string, unknown>): string | undefined => {
-        const fn = (m as Record<string, unknown>)[key];
-        return typeof fn === 'function'
-            ? (fn as (p: Record<string, unknown>) => string)(params ?? {})
-            : undefined;
-    };
-
-    // Category title: mirror the side menu, which overrides tenant theme labels
-    // with the shared i18n catalog (wallet.categories[Singular]). Falls back to
-    // the theme label for any category without a translation key.
-    const categoryKey = getSideMenuTranslationKey(category);
-    const pluralName = tr(`wallet.categories.${categoryKey}`) ?? labels?.plural;
-    const singularName = tr(`wallet.categoriesSingular.${categoryKey}`) ?? labels?.singular;
-
-    const history = useHistory();
-    const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
-
-    const sheetModal = useRef<HTMLIonModalElement>(null);
-    const centerModal = useRef<HTMLIonModalElement>(null);
+    const { headerTextColor, helperTextColor } = colors;
 
     const { iconPadding, helperText, helperTextClickable, showBetaLabel } =
         SubheaderContentType[subheaderType];
-
-    const handleCloseShareModal = () => {
-        setShareCredsIsOpen(false);
-    };
 
     const [presentCategoryDescriptorModal, dismissCategoryDescriptorModal] = useIonModal(
         CategoryDescriptorModal,
         {
             handleCloseModal: () => dismissCategoryDescriptorModal(),
-            title: pluralName,
-            category,
+            title: labels?.plural,
         }
     );
-
-    const { handlePresentBoostModal } = useBoostModal(history, category as CredentialCategoryEnum);
 
     const handlePersonalizeMyAi = () => {
         newModal(
@@ -106,44 +69,23 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         );
     };
 
-    let titleDisplay = pluralName;
+    let titleDisplay = labels?.plural;
     if (count !== undefined) {
-        titleDisplay = `${formatCount(count)} ${pluralName}`;
-        if (count === 1) titleDisplay = singularName;
+        titleDisplay = `${formatCount(count)} ${titleDisplay}`;
+        if (count === 1) titleDisplay = labels?.singular;
     }
 
-    const newCredsCountDisplay =
-        newCredsCount > 0 && category !== CredentialCategoryEnum.aiPathway ? (
-            <span
-                className={`text-${colors?.indicatorColor} font-poppins text-[18px] font-[600] inline-flex items-center gap-[5px] ml-[5px]`}
-            >
-                <DotIcon className="w-[10px] h-[10px]" /> {newCredsCount} New
-            </span>
-        ) : null;
-
-    // Subtitle copy (wallet.subheaders.<type>). `Job` shares the `Experience`
-    // wording. Each piece falls back to the static English from
-    // SubheaderContentType when no translation key exists.
-    const subKey =
-        subheaderType === SubheaderTypeEnum.Job ? SubheaderTypeEnum.Experience : subheaderType;
-    const translatedLead =
-        tr(`wallet.subheaders.${subKey}.lead`) ??
-        tr(`wallet.subheaders.${subKey}.text`) ??
-        helperText;
-    const translatedLink = tr(`wallet.subheaders.${subKey}.link`) ?? helperTextClickable;
-    const translatedOptimized =
-        tr(`wallet.subheaders.${subKey}.optimized`, { percent: completionPercentage }) ??
-        `${completionPercentage}% Optimized`;
+    const showNewCredsPill = newCredsCount > 0 && category !== CredentialCategoryEnum.aiPathway;
 
     let helperTextComponent = (
         <span className={`font-poppins text-[12px] ${helperTextColor || ''}`}>
-            <span>{translatedLead}</span>{' '}
-            {translatedLink && (
+            <span>{helperText}</span>{' '}
+            {helperTextClickable && (
                 <button
                     className="font-[600] underline"
                     onClick={() => presentCategoryDescriptorModal()}
                 >
-                    {translatedLink}.
+                    {helperTextClickable}.
                 </button>
             )}
         </span>
@@ -156,10 +98,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                     className={`font-semibold !text-${colors?.indicatorColor || ''}`}
                     onClick={() => handlePersonalizeMyAi()}
                 >
-                    {translatedLink}
+                    {helperTextClickable}
                 </button>{' '}
                 <span className={`${helperTextColor || ''} font-medium text-[12px]`}>
-                    • {translatedOptimized}
+                    • {completionPercentage}% Optimized
                 </span>
             </span>
         );
@@ -191,50 +133,20 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                                 beta
                             </span>
                         )}
-                        {newCredsCountDisplay}
                     </span>
-                    {helperText && helperTextComponent}
+                    {(helperText || showNewCredsPill) && (
+                        <div className="flex items-center gap-[8px] flex-wrap">
+                            {helperText && helperTextComponent}
+                            {showNewCredsPill && (
+                                <NewCredentialsPill count={newCredsCount} tone="onColor" />
+                            )}
+                        </div>
+                    )}
                 </h2>
             </IonCol>
 
             <IonCol size="3" className="flex items-center justify-end">
-                {plusButtonOverride}
-                {!hidePlusBtn && !plusButtonOverride && (
-                    <button
-                        type="button"
-                        aria-label="plus-button"
-                        onClick={handlePresentBoostModal}
-                        className={`flex items-center justify-center h-fit w-fit p-[8px] rounded-full bg-${backgroundPrimaryColor}`}
-                    >
-                        <Plus className={`h-[20px] w-[20px] ${headerTextColor}`} />
-                    </button>
-                )}
-
-                <IonModal className="main-header-modal" isOpen={shareCredsIsOpen}>
-                    <ShareCredentialsModal onDismiss={handleCloseShareModal} />
-                </IonModal>
-
-                <IonModal ref={centerModal} trigger="open-center-modal" className="center-modal">
-                    <PlusButtonModalContent
-                        handleCloseModal={() => centerModal.current?.dismiss()}
-                        showFixedFooter={false}
-                        showCloseButton={false}
-                    />
-                </IonModal>
-                <IonModal
-                    ref={sheetModal}
-                    initialBreakpoint={0.25}
-                    breakpoints={[0, 0.25, 0.5, 0.75]}
-                    handleBehavior="cycle"
-                    trigger="open-sheet-modal"
-                    className="mobile-modal"
-                >
-                    <PlusButtonModalContent
-                        handleCloseModal={() => sheetModal.current?.dismiss()}
-                        showFixedFooter={false}
-                        showCloseButton={false}
-                    />
-                </IonModal>
+                {!hidePlusBtn && plusButtonOverride}
             </IonCol>
         </IonRow>
     );

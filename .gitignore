@@ -53,3 +53,6 @@ services/learn-card-network/*/didkit-native-layer/
 .netlify
 # Local environment configuration
 .envrc
+services/learn-card-network/lca-api/.env.scouts
+/apps/scouts/.vite-local
+/apps/scouts/.vite-docker

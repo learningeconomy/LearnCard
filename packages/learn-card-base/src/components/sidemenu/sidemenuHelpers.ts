@@ -240,7 +240,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
         },
         {
             id: 2,
-            name: 'Boosts',
+            name: 'Badges',
             IconComponent: BoostsTwoTonedIcon,
             path: '/socialBadges',
             type: SideMenuLinksEnum.socialBadges,

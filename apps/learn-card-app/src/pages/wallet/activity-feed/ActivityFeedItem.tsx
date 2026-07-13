@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserProfilePicture } from 'learn-card-base';
 import CaretRight from 'learn-card-base/svgs/CaretRight';
-import { useTheme } from '../../../theme/hooks/useTheme';
+import { ActivityCredentialIcon } from './ActivityCredentialIcon';
 import type { ActivityFeedItemVM } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 import { tShortMonth } from './activityFeedI18n';
@@ -11,63 +11,76 @@ const shortDate = (iso: string) => {
     return `${tShortMonth(d.getUTCMonth())} ${d.getUTCDate()}`;
 };
 
-// Thin right arrow separating the avatar from the credential-category icon,
-// reading "this person → this credential" (matches the Figma row).
-const DirectionArrow: React.FC<{ className?: string }> = ({ className }) => (
-    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
-        <path
-            d="M3.5 10h11.5M11 6l4 4-4 4"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
-
-export const ActivityFeedItem: React.FC<{ item: ActivityFeedItemVM }> = ({ item }) => {
-    const { getThemedCategory } = useTheme();
-    const { icons } = getThemedCategory(item.category);
-    // Prefer the branded "with shape" icon (colored tile) used across the passport;
-    // fall back to the bare icon, or nothing if the theme has neither.
-    const CategoryIcon = icons?.IconWithShape ?? icons?.Icon;
-
+export const ActivityFeedItem: React.FC<{
+    item: ActivityFeedItemVM;
+    onSelect?: (item: ActivityFeedItemVM) => void;
+}> = ({ item, onSelect }) => {
     return (
         <li
             data-unread={item.unread}
-            className={`flex items-center gap-3 w-full py-3 px-2 rounded-[12px] ${
-                item.unread ? 'bg-emerald-50' : ''
-            } [&:not(:last-of-type)]:border-b border-grayscale-100`}
+            className="[&:not(:last-of-type)]:border-b border-grayscale-100"
         >
-            <div className="flex items-center gap-[6px] shrink-0">
-                <UserProfilePicture
-                    user={{
-                        displayName: item.avatar.displayName,
-                        profileId: item.avatar.profileId,
-                        image: item.avatar.image,
-                    }}
-                    customContainerClass="h-[40px] w-[40px] min-h-[40px] min-w-[40px] text-[15px]"
-                    customImageClass="h-[40px] w-[40px] object-cover"
-                />
-                <DirectionArrow className="w-[16px] h-[16px] text-grayscale-300" />
-                {CategoryIcon && <CategoryIcon className="w-[30px] h-[30px]" />}
-            </div>
+            <button
+                type="button"
+                onClick={() => onSelect?.(item)}
+                aria-label={item.title}
+                className={`flex items-center gap-3 w-full text-left py-3 px-2 rounded-[12px] transition-colors hover:bg-grayscale-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                    item.unread ? 'bg-emerald-50' : ''
+                }`}
+            >
+                <div className="relative shrink-0 h-[44px] w-[44px]">
+                    {item.isSelf ? (
+                        <div className="flex items-center justify-center h-[44px] w-[44px]">
+                            <ActivityCredentialIcon
+                                category={item.category}
+                                isGeneric={item.isGenericCredential}
+                                className="w-[38px] h-[38px]"
+                            />
+                        </div>
+                    ) : (
+                        <>
+                            <UserProfilePicture
+                                user={{
+                                    displayName: item.avatar.displayName,
+                                    profileId: item.avatar.profileId,
+                                    image: item.avatar.image,
+                                }}
+                                customContainerClass="h-[44px] w-[44px] min-h-[44px] min-w-[44px] text-[16px]"
+                                customImageClass="h-[44px] w-[44px] object-cover"
+                            />
+                            <span className="absolute -right-[3px] -bottom-[3px] flex items-center justify-center h-[22px] w-[22px] rounded-full bg-white ring-2 ring-white shadow-sm">
+                                <ActivityCredentialIcon
+                                    category={item.category}
+                                    isGeneric={item.isGenericCredential}
+                                    className="w-[20px] h-[20px]"
+                                />
+                            </span>
+                        </>
+                    )}
+                </div>
 
-            <div className="flex-1 min-w-0">
-                <p className="font-poppins text-[15px] font-[500] text-grayscale-900 truncate">
-                    {item.title}
-                </p>
-                {item.credentialType && (
-                    <p className="font-poppins text-[13px] text-grayscale-500 truncate">
-                        {item.credentialType}
+                <div className="flex-1 min-w-0">
+                    <p className="font-poppins text-[15px] truncate">
+                        <span className="font-[500] text-grayscale-900">{item.titleLead}</span>
+                        {item.titleSubject && (
+                            <span className="font-normal text-grayscale-600">
+                                {' '}
+                                {item.titleSubject}
+                            </span>
+                        )}
                     </p>
-                )}
-            </div>
+                    {item.credentialType && (
+                        <p className="font-poppins text-[13px] text-grayscale-500 truncate">
+                            {item.credentialType}
+                        </p>
+                    )}
+                </div>
 
-            <span className="font-poppins text-[13px] text-grayscale-500 whitespace-nowrap">
-                {shortDate(item.timestamp)}
-            </span>
-            <CaretRight className="h-3 w-auto text-grayscale-400" />
+                <span className="font-poppins text-[13px] text-grayscale-500 whitespace-nowrap">
+                    {shortDate(item.timestamp)}
+                </span>
+                <CaretRight className="h-3 w-auto text-grayscale-400" />
+            </button>
         </li>
     );
 };

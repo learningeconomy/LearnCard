@@ -2303,7 +2303,7 @@
         },
         "issuing": "Issuing Boost",
         "wizard": {
-            "title": "AI Boost Wizard",
+            "title": "AI Badge Wizard",
             "subtextSelf": "You can issue yourself boosts to tell your story. Your skills are currencies for your future.",
             "subtextSomeone": "Issue boosts to people you know.",
             "promptDescription": "Use simple words to describe why you admire someone, what they accomplished, why they are great, etc.",

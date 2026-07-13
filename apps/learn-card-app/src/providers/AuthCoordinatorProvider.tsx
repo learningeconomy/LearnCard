@@ -105,6 +105,7 @@ import {
 const WALLET_INIT_TIMEOUT_MS = 15000;
 
 import { auth } from '../firebase/firebase';
+import { mergeAuthUserIntoCurrentUser, shouldResetWalletOnStatus } from './authCoordinator.helpers';
 import {
     getAppBaseUrl,
     getFirebaseRedirectDomain,
@@ -1051,9 +1052,16 @@ const AuthSessionManager: React.FC<{
         walletUpgradeNonce,
     ]);
 
-    // --- Reset wallet when coordinator leaves 'ready' (e.g. on logout) ---
+    // --- Reset wallet when coordinator settles outside 'ready' (e.g. logout) ---
+    // Transitional statuses (authenticating / checking_key_status / deriving_key)
+    // are deliberately excluded: they occur while the coordinator re-initializes
+    // after the noOp → real authProvider swap that follows Firebase session
+    // restore on a hard refresh. The wallet — derived from the same cached
+    // private key — stays valid throughout, and tearing it down here used to
+    // flash the full-screen loader over the already-rendered app and rebuild an
+    // identical wallet.
     useEffect(() => {
-        if (coordinator.state.status !== 'ready' && wallet) {
+        if (shouldResetWalletOnStatus(coordinator.state.status) && wallet) {
             setWallet(null);
             setLcnProfile(null);
             setRecoveryMethodCount(null);
@@ -1062,6 +1070,61 @@ const AuthSessionManager: React.FC<{
             walletModeStore.set.mode(null);
         }
     }, [coordinator.state.status, wallet]);
+
+    // --- Backfill auth-session identity once the real provider lands ---
+    // On the private-key-first path the wallet is built before Firebase
+    // restores the session, so currentUser.uid/email/phoneNumber start empty.
+    // The coordinator re-init used to repopulate them by rebuilding the wallet;
+    // now that the wallet survives, patch the missing fields in place.
+    useEffect(() => {
+        if (coordinator.state.status !== 'ready' || !wallet) return;
+
+        const merged = mergeAuthUserIntoCurrentUser(
+            currentUserStore.get.currentUser(),
+            coordinator.state.authUser
+        );
+
+        if (merged) currentUserStore.set.currentUser(merged);
+    }, [coordinator.state, wallet]);
+
+    // --- Backfill recovery-method count for the same reason ---
+    // The wallet-build network tail (which normally loads it) is skipped on the
+    // pk-first path because no auth provider exists yet, and the wallet is no
+    // longer rebuilt when the provider arrives.
+    useEffect(() => {
+        if (
+            coordinator.state.status !== 'ready' ||
+            !wallet ||
+            !authProvider ||
+            recoveryMethodCount !== null ||
+            !keyDerivation.capabilities.recovery ||
+            !keyDerivation.getAvailableRecoveryMethods
+        )
+            return;
+
+        let cancelled = false;
+
+        void (async () => {
+            try {
+                const token = await authProvider.getIdToken();
+                const providerType = authProvider.getProviderType();
+                const methods = await keyDerivation.getAvailableRecoveryMethods!(
+                    token,
+                    providerType
+                );
+
+                if (!cancelled) {
+                    setRecoveryMethodCount(methods.filter(m => m.type !== 'email').length);
+                }
+            } catch {
+                // Non-critical — same best-effort semantics as the wallet-build tail
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [coordinator.state.status, wallet, authProvider, recoveryMethodCount, keyDerivation]);
 
     // --- Clear stale legacy stores when coordinator is idle ---
     // After a public-computer session, the tab close destroys the Firebase

@@ -54,6 +54,12 @@ const ORIGIN_MAP: Record<string, string> = {
     'alpha.vetpass.app': 'vetpass',
     'staging.vetpass.app': 'vetpass',
 
+    // ScoutPass
+    'scout.org': 'scoutpass',
+    'www.scout.org': 'scoutpass',
+    'pass.scout.org': 'scoutpass',
+    'staging.pass.scout.org': 'scoutpass',
+
     // LearnCard
     'learncard.app': 'learncard',
     'staging.learncard.app': 'learncard',
@@ -84,6 +90,19 @@ const TENANT_EMAIL_BRANDING: Record<string, Partial<TenantBranding>> = {
         appUrl: 'https://vetpass.app',
         fromDomain: 'vetpass.app',
         copyrightHolder: 'VetPass',
+    },
+
+    scoutpass: {
+        brandName: 'ScoutPass',
+        logoUrl: 'https://pass.scout.org/assets/icon/icon.png',
+        logoAlt: 'ScoutPass',
+        primaryColor: '#00BA88',
+        primaryTextColor: '#ffffff',
+        supportEmail: 'support@scout.org',
+        websiteUrl: 'https://scout.org/scoutpass',
+        appUrl: 'https://pass.scout.org',
+        fromDomain: 'scoutnetwork.org',
+        copyrightHolder: 'ScoutPass',
     },
 };
 
@@ -129,7 +148,7 @@ const tenantIdFromHostname = (hostname: string): string | undefined => {
  */
 export const resolveTenantFromRequest = (
     headers: RequestHeaders,
-    envTenantId?: string,
+    envTenantId?: string
 ): ResolvedTenant => {
     // 1. Explicit X-Tenant-Id header (native apps, any informed client)
     const explicit = normalizeHeader(headers['x-tenant-id']);
@@ -196,7 +215,10 @@ export const registerOriginMapping = (hostname: string, tenantId: string): void 
  * Register or update email branding for a tenant at startup.
  * Merges with any existing branding (does not replace).
  */
-export const registerTenantBranding = (tenantId: string, branding: Partial<TenantBranding>): void => {
+export const registerTenantBranding = (
+    tenantId: string,
+    branding: Partial<TenantBranding>
+): void => {
     TENANT_EMAIL_BRANDING[tenantId] = {
         ...TENANT_EMAIL_BRANDING[tenantId],
         ...branding,

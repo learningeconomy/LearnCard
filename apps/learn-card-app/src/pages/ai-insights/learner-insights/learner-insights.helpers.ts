@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learner-insights.helpers');
 
-import { m } from '../../../paraglide/messages.js';
-
-import { useWallet, useGetCurrentLCNUser } from 'learn-card-base';
+import { useWallet, useGetCurrentLCNUser, useGetCurrentUserRole } from 'learn-card-base';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
@@ -32,38 +30,42 @@ export type LearnerInsightsFilterOption = Omit<LearnerInsightsSortOption, 'type'
     type: LearnerInsightsFilterOptionsEnum;
 };
 
-export const getLearnerInsightsSortOptions = () => [
+export const LEARNER_INSIGHTS_SORT_OPTIONS: LearnerInsightsSortOption[] = [
     {
         id: 1,
-        title: m['aiInsights.sort.az'](),
+        title: 'A-Z',
         type: LearnerInsightsSortOptionsEnum.alphabetical,
     },
     {
         id: 2,
-        title: m['aiInsights.sort.recentlyAdded'](),
+        title: 'Recently Added',
         type: LearnerInsightsSortOptionsEnum.recentlyAdded,
     },
 ];
 
-export const getLearnerInsightsFilterOptions = () => [
+export const LEARNER_INSIGHTS_FILTER_OPTIONS: LearnerInsightsFilterOption[] = [
     {
         id: 1,
-        title: m['aiInsights.filter.all'](),
+        title: 'All',
         type: LearnerInsightsFilterOptionsEnum.all,
     },
     {
         id: 2,
-        title: m['aiInsights.filter.pending'](),
+        title: 'Pending',
         type: LearnerInsightsFilterOptionsEnum.pending,
     },
     {
         id: 3,
-        title: m['aiInsights.filter.accepted'](),
+        title: 'Accepted',
         type: LearnerInsightsFilterOptionsEnum.accepted,
     },
 ];
 
 export const getAiInsightsServices = async (wallet: BespokeLearnCard, did: string) => {
+    if (!did?.trim()) {
+        return null;
+    }
+
     const didDoc = await wallet.invoke.resolveDid(did);
     const service = didDoc.service?.find(service =>
         Array.isArray(service.type) ? service.type.includes('ShareInsights') : false
@@ -78,7 +80,8 @@ export const createAiInsightsService = async (
     profileId: string,
     did: string
 ) => {
-    if (!profileId || !uri) return;
+    if (!profileId || !uri || !did?.trim()) return;
+
     const service = await getAiInsightsServices(wallet, did);
 
     if (service) return service;
@@ -105,11 +108,17 @@ export const createAiInsightsService = async (
 export const useGetAiInsightsServicesContract = (did: string, upsert?: boolean) => {
     const { initWallet } = useWallet();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const currentUserRole = useGetCurrentUserRole();
+    const currentTeacherDid = (currentLCNUser as { did?: string } | null)?.did?.trim() ?? '';
 
     const [contractUri, setContractUri] = useState<string | null>(null);
     const [contract, setContract] = useState<ConsentFlowContractDetails | null>(null);
 
     const getAiInsightsContractUri = async () => {
+        if (!did?.trim()) {
+            return null;
+        }
+
         const wallet = await initWallet();
         const existingContract = await getAiInsightsServices(wallet, did);
 
@@ -123,10 +132,18 @@ export const useGetAiInsightsServicesContract = (did: string, upsert?: boolean) 
         }
 
         if (upsert && !existingContract) {
+            if (currentUserRole !== 'teacher' || !currentTeacherDid || !currentLCNUser?.profileId) {
+                return null;
+            }
+
             const uri = await createTeacherStudentContract({
-                teacherProfile: currentLCNUser!,
+                teacherProfile: {
+                    profileId: currentLCNUser.profileId,
+                    did: currentTeacherDid,
+                    image: currentLCNUser.image,
+                },
             });
-            await createAiInsightsService(wallet, uri, currentLCNUser?.profileId!, did);
+            await createAiInsightsService(wallet, uri, currentLCNUser.profileId, currentTeacherDid);
 
             setContractUri(uri);
             const contract = await wallet.invoke.getContract(uri);
@@ -137,9 +154,11 @@ export const useGetAiInsightsServicesContract = (did: string, upsert?: boolean) 
     };
 
     useEffect(() => {
-        if (currentLCNUserLoading) return;
-        getAiInsightsContractUri();
-    }, [currentLCNUserLoading, did]);
+        if (currentLCNUserLoading || !did?.trim()) return;
+        if (upsert && currentUserRole !== 'teacher') return;
+
+        void getAiInsightsContractUri();
+    }, [currentLCNUserLoading, currentUserRole, did, upsert]);
 
     return { contractUri, contract, getAiInsightsContractUri, isLoading: currentLCNUserLoading };
 };

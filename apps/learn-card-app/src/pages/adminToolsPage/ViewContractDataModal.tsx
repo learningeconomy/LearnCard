@@ -6,9 +6,11 @@ import { ConsentFlowContractData, ConsentFlowContractDetails } from '@learncard/
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import {
     contractCategoryNameToCategoryMetadata,
+    useConsentFlowDataForDid,
     useContract,
     useGetConsentFlowData,
     useModal,
+    useWallet,
 } from 'learn-card-base';
 
 import Share from '../../components/svgs/Share';
@@ -194,12 +196,19 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const [isConsentRecordsOpen, setIsConsentRecordsOpen] = React.useState(false);
+    const [didInput, setDidInput] = React.useState('');
+    const [activeDidFilter, setActiveDidFilter] = React.useState('');
+    const [resolvedDidFilter, setResolvedDidFilter] = React.useState('');
+    const [filterInputMode, setFilterInputMode] = React.useState<'did' | 'profileId'>('did');
     const { data: contractDetails, isLoading: contractLoading } = useContract(contract.uri);
     const resolvedContract = contractDetails ?? contract;
+    const { initWallet } = useWallet();
 
-    const { data: paginatedData, isLoading: consentDataLoading } = useGetConsentFlowData(
-        resolvedContract.uri
-    );
+    const {
+        data: paginatedData,
+        isLoading: consentDataLoading,
+        refetch: refetchConsentData,
+    } = useGetConsentFlowData(resolvedContract.uri);
     const consentRecords = React.useMemo(() => {
         if (Array.isArray(paginatedData)) {
             return paginatedData;
@@ -210,6 +219,87 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                 ?.records ?? []
         );
     }, [paginatedData]);
+
+    const normalizedDidFilter = resolvedDidFilter.trim();
+    const shouldFilterByDid = Boolean(normalizedDidFilter);
+
+    const {
+        data: consentDataForDid,
+        isLoading: consentDataForDidLoading,
+        isFetching: consentDataForDidFetching,
+        refetch: refetchConsentDataForDid,
+    } = useConsentFlowDataForDid(normalizedDidFilter || undefined, undefined, shouldFilterByDid);
+
+    const didFilteredConsentRecords = React.useMemo(() => {
+        const records =
+            (consentDataForDid as { records?: { contractUri?: string }[] } | undefined | null)
+                ?.records ?? [];
+
+        return records.filter(record => record.contractUri === resolvedContract.uri);
+    }, [consentDataForDid, resolvedContract.uri]);
+
+    const visibleConsentRecords = shouldFilterByDid ? didFilteredConsentRecords : consentRecords;
+    const visibleConsentRecordsLoading = shouldFilterByDid
+        ? consentDataForDidLoading || consentDataForDidFetching
+        : consentDataLoading;
+
+    const resolveFilterInput = async (input: string) => {
+        const trimmedInput = input.trim();
+
+        if (!trimmedInput) {
+            setResolvedDidFilter('');
+            return;
+        }
+
+        const looksLikeDid = trimmedInput.toLowerCase().startsWith('did:');
+
+        if (looksLikeDid) {
+            setFilterInputMode('did');
+            setResolvedDidFilter(trimmedInput);
+            return;
+        }
+
+        setFilterInputMode('profileId');
+
+        try {
+            const wallet = await initWallet();
+            const profile = await wallet.invoke.getProfile(trimmedInput);
+            const profileDid = (profile as { did?: string } | undefined)?.did;
+
+            if (profileDid) {
+                setResolvedDidFilter(profileDid);
+                return;
+            }
+
+            setResolvedDidFilter(trimmedInput);
+        } catch {
+            setResolvedDidFilter(trimmedInput);
+        }
+    };
+
+    const submitDidFilter = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        const nextFilter = didInput.trim();
+        setActiveDidFilter(nextFilter);
+        await resolveFilterInput(nextFilter);
+    };
+
+    const clearDidFilter = () => {
+        setDidInput('');
+        setActiveDidFilter('');
+        setResolvedDidFilter('');
+        setFilterInputMode('did');
+    };
+
+    const refreshConsentRecords = async () => {
+        if (shouldFilterByDid) {
+            await refetchConsentDataForDid();
+            return;
+        }
+
+        await refetchConsentData();
+    };
 
     const {
         name,
@@ -493,12 +583,12 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                     <div className="flex min-w-0 items-center gap-2">
                         <span>Consent records</span>
                         <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-grayscale-600">
-                            {consentRecords.length}
+                            {visibleConsentRecords.length}
                         </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {consentDataLoading && <IonSpinner color="dark" />}
+                        {visibleConsentRecordsLoading && <IonSpinner color="dark" />}
                         <CaretDown
                             className={`h-[14px] w-[14px] text-grayscale-500 transition-transform duration-200 ${
                                 isConsentRecordsOpen ? 'rotate-180' : ''
@@ -509,30 +599,92 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
                 </summary>
 
                 <div className="mt-4 max-h-[420px] overflow-y-auto space-y-3 pr-1 pb-2">
-                    {/* could definitely present this prettier */}
-                    {!consentDataLoading && consentRecords.length > 0 && (
+                    <form
+                        onSubmit={submitDidFilter}
+                        className="space-y-2 rounded-[20px] border border-grayscale-200 bg-white p-3"
+                    >
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-grayscale-700">
+                                Filter by DID or profile ID
+                            </label>
+                            <input
+                                type="text"
+                                value={didInput}
+                                onChange={e => setDidInput(e.target.value)}
+                                placeholder="did:key:... or profile-id"
+                                className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="submit"
+                                className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={!didInput.trim() || visibleConsentRecordsLoading}
+                            >
+                                {visibleConsentRecordsLoading && shouldFilterByDid
+                                    ? 'Searching...'
+                                    : 'Search'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={clearDidFilter}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                disabled={!didInput && !activeDidFilter}
+                            >
+                                Clear
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={refreshConsentRecords}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={visibleConsentRecordsLoading}
+                            >
+                                Refresh
+                            </button>
+                        </div>
+
+                        {shouldFilterByDid && (
+                            <p className="text-xs text-grayscale-500 break-all">
+                                Showing consent records for{' '}
+                                <span className="font-medium text-grayscale-700">
+                                    {normalizedDidFilter}
+                                </span>
+                            </p>
+                        )}
+                    </form>
+
+                    {!visibleConsentRecordsLoading && visibleConsentRecords.length > 0 && (
                         <ol className="space-y-3">
-                            {consentRecords.map((terms: ConsentFlowContractData, index: number) => (
-                                <li
-                                    key={terms.personal.Name ?? index}
-                                    className="rounded-[20px] border border-grayscale-200 bg-white p-3"
-                                >
-                                    <pre className="overflow-x-auto text-xs text-grayscale-700">
-                                        {JSON.stringify(terms, null, 4)}
-                                    </pre>
-                                </li>
-                            ))}
+                            {visibleConsentRecords.map(
+                                (terms: ConsentFlowContractData, index: number) => (
+                                    <li
+                                        key={terms.personal.Name ?? index}
+                                        className="rounded-[20px] border border-grayscale-200 bg-white p-3"
+                                    >
+                                        <pre className="overflow-x-auto text-xs text-grayscale-700">
+                                            {JSON.stringify(terms, null, 4)}
+                                        </pre>
+                                    </li>
+                                )
+                            )}
                         </ol>
                     )}
-                    {!consentDataLoading && consentRecords.length === 0 && (
+                    {!visibleConsentRecordsLoading && visibleConsentRecords.length === 0 && (
                         <p className="h-[120px] flex items-center justify-center text-sm text-grayscale-600">
-                            No one has consented to this contract yet
+                            {shouldFilterByDid
+                                ? 'No consent records were found for this person on this contract'
+                                : 'No one has consented to this contract yet'}
                         </p>
                     )}
-                    {contractLoading && !consentRecords.length && (
+                    {visibleConsentRecordsLoading && !visibleConsentRecords.length && (
                         <div className="w-full h-[120px] flex flex-col gap-[5px] items-center justify-center">
                             <IonSpinner color="dark" />
-                            <span className="text-sm text-grayscale-600">Loading...</span>
+                            <span className="text-sm text-grayscale-600">
+                                {shouldFilterByDid ? 'Loading DID records...' : 'Loading...'}
+                            </span>
                         </div>
                     )}
                 </div>

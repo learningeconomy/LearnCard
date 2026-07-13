@@ -10,8 +10,6 @@ import {
     constructCustomBoostType,
     useModal,
 } from 'learn-card-base';
-import * as m from '../../../paraglide/messages.js';
-import { localizeNewBoostTitle } from '../../../i18n/categoryTitle';
 
 type BoostTemplateTypeModalProps = {
     selectedCategory: BoostCategoryOptionsEnum;
@@ -50,7 +48,7 @@ const BoostTemplateTypeModal: React.FC<BoostTemplateTypeModalProps> = ({
                     )}
                 </div>
                 <h2 className="font-poppins text-[22px] leading-[100%] text-grayscale-900">
-                    {localizeNewBoostTitle(titleSingular)}
+                    New {titleSingular}
                 </h2>
 
                 <div className="relative">
@@ -58,7 +56,7 @@ const BoostTemplateTypeModal: React.FC<BoostTemplateTypeModalProps> = ({
                         autocapitalize="on"
                         value={boostType}
                         onIonInput={e => setBoostType(e?.detail?.value)}
-                        placeholder={m['boost.template.boostTypePlaceholder']()}
+                        placeholder={`${titleSingular} type...`}
                         className="relative bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[5px]"
                         rows={3}
                         maxlength={22}
@@ -73,7 +71,7 @@ const BoostTemplateTypeModal: React.FC<BoostTemplateTypeModalProps> = ({
                     className="bg-grayscale-50 py-[10px] px-[20px] rounded-[30px] text-grayscale-800 font-poppins text-[17px] leading-[130%] tracking-[-0.25px] shadow-bottom-4-4 flex-1"
                     onClick={closeModal}
                 >
-                    {m['common.back']()}
+                    Back
                 </button>
                 <button
                     className={`flex-1 py-[10px] px-[20px] rounded-[30px] font-poppins text-[17px] leading-[130%] tracking-[-0.25px] shadow-bottom-4-4 text-white disabled:bg-grayscale-300 bg-${color}`}
@@ -83,7 +81,7 @@ const BoostTemplateTypeModal: React.FC<BoostTemplateTypeModalProps> = ({
                     }}
                     disabled={continueDisabled}
                 >
-                    {m['common.continue']()}
+                    Continue
                 </button>
             </div>
         </div>
