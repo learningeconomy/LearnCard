@@ -191,6 +191,46 @@ import {
 } from '@helpers/status-list.helpers';
 
 /**
+ * Human-friendly noun for a credential-status notification, derived from the boost
+ * category (e.g. "Social Badge" -> "badge"). Falls back to "credential" so the
+ * message always reads naturally. Used to build bodies like
+ * `Your Spec Gremlin badge was revoked by ...`.
+ */
+const getCredentialNoun = (category?: string | null): string => {
+    switch (category) {
+        case 'Social Badge':
+        case 'Merit Badge':
+            return 'badge';
+        case 'Achievement':
+            return 'achievement';
+        case 'Accomplishment':
+            return 'accomplishment';
+        case 'Accommodation':
+            return 'accommodation';
+        case 'Membership':
+            return 'membership';
+        case 'Course':
+            return 'course';
+        case 'Skill':
+            return 'skill';
+        default:
+            // ID categories (e.g. "Scout ID", "Troop Leader ID") end in "ID".
+            if (category && /\bID$/.test(category)) return 'ID';
+            return 'credential';
+    }
+};
+
+/**
+ * Builds the subject phrase for a lifecycle notification body, e.g.
+ * `Spec Gremlin badge` (name + category noun) or just `badge` when the boost is
+ * unnamed. Keep the leading `Your ` in the caller.
+ */
+const getCredentialSubject = (name?: string | null, category?: string | null): string => {
+    const noun = getCredentialNoun(category);
+    return name ? `${name} ${noun}` : noun;
+};
+
+/**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
  */
 const buildInboxConfig = (
@@ -2014,7 +2054,7 @@ export const boostsRouter = t.router({
                     },
                     message: {
                         title: 'Credential revoked',
-                        body: `Your "${boost.name ?? 'credential'}" was revoked by ${
+                        body: `Your ${getCredentialSubject(boost.name, boost.category)} was revoked by ${
                             profile.displayName ?? profile.profileId
                         }.`,
                     },
@@ -2129,7 +2169,7 @@ export const boostsRouter = t.router({
                     },
                     message: {
                         title: 'Credential suspended',
-                        body: `Your "${boost.name ?? 'credential'}" was suspended by ${
+                        body: `Your ${getCredentialSubject(boost.name, boost.category)} was suspended by ${
                             profile.displayName ?? profile.profileId
                         }.`,
                     },
@@ -2239,7 +2279,7 @@ export const boostsRouter = t.router({
                     },
                     message: {
                         title: 'Credential reinstated',
-                        body: `Your "${boost.name ?? 'credential'}" was reinstated by ${
+                        body: `Your ${getCredentialSubject(boost.name, boost.category)} was reinstated by ${
                             profile.displayName ?? profile.profileId
                         }.`,
                     },
