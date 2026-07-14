@@ -35,6 +35,7 @@ import {
     resolveBadgeStyle,
     buildPreviewCredential,
 } from './boostAFriend.helpers';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useStylePackRegistry } from '../../registries/useStylePackRegistry';
 import { useBadgeGroups } from '../../registries/useBadgeGroups';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
@@ -66,6 +67,7 @@ const BoostAFriendPage: React.FC = () => {
     const { getRegisteredSigningAuthorities, getRegisteredSigningAuthority } =
         useSigningAuthority();
     const { presentToast } = useToast();
+    const { gate } = useLCNGatedAction();
     const { data: stylePacks } = useStylePackRegistry();
     const { data: badgeGroups } = useBadgeGroups();
     const categoryFallback = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
@@ -119,6 +121,14 @@ const BoostAFriendPage: React.FC = () => {
         }
 
         setError(null);
+
+        // Every send mode needs an LCN profile. If the user has none, open
+        // onboarding and resume this same send once it completes.
+        const { prompted } = await gate(() => {
+            void handleIssue();
+        });
+        if (prompted) return;
+
         setIsIssuing(true);
 
         try {
