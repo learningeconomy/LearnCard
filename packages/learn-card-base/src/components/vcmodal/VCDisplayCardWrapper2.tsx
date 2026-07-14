@@ -182,6 +182,10 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
 
         // VC Display Metadata
         displayType,
+        subtype,
+        accentColor,
+        backgroundColor,
+        backgroundImage,
         idFontColor,
         idAccentColor,
         idDisplayBackgroundImage,
@@ -285,9 +289,11 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             display: {
                 ...(credential.display ?? {}),
                 displayType: String(displayType).toLowerCase(),
+                ...(backgroundColor ? { backgroundColor } : {}),
+                ...(backgroundImage ? { backgroundImage } : {}),
             },
         };
-    }, [credential, displayType]);
+    }, [credential, displayType, backgroundColor, backgroundImage]);
 
     const subtitleDisplayType = achievementType ? formattedAchievementType : displayType;
 
@@ -339,6 +345,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                     ) : (
                         <CredentialBadge
                             achievementType={achievementType}
+                            subtype={subtype}
+                            accentColor={accentColor}
                             fallbackCircleText={overrideCardTitle || title}
                             boostType={category}
                             badgeThumbnail={overrideCardImageUrl || badgeThumbnail!}

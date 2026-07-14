@@ -291,7 +291,10 @@ const ShortBoostUserOptions: React.FC<{
                     onClick={selfBoostConfirmationAlert}
                     className="flex items-center gap-[10px] font-notoSans text-grayscale-800 text-[18px] py-[10px] w-full"
                 >
-                    <ProfilePicture customContainerClass="w-[35px] h-[35px]" />
+                    <ProfilePicture
+                        customContainerClass="w-[35px] h-[35px] overflow-hidden rounded-full flex-shrink-0"
+                        customImageClass="w-full h-full object-cover"
+                    />
                     Myself
                 </button>
                 <button

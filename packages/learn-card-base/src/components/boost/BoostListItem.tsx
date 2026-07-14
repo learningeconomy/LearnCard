@@ -46,6 +46,7 @@ type BoostListItemProps = {
     unknownVerifierTitle?: string;
     relativeDate?: boolean;
     compact?: boolean;
+    trustedVerifierOnly?: boolean;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -68,6 +69,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     unknownVerifierTitle,
     relativeDate = false,
     compact = false,
+    trustedVerifierOnly = false,
 }) => {
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
@@ -195,8 +197,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     const thumbSize = compact ? 'h-[34px] w-[34px]' : 'h-[40px] w-[40px]';
     const textBlockSize = compact ? 'text-[13px]' : 'text-[14px]';
     const verificationIconClass = compact
-        ? 'w-[14px] h-[14px] min-w-[14px] min-h-[14px] mr-1 z-50'
-        : 'w-[20px] h-[20px] min-w-[20px] min-h-[20px] mr-1 z-50';
+        ? '!w-[14px] !h-[14px] !min-w-[14px] !min-h-[14px] mr-1 z-50'
+        : '!w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] mr-1 z-50';
 
     return (
         <IonRow
@@ -276,6 +278,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             credential={credential}
                             iconClassName={verificationIconClass}
                             unknownVerifierTitle={unknownVerifierTitle}
+                            trustedOnly={trustedVerifierOnly}
                         />
                     )}
                     {compact ? (

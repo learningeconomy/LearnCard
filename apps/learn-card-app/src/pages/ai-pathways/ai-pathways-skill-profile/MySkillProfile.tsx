@@ -69,7 +69,13 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
 
     return (
         <div className={`w-full flex items-center justify-center text-left ${className}`}>
-            <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-4-4 px-[15px] py-[18px] rounded-[15px]">
+            <div
+                className={`w-full bg-white items-center flex flex-col shadow-bottom-4-4 px-[15px] py-[18px] rounded-[15px] min-h-0 ${
+                    isExpanded
+                        ? 'justify-start h-[calc(100dvh-32px)] overflow-hidden'
+                        : 'justify-center'
+                }`}
+            >
                 <div className="flex flex-col w-full gap-[10px]">
                     <div className="flex gap-[10px] items-center justify-start w-full">
                         <ProfilePicture
@@ -131,12 +137,12 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
 
                 {isNativePlatform && (
                     <div
-                        className={`grid w-full transition-[grid-template-rows] duration-300 ease-in-out ${
+                        className={`grid w-full flex-1 min-h-0 transition-[grid-template-rows] duration-300 ease-in-out ${
                             isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                         }`}
                     >
-                        <div className="overflow-hidden min-h-0">
-                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px]">
+                        <div className="overflow-hidden min-h-0 flex flex-col">
+                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px] flex flex-col flex-1 min-h-0">
                                 {steps[currentStep] ?? null}
                             </div>
                         </div>
