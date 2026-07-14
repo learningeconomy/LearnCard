@@ -263,7 +263,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
 
                     <IonInput
                         value={getMemberTypeText(rootViewMode, viewMode)}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
+                        className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder troops-cms-readonly-input"
                         placeholder="Member type"
                         type="text"
                         readonly
