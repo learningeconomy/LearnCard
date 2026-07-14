@@ -97,12 +97,12 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             {isParsing
                                 ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                  ? m['passport.buildMyLearnCard.pendingReview']({
-                                        count: pendingReviewCount,
-                                    })
-                                  : m['passport.buildMyLearnCard.progress']({
-                                        percent: optimizedPercent,
-                                    })}
+                                ? m['passport.buildMyLearnCard.pendingReview']({
+                                      count: pendingReviewCount,
+                                  })
+                                : m['passport.buildMyLearnCard.progress']({
+                                      percent: optimizedPercent,
+                                  })}
                         </span>
                     </div>
                     {!isParsing && !hasPendingReview && (
@@ -138,8 +138,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             isParsing
                                 ? `bg-${primaryColor}`
                                 : featuredCardBgColor
-                                  ? 'bg-transparent'
-                                  : 'bg-white'
+                                ? 'bg-transparent'
+                                : 'bg-white'
                         }`}
                     >
                         {isParsing ? (
@@ -218,8 +218,8 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         isParsing
                             ? `bg-${primaryColor}`
                             : featuredCardBgColor
-                              ? 'bg-transparent'
-                              : 'bg-white'
+                            ? 'bg-transparent'
+                            : 'bg-white'
                     }`}
                 >
                     {isParsing ? (
