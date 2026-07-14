@@ -91,6 +91,7 @@ const BoostAFriendPage: React.FC = () => {
     const [claimLink, setClaimLink] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+    const handleIssueRef = useRef<() => Promise<void>>(async () => {});
 
     const handleSelectBadge = (badge: BadgePreset, color: string) => {
         const {
@@ -189,12 +190,6 @@ const BoostAFriendPage: React.FC = () => {
         }
     };
 
-    // The onboarding resume callback below is created once (at send-time) but
-    // fires later, after onboarding. Routing through a ref invokes the latest
-    // runIssue closure (post-onboarding auth/profile) instead of a stale one.
-    const runIssueRef = useRef(runIssue);
-    runIssueRef.current = runIssue;
-
     const handleIssue = async () => {
         if (!selectedBadge) return;
 
@@ -208,11 +203,10 @@ const BoostAFriendPage: React.FC = () => {
         setError(null);
 
         // Every send mode needs an LCN profile. If the user has none, open
-        // onboarding, then resume via the ref so the send runs against fresh
-        // state without re-triggering the profile gate.
+        // onboarding, then resume through the latest gate-aware handler.
         const { prompted } = await gate(async () => {
             try {
-                await runIssueRef.current();
+                await handleIssueRef.current();
             } catch (err) {
                 setError(getFriendlyIssueError(err, recipientMode).message);
             }
@@ -221,6 +215,7 @@ const BoostAFriendPage: React.FC = () => {
 
         await runIssue();
     };
+    handleIssueRef.current = handleIssue;
 
     const handleCopyLink = async () => {
         if (!claimLink) return;
