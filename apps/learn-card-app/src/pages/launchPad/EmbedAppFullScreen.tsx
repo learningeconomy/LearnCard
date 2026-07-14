@@ -10,7 +10,7 @@ import {
     IonTitle,
 } from '@ionic/react';
 
-import { getLogger, useIsOffline, connectivityStore } from 'learn-card-base';
+import { getLogger, useIsOffline, connectivityStore, appendQueryParams } from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
 const log = getLogger('embed-app-full-screen');
@@ -120,9 +120,9 @@ export const EmbedAppFullScreen: React.FC = () => {
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(
-                    window.location.origin
-                )}`;
+                iframeRef.current.src = appendQueryParams(base.toString(), {
+                    lc_host_override: window.location.origin,
+                });
             } catch {
                 // embedUrl is invalid — do not navigate
             }
@@ -178,7 +178,9 @@ export const EmbedAppFullScreen: React.FC = () => {
         return null; // Will redirect via useEffect
     }
 
-    const embedUrlWithOverride = `${embedUrl}?lc_host_override=${window.location.origin}`;
+    const embedUrlWithOverride = appendQueryParams(embedUrl, {
+        lc_host_override: window.location.origin,
+    });
     return (
         <IonPage>
             <IonHeader>
