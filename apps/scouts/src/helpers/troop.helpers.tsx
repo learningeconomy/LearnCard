@@ -205,9 +205,10 @@ export const getTroopIdThumbOrDefault = (credential: VC, className: string = '')
 export const getScoutsRole = (credential: VC | Boost) => {
     if (!credential) return ScoutsRoleEnum.scout;
 
+    const typedCredential = credential as any;
     const type =
-        credential.credentialSubject?.achievement?.achievementType ||
-        credential.boostCredential?.credentialSubject?.achievement?.achievementType;
+        typedCredential?.credentialSubject?.achievement?.achievementType ||
+        typedCredential?.boostCredential?.credentialSubject?.achievement?.achievementType;
 
     switch (type) {
         case AchievementTypes.Global:
@@ -228,6 +229,23 @@ export const getScoutsRole = (credential: VC | Boost) => {
 export const getScoutsNounForCred = (credential: VC) => {
     const role = getRoleFromCred(credential);
     return getScoutsNounForRole(role);
+};
+
+export const getScoutsRoleLabelForRole = (role: ScoutsRoleEnum) => {
+    switch (role) {
+        case ScoutsRoleEnum.scout:
+            return 'Scout';
+        case ScoutsRoleEnum.leader:
+            return 'Troop Leader';
+        case ScoutsRoleEnum.national:
+            return 'National Admin';
+        case ScoutsRoleEnum.global:
+            return 'Global Admin';
+    }
+};
+
+export const getScoutsRoleLabelForCred = (credential: VC) => {
+    return getScoutsRoleLabelForRole(getRoleFromCred(credential));
 };
 
 export const getScoutsNounForRole = (role: ScoutsRoleEnum, shorten?: boolean) => {
@@ -269,7 +287,7 @@ export const isTroopCredential = (credential: VC) => {
         AchievementTypes.Network,
         AchievementTypes.ScoutMember,
     ];
-    const credType = credential?.credentialSubject?.achievement?.achievementType;
+    const credType = (credential as any)?.credentialSubject?.achievement?.achievementType;
     return troopTypes.includes(credType);
 };
 

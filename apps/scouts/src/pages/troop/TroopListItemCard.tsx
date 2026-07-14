@@ -23,7 +23,10 @@ import InviteSelectionModal from './InviteSelectionModal';
 import { Boost, VC } from '@learncard/types';
 import { pluralize } from 'learn-card-base';
 import { useCanInviteTroop } from './useCanInviteTroop';
-import { getDefaultBadgeThumbForCredential, getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import {
+    getDefaultBadgeThumbForCredential,
+    getScoutsRoleLabelForCred,
+} from '../../helpers/troop.helpers';
 import { insertParamsToFilestackUrl, useGetCurrentUserTroopIds } from 'learn-card-base';
 
 type TroopListItemProps = {
@@ -159,9 +162,7 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         const canInviteScout = myTroopIds?.isTroopLeader || scoutPermissionsData?.canIssue;
         const canInviteLeader = boostPermissionsData?.canIssue;
 
-        // Determine the correct label for the current credential type
-        const credentialRole = getScoutsRole(_resolvedBoost);
-        const credentialLabel = getScoutsNounForRole(credentialRole);
+        const credentialLabel = getScoutsRoleLabelForCred(_resolvedBoost);
 
         if (canInviteScout && canInviteLeader) {
             newModal(

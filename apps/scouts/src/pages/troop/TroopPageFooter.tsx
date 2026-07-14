@@ -21,7 +21,7 @@ import TroopActionMenu from './TroopActionMenu';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
-import { getScoutsRole } from '../../helpers/troop.helpers';
+import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
 
 type TroopPageFooterProps = {
@@ -107,10 +107,14 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 try {
                     const walletDid = wallet.id.did();
                     await wallet.invoke.deleteBoost(uri);
-                    queryClient.invalidateQueries(['useGetIDs', walletDid ?? '']);
+                    queryClient.invalidateQueries({ queryKey: ['useGetIDs', walletDid ?? ''] });
                     closeAllModals();
-                } catch (error) {
-                    if (error) presentAlert(error?.message);
+                } catch (error: unknown) {
+                    if (error) {
+                        presentAlert(
+                            error instanceof Error ? error.message : 'Something went wrong'
+                        );
+                    }
                     closeAllModals();
                 }
             },
@@ -123,12 +127,18 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     const handleInvite = showInviteButton
         ? () => {
               const canInviteScout = scoutPermissionsData?.canIssue;
-              const canInviteLeader = troopPermissionsData?.canIssue || boostPermissionsData?.canIssue;
+              const canInviteLeader =
+                  troopPermissionsData?.canIssue || boostPermissionsData?.canIssue;
 
               if (canInviteScout && canInviteLeader) {
                   newModal(
                       <InviteSelectionModal
-                          onInviteLeader={() => openScoutConnectModal(troopBoostUri, 'Troop Leader')}
+                          onInviteLeader={() =>
+                              openScoutConnectModal(
+                                  troopBoostUri,
+                                  getScoutsRoleLabelForCred(credential)
+                              )
+                          }
                           onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
                           handleCloseModal={closeModal}
                           scoutNoun={scoutNoun}
@@ -139,7 +149,10 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
               } else if (canInviteScout) {
                   openScoutConnectModal(scoutBoostUri, 'Scout');
               } else if (canInviteLeader) {
-                  openScoutConnectModal(troopBoostUri || currentBoostUri, 'Troop Leader');
+                  openScoutConnectModal(
+                      troopBoostUri || currentBoostUri,
+                      getScoutsRoleLabelForCred(credential)
+                  );
               }
           }
         : undefined;
