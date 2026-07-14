@@ -1,4 +1,5 @@
 import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import React from 'react';
 import moment from 'moment';
 
@@ -94,14 +95,19 @@ export const FinishedAiSessionAssessmentPreviewDetails: React.FC<{
                     <div className="flex flex-col items-start justify-start">
                         <div className="flex flex-col items-start justify-start mt-4 last:mb-4">
                             <p className="text-grayscale-700 text-sm font-semibold font-notoSans p-0 mt-0">
-                                <span className="text-grayscale-900  ">Completed</span> on{' '}
-                                {completedDate}
+                                <TransP
+                                    m={m['ai.completedOn']}
+                                    values={{ date: completedDate }}
+                                    components={[<span className="text-grayscale-900" />]}
+                                />
                             </p>
                             <p className="text-grayscale-700 text-sm font-semibold font-notoSans p-0 my-1">
-                                <span className="text-grayscale-900  ">Topic</span> {topicTitle}
+                                <span className="text-grayscale-900">{m['ai.topicLabel']()}</span>{' '}
+                                {topicTitle}
                             </p>
                             <p className="text-grayscale-700 text-sm font-semibold font-notoSans p-0 mt-0">
-                                <span className="text-grayscale-900  ">App</span> {app?.name}
+                                <span className="text-grayscale-900">{m['ai.appLabel']()}</span>{' '}
+                                {app?.name}
                             </p>
                         </div>
                     </div>

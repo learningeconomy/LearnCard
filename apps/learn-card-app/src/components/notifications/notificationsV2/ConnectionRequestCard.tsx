@@ -10,7 +10,11 @@ import ArrowArcLeft from '../../../assets/images/ArrowArcLeft.svg';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
-import { UserNotificationTypeStyles, UserNotificationTypeEnum } from './types';
+import {
+    UserNotificationTypeStyles,
+    UserNotificationTypeEnum,
+    notificationCardStyles,
+} from './types';
 import * as m from '../../../paraglide/messages.js';
 
 type ConnectionRequestCardProps = {
@@ -88,7 +92,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
         <div
             onClick={handleReadStatus}
             ref={ref}
-            className={`flex my-[15px] min-justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white ${className}`}
+            className={`${notificationCardStyles.shell} ${className}`}
         >
             {!isRead && !isLoading && (
                 <div className="notification-count-mobile unread-indicator-dot" />
@@ -111,19 +115,19 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
             <div className="flex flex-col justify-center items-start relative w-full">
                 <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                     <h4
-                        className="cursor-pointer font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
+                        className={`cursor-pointer ${notificationCardStyles.title}`}
                         data-testid="notification-title"
                     >
                         {title}
                     </h4>
                     <p
-                        className={`font-semibold p-0 mt-[10px] leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text ${textStyles}`}
+                        className={`${notificationCardStyles.meta} mt-[10px] ${textStyles}`}
                         data-testid="notification-type"
                     >
                         {typeText}{' '}
                         {issueDate && (
                             <span
-                                className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
+                                className={notificationCardStyles.date}
                                 data-testid="notification-cred-issue-date"
                             >
                                 • {issueDate}
@@ -133,7 +137,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
                     <div className="relative flex items-center justify-between mt-3 w-full">
                         <button
-                            className={`notification-claim-btn flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
+                            className={`${notificationCardStyles.primaryButton} mr-[15px] w-[143px] ${claimButtonStyles}`}
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
@@ -143,7 +147,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
                         <button
                             onClick={handleCancelClick}
-                            className={`rounded-[40px] flex items-center justify-center border-[1px] border-grayscale-200 border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-[0px] tracking-wide`}
+                            className={`${notificationCardStyles.iconButton} mr-2`}
                             name="notification-view-button"
                         >
                             {!isArchived && (

@@ -26,7 +26,9 @@ export const ForgotPinConfirmation: React.FC<{}> = () => {
             <button
                 onClick={() => {
                     closeAllModals();
-                    handleLogout();
+                    // Relative /login keeps native reauth inside the app instead
+                    // of hard-redirecting to the tenant URL in the system browser.
+                    handleLogout({ overrideRedirectUrl: '/login' });
                 }}
                 className="text-mv_blue-700 font-bold mt-2"
             >

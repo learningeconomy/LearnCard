@@ -17,7 +17,12 @@ import {
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 
-import { initialBoostCMSState, LCNBoostStatusEnum } from '../boost/boost';
+import {
+    BoostCMSAppearanceDisplayTypeEnum,
+    initialBoostCMSState,
+    type BoostCMSState,
+} from 'learn-card-base/components/boost/boost';
+import { LCNBoostStatusEnum } from '../boost/boost';
 import { getDefaultDisplayType, sendBoostCredential } from '../boost/boostHelpers';
 import { useAddCredentialToWallet } from '../boost/mutations';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
@@ -64,7 +69,11 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             if (!wallet) throw new Error('Wallet is not initialized');
 
             const customBoostType = constructCustomBoostType(boostCategory, name.trim());
-            const state = {
+            const displayType =
+                Object.values(BoostCMSAppearanceDisplayTypeEnum).find(
+                    type => type === String(getDefaultDisplayType(boostCategory))
+                ) ?? BoostCMSAppearanceDisplayTypeEnum.Badge;
+            const state: BoostCMSState = {
                 ...initialBoostCMSState,
                 basicInfo: {
                     ...initialBoostCMSState.basicInfo,
@@ -72,11 +81,15 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     description: description.trim(),
                     type: boostCategory,
                     achievementType: customBoostType,
+                    memberTitles: initialBoostCMSState.basicInfo.memberTitles ?? {
+                        guardians: { singular: 'Guardian', plural: 'Guardians' },
+                        dependents: { singular: 'Member', plural: 'Members' },
+                    },
                 },
                 appearance: {
                     ...initialBoostCMSState.appearance,
                     badgeThumbnail: metadata?.CategoryImage ?? '',
-                    displayType: getDefaultDisplayType(boostCategory),
+                    displayType,
                 },
             };
 
@@ -92,7 +105,16 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
             if (!boostUri) throw new Error('Boost was created without a URI');
 
-            const { sentBoost } = await sendBoostCredential(wallet, profile.profileId, boostUri);
+            const { sentBoost, sentBoostUri } = await sendBoostCredential(
+                wallet,
+                profile.profileId,
+                boostUri
+            );
+            if (!sentBoost) throw new Error('Unable to prepare credential');
+            if (!sentBoostUri) throw new Error('Credential was created without a URI');
+
+            await wallet.invoke.acceptCredential(sentBoostUri);
+
             const issuedVcUri = await wallet.store.LearnCloud.uploadEncrypted?.(sentBoost);
 
             if (!issuedVcUri) throw new Error('Unable to save issued credential');

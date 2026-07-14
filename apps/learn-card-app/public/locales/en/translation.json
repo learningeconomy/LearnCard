@@ -65,7 +65,11 @@
             "connectionsEncrypted": "All connections are <0>encrypted.</0>",
             "privacyPolicy": "Privacy Policy",
             "termsOfService": "Terms of Service",
-            "copyright": "© {{year}} Learning Economy"
+            "copyright": "© {{year}} Learning Economy",
+            "privacy": "Privacy",
+            "terms": "Terms",
+            "logout": "Logout",
+            "viewVersionDetails": "View version details"
         },
         "links": {
             "dashboard": "Dashboard",
@@ -81,7 +85,7 @@
             "aiInsights": "AI Insights",
             "aiPathways": "AI Pathways",
             "skills": "Skills",
-            "socialBadges": "Boosts",
+            "socialBadges": "Badges",
             "achievements": "Achievements",
             "studies": "Studies",
             "portfolio": "Portfolio",
@@ -91,7 +95,9 @@
             "ids": "IDs",
             "pathways": "Journeys"
         },
-        "newAiSession": "New AI Session"
+        "newAiSession": "New AI Session",
+        "settings": "Settings",
+        "closeMenu": "Close menu"
     },
     "passport": {
         "buildMyLearnCard": {
@@ -128,7 +134,13 @@
                 "noCredentials": "No Demo credentials found. Please try again.",
                 "deletedCount": "Deleted {{count}} Demo credentials",
                 "confirmSync": "Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.",
-                "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed."
+                "confirmDelete": "Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed.",
+                "checking": "Checking Demo School...",
+                "connecting": "Connecting to Demo School...",
+                "syncing": "Syncing Credentials...",
+                "disconnect": "Disconnecting From Demo School...",
+                "deleting": "Deleting Demo Credentials...",
+                "delError": "Unable to delete the demo school. Please try again."
             },
             "managers": {
                 "resume": {
@@ -453,6 +465,84 @@
                 "description1": "This link and QR code let others view your shared resume.",
                 "description2": "Share with recruiters, hiring managers, friends, or anyone you want to review your resume."
             }
+        },
+        "wallet": {
+            "newCredentials": "New Credentials",
+            "scanQrCode": "Scan a QR code",
+            "addToPassport": "Add to Passport",
+            "new": "New"
+        },
+        "activity": {
+            "heading": "Activity",
+            "searchAria": "Search activity",
+            "searchPlaceholder": "Search...",
+            "filter": "Filter",
+            "error": "Something went wrong — we couldn't load your activity.",
+            "empty": "No activity yet.",
+            "reset": "Reset",
+            "applyFilter": "Apply Filter",
+            "you": "You",
+            "someone": "Someone",
+            "credential": "Credential",
+            "sentYou": "{actorName} sent you {article} {categoryLabel}",
+            "youSent": "You sent {article} {categoryLabel} to {recipientName}",
+            "months": {
+                "jan": "Jan",
+                "feb": "Feb",
+                "mar": "Mar",
+                "apr": "Apr",
+                "may": "May",
+                "jun": "Jun",
+                "jul": "Jul",
+                "aug": "Aug",
+                "sep": "Sep",
+                "oct": "Oct",
+                "nov": "Nov",
+                "dec": "Dec",
+                "JANUARY": "January",
+                "FEBRUARY": "February",
+                "MARCH": "March",
+                "APRIL": "April",
+                "MAY": "May",
+                "JUNE": "June",
+                "JULY": "July",
+                "AUGUST": "August",
+                "SEPTEMBER": "September",
+                "OCTOBER": "October",
+                "NOVEMBER": "November",
+                "DECEMBER": "December"
+            },
+            "categories": {
+                "all": "All",
+                "socialBadge": "Badge",
+                "achievement": "Achievement",
+                "learningHistory": "Course",
+                "accomplishment": "Portfolio item",
+                "accommodation": "Assistance",
+                "workHistory": "Experience",
+                "credential": "Credential"
+            },
+            "categoriesPlural": {
+                "all": "All",
+                "socialBadge": "Badges",
+                "achievement": "Achievements",
+                "learningHistory": "Courses",
+                "accomplishment": "Portfolio",
+                "accommodation": "Assistance",
+                "workHistory": "Experiences",
+                "id": "IDs"
+            },
+            "selfAdded": "You added this to your passport.",
+            "sentShare": "You shared this with {{name}}.",
+            "rcvdShare": "{{name}} shared this with you.",
+            "what": "What",
+            "type": "Type",
+            "date": "Date",
+            "viewInPass": "View in your passport",
+            "allCreds": "All credentials",
+            "emptyAll": "Nothing in your passport yet.",
+            "recent": "RECENTLY ADDED",
+            "seeAll": "See all"
         }
     },
     "launchpad": {
@@ -588,7 +678,7 @@
             "aiPathways": "Pathways",
             "aiInsights": "Insights",
             "skills": "Skills",
-            "socialBadges": "Boosts",
+            "socialBadges": "Badges",
             "achievements": "Achievements",
             "studies": "Studies",
             "portfolio": "Portfolio",
@@ -633,7 +723,7 @@
             "aiPathways": "AI Pathway",
             "aiInsights": "AI Insight",
             "skills": "Skill",
-            "socialBadges": "Boost",
+            "socialBadges": "Badge",
             "achievements": "Achievement",
             "studies": "Study",
             "portfolio": "Portfolio",
@@ -1049,7 +1139,7 @@
         "back": "Back",
         "close": "Close",
         "connectingHandler": "Connect Handler",
-        "country": "Country",
+        "country": "Select Country",
         "dateOfBirth": "Date of Birth",
         "delete": {
             "title": "Delete Account?",
@@ -1118,7 +1208,9 @@
             "linkADevice": "Link a Device",
             "switchAccount": "Switch Account",
             "buildMyLearnCard": "Build My {{brand}}",
-            "stepsCompleted": "{{completed}} of {{total}}"
+            "stepsCompleted": "{{completed}} of {{total}}",
+            "completeProfile": "Complete Profile",
+            "settings": "Account Settings"
         },
         "needParentGuardian": "You'll need a parent or guardian to set up a Family Account before you can join.",
         "notifications": "Notifications",
@@ -1149,7 +1241,24 @@
             "failed": "Verification Failed",
             "failedDesc": "We couldn't verify your email. The token may be invalid or expired. Please try again or request a new verification email.",
             "returnHome": "Return Home"
-        }
+        },
+        "saved": "Profile saved",
+        "saveFail": "Could not save your profile. Please try again.",
+        "yourName": "Your Name",
+        "profile": "Profile",
+        "namePlace": "Enter your full name",
+        "countryLbl": "Country",
+        "role": "Role",
+        "prefs": "Preferences",
+        "notifs": "Notifications",
+        "notifsSub": "Manage push notifications",
+        "netId": "Network & Identity",
+        "security": "Security",
+        "exportSub": "Backup your wallet recovery phrase",
+        "connectSub": "Enable web-based credential handling",
+        "connect": "Connect",
+        "danger": "Danger Zone",
+        "deleteSub": "Permanently remove your data"
     },
     "settings": {
         "aiFeatures": "AI Features",
@@ -1171,13 +1280,26 @@
                 "description": "Boosts include all types of credentials including:  Skills, IDs, Achievements, Learning History, Work History, Currency, and Badges."
             },
             "prompt": {
-                "title": "Stay in the Loop?",
-                "description": "Receive push notifications for:",
+                "title": "Notifications",
+                "description": "Get notified so you never miss what matters.",
                 "details": "New connection requests, New boosts (like achievements, credentials, and badges).",
-                "continue": "Continue",
-                "notYet": "Not Yet",
+                "continue": "Enable Notifications",
+                "notYet": "Not now",
                 "privacyPolicy": "Privacy Policy",
-                "termsOfService": "Terms of Service"
+                "termsOfService": "Terms of Service",
+                "enabled": "Notifications enabled",
+                "anytime": "You can turn on notifications anytime in Settings.",
+                "enableFail": "Couldn’t enable notifications. Please try again.",
+                "on": "On",
+                "blocked": "Blocked",
+                "off": "Off",
+                "back": "Back",
+                "about": "You'll be notified about:",
+                "benefit1": "New connection requests",
+                "benefit2": "New boosts — achievements, credentials, and badges.",
+                "working": "Working...",
+                "openSet": "Open Settings",
+                "openSys": "Open System Settings"
             }
         },
         "privacy": {
@@ -1706,7 +1828,11 @@
         "unfinished": "Unfinished",
         "untitledSession": "Untitled Session",
         "browseTopicsPlaceholder": "Browse topics...",
-        "personalizeMyAi": "Personalize My AI"
+        "personalizeMyAi": "Personalize My AI",
+        "noSessionsForTopicBody": "You don't have any sessions for \"{{topic}}\" yet. Start a new one to begin chatting about this topic.",
+        "completedOn": "<0>Completed</0> on {{date}}",
+        "topicLabel": "Topic",
+        "appLabel": "App"
     },
     "pathways": {
         "addSkill": "Add Skill",
@@ -1747,28 +1873,30 @@
     },
     "claim": {
         "didAuth": {
-            "title": "You've Been Sent a Credential!",
-            "subtitle": "Someone wants to issue you a verifiable credential",
+            "title": "You've been sent a credential",
+            "subtitle": "Confirm your identity to receive it",
             "ready": "Ready to claim it?",
-            "intro": "To receive this credential, you'll need to confirm your identity. This lets the issuer securely deliver it to your wallet.",
+            "intro": "To receive this credential, you'll need to confirm your identity. This lets the sender securely deliver it to your account.",
             "whatHappens": "What happens when you continue:",
-            "step1": "Your wallet confirms your identity to the issuer",
-            "step2": "The credential is securely delivered to your wallet",
-            "step3": "You own and control this credential forever",
-            "privacy": "Your identity is only shared with the issuer to complete this exchange. You're always in control of your data.",
+            "step1": "We confirm it's really you",
+            "step2": "Your credential arrives safely",
+            "step3": "It's yours to keep, forever",
+            "privacy": "Your identity is only shared to complete this exchange. You're always in control of your data.",
             "connecting": "Connecting...",
-            "claimButton": "Claim My Credential",
+            "claimButton": "Claim my credential",
             "decline": "No thanks, take me home",
             "loginRequired": "Please log in to continue."
         },
         "initiate": {
             "heading": "You've been sent a request",
-            "description": "Click the button below to begin the exchange process.",
-            "begin": "Begin"
+            "description": "Click the button below to begin the exchange process and see what was sent to you.",
+            "begin": "Begin",
+            "subtitle": "A credential exchange is ready"
         },
         "redirect": {
-            "heading": "Redirect Required",
-            "description": "To continue, you need to complete a step on an external website."
+            "heading": "Redirect required",
+            "description": "To continue, you need to complete a step on an external website.",
+            "subtitle": "Complete the next step"
         },
         "claiming": "Claiming...",
         "claimingCredential": "Claiming Credential",
@@ -1831,6 +1959,33 @@
                 "invalidVc": "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.",
                 "unknownFormat": "We couldn't make sense of that. Paste a claim link or upload a QR code image."
             }
+        },
+        "accept": {
+            "success": "Successfully claimed {{count}} credential(s)!",
+            "exists": "You have already claimed this credential.",
+            "failed": "Oops, we couldn't claim the credential(s).",
+            "readyCount": "{{count}} credentials ready to claim",
+            "tapHint": "Tap each credential to select or deselect it. Only selected credentials will be added to your account.",
+            "selCount": {
+                "one": "{{selected}} of {{total}} credential selected",
+                "other": "{{selected}} of {{total}} credentials selected"
+            },
+            "selectOne": "Select at least one to continue",
+            "willAdd": "These will be added to your account",
+            "deselAll": "Deselect all",
+            "selAll": "Select all",
+            "noneTitle": "No credentials found",
+            "noneSub": "This link doesn't contain any credentials",
+            "noneDesc": "The credential link you followed doesn't have any credentials to claim. This could happen if:",
+            "reason1": "The credential has already been claimed",
+            "reason2": "The link has expired",
+            "reason3": "The sender removed the credential",
+            "whatToDo": "What to do",
+            "noneHelp": "Contact the person or organization that sent you this link to request a new one.",
+            "goHome": "Go to home",
+            "support": "Contact support",
+            "claimed": "Claimed",
+            "claiming": "Claiming Credential(s)..."
         }
     },
     "chapi": {
@@ -1840,7 +1995,9 @@
         "p2": "Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.",
         "p3": "It allows your digital wallet to send or receive Verifiable Credentials from an independent third-party verifier or issuer in a way that establishes trust and preserves privacy.",
         "readMore": "Read More",
-        "connectHandler": "Connect Handler"
+        "connectHandler": "Connect Handler",
+        "connected": "Credential handler connected",
+        "connFail": "Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again."
     },
     "legal": {
         "connectionsEncrypted": "All connections are encrypted.",
@@ -2226,7 +2383,7 @@
         },
         "issuing": "Issuing Boost",
         "wizard": {
-            "title": "AI Boost Wizard",
+            "title": "AI Badge Wizard",
             "subtextSelf": "You can issue yourself boosts to tell your story. Your skills are currencies for your future.",
             "subtextSomeone": "Issue boosts to people you know.",
             "promptDescription": "Use simple words to describe why you admire someone, what they accomplished, why they are great, etc.",
@@ -2250,7 +2407,8 @@
                 "Finalizing everything now...",
                 "AI is crafting your proof...",
                 "Almost there..."
-            ]
+            ],
+            "generatingDetails": "Generating boost details..."
         },
         "template": {
             "custom": "Custom",
@@ -2259,7 +2417,8 @@
             "noBoosts": "No Boosts yet!",
             "newTemplate": "New Template",
             "brandTemplate": "{{brand}} Template",
-            "boostTypePlaceholder": "Boost type..."
+            "boostTypePlaceholder": "Boost type...",
+            "noneYet": "No {{type}} yet!"
         },
         "newBoost": {
             "study": "New Study",
@@ -2543,7 +2702,18 @@
         "yourMarketComparison": "Your Market Comparison",
         "shareChildInsights": "Share <0>{{child}}</0>'s insights with <1>{{teacher}}</1>",
         "successfullyShared": "You've successfully shared insights with {{name}}",
-        "approveDescription": "If you approve, your teacher will be able to see your Top Skills, Learning Snapshots, Suggested Pathways. They will also be able to send learning pathway suggestions to you."
+        "approveDescription": "If you approve, your teacher will be able to see your Top Skills, Learning Snapshots, Suggested Pathways. They will also be able to send learning pathway suggestions to you.",
+        "regenerate": "Regenerate",
+        "regenLoad": "Regenerating...",
+        "sort": {
+            "az": "A-Z",
+            "recentlyAdded": "Recently Added"
+        },
+        "filter": {
+            "all": "All",
+            "pending": "Pending",
+            "accepted": "Accepted"
+        }
     },
     "aiPathways": {
         "searchSkillGoalJob": "Search by skill, goal, or job...",
@@ -2699,7 +2869,9 @@
             "viewLess": "View Less",
             "viewAll": "View All",
             "didntFind": "Didn't find what you're looking for?",
-            "suggestionThankYou": "Thank you for your suggestion!"
+            "suggestionThankYou": "Thank you for your suggestion!",
+            "prev": "Previous",
+            "next": "Next"
         },
         "adminPanel": {
             "createFramework": "Create Framework",
@@ -3131,7 +3303,7 @@
         "revoking": "Revoking...",
         "confirmRevoke": "Yes, Revoke Access",
         "disableAiRevoke": "Disable AI & Revoke",
-        "appDetails": "App Details",
+        "appDetails": "App details",
         "dataAccessPermissions": "Data Access Permissions",
         "opening": "Opening...",
         "openApp": "Open App",
@@ -3142,7 +3314,23 @@
         "readAccess": "Read Access",
         "noReadPermissions": "No read permissions granted",
         "writeAccess": "Write Access",
-        "noWritePermissions": "No write permissions granted"
+        "noWritePermissions": "No write permissions granted",
+        "loadingCenter": "Loading your privacy center...",
+        "centerFooter": "You can change any of this anytime. Turning something off takes effect right away.",
+        "activityFeed": "Activity Feed",
+        "loadingActivityData": "Loading activity data...",
+        "noActivityYet": "No activity data yet",
+        "noActivitySubtitle": "Activity from this app will appear here when it becomes available.",
+        "activityCount": "Showing {{count}} activities from this app",
+        "editAccess": "Edit access",
+        "dataAccess": "Data access",
+        "connecting": "Connecting...",
+        "disconnecting": "Disconnecting...",
+        "connected": "Connected",
+        "disconnected": "Successfully Disconnected",
+        "aiConsentWarning": "AI is on, but consent to the LearnCard AI contract is missing.",
+        "tryAgain": "Try again",
+        "retrying": "Retrying…"
     },
     "recoveryPrompt": {
         "title": "Recover Your Progress",
@@ -3275,7 +3463,13 @@
             "statSkills": "{{count}} skills",
             "statContact": "{{count}} contact",
             "statContacts": "{{count}} contacts",
-            "overflowSkills": "+{{count}} more"
+            "overflowSkills": "+{{count}} more",
+            "greetMorn": "Good morning,",
+            "greetAft": "Good afternoon,",
+            "greetEve": "Good evening,",
+            "welcome": "Welcome",
+            "alertOne": "You have {{count}} unread alert. Open alerts",
+            "alertMany": "You have {{count}} unread alerts. Open alerts"
         },
         "tips": {
             "scanQrTitle": "Scan a QR code",
@@ -3410,6 +3604,89 @@
         },
         "appLaunch": {
             "error": "Couldn't open this app. Please try again."
+        },
+        "roleSwitcher": {
+            "iconAlt": "{{role}} icon",
+            "roleAria": "Role: {{role}}",
+            "switchAria": "Switch role — current: {{role}}"
+        }
+    },
+    "notifications": {
+        "contract": "your contract",
+        "loadErr": "Unable to load activity",
+        "updates": "Updates",
+        "credShared": "Credentials shared",
+        "firstAct": "First activity",
+        "sharedWith": "Shared with {{name}}",
+        "sharedCred": "Shared credentials with {{name}}",
+        "updateCnt": "{{count}} updates",
+        "latest": "Latest {{date}}"
+    },
+    "boostAFriend": {
+        "yourBadge": "Your Badge",
+        "page": {
+            "noRecip": "Please add at least one recipient.",
+            "descDflt": "A social badge for being a {{title}}",
+            "saveErr": "Badge was issued, but it could not be saved to your Passport.",
+            "copyFail": "Failed to copy link",
+            "shareTtl": "Claim your badge!",
+            "shareTxt": "I sent you a {{badge}} badge!",
+            "qrSaved": "QR code saved to Photos.",
+            "qrFail": "Failed to download QR code.",
+            "sendTo": "Send to",
+            "whoGets": "Who gets this badge?",
+            "creating": "Creating link...",
+            "createLnk": "Create Link",
+            "sendBadge": "Send Badge",
+            "linkReady": "Link ready!",
+            "claimAny": "Anyone with this link or QR code can claim it.",
+            "copied": "Copied",
+            "copyLink": "Copy link",
+            "dlQr": "Download QR",
+            "another": "Boost Another",
+            "added": "Added to your Passport!",
+            "sent": "Badge sent!",
+            "findBadge": "You'll find it in your badges.",
+            "sentTo": "Sent to {{recipients}}"
+        },
+        "pick": {
+            "moreBadge": "More Badges",
+            "title": "Pick a Badge",
+            "subtitle": "Send a fun badge to a friend to show appreciation.",
+            "search": "Search badges...",
+            "surprise": "Surprise me",
+            "noBadges": "No badges found."
+        },
+        "person": {
+            "subtitle": "Add a note and pick a color.",
+            "name": "Badge name",
+            "namePlace": "e.g. Trailblazer",
+            "subtype": "Subtype",
+            "subDesc": "A short label for this kind of badge.",
+            "image": "Badge image (optional)",
+            "uploadAria": "Upload badge image",
+            "change": "Change image",
+            "uploadImg": "Upload image",
+            "fileTypes": "PNG, JPG, or GIF.",
+            "vibe": "Vibe Color",
+            "colorAria": "Select color {{color}}",
+            "note": "Add a note (optional)",
+            "notePlace": "You're awesome because..."
+        },
+        "recip": {
+            "justMe": "Just me",
+            "shareLnk": "Share link",
+            "rmRecip": "Remove recipient",
+            "search": "Search people...",
+            "sendTo": "Send to {{query}}",
+            "emailHint": "They'll get an email to claim it",
+            "noResults": "No results found. Enter a valid email to send an invite.",
+            "hint": "Search for someone by name, @username, or email.",
+            "selfDesc": "This badge will be added directly to your own Passport.",
+            "linkDesc": "Anyone with the link can claim this badge.",
+            "expires": "Expires (optional)",
+            "maxClaims": "Max claims (optional)",
+            "unlimited": "Unlimited"
         }
     }
 }

@@ -25,6 +25,12 @@ export type ThemeCategory = z.infer<typeof ThemeCategoriesSchema>;
 export const ThemeDefaultsSchema = z
     .object({
         viewMode: z.nativeEnum(ViewMode).describe('View Modes for Credential Lists'),
+        passportViewMode: z
+            .nativeEnum(ViewMode)
+            .describe('Default layout for the Passport overview page'),
+        credentialViewMode: z
+            .enum(['card', 'list'])
+            .describe('Default layout for individual wallet/category pages'),
         switcherIcon: z.string().describe('Theme Switcher Icon'),
         buildMyLCIcon: z.string().describe('Build My LearnCard Icon'),
         resumeBuilderIcon: z.string().describe('Resume Builder Icon'),
@@ -67,7 +73,10 @@ export const ThemeSchema = z
         displayName: z.string().describe('Display name for UI'),
         colors: ThemeColorsSchema.describe('Color mappings by category + launchPad'),
         icons: ThemeIconsSchema.describe('Icon mappings by category + launchPad'),
-        iconPalettes: z.record(z.string(), IconPaletteSchema).optional().describe('Per-category icon color palettes'),
+        iconPalettes: z
+            .record(z.string(), IconPaletteSchema)
+            .optional()
+            .describe('Per-category icon color palettes'),
         categories: z.array(ThemeCategoriesSchema).describe('Theme credential categories'),
         sideMenuRootLinks: z.array(SideMenuLinkSchema).describe('Theme side menu root links'),
         sideMenuSecondaryLinks: z

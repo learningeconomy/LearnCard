@@ -35,7 +35,11 @@ const stripPrebuiltSvgDuplicateExports = (): PluginOption => ({
 
 const config: StorybookConfig = {
     stories: ['../src/**/*.stories.@(ts|tsx)'],
-    addons: ['@storybook/addon-essentials', '@storybook/addon-themes'],
+    addons: [
+        '@storybook/addon-essentials',
+        '@storybook/addon-themes',
+        '@storybook/addon-interactions',
+    ],
     framework: {
         name: '@storybook/react-vite',
         options: {

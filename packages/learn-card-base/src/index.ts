@@ -81,6 +81,18 @@ export * from './hooks/useTermsTransactions';
 export * from './auth-coordinator';
 export * from './auth-providers';
 export * from './auth-adapters';
+
+// Auth Status - canonical race-safe auth-gate selector for all gating decisions
+export * from './auth-status/authStatus';
+export * from './auth-status/useAuthStatus';
+export * from './auth-status/useAuthGateState';
+
+// Offline resilience - connectivity model + boot-time deadline utility
+export * from './stores/connectivityStore';
+export * from './stores/walletModeStore';
+export * from './hooks/useConnectivity';
+export * from './helpers/withDeadline';
+export * from './helpers/networkFault';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
@@ -217,6 +229,7 @@ export * from './helpers/searchHelpers';
 export * from './helpers/urlHelpers';
 export * from './helpers/openAttachmentUrl';
 export * from './helpers/display.helpers';
+export * from './helpers/displayTags.helpers';
 export * from './helpers/youtube.helpers';
 export * from './helpers/vimeo.helpers';
 export * from './helpers/video.helpers';
@@ -247,6 +260,7 @@ export * from './react-query/mutations/mutation.helpers';
 export * from './react-query/queries/pins';
 export * from './react-query/mutations/pins';
 export * from './react-query/mutations/ai-passport';
+export * from './react-query/mutations/pruneConsentFlowDeletedCredentials';
 export * from './react-query/mutations/checklist';
 export * from './react-query/mutations/user-contact';
 export * from './react-query/mutations/firebase';

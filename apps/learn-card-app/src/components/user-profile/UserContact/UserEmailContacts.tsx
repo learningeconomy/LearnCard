@@ -102,8 +102,8 @@ export const UserEmailContacts: React.FC = () => {
     }, [contactMethods]);
 
     return (
-        <div className="w-full items-center justify-center flex flex-col pb-6 px-2">
-            <div className="w-full flex items-start justify-center flex-col gap-2">
+        <div className="w-full h-full flex flex-col px-2">
+            <div className="shrink-0 bg-white pt-2 pb-3">
                 <div className="w-full flex flex-col flex-1 items-center justify-between mb-2">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-start">
@@ -143,7 +143,9 @@ export const UserEmailContacts: React.FC = () => {
                         </p>
                     )}
                 </div>
+            </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto pb-6 flex flex-col gap-2">
                 {emails?.length > 0 ? (
                     emails.map(emailItem => (
                         <UserEmailContactItem

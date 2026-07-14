@@ -15,6 +15,7 @@ import { getWalletCategory } from './AchievementTypeSelectorModal';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -25,6 +26,7 @@ import {
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type ResumeType = {
     id: string;
@@ -52,6 +54,7 @@ export const CheckListUploadResume: React.FC = () => {
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
@@ -159,9 +162,11 @@ export const CheckListUploadResume: React.FC = () => {
                 const record = await wallet.index.LearnCloud.get({
                     category: UploadTypesEnum.Resume,
                 });
-                const recordUri = record?.[0]?.uri as string;
-                if (!recordUri) return;
-                await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteResume::error', error);

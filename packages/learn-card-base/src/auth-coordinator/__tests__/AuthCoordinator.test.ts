@@ -53,7 +53,9 @@ const createMockAuthProvider = (overrides?: Partial<AuthProvider>): AuthProvider
     ...overrides,
 });
 
-const createMockKeyDerivation = (overrides?: Partial<KeyDerivationStrategy>): KeyDerivationStrategy => ({
+const createMockKeyDerivation = (
+    overrides?: Partial<KeyDerivationStrategy>
+): KeyDerivationStrategy => ({
     name: 'mock-sss',
     hasLocalKey: vi.fn().mockResolvedValue(true),
     getLocalKey: vi.fn().mockResolvedValue('local-key-abc'),
@@ -141,7 +143,9 @@ describe('AuthCoordinator', () => {
         it('reaches ready with authSessionValid=false when auth check fails', async () => {
             const { coordinator } = setup({
                 authProvider: {
-                    getCurrentUser: vi.fn().mockRejectedValue(new AuthSessionError('No Firebase user', 'no_session')),
+                    getCurrentUser: vi
+                        .fn()
+                        .mockRejectedValue(new AuthSessionError('No Firebase user', 'no_session')),
                 },
                 config: {
                     getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
@@ -208,7 +212,12 @@ describe('AuthCoordinator', () => {
         it('transitions to needs_migration when strategy supports recovery but server has no record', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
+                    capabilities: {
+                        recovery: true,
+                        deviceLinking: false,
+                        localKeyPersistence: true,
+                        contactMethodUpgrade: false,
+                    },
                     fetchServerKeyStatus: vi.fn().mockResolvedValue({
                         exists: false,
                         needsMigration: false,
@@ -236,7 +245,12 @@ describe('AuthCoordinator', () => {
         it('transitions to needs_migration when server says needsMigration', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
+                    capabilities: {
+                        recovery: true,
+                        deviceLinking: false,
+                        localKeyPersistence: true,
+                        contactMethodUpgrade: false,
+                    },
                     fetchServerKeyStatus: vi.fn().mockResolvedValue({
                         ...defaultServerStatus,
                         needsMigration: true,
@@ -256,7 +270,12 @@ describe('AuthCoordinator', () => {
         it('proceeds to ready when server check fails (graceful fallback)', async () => {
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
+                    capabilities: {
+                        recovery: true,
+                        deviceLinking: false,
+                        localKeyPersistence: true,
+                        contactMethodUpgrade: false,
+                    },
                     fetchServerKeyStatus: vi.fn().mockRejectedValue(new Error('network error')),
                 },
                 config: {
@@ -275,7 +294,12 @@ describe('AuthCoordinator', () => {
 
             const { coordinator } = setup({
                 keyDerivation: {
-                    capabilities: { recovery: false, deviceLinking: false, localKeyPersistence: false, contactMethodUpgrade: false },
+                    capabilities: {
+                        recovery: false,
+                        deviceLinking: false,
+                        localKeyPersistence: false,
+                        contactMethodUpgrade: false,
+                    },
                     fetchServerKeyStatus,
                 },
                 config: {
@@ -298,7 +322,12 @@ describe('AuthCoordinator', () => {
                     getCurrentUser: vi.fn().mockResolvedValue(null),
                 },
                 keyDerivation: {
-                    capabilities: { recovery: true, deviceLinking: false, localKeyPersistence: true, contactMethodUpgrade: false },
+                    capabilities: {
+                        recovery: true,
+                        deviceLinking: false,
+                        localKeyPersistence: true,
+                        contactMethodUpgrade: false,
+                    },
                     fetchServerKeyStatus,
                 },
                 config: {
@@ -647,9 +676,25 @@ describe('AuthCoordinator', () => {
         it('goes to idle (not error) when AuthSessionError is thrown', async () => {
             const { coordinator } = setup({
                 authProvider: {
-                    getCurrentUser: vi.fn().mockRejectedValue(
-                        new AuthSessionError('No Firebase user', 'no_session')
-                    ),
+                    getCurrentUser: vi
+                        .fn()
+                        .mockRejectedValue(new AuthSessionError('No Firebase user', 'no_session')),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('idle');
+        });
+
+        it('goes to idle (not error) on a network failure (offline boot)', async () => {
+            const { coordinator } = setup({
+                authProvider: {
+                    getCurrentUser: vi
+                        .fn()
+                        .mockRejectedValue(
+                            new Error('Firebase: Error (auth/network-request-failed).')
+                        ),
                 },
             });
 
@@ -709,7 +754,13 @@ describe('AuthCoordinator', () => {
 
             expect(keyDerivation.splitKey).toHaveBeenCalledWith('new-private-key');
             expect(keyDerivation.storeLocalKey).toHaveBeenCalledWith('local-split');
-            expect(keyDerivation.storeAuthShare).toHaveBeenCalledWith('mock-token', 'firebase', 'remote-split', 'did:key:zNew', undefined);
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalledWith(
+                'mock-token',
+                'firebase',
+                'remote-split',
+                'did:key:zNew',
+                undefined
+            );
         });
 
         it('signs DID-Auth VP and passes it to storeAuthShare when signDidAuthVp is configured', async () => {
@@ -735,7 +786,11 @@ describe('AuthCoordinator', () => {
 
             expect(mockSignDidAuthVp).toHaveBeenCalledWith('new-pk');
             expect(keyDerivation.storeAuthShare).toHaveBeenCalledWith(
-                'mock-token', 'firebase', 'remote-split', 'did:key:zNew', 'mock-vp-jwt'
+                'mock-token',
+                'firebase',
+                'remote-split',
+                'did:key:zNew',
+                'mock-vp-jwt'
             );
         });
 
@@ -861,7 +916,11 @@ describe('AuthCoordinator', () => {
 
             expect(result.status).toBe('ready');
             expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
-            expect(keyDerivation.markMigrated).toHaveBeenCalledWith('mock-token', 'firebase', undefined);
+            expect(keyDerivation.markMigrated).toHaveBeenCalledWith(
+                'mock-token',
+                'firebase',
+                undefined
+            );
         });
 
         it('throws when called in wrong state', async () => {
@@ -878,18 +937,19 @@ describe('AuthCoordinator', () => {
     // -----------------------------------------------------------------------
 
     describe('setMigrationData()', () => {
-        const setupForMigration = () => setup({
-            keyDerivation: {
-                fetchServerKeyStatus: vi.fn().mockResolvedValue({
-                    exists: true,
-                    needsMigration: true,
-                    primaryDid: 'did:key:zOld',
-                    recoveryMethods: [],
-                    authShare: 'old-share',
-                    shareVersion: 1,
-                } satisfies ServerKeyStatus),
-            },
-        });
+        const setupForMigration = () =>
+            setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        exists: true,
+                        needsMigration: true,
+                        primaryDid: 'did:key:zOld',
+                        recoveryMethods: [],
+                        authShare: 'old-share',
+                        shareVersion: 1,
+                    } satisfies ServerKeyStatus),
+                },
+            });
 
         it('attaches data to the needs_migration state', async () => {
             const { coordinator, stateChanges } = setupForMigration();
@@ -962,7 +1022,9 @@ describe('AuthCoordinator', () => {
                         authShare: 'server-share',
                         shareVersion: 1,
                     } satisfies ServerKeyStatus),
-                    executeRecovery: vi.fn().mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' }),
+                    executeRecovery: vi
+                        .fn()
+                        .mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' }),
                 },
                 config: {
                     didFromPrivateKey: vi.fn().mockResolvedValue('did:key:z123'),
@@ -1015,16 +1077,23 @@ describe('AuthCoordinator', () => {
                         shareVersion: 1,
                     } satisfies ServerKeyStatus),
                     // Strategy now validates DID before rotating and throws on mismatch
-                    executeRecovery: vi.fn().mockRejectedValue(
-                        new Error('Recovery produced an incorrect key. The recovery key may be outdated. Please try a different recovery method.')
-                    ),
+                    executeRecovery: vi
+                        .fn()
+                        .mockRejectedValue(
+                            new Error(
+                                'Recovery produced an incorrect key. The recovery key may be outdated. Please try a different recovery method.'
+                            )
+                        ),
                 },
             });
 
             await s.coordinator.initialize();
             expect(s.coordinator.getState().status).toBe('needs_recovery');
 
-            const result = await s.coordinator.recover({ method: 'email', emailShare: 'stale-share' });
+            const result = await s.coordinator.recover({
+                method: 'email',
+                emailShare: 'stale-share',
+            });
 
             expect(result.status).toBe('error');
 
@@ -1047,13 +1116,18 @@ describe('AuthCoordinator', () => {
                         authShare: 'server-share',
                         shareVersion: 1,
                     } satisfies ServerKeyStatus),
-                    executeRecovery: vi.fn().mockRejectedValue(new Error('No auth share found on server')),
+                    executeRecovery: vi
+                        .fn()
+                        .mockRejectedValue(new Error('No auth share found on server')),
                 },
             });
 
             await s.coordinator.initialize();
 
-            const result = await s.coordinator.recover({ method: 'passkey', credentialId: 'bad-cred' });
+            const result = await s.coordinator.recover({
+                method: 'passkey',
+                credentialId: 'bad-cred',
+            });
 
             expect(result.status).toBe('error');
 
@@ -1131,7 +1205,8 @@ describe('AuthCoordinator', () => {
         it('re-initializes from error state', async () => {
             const { coordinator } = setup({
                 authProvider: {
-                    getCurrentUser: vi.fn()
+                    getCurrentUser: vi
+                        .fn()
                         // First call fails
                         .mockRejectedValueOnce(new Error('Network failure'))
                         // Second call succeeds
@@ -1170,7 +1245,8 @@ describe('AuthCoordinator', () => {
             const { coordinator } = setup({
                 authProvider: {
                     getIdToken,
-                    getCurrentUser: vi.fn()
+                    getCurrentUser: vi
+                        .fn()
                         .mockRejectedValueOnce(new Error('Transient failure'))
                         .mockResolvedValueOnce(mockUser),
                 },
@@ -1367,7 +1443,8 @@ describe('AuthCoordinator', () => {
             const { coordinator } = setup({
                 authProvider: {
                     refreshSession: vi.fn().mockResolvedValue(false),
-                    getIdToken: vi.fn()
+                    getIdToken: vi
+                        .fn()
                         .mockResolvedValueOnce('token-for-init') // used during initialize
                         .mockRejectedValue(new Error('Token expired')),
                 },
@@ -1399,7 +1476,8 @@ describe('AuthCoordinator', () => {
             const { coordinator } = setup({
                 authProvider: {
                     refreshSession: vi.fn().mockResolvedValue(true),
-                    getCurrentUser: vi.fn()
+                    getCurrentUser: vi
+                        .fn()
                         .mockResolvedValueOnce(mockUser) // during initialize
                         .mockResolvedValue(updatedUser), // during refresh
                 },

@@ -19,6 +19,7 @@ export type DashboardState = {
 
 export type ActionHandlers = {
     goToAddCredential: () => void;
+    openAddToPassport: () => void;
     openClaimLink: () => void;
     goToWallet: () => void;
     goToSkills: () => void;

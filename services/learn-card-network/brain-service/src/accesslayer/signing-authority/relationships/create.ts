@@ -1,4 +1,5 @@
-import { SigningAuthorityInstance, Profile } from '@models';
+import { SigningAuthorityInstance } from '@models';
+import { neogma } from '@instance';
 import { ProfileType } from 'types/profile';
 
 export const createUseSigningAuthorityRelationship = async (
@@ -8,12 +9,11 @@ export const createUseSigningAuthorityRelationship = async (
     did: string,
     isPrimary: boolean = false
 ): Promise<void> => {
-    await Profile.relateTo({
-        alias: 'usesSigningAuthority',
-        where: {
-            source: { profileId: user.profileId },
-            target: { endpoint: signingAuthority.endpoint },
-        },
-        properties: { name, did, isPrimary },
-    });
+    await neogma.queryRunner.run(
+        `MATCH (profile:Profile { profileId: $profileId })
+         MATCH (signingAuthority:SigningAuthority { endpoint: $endpoint })
+         MERGE (profile)-[rel:USES_SIGNING_AUTHORITY { name: $name, did: $did }]->(signingAuthority)
+         SET rel.isPrimary = $isPrimary`,
+        { profileId: user.profileId, endpoint: signingAuthority.endpoint, name, did, isPrimary }
+    );
 };

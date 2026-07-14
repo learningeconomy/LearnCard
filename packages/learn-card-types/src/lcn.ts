@@ -310,6 +310,7 @@ export const BoostValidator = z.object({
     name: z.string().optional(),
     type: z.string().optional(),
     category: z.string().optional(),
+    created: z.string().optional(),
     status: LCNBoostStatus.optional(),
     autoConnectRecipients: z.boolean().optional(),
     meta: z.record(z.string(), z.any()).optional(),

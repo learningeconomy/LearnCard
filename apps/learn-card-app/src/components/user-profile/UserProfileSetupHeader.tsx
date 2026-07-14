@@ -17,7 +17,7 @@ const UserProfileSetupHeader: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <div className="ion-no-border bg-white pt-5">
+        <div className="ion-no-border">
             {showNetworkSettings && (
                 <div className="w-full flex items-center justify-center">
                     {Capacitor?.isNativePlatform?.() && (

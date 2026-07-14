@@ -10,7 +10,7 @@ import {
     UserProfilePicture,
     useUpdateNotification,
 } from 'learn-card-base';
-import { NotificationTypeEnum, NotificationTypeStyles } from './types';
+import { NotificationTypeEnum, NotificationTypeStyles, notificationCardStyles } from './types';
 
 type NotificationConsentFlowCardProps = {
     notification: any;
@@ -64,16 +64,14 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
     return (
         <ErrorBoundary
             fallback={
-                <div
-                    className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]`}
-                >
+                <div className={notificationCardStyles.fallbackShell}>
                     Unable to load notification
                 </div>
             }
         >
             <div
                 onClick={handleReadStatus}
-                className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]`}
+                className={`${notificationCardStyles.shell} min-h-[120px]`}
             >
                 {!isRead && !isLoading && (
                     <div className="notification-count-mobile unread-indicator-dot" />
@@ -87,28 +85,30 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
                         />
                     </div>
 
-                    {isLoading && <div className="w-[78px] h-[78px] rounded-full bg-gray-50" />}
+                    {isLoading && (
+                        <div className="w-[78px] h-[78px] rounded-full bg-grayscale-50" />
+                    )}
                 </div>
 
                 <div className="flex flex-col justify-center items-start relative w-full">
                     <div className="text-left ml-3 flex flex-col gap-2 items-start justify-start w-full">
                         <h4
-                            className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
+                            className={`cursor-pointer ${notificationCardStyles.title}`}
                             data-testid="notification-title"
                         >
                             {capitalize(notification.message?.title)}
                         </h4>
-                        <p className="text-left text-sm flex flex-col text-grayscale-600 items-start justify-start w-full line-clamp-2">
+                        <p className={`${notificationCardStyles.body} w-full`}>
                             {notification.message?.body}
                         </p>
                         <p
-                            className={`font-bold p-0 leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text text-indigo-600`}
+                            className={`${notificationCardStyles.meta} text-indigo-600`}
                             data-testid="notification-type"
                         >
                             {typeText}{' '}
                             {transactionDate && (
                                 <span
-                                    className="text-[rgba(24,34,78,0.8)] normal-case font-normal text-[12px] notification-card-type-issue-date"
+                                    className={notificationCardStyles.date}
                                     data-testid="notification-cred-issue-date"
                                 >
                                     • {formattedDate}

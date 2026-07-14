@@ -173,12 +173,10 @@ const ResumePreviewUserInfo: React.FC<{
                 {documentSetup?.showQRCode && (
                     <div
                         className={`shrink-0 rounded-lg border border-grayscale-200 bg-white p-2 ${
-                            isMobile
-                                ? 'absolute right-4 top-4 z-10'
-                                : 'relative sm:static sm:z-auto'
+                            isMobile ? 'absolute right-4 top-4 z-10' : 'relative z-auto'
                         }`}
                     >
-                        <div className="absolute top-[-7px] right-[-7px]">
+                        <div className="absolute top-[-7px] right-[-7px] sm:top-[-7px] sm:right-[-7px]">
                             <TrustedIcon className="w-4 h-4" />
                         </div>
 

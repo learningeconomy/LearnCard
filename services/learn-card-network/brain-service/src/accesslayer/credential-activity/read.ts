@@ -193,6 +193,7 @@ export const getActivitiesForProfile = async (
                 ? {
                       profileId: recipient.profileId,
                       displayName: recipient.displayName,
+                      image: recipient.image,
                   }
                 : undefined,
             status: credStatus ?? undefined,
@@ -392,6 +393,7 @@ export const getActivityChain = async (
                 ? {
                       profileId: recipient.profileId,
                       displayName: recipient.displayName,
+                      image: recipient.image,
                   }
                 : undefined,
         };
@@ -455,6 +457,7 @@ export const getActivityById = async (
             ? {
                   profileId: recipient.profileId,
                   displayName: recipient.displayName,
+                  image: recipient.image,
               }
             : undefined,
     };

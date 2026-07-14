@@ -122,7 +122,10 @@ const BoostDescriptionInput: React.FC<BoostDescriptionInputProps> = ({
                     >
                         {m['boost.wizard.goBack']()}
                     </IonButton>
-                    <IonLoading isOpen={isLoading} message="Generating boost details..." />
+                    <IonLoading
+                        isOpen={isLoading}
+                        message={m['boost.wizard.generatingDetails']()}
+                    />
                     <IonToast
                         isOpen={showErrorToast}
                         onDidDismiss={() => setShowErrorToast(false)}

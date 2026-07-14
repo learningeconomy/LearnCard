@@ -12,10 +12,10 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 import { isPlatformWeb } from 'learn-card-base/helpers/platformHelpers';
 import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
-import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { QueryClient } from '@tanstack/react-query';
 import { getGuardianApprovalVP } from 'learn-card-base/stores/guardianApprovalStore';
+import { PRODUCTION_NETWORK_URL } from './networkHelpers';
 
 let LEARN_CARDS: Record<string, BespokeLearnCard> = {};
 
@@ -34,23 +34,40 @@ export const clearLearnCardCache = () => {
 export const getSigningLearnCard = async (seed: string) => {
     if (SIGNING_LEARN_CARDS[seed]) return SIGNING_LEARN_CARDS[seed];
 
-    const lc = await initLearnCard({ seed, allowRemoteContexts: true });
+    // Pass the locally-bundled DIDKit WASM so did:key derivation works offline.
+    // Without it DIDKit fetches its WASM from the network and lc.id.did() throws
+    // on a cold offline start — breaking the private-key-first boot path.
+    const lc = await initLearnCard({ seed, didkit, allowRemoteContexts: true });
 
     SIGNING_LEARN_CARDS[seed] = lc;
 
     return lc;
 };
 
+export interface GetBespokeLearnCardOptions {
+    /**
+     * Build a network-free wallet for offline use. Skips the `network`/`cloud`
+     * connection in `initLearnCard` (which is what depends on connectivity),
+     * but keeps the full plugin stack so the returned wallet is still a valid
+     * `BespokeLearnCard`: local planes (SQLite read/store/index/cache, signing,
+     * verification, render) work, and network-only methods degrade gracefully.
+     * Previously-viewed credentials remain readable from the SQLite cache plane.
+     */
+    offline?: boolean;
+}
+
 export const getBespokeLearnCard = async (
     seed: string,
-    didWeb?: string
+    didWeb?: string,
+    options?: GetBespokeLearnCardOptions
 ): Promise<BespokeLearnCard> => {
-    const cacheKey = [seed, didWeb].toString();
+    const offline = options?.offline ?? false;
+    const cacheKey = [seed, didWeb, offline ? 'offline' : 'full'].toString();
 
     if (LEARN_CARDS[cacheKey]) return LEARN_CARDS[cacheKey];
 
     let network: string | boolean = networkStore.get.networkUrl();
-    if (!network || network === LEARNCARD_NETWORK_URL) network = true;
+    if (!network || network === PRODUCTION_NETWORK_URL) network = true;
 
     const cloudUrl = networkStore.get.cloudUrl();
 
@@ -59,15 +76,25 @@ export const getBespokeLearnCard = async (
     const tenantId = networkStore.get.tenantId();
     const extraHeaders = tenantId ? { 'X-Tenant-Id': tenantId } : undefined;
 
-    const networkLearnCard = await initLearnCard({
-        seed,
-        network: network,
-        cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
-        allowRemoteContexts: true,
-        guardianApprovalGetter: getGuardianApprovalVP,
-        extraHeaders,
-        ...(didWeb && { didWeb }),
-    });
+    const networkLearnCard = offline
+        ? await initLearnCard({
+              seed,
+              didkit,
+              allowRemoteContexts: true,
+              guardianApprovalGetter: getGuardianApprovalVP,
+              extraHeaders,
+              ...(didWeb && { didWeb }),
+          })
+        : await initLearnCard({
+              seed,
+              didkit,
+              network: network,
+              cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
+              allowRemoteContexts: true,
+              guardianApprovalGetter: getGuardianApprovalVP,
+              extraHeaders,
+              ...(didWeb && { didWeb }),
+          });
 
     const lcaLearnCard = await networkLearnCard.addPlugin(
         await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb), extraHeaders)

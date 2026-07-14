@@ -80,8 +80,15 @@ const useBoostMenu = ({
             onDelete?.();
         } else if (record?.id && record.uri) {
             log.info('deleting record', record);
-            await deleteCredentialRecord(record as LCR);
-            onDelete?.();
+            await deleteCredentialRecord({
+                ...(record as LCR),
+                deferPostDeleteCleanup: true,
+                onLocalDeleteComplete: () => {
+                    closeModal();
+                    onCloseModal?.();
+                    onDelete?.();
+                },
+            });
         } else {
             presentToast(m['toasts.boost.deleteCredentialError'](), {
                 type: ToastTypeEnum.Error,

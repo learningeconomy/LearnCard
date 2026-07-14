@@ -14,21 +14,39 @@ import {
 } from '../svgs/attachmentTypes/attachmentIcons';
 import { BoostMediaOptionsEnum } from 'learn-card-base/components/boost/boost';
 
-export enum DisplayTypeEnum {
-    Badge = 'badge',
-    Certificate = 'certificate',
-    ID = 'id',
-    Course = 'course',
-    Award = 'award',
-    Media = 'media',
-}
+export { DisplayTypeEnum, PreviewTypeEnum } from './display-types';
+import { DisplayTypeEnum } from './display-types';
 
-export enum PreviewTypeEnum {
-    Default = 'default',
-    Media = 'media',
-}
+/**
+ * Map from achievementType directly to its semantically-obvious display type.
+ * These override the category-based fallback so that e.g. `Award` renders
+ * with an award-specific visual even when its category is `Achievement`.
+ */
+const ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE: Record<string, DisplayTypeEnum> = {
+    Badge: DisplayTypeEnum.Badge,
+    Award: DisplayTypeEnum.Award,
+    Course: DisplayTypeEnum.Course,
+    Certificate: DisplayTypeEnum.Certificate,
+    ApprenticeshipCertificate: DisplayTypeEnum.Certificate,
+    JourneymanCertificate: DisplayTypeEnum.Certificate,
+    MasterCertificate: DisplayTypeEnum.Certificate,
+};
 
-export const getDefaultDisplayType = (category: string): DisplayTypeEnum => {
+export const getDefaultDisplayType = (
+    category: string,
+    achievementType?: string,
+    displayTypeHint?: DisplayTypeEnum
+): DisplayTypeEnum => {
+    if (displayTypeHint) return displayTypeHint;
+
+    if (achievementType) {
+        const directMatch =
+            ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE[
+                achievementType as keyof typeof ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE
+            ];
+        if (directMatch) return directMatch;
+    }
+
     if (category === CredentialCategoryEnum.accomplishment) {
         return DisplayTypeEnum.Media;
     }

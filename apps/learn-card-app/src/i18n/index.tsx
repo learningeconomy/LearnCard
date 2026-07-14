@@ -95,8 +95,11 @@ function resolveInitialLocale(): SupportedLanguage {
  * subsequent launches.
  */
 export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [locale, setLocaleState] = useState<SupportedLanguage>(resolveInitialLocale);
-
+    const [locale, setLocaleState] = useState<SupportedLanguage>(() => {
+        const initial = resolveInitialLocale();
+        paraglideSetLocale(initial, { reload: false });
+        return initial;
+    });
     const changeLocale = useCallback((lang: SupportedLanguage) => {
         // 1. Persist to localStorage
         if (typeof localStorage !== 'undefined') {
