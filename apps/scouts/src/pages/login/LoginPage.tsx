@@ -61,6 +61,7 @@ const LoginPage: React.FC = () => {
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
     const authConfig = getAuthConfig();
+    const lcnRedirectTo = redirectStore.get.lcnRedirect();
 
     useEffect(() => {
         // handles redirecting a user to an LC network specific action / page
@@ -76,8 +77,9 @@ const LoginPage: React.FC = () => {
                     if (authStore?.get?.typeOfLogin() === SocialLoginTypes?.scoutsSSO) {
                         currentUserStore.set.currentUser({
                             ...currentUser,
-                            profileImage: currentUserLCProfile?.image,
-                        });
+                            profileImage:
+                                currentUserLCProfile?.image ?? currentUser?.profileImage ?? '',
+                        } as any);
                     }
 
                     history.push(redirect);
@@ -91,7 +93,6 @@ const LoginPage: React.FC = () => {
 
         if (currentUser || isLoggedIn) {
             const redirectTo = redirectStore.get.authRedirect() || query.get('redirectTo');
-            const lcnRedirectTo = redirectStore.get.lcnRedirect();
             // const isChapiInteraction = chapiStore.get.isChapiInteraction();
 
             if (redirectTo) {

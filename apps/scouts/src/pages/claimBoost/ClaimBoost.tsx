@@ -151,6 +151,12 @@ export const ClaimBoostModal: React.FC<{
 
     const handleRedirectTo = () => {
         const redirectTo = `/claim/boost?boostUri=${boostUri}&challenge=${challenge}`;
+        console.log('[Scouts route trace] ClaimBoost logged-out redirect handler invoked', {
+            pathname: history.location.pathname,
+            search: history.location.search,
+            redirectTo,
+            isLoggedIn,
+        });
         redirectStore.set.lcnRedirect(redirectTo);
         dismissClaimModal?.();
         closeLoggedOutModal();
@@ -310,7 +316,7 @@ export const ClaimBoostModal: React.FC<{
         actionButtonText = 'Accept';
     }
 
-    const isTroopIdClaim = isTroopCredential(boost);
+    const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
     const boostExists = !!boost && !loading;
 
@@ -394,16 +400,32 @@ export const ClaimBoostModal: React.FC<{
 };
 
 const ClaimBoost: React.FC = () => {
+    const history = useHistory();
+    const query = usePathQuery();
+    const isLoggedIn = useIsLoggedIn();
+
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
 
-    const query = usePathQuery();
     const uriParam = query.get('boostUri') || undefined;
     const challengeParam = query.get('challenge') || undefined;
+    const redirectTo = `${history.location.pathname}${history.location.search}`;
 
     useEffect(() => {
+        console.log('[Scouts route trace] ClaimBoost mounted / redirect store set', {
+            pathname: history.location.pathname,
+            search: history.location.search,
+            redirectTo,
+            isLoggedIn,
+        });
+        redirectStore.set.lcnRedirect(redirectTo);
+    }, [redirectTo]);
+
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
         // opens 2 modals for some reason, but looks fine...
         newModal(
             <ClaimBoostModal
@@ -414,7 +436,31 @@ const ClaimBoost: React.FC = () => {
         );
         // only open once per route load
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isLoggedIn, uriParam, challengeParam]);
+
+    if (!isLoggedIn) {
+        console.log('[Scouts route trace] ClaimBoost rendering logged-out prompt', {
+            pathname: history.location.pathname,
+            search: history.location.search,
+            isLoggedIn,
+        });
+
+        return (
+            <ClaimBoostLoggedOutPrompt
+                handleCloseModal={() => history.push('/')}
+                handleRedirectTo={() => {
+                    console.log('[Scouts route trace] ClaimBoost prompt button callback invoked', {
+                        pathname: history.location.pathname,
+                        search: history.location.search,
+                    });
+                    redirectStore.set.lcnRedirect(
+                        `${history.location.pathname}${history.location.search}`
+                    );
+                    history.push('/login');
+                }}
+            />
+        );
+    }
 
     return <IonPage className="bg-grayscale-100" />;
 };
