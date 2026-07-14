@@ -30,9 +30,9 @@ import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivac
 import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
-import { buildPermissionText } from './consentSummary';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
+import { buildPermissionText } from './consentSummary';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
@@ -98,7 +98,7 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
 
                     <p className="text-sm text-grayscale-600 mt-2 leading-relaxed">
                         {isLearnCardAiContract ? (
-                            m['dataSharing.revokeConfirm.aiBody']()
+                            <>{m['dataSharing.revokeConfirm.aiBody']()}</>
                         ) : (
                             <TransP
                                 m={m['dataSharing.revokeConfirm.body']}
@@ -118,8 +118,8 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                         {isRevoking || isWorking
                             ? m['dataSharing.revoking']()
                             : isLearnCardAiContract
-                            ? m['dataSharing.disableAiRevoke']()
-                            : m['dataSharing.confirmRevoke']()}
+                              ? m['dataSharing.disableAiRevoke']()
+                              : m['dataSharing.confirmRevoke']()}
                     </button>
 
                     <button
@@ -127,7 +127,7 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                         disabled={isRevoking || isWorking}
                         className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium disabled:opacity-60"
                     >
-                        {m['common.cancel']()}
+                        Cancel
                     </button>
                 </div>
             </div>
@@ -186,7 +186,8 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                 </div>
 
                 <p className="text-sm text-grayscale-600">
-                    {m['dataSharing.subtitle']({ brand: brandingConfig?.name ?? '' })}
+                    Apps and services you've given permission to access your {brandingConfig?.name}{' '}
+                    data.
                 </p>
             </div>
 
@@ -227,19 +228,31 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
     );
 };
 
-type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
+export type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
 
 type ConsentedContractRowProps = {
     contract: ConsentedContract;
     onUpdate?: () => Promise<unknown> | void;
 };
 
-const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, onUpdate }) => {
+export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
+    contract,
+    onUpdate,
+}) => {
     const { newModal, closeModal } = useModal();
     // Contract details are already in the record
     const contractDetails = contract.contract;
 
     const handleOpenDetails = () => {
+        void (async () => {
+            try {
+                const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+                await Haptics.impact({ style: ImpactStyle.Light });
+            } catch (e) {
+                log.debug('haptics unavailable', e);
+            }
+        })();
+
         newModal(
             <ContractDetailView contract={contract} onUpdate={onUpdate} />,
             {
@@ -258,7 +271,7 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
     return (
         <button
             onClick={handleOpenDetails}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-grayscale-10 transition-colors text-left w-full"
+            className="flex items-center gap-3 p-3 min-h-[64px] rounded-xl hover:bg-grayscale-10 transition-all duration-100 motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-left w-full"
         >
             {image ? (
                 <img src={image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
@@ -283,16 +296,22 @@ type ContractDetailViewProps = {
     onUpdate?: () => Promise<unknown> | void;
 };
 
-const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
+export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
     const contractDetails = contract.contract;
     const { closeModal, newModal } = useModal();
     const { initWallet } = useWallet();
     const { handleAiToggle } = useAiConsentToggle();
     const { name: brandName } = useBrandingConfig();
     const contractUri = contractDetails?.uri ?? contract.uri;
+    const [step, setStep] = useState<'details' | 'edit' | 'activity'>('details');
 
     const handleBack = () => {
-        void onUpdate?.(); // Refetch to show updated terms
+        if (step !== 'details') {
+            void onUpdate?.();
+            setStep('details');
+            return;
+        }
+        void onUpdate?.();
         closeModal();
     };
 
@@ -305,41 +324,6 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
     const name = contractDetails?.name ?? m['dataSharing.unknownApp']();
     const image = contractDetails?.image;
     const redirectUrl = contractDetails?.redirectUrl?.trim();
-
-    const handleEditPermissions = () => {
-        if (!contractDetails || !contract.terms) return;
-
-        newModal(
-            <ConsentFlowPrivacyAndData
-                contractDetails={contractDetails}
-                terms={contract.terms}
-                setTerms={() => {}} // Not used for direct updates - uses updateTerms internally
-                isPostConsent={true}
-                termsUri={contract.uri}
-                ownerDid={contractDetails.owner?.did}
-            />,
-            {
-                sectionClassName:
-                    '!bg-transparent !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
-            },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
-    };
-
-    const handleViewDataFeed = () => {
-        newModal(
-            <XApiDataFeedModal
-                contractUri={contract.uri}
-                contractName={name}
-                onBack={closeModal}
-            />,
-            {
-                sectionClassName:
-                    '!p-0 !shadow-none !max-w-[450px] !h-[80vh] !max-h-[80vh] !overflow-hidden',
-            },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
-    };
 
     const handleOpenApp = async () => {
         if (!redirectUrl) return;
@@ -422,84 +406,125 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
         );
     };
 
+    const stepTitle =
+        step === 'edit'
+            ? m['dataSharing.editAccess']()
+            : step === 'activity'
+              ? m['dataSharing.activityFeed']()
+              : m['dataSharing.appDetails']();
+
     return (
-        <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] h-[80vh] overflow-hidden flex flex-col min-h-0">
-            <div className="flex items-center gap-3 mb-4">
-                <button onClick={handleBack} className="p-1 -ml-1">
+        <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
+            <div className="shrink-0 flex items-center gap-3 px-6 pt-6 pb-4">
+                <button
+                    onClick={handleBack}
+                    aria-label={m['common.back']()}
+                    className="p-1 -ml-1 rounded-full hover:bg-grayscale-10 transition-colors"
+                >
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
                 </button>
 
-                <span className="text-lg font-semibold text-grayscale-900">
-                    {m['dataSharing.appDetails']()}
-                </span>
-            </div>
-
-            <div className="flex items-center gap-4 mb-6">
                 {image ? (
-                    <img src={image} alt={name} className="w-16 h-16 rounded-xl object-cover" />
+                    <img src={image} alt={name} className="w-8 h-8 rounded-lg object-cover" />
                 ) : (
-                    <div className="w-16 h-16 rounded-xl bg-grayscale-100 flex items-center justify-center">
-                        <Shield className="w-8 h-8 text-grayscale-400" />
+                    <div className="w-8 h-8 rounded-lg bg-grayscale-100 flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-grayscale-400" />
                     </div>
                 )}
 
-                <div>
-                    <h3 className="text-lg font-semibold text-grayscale-900">{name}</h3>
-
-                    {contractDetails?.description && (
-                        <p className="text-sm text-grayscale-600 line-clamp-2">
-                            {contractDetails.description}
-                        </p>
-                    )}
+                <div className="min-w-0">
+                    <h2 className="text-lg font-semibold text-grayscale-900 truncate leading-tight">
+                        {stepTitle}
+                    </h2>
+                    <p className="text-xs text-grayscale-500 truncate">{name}</p>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto mb-4">
-                <h4 className="text-sm font-semibold text-grayscale-700 mb-2">
-                    {m['dataSharing.dataAccessPermissions']()}
-                </h4>
+            {step === 'details' && (
+                <>
+                    <div className="flex-1 min-h-0 overflow-y-auto px-6">
+                        {contractDetails?.description && (
+                            <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
+                                {contractDetails.description}
+                            </p>
+                        )}
 
-                <div className="bg-grayscale-50 rounded-xl p-4">
-                    <PermissionsList contract={contract} />
+                        <h4 className="text-xs font-semibold tracking-wider text-grayscale-500 uppercase mb-2">
+                            {m['dataSharing.dataAccess']()}
+                        </h4>
+
+                        <div className="bg-grayscale-50 rounded-xl p-4">
+                            <PermissionsList contract={contract} />
+                        </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col gap-2.5 px-6 py-5 border-t border-grayscale-100">
+                        {redirectUrl && (
+                            <button
+                                onClick={handleOpenApp}
+                                disabled={isOpening}
+                                className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                {isOpening
+                                    ? m['dataSharing.opening']()
+                                    : m['dataSharing.openApp']()}
+                            </button>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button
+                                onClick={() => setStep('edit')}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Settings className="w-4 h-4" />
+                                {m['dataSharing.editAccess']()}
+                            </button>
+
+                            <button
+                                onClick={() => setStep('activity')}
+                                className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Activity className="w-4 h-4" />
+                                {m['dataSharing.activityFeed']()}
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={openRevokeConfirmation}
+                            className="w-full py-3 px-4 rounded-[20px] text-red-600 font-medium text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            {m['dataSharing.revokeAccess']()}
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {step === 'edit' && contractDetails && contract.terms && (
+                <div className="relative flex-1 min-h-0">
+                    <ConsentFlowPrivacyAndData
+                        contractDetails={contractDetails}
+                        terms={contract.terms}
+                        setTerms={() => {}}
+                        isPostConsent
+                        embedded
+                        termsUri={contract.uri}
+                        ownerDid={contractDetails.owner?.did}
+                        onSaved={() => {
+                            void onUpdate?.();
+                            setStep('details');
+                        }}
+                        onCancel={() => setStep('details')}
+                    />
                 </div>
-            </div>
+            )}
 
-            <div className="flex flex-col gap-2">
-                {redirectUrl && (
-                    <button
-                        onClick={handleOpenApp}
-                        disabled={isOpening}
-                        className="w-full py-3 bg-emerald-600 text-white rounded-full font-medium flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                        {isOpening ? m['dataSharing.opening']() : m['dataSharing.openApp']()}
-                    </button>
-                )}
-
-                <button
-                    onClick={handleViewDataFeed}
-                    className="w-full py-3 bg-violet-100 text-violet-700 rounded-full font-medium flex items-center justify-center gap-2"
-                >
-                    <Activity className="w-4 h-4" />
-                    {m['dataSharing.xapiDataFeed']()}
-                </button>
-
-                <button
-                    onClick={handleEditPermissions}
-                    className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium flex items-center justify-center gap-2"
-                >
-                    <Settings className="w-4 h-4" />
-                    {m['dataSharing.editPermissions']()}
-                </button>
-
-                <button
-                    onClick={openRevokeConfirmation}
-                    className="w-full py-3 bg-red-50 text-red-600 rounded-full font-medium flex items-center justify-center gap-2"
-                >
-                    <Trash2 className="w-4 h-4" />
-                    {m['dataSharing.revokeAccess']()}
-                </button>
-            </div>
+            {step === 'activity' && (
+                <div className="flex-1 min-h-0">
+                    <XApiDataFeedModal contractUri={contract.uri} contractName={name} embedded />
+                </div>
+            )}
         </div>
     );
 };

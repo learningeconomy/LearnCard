@@ -136,7 +136,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         idBody = (
             <div
                 style={{
-                    backgroundImage: `url(${credSleeve})`,
+                    backgroundImage: `url("${credSleeve}")`,
                     backgroundRepeat: 'no-repeat',
                     position: 'absolute',
                     bottom: -65,
@@ -225,7 +225,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         idBody = (
             <div
                 style={{
-                    backgroundImage: `url(${credSleeve})`,
+                    backgroundImage: `url("${credSleeve}")`,
                     backgroundRepeat: 'no-repeat',
                     position: 'absolute',
                     bottom: -65,

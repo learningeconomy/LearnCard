@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 
 import { m } from '../../paraglide/messages.js';
-import { TransP } from '../../i18n/TransP';
+import { TransP, type ParaglideMessage } from '../../i18n/TransP';
 
 import { type OccupationDetailsResponse, useVerifiableData } from 'learn-card-base';
 
@@ -20,8 +20,8 @@ type AiInsightsQualitativeFactorsBoxProps = {
 };
 
 type GaugeComparisonCopy = {
-    messageKey: string;
-    highlightClassName: string;
+    message: ParaglideMessage;
+    highlightClassName: 'text-grayscale-900' | 'text-red-700' | 'text-emerald-700';
 };
 
 const WORK_LIFE_BALANCE_SCORE_MAP: Record<string, number> = {
@@ -147,7 +147,7 @@ const getWorkLifeBalanceCopy = (
 ): GaugeComparisonCopy => {
     if (userScore === undefined) {
         return {
-            messageKey: 'aiInsights.workLife.ready',
+            message: m['aiInsights.workLife.ready'],
             highlightClassName: 'text-grayscale-900',
         };
     }
@@ -156,34 +156,34 @@ const getWorkLifeBalanceCopy = (
 
     if (delta >= 33) {
         return {
-            messageKey: 'aiInsights.workLife.veryLow',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.workLife.veryLow'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta >= 15) {
         return {
-            messageKey: 'aiInsights.workLife.low',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.workLife.low'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta <= -33) {
         return {
-            messageKey: 'aiInsights.workLife.veryStrong',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.workLife.veryStrong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     if (delta <= -15) {
         return {
-            messageKey: 'aiInsights.workLife.strong',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.workLife.strong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     return {
-        messageKey: 'aiInsights.workLife.aboutInLine',
+        message: m['aiInsights.workLife.aboutInLine'],
         highlightClassName: 'text-grayscale-900',
     };
 };
@@ -194,7 +194,7 @@ const getJobStabilityCopy = (
 ): GaugeComparisonCopy => {
     if (userScore === undefined) {
         return {
-            messageKey: 'aiInsights.jobStability.ready',
+            message: m['aiInsights.jobStability.ready'],
             highlightClassName: 'text-grayscale-900',
         };
     }
@@ -203,34 +203,34 @@ const getJobStabilityCopy = (
 
     if (delta >= 33) {
         return {
-            messageKey: 'aiInsights.jobStability.veryLow',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.jobStability.veryLow'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta >= 15) {
         return {
-            messageKey: 'aiInsights.jobStability.low',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.jobStability.low'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta <= -33) {
         return {
-            messageKey: 'aiInsights.jobStability.veryStrong',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.jobStability.veryStrong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     if (delta <= -15) {
         return {
-            messageKey: 'aiInsights.jobStability.strong',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.jobStability.strong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     return {
-        messageKey: 'aiInsights.jobStability.aboutInLine',
+        message: m['aiInsights.jobStability.aboutInLine'],
         highlightClassName: 'text-grayscale-900',
     };
 };
@@ -239,7 +239,7 @@ const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => 
     return (
         <p className="text-sm font-poppins text-grayscale-600 text-center max-w-[250px] mx-auto">
             <TransP
-                m={m[copy.messageKey]()}
+                m={copy.message}
                 components={[<span className={`font-bold ${copy.highlightClassName}`} />]}
             />
         </p>

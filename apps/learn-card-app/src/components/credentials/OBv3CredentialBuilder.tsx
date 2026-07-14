@@ -33,6 +33,7 @@ import {
     useWallet,
     getLogger,
 } from 'learn-card-base';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { BoostEarnedCard } from '../boost/boost-earned-card/BoostEarnedCard';
 
 // Storage key for saved credentials
@@ -249,6 +250,27 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
     const [activeTab, setActiveTab] = useState<'build' | 'preview' | 'visual'>('build');
     const [copied, setCopied] = useState(false);
     const [userDid, setUserDid] = useState<string>('did:web:preview.learncard.com');
+
+    // Derive the correct category from the achievement type for the preview
+    const previewCategory = useMemo(() => {
+        const previewCred = {
+            credentialSubject: {
+                achievement: {
+                    achievementType: data.achievementType,
+                },
+            },
+        };
+        const category = getDefaultCategoryForCredential(previewCred as any);
+        // Map string category to enum value
+        const categoryMap: Record<string, BoostCategoryOptionsEnum> = {
+            Achievement: BoostCategoryOptionsEnum.achievement,
+            'Learning History': BoostCategoryOptionsEnum.learningHistory,
+            'Work History': BoostCategoryOptionsEnum.workHistory,
+            ID: BoostCategoryOptionsEnum.id,
+            Membership: BoostCategoryOptionsEnum.membership,
+        };
+        return categoryMap[category] ?? BoostCategoryOptionsEnum.socialBadge;
+    }, [data.achievementType]);
 
     // Saved credentials state
     const [savedCredentials, setSavedCredentials] = useState<SavedCredential[]>([]);
@@ -1047,7 +1069,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                                         },
                                                     } as any
                                                 }
-                                                categoryType={BoostCategoryOptionsEnum.socialBadge}
+                                                categoryType={previewCategory}
                                                 boostPageViewMode={BoostPageViewMode.Card}
                                                 useWrapper={false}
                                                 className="shadow-lg"

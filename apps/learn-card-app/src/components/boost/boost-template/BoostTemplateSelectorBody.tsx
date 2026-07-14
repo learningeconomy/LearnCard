@@ -32,6 +32,7 @@ import {
 import { getLearnCardBoostTemplates } from '../boostHelpers';
 
 import * as m from '../../../paraglide/messages.js';
+import { localizeCategoryTitle } from '../../../i18n/categoryTitle';
 
 type BoostTemplateSelectorBodyProps = {
     selectedCategory: BoostCategoryOptionsEnum;
@@ -249,7 +250,13 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
                             <p className="mt-2 font-poppins text-xl text-grayscale-900">
                                 {searchInput
                                     ? m['boost.template.noResults']()
-                                    : m['boost.template.noBoosts']()}
+                                    : m['boost.template.noneYet']({
+                                          type: localizeCategoryTitle(
+                                              selectedCategory === BoostCategoryOptionsEnum.all
+                                                  ? 'Boosts'
+                                                  : boostCategoryMetadata[selectedCategory].title
+                                          ),
+                                      })}
                             </p>
                         </div>
                     )}

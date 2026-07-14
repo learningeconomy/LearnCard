@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { ChevronLeft, Activity } from 'lucide-react';
 import { useXApiStatementsForContract } from 'learn-card-base/hooks/useXApiStatementsForContract';
+import * as m from '../../paraglide/messages.js';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import StatementCard from './StatementCard';
 
@@ -10,6 +11,7 @@ type XApiDataFeedModalProps = {
     contractUri: string;
     contractName: string;
     onBack?: () => void;
+    embedded?: boolean;
 };
 export interface XAPIStatement {
     actor: {
@@ -48,6 +50,7 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
     contractUri,
     contractName,
     onBack,
+    embedded = false,
 }) => {
     const { data, fetchNextPage, hasNextPage, isFetching, isLoading, refetch } =
         useXApiStatementsForContract(contractUri);
@@ -63,33 +66,43 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
     const allStatements = data?.pages.flatMap(page => page?.statements ?? []) ?? [];
 
     return (
-        <div className="bg-white rounded-l-[20px] h-full w-full max-w-[450px] flex flex-col shadow-xl">
-            <div className="flex items-center gap-3 p-4 border-b border-grayscale-100">
-                <button
-                    onClick={onBack}
-                    className="p-1 -ml-1 hover:bg-grayscale-50 rounded-lg transition-colors"
-                >
-                    <ChevronLeft className="w-6 h-6 text-grayscale-700" />
-                </button>
+        <div
+            className={
+                embedded
+                    ? 'h-full w-full flex flex-col'
+                    : 'bg-white rounded-l-[20px] h-full w-full max-w-[450px] flex flex-col shadow-xl'
+            }
+        >
+            {!embedded && (
+                <div className="flex items-center gap-3 p-4 border-b border-grayscale-100">
+                    <button
+                        onClick={onBack}
+                        className="p-1 -ml-1 hover:bg-grayscale-50 rounded-lg transition-colors"
+                    >
+                        <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                    </button>
 
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                        <Activity className="w-4 h-4 text-violet-600" />
-                    </div>
-                    <div className="min-w-0">
-                        <h2 className="text-lg font-semibold text-grayscale-900 truncate">
-                            Activity Feed
-                        </h2>
-                        <p className="text-xs text-grayscale-500 truncate">{contractName}</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                            <Activity className="w-4 h-4 text-violet-600" />
+                        </div>
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-semibold text-grayscale-900 truncate">
+                                {m['dataSharing.activityFeed']()}
+                            </h2>
+                            <p className="text-xs text-grayscale-500 truncate">{contractName}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4">
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-12">
                         <IonSpinner name="crescent" className="w-8 h-8 mb-4" />
-                        <p className="text-grayscale-600">Loading activity data...</p>
+                        <p className="text-grayscale-600">
+                            {m['dataSharing.loadingActivityData']()}
+                        </p>
                     </div>
                 )}
 
@@ -98,9 +111,11 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
                         <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mb-4">
                             <Activity className="w-8 h-8 text-grayscale-400" />
                         </div>
-                        <p className="text-grayscale-700 font-medium">No activity data yet</p>
+                        <p className="text-grayscale-700 font-medium">
+                            {m['dataSharing.noActivityYet']()}
+                        </p>
                         <p className="text-sm text-grayscale-500 mt-1 max-w-[280px]">
-                            Activity from this app will appear here when it becomes available.
+                            {m['dataSharing.noActivitySubtitle']()}
                         </p>
                     </div>
                 )}

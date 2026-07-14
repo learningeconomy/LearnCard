@@ -20,7 +20,8 @@ import jwtDecode from 'jwt-decode';
 import { getDidWebLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { isAuthorizedDID } from '@helpers/dids.helpers';
 
-const LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS = process.env.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS ?? '';
+const LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS =
+    process.env.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS || 'login-verification-code';
 
 export const ScoutsSSOUserLoginEndpoint: string =
     'https://sso.scout.org/auth/realms/wsb/protocol/openid-connect/token';
@@ -297,7 +298,10 @@ export const firebaseRouter = t.router({
                             recipient: { name: email },
                         },
                         branding: ctx.tenant?.emailBranding,
-                        from: getFrom({ mailbox: 'login', branding: ctx.tenant?.emailBranding }),
+                        from: getFrom({
+                            mailbox: 'login',
+                            branding: ctx.tenant?.emailBranding,
+                        }),
                     });
                 } catch (error) {
                     console.error('Failed to send verification email:', error);

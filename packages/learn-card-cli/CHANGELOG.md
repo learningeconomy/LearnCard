@@ -1,5 +1,61 @@
 # @learncard/cli
 
+## 3.4.8
+
+### Patch Changes
+
+-   [#1359](https://github.com/learningeconomy/LearnCard/pull/1359) [`ca6760392066c4ca5daf0061e740523a63b6cf52`](https://github.com/learningeconomy/LearnCard/commit/ca6760392066c4ca5daf0061e740523a63b6cf52) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix CLI
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/types@5.17.6
+    -   @learncard/holder-continuity@0.2.8
+    -   @learncard/core@9.4.27
+    -   @learncard/init@2.4.6
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/learn-cloud-plugin@2.3.32
+    -   @learncard/ler-rs-plugin@0.1.18
+    -   @learncard/linked-claims-plugin@0.2.27
+    -   @learncard/open-badge-v2-plugin@1.1.28
+    -   @learncard/render-method-plugin@3.0.7
+    -   @learncard/simple-signing-plugin@1.1.31
+
+## 3.4.7
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/init@2.4.5
+    -   @learncard/holder-continuity@0.2.7
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/learn-cloud-plugin@2.3.31
+    -   @learncard/simple-signing-plugin@1.1.30
+    -   @learncard/open-badge-v2-plugin@1.1.27
+    -   @learncard/linked-claims-plugin@0.2.26
+    -   @learncard/ler-rs-plugin@0.1.17
+    -   @learncard/render-method-plugin@3.0.6
+
+## 3.4.6
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/holder-continuity@0.2.6
+    -   @learncard/core@9.4.25
+    -   @learncard/init@2.4.4
+    -   @learncard/types@5.17.5
+    -   @learncard/didkit-plugin@1.9.5
+    -   @learncard/learn-cloud-plugin@2.3.30
+    -   @learncard/ler-rs-plugin@0.1.16
+    -   @learncard/linked-claims-plugin@0.2.25
+    -   @learncard/open-badge-v2-plugin@1.1.26
+    -   @learncard/render-method-plugin@3.0.5
+    -   @learncard/simple-signing-plugin@1.1.29
+
 ## 3.4.5
 
 ### Patch Changes

@@ -1,7 +1,7 @@
 {
     "baseLocale": "en",
     "locales": ["en", "es", "fr", "ar"],
-    "modules": ["https://cdn.jsdelivr.net/npm/@inlang/plugin-i18next@latest/dist/index.js"],
+    "modules": ["https://cdn.jsdelivr.net/npm/@inlang/plugin-i18next@6.2.3/dist/index.js"],
     "plugin.inlang.i18next": {
         "pathPattern": "./public/locales/{locale}/translation.json"
     }

@@ -46,8 +46,13 @@ export interface UseAppListingLaunchResult {
     /**
      * Invoke the launch. Safe to call for any listing — will either
      * dispatch inline or navigate to `/app/:id` based on `inlineKind`.
+     *
+     * `onClose` is forwarded to the modal launch kinds (`iframe`,
+     * `ai-tutor`) so a caller can restore a host surface it suppressed
+     * before launching. Ignored for `direct` (new tab) and `fallback`
+     * (route navigation) since those open no modal.
      */
-    launch: () => void;
+    launch: (opts?: { onClose?: () => void }) => void;
 
     /**
      * What the current hook would do on `launch()`:
@@ -89,25 +94,26 @@ const parseLaunchConfig = (raw: string | null | undefined): Record<string, unkno
  * replaced by an inline dispatch? If yes, the hook routes to `/app/:id`
  * so the consent / guardian / age flows stay in one place.
  */
-const requiresFullPageGate = (
-    listing: AnyAppListing,
-    launchConfig: Record<string, unknown>,
-): boolean => {
-    // Consent-flow contracts require a DID + delegate VP injection on
-    // redirect — non-trivial code path, lives in AppStoreListItem today.
-    // Don't try to mirror it inline.
-    if (typeof launchConfig.contractUri === 'string' && launchConfig.contractUri.length > 0) {
-        return true;
+const requiresFullPageGate = (listing: AnyAppListing, isInstalled: boolean): boolean => {
+    // Only the CONSENT_REDIRECT launch type needs the full page — it
+    // requires a DID + delegate-VP redirect built in AppStoreListItem
+    // that we don't mirror inline. Every other type (EMBEDDED_IFRAME /
+    // DIRECT_LINK / SECOND_SCREEN / AI_TUTOR) launches inline even when
+    // it carries a consent `contractUri`: those apps receive identity via
+    // the in-app handshake, not a URL redirect (matches the canonical
+    // AppStoreListItem launcher, which opens the iframe regardless).
+    if ((listing.launch_type as string) === 'CONSENT_REDIRECT') return true;
+
+    // Age gating only matters before install — the install flow already
+    // clears it. An installed app launching from a node has passed the
+    // gate, so route it inline in its real launch mode instead of the
+    // full-page listing. `min_age` is canonical; `age_rating` is softer.
+    if (!isInstalled) {
+        const asAny = listing as unknown as { min_age?: number; age_rating?: string };
+
+        if (typeof asAny.min_age === 'number' && asAny.min_age > 0) return true;
+        if (typeof asAny.age_rating === 'string' && asAny.age_rating.length > 0) return true;
     }
-
-    // Age gating (hard block + soft block with guardian approval). The
-    // inline card in NodeDetail never shows these gates; kick to the
-    // full page where the existing modal stack handles them.
-    // `min_age` is canonical; `age_rating` is the softer signal.
-    const asAny = listing as unknown as { min_age?: number; age_rating?: string };
-
-    if (typeof asAny.min_age === 'number' && asAny.min_age > 0) return true;
-    if (typeof asAny.age_rating === 'string' && asAny.age_rating.length > 0) return true;
 
     return false;
 };
@@ -118,19 +124,20 @@ const requiresFullPageGate = (
 
 export const useAppListingLaunch = (
     listing: AnyAppListing | null | undefined,
+    isInstalled = false
 ): UseAppListingLaunchResult => {
     const history = useHistory();
     const { newModal } = useModal();
 
     const launchConfig = useMemo(
         () => parseLaunchConfig(listing?.launch_config_json),
-        [listing?.launch_config_json],
+        [listing?.launch_config_json]
     );
 
     const inlineKind: UseAppListingLaunchResult['inlineKind'] = useMemo(() => {
         if (!listing) return 'fallback';
 
-        if (requiresFullPageGate(listing, launchConfig)) return 'fallback';
+        if (requiresFullPageGate(listing, isInstalled)) return 'fallback';
 
         const type = listing.launch_type as string;
 
@@ -142,86 +149,86 @@ export const useAppListingLaunch = (
             return 'iframe';
         }
 
-        if ((type === 'DIRECT_LINK' || type === 'SECOND_SCREEN')
-            && typeof launchConfig.url === 'string') {
+        if (
+            (type === 'DIRECT_LINK' || type === 'SECOND_SCREEN') &&
+            typeof launchConfig.url === 'string'
+        ) {
             return 'direct';
         }
 
         return 'fallback';
-    }, [listing, launchConfig]);
+    }, [listing, launchConfig, isInstalled]);
 
-    const launch = useCallback(() => {
-        if (!listing) return;
+    const launch = useCallback(
+        (opts?: { onClose?: () => void }) => {
+            if (!listing) return;
 
-        switch (inlineKind) {
-            case 'direct': {
-                const url = launchConfig.url as string;
+            switch (inlineKind) {
+                case 'direct': {
+                    const url = launchConfig.url as string;
 
-                window.open(url, '_blank', 'noopener,noreferrer');
+                    window.open(url, '_blank', 'noopener,noreferrer');
 
-                return;
+                    return;
+                }
+
+                case 'iframe': {
+                    const url = launchConfig.url as string;
+
+                    // Must be Right, matching the dashboard/launchpad entry
+                    // points for this same modal. NOT FullScreen:
+                    // `#full-screen-modal` adds `padding-top:
+                    // env(safe-area-inset-top)`, which double-stacks with the
+                    // inset EmbedIframeModal's own IonHeader handles (oversized
+                    // top margin on native). NOT the default Center: it
+                    // collapses the IonPage via Ionic's `.ion-page-invisible`.
+                    // `hideButton: true` — the modal has its own close X.
+                    newModal(
+                        <EmbedIframeModal
+                            embedUrl={url}
+                            appId={
+                                (listing as unknown as { slug?: string }).slug ?? listing.listing_id
+                            }
+                            appName={listing.display_name}
+                            launchConfig={launchConfig as Record<string, unknown>}
+                            isInstalled
+                        />,
+                        { hideButton: true, onClose: opts?.onClose },
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+
+                    return;
+                }
+
+                case 'ai-tutor': {
+                    // Right slide on desktop (chat UI reads well in a
+                    // narrow column), FullScreen on mobile. Same IonPage
+                    // full-height-container requirement as above.
+                    newModal(
+                        <AiTutorConnectedView
+                            listing={listing}
+                            launchConfig={{
+                                aiTutorUrl: launchConfig.aiTutorUrl as string,
+                                contractUri: launchConfig.contractUri as string | undefined,
+                            }}
+                        />,
+                        { hideButton: true, onClose: opts?.onClose },
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
+                    );
+
+                    return;
+                }
+
+                case 'fallback':
+                default: {
+                    history.push(`/app/${encodeURIComponent(listing.listing_id)}`);
+
+                    return;
+                }
             }
-
-            case 'iframe': {
-                const url = launchConfig.url as string;
-
-                // Must open as a FullScreen modal. `EmbedIframeModal`'s
-                // root is `<IonPage>` with `<IonContent fullscreen>`
-                // wrapping an `<iframe style={{ width: '100%', height:
-                // '100%' }}>` — rendering inside the default Center
-                // container (600×75vh) collapses the IonPage to
-                // `opacity: 0` via Ionic's default `.ion-page-invisible`
-                // styling, which is what the user sees as "screen
-                // blurs but no iframe appears." Same class of bug as
-                // `AppStoreDetailModal`; same fix.
-                //
-                // `hideButton: true` because the iframe modal has its
-                // own close X inside the IonHeader.
-                newModal(
-                    <EmbedIframeModal
-                        embedUrl={url}
-                        appId={
-                            (listing as unknown as { slug?: string }).slug
-                            ?? listing.listing_id
-                        }
-                        appName={listing.display_name}
-                        launchConfig={launchConfig as Record<string, unknown>}
-                        isInstalled
-                    />,
-                    { hideButton: true },
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen },
-                );
-
-                return;
-            }
-
-            case 'ai-tutor': {
-                // Right slide on desktop (chat UI reads well in a
-                // narrow column), FullScreen on mobile. Same IonPage
-                // full-height-container requirement as above.
-                newModal(
-                    <AiTutorConnectedView
-                        listing={listing}
-                        launchConfig={{
-                            aiTutorUrl: launchConfig.aiTutorUrl as string,
-                            contractUri: launchConfig.contractUri as string | undefined,
-                        }}
-                    />,
-                    { hideButton: true },
-                    { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen },
-                );
-
-                return;
-            }
-
-            case 'fallback':
-            default: {
-                history.push(`/app/${encodeURIComponent(listing.listing_id)}`);
-
-                return;
-            }
-        }
-    }, [listing, launchConfig, inlineKind, newModal, history]);
+        },
+        [listing, launchConfig, inlineKind, newModal, history]
+    );
 
     return { launch, inlineKind, launchConfig };
 };

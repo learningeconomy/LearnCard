@@ -4,6 +4,7 @@ import { capitalize } from 'lodash-es';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import X from 'learn-card-base/svgs/X';
+import { IDsIconSolid } from 'learn-card-base/svgs/wallet/IDsIcon';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import ArrowArcLeft from '../../../assets/images/ArrowArcLeft.svg';
@@ -27,11 +28,17 @@ import {
     useModal,
     ModalTypes,
     CredentialCategoryEnum,
+    BoostCategoryOptionsEnum,
+    getBoostMetadata,
     useGetCredentialWithEdits,
 } from 'learn-card-base';
 
 import { ErrorBoundary } from 'react-error-boundary';
-import { NotificationTypeStyles, CATEGORY_TO_NOTIFICATION_ENUM } from './types';
+import {
+    NotificationTypeStyles,
+    CATEGORY_TO_NOTIFICATION_ENUM,
+    notificationCardStyles,
+} from './types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 import { useGetVCInfo } from 'learn-card-base';
@@ -122,8 +129,36 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const displayType = unwrappedCred?.display?.displayType;
     const isCertDisplayType = displayType === 'certificate';
     const isAwardDisplayType = displayType === 'award';
-    const isID = displayType === 'id' || unwrappedCred?.hasOwnProperty('boostID') || false;
+    const isID =
+        displayType === 'id' ||
+        credCategory === CredentialCategoryEnum.id ||
+        unwrappedCred?.hasOwnProperty('boostID') ||
+        false;
     const isFamily = credCategory === CredentialCategoryEnum.family;
+
+    const isMediaDisplayType = displayType === 'media';
+
+    // CredentialBadgeNew's certificate art renders at ~120px and the merit/award
+    // ribbon SVG at a fixed 138x110, so both need scaling down to sit in the
+    // uniform 90px notification badge slot alongside the default badge type.
+    // The wrapper keeps the art's natural width (shrink-0) so fixed-size circles
+    // aren't flex-squeezed into ovals before the transform scales them.
+    const isMeritStyleBadge =
+        isAwardDisplayType || credCategory === BoostCategoryOptionsEnum.meritBadge;
+    const badgeScaleClass = isCertDisplayType
+        ? 'w-[120px] min-w-[120px] scale-[0.7]'
+        : isMeritStyleBadge
+        ? 'w-[138px] min-w-[138px] scale-[0.8]'
+        : 'w-full';
+
+    // Compact circular fallback (matching the ID treatment) for display types
+    // whose full art can't fit the notification slot, e.g. media/portfolio.
+    const categoryMeta = getBoostMetadata(
+        (credCategory as unknown as BoostCategoryOptionsEnum) ??
+            BoostCategoryOptionsEnum.socialBadge
+    );
+    const CategoryIcon = categoryMeta?.SolidIconComponent ?? categoryMeta?.IconComponent;
+    const categoryCircleColor = categoryMeta?.badgeBackgroundColor ?? 'gray-500';
 
     const handleReadStatus = async () => {
         setIsRead(true);
@@ -225,7 +260,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 onDismiss={async () => {
                     handleReadStatus();
                     setClaimModalOpen(false);
-                    history.replace('/notifications');
                 }}
                 hideEndorsementRequestCard
             />,
@@ -281,7 +315,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 onDismiss={async () => {
                     handleReadStatus();
                     setClaimModalOpen(false);
-                    history.replace('/notifications');
                 }}
                 hideEndorsementRequestCard
             />,
@@ -318,9 +351,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         <>
             <ErrorBoundary
                 fallback={
-                    <div
-                        className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px] ${className}`}
-                    >
+                    <div className={`${notificationCardStyles.fallbackShell} ${className}`}>
                         Unable to load notification
                     </div>
                 }
@@ -328,7 +359,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 <div
                     onClick={handleMarkRead}
                     ref={ref}
-                    className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px] ${className}`}
+                    className={`${notificationCardStyles.shell} min-h-[120px] ${className}`}
                 >
                     {!isRead && !isLoading && (
                         <div className="notification-count-mobile unread-indicator-dot" />
@@ -343,37 +374,92 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                             </div>
                         )}
 
-                        {!isLoading && !isEndorsementCredentialType && (
-                            <CredentialBadgeNew
-                                achievementType={credentialBadgeAchievementType}
-                                boostType={credCategory}
-                                badgeThumbnail={credImgUrl}
-                                badgeCircleCustomClass="!w-[90px] h-[90px]"
-                                badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
-                                badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
-                                displayType={displayType}
-                            />
+                        {/* IDs get a compact circular badge: the full ID-card art
+                            CredentialBadgeNew renders can't shrink into the 90px slot */}
+                        {!isLoading && !isEndorsementCredentialType && isID && (
+                            <div className="w-[90px] h-[90px] min-w-[90px] min-h-[90px] rounded-full bg-blue-400 border-4 border-solid border-white flex items-center justify-center overflow-hidden">
+                                {credImgUrl ? (
+                                    <img
+                                        src={credImgUrl}
+                                        alt=""
+                                        className="w-[70%] h-[70%] rounded-full object-cover border-4 border-solid border-white"
+                                    />
+                                ) : (
+                                    <IDsIconSolid className="w-[36px] h-[36px] text-white" />
+                                )}
+                            </div>
                         )}
 
-                        {isLoading && <div className="w-[90px] h-[90px] rounded-full bg-gray-50" />}
+                        {/* Media/portfolio art can't fit the slot either: use the
+                            category icon in a circle, mirroring the ID treatment */}
+                        {!isLoading &&
+                            !isEndorsementCredentialType &&
+                            !isID &&
+                            isMediaDisplayType && (
+                                <div
+                                    className={`w-[90px] h-[90px] min-w-[90px] min-h-[90px] rounded-full border-4 border-solid border-white flex items-center justify-center overflow-hidden bg-${categoryCircleColor}`}
+                                >
+                                    <div className="w-[70%] h-[70%] rounded-full border-4 border-solid border-white flex items-center justify-center">
+                                        {CategoryIcon && (
+                                            <CategoryIcon className="w-[32px] h-[32px] text-white" />
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                        {!isLoading &&
+                            !isEndorsementCredentialType &&
+                            !isID &&
+                            !isMediaDisplayType && (
+                                <div className="w-[90px] h-[90px] min-w-[90px] min-h-[90px] flex items-center justify-center">
+                                    <div
+                                        className={`flex flex-col items-center justify-center shrink-0 ${badgeScaleClass}`}
+                                    >
+                                        <CredentialBadgeNew
+                                            // Deliberately not passing the resolved credential:
+                                            // it would route CLR credentials (e.g. learning
+                                            // history) into the unsized CLR badge; notifications
+                                            // use the compact default badge instead.
+                                            credential={undefined as never}
+                                            achievementType={credentialBadgeAchievementType}
+                                            // boostType accepts CredentialCategoryEnum values at runtime (see getBoostMetadata)
+                                            boostType={
+                                                credCategory as unknown as BoostCategoryOptionsEnum
+                                            }
+                                            badgeThumbnail={credImgUrl || ''}
+                                            showBackgroundImage={false}
+                                            backgroundImage=""
+                                            backgroundColor=""
+                                            badgeCircleCustomClass="!w-[90px] h-[90px]"
+                                            badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
+                                            badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
+                                            displayType={displayType}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                        {isLoading && (
+                            <div className="w-[90px] h-[90px] rounded-full bg-grayscale-50" />
+                        )}
                     </div>
                     <div className="flex flex-col justify-center items-start relative w-full">
                         <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                             <h4
                                 onClick={handleCardClick}
-                                className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
+                                className={`cursor-pointer ${notificationCardStyles.title}`}
                                 data-testid="notification-title"
                             >
                                 {capitalize(title)}
                             </h4>
                             <p
-                                className={`font-bold p-0 mt-[10px] leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text ${textStyles}`}
+                                className={`${notificationCardStyles.meta} mt-[10px] ${textStyles}`}
                                 data-testid="notification-type"
                             >
                                 {typeText}{' '}
                                 {issueDate && (
                                     <span
-                                        className="text-[rgba(24,34,78,0.8)] normal-case font-normal text-[12px] notification-card-type-issue-date"
+                                        className={notificationCardStyles.date}
                                         data-testid="notification-cred-issue-date"
                                     >
                                         • {issueDate}
@@ -383,7 +469,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
                             <div className="flex relative items-center justify-between mt-3 w-full">
                                 <button
-                                    className={`cursor-pointer notification-claim-btn flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold font-poppins py-2 px-3 tracking-wide ${claimButtonStyles}`}
+                                    className={`cursor-pointer ${notificationCardStyles.primaryButton} mr-[15px] w-[143px] ${claimButtonStyles}`}
                                     onClick={handleButtonClick}
                                     name="notification-claim-button"
                                 >
@@ -393,7 +479,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
                                 <button
                                     onClick={handleArchiveAction}
-                                    className={`rounded-[40px] flex items-center justify-center border-[1px] border-[#E2E3E9] border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-[0px] tracking-wide`}
+                                    className={`${notificationCardStyles.iconButton} mr-2`}
                                     name="notification-view-button"
                                 >
                                     {!isArchived && (

@@ -4,6 +4,8 @@ import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('add-to-learn-card-menu');
 
+import { useHistory } from 'react-router-dom';
+
 import * as m from '../../paraglide/messages.js';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -69,8 +71,9 @@ export type AddToLearnCardMenuItem = {
 
 export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className }) => {
     const flags = useFlags();
+    const history = useHistory();
     const { isDesktop } = useDeviceTypeByWidth();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, closeAllModals } = useModal();
     const { gate } = useLCNGatedAction();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
@@ -111,6 +114,13 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     const handleNewBoostModal = () => {
         closeModal();
         handlePresentBoostModal();
+    };
+
+    const handleSimpleSend = () => {
+        checkAndPromptRecovery(() => {
+            closeAllModals();
+            history.push('/issue');
+        });
     };
 
     const handleIssueManagedBoost = () => {
@@ -202,6 +212,10 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
             Icon: AddCredentialIcon,
             label: m['launchpad.actions.createCredential'](),
             onClick: () => {
+                if (flags?.enableSimpleSend) {
+                    handleSimpleSend();
+                    return;
+                }
                 closeModal();
                 checkAndPromptRecovery(() => {
                     handlePresentBoostModal();

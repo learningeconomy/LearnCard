@@ -22,6 +22,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     measureOnly?: boolean;
     readOnly?: boolean;
     resolvedCredentialsByUri?: Record<string, VC | null | undefined>;
+    onOpenCredentialPanel?: (sectionKey?: ResumeSectionKey) => void;
 }> = ({
     section,
     isMobile = false,
@@ -29,6 +30,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
     measureOnly = false,
     readOnly = false,
     resolvedCredentialsByUri,
+    onOpenCredentialPanel,
 }) => {
     const credentialEntries = resumeBuilderStore.useTracked.credentialEntries();
     const currentJobCredentialUri = resumeBuilderStore.useTracked.currentJobCredentialUri();
@@ -73,6 +75,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                             <ResumePreviewSectionPlaceholder
                                 category={sectionKey}
                                 className="mb-0"
+                                onOpenCredentialPanel={onOpenCredentialPanel}
                             />
                         )}
                     </>
@@ -81,7 +84,11 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                         <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
                             {getSectionLabel(sectionKey)}
                         </h2>
-                        <ResumePreviewSectionPlaceholder category={sectionKey} className="mb-0" />
+                        <ResumePreviewSectionPlaceholder
+                            category={sectionKey}
+                            className="mb-0"
+                            onOpenCredentialPanel={onOpenCredentialPanel}
+                        />
                     </>
                 )}
             </div>

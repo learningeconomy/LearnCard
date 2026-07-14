@@ -22,12 +22,10 @@ import {
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
 import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
-
-export type SkillProfileWorkHistoryData = {
-    selectedCredentialUris: string[];
-};
-
-export const SKILL_PROFILE_WORK_HISTORY_KEY = 'skill-profile-work-history';
+import {
+    SKILL_PROFILE_WORK_HISTORY_KEY,
+    type SkillProfileWorkHistoryData,
+} from './SkillProfileStep2.constants';
 
 import SelectFrameworkToManageModal from 'src/pages/SkillFrameworks/SelectFrameworkToManageModal';
 import BrowseFrameworkPage from 'src/pages/SkillFrameworks/BrowseFrameworkPage';

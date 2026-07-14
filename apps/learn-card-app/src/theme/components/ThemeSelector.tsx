@@ -9,10 +9,15 @@ import { applyTheme, useTheme } from '../hooks/useTheme';
 import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
 import { useUpdatePreferences } from 'learn-card-base';
+import Swatches from '../../components/svgs/Swatches';
 
 export enum themeSelectorViewMode {
     Mini = 'mini',
     Full = 'full',
+    // Compact single-row toggle for the desktop side menu (LC-1921):
+    // swatches icon + "Colorful/Neutral Mode" label + a switch that flips
+    // between the colorful and formal (neutral) themes.
+    Compact = 'compact',
 }
 
 // TODOS:
@@ -26,7 +31,8 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
     const flags = useFlags();
-    const { theme } = useTheme();
+    const { theme, colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
 
     const allowedThemeIds = useMemo(() => {
         const allowed = new Set(getAllowedThemes());
@@ -57,6 +63,49 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     if (flags?.enableThemeToggle === false) return null;
 
     if (!isThemeSwitchingEnabled()) return null;
+
+    if (viewMode === themeSelectorViewMode.Compact) {
+        const isColorful = theme.id === 'colorful';
+        const targetTheme = isColorful ? 'formal' : 'colorful';
+
+        // Compact toggle only makes sense as a colorful ↔ neutral switch.
+        // If the alternate theme isn't allowed for this tenant, hide it.
+        if (!allowedThemeIds.includes(targetTheme)) return null;
+
+        const label = isColorful ? 'Colorful Mode' : 'Neutral Mode';
+        const onColor = primaryColor ? `bg-${primaryColor}` : 'bg-indigo-500';
+
+        return (
+            <div className="w-full px-4">
+                <button
+                    type="button"
+                    onClick={async () => {
+                        await handleSetTheme(targetTheme);
+                    }}
+                    disabled={isUpdatingPreferences}
+                    aria-pressed={isColorful}
+                    aria-label={`Theme: ${label}`}
+                    className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px]"
+                >
+                    <Swatches className="w-[35px] h-[35px] shrink-0" />
+                    <span className="flex-1 text-left text-grayscale-900 font-poppins text-[17px]">
+                        {label}
+                    </span>
+                    <span
+                        className={`relative shrink-0 w-[27px] h-[15px] rounded-full transition-colors ${
+                            isColorful ? onColor : 'bg-grayscale-800'
+                        }`}
+                    >
+                        <span
+                            className={`absolute top-1/2 -translate-y-1/2 w-[11px] h-[11px] bg-white rounded-full transition-all ${
+                                isColorful ? 'right-[2.5px]' : 'left-[2.5px]'
+                            }`}
+                        />
+                    </span>
+                </button>
+            </div>
+        );
+    }
 
     if (viewMode === themeSelectorViewMode.Mini) {
         return (

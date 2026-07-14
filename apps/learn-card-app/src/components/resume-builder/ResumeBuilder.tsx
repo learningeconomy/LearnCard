@@ -34,6 +34,7 @@ import {
 } from '../../stores/resumeBuilderStore';
 import type { ExistingResume } from '../../hooks/useExistingResumes';
 import { buildResumeHydrationState } from './resume-builder-history.helpers';
+import type { ResumeSectionKey } from './resume-builder.helpers';
 
 import { VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
@@ -48,6 +49,10 @@ export const ResumeBuilder: React.FC = () => {
 
     const [panelOpen, setPanelOpen] = useState<boolean>(true); // Desktop side panel
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
+    const [credentialFocusRequest, setCredentialFocusRequest] = useState<{
+        sectionKey: ResumeSectionKey;
+        requestId: number;
+    } | null>(null);
 
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
     const [inlinePreview, setInlinePreview] = useState<ResumePdfPreviewData | null>(null);
@@ -181,7 +186,7 @@ export const ResumeBuilder: React.FC = () => {
 
             const includedCredentials = Object.entries(credentialEntries).flatMap(
                 ([category, entries]) =>
-                    (hiddenSections?.[category as CredentialCategoryEnum] ? [] : entries ?? []).map(
+                    (hiddenSections?.[category as ResumeSectionKey] ? [] : entries ?? []).map(
                         entry => ({
                             uri: entry.uri,
                             category: category || CredentialCategoryEnum.workHistory,
@@ -215,7 +220,6 @@ export const ResumeBuilder: React.FC = () => {
 
             presentToast(m['toasts.resume.publishedSuccess'](), {
                 title: successToastTitle,
-                details: lerVc?.id || undefined,
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
                 duration: 6000,
@@ -321,13 +325,25 @@ export const ResumeBuilder: React.FC = () => {
         }
     }, [loadingAction, presentToast, publishCurrentResume, activeResume?.recordId]);
 
-    const openResumeConfigPanel = () => {
+    const openResumeConfigPanel = (focusSectionKey?: ResumeSectionKey) => {
+        const focusRequestId = focusSectionKey ? Date.now() : undefined;
+
         if (isMobile) {
             newModal(
-                <ResumeConfigOverlayPanel drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
+                <ResumeConfigOverlayPanel
+                    drawerOpen={drawerOpen}
+                    setDrawerOpen={setDrawerOpen}
+                    focusSectionKey={focusSectionKey}
+                    focusRequestId={focusRequestId}
+                />
             );
         } else {
             setPanelOpen(true);
+            setCredentialFocusRequest(
+                focusSectionKey && focusRequestId
+                    ? { sectionKey: focusSectionKey, requestId: focusRequestId }
+                    : null
+            );
         }
     };
 
@@ -451,6 +467,7 @@ export const ResumeBuilder: React.FC = () => {
                         isMobile={isMobile}
                         isPreviewing={isPreviewing}
                         qrCodeValue={resumeQrCodeLink}
+                        onOpenCredentialPanel={openResumeConfigPanel}
                     />
                 </div>
             </div>
@@ -464,6 +481,8 @@ export const ResumeBuilder: React.FC = () => {
                     setPanelOpen={setPanelOpen}
                     isPreviewing={isPreviewing}
                     setIsPreviewing={setIsPreviewing}
+                    focusSectionKey={credentialFocusRequest?.sectionKey}
+                    focusRequestId={credentialFocusRequest?.requestId}
                 />
             )}
 

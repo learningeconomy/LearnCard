@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 
 import { spawn } from 'child_process';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { createInterface } from 'readline';
-import { dirname, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 import { getLogger } from '../../../packages/learn-card-base/src/logging/logger';
@@ -12,6 +13,19 @@ const log = getLogger('lc');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const APP_ROOT = resolve(__dirname, '..');
+const ENVIRONMENTS_DIR = resolve(APP_ROOT, 'environments');
+const LCA_API_ROOT = resolve(APP_ROOT, '../../services/learn-card-network/lca-api');
+const SCOUTS_ENV_PATH = resolve(LCA_API_ROOT, '.env.scouts');
+const FALLBACK_ENV_PATH = resolve(LCA_API_ROOT, '.env');
+
+/**
+ * ScoutPass is single-tenant, so unlike learn-card-app's lc there is no tenant
+ * picker — just stages. Stages are discovered from environments/scoutpass:
+ * every config.<stage>.json overlay is a stage, plus the implicit 'production'
+ * stage which is the base config.json with no overlay. ScoutPass has no staging
+ * environment, so this normally yields ['local', 'production'].
+ */
+const PROJECT_ID = 'scoutpass';
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 
@@ -27,11 +41,70 @@ const cyan = (value: string): string => `\x1b[36m${value}\x1b[0m`;
 const dim = (value: string): string => `\x1b[2m${value}\x1b[0m`;
 const yellow = (value: string): string => `\x1b[33m${value}\x1b[0m`;
 
+const loadEnvFile = (filePath: string): Record<string, string> => {
+    if (!existsSync(filePath)) {
+        return {};
+    }
+
+    const env: Record<string, string> = {};
+    const lines = readFileSync(filePath, 'utf-8').split(/\r?\n/);
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+
+        if (!trimmed || trimmed.startsWith('#')) {
+            continue;
+        }
+
+        const equalsIndex = trimmed.indexOf('=');
+
+        if (equalsIndex === -1) {
+            continue;
+        }
+
+        const key = trimmed.slice(0, equalsIndex).trim();
+
+        if (!key) {
+            continue;
+        }
+
+        let value = trimmed.slice(equalsIndex + 1).trim();
+
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+
+        env[key] = value;
+    }
+
+    return env;
+};
+
+const loadScoutsEnv = (): Record<string, string> => {
+    if (existsSync(SCOUTS_ENV_PATH)) {
+        return loadEnvFile(SCOUTS_ENV_PATH);
+    }
+
+    return loadEnvFile(FALLBACK_ENV_PATH);
+};
+
+const scoutsEnv = loadScoutsEnv();
+
+for (const [key, value] of Object.entries(scoutsEnv)) {
+    if (process.env[key] === undefined) {
+        process.env[key] = value;
+    }
+}
+
 const runCommand = (
     cmd: string,
     label: string,
     shortcut?: string,
-    cwd: string = APP_ROOT
+    cwd: string = APP_ROOT,
+    extraEnv?: Record<string, string>
 ): void => {
     log.info('');
     log.info(green(`▶ ${label}`));
@@ -48,10 +121,138 @@ const runCommand = (
     const child = spawn('sh', ['-c', cmd], {
         cwd,
         stdio: 'inherit',
-        env: { ...process.env },
+        env: { ...process.env, ...extraEnv },
     });
 
     child.on('exit', code => process.exit(code ?? 0));
+};
+
+// ---------------------------------------------------------------------------
+// Stage / environment resolution
+// ---------------------------------------------------------------------------
+
+const discoverStages = (): string[] => {
+    const projectDir = join(ENVIRONMENTS_DIR, PROJECT_ID);
+
+    if (!existsSync(projectDir)) return ['production'];
+
+    const overlays = readdirSync(projectDir)
+        .filter(f => /^config\..+\.json$/.test(f))
+        .map(f => f.replace(/^config\./, '').replace(/\.json$/, ''));
+
+    // 'production' is the base config.json with no overlay applied
+    return [...overlays, 'production'];
+};
+
+const asStage = (value?: string): string | undefined => {
+    if (!value) return undefined;
+
+    return discoverStages().includes(value) ? value : undefined;
+};
+
+const deepMerge = (
+    base: Record<string, unknown>,
+    overlay: Record<string, unknown>
+): Record<string, unknown> => {
+    const result: Record<string, unknown> = { ...base };
+
+    for (const [key, value] of Object.entries(overlay)) {
+        const baseValue = result[key];
+
+        if (
+            value &&
+            baseValue &&
+            typeof value === 'object' &&
+            typeof baseValue === 'object' &&
+            !Array.isArray(value) &&
+            !Array.isArray(baseValue)
+        ) {
+            result[key] = deepMerge(
+                baseValue as Record<string, unknown>,
+                value as Record<string, unknown>
+            );
+        } else {
+            result[key] = value;
+        }
+    }
+
+    return result;
+};
+
+const resolveStageConfig = (stage: string): Record<string, any> => {
+    const projectDir = join(ENVIRONMENTS_DIR, PROJECT_ID);
+    const basePath = join(projectDir, 'config.json');
+
+    if (!existsSync(basePath)) {
+        log.error(`Missing base config: ${basePath}`);
+        process.exit(1);
+    }
+
+    const base = JSON.parse(readFileSync(basePath, 'utf-8'));
+
+    if (stage === 'production') return base;
+
+    const overlayPath = join(projectDir, `config.${stage}.json`);
+
+    if (!existsSync(overlayPath)) return base;
+
+    return deepMerge(base, JSON.parse(readFileSync(overlayPath, 'utf-8')));
+};
+
+/**
+ * Maps a resolved stage config to the env vars the scouts app consumes.
+ * These become vite build defines (see vite.config.ts) and are forwarded
+ * into docker compose via ${VAR:-default} substitution in the compose files.
+ */
+const configToEnv = (config: Record<string, any>): Record<string, string> => {
+    const env: Record<string, string> = {};
+    const apis = config.apis ?? {};
+
+    if (apis.brainService) env.LCN_URL = apis.brainService;
+    if (apis.brainServiceApi) env.LCN_API_URL = apis.brainServiceApi;
+    if (apis.cloudService) env.CLOUD_URL = apis.cloudService;
+    if (apis.xapi) env.LEARN_CLOUD_XAPI_URL = apis.xapi;
+    if (apis.lcaApi) env.API_URL = apis.lcaApi;
+    if (config.observability?.sentryEnv) env.SENTRY_ENV = config.observability.sentryEnv;
+
+    return env;
+};
+
+const resolveStageEnv = (stage: string): Record<string, string> =>
+    configToEnv(resolveStageConfig(stage));
+
+const getEnvFileLabel = (): string => {
+    if (existsSync(SCOUTS_ENV_PATH)) {
+        return `${SCOUTS_ENV_PATH} (.env.scouts preferred)`;
+    }
+
+    return `${FALLBACK_ENV_PATH} (.env fallback)`;
+};
+
+const printResolvedStage = (stage?: string): void => {
+    const stages = discoverStages();
+    const selected = stage ?? 'local';
+
+    if (!stages.includes(selected)) {
+        log.info(yellow(`Unknown stage: ${selected}. Available: ${stages.join(', ')}`));
+        rl.close();
+        return;
+    }
+
+    log.info('');
+    log.info(bold(`Resolved environment for ${PROJECT_ID} (stage: ${selected})`));
+    log.info('');
+    log.info(JSON.stringify(resolveStageConfig(selected), null, 4));
+    log.info('');
+    log.info(bold('Injected env vars:'));
+    log.info('');
+
+    for (const [key, value] of Object.entries(resolveStageEnv(selected))) {
+        log.info(`  ${cyan(key)}=${value}`);
+    }
+
+    log.info('');
+    rl.close();
 };
 
 const asPlatform = (value?: string): Platform | undefined => {
@@ -110,11 +311,21 @@ const pickPlatform = async (): Promise<Platform> => {
     return choice === '2' ? 'android' : 'ios';
 };
 
-const startAppOnly = (): void => {
-    runCommand('bun run docker-start', 'Starting Scouts app only', 'bun run lc start');
+const startAppOnly = (stage?: string, shortcut?: string): void => {
+    const stageId = stage ?? 'production';
+    const resolvedShortcut =
+        shortcut ?? `bun run lc start${stageId === 'production' ? '' : ` ${stageId}`}`;
+
+    runCommand(
+        'vite --host',
+        `Starting Scouts frontend only (env: ${stageId})`,
+        resolvedShortcut,
+        APP_ROOT,
+        resolveStageEnv(stageId)
+    );
 };
 
-const startDev = async (devMode?: DevMode, noBuild?: boolean): Promise<void> => {
+const startDev = async (devMode?: DevMode, noBuild?: boolean, stage?: string): Promise<void> => {
     if (!devMode) {
         log.info('');
         log.info(bold('How do you want to run Scouts?'));
@@ -149,8 +360,20 @@ const startDev = async (devMode?: DevMode, noBuild?: boolean): Promise<void> => 
         noBuild = buildAnswer.trim().toLowerCase() === 'n';
     }
 
+    // Full-stack and services flows default to the local stage — its env matches the docker stack.
+    // Frontend-only flows default to production so they point at the live backend by default.
+    // Pass a stage arg (e.g. `bun run lc dev app local`) to point elsewhere.
+    const stageId = stage ?? (devMode === 'app' ? 'production' : 'local');
+    const stageEnv = resolveStageEnv(stageId);
+
     if (devMode === 'app') {
-        runCommand('bun run docker-start', 'Starting Scouts app only', 'bun run lc dev app');
+        runCommand(
+            'vite --host',
+            `Starting Scouts frontend only (env: ${stageId})`,
+            'bun run lc dev app',
+            APP_ROOT,
+            stageEnv
+        );
         return;
     }
 
@@ -159,7 +382,9 @@ const startDev = async (devMode?: DevMode, noBuild?: boolean): Promise<void> => 
             runCommand(
                 'docker compose -f compose-local.yaml up --scale app=0',
                 'Starting Scouts Docker services only — skipping rebuild',
-                'bun run lc dev services fast'
+                'bun run lc dev services fast',
+                APP_ROOT,
+                stageEnv
             );
             return;
         }
@@ -167,7 +392,9 @@ const startDev = async (devMode?: DevMode, noBuild?: boolean): Promise<void> => 
         runCommand(
             'bun run dev:services',
             'Starting Scouts Docker services only',
-            'bun run lc dev services'
+            'bun run lc dev services',
+            APP_ROOT,
+            stageEnv
         );
         return;
     }
@@ -175,13 +402,21 @@ const startDev = async (devMode?: DevMode, noBuild?: boolean): Promise<void> => 
     if (noBuild) {
         runCommand(
             'bun run dev-no-build',
-            'Starting Scouts full stack — skipping rebuild',
-            'bun run lc dev fast'
+            `Starting Scouts full stack (env: ${stageId}) — skipping rebuild`,
+            'bun run lc dev fast',
+            APP_ROOT,
+            stageEnv
         );
         return;
     }
 
-    runCommand('bun run dev', 'Starting Scouts full stack', 'bun run lc dev');
+    runCommand(
+        'bun run dev',
+        `Starting Scouts full stack (env: ${stageId})`,
+        'bun run lc dev',
+        APP_ROOT,
+        stageEnv
+    );
 };
 
 const nativeSync = (): void => {
@@ -275,17 +510,42 @@ const printHelp = (): void => {
     log.info(bold('  ⚡ Start'));
     log.info('');
     log.info(
-        `  ${cyan('bun run lc dev [full|app|services] [fast|no-build]')} ${dim(
+        `  ${cyan('bun run lc dev [full|app|services] [fast|no-build] [stage]')} ${dim(
             'Interactive dev launcher'
         )}`
     );
-    log.info(`  ${cyan('bun run lc start')}                        ${dim('Vite dev server only')}`);
+    log.info(
+        `  ${cyan('bun run lc start [stage]')}                ${dim(
+            'Frontend only (production by default)'
+        )}`
+    );
     log.info(`  ${cyan('bun run lc services')}                     ${dim('Docker services only')}`);
     log.info(
-        `  ${cyan('bun run lc docker-start')}                ${dim(
+        `  ${cyan('bun run lc docker-start [stage]')}         ${dim(
             'Vite dev server with app-specific runtime env'
         )}`
     );
+    log.info('');
+    log.info(bold('  🌐 Environments'));
+    log.info('');
+    log.info(
+        `  ${cyan('bun run lc resolve [stage]')}              ${dim(
+            'Print resolved config + injected env vars'
+        )}`
+    );
+    log.info(
+        dim(
+            `  Stages are discovered from environments/${PROJECT_ID} (config.<stage>.json + implicit 'production').`
+        )
+    );
+    log.info(
+        dim(
+            `  Currently available: ${discoverStages().join(
+                ', '
+            )} — full-stack dev defaults to 'local', while frontend-only start defaults to 'production'.`
+        )
+    );
+    log.info(dim(`  LCA API env file: ${getEnvFileLabel()}`));
     log.info('');
     log.info(bold('  📱 Native'));
     log.info('');
@@ -354,9 +614,12 @@ const handleShortcuts = async (): Promise<boolean> => {
             printHelp();
             return true;
 
-        case 'start':
-            runCommand('bun run start', 'Starting Scouts app only', 'bun run lc start');
+        case 'start': {
+            const stageId = asStage(args[1]);
+
+            startAppOnly(stageId);
             return true;
+        }
 
         case 'services':
             runCommand(
@@ -366,12 +629,21 @@ const handleShortcuts = async (): Promise<boolean> => {
             );
             return true;
 
-        case 'docker-start':
+        case 'docker-start': {
+            const stageId = asStage(args[1]) ?? 'local';
+
             runCommand(
                 'bun run docker-start',
-                'Starting Scouts Docker-start app',
-                'bun run lc docker-start'
+                `Starting Scouts Docker-start app (env: ${stageId})`,
+                'bun run lc docker-start',
+                APP_ROOT,
+                resolveStageEnv(stageId)
             );
+            return true;
+        }
+
+        case 'resolve':
+            printResolvedStage(asStage(args[1]) ?? args[1]);
             return true;
 
         case 'build':
@@ -415,7 +687,15 @@ const handleShortcuts = async (): Promise<boolean> => {
                 return asNoBuild(value);
             }, undefined);
 
-            await startDev(devMode, noBuild);
+            const stage = devArgs.reduce<string | undefined>((found, value) => {
+                if (found) {
+                    return found;
+                }
+
+                return asStage(value);
+            }, undefined);
+
+            await startDev(devMode, noBuild, stage);
             return true;
         }
 
@@ -432,30 +712,38 @@ const main = async (): Promise<void> => {
     log.info('');
     log.info(bold('🛡️ Scouts Developer Tools'));
     log.info('');
-    log.info(`  ${cyan('1')}  ${bold('Dev server')}        ${dim('— app only')}`);
-    log.info(`  ${cyan('2')}  ${bold('Docker dev')}        ${dim('— full stack')}`);
-    log.info(`  ${cyan('3')}  ${bold('Docker services')}   ${dim('— backend services only')}`);
-    log.info(`  ${cyan('4')}  ${bold('Native menu')}       ${dim('— sync, open, run, package')}`);
-    log.info(`  ${cyan('5')}  ${bold('Build web app')}     ${dim('— vite build')}`);
+    log.info(`  ${cyan('1')}  ${bold('Docker dev')}        ${dim('— full stack')}`);
+    log.info(`  ${cyan('2')}  ${bold('Local app + prod backend')} ${dim('— frontend only')}`);
+    log.info(
+        `  ${cyan('3')}  ${bold('Local dev server')}  ${dim(
+            '— local frontend, run local services separately'
+        )}`
+    );
+    log.info(`  ${cyan('4')}  ${bold('Local services')}    ${dim('— backend services only')}`);
+    log.info(`  ${cyan('5')}  ${bold('Native menu')}       ${dim('— sync, open, run, package')}`);
+    log.info(`  ${cyan('6')}  ${bold('Build web app')}     ${dim('— vite build')}`);
     log.info(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
     log.info('');
 
-    const choice = await ask('Pick an option [1-5, h]: ');
+    const choice = await ask('Pick an option [1-6, h]: ');
 
     switch (choice) {
         case '1':
-            startAppOnly();
-            break;
-        case '2':
             await startDev('full');
             break;
+        case '2':
+            startAppOnly();
+            break;
         case '3':
-            await startDev('services');
+            startAppOnly('local');
             break;
         case '4':
-            await nativeMenu();
+            await startDev('services');
             break;
         case '5':
+            await nativeMenu();
+            break;
+        case '6':
             runCommand('bun run build', 'Building Scouts web app', 'bun run lc build');
             break;
         case 'h':
@@ -464,7 +752,7 @@ const main = async (): Promise<void> => {
             printHelp();
             break;
         default:
-            log.info(yellow('Unknown option. Try 1-5 or h.'));
+            log.info(yellow('Unknown option. Try 1-6 or h.'));
             rl.close();
             break;
     }

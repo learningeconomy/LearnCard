@@ -1,5 +1,27 @@
 # learn-card-types
 
+## 5.17.6
+
+### Patch Changes
+
+-   [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow (simple send), gated behind the `enableSimpleSend` flag.
+
+    A new `/issue` page lets users issue a standards-pure OBv3 credential from one screen — from scratch, from an imported source (link, file, JSON, or Credential Engine ID), or by resending a credential they already manage — with a live card preview and self / specific-people / claim-link recipients.
+
+    Also includes shared credential-card fixes used across the wallet: achievement-type-aware subtitles and display types, corrected category mapping, redesigned "verified source" alignments, and image/placeholder fallbacks. `@learncard/types` gains an optional `created` field on the boost validator.
+
+## 5.17.5
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix: repair published-packages smoketest (zod v4 hoist break + pnpm pin)
+
+-   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix(types): import zod via the `zod/v4` subpath instead of the bare `zod` specifier
+
+    The published ESM build externalizes `import { z } from 'zod'`, so when a consumer's dependency tree hoists the zod **3.25 bridge** release (whose default export is still v3, e.g. when `expo` is present transitively), `z.iso` resolves to `undefined` and the package throws `Cannot read properties of undefined (reading 'datetime')` at import time. Importing from `zod/v4` pins the v4 API regardless of which zod major the consumer hoists (the `./v4` subpath exists in both 3.25.x and 4.x), making the ESM build resolution-stable.
+
 ## 5.17.4
 
 ### Patch Changes

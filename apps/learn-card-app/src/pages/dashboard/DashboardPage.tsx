@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
@@ -9,12 +9,10 @@ import {
     CredentialCategoryEnum,
     useAllContractRequestsForProfile,
     useCurrentUser,
-    useGetBoostSkills,
     useGetCredentialList,
     useGetConnections,
     useGetConnectionsRequests,
     useGetCurrentLCNUser,
-    useGetResolvedCredential,
     useGetSelfAssignedSkillsBoost,
     useGetUnreadUserNotifications,
     useVerifiableData,
@@ -23,36 +21,35 @@ import {
     useAiFeatureGate,
     useGetCredentialsForSkills,
 } from 'learn-card-base';
-import {
-    getCredentialName,
-    getIssuerName,
-    unwrapBoostCredential,
-    SELF_ASSIGNED_SKILLS_BOOST_NAME,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
-import MyLearnCardModal from '../../components/learncard/MyLearnCardModal';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
-import ManageDataSharingModal from '../../components/data-sharing/ManageDataSharingModal';
+import useOpenNotifications from '../../components/notifications/useOpenNotifications';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
+import useOpenMyLearnCard from '../../components/learncard/useOpenMyLearnCard';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import pathwayStore from '../../stores/pathways/pathwayStore';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 import useTheme from '../../theme/hooks/useTheme';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import { IconSetEnum } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 import {
     SKILL_PROFILE_PROFILE_KEY,
+    SKILL_PROFILE_GOALS_KEY,
     type SkillProfileProfileData,
+    type SkillProfileGoalsData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 
 import DashboardView from './DashboardView';
+import DashboardRoleSwitcher from './components/DashboardRoleSwitcher';
 import type {
     DashboardViewModel,
     DashboardEmptyTip,
@@ -68,7 +65,7 @@ import {
     type RawCategorizedEntry,
 } from '../skills/skills.helpers';
 import { countReviewsDueToday } from './helpers/dueReviews';
-import useBuildMyLearnCardModal from './hooks/useBuildMyLearnCardModal';
+import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import useAddToLearnCardActions from './hooks/useAddToLearnCardActions';
 import useSkillProfileModal from './hooks/useSkillProfileModal';
 import useAppStore from '../launchPad/useAppStore';
@@ -76,6 +73,7 @@ import { useSkillProfileCompletion } from '../ai-pathways/ai-pathways-skill-prof
 import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
+import { isHiddenActivity } from '../wallet/activity-feed/activityFeed.helpers';
 
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -84,13 +82,12 @@ import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 const DashboardPage: React.FC = () => {
     const history = useHistory();
     const flags = useFlags();
-    const { theme, getIconSet, getColorSet } = useTheme();
+    const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
     const pathwaysEnabled = usePathwaysEnabled();
-    const { openBuildMyLearnCard } = useBuildMyLearnCardModal();
     const {
         openClaimLink,
         openIssueCredential,
@@ -102,20 +99,18 @@ const DashboardPage: React.FC = () => {
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
+    const { newModal: openAddToPassportModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.BottomSheet,
+    });
+
+    const onHeaderScroll = useHeaderScrollSync();
 
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { data: allCredentials, isLoading: allCredentialsLoading } =
         useGetCredentialList(undefined);
-
-    const { data: idCredentials } = useGetCredentialList(CredentialCategoryEnum.id);
-    const primaryId = useMemo(() => idCredentials?.pages?.[0]?.records?.[0], [idCredentials]);
-    const { data: primaryIdVc } = useGetResolvedCredential(primaryId?.uri);
-    const unwrappedPrimaryIdVc = useMemo(
-        () => (primaryIdVc ? unwrapBoostCredential(primaryIdVc) : undefined),
-        [primaryIdVc]
-    );
 
     const { data: skillCredentials } = useGetCredentialList(CredentialCategoryEnum.skill);
     const skillsCount = useMemo(
@@ -125,21 +120,16 @@ const DashboardPage: React.FC = () => {
 
     const { data: skillProfileData } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
+    const { data: skillProfileGoalsData } =
+        useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
     const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
-    const { data: selfAssignedSkills } = useGetBoostSkills(selfAssignedSkillsBoost?.uri);
-    const headerSkillPills = useMemo(
-        () =>
-            (selfAssignedSkills ?? [])
-                .filter((s: any) => s?.statement?.trim())
-                .map((s: any) => ({ id: s.id, label: s.statement.trim() })),
-        [selfAssignedSkills]
-    );
 
     const selfAssignedSkillsUri = selfAssignedSkillsBoost?.uri;
     const allCredentialRecords = useMemo(
         () =>
             (allCredentials?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(record => {
                 if (isVerifiableDataRecord(record)) return false;
+                if (isHiddenActivity(record.category)) return false;
                 if (selfAssignedSkillsUri && record.uri === selfAssignedSkillsUri) return false;
                 if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
                 return true;
@@ -210,9 +200,10 @@ const DashboardPage: React.FC = () => {
         return buildTopSkills(getTopSkills(aggregatedSkills, 15), 3);
     }, [aiInsightsAllowed, skillsCredentials]);
 
-    const openMyLearnCard = () => {
-        openHeaderModal(<MyLearnCardModal branding={BrandingEnum.learncard} />);
-    };
+    // LC-1921: shared right-loading profile/settings modal, same entry point as
+    // the side-menu Settings row and the header avatar.
+    const openMyLearnCard = useOpenMyLearnCard();
+    const openNotifications = useOpenNotifications();
     const openQrScanner = () => {
         openHeaderModal(
             <QrCodeUserCardModal
@@ -224,12 +215,8 @@ const DashboardPage: React.FC = () => {
         );
     };
     const openManageDataSharing = useCallback(() => {
-        openHeaderModal(
-            <ManageDataSharingModal />,
-            { sectionClassName: '!bg-transparent !shadow-none' },
-            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-        );
-    }, [openHeaderModal]);
+        history.push('/privacy-and-data');
+    }, [history]);
 
     const pathways = pathwayStore.use.pathways();
     const activePathwayId = pathwayStore.use.activePathwayId();
@@ -245,44 +232,24 @@ const DashboardPage: React.FC = () => {
     const displayName = (currentLCNUser?.displayName?.trim() || currentUser?.name?.trim()) ?? '';
     const profileImage = currentLCNUser?.image?.trim() || currentUser?.profileImage?.trim() || '';
 
-    const categoryLabels = useMemo(() => {
-        const map: Record<string, string> = {};
-        for (const c of theme.categories ?? []) {
-            map[c.categoryId] = c.labels.singular;
-        }
-        return map;
-    }, [theme]);
-
-    const affiliation = useMemo(() => {
-        if (!primaryId) return null;
-
-        const resolvedName = unwrappedPrimaryIdVc
-            ? getCredentialName(unwrappedPrimaryIdVc)
-            : undefined;
-        const resolvedIssuer = unwrappedPrimaryIdVc
-            ? getIssuerName(unwrappedPrimaryIdVc)
-            : undefined;
-
-        const metaTitle = primaryId.title?.trim();
-        const looksGeneric = !metaTitle || /^(id|ids|identity|membership)$/i.test(metaTitle);
-
-        const role =
-            (!looksGeneric && metaTitle) ||
-            resolvedName?.trim() ||
-            categoryLabels[primaryId.category] ||
-            m['dashboard.header.memberRole']();
-
-        const rawFrom = primaryId.from?.trim() || resolvedIssuer?.trim();
-        const from = rawFrom && !/^did:/i.test(rawFrom) ? rawFrom : undefined;
-
-        return {
-            role,
-            from,
-            issuedAt: primaryId.date,
-        };
-    }, [primaryId, unwrappedPrimaryIdVc, categoryLabels]);
-
     const goalSummary = useMemo(() => {
+        // Pathways disabled has no pathway structure, so synthesize a step-less
+        // goal from the skills-profile goals instead of the pathway store.
+        if (!pathwaysEnabled) {
+            const goals = skillProfileGoalsData?.goals ?? [];
+            if (goals.length === 0) return null;
+            const [firstGoal, ...restGoals] = goals;
+            return {
+                title: firstGoal,
+                goal: restGoals.join(' • '),
+                total: 0,
+                completed: 0,
+                nextNode: null,
+                pathwayId: '',
+                goals,
+            };
+        }
+
         if (!activePathway) return null;
         const nodes = activePathway.nodes ?? [];
         const order = activePathway.chosenRoute?.length
@@ -301,10 +268,14 @@ const DashboardPage: React.FC = () => {
             nextNode,
             pathwayId: activePathway.id,
         };
-    }, [activePathway]);
+    }, [pathwaysEnabled, activePathway, skillProfileGoalsData]);
 
     const goToCollect = () => {
-        openBuildMyLearnCard();
+        openAddToPassportModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
     };
     const goToInsights = () => history.push('/ai/insights');
     const goToSkills = () => history.push('/skills');
@@ -334,7 +305,7 @@ const DashboardPage: React.FC = () => {
     };
 
     const hasCredentials = totalCredentialCount > 0;
-    const hasGoal = !!activePathway;
+    const hasGoal = pathwaysEnabled ? !!activePathway : !!goalSummary;
     const hasSkillProfile = skillProfilePercentage >= 100;
     const hasDiscoveredApps = installedApps.length > 0;
 
@@ -393,6 +364,7 @@ const DashboardPage: React.FC = () => {
 
     const actionHandlers: ActionHandlers = {
         goToAddCredential: goToCollect,
+        openAddToPassport: goToCollect,
         openClaimLink,
         goToWallet,
         goToSkills,
@@ -509,18 +481,12 @@ const DashboardPage: React.FC = () => {
             heroImage: currentLCNUser?.heroImage,
             profileRole: currentLCNUser?.role,
             shortBio: currentLCNUser?.shortBio,
-            affiliation,
-            stats: {
-                credentials: totalCredentialCount,
-                skills: skillsCount,
-                contacts: connections.length,
-            },
             professionalTitle: skillProfileData?.professionalTitle,
-            experience: skillProfileData?.lifetimeExperience ?? null,
-            skills: headerSkillPills,
-            onSkillPillClick: () => history.push('/skills'),
             onAvatarClick: openMyLearnCard,
             onScanQrTopRight: openQrScanner,
+            onNotificationsClick: openNotifications,
+            unreadCount: unreadNotifications.length,
+            roleSwitcher: <DashboardRoleSwitcher />,
         },
         heroSlot,
         checklistItems,
@@ -553,7 +519,12 @@ const DashboardPage: React.FC = () => {
     return (
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <IonContent fullscreen color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                >
                     <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>

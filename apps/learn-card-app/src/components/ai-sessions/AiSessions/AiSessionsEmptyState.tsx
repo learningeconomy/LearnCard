@@ -27,8 +27,7 @@ export const AiSessionsEmptyState: React.FC<{
                 {m['ai.noSessionsForTopic']()}
             </h3>
             <p className="text-grayscale-600 mt-2 max-w-[520px] text-sm leading-relaxed">
-                You don't have any sessions for "{topicsTitle}" yet. Start a new one to begin
-                chatting about this topic.
+                {m['ai.noSessionsForTopicBody']({ topic: topicsTitle })}
             </p>
             <button
                 className={`mt-6 bg-${primaryColor} hover:bg-${primaryColor} text-white px-5 py-3 rounded-[20px] font-semibold text-sm shadow-soft-bottom disabled:opacity-50 disabled:cursor-not-allowed`}

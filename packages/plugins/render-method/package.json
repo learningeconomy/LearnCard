@@ -1,6 +1,6 @@
 {
     "name": "@learncard/render-method-plugin",
-    "version": "3.0.4",
+    "version": "3.0.7",
     "description": "LearnCard plugin for attaching W3C renderMethod to Verifiable Credentials",
     "type": "module",
     "main": "./dist/index.cjs",

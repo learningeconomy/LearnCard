@@ -48,7 +48,7 @@ export const AiSessionsLayout: React.FC<{
                         <IonFooter className="absolute bottom-0 w-full bg-cyan-50 flex items-center justify-around ion-padding ion-no-border gap-3">
                             <button
                                 onClick={handlePersonalizeMyAi}
-                                className="flex-1 h-[60px] bg-white text-grayscale-900 flex items-center justify-center px-4 py-2 rounded-[20px] font-semibold text-[17px] shadow-soft-bottom"
+                                className="flex-1 min-h-[60px] bg-white text-grayscale-900 flex items-center justify-center px-4 py-2 rounded-[20px] font-semibold text-[17px] shadow-soft-bottom"
                             >
                                 <UnicornIcon className="w-[35px] h-auto mr-2" />
                                 {m['ai.personalizeMyAi']()}
@@ -57,9 +57,9 @@ export const AiSessionsLayout: React.FC<{
                                 <NewAiSessionButton
                                     type={NewAiSessionButtonEnum.mobile}
                                     iconType="light"
-                                    text={m['ai.newSession']()}
+                                    text={m['ai.newSessionTitle']()}
                                     onClick={onNewSessionForTopic}
-                                    className="!flex-1 !mt-0 !h-[60px] !px-4 !py-2 !rounded-[20px] !bg-indigo-500 !border-indigo-500 !text-white !text-center !flex !items-center !justify-center !flex-row-reverse"
+                                    className="!flex-1 !mt-0 !min-h-[60px] !px-4 !py-2 !rounded-[20px] !bg-indigo-500 !border-indigo-500 !text-white !text-center !flex !items-center !justify-center !flex-row-reverse"
                                 />
                             )}
                         </IonFooter>

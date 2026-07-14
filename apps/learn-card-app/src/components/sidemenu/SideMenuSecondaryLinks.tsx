@@ -30,7 +30,7 @@ const SideMenuSecondaryLinks: React.FC<{
     setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }> = ({ activeTab, setActiveTab }) => {
     const { theme, getIconSet, getColorSet } = useTheme();
-    const iconSet = getIconSet(IconSetEnum.sideMenu);
+    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<any>>;
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
     const flags = useFlags();
@@ -66,8 +66,13 @@ const SideMenuSecondaryLinks: React.FC<{
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
+        const isPassportActive =
+            tab === '/passport' &&
+            ['/passport', '/wallet', '/home'].some(
+                prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
+            );
 
-        if (tab === activeTab || isAdminToolsActive) return true;
+        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
         return false;
     };
 
@@ -104,6 +109,8 @@ const SideMenuSecondaryLinks: React.FC<{
     if (isCompleted) walletTextStyles = `${colors.completedColor}`;
 
     const sideMenuLinks = theme?.sideMenuSecondaryLinks;
+
+    if (!sideMenuLinks || sideMenuLinks.length === 0) return null;
 
     const secondaryLinks = sideMenuLinks?.map(link => {
         if (link?.path === '/families' && !canCreateFamilies)
@@ -176,18 +183,19 @@ const SideMenuSecondaryLinks: React.FC<{
                     to={link.path}
                     className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
                 >
-                    {(isSyncing || isCompleted) && (
-                        <div
-                            className={`flex items-center justify-center absolute top-[12px] z-50 h-[28px] w-[28px] rounded-[10px]`}
-                        >
-                            {isSyncing && (
-                                <CustomSpinner
-                                    className={`${colors?.syncingColor} h-[18px] w-[18px]`}
-                                />
-                            )}
-                        </div>
-                    )}
-                    {renderIcon({ isCompleted, isSyncing })} {walletText}
+                    <div className="relative mr-[10px] h-[35px] w-[35px] shrink-0">
+                        {(isSyncing || isCompleted) && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[10px]">
+                                {isSyncing && (
+                                    <CustomSpinner
+                                        className={`${colors?.syncingColor} h-[18px] w-[18px]`}
+                                    />
+                                )}
+                            </div>
+                        )}
+                        {renderIcon({ isCompleted, isSyncing })}
+                    </div>
+                    {walletText}
                 </PreloadingLink>
             );
         }
@@ -199,7 +207,7 @@ const SideMenuSecondaryLinks: React.FC<{
                         if (link.path === '/ai/topics') chatBotStore.set.resetStore();
                         setActiveTab(link.path);
                     }}
-                    className="flex items-center justify-center px-2 py-0"
+                    className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
                 </li>

@@ -12,6 +12,7 @@ import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -22,6 +23,7 @@ import {
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type CertType = {
     id: string;
@@ -29,6 +31,15 @@ export type CertType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type CertificateCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListCerts: React.FC = () => {
@@ -40,6 +51,7 @@ export const CheckListCerts: React.FC = () => {
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -78,7 +90,7 @@ export const CheckListCerts: React.FC = () => {
                 return;
             }
 
-            const certCredentials = await Promise.all(
+            const certCredentials: CertificateCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -87,11 +99,11 @@ export const CheckListCerts: React.FC = () => {
                 })
             );
 
-            const _certs = certCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _certs = certCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Certificate,
             }));
 
@@ -114,7 +126,12 @@ export const CheckListCerts: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                await wallet.index.LearnCloud.remove(id);
+                const record = await wallet.index.LearnCloud.get({ id });
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('Failed to delete certificate', error);

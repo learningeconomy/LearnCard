@@ -1,5 +1,26 @@
 # @learncard/app-store-demo-request-learner-context
 
+## 1.0.13
+
+### Patch Changes
+
+-   Updated dependencies [[`406235e359bb45e8d341f7581cd6d235aed72ba4`](https://github.com/learningeconomy/LearnCard/commit/406235e359bb45e8d341f7581cd6d235aed72ba4)]:
+    -   @learncard/partner-connect@0.3.10
+
+## 1.0.12
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/partner-connect@0.3.9
+
+## 1.0.11
+
+### Patch Changes
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/partner-connect@0.3.8
+
 ## 1.0.10
 
 ### Patch Changes

@@ -11,6 +11,7 @@ import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import BoostMediaPreview from './BoostMediaPreview';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import {
@@ -18,6 +19,7 @@ import {
     ClrTranscriptSurface,
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -26,6 +28,7 @@ import {
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
+    DisplayTypeEnum,
 } from 'learn-card-base';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
@@ -68,6 +71,8 @@ type NonBoostPreviewProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     isClrCredential?: boolean;
+    displayType?: DisplayTypeEnum;
+    isPreview?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -101,6 +106,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     isClrCredential = false,
+    displayType,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const { initWallet } = useWallet();
@@ -125,6 +132,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     useEffect(() => {
+        if (isPreview) return;
+
         const verify = async () => {
             const wallet = await initWallet();
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
@@ -132,7 +141,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         };
 
         verify();
-    }, [credential]);
+    }, [credential, isPreview]);
 
     useEffect(() => {
         if (!isFront) {
@@ -160,6 +169,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 isEarnedBoost={isEarnedBoost}
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={credential as VC | UnsignedVC}
+                isPreview={isPreview}
             />,
             {
                 className: '!bg-transparent',
@@ -194,8 +204,17 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const selectedCredential = credential;
 
-    const isCertificate = credential?.display?.displayType === 'certificate';
-    const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const isCertificate =
+        displayType === DisplayTypeEnum.Certificate ||
+        credential?.display?.displayType === 'certificate';
+    const isID =
+        displayType === DisplayTypeEnum.ID ||
+        credential?.display?.displayType === 'id' ||
+        categoryType === 'ID';
+    const isMedia =
+        !isClrCredential &&
+        !isClrChildCredential &&
+        (displayType === DisplayTypeEnum.Media || credential?.display?.displayType === 'media');
     const isIssuerViewSelected =
         enableRenderMethod &&
         Boolean(renderMethod) &&
@@ -206,17 +225,32 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const bgColor = isClrCredential ? 'bg-grayscale-100' : '';
 
+    const clrCredential = useMemo(() => unwrapBoostCredential(credential), [credential]);
+
     const clrModel = useMemo(
         () =>
             isClrCredential || isClrChildCredential
                 ? normalizeClrTranscriptDisplayModel(
-                      credential as unknown as Record<string, unknown>
+                      clrCredential as unknown as Record<string, unknown>
                   )
                 : null,
-        [credential, isClrCredential, isClrChildCredential]
+        [clrCredential, isClrCredential, isClrChildCredential]
     );
     const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
     const hasClrEvidence = clrEvidence.length > 0;
+
+    if (isMedia) {
+        return (
+            <BoostMediaPreview
+                credential={credential}
+                openDetailsSideModal={openDetailsSideModal}
+                handleShareBoost={handleShareBoost}
+                onDotsClick={onDotsClick}
+                verifications={verifications}
+                handleCloseModal={handleCloseModal}
+            />
+        );
+    }
 
     const credentialDisplay = (
         <VCDisplayCardWrapper2
@@ -253,7 +287,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         credentialContent = (
             <ClrTranscriptFullPage
                 model={clrModel}
-                boost={credential}
+                boost={clrCredential}
                 // boostUri comes from boost cards; credentialUri from direct credential views
                 boostUri={boostUri ?? credentialUri}
                 options={{ viewer: 'student', surface: ClrTranscriptSurface.Full }}
@@ -317,6 +351,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         isEarnedBoost={isEarnedBoost}
                         isClrChildCredential={isClrChildCredential}
                         renderMethodCredential={credential as VC | UnsignedVC}
+                        isPreview={isPreview}
                     />
                 )}
             </div>

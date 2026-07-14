@@ -251,9 +251,17 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
+    let tenantId: string | undefined;
+
+    try {
+        tenantId = getResolvedTenantConfig().tenantId;
+    } catch {
+        tenantId = undefined;
+    }
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
+        tenantId,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the

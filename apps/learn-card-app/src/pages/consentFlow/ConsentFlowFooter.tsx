@@ -12,6 +12,7 @@ type ConsentFlowFooterProps = {
     actionButtonText?: string;
     onActionButtonClick?: () => void;
     actionButtonDisabled?: boolean;
+    actionButtonColorClass?: string;
     showCloseModalX?: boolean;
 
     secondaryButtonText?: string;
@@ -28,6 +29,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
     actionButtonText,
     onActionButtonClick,
     actionButtonDisabled = false,
+    actionButtonColorClass,
     showCloseModalX,
     secondaryButtonText,
     onSecondaryButtonClick,
@@ -93,7 +95,9 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                 {showActionButton && (
                     <button
                         type="button"
-                        className={`w-full py-[7px] px-[15px] text-[17px] bg-${primaryColor} rounded-[35px] font-notoSans text-white shadow-button-bottom disabled:opacity-60 h-[44px] leading-[24px] tracking-[0.25px] font-[600]`}
+                        className={`w-full py-[7px] px-[15px] text-[17px] ${
+                            actionButtonColorClass ?? `bg-${primaryColor}`
+                        } rounded-[35px] font-notoSans text-white shadow-button-bottom disabled:opacity-60 h-[44px] leading-[24px] tracking-[0.25px] font-[600]`}
                         onClick={onActionButtonClick}
                         disabled={actionButtonDisabled}
                     >
