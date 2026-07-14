@@ -7,7 +7,7 @@ const log = getLogger('app-preview-modal');
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
 
-import { useModal } from 'learn-card-base';
+import { useModal, appendQueryParams } from 'learn-card-base';
 import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLearnCardMessageHandlers';
 
@@ -179,7 +179,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     };
 
     const embedUrlWithOverride = embedUrl
-        ? `${embedUrl}?lc_host_override=${window.location.origin}`
+        ? appendQueryParams(embedUrl, { lc_host_override: window.location.origin })
         : '';
 
     if (!isEmbeddable) {
