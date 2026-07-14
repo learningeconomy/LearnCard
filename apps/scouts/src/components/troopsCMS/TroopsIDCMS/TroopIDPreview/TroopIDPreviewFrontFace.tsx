@@ -68,7 +68,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
                         <br />
                         by {name}
                     </span>
-                    <h4 className="text-[14px] font-notoSans font-semibold text-gray-900">
+                    <h4 className="text-[14px] font-notoSans font-semibold text-grayscale-900">
                         {network?.basicInfo?.name}
                     </h4>
                 </div>
