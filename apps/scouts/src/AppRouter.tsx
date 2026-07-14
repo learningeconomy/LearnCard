@@ -1,4 +1,4 @@
-import { useEffect, useCallback, memo, useRef, useState } from 'react';
+import { useEffect, useCallback, memo, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -35,7 +35,6 @@ import {
     LOGIN_REDIRECTS,
     lazyWithRetry,
     useGetUnreadUserNotifications,
-    useIsCurrentUserLCNUser,
     Modals,
     redirectStore,
     BrandingEnum,
@@ -44,7 +43,6 @@ import { tabRoutes } from './constants';
 
 import { useFirebase } from './hooks/useFirebase';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
-import { useJoinLCNetworkModal } from './components/network-prompts/hooks/useJoinLCNetworkModal';
 import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
@@ -99,11 +97,8 @@ const AppRouter: React.FC = () => {
     const savedEmail = localStorage.getItem('emailForSignIn');
 
     const params = queryString.parse(location.search);
-    const hasAutoPromptedJoinNetworkRef = useRef(false);
 
     // Custom hooks
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { data: notificationsData } = useGetUnreadUserNotifications();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
@@ -136,33 +131,6 @@ const AppRouter: React.FC = () => {
             />
         );
     };
-
-    useEffect(() => {
-        if (params?.profileSetup === 'true') {
-            return;
-        }
-
-        if (currentLCNUser) {
-            hasAutoPromptedJoinNetworkRef.current = false;
-            return;
-        }
-
-        if (
-            currentLCNUserLoading ||
-            currentLCNUser !== false ||
-            hasAutoPromptedJoinNetworkRef.current
-        ) {
-            return;
-        }
-
-        void (async () => {
-            const result = await handlePresentJoinNetworkModal();
-
-            if (result.prompted) {
-                hasAutoPromptedJoinNetworkRef.current = true;
-            }
-        })();
-    }, [currentLCNUser, currentLCNUserLoading, handlePresentJoinNetworkModal, params]);
 
     const handleAppUrlOpen = async (data: { url: string }) => {
         const parsedUrl = new URL(data.url);
