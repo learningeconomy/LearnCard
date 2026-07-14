@@ -118,8 +118,8 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                         {isRevoking || isWorking
                             ? m['dataSharing.revoking']()
                             : isLearnCardAiContract
-                              ? m['dataSharing.disableAiRevoke']()
-                              : m['dataSharing.confirmRevoke']()}
+                            ? m['dataSharing.disableAiRevoke']()
+                            : m['dataSharing.confirmRevoke']()}
                     </button>
 
                     <button
@@ -410,8 +410,8 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
         step === 'edit'
             ? m['dataSharing.editAccess']()
             : step === 'activity'
-              ? m['dataSharing.activityFeed']()
-              : m['dataSharing.appDetails']();
+            ? m['dataSharing.activityFeed']()
+            : m['dataSharing.appDetails']();
 
     return (
         <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
