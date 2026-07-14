@@ -37,6 +37,7 @@ import { isEUCountry, requiresEUParentalConsent } from '../onboardingNetworkForm
 import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../privacyPreferences';
 import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
+import { inferCountryCode } from './countryInference';
 
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
@@ -103,6 +104,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [dob, setDob] = useState<string>('');
     const [country, setCountry] = useState<string>('');
     const [usMinorConsent, setUsMinorConsent] = useState(false);
+
+    useEffect(() => {
+        setCountry(prev => prev || inferCountryCode() || '');
+    }, []);
+
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
 
