@@ -146,8 +146,6 @@
         "storybook": "storybook dev -p 6007",
         "build-storybook": "storybook build",
         "i18n:check-keys": "node scripts/check-i18n-keys.mjs",
-        "i18n:check-guides": "node scripts/check-i18n-guides.mjs",
-        "i18n:check-ast": "eslint --no-eslintrc -c .eslintrc-i18n.cjs --resolve-plugins-relative-to ../.. --ext .tsx,.ts src/pages/appStoreDeveloper src/pages/appStoreAdmin",
         "test-storybook": "test-storybook --url http://localhost:6007",
         "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
         "test:e2e:mock": "playwright test --config=playwright.mock.config.ts",
